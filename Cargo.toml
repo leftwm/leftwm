@@ -9,4 +9,4 @@ name = "wm"
 path = "src/wm.rs"
 
 [dependencies]
-x11 = "2.18.1"
+x11-dl = "2.18.3"
