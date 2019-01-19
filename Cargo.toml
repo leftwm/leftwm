@@ -1,0 +1,12 @@
+[package]
+name = "whatawm"
+version = "0.1.0"
+authors = ["Lex Childs <lexchilds@gmail.com>"]
+edition = "2018"
+
+[[bin]]
+name = "wm"
+path = "src/wm.rs"
+
+[dependencies]
+x11 = "2.18.1"
