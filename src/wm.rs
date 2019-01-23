@@ -1,4 +1,4 @@
-//use x11_dl::xlib;
+use x11_dl::xlib;
 
 mod xwrap;
 
@@ -9,6 +9,20 @@ fn main() {
 
     for window in windows {
         println!("WINDOW: {:#?} ", window);
+    }
+
+    xw.init();
+    loop {
+        let event = xw.get_next_event();
+        match event.get_type() {
+            xlib::ClientMessage => { 
+                let xclient = xlib::XClientMessageEvent::from(event);
+                println!("EVENT: {:#?} ", xclient);
+            }
+            _ => {
+                println!("UNKNOWN EVENT: ");
+            }
+        }
     }
 
 

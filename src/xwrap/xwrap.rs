@@ -1,5 +1,5 @@
 use x11_dl::xlib;
-use std::os::raw::{ c_int, c_ulong, c_uint, c_char };
+use std::os::raw::{ c_int, c_ulong, c_uint, c_char, c_long };
 use std::ffi::{ CString };
 use std::ptr;
 use std::{thread, time};
@@ -174,6 +174,47 @@ impl XWrap {
             }
         };
         return Err(())
+    }
+
+
+
+    pub fn init(&self){
+        unsafe{
+
+            let mask: c_long = 
+                xlib::SubstructureRedirectMask
+                | xlib::SubstructureNotifyMask
+                | xlib::ButtonPressMask
+                | xlib::PointerMotionMask
+                | xlib::EnterWindowMask
+                | xlib::LeaveWindowMask
+                | xlib::StructureNotifyMask
+                | xlib::PropertyChangeMask;
+
+            let mut attrs: xlib::XSetWindowAttributes = unsafe{ std::mem::uninitialized() };
+            attrs.event_mask = mask;
+            attrs.cursor = 0;
+
+            let screen = (self.xlib.XDefaultScreen)(self.display);
+            let root = (self.xlib.XRootWindow)(self.display, screen);
+            (self.xlib.XSelectInput)(self.display, root, mask);
+
+
+            for root in self.get_roots() {
+                let unlock = xlib::CWEventMask | xlib::CWCursor;
+                (self.xlib.XChangeWindowAttributes)(self.display, root, unlock, &mut attrs);
+                (self.xlib.XSelectInput)(self.display, root, mask);
+            }
+            (self.xlib.XSync)(self.display, 0);
+        }
+    }
+
+    pub fn get_next_event(&self) -> xlib::XEvent {
+        let mut event: xlib::XEvent = unsafe{ std::mem::uninitialized() };
+        unsafe{
+            (self.xlib.XNextEvent)(self.display, &mut event);
+        };
+        return event;
     }
 
 

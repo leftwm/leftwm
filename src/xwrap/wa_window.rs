@@ -40,9 +40,7 @@ impl WaWindow{
           Ok(handles) => {
             handles.into_iter().map(|handle| { 
                 WaWindow::build(xw, handle) 
-            })
-            //.filter(|w| w.is_managed )
-            .collect()
+            }).filter(|w| w.is_managed ).collect()
           }
           Err(err) => {
               println!("ERROR: {}", err);
