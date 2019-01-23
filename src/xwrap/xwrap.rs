@@ -29,7 +29,7 @@ impl XWrap {
     pub fn get_screens(&self) -> Vec<*mut xlib::Screen> {
         let mut screens = Vec::new();
         let screen_count = unsafe{ (self.xlib.XScreenCount)(self.display) };
-        for screen_num in 0..screen_count {
+        for screen_num in 0..(screen_count) {
             let screen = unsafe{ (self.xlib.XScreenOfDisplay)(self.display, screen_num) };
             screens.push( screen );
         }
@@ -177,37 +177,41 @@ impl XWrap {
     }
 
 
-
-    pub fn init(&self){
+    pub fn subscribe_to_event(&self, window: xlib::Window, mask: &c_long){
+        //let mut attrs: xlib::XSetWindowAttributes = unsafe{ std::mem::uninitialized() };
+        //attrs.event_mask = *mask;
+        //attrs.cursor = 0;
         unsafe{
-
-            let mask: c_long = 
-                xlib::SubstructureRedirectMask
-                | xlib::SubstructureNotifyMask
-                | xlib::ButtonPressMask
-                | xlib::PointerMotionMask
-                | xlib::EnterWindowMask
-                | xlib::LeaveWindowMask
-                | xlib::StructureNotifyMask
-                | xlib::PropertyChangeMask;
-
-            let mut attrs: xlib::XSetWindowAttributes = unsafe{ std::mem::uninitialized() };
-            attrs.event_mask = mask;
-            attrs.cursor = 0;
-
-            let screen = (self.xlib.XDefaultScreen)(self.display);
-            let root = (self.xlib.XRootWindow)(self.display, screen);
-            (self.xlib.XSelectInput)(self.display, root, mask);
-
-
-            for root in self.get_roots() {
-                let unlock = xlib::CWEventMask | xlib::CWCursor;
-                (self.xlib.XChangeWindowAttributes)(self.display, root, unlock, &mut attrs);
-                (self.xlib.XSelectInput)(self.display, root, mask);
-            }
-            (self.xlib.XSync)(self.display, 0);
+            //let unlock = xlib::CWEventMask | xlib::CWCursor;
+            //(self.xlib.XChangeWindowAttributes)(self.display, window, unlock, &mut attrs);
+            (self.xlib.XSelectInput)(self.display, window, *mask);
         }
     }
+
+
+    pub fn init(&self){
+        let root_event_mask: c_long = 
+            xlib::ButtonPressMask
+            | xlib::SubstructureRedirectMask
+            | xlib::SubstructureNotifyMask
+            | xlib::PointerMotionMask
+            | xlib::EnterWindowMask
+            | xlib::LeaveWindowMask
+            | xlib::StructureNotifyMask
+            | xlib::PropertyChangeMask;
+        for root in self.get_roots() {
+            self.subscribe_to_event(root, &root_event_mask);
+        }
+        //if let Ok(windows) = self.get_all_windows() {
+        //    for window in windows {
+        //        let mask = xlib::ButtonPressMask;
+        //        self.subscribe_to_event(window, &mask);
+        //    }
+        //}
+        unsafe { (self.xlib.XSync)(self.display, 0); }
+    }
+
+
 
     pub fn get_next_event(&self) -> xlib::XEvent {
         let mut event: xlib::XEvent = unsafe{ std::mem::uninitialized() };

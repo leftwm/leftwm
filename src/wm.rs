@@ -5,22 +5,26 @@ mod xwrap;
 fn main() {
 
     let xw = xwrap::XWrap::new();
-    let windows = xwrap::WaWindow::find_all(&xw);
+    //let windows = xwrap::WaWindow::find_all(&xw);
 
-    for window in windows {
-        println!("WINDOW: {:#?} ", window);
-    }
+    //for window in windows {
+    //    println!("WINDOW: {:#?} ", window);
+    //}
 
     xw.init();
     loop {
-        let event = xw.get_next_event();
-        match event.get_type() {
+        let raw_event = xw.get_next_event();
+        match raw_event.get_type() {
             xlib::ClientMessage => { 
-                let xclient = xlib::XClientMessageEvent::from(event);
-                println!("EVENT: {:#?} ", xclient);
+                let event = xlib::XClientMessageEvent::from(raw_event);
+                println!("ClientMessage: {:#?} ", event);
+            }
+            xlib::ButtonPress => { 
+                let event = xlib::XButtonPressedEvent::from(raw_event);
+                println!("ButtonPress: {:#?} ", event);
             }
             _ => {
-                println!("UNKNOWN EVENT: ");
+                //println!("UNKNOWN EVENT: ");
             }
         }
     }
