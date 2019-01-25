@@ -1,21 +1,32 @@
-use x11_dl::xlib;
 
+mod utils;
+mod display_servers;
 mod xwrap;
-use xwrap::WaWindow;
-use xwrap::XWrap;
-mod event_handler;
+use display_servers::*;
 
 fn main() {
 
-    let xw = XWrap::new();
-    xw.init();
 
-    let mut windows = WaWindow::find_all(&xw);
+    let ds:MockDisplayServer = DisplayServer::new();
+    //let ds:XlibDisplayServer = DisplayServer::new();
 
-    loop {
-        let raw_event = xw.get_next_event();
-        event_handler::handle_event(raw_event);
+    let windows = ds.find_all_windows();
+
+    for window in windows {
+        println!("window: {:#?} ", window);
     }
+
+
+
+    //let xw = XWrap::new();
+    //xw.init();
+
+    //let mut windows = WaWindow::find_all(&xw);
+
+    //loop {
+    //    let raw_event = xw.get_next_event();
+    //    //event_handler::handle_event(raw_event);
+    //}
 
 }
 
