@@ -5,13 +5,15 @@ mod xwrap;
 fn main() {
 
     let xw = xwrap::XWrap::new();
-    //let windows = xwrap::WaWindow::find_all(&xw);
 
     //for window in windows {
     //    println!("WINDOW: {:#?} ", window);
     //}
 
     xw.init();
+    let windows = xwrap::WaWindow::find_all(&xw);
+
+
     loop {
         let raw_event = xw.get_next_event();
         match raw_event.get_type() {

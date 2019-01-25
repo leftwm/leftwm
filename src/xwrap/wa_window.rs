@@ -27,6 +27,7 @@ impl WaWindow{
             }
         }
         let name = xw.get_window_title(handle);
+        xw.subscribe_to_client_events(handle);
         WaWindow { 
             handle: handle,
             name: if let Ok(n) = name { n } else { "".to_string() },

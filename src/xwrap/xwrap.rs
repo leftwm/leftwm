@@ -177,17 +177,25 @@ impl XWrap {
     }
 
 
-    pub fn subscribe_to_event(&self, window: xlib::Window, mask: &c_long){
+    pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long){
         //let mut attrs: xlib::XSetWindowAttributes = unsafe{ std::mem::uninitialized() };
         //attrs.event_mask = *mask;
         //attrs.cursor = 0;
         unsafe{
             //let unlock = xlib::CWEventMask | xlib::CWCursor;
             //(self.xlib.XChangeWindowAttributes)(self.display, window, unlock, &mut attrs);
-            (self.xlib.XSelectInput)(self.display, window, *mask);
+            (self.xlib.XSelectInput)(self.display, window, mask);
         }
     }
 
+
+    pub fn subscribe_to_client_events(&self, window: xlib::Window){
+        let mask = xlib::EnterWindowMask|
+            xlib::FocusChangeMask|
+            xlib::PropertyChangeMask|
+            xlib::StructureNotifyMask;
+        self.subscribe_to_event(window,mask);
+    }
 
     pub fn init(&self){
         let root_event_mask: c_long = 
@@ -200,7 +208,7 @@ impl XWrap {
             | xlib::StructureNotifyMask
             | xlib::PropertyChangeMask;
         for root in self.get_roots() {
-            self.subscribe_to_event(root, &root_event_mask);
+            self.subscribe_to_event(root, root_event_mask);
         }
         //if let Ok(windows) = self.get_all_windows() {
         //    for window in windows {
