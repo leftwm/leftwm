@@ -189,12 +189,13 @@ impl XWrap {
     }
 
 
-    pub fn subscribe_to_client_events(&self, window: xlib::Window){
-        let mask = xlib::EnterWindowMask|
-            xlib::FocusChangeMask|
-            xlib::PropertyChangeMask|
+    pub fn manage_window(&self, window: xlib::Window){
+        let mask = xlib::EnterWindowMask |
+            xlib::FocusChangeMask |
+            xlib::PropertyChangeMask |
             xlib::StructureNotifyMask;
         self.subscribe_to_event(window,mask);
+        unsafe{ (self.xlib.XMapWindow)(self.display, window) };
     }
 
     pub fn init(&self){
@@ -210,12 +211,6 @@ impl XWrap {
         for root in self.get_roots() {
             self.subscribe_to_event(root, root_event_mask);
         }
-        //if let Ok(windows) = self.get_all_windows() {
-        //    for window in windows {
-        //        let mask = xlib::ButtonPressMask;
-        //        self.subscribe_to_event(window, &mask);
-        //    }
-        //}
         unsafe { (self.xlib.XSync)(self.display, 0); }
     }
 
