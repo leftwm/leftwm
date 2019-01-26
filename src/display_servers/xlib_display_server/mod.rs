@@ -2,12 +2,15 @@ use super::DisplayServer;
 use super::Window;
 use super::Handle;
 use super::event_handler;
+use std::thread;
+//use std::sync::{Arc, Mutex};
 
 mod xwrap;
 use xwrap::XWrap;
 
 
 pub struct XlibDisplayServer<'a>{
+    //let game = Arc::new(Mutex::new( game::Game::new(games_outs) ));
     xw: XWrap,
     events: Vec<&'a event_handler::Events>
 }
@@ -28,10 +31,8 @@ impl<'a> DisplayServer<'a> for XlibDisplayServer<'a> {
     }
 
     fn find_all_windows(&self) -> Vec<Window> {
-
         match self.xw.get_all_windows() {
           Ok(handles) => {
-
             let mut list: Vec<Window> = Vec::new();
             for handle in handles {
                 let attrs = self.xw.get_window_attrs(handle).unwrap();
@@ -58,10 +59,25 @@ impl<'a> DisplayServer<'a> for XlibDisplayServer<'a> {
             return Vec::new();
           }
         }
+    }
 
+
+}
+
+
+
+impl<'a> XlibDisplayServer<'a> {
+
+    fn start_event_loop(&self){
+        loop{
+            //will block waiting for the next xlib event.
+            let raw_event = self.xw.get_next_event();
+        }
     }
 
 }
+
+
 
 
 #[test]
