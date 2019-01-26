@@ -2,6 +2,7 @@ use super::DisplayServer;
 use super::Window;
 use super::Handle;
 use super::Manager;
+use super::Screen;
 
 mod xwrap;
 mod event_dispatch;
@@ -42,6 +43,7 @@ impl DisplayServer for XlibDisplayServer {
                 }
                 if managed {
                     let w = Window{ 
+                        name: self.xw.get_window_name(handle),
                         handle: Handle::XlibHandle(handle)
                     };
                     self.manager.on_new_window(w);
@@ -64,24 +66,23 @@ impl XlibDisplayServer {
     pub fn start_event_loop(&mut self){
         //subscribe to WM type events
         self.find_all_windows();
+
+        for s in self.xw.get_screens() {
+            let ss = unsafe{ *s };
+            let screen = Screen::new(ss.height, ss.width);
+            self.manager.add_screen(screen);
+        }
+
         self.xw.init();
 
         loop{
             //will block waiting for the next xlib event.
             let raw_event = self.xw.get_next_event();
-            event_dispatch::dispatch( &mut self.manager, raw_event);
+            event_dispatch::dispatch( &mut self.manager, &self.xw, raw_event);
         }
     }
 
 }
 
 
-
-
-#[test]
-fn it_should_be_able_to_update_the_list_of_windows(){
-    let ds:MockDisplayServer = DisplayServer::new();
-    ds.find_all_windows();
-    assert!(ds.manager.windows.len() == 10, "wasn't able to get a list of windows")
-}
 

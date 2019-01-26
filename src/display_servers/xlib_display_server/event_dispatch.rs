@@ -2,16 +2,18 @@ use x11_dl::xlib;
 use super::Handle;
 use super::Window;
 use super::Manager;
+use super::XWrap;
 
 
 
-pub fn dispatch(manager: &mut Manager, raw_event: xlib::XEvent){
+pub fn dispatch(manager: &mut Manager, xw: &XWrap, raw_event: xlib::XEvent){
 
     match raw_event.get_type() {
 
         xlib::ClientMessage => { 
             let event = xlib::XClientMessageEvent::from(raw_event);
             let w = Window{ 
+                name: xw.get_window_name(event.window),
                 handle: Handle::XlibHandle(event.window)
             };
             manager.on_new_window(w);

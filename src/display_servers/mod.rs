@@ -1,6 +1,7 @@
 
 use super::utils::window::Handle;
 use super::utils::window::Window;
+use super::utils::screen::Screen;
 use super::manager::Manager;
 mod mock_display_server;
 mod xlib_display_server;

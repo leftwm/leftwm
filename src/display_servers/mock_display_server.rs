@@ -17,7 +17,10 @@ impl DisplayServer for MockDisplayServer  {
 
     fn find_all_windows(&mut self) {
         for i in 0..10 {
+            let mut name: String = "MOCK: ".to_owned();
+            name.push_str( &(i.to_string())[..] );
             let w = Window{
+                name: Some(name),
                 handle: Handle::MockHandle(i)
             };
             self.manager.on_new_window(w);
@@ -28,17 +31,14 @@ impl DisplayServer for MockDisplayServer  {
 
 impl MockDisplayServer  {
 
-    pub fn start_event_loop(&mut self){
-    }
-    //    let w = Window{ handle: Handle::MockHandle(1) };
-    //    self.manager.on_new_window(w);
+    //pub fn start_event_loop(&mut self){
     //}
 }
 
 
 #[test]
 fn it_should_be_able_to_update_the_list_of_windows(){
-    let ds:MockDisplayServer = DisplayServer::new();
+    let mut ds:MockDisplayServer = DisplayServer::new();
     ds.find_all_windows();
     assert!(ds.manager.windows.len() == 10, "wasn't able to get a list of windows")
 }

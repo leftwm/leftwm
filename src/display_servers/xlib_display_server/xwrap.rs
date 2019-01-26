@@ -1,8 +1,8 @@
 use x11_dl::xlib;
-use std::os::raw::{ c_int, c_ulong, c_uint, c_char, c_long };
+use std::os::raw::{ c_int, c_uint, c_char, c_long };
 use std::ffi::{ CString };
 use std::ptr;
-use std::{thread, time};
+//use std::{thread, time};
 use std::slice;
 
 
@@ -107,74 +107,74 @@ impl XWrap {
         }
     }
 
-    pub fn get_window_name(&self, window: xlib::Window) -> String {
+    pub fn get_window_name(&self, window: xlib::Window) -> Option<String> {
         let c_string = unsafe{
             let mut ptr : *mut c_char = std::mem::zeroed();
             let status :c_int = (self.xlib.XFetchName)(
                 self.display, 
                 window, 
                 &mut ptr );
-            if status == 0 {  return "".to_string(); }
+            if status == 0 {  return None; }
             CString::from_raw(ptr)
         };
         match c_string.into_string() {
-            Ok(s) => { return s }
-            Err(_) => { return "".to_string() }
+            Ok(s) => { return Some(s) }
+            Err(_) => { return None }
         }
     }
 
 
-    //get the WMName of a window
-    pub fn get_window_title(&self, window: xlib::Window) -> Result<String, ()> {
-        unsafe{
-            let mut ptr : *mut *mut c_char = std::mem::zeroed();
-            let mut ptr_len: c_int = 0;
-            let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
-            let status :c_int = (self.xlib.XGetTextProperty)(
-                self.display, 
-                window, 
-                &mut text_prop,
-                2);
-            if status == 0 { return Err( () ) }
-            (self.xlib.XTextPropertyToStringList)( 
-                &mut text_prop, 
-                &mut ptr, 
-                &mut ptr_len );
-            let raw: &[*mut c_char] = slice::from_raw_parts(ptr, ptr_len as usize);
-            for i in 0..ptr_len {
-                if let Ok(s) = CString::from_raw(*ptr).into_string() {
-                    return Ok(s)
-                }
-            }
-        };
-        return Err(())
-    }
+    ////get the WMName of a window
+    //pub fn get_window_title(&self, window: xlib::Window) -> Result<String, ()> {
+    //    unsafe{
+    //        let mut ptr : *mut *mut c_char = std::mem::zeroed();
+    //        let mut ptr_len: c_int = 0;
+    //        let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
+    //        let status :c_int = (self.xlib.XGetTextProperty)(
+    //            self.display, 
+    //            window, 
+    //            &mut text_prop,
+    //            2);
+    //        if status == 0 { return Err( () ) }
+    //        (self.xlib.XTextPropertyToStringList)( 
+    //            &mut text_prop, 
+    //            &mut ptr, 
+    //            &mut ptr_len );
+    //        let raw: &[*mut c_char] = slice::from_raw_parts(ptr, ptr_len as usize);
+    //        for i in 0..ptr_len {
+    //            if let Ok(s) = CString::from_raw(*ptr).into_string() {
+    //                return Ok(s)
+    //            }
+    //        }
+    //    };
+    //    return Err(())
+    //}
 
 
-    //get the WMName of a window
-    pub fn get_wmname(&self, window: xlib::Window) -> Result<String, ()> {
-        unsafe{
-            let mut ptr : *mut *mut c_char = std::mem::zeroed();
-            let mut ptr_len: c_int = 0;
-            let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
-            let status :c_int = (self.xlib.XGetWMName)(
-                self.display, 
-                window, 
-                &mut text_prop );
-            if status == 0 { return Err( () ) }
-            (self.xlib.XTextPropertyToStringList)( 
-                &mut text_prop, 
-                &mut ptr, 
-                &mut ptr_len );
-            let raw: &[*mut c_char] = slice::from_raw_parts(ptr, ptr_len as usize);
-            for i in 0..ptr_len {
-                if let Ok(s) = CString::from_raw(*ptr).into_string() {
-                    return Ok(s)
-                }
-            }
-        };
-        return Err(())
-    }
+    ////get the WMName of a window
+    //pub fn get_wmname(&self, window: xlib::Window) -> Result<String, ()> {
+    //    unsafe{
+    //        let mut ptr : *mut *mut c_char = std::mem::zeroed();
+    //        let mut ptr_len: c_int = 0;
+    //        let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
+    //        let status :c_int = (self.xlib.XGetWMName)(
+    //            self.display, 
+    //            window, 
+    //            &mut text_prop );
+    //        if status == 0 { return Err( () ) }
+    //        (self.xlib.XTextPropertyToStringList)( 
+    //            &mut text_prop, 
+    //            &mut ptr, 
+    //            &mut ptr_len );
+    //        let raw: &[*mut c_char] = slice::from_raw_parts(ptr, ptr_len as usize);
+    //        for i in 0..ptr_len {
+    //            if let Ok(s) = CString::from_raw(*ptr).into_string() {
+    //                return Ok(s)
+    //            }
+    //        }
+    //    };
+    //    return Err(())
+    //}
 
 
     pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long){
@@ -189,14 +189,14 @@ impl XWrap {
     }
 
 
-    pub fn manage_window(&self, window: xlib::Window){
-        let mask = xlib::EnterWindowMask |
-            xlib::FocusChangeMask |
-            xlib::PropertyChangeMask |
-            xlib::StructureNotifyMask;
-        self.subscribe_to_event(window,mask);
-        unsafe{ (self.xlib.XMapWindow)(self.display, window) };
-    }
+    //pub fn manage_window(&self, window: xlib::Window){
+    //    let mask = xlib::EnterWindowMask |
+    //        xlib::FocusChangeMask |
+    //        xlib::PropertyChangeMask |
+    //        xlib::StructureNotifyMask;
+    //    self.subscribe_to_event(window,mask);
+    //    unsafe{ (self.xlib.XMapWindow)(self.display, window) };
+    //}
 
     pub fn init(&self){
         let root_event_mask: c_long = 
