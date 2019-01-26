@@ -1,53 +1,45 @@
 use super::DisplayServer;
 use super::Window;
 use super::Handle;
-use super::event_handler;
+use super::Manager;
 
-pub struct MockDisplayServer<'a>{
-    events: Vec<&'a event_handler::Events>
+pub struct MockDisplayServer{
+    manager: Manager
 }
 
-impl<'a> DisplayServer<'a> for MockDisplayServer<'a>  {
+impl DisplayServer for MockDisplayServer  {
 
-    fn new() -> MockDisplayServer<'a> {
+    fn new() -> MockDisplayServer {
         MockDisplayServer{
-            events: Vec::new()
+            manager: Manager::new()
         }
     }
 
-    fn event_handler(&mut self, handler: &'a event_handler::Events){
-        self.events.push( handler );
-    }
-
-
-    fn find_all_windows(&self) -> Vec<Window> {
-        let mut list: Vec<Window> = Vec::new();
+    fn find_all_windows(&mut self) {
         for i in 0..10 {
-            list.push( Window{
+            let w = Window{
                 handle: Handle::MockHandle(i)
-            });
+            };
+            self.manager.on_new_window(w);
         }
-        list
     }
-
-
 
 }
 
-impl<'a> MockDisplayServer<'a>  {
+impl MockDisplayServer  {
 
-    pub fn create_mock_window(&self){
-        for h in self.events.clone() {
-            let w = Window{ handle: Handle::MockHandle(1) };
-            h.on_new_window(w);
-        }
+    pub fn start_event_loop(&mut self){
     }
+    //    let w = Window{ handle: Handle::MockHandle(1) };
+    //    self.manager.on_new_window(w);
+    //}
 }
 
 
 #[test]
-fn it_should_be_able_to_get_a_list_of_windows(){
+fn it_should_be_able_to_update_the_list_of_windows(){
     let ds:MockDisplayServer = DisplayServer::new();
-    assert!(ds.find_all_windows().len() == 10, "wasn't able to get a list of windows")
+    ds.find_all_windows();
+    assert!(ds.manager.windows.len() == 10, "wasn't able to get a list of windows")
 }
 

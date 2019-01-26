@@ -1,39 +1,33 @@
 use super::DisplayServer;
 use super::Window;
 use super::Handle;
-use super::event_handler;
-use std::thread;
-//use std::sync::{Arc, Mutex};
+use super::Manager;
 
 mod xwrap;
+mod event_dispatch;
 use xwrap::XWrap;
 
 
-pub struct XlibDisplayServer<'a>{
+pub struct XlibDisplayServer{
     //let game = Arc::new(Mutex::new( game::Game::new(games_outs) ));
     xw: XWrap,
-    events: Vec<&'a event_handler::Events>
+    manager: Manager,
 }
 
 
-impl<'a> DisplayServer<'a> for XlibDisplayServer<'a> {
+impl DisplayServer for XlibDisplayServer {
 
 
-    fn new() -> XlibDisplayServer<'a> { 
+    fn new() -> XlibDisplayServer { 
         XlibDisplayServer{ 
             xw: XWrap::new(),
-            events: Vec::new()
+            manager: Manager::new()
         }
     }
 
-    fn event_handler(&mut self, handler: &'a event_handler::Events){
-        self.events.push( handler );
-    }
-
-    fn find_all_windows(&self) -> Vec<Window> {
+    fn find_all_windows(&mut self) {
         match self.xw.get_all_windows() {
           Ok(handles) => {
-            let mut list: Vec<Window> = Vec::new();
             for handle in handles {
                 let attrs = self.xw.get_window_attrs(handle).unwrap();
                 let transient = self.xw.get_transient_for(handle);
@@ -47,16 +41,15 @@ impl<'a> DisplayServer<'a> for XlibDisplayServer<'a> {
                     }
                 }
                 if managed {
-                    list.push( Window{ 
+                    let w = Window{ 
                         handle: Handle::XlibHandle(handle)
-                    })
+                    };
+                    self.manager.on_new_window(w);
                 }
             }
-            list
           }
           Err(err) => {
               println!("ERROR: {}", err);
-            return Vec::new();
           }
         }
     }
@@ -66,12 +59,17 @@ impl<'a> DisplayServer<'a> for XlibDisplayServer<'a> {
 
 
 
-impl<'a> XlibDisplayServer<'a> {
+impl XlibDisplayServer {
 
-    fn start_event_loop(&self){
+    pub fn start_event_loop(&mut self){
+        //subscribe to WM type events
+        self.find_all_windows();
+        self.xw.init();
+
         loop{
             //will block waiting for the next xlib event.
             let raw_event = self.xw.get_next_event();
+            event_dispatch::dispatch( &mut self.manager, raw_event);
         }
     }
 
@@ -81,8 +79,9 @@ impl<'a> XlibDisplayServer<'a> {
 
 
 #[test]
-fn it_should_be_able_to_get_a_list_of_windows(){
-    let ds:XlibDisplayServer = DisplayServer::new();
-    assert!(ds.find_all_windows().len() > 0, "wasn't able to get a list of windows")
+fn it_should_be_able_to_update_the_list_of_windows(){
+    let ds:MockDisplayServer = DisplayServer::new();
+    ds.find_all_windows();
+    assert!(ds.manager.windows.len() == 10, "wasn't able to get a list of windows")
 }
 
