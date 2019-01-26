@@ -1,19 +1,31 @@
 use super::DisplayServer;
 use super::Window;
 use super::Handle;
+use super::event_handler;
 
 mod xwrap;
 use xwrap::XWrap;
 
-pub struct XlibDisplayServer{
-    xw: XWrap
-}
-impl DisplayServer for XlibDisplayServer {
 
-    fn new() -> XlibDisplayServer { 
-        XlibDisplayServer{ xw: XWrap::new() }
+pub struct XlibDisplayServer<'a>{
+    xw: XWrap,
+    events: Vec<&'a event_handler::Events>
+}
+
+
+impl<'a> DisplayServer<'a> for XlibDisplayServer<'a> {
+
+
+    fn new() -> XlibDisplayServer<'a> { 
+        XlibDisplayServer{ 
+            xw: XWrap::new(),
+            events: Vec::new()
+        }
     }
 
+    fn event_handler(&mut self, handler: &'a event_handler::Events){
+        self.events.push( handler );
+    }
 
     fn find_all_windows(&self) -> Vec<Window> {
 

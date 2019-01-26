@@ -10,13 +10,11 @@ pub use self::xlib_display_server::XlibDisplayServer;
 pub use self::event_handler::Events;
 
 
-pub trait DisplayServer {
+pub trait DisplayServer<'a> {
     fn new() -> Self;
     fn find_all_windows(&self) -> Vec<Window>;
 
-    //fn event_handler(&mut self, handler: &Events){
-    //    self.handler = handler;
-    //}
+    fn event_handler(&mut self, handler: &'a event_handler::Events);
 
 }
 
@@ -24,9 +22,16 @@ pub trait DisplayServer {
 
 
 #[test]
-fn they_should_be_able_to_woot(){
-    MockDisplayServer::woot();
-    XlibDisplayServer::woot();
-    assert!(true);
+fn it_should_alert_for_new_windows(){
+    struct H {}
+    impl Events for H{
+        fn on_new_window(&self, w:Window){
+            assert!(true);
+        }
+    }
+    let mut ds:MockDisplayServer = DisplayServer::new();
+    let handler = H{};
+    ds.event_handler( &handler );
+    ds.create_mock_window();
 }
 

@@ -1,15 +1,24 @@
 use super::DisplayServer;
 use super::Window;
 use super::Handle;
+use super::event_handler;
 
-pub struct MockDisplayServer{
+pub struct MockDisplayServer<'a>{
+    events: Vec<&'a event_handler::Events>
 }
 
-impl DisplayServer for MockDisplayServer {
+impl<'a> DisplayServer<'a> for MockDisplayServer<'a>  {
 
-    fn new() -> MockDisplayServer {
-        MockDisplayServer{}
+    fn new() -> MockDisplayServer<'a> {
+        MockDisplayServer{
+            events: Vec::new()
+        }
     }
+
+    fn event_handler(&mut self, handler: &'a event_handler::Events){
+        self.events.push( handler );
+    }
+
 
     fn find_all_windows(&self) -> Vec<Window> {
         let mut list: Vec<Window> = Vec::new();
@@ -19,6 +28,19 @@ impl DisplayServer for MockDisplayServer {
             });
         }
         list
+    }
+
+
+
+}
+
+impl<'a> MockDisplayServer<'a>  {
+
+    pub fn create_mock_window(&self){
+        for h in self.events.clone() {
+            let w = Window{ handle: Handle::MockHandle(1) };
+            h.on_new_window(w);
+        }
     }
 }
 
