@@ -12,10 +12,8 @@ pub fn dispatch(manager: &mut Manager, xw: &XWrap, raw_event: xlib::XEvent){
 
         xlib::ClientMessage => { 
             let event = xlib::XClientMessageEvent::from(raw_event);
-            let w = Window{ 
-                name: xw.get_window_name(event.window),
-                handle: Handle::XlibHandle(event.window)
-            };
+            let name = xw.get_window_name(event.window);
+            let w = Window::new( Handle::XlibHandle(event.window), name );
             manager.on_new_window(w);
         }
 

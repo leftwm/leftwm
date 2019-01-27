@@ -15,9 +15,19 @@ pub enum Handle {
 #[derive(Debug, Clone)]
 pub struct Window {
     pub handle: Handle,
-    pub name: Option<String>
+    pub name: Option<String>,
+    pub tags: Vec<String>,
 }
 
 
 impl Window{
+
+    pub fn new(h: Handle, name: Option<String>) -> Window{
+        Window{
+            handle:h,
+            name:name,
+            tags: Vec::new()
+        }
+    }
+
 }

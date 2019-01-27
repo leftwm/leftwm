@@ -19,12 +19,13 @@ impl DisplayServer for MockDisplayServer  {
         for i in 0..10 {
             let mut name: String = "MOCK: ".to_owned();
             name.push_str( &(i.to_string())[..] );
-            let w = Window{
-                name: Some(name),
-                handle: Handle::MockHandle(i)
-            };
+            let w = Window::new( Handle::MockHandle(i), Some(name));
             self.manager.on_new_window(w);
         }
+    }
+
+    fn get_manager(&self) -> &Manager {
+        &self.manager
     }
 
 }
