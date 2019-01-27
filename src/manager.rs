@@ -7,7 +7,7 @@ pub struct Manager{
     pub screens: Vec<Screen>,
     pub workspaces: Vec<Workspace>,
     pub tags: Vec<String>,
-    pub focused_workspace: i32,
+    pub active_tag: String,
 }
 
 impl Manager{
@@ -18,81 +18,33 @@ impl Manager{
             screens: Vec::new(),
             workspaces: Vec::new(),
             tags: Vec::new(),
-            focused_workspace: 0,
+            active_tag: "".to_string(),
         }
     }
 
-    // load all the defaults values and the things from config 
-    pub fn load_config(&mut self, screens: Vec<Screen>){
-        self.screens = screens;
-
-        // defaults is to build one workspace per screen
-        if self.workspaces.len() == 0 {
-            for s in self.screens.clone() {
-                self.workspaces.push( Workspace::from_screen(s) )
-            }
-        }
-
-        // default to tags 1 to 9
-        for i in 1..10 {
-            self.tags.push( i.to_string() );
-        }
-
-    }
-
-
-    pub fn on_new_window(&mut self, window: Window){
-        for w in self.windows.clone() {
-            if w.handle == window.handle {
+    pub fn on_new_window(&mut self, a_window: Window){
+        for w in &self.windows {
+            if w.handle == a_window.handle {
                 return;
             }
         }
+        let mut window = a_window.clone();
+        window.tag( self.active_tag.clone() );
         self.windows.push(window);
     }
 
-
 }
-
-
 
 
 #[test]
-fn default_config_should_create_tags_1_to_9(){
+fn adding_a_window_should_tag_it(){
     let mut subject = Manager::new();
-    let screens: Vec<Screen> = Vec::new();
-    subject.load_config(screens);
-    let tags = subject.tags.clone();
-    assert!( tags[0] == "1", "default tag {1} did not load");
-    assert!( tags[1] == "2", "default tag {2} did not load");
-    assert!( tags[2] == "3", "default tag {3} did not load");
-    assert!( tags[3] == "4", "default tag {4} did not load");
-    assert!( tags[4] == "5", "default tag {5} did not load");
-    assert!( tags[5] == "6", "default tag {6} did not load");
-    assert!( tags[6] == "7", "default tag {6} did not load");
-    assert!( tags[7] == "8", "default tag {7} did not load");
-    assert!( tags[8] == "9", "default tag {8} did not load");
+    subject.active_tag = "test".to_string();
+    let window: Window = unsafe{ std::mem::zeroed() };
+    subject.on_new_window(window);
+    let ww = subject.windows[0].clone();
+    assert!( ww.has_tag( "test".to_string() ), "adding a window didn't auto tag it");
 }
-
-#[test]
-fn default_config_should_be_one_workspace_per_screen(){
-    let mut subject = Manager::new();
-    let mut screens = Vec::new();
-    let x: Screen = unsafe{ std::mem::zeroed() };
-    screens.push(x);
-    subject.load_config(screens);
-    assert!( subject.screens.len() == subject.workspaces.len(), "default workspaces did not load");
-}
-
-#[test]
-fn after_loading_config_it_should_know_about_all_screens(){
-    let mut subject = Manager::new();
-    let mut screens = Vec::new();
-    let x: Screen = unsafe{ std::mem::zeroed() };
-    screens.push(x);
-    subject.load_config(screens);
-    assert!( subject.screens.len() == 1, "Was unable to manage the screen");
-}
-
 
 #[test]
 fn on_new_window_should_add_items_window_to_the_managed_list(){

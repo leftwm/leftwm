@@ -3,6 +3,7 @@ use super::Window;
 use super::Handle;
 use super::Manager;
 use super::Screen;
+use super::config;
 
 mod xwrap;
 mod event_dispatch;
@@ -73,7 +74,7 @@ impl XlibDisplayServer {
             let ss = unsafe{ *s };
             Screen::new(ss.height, ss.width)
         }).collect();
-        self.manager.load_config(screens);
+        config::load_config( &mut self.manager, screens );
         self.xw.init();
 
         loop{

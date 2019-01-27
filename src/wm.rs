@@ -2,6 +2,7 @@
 mod utils;
 mod display_servers;
 mod manager;
+mod config;
 use display_servers::*;
 
 
