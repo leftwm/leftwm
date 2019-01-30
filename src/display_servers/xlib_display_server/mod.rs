@@ -10,6 +10,7 @@ mod event_dispatch;
 use xwrap::XWrap;
 
 
+#[derive(Clone)]
 pub struct XlibDisplayServer{
     //let game = Arc::new(Mutex::new( game::Game::new(games_outs) ));
     xw: XWrap,
@@ -49,7 +50,7 @@ impl DisplayServer for XlibDisplayServer {
                 if managed {
                     let name = self.xw.get_window_name(handle);
                     let w = Window::new( Handle::XlibHandle(handle), name );
-                    self.manager.on_new_window(w);
+                    self.manager.on_new_window(&self.clone(), w);
                 }
             }
           }
@@ -80,9 +81,10 @@ impl XlibDisplayServer {
         loop{
             //will block waiting for the next xlib event.
             let raw_event = self.xw.get_next_event();
-            event_dispatch::dispatch( &mut self.manager, &self.xw, raw_event);
+            event_dispatch::dispatch( self, raw_event);
         }
     }
+
 
 }
 

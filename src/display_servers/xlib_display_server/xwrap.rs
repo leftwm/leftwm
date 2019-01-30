@@ -4,11 +4,32 @@ use std::ffi::{ CString };
 use std::ptr;
 //use std::{thread, time};
 use std::slice;
+use std::sync::{Once, ONCE_INIT};
+use std::{mem};
 
 
+
+#[derive(Clone)]
 pub struct XWrap{
-    xlib: xlib::Xlib,
     display: *mut xlib::Display
+}
+
+
+fn get_xlib() -> &'static xlib::Xlib {
+    static mut SINGLETON: *const xlib::Xlib = 0 as *const xlib::Xlib;
+    static ONCE: Once = ONCE_INIT;
+    unsafe {
+        ONCE.call_once(|| {
+            // Make it
+            let xlib = xlib::Xlib::open().unwrap();
+
+            // Put it in the heap so it can outlive this call
+            SINGLETON = mem::transmute(Box::new(xlib));
+        });
+
+        // Now we give out a copy of the data that is safe to use concurrently.
+        &(*SINGLETON)
+    }
 }
 
 
@@ -19,7 +40,6 @@ impl XWrap {
         let display = unsafe{ (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
         XWrap{
-            xlib: xlib,
             display: display
         }
     }
@@ -28,9 +48,9 @@ impl XWrap {
     //returns all the screens the display
     pub fn get_screens(&self) -> Vec<*mut xlib::Screen> {
         let mut screens = Vec::new();
-        let screen_count = unsafe{ (self.xlib.XScreenCount)(self.display) };
+        let screen_count = unsafe{ (get_xlib().XScreenCount)(self.display) };
         for screen_num in 0..(screen_count) {
-            let screen = unsafe{ (self.xlib.XScreenOfDisplay)(self.display, screen_num) };
+            let screen = unsafe{ (get_xlib().XScreenOfDisplay)(self.display, screen_num) };
             screens.push( screen );
         }
         screens
@@ -39,7 +59,7 @@ impl XWrap {
     //returns all the roots the display
     pub fn get_roots(&self) -> Vec<xlib::Window> {
         return self.get_screens().into_iter().map(|s| {
-        unsafe{ (self.xlib.XRootWindowOfScreen)(s) }
+        unsafe{ (get_xlib().XRootWindowOfScreen)(s) }
         }).collect();
     }
 
@@ -51,7 +71,7 @@ impl XWrap {
             let mut parent_return: xlib::Window = std::mem::zeroed();
             let mut array: *mut xlib::Window = std::mem::zeroed();
             let mut length: c_uint = std::mem::zeroed();
-            let status : xlib::Status = (self.xlib.XQueryTree)(self.display,
+            let status : xlib::Status = (get_xlib().XQueryTree)(self.display,
                                                           root, 
                                                           &mut root_return,
                                                           &mut parent_return, 
@@ -85,7 +105,7 @@ impl XWrap {
 
     pub fn get_window_attrs(&self, window: xlib::Window) -> Result<xlib::XWindowAttributes, ()> {
         let mut attrs: xlib::XWindowAttributes = unsafe{ std::mem::zeroed() };
-        let status = unsafe { (self.xlib.XGetWindowAttributes)(self.display, window, &mut attrs) };
+        let status = unsafe { (get_xlib().XGetWindowAttributes)(self.display, window, &mut attrs) };
         if status == 0 { return Err(()) }
         return Ok(attrs);
     }
@@ -94,7 +114,7 @@ impl XWrap {
     pub fn get_transient_for(&self, window: xlib::Window) -> Option<xlib::Window> {
         unsafe{
             let mut transient: xlib::Window = std::mem::zeroed();
-            let status :c_int = (self.xlib.XGetTransientForHint)(
+            let status :c_int = (get_xlib().XGetTransientForHint)(
                 self.display,
                 window,
                 &mut transient);
@@ -110,7 +130,7 @@ impl XWrap {
     pub fn get_window_name(&self, window: xlib::Window) -> Option<String> {
         let c_string = unsafe{
             let mut ptr : *mut c_char = std::mem::zeroed();
-            let status :c_int = (self.xlib.XFetchName)(
+            let status :c_int = (get_xlib().XFetchName)(
                 self.display, 
                 window, 
                 &mut ptr );
@@ -130,13 +150,13 @@ impl XWrap {
     //        let mut ptr : *mut *mut c_char = std::mem::zeroed();
     //        let mut ptr_len: c_int = 0;
     //        let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
-    //        let status :c_int = (self.xlib.XGetTextProperty)(
+    //        let status :c_int = (get_xlib().XGetTextProperty)(
     //            self.display, 
     //            window, 
     //            &mut text_prop,
     //            2);
     //        if status == 0 { return Err( () ) }
-    //        (self.xlib.XTextPropertyToStringList)( 
+    //        (get_xlib().XTextPropertyToStringList)( 
     //            &mut text_prop, 
     //            &mut ptr, 
     //            &mut ptr_len );
@@ -157,12 +177,12 @@ impl XWrap {
     //        let mut ptr : *mut *mut c_char = std::mem::zeroed();
     //        let mut ptr_len: c_int = 0;
     //        let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
-    //        let status :c_int = (self.xlib.XGetWMName)(
+    //        let status :c_int = (get_xlib().XGetWMName)(
     //            self.display, 
     //            window, 
     //            &mut text_prop );
     //        if status == 0 { return Err( () ) }
-    //        (self.xlib.XTextPropertyToStringList)( 
+    //        (get_xlib().XTextPropertyToStringList)( 
     //            &mut text_prop, 
     //            &mut ptr, 
     //            &mut ptr_len );
@@ -183,8 +203,8 @@ impl XWrap {
         //attrs.cursor = 0;
         unsafe{
             //let unlock = xlib::CWEventMask | xlib::CWCursor;
-            //(self.xlib.XChangeWindowAttributes)(self.display, window, unlock, &mut attrs);
-            (self.xlib.XSelectInput)(self.display, window, mask);
+            //(get_xlib().XChangeWindowAttributes)(self.display, window, unlock, &mut attrs);
+            (get_xlib().XSelectInput)(self.display, window, mask);
         }
     }
 
@@ -195,7 +215,7 @@ impl XWrap {
     //        xlib::PropertyChangeMask |
     //        xlib::StructureNotifyMask;
     //    self.subscribe_to_event(window,mask);
-    //    unsafe{ (self.xlib.XMapWindow)(self.display, window) };
+    //    unsafe{ (get_xlib().XMapWindow)(self.display, window) };
     //}
 
     pub fn init(&self){
@@ -211,7 +231,7 @@ impl XWrap {
         for root in self.get_roots() {
             self.subscribe_to_event(root, root_event_mask);
         }
-        unsafe { (self.xlib.XSync)(self.display, 0); }
+        unsafe { (get_xlib().XSync)(self.display, 0); }
     }
 
 
@@ -219,7 +239,7 @@ impl XWrap {
     pub fn get_next_event(&self) -> xlib::XEvent {
         let mut event: xlib::XEvent = unsafe{ std::mem::uninitialized() };
         unsafe{
-            (self.xlib.XNextEvent)(self.display, &mut event);
+            (get_xlib().XNextEvent)(self.display, &mut event);
         };
         return event;
     }

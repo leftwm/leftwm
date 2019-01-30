@@ -3,6 +3,7 @@ use super::Window;
 use super::Handle;
 use super::Manager;
 
+#[derive(Clone)]
 pub struct MockDisplayServer{
     manager: Manager
 }
@@ -20,7 +21,7 @@ impl DisplayServer for MockDisplayServer  {
             let mut name: String = "MOCK: ".to_owned();
             name.push_str( &(i.to_string())[..] );
             let w = Window::new( Handle::MockHandle(i), Some(name));
-            self.manager.on_new_window(w);
+            self.manager.on_new_window( &self.clone(), w);
         }
     }
 
@@ -31,6 +32,7 @@ impl DisplayServer for MockDisplayServer  {
 }
 
 impl MockDisplayServer  {
+
 
     //pub fn start_event_loop(&mut self){
     //}

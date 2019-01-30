@@ -1,7 +1,9 @@
 use super::utils::window::Window;
 use super::utils::screen::Screen;
 use super::utils::workspace::Workspace;
+use super::display_servers::DisplayServer;
 
+#[derive(Clone)]
 pub struct Manager{
     pub windows: Vec<Window>,
     pub screens: Vec<Screen>,
@@ -22,7 +24,7 @@ impl Manager{
         }
     }
 
-    pub fn on_new_window(&mut self, a_window: Window){
+    pub fn on_new_window<T: DisplayServer>(&mut self, ds: &T, a_window: Window){
         for w in &self.windows {
             if w.handle == a_window.handle {
                 return;
