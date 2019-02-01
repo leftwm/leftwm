@@ -17,6 +17,10 @@ pub struct Window {
     pub handle: Handle,
     pub name: Option<String>,
     pub tags: Vec<String>,
+    pub height: i32,
+    pub width: i32,
+    pub x: i32,
+    pub y: i32,
 }
 
 
@@ -26,7 +30,11 @@ impl Window{
         Window{
             handle:h,
             name:name,
-            tags: Vec::new()
+            tags: Vec::new(),
+            height: 600,
+            width: 800,
+            x: 0,
+            y: 0,
         }
     }
 

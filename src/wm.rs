@@ -1,5 +1,6 @@
 
 mod utils;
+mod layouts;
 mod display_servers;
 mod manager;
 mod config;

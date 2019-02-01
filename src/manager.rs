@@ -27,7 +27,7 @@ impl Manager{
     }
 
 
-    pub fn on_new_window<T: DisplayServer>(&mut self, ds: &T, a_window: Window){
+    pub fn on_new_window<T: DisplayServer>(&mut self, _: &T, a_window: Window){
         for w in &self.windows {
             if w.handle == a_window.handle {
                 return;
@@ -37,6 +37,7 @@ impl Manager{
         window.tag( self.active_tag.clone() );
         self.windows.push(window);
     }
+
 
 }
 

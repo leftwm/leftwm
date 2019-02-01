@@ -1,8 +1,6 @@
 use x11_dl::xlib;
 use super::Handle;
 use super::Window;
-use super::Manager;
-use super::XWrap;
 use super::XlibDisplayServer;
 
 
