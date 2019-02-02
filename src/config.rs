@@ -6,6 +6,11 @@ pub fn load_config(manager: &mut Manager, screens: Vec<Screen> ){
 
     manager.screens = screens;
 
+    // default to tags 1 to 9
+    for i in 1..10 {
+        manager.tags.push( i.to_string() );
+    }
+
     // defaults is to build one workspace per screen
     if manager.workspaces.len() == 0 {
         for s in manager.screens.clone() {
@@ -13,25 +18,19 @@ pub fn load_config(manager: &mut Manager, screens: Vec<Screen> ){
         }
     }
 
-    // default to tags 1 to 9
-    for i in 1..10 {
-        manager.tags.push( i.to_string() );
+    //default the workspaces to show first tags in order
+    let mut i = 0;
+    let workspaces = &mut manager.workspaces;
+    for ws in workspaces {
+        let t = manager.tags[i].clone();
+        ws.show_tag( t );
+        i = i + 1;
     }
-    manager.active_tag = manager.tags[0].clone();
 
 }
 
 
 
-#[test]
-fn default_config_set_the_active_tag_to_the_first_tag(){
-    let mut subject = Manager::new();
-    let screens: Vec<Screen> = Vec::new();
-
-    load_config(&mut subject, screens);
-    let first = subject.tags[0].clone();
-    assert!( subject.active_tag == first, "failed to set the active tag on load");
-}
 
 #[test]
 fn default_config_should_create_tags_1_to_9(){

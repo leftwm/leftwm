@@ -72,7 +72,7 @@ impl Workspace{
 
 #[test]
 fn empty_ws_should_not_contain_window(){
-    let mut subject = Workspace::new();
+    let subject = Workspace::new();
     let w: Window = unsafe{ std::mem::zeroed() };
     assert!( subject.is_displaying(&w) == false, "workspace incorrectly owns window");
 }

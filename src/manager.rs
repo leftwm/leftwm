@@ -10,7 +10,7 @@ pub struct Manager{
     pub screens: Vec<Screen>,
     pub workspaces: Vec<Workspace>,
     pub tags: Vec<String>,
-    pub active_tag: String,
+    active_wp_index: usize,
 }
 
 impl Manager{
@@ -22,8 +22,16 @@ impl Manager{
             screens: Vec::new(),
             workspaces: Vec::new(),
             tags: Vec::new(),
-            active_tag: "".to_string(),
+            active_wp_index: 0,
         }
+    }
+
+
+    fn active_workspace(&self) -> Option<&Workspace> {
+        if self.active_wp_index < self.workspaces.len() {
+            return Some( &self.workspaces[ self.active_wp_index ] );
+        }
+        None
     }
 
 
@@ -34,7 +42,9 @@ impl Manager{
             }
         }
         let mut window = a_window.clone();
-        window.tag( self.active_tag.clone() );
+        if let Some(ws) = self.active_workspace() {
+            window.tags = ws.tags.clone();
+        }
         self.windows.push(window);
     }
 
@@ -48,8 +58,9 @@ impl Manager{
 #[test]
 fn adding_a_window_should_tag_it(){
     let mut subject = Manager::new();
+    subject.workspaces = vec![ Workspace::new() ];
+    subject.workspaces[0].show_tag( "test".to_owned() );
     let ds:MockDisplayServer = DisplayServer::new();
-    subject.active_tag = "test".to_string();
     let window: Window = unsafe{ std::mem::zeroed() };
     subject.on_new_window(&ds, window);
     let ww = subject.windows[0].clone();
