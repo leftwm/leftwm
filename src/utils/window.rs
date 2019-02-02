@@ -39,6 +39,12 @@ impl Window{
     }
 
 
+    pub fn set_height(&mut self, height: i32 ){ self.height = height }
+    pub fn set_width(&mut self, width: i32 ){ self.width = width }
+    pub fn set_x(&mut self, x: i32 ){ self.x = x }
+    pub fn set_y(&mut self, y: i32 ){ self.y = y }
+
+
     pub fn tag( &mut self, tag: String ){
         if tag == "" { return }
         for t in &self.tags {

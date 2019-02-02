@@ -14,10 +14,7 @@ pub use self::xlib_display_server::XlibDisplayServer;
 pub trait DisplayServer {
     fn new() -> Self;
     fn find_all_windows(&mut self);
-    
     fn get_manager(&self) -> &Manager;
-
-
 }
 
 
