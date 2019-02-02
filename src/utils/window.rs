@@ -15,6 +15,8 @@ pub enum Handle {
 #[derive(Debug, Clone)]
 pub struct Window {
     pub handle: Handle,
+    pub visable: bool,
+    pub floating: bool,
     pub name: Option<String>,
     pub tags: Vec<String>,
     pub height: i32,
@@ -29,6 +31,8 @@ impl Window{
     pub fn new(h: Handle, name: Option<String>) -> Window{
         Window{
             handle:h,
+            visable:false,
+            floating:false,
             name:name,
             tags: Vec::new(),
             height: 600,

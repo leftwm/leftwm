@@ -56,16 +56,24 @@ impl Workspace{
         found
     }
 
+
     pub fn update_windows(&self, windows: Vec<&mut Window>){
-        let mine = self.displayed_windows(windows);
+        let mut mine = self.displayed_windows(windows);
+        mark_visable(&mut mine);
         self.layout.update_windows( self, mine );
     }
-
 
 
 }
 
 
+
+
+fn mark_visable(windows: &mut Vec<&mut Window>){
+    for w in windows {
+        w.visable = true;
+    }
+}
 
 
 
