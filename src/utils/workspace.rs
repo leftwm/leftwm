@@ -25,7 +25,7 @@ impl Workspace{
         }
     }
 
-    pub fn from_screen(screen: Screen) -> Workspace{
+    pub fn from_screen(screen: &Screen) -> Workspace{
         Workspace{
             layout: Box::new( DefaultLayout{} ),
             tags: vec![],

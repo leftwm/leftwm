@@ -1,31 +1,36 @@
 use super::DisplayServer;
 use super::Window;
 use super::Handle;
+use super::Screen;
 use super::DisplayEventHandler;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct MockDisplayServer{
+    pub screens: Vec<Screen>
 }
 
 impl DisplayServer for MockDisplayServer  {
 
     fn new() -> MockDisplayServer {
-        MockDisplayServer{ }
+        MockDisplayServer{
+            screens: vec![]
+        }
     }
 
-    fn watch_events<DEH: DisplayEventHandler>(&self, handler: Arc<Mutex<DEH>>){
+    //testing a couple mock event
+    fn watch_events<DEH: DisplayEventHandler>(&self, h: Arc<Mutex<DEH>>){
+        if let Ok(ref mut handler) = h.lock() {
+            //new mock window
+            let w = Window::new( Handle::MockHandle(1), Some("MOCK".to_owned() ));
+            handler.on_new_window(w);
+            //new mock screen
+            let s = Screen::new(600,800);
+            handler.on_new_screen(s);
+        } else {
+            panic!("MUTEX FAILED!")
+        }
     }
-
-
-    //fn find_all_windows(&mut self) {
-    //    for i in 0..10 {
-    //        let mut name: String = "MOCK: ".to_owned();
-    //        name.push_str( &(i.to_string())[..] );
-    //        let w = Window::new( Handle::MockHandle(i), Some(name));
-    //        self.manager.on_new_window( &self.clone(), w);
-    //    }
-    //}
 
 }
 
