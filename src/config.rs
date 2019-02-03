@@ -1,10 +1,10 @@
 use super::manager::Manager;
 use super::utils::screen::Screen;
 use super::utils::workspace::Workspace;
+use super::display_servers::DisplayServer;
 
-pub fn load_config(manager: &mut Manager, screens: Vec<Screen> ){
+pub fn load_config<T: DisplayServer>(manager: &mut Manager<T> ){
 
-    manager.screens = screens;
 
     // default to tags 1 to 9
     for i in 1..10 {

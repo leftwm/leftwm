@@ -1,11 +1,13 @@
 use x11_dl::xlib;
 use super::Handle;
 use super::Window;
+use super::DisplayEventHandler;
 use super::XlibDisplayServer;
 
 
+type DS = XlibDisplayServer;
 
-pub fn dispatch(ds: &mut XlibDisplayServer, raw_event: xlib::XEvent){
+pub fn dispatch(ds: &mut DS, handler: Box<DisplayEventHandler>, raw_event: xlib::XEvent){
 
     match raw_event.get_type() {
 
@@ -14,7 +16,7 @@ pub fn dispatch(ds: &mut XlibDisplayServer, raw_event: xlib::XEvent){
             let name = ds.xw.get_window_name(event.window);
             let w = Window::new( Handle::XlibHandle(event.window), name );
             let copy = ds.clone();
-            ds.manager.on_new_window(&copy, w);
+            //handler.unwrap().on_new_window(w);
         }
 
         //xlib::ButtonPress => { 

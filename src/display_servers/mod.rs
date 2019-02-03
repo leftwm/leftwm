@@ -2,10 +2,11 @@
 use super::utils::window::Handle;
 use super::utils::window::Window;
 use super::utils::screen::Screen;
-use super::manager::Manager;
+use super::manager::*;
 use super::config;
 mod mock_display_server;
 mod xlib_display_server;
+use std::sync::{Arc, Mutex};
 
 pub use self::mock_display_server::MockDisplayServer;
 pub use self::xlib_display_server::XlibDisplayServer;
@@ -13,8 +14,8 @@ pub use self::xlib_display_server::XlibDisplayServer;
 
 pub trait DisplayServer {
     fn new() -> Self;
-    fn find_all_windows(&mut self);
-    fn get_manager(&self) -> &Manager;
+    //fn find_all_windows(&mut self);
+    fn watch_events<DEH: DisplayEventHandler>(&self, handler: Arc<Mutex<DEH>>);
 }
 
 
