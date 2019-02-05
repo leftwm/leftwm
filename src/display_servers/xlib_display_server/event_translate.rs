@@ -1,22 +1,19 @@
 use x11_dl::xlib;
-use super::Handle;
-use super::Window;
-use super::DisplayEventHandler;
-use super::XlibDisplayServer;
+use super::utils::window::*;
+use super::event_queue::EventQueueItem;
+use super::XWrap;
 
 
-type DS = XlibDisplayServer;
 
-pub fn dispatch(ds: &mut DS, handler: Box<DisplayEventHandler>, raw_event: xlib::XEvent){
+pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem>{
 
     match raw_event.get_type() {
 
         xlib::ClientMessage => { 
             let event = xlib::XClientMessageEvent::from(raw_event);
-            let name = ds.xw.get_window_name(event.window);
-            let w = Window::new( Handle::XlibHandle(event.window), name );
-            let copy = ds.clone();
-            //handler.unwrap().on_new_window(w);
+            let name = xw.get_window_name(event.window);
+            let w = Window::new( WindowHandle::XlibHandle(event.window), name );
+            Some( EventQueueItem::NewWindow(w) )
         }
 
         //xlib::ButtonPress => { 
@@ -72,6 +69,7 @@ pub fn dispatch(ds: &mut DS, handler: Box<DisplayEventHandler>, raw_event: xlib:
         //xlib::GenericEvent => println!("GenericEvent"),
 
         _ => {
+            None
             //println!("UNKNOWN EVENT: {}", raw_event.get_type() );
         }
 

@@ -4,7 +4,7 @@ use x11_dl::xlib;
 
 type MockHandle = i32;
 #[derive(Debug, Clone, PartialEq)]
-pub enum Handle {
+pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window)
 }
@@ -14,7 +14,7 @@ pub enum Handle {
 
 #[derive(Debug, Clone)]
 pub struct Window {
-    pub handle: Handle,
+    pub handle: WindowHandle,
     pub visable: bool,
     pub floating: bool,
     pub name: Option<String>,
@@ -28,7 +28,7 @@ pub struct Window {
 
 impl Window{
 
-    pub fn new(h: Handle, name: Option<String>) -> Window{
+    pub fn new(h: WindowHandle, name: Option<String>) -> Window{
         Window{
             handle:h,
             visable:false,
@@ -81,14 +81,14 @@ impl Window{
 
 #[test]
 fn should_be_able_to_tag_a_window(){
-    let mut subject = Window::new( Handle::MockHandle(1), None);
+    let mut subject = Window::new( WindowHandle::MockHandle(1), None);
     subject.tag("test".to_string() );
     assert!( subject.has_tag("test".to_string() ) , "was unable to tag the window");
 }
 
 #[test]
 fn should_be_able_to_untag_a_window(){
-    let mut subject = Window::new( Handle::MockHandle(1), None);
+    let mut subject = Window::new( WindowHandle::MockHandle(1), None);
     subject.tag("test".to_string() );
     subject.untag("test".to_string() );
     assert!( subject.has_tag("test".to_string() ) == false , "was unable to untag the window");
