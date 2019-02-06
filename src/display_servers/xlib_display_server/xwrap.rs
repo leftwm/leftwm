@@ -2,6 +2,7 @@ use x11_dl::xlib;
 use std::os::raw::{ c_int, c_uint, c_char, c_long };
 use std::ffi::{ CString };
 use std::ptr;
+use super::utils;
 use std::slice;
 
 
@@ -87,6 +88,27 @@ impl XWrap {
         let status = unsafe { (self.xlib.XGetWindowAttributes)(self.display, window, &mut attrs) };
         if status == 0 { return Err(()) }
         return Ok(attrs);
+    }
+
+
+    pub fn update_window(&self, window: &utils::window::Window ) {
+        use utils::window::WindowHandle;
+        let mut changes =xlib::XWindowChanges{
+            x: window.x,
+            y: window.y,
+            width: window.width,
+            height: window.height,
+            border_width: window.border,
+            sibling: 0,    //not unlocked
+            stack_mode: 0, //not unlocked
+        };
+        if let WindowHandle::XlibHandle(h) = window.handle {
+            let unlock = xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
+            unsafe {
+                (self.xlib.XConfigureWindow)(self.display, h, unlock as u32, &mut changes);
+                (self.xlib.XSync)(self.display, 0); 
+            }
+        }
     }
 
 

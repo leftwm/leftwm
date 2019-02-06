@@ -45,13 +45,17 @@ impl<DM: DisplayServer> Manager<DM>{
 
 
     pub fn update_windows(&mut self){
-        let all_windows = &mut self.windows;
-        let all: Vec<&mut Window> = all_windows.into_iter().map(|w| w ).collect();
-        for w in all { w.visable = w.tags.len() == 0; } // if not tagged force it to display
-        for ws in &mut self.workspaces {
-            let windows: Vec<&mut Window> = all_windows.into_iter().map(|w| w ).collect();
-            ws.update_windows( windows );
+        {
+            let all_windows = &mut self.windows;
+            let all: Vec<&mut Window> = all_windows.into_iter().map(|w| w ).collect();
+            for w in all { w.visable = w.tags.len() == 0; } // if not tagged force it to display
+            for ws in &mut self.workspaces {
+                let windows: Vec<&mut Window> = all_windows.into_iter().map(|w| w ).collect();
+                ws.update_windows( windows );
+            }
         }
+        let to_update: Vec<&mut Window> = (&self.windows).into_iter().map(|w| w ).collect();
+        self.ds.update_windows(to_update);
     }
 
     fn on_new_window(&mut self, a_window: Window){

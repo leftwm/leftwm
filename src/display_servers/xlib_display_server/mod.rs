@@ -22,6 +22,13 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
+    fn update_windows(&self, windows: Vec<&utils::window::Window> ){
+        for window in windows {
+            self.xw.update_window(&window)
+        }
+    }
+
+
     fn watch_events(&self, queue: event_queue::EventQueue) {
         thread::spawn( move || {
             //NOTE: we need another connection to XLIB to handle watching to events

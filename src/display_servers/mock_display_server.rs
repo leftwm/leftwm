@@ -1,5 +1,6 @@
 use super::DisplayServer;
 use super::Screen;
+use super::utils;
 use super::event_queue::EventQueue;
 
 #[derive(Clone)]
@@ -17,6 +18,9 @@ impl DisplayServer for MockDisplayServer  {
 
     //testing a couple mock event
     fn watch_events(&self, _: EventQueue){
+    }
+
+    fn update_windows(&self, windows: Vec<&utils::window::Window> ){
     }
 
 }

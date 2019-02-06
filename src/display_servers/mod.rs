@@ -12,6 +12,7 @@ pub trait DisplayServer {
     fn new() -> Self;
     //fn find_all_windows(&mut self);
     fn watch_events(&self, queue: event_queue::EventQueue);
+    fn update_windows(&self, windows: Vec<&utils::window::Window> );
 }
 
 
