@@ -2,6 +2,7 @@ use super::utils::window::Window;
 use super::utils::screen::Screen;
 use super::utils::workspace::Workspace;
 use super::display_servers::DisplayServer;
+use super::event_queue::EventQueueItem;
 
 pub trait DisplayEventHandler {
     fn on_new_window(&mut self, window: Window);
@@ -53,14 +54,6 @@ impl<DM: DisplayServer> Manager<DM>{
         }
     }
 
-
-}
-
-
-
-
-impl<DM:DisplayServer> DisplayEventHandler for Manager<DM> {
-
     fn on_new_window(&mut self, a_window: Window){
         for w in &self.windows {
             if w.handle == a_window.handle {
@@ -80,68 +73,22 @@ impl<DM:DisplayServer> DisplayEventHandler for Manager<DM> {
         self.screens.push(screen);
     }
 
+
+    pub fn on_event(&mut self, event: EventQueueItem){
+        match event {
+            EventQueueItem::WindowCreate(w) => { self.on_new_window(w) }
+            EventQueueItem::ScreenCreate(s) => { self.on_new_screen(s) }
+            _ => {}
+        }
+    }
+
+
 }
 
 
 
 
 
-#[test]
-fn adding_a_window_should_tag_it(){
-    use super::display_servers::MockDisplayServer;
-    use std::sync::{Arc, Mutex};
-    let mut subject: Manager<MockDisplayServer> = Manager::new();
-    subject.workspaces = vec![ Workspace::new() ];
-    subject.workspaces[0].show_tag( "test".to_owned() );
-    let ds:MockDisplayServer = DisplayServer::new();
-    let mutex = Arc::new(Mutex::new(subject));
-    ds.watch_events(mutex.clone()); //NOTE: this add a mock window
-    let ss = mutex.lock().unwrap();
-    let ww = ss.windows[0].clone();
-    assert!( ww.has_tag( "test".to_string() ), "adding a window didn't auto tag it");
-}
 
 
-#[test]
-fn after_loading_config_it_should_know_about_all_screens(){
-    use super::display_servers::MockDisplayServer;
-    use std::sync::{Arc, Mutex};
-    let subject: Manager<MockDisplayServer> = Manager::new();
-    let ds:MockDisplayServer = DisplayServer::new();
-    let mutex = Arc::new(Mutex::new(subject));
-    ds.watch_events(mutex.clone()); //NOTE: this add a mock window
-    let ss = mutex.lock().unwrap();
-    assert!( ss.screens.len() == 1, "Was unable to build the screen");
-}
 
-#[test]
-fn should_default_to_one_workspace_per_screen(){
-    use super::display_servers::MockDisplayServer;
-    use std::sync::{Arc, Mutex};
-    let subject: Manager<MockDisplayServer> = Manager::new();
-    let ds:MockDisplayServer = DisplayServer::new();
-    let mutex = Arc::new(Mutex::new(subject));
-    ds.watch_events(mutex.clone()); //NOTE: this add a mock window
-    let ss = mutex.lock().unwrap();
-    assert!( ss.screens.len() == ss.workspaces.len(), "default workspaces did not load");
-}
-
-#[test]
-fn on_new_window_should_add_items_window_to_the_managed_list(){
-    use super::display_servers::MockDisplayServer;
-    let mut subject: Manager<MockDisplayServer> = Manager::new();
-    let w: Window = unsafe{ std::mem::zeroed() };
-    subject.on_new_window(w);
-    assert!( subject.windows.len() == 1, "Window was not added to managed list");
-}
-
-#[test]
-fn two_windows_with_the_same_handle_should_not_be_added(){
-    use super::display_servers::MockDisplayServer;
-    let mut subject: Manager<MockDisplayServer> = Manager::new();
-    let w: Window = unsafe{ std::mem::zeroed() };
-    let w2: Window = unsafe{ std::mem::zeroed() };
-    subject.on_new_window(w);
-    subject.on_new_window(w2);
-    assert!( subject.windows.len() == 1, "Window was not added to managed list");
-}

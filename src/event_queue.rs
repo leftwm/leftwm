@@ -1,12 +1,13 @@
-use super::utils::window::Window;
+use super::utils::window;
 use super::utils::screen::Screen;
 use std::sync::{Arc, Mutex};
 use std::collections::VecDeque;
 
 
 pub enum EventQueueItem {
-    NewWindow(Window),
-    NewScreen(Screen)
+    WindowCreate(window::Window),
+    WindowDelete(window::WindowHandle),
+    ScreenCreate(Screen)
 }
 
 
