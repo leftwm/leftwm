@@ -54,7 +54,7 @@ impl<DM: DisplayServer> Manager<DM>{
                 ws.update_windows( windows );
             }
         }
-        let to_update: Vec<&mut Window> = (&self.windows).into_iter().map(|w| w ).collect();
+        let to_update :Vec<&Window>= (&self.windows).into_iter().map(|w| w ).collect();
         self.ds.update_windows(to_update);
     }
 

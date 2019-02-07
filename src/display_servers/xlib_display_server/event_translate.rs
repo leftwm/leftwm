@@ -19,7 +19,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem
 
         // window is deleted
         xlib::UnmapNotify => {
-            println!("UnmapNotify");
+            //println!("UnmapNotify");
             let event = xlib::XUnmapEvent::from(raw_event);
             let h = WindowHandle::XlibHandle(event.window);
             Some( EventQueueItem::WindowDelete(h) )
@@ -27,7 +27,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem
 
         // window is deleted
         xlib::DestroyNotify => {
-            println!("DestroyNotify");
+            //println!("DestroyNotify");
             let event = xlib::XDestroyWindowEvent::from(raw_event);
             let h = WindowHandle::XlibHandle(event.window);
             Some( EventQueueItem::WindowDelete(h) )

@@ -102,6 +102,7 @@ impl XWrap {
             sibling: 0,    //not unlocked
             stack_mode: 0, //not unlocked
         };
+        println!("in xwrap update window: {:#?} ", changes);
         if let WindowHandle::XlibHandle(h) = window.handle {
             let unlock = xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
             unsafe {
