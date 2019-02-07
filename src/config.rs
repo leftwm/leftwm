@@ -1,13 +1,13 @@
-//use super::display_servers::DisplayServer;
-//use super::manager::Manager;
+use super::display_servers::DisplayServer;
+use super::manager::Manager;
 
-//pub fn load_config<T: DisplayServer>(manager: &mut Manager<T>) {
-//    // default to tags 1 to 9
-//    for i in 1..10 {
-//        manager.tags.push(i.to_string());
-//    }
-//}
-//
+pub fn load_config<T: DisplayServer>(manager: &mut Manager<T>) {
+    // default to tags 1 to 9
+    for i in 1..10 {
+        manager.tags.push(i.to_string());
+    }
+}
+
 //#[test]
 //fn default_config_should_create_tags_1_to_9() {
 //    use super::display_servers::MockDisplayServer;

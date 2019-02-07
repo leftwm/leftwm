@@ -107,6 +107,9 @@ impl XWrap {
             unsafe {
                 (self.xlib.XConfigureWindow)(self.display, h, u32::from(unlock), &mut changes);
                 (self.xlib.XSync)(self.display, 0);
+                let rw :u32 = window.width as u32;
+                let rh :u32 = window.height as u32;
+                (self.xlib.XMoveResizeWindow)(self.display, h, window.x, window.y, rw, rh);
             }
             self.send_config(window);
         }

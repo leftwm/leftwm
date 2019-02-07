@@ -14,7 +14,7 @@ pub struct Manager<DM: DisplayServer> {
     pub windows: Vec<Window>,
     pub screens: Vec<Screen>,
     pub workspaces: Vec<Workspace>,
-    pub tags: Vec<String>,
+    pub tags: Vec<String>, //list of all known tags
     pub ds: DM,
     active_wp_index: usize,
 }
@@ -65,7 +65,6 @@ impl<DM: DisplayServer> Manager<DM> {
         let mut window = a_window;
 
         if let Some(ws) = self.active_workspace() {
-            println!("TAGGING WINDOW: {:#?}", ws.tags.clone());
             window.tags = ws.tags.clone();
         }
         self.windows.push(window);
@@ -73,7 +72,11 @@ impl<DM: DisplayServer> Manager<DM> {
     }
 
     fn on_new_screen(&mut self, screen: Screen) {
-        self.workspaces.push(Workspace::from_screen(&screen));
+        let tag_index = self.workspaces.len();
+        let mut workspace = Workspace::from_screen(&screen);
+        let next_tag = self.tags[tag_index].clone();
+        workspace.show_tag( next_tag );
+        self.workspaces.push(workspace);
         self.screens.push(screen);
     }
 

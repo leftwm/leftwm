@@ -11,6 +11,7 @@ use std::{thread, time};
 
 fn main() {
     let mut manager: Manager<XlibDisplayServer> = Manager::new();
+    config::load_config(&mut manager);
     let event_queue: EventQueue = event_queue::new();
 
     //wireup the events
