@@ -1,22 +1,18 @@
-use super::utils::screen::Screen;
 use super::event_queue;
 use super::utils;
+use super::utils::screen::Screen;
 mod mock_display_server;
 mod xlib_display_server;
 
 pub use self::mock_display_server::MockDisplayServer;
 pub use self::xlib_display_server::XlibDisplayServer;
 
-
 pub trait DisplayServer {
     fn new() -> Self;
     //fn find_all_windows(&mut self);
     fn watch_events(&self, queue: event_queue::EventQueue);
-    fn update_windows(&self, windows: Vec<&utils::window::Window> );
+    fn update_windows(&self, windows: Vec<&utils::window::Window>);
 }
-
-
-
 
 //#[test]
 //fn it_should_alert_for_new_windows(){
