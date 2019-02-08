@@ -32,6 +32,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem
         //xlib::ClientMessage => {
         //    let event = xlib::XClientMessageEvent::from(raw_event);
         //    println!("ClientMessage: {:#?} ", event);
+        //    None
         //}
 
         //xlib::ButtonPress => {
@@ -43,127 +44,124 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem
         //    let event = xlib::XEnterWindowEvent::from(raw_event);
         //    println!("EnterNotify: {:#?} ", event);
         //    None
-        //},
+        //}
         //xlib::LeaveNotify => {
         //    let event = xlib::XLeaveWindowEvent::from(raw_event);
         //    println!("LeaveNotify: {:#?} ", event);
         //    None
-        //},
+        //}
         //xlib::PropertyNotify => {
         //    let event = xlib::XPropertyEvent::from(raw_event);
         //    println!("PropertyNotify: {:#?} ", event);
         //    None
-        //},
+        //}
 
         //xlib::MapNotify => {
         //    let event = xlib::XMappingEvent::from(raw_event);
         //    println!("MapNotify: {:#?} ", event);
         //    None
-        //},
+        //}
 
         //xlib::KeyPress => {
         //    println!("KeyPress");
         //    None
-        //},
+        //}
         //xlib::KeyRelease => {
         //    println!("KeyRelease");
         //    None
-        //},
+        //}
         //xlib::ButtonRelease => {
         //    println!("ButtonRelease");
         //    None
-        //},
+        //}
         //xlib::MotionNotify => {
         //    {};
         //    None
-        //},
+        //}
         //xlib::FocusIn => {
         //    println!("FocusIn");
         //    None
-        //},
+        //}
         //xlib::FocusOut => {
         //    println!("FocusOut");
         //    None
-        //},
+        //}
         //xlib::KeymapNotify => {
         //    println!("KeymapNotify");
         //    None
-        //},
+        //}
         //xlib::Expose => {
         //    println!("Expose");
         //    None
-        //},
+        //}
         //xlib::GraphicsExpose => {
         //    println!("GraphicsExpose");
         //    None
-        //},
+        //}
         //xlib::NoExpose => {
         //    println!("NoExpose");
         //    None
-        //},
+        //}
         //xlib::VisibilityNotify => {
         //    println!("VisibilityNotify");
         //    None
-        //},
+        //}
         //xlib::CreateNotify => {
         //    println!("CreateNotify");
         //    None
-        //},
+        //}
         //xlib::ReparentNotify => {
         //    println!("ReparentNotify");
         //    None
-        //},
+        //}
         //xlib::ConfigureNotify => {
         //    println!("ConfigureNotify");
         //    None
-        //},
+        //}
         //xlib::ConfigureRequest => {
         //    println!("ConfigureRequest");
         //    None
-        //},
+        //}
         //xlib::GravityNotify => {
         //    println!("GravityNotify");
         //    None
-        //},
+        //}
         //xlib::ResizeRequest => {
         //    println!("ResizeRequest");
         //    None
-        //},
+        //}
         //xlib::CirculateNotify => {
         //    println!("CirculateNotify");
         //    None
-        //},
+        //}
         //xlib::CirculateRequest => {
         //    println!("CirculateRequest");
         //    None
-        //},
+        //}
         //xlib::SelectionClear => {
         //    println!("SelectionClear");
         //    None
-        //},
+        //}
         //xlib::SelectionRequest => {
         //    println!("SelectionRequest");
         //    None
-        //},
+        //}
         //xlib::SelectionNotify => {
         //    println!("SelectionNotify");
         //    None
-        //},
+        //}
         //xlib::ColormapNotify => {
         //    println!("ColormapNotify");
         //    None
-        //},
+        //}
         //xlib::MappingNotify => {
         //    println!("MappingNotify");
         //    None
-        //},
+        //}
         //xlib::GenericEvent => {
         //    println!("GenericEvent");
         //    None
-        //},
-        _ => {
-            None
-            //println!("UNKNOWN EVENT: {}", raw_event.get_type() );
-        }
+        //}
+        _ => None,
     }
 }

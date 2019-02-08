@@ -2,11 +2,13 @@ use super::event_queue;
 use super::event_queue::EventQueueItem;
 use super::utils;
 use super::DisplayServer;
-use std::thread;
+use std::sync::Once;
 
 mod event_translate;
 mod xwrap;
 use xwrap::XWrap;
+
+static SETUP: Once = Once::new();
 
 pub struct XlibDisplayServer {
     xw: XWrap,
@@ -14,7 +16,9 @@ pub struct XlibDisplayServer {
 
 impl DisplayServer for XlibDisplayServer {
     fn new() -> XlibDisplayServer {
-        XlibDisplayServer { xw: XWrap::new() }
+        let me = XlibDisplayServer { xw: XWrap::new() };
+        me.xw.init(); //setup events masks
+        me
     }
 
     fn update_windows(&self, windows: Vec<&utils::window::Window>) {
@@ -23,39 +27,42 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn watch_events(&self, queue: event_queue::EventQueue) {
-        // before starting the watching thread pass the know state to the manager
-        {
-            let mut q = queue.lock().unwrap();
-            // tell manager about existing screens
-            for s in self.xw.get_screens() {
-                let screen = utils::screen::Screen::from(&s);
-                let e = EventQueueItem::ScreenCreate(screen);
-                q.push_back(e);
-            }
-            // tell manager about existing windows
-            for w in &self.find_all_windows() {
-                let e = EventQueueItem::WindowCreate(w.clone());
-                q.push_back(e);
-            }
-        }
-        thread::spawn(move || {
-            //NOTE: we need another connection to XLIB to handle watching to events
-            //this is to prevent locking and other threading issues
-            let xw = XWrap::new();
-            xw.init(); //setup events masks
-            loop {
-                let xlib_event = xw.get_next_event();
-                let event = event_translate::from_xevent(&xw, xlib_event);
-                if let Some(e) = event {
-                    queue.lock().unwrap().push_back(e);
-                }
+    fn get_next_events(&self) -> Vec<event_queue::EventQueueItem> {
+        let mut events = vec![];
+        SETUP.call_once(|| {
+            for e in self.initial_events() {
+                (&mut events).push(e);
             }
         });
+        let xlib_event = self.xw.get_next_event();
+        let event = event_translate::from_xevent(&self.xw, xlib_event);
+        if let Some(e) = event {
+            events.push(e)
+        }
+        events
     }
 }
 
 impl XlibDisplayServer {
+    /**
+     * return a vec of events for setting up state of WM
+     */
+    fn initial_events(&self) -> Vec<event_queue::EventQueueItem> {
+        let mut events = vec![];
+        // tell manager about existing screens
+        for s in self.xw.get_screens() {
+            let screen = utils::screen::Screen::from(&s);
+            let e = EventQueueItem::ScreenCreate(screen);
+            events.push(e);
+        }
+        // tell manager about existing windows
+        for w in &self.find_all_windows() {
+            let e = EventQueueItem::WindowCreate(w.clone());
+            events.push(e);
+        }
+        events
+    }
+
     fn find_all_windows(&self) -> Vec<utils::window::Window> {
         use utils::window::Window;
         use utils::window::WindowHandle;

@@ -10,7 +10,7 @@ pub use self::xlib_display_server::XlibDisplayServer;
 pub trait DisplayServer {
     fn new() -> Self;
     //fn find_all_windows(&mut self);
-    fn watch_events(&self, queue: event_queue::EventQueue);
+    fn get_next_events(&self) -> Vec<event_queue::EventQueueItem>;
     fn update_windows(&self, windows: Vec<&utils::window::Window>);
 }
 
