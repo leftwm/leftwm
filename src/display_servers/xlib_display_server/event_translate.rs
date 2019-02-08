@@ -13,27 +13,27 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem
             Some(EventQueueItem::WindowCreate(w))
         }
 
-        // window is deleted
-        xlib::UnmapNotify => {
-            //println!("UnmapNotify");
-            let event = xlib::XUnmapEvent::from(raw_event);
-            let h = WindowHandle::XlibHandle(event.window);
-            Some(EventQueueItem::WindowDelete(h))
-        }
+        //// window is deleted
+        //xlib::UnmapNotify => {
+        //    //println!("UnmapNotify");
+        //    let event = xlib::XUnmapEvent::from(raw_event);
+        //    let h = WindowHandle::XlibHandle(event.window);
+        //    Some(EventQueueItem::WindowDelete(h))
+        //}
 
         // window is deleted
         xlib::DestroyNotify => {
             //println!("DestroyNotify");
             let event = xlib::XDestroyWindowEvent::from(raw_event);
             let h = WindowHandle::XlibHandle(event.window);
-            Some(EventQueueItem::WindowDelete(h))
+            Some(EventQueueItem::WindowDestroy(h))
         }
 
-        //xlib::ClientMessage => {
-        //    let event = xlib::XClientMessageEvent::from(raw_event);
-        //    println!("ClientMessage: {:#?} ", event);
-        //    None
-        //}
+        xlib::ClientMessage => {
+            let event = xlib::XClientMessageEvent::from(raw_event);
+            println!("ClientMessage: {:#?} ", event);
+            None
+        }
 
         //xlib::ButtonPress => {
         //    let event = xlib::XButtonPressedEvent::from(raw_event);

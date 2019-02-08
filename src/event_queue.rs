@@ -3,6 +3,6 @@ use super::utils::window;
 
 pub enum EventQueueItem {
     WindowCreate(window::Window),
-    WindowDelete(window::WindowHandle),
+    WindowDestroy(window::WindowHandle),
     ScreenCreate(Screen),
 }
