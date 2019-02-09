@@ -7,9 +7,12 @@ mod utils;
 use display_servers::*;
 use manager::Manager;
 
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+
 fn main() {
     let mut manager: Manager<XlibDisplayServer> = Manager::new();
-    config::load_config(&mut manager);
 
     //main event loop
     loop {

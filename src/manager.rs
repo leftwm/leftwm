@@ -2,6 +2,7 @@ use super::display_servers::DisplayServer;
 use super::display_servers::MockDisplayServer;
 use super::event_queue::EventQueueItem;
 use super::utils::screen::Screen;
+use super::config;
 use super::utils::window::Window;
 use super::utils::window::WindowHandle;
 use super::utils::workspace::Workspace;
@@ -23,14 +24,16 @@ pub struct Manager<DM: DisplayServer> {
 
 impl<DM: DisplayServer> Manager<DM> {
     pub fn new() -> Manager<DM> {
-        Manager {
+        let mut m = Manager {
             windows: Vec::new(),
             ds: DM::new(),
             screens: Vec::new(),
             workspaces: Vec::new(),
             tags: Vec::new(),
             active_wp_index: 0,
-        }
+        };
+        config::load_config(&mut m);
+        m
     }
 
     fn active_workspace(&self) -> Option<&Workspace> {
@@ -100,7 +103,6 @@ impl<DM: DisplayServer> Manager<DM> {
 #[allow(dead_code)]
 fn mock_manager() -> Manager<MockDisplayServer> {
     let mut manager: Manager<MockDisplayServer> = Manager::new();
-    super::config::load_config(&mut manager);
     for s in manager.ds.create_fake_screens(1) {
         manager.on_new_screen(s);
     }

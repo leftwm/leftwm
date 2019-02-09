@@ -10,3 +10,7 @@ path = "src/wm.rs"
 
 [dependencies]
 x11-dl = "2.18.3"
+toml = "0.4.10"
+serde = "*"
+serde_derive = "*"
+xdg = "2.2.0"

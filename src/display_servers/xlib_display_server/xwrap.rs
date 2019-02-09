@@ -1,4 +1,3 @@
-use super::event_queue;
 use super::utils;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
@@ -12,7 +11,6 @@ use x11_dl::xlib;
 pub struct XWrap {
     xlib: xlib::Xlib,
     display: *mut xlib::Display,
-    q: event_queue::EventQueue,
 }
 
 impl XWrap {
@@ -20,8 +18,7 @@ impl XWrap {
         let xlib = xlib::Xlib::open().unwrap();
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
-        let q = event_queue::new();
-        let xw = XWrap { xlib, display, q };
+        let xw = XWrap { xlib, display };
 
         ////On xlib error
         //let error_q = xw.q.clone();
@@ -119,30 +116,30 @@ impl XWrap {
         Ok(attrs)
     }
 
-    pub fn get_parent_window(&self, window: xlib::Window) -> Option<xlib::Window> {
-        unsafe {
-            let mut root_return: xlib::Window = std::mem::zeroed();
-            let mut parent_return: xlib::Window = std::mem::zeroed();
-            let mut array: *mut xlib::Window = std::mem::zeroed();
-            let mut length: c_uint = std::mem::zeroed();
-            let status: xlib::Status = (self.xlib.XQueryTree)(
-                self.display,
-                window,
-                &mut root_return,
-                &mut parent_return,
-                &mut array,
-                &mut length,
-            );
-            //take ownership of the array
-            let _: &[xlib::Window] = slice::from_raw_parts(array, length as usize);
-            match status {
-                0 /* XcmsFailure */ => { None }
-                1 /* XcmsSuccess */ => { Some(parent_return) }
-                2 /* XcmsSuccessWithCompression */ => { Some(parent_return) }
-                _ => { None }
-            }
-        }
-    }
+    //pub fn get_parent_window(&self, window: xlib::Window) -> Option<xlib::Window> {
+    //    unsafe {
+    //        let mut root_return: xlib::Window = std::mem::zeroed();
+    //        let mut parent_return: xlib::Window = std::mem::zeroed();
+    //        let mut array: *mut xlib::Window = std::mem::zeroed();
+    //        let mut length: c_uint = std::mem::zeroed();
+    //        let status: xlib::Status = (self.xlib.XQueryTree)(
+    //            self.display,
+    //            window,
+    //            &mut root_return,
+    //            &mut parent_return,
+    //            &mut array,
+    //            &mut length,
+    //        );
+    //        //take ownership of the array
+    //        let _: &[xlib::Window] = slice::from_raw_parts(array, length as usize);
+    //        match status {
+    //            0 /* XcmsFailure */ => { None }
+    //            1 /* XcmsSuccess */ => { Some(parent_return) }
+    //            2 /* XcmsSuccessWithCompression */ => { Some(parent_return) }
+    //            _ => { None }
+    //        }
+    //    }
+    //}
 
     pub fn update_window(&self, window: &utils::window::Window) {
         let mut changes = xlib::XWindowChanges {
