@@ -46,7 +46,7 @@ fn should_fullscreen_a_single_window() {
     let mut ws = Workspace::new();
     ws.height = 1000;
     ws.width = 2000;
-    let mut w = Window::new(Handle::MockHandle(1), None);
+    let mut w = Window::new(WindowHandle::MockHandle(1), None);
     let windows = vec![&mut w];
     layout.update_windows(&ws, windows);
     assert!(

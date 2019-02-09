@@ -89,6 +89,31 @@ impl XWrap {
         Ok(attrs)
     }
 
+    pub fn get_parent_window(&self, window: xlib::Window) -> Option<xlib::Window> {
+        unsafe {
+            let mut root_return: xlib::Window = std::mem::zeroed();
+            let mut parent_return: xlib::Window = std::mem::zeroed();
+            let mut array: *mut xlib::Window = std::mem::zeroed();
+            let mut length: c_uint = std::mem::zeroed();
+            let status: xlib::Status = (self.xlib.XQueryTree)(
+                self.display,
+                window,
+                &mut root_return,
+                &mut parent_return,
+                &mut array,
+                &mut length,
+            );
+            //take ownership of the array
+            let _: &[xlib::Window] = slice::from_raw_parts(array, length as usize);
+            match status {
+                0 /* XcmsFailure */ => { None }
+                1 /* XcmsSuccess */ => { Some(parent_return) }
+                2 /* XcmsSuccessWithCompression */ => { Some(parent_return) }
+                _ => { None }
+            }
+        }
+    }
+
     pub fn update_window(&self, window: &utils::window::Window) {
         use utils::window::WindowHandle;
         let mut changes = xlib::XWindowChanges {

@@ -21,3 +21,12 @@ impl From<&xlib::Screen> for Screen {
         }
     }
 }
+
+impl Default for Screen {
+    fn default() -> Self {
+        Screen {
+            height: 600,
+            width: 800,
+        }
+    }
+}

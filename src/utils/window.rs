@@ -7,18 +7,18 @@ pub enum WindowHandle {
     XlibHandle(xlib::Window),
 }
 
-pub fn handles_equal(a: &WindowHandle, b: &WindowHandle) -> bool {
-    use WindowHandle::*;
-    match (a, b) {
-        (XlibHandle(aa), XlibHandle(bb)) => {
-            println!("aa: {}", aa);
-            println!("bb: {}", bb);
-            aa == bb
-        }
-        (MockHandle(aa), MockHandle(bb)) => aa == bb,
-        _ => false,
-    }
-}
+//pub fn handles_equal(a: &WindowHandle, b: &WindowHandle) -> bool {
+//    use WindowHandle::*;
+//    match (a, b) {
+//        (XlibHandle(aa), XlibHandle(bb)) => {
+//            println!("aa: {}", aa);
+//            println!("bb: {}", bb);
+//            aa == bb
+//        }
+//        (MockHandle(aa), MockHandle(bb)) => aa == bb,
+//        _ => false,
+//    }
+//}
 
 #[derive(Debug, Clone)]
 pub struct Window {

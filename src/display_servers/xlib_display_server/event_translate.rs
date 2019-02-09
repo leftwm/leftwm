@@ -25,7 +25,9 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem
         xlib::DestroyNotify => {
             //println!("DestroyNotify");
             let event = xlib::XDestroyWindowEvent::from(raw_event);
+            println!("DestroyNotify: {:#?}", event);
             let h = WindowHandle::XlibHandle(event.window);
+            //let h = WindowHandle::XlibHandle(event.window + 2);
             Some(EventQueueItem::WindowDestroy(h))
         }
 
