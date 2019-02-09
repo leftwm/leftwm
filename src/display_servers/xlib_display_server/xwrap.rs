@@ -328,15 +328,13 @@ impl XWrap {
 
     pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
         let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, u64::from(keysym)) };
-        //grb the keys with and without numlock (Mod2)
+        //grab the keys with and without numlock (Mod2)
         let mods: Vec<u32> = vec![modifiers, modifiers | xlib::Mod2Mask];
         for m in mods {
             unsafe {
                 (self.xlib.XGrabKey)(
                     self.display,
-                    //xlib::AnyKey,
                     i32::from(code),
-                    //xlib::AnyModifier,
                     m,
                     root,
                     1,
@@ -360,10 +358,10 @@ impl XWrap {
             self.subscribe_to_event(root, root_event_mask);
             unsafe {
                 (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
-                self.grab_keys(root, keysym::XK_KP_1, xlib::Mod1Mask);
-                self.grab_keys(root, keysym::XK_KP_2, xlib::Mod1Mask);
-                //self.grab_keys(root, keysym::XK_KP_1, xlib::Mod1Mask);
-                //self.grab_keys(root, keysym::XK_KP_2, xlib::Mod2Mask);
+                self.grab_keys(root, keysym::XK_1, xlib::Mod1Mask);
+                self.grab_keys(root, keysym::XK_2, xlib::Mod1Mask);
+                self.grab_keys(root, keysym::XK_1, xlib::ShiftMask | xlib::Mod1Mask);
+                self.grab_keys(root, keysym::XK_2, xlib::ShiftMask | xlib::Mod1Mask);
             }
         }
         unsafe {
