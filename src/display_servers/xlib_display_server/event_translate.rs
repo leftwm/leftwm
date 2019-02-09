@@ -64,12 +64,14 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem
         //    None
         //}
 
-        //xlib::KeyPress => {
-        //    println!("KeyPress");
-        //    None
-        //}
+        xlib::KeyPress => {
+            let event = xlib::XKeyEvent::from(raw_event);
+            println!("KeyPress: {:#?} ", event);
+            None
+        }
         //xlib::KeyRelease => {
-        //    println!("KeyRelease");
+        //    let event = xlib::XKeyEvent::from(raw_event);
+        //    println!("release: {:#?} ", event);
         //    None
         //}
         //xlib::ButtonRelease => {

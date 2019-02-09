@@ -1,13 +1,18 @@
+use super::event_queue;
 use super::utils;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::ptr;
 use std::slice;
+use utils::window::WindowHandle;
+use x11_dl::keysym;
 use x11_dl::xlib;
+//type ErrorCallback = extern "C" fn (*mut xlib::Display, *mut xlib::XErrorEvent) -> c_int;
 
 pub struct XWrap {
     xlib: xlib::Xlib,
     display: *mut xlib::Display,
+    q: event_queue::EventQueue,
 }
 
 impl XWrap {
@@ -15,7 +20,32 @@ impl XWrap {
         let xlib = xlib::Xlib::open().unwrap();
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
-        XWrap { xlib, display }
+        let q = event_queue::new();
+        let xw = XWrap { xlib, display, q };
+
+        ////On xlib error
+        //let error_q = xw.q.clone();
+        //let lam :ErrorCallback =  |_: *mut xlib::Display, er: *mut xlib::XErrorEvent|  {
+        //    let _ = error_q.lock();
+        //    0
+        //};
+
+        extern "C" fn on_error_from_xlib(
+            _: *mut xlib::Display,
+            er: *mut xlib::XErrorEvent,
+        ) -> c_int {
+            let err = unsafe { *er };
+            //ignore bad window errors
+            if err.error_code == xlib::BadWindow {
+                return 0;
+            }
+            1
+        }
+
+        unsafe {
+            (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
+        };
+        xw
     }
 
     //returns all the screens the display
@@ -115,7 +145,6 @@ impl XWrap {
     }
 
     pub fn update_window(&self, window: &utils::window::Window) {
-        use utils::window::WindowHandle;
         let mut changes = xlib::XWindowChanges {
             x: window.x,
             y: window.y,
@@ -281,24 +310,42 @@ impl XWrap {
     //}
 
     pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long) {
-        //let mut attrs: xlib::XSetWindowAttributes = unsafe{ std::mem::uninitialized() };
-        //attrs.event_mask = *mask;
-        //attrs.cursor = 0;
         unsafe {
-            //let unlock = xlib::CWEventMask | xlib::CWCursor;
-            //(self.xlib.XChangeWindowAttributes)(self.display, window, unlock, &mut attrs);
             (self.xlib.XSelectInput)(self.display, window, mask);
         }
     }
 
-    //pub fn manage_window(&self, window: xlib::Window){
-    //    let mask = xlib::EnterWindowMask |
-    //        xlib::FocusChangeMask |
-    //        xlib::PropertyChangeMask |
-    //        xlib::StructureNotifyMask;
-    //    self.subscribe_to_event(window,mask);
-    //    unsafe{ (self.xlib.XMapWindow)(self.display, window) };
-    //}
+    pub fn subscribe_to_window_events(&self, window: &utils::window::Window) {
+        if let WindowHandle::XlibHandle(handle) = window.handle {
+            let mask = xlib::EnterWindowMask
+                | xlib::FocusChangeMask
+                | xlib::PropertyChangeMask
+                | xlib::StructureNotifyMask;
+            self.subscribe_to_event(handle, mask);
+            //might want to grab buttons here???
+        }
+    }
+
+    pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
+        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, u64::from(keysym)) };
+        //grb the keys with and without numlock (Mod2)
+        let mods: Vec<u32> = vec![modifiers, modifiers | xlib::Mod2Mask];
+        for m in mods {
+            unsafe {
+                (self.xlib.XGrabKey)(
+                    self.display,
+                    //xlib::AnyKey,
+                    i32::from(code),
+                    //xlib::AnyModifier,
+                    m,
+                    root,
+                    1,
+                    xlib::GrabModeAsync,
+                    xlib::GrabModeAsync,
+                );
+            }
+        }
+    }
 
     pub fn init(&self) {
         let root_event_mask: c_long = xlib::ButtonPressMask
@@ -311,6 +358,13 @@ impl XWrap {
             | xlib::PropertyChangeMask;
         for root in self.get_roots() {
             self.subscribe_to_event(root, root_event_mask);
+            unsafe {
+                (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
+                self.grab_keys(root, keysym::XK_KP_1, xlib::Mod1Mask);
+                self.grab_keys(root, keysym::XK_KP_2, xlib::Mod1Mask);
+                //self.grab_keys(root, keysym::XK_KP_1, xlib::Mod1Mask);
+                //self.grab_keys(root, keysym::XK_KP_2, xlib::Mod2Mask);
+            }
         }
         unsafe {
             (self.xlib.XSync)(self.display, 0);

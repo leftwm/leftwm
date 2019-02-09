@@ -37,6 +37,10 @@ impl DisplayServer for XlibDisplayServer {
         let xlib_event = self.xw.get_next_event();
         let event = event_translate::from_xevent(&self.xw, xlib_event);
         if let Some(e) = event {
+            //if we have a new windows go ahead and subscribe to its events
+            if let EventQueueItem::WindowCreate(new_win) = &e {
+                self.xw.subscribe_to_window_events(new_win);
+            }
             events.push(e)
         }
         events

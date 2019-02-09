@@ -97,7 +97,6 @@ impl<DM: DisplayServer> Manager<DM> {
     }
 }
 
-
 #[allow(dead_code)]
 fn mock_manager() -> Manager<MockDisplayServer> {
     let mut manager: Manager<MockDisplayServer> = Manager::new();
@@ -117,33 +116,42 @@ fn should_have_mock_workspaces() {
 #[test]
 fn adding_a_second_window_should_resize_the_first() {
     let mut manager = mock_manager();
-    let w1 = Window::new(WindowHandle::MockHandle(1), None );
-    let w2 = Window::new(WindowHandle::MockHandle(2), None );
+    let w1 = Window::new(WindowHandle::MockHandle(1), None);
+    let w2 = Window::new(WindowHandle::MockHandle(2), None);
     manager.on_new_window(w1);
     let w = manager.windows[0].width;
     manager.on_new_window(w2);
-    assert!( manager.windows[0].width != w, "Expected window to resize when other window was added" );
+    assert!(
+        manager.windows[0].width != w,
+        "Expected window to resize when other window was added"
+    );
 }
 
 #[test]
 fn removeing_a_window_should_remove_it_from_the_list_of_managed_windows() {
     let mut manager = mock_manager();
-    let w1 = Window::new(WindowHandle::MockHandle(1), None );
-    let w2 = Window::new(WindowHandle::MockHandle(2), None );
+    let w1 = Window::new(WindowHandle::MockHandle(1), None);
+    let w2 = Window::new(WindowHandle::MockHandle(2), None);
     manager.on_new_window(w1);
     manager.on_new_window(w2);
     manager.on_destroy_window(manager.windows[1].handle.clone());
-    assert!( manager.windows.len() == 1, "Expected only one window to remain" );
+    assert!(
+        manager.windows.len() == 1,
+        "Expected only one window to remain"
+    );
 }
 
 #[test]
 fn removeing_a_window_should_resize_the_windows_left_in_the_workspace() {
     let mut manager = mock_manager();
-    let w1 = Window::new(WindowHandle::MockHandle(1), None );
-    let w2 = Window::new(WindowHandle::MockHandle(2), None );
+    let w1 = Window::new(WindowHandle::MockHandle(1), None);
+    let w2 = Window::new(WindowHandle::MockHandle(2), None);
     manager.on_new_window(w1);
     manager.on_new_window(w2);
     let w = manager.windows[0].width;
     manager.on_destroy_window(manager.windows[1].handle.clone());
-    assert!( manager.windows[0].width != w, "Expected window to resize when other window was removed" );
+    assert!(
+        manager.windows[0].width != w,
+        "Expected window to resize when other window was removed"
+    );
 }
