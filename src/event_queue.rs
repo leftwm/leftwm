@@ -1,14 +1,16 @@
 use super::utils::screen::Screen;
 use super::utils::window;
+use x11_dl::xlib::XKeyEvent;
 //use std::collections::VecDeque;
 //use std::sync::{Arc, Mutex};
 
 pub enum EventQueueItem {
-    KeyDown(Vec<String>, String),
+    KeyDown(XKeyEvent),
     WindowCreate(window::Window),
     WindowDestroy(window::WindowHandle),
     ScreenCreate(Screen),
 }
+
 
 //pub type EventQueue = Arc<Mutex<VecDeque<EventQueueItem>>>;
 //

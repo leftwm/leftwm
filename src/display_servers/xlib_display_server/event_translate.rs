@@ -63,11 +63,10 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<EventQueueItem
         //    println!("MapNotify: {:#?} ", event);
         //    None
         //}
-
         xlib::KeyPress => {
             let event = xlib::XKeyEvent::from(raw_event);
             println!("KeyPress: {:#?} ", event);
-            None
+            Some(EventQueueItem::KeyDown(event))
         }
         //xlib::KeyRelease => {
         //    let event = xlib::XKeyEvent::from(raw_event);

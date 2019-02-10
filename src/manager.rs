@@ -3,7 +3,9 @@ use super::display_servers::MockDisplayServer;
 use super::event_queue::EventQueueItem;
 use super::utils::screen::Screen;
 use super::config;
+use super::config::Config;
 use super::utils::window::Window;
+use super::utils::command::CommandBuilder;
 use super::utils::window::WindowHandle;
 use super::utils::workspace::Workspace;
 
@@ -96,6 +98,9 @@ impl<DM: DisplayServer> Manager<DM> {
             EventQueueItem::WindowCreate(w) => self.on_new_window(w),
             EventQueueItem::WindowDestroy(window_handle) => self.on_destroy_window(window_handle),
             EventQueueItem::ScreenCreate(s) => self.on_new_screen(s),
+            _ => {
+                let _ = CommandBuilder::new(Config::default());
+            },
         }
     }
 }
@@ -156,4 +161,5 @@ fn removeing_a_window_should_resize_the_windows_left_in_the_workspace() {
         manager.windows[0].width != w,
         "Expected window to resize when other window was removed"
     );
+}
 

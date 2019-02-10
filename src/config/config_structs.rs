@@ -15,25 +15,12 @@ pub struct Keybind {
     key: String,
 }
 
-//fn concat(s: &str, s2: &str) -> String {
-//    let mut ss = s.to_owned();
-//    ss.push_str(&s2.to_string());
-//    ss
-//}
-
-fn concat_int(s: &str, s2: i32) -> String {
-    let mut ss = s.to_owned();
-    ss.push_str(&s2.to_string());
-    ss
-}
-
 impl Default for Config {
     fn default() -> Self {
         let mut commands: Vec<Keybind> = vec![];
 
         //add goto workspace
         for i in 1..10 {
-            let cmd: String = concat_int("goto_workspace_", i);
             commands.push(Keybind {
                 command: Command::GotoWorkspace,
                 value: Some(i.to_string()),
@@ -44,7 +31,6 @@ impl Default for Config {
 
         //add move to workspace
         for i in 1..10 {
-            let cmd: String = concat_int("goto_workspace_", i);
             commands.push(Keybind {
                 command: Command::MovetoWorkspace,
                 value: Some(i.to_string()),
