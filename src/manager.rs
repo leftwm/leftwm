@@ -2,10 +2,10 @@ use super::display_servers::DisplayServer;
 use super::display_servers::MockDisplayServer;
 use super::event_queue::EventQueueItem;
 use super::utils::screen::Screen;
+use super::utils::command::Command;
 use super::config;
 use super::config::Config;
 use super::utils::window::Window;
-use super::utils::command::CommandBuilder;
 use super::utils::window::WindowHandle;
 use super::utils::workspace::Workspace;
 
@@ -22,19 +22,22 @@ pub struct Manager<DM: DisplayServer> {
     pub tags: Vec<String>, //list of all known tags
     pub ds: DM,
     active_wp_index: usize,
+    config: Config,
 }
 
 impl<DM: DisplayServer> Manager<DM> {
     pub fn new() -> Manager<DM> {
+        let config = config::parse_config();
         let mut m = Manager {
             windows: Vec::new(),
-            ds: DM::new(),
+            ds: DM::new( &config ),
             screens: Vec::new(),
             workspaces: Vec::new(),
             tags: Vec::new(),
             active_wp_index: 0,
+            config: config
         };
-        config::load_config(&mut m);
+        config::apply_config(&mut m);
         m
     }
 
@@ -98,11 +101,23 @@ impl<DM: DisplayServer> Manager<DM> {
             EventQueueItem::WindowCreate(w) => self.on_new_window(w),
             EventQueueItem::WindowDestroy(window_handle) => self.on_destroy_window(window_handle),
             EventQueueItem::ScreenCreate(s) => self.on_new_screen(s),
-            _ => {
-                let _ = CommandBuilder::new(Config::default());
-            },
+            EventQueueItem::Command(command, value) => self.on_command( command, value )
         }
     }
+
+    pub fn on_command(&mut self, command: Command, value: Option<String>) {
+        match command {
+            Command::Execute => {
+            },
+            _=>{},
+            //CloseWindow => {},
+            //SwapWorkspaces => {},
+            //GotoWorkspace => {},
+            //MovetoWorkspace => {},
+        }
+    }
+
+
 }
 
 #[allow(dead_code)]

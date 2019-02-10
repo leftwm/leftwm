@@ -64,6 +64,11 @@ impl XWrap {
             .collect()
     }
 
+    pub fn keycode_to_keysym(&self, keycode: u32 ) -> utils::xkeysym_lookup::XKeysym {
+        let sym = unsafe { (self.xlib.XKeycodeToKeysym)(self.display, keycode as u8, 0) };
+        sym as u32
+    }
+
     //returns all the windows under a root windows
     pub fn get_windows_for_root<'w>(
         &self,

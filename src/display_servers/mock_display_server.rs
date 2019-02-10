@@ -1,3 +1,4 @@
+use super::config::Config;
 use super::event_queue::EventQueueItem;
 use super::utils;
 use super::DisplayServer;
@@ -9,7 +10,7 @@ pub struct MockDisplayServer {
 }
 
 impl DisplayServer for MockDisplayServer {
-    fn new() -> MockDisplayServer {
+    fn new(_: &Config) -> MockDisplayServer {
         MockDisplayServer { screens: vec![] }
     }
 

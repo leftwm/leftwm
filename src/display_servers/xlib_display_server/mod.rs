@@ -1,6 +1,8 @@
+use super::config::Config;
 use super::event_queue;
 use super::event_queue::EventQueueItem;
 use super::utils;
+use super::utils::command::CommandBuilder;
 use super::DisplayServer;
 use std::sync::Once;
 
@@ -12,11 +14,15 @@ static SETUP: Once = Once::new();
 
 pub struct XlibDisplayServer {
     xw: XWrap,
+    command_builder: CommandBuilder,
 }
 
 impl DisplayServer for XlibDisplayServer {
-    fn new() -> XlibDisplayServer {
-        let me = XlibDisplayServer { xw: XWrap::new() };
+    fn new(config: &Config) -> XlibDisplayServer {
+        let me = XlibDisplayServer { 
+            xw: XWrap::new(),
+            command_builder: CommandBuilder::new(config)
+        };
         me.xw.init(); //setup events masks
         me
     }
@@ -35,7 +41,7 @@ impl DisplayServer for XlibDisplayServer {
             }
         });
         let xlib_event = self.xw.get_next_event();
-        let event = event_translate::from_xevent(&self.xw, xlib_event);
+        let event = event_translate::from_xevent(&self.xw, &self.command_builder ,xlib_event);
         if let Some(e) = event {
             //if we have a new windows go ahead and subscribe to its events
             if let EventQueueItem::WindowCreate(new_win) = &e {

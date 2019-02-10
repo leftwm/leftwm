@@ -1,3 +1,4 @@
+use super::config;
 use super::event_queue;
 use super::utils;
 use super::utils::screen::Screen;
@@ -8,7 +9,7 @@ pub use self::mock_display_server::MockDisplayServer;
 pub use self::xlib_display_server::XlibDisplayServer;
 
 pub trait DisplayServer {
-    fn new() -> Self;
+    fn new(config: &config::Config) -> Self;
     //fn find_all_windows(&mut self);
     fn get_next_events(&self) -> Vec<event_queue::EventQueueItem>;
     fn update_windows(&self, windows: Vec<&utils::window::Window>);
