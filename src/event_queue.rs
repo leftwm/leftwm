@@ -4,6 +4,7 @@ use super::utils::window;
 //use std::sync::{Arc, Mutex};
 
 pub enum EventQueueItem {
+    KeyDown(Vec<String>, String),
     WindowCreate(window::Window),
     WindowDestroy(window::WindowHandle),
     ScreenCreate(Screen),

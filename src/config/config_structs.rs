@@ -1,5 +1,6 @@
-use std::default::Default;
+use super::utils::command::Command;
 
+use std::default::Default;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     modkey: String,
@@ -8,7 +9,8 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Keybind {
-    command: String,
+    command: Command,
+    value: Option<String>,
     modifier: Vec<String>,
     key: String,
 }
@@ -33,7 +35,8 @@ impl Default for Config {
         for i in 1..10 {
             let cmd: String = concat_int("goto_workspace_", i);
             commands.push(Keybind {
-                command: cmd,
+                command: Command::GotoWorkspace,
+                value: Some(i.to_string()),
                 modifier: vec!["modkey".to_owned()],
                 key: i.to_string(),
             });
@@ -43,7 +46,8 @@ impl Default for Config {
         for i in 1..10 {
             let cmd: String = concat_int("goto_workspace_", i);
             commands.push(Keybind {
-                command: cmd,
+                command: Command::MovetoWorkspace,
+                value: Some(i.to_string()),
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: i.to_string(),
             });

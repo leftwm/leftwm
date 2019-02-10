@@ -156,4 +156,4 @@ fn removeing_a_window_should_resize_the_windows_left_in_the_workspace() {
         manager.windows[0].width != w,
         "Expected window to resize when other window was removed"
     );
-}
+

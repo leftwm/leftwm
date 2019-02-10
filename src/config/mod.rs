@@ -1,8 +1,9 @@
 use super::display_servers::DisplayServer;
 use super::manager::Manager;
+use super::utils;
 use std::fs;
-use xdg;
 use toml;
+use xdg;
 mod config_structs;
 pub use config_structs::*;
 
@@ -32,16 +33,7 @@ fn parse_config() -> Config {
     let config_contents = fs::read_to_string(path).expect("Something went wrong reading the file");
     let config = toml::from_str::<Config>(&config_contents);
     match config {
-        Ok(cfg) => { cfg }
-        Err(_) => { Config::default() }
+        Ok(cfg) => cfg,
+        Err(_) => Config::default(),
     }
 }
-
-
-
-
-
-
-
-
-
