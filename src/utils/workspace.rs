@@ -45,6 +45,9 @@ impl Workspace {
         self.tags = vec![tag.clone()];
     }
 
+    /*
+     * returns true if the workspace is displays a given window
+     */
     pub fn is_displaying(&self, window: &Window) -> bool {
         for ws_t in &self.tags {
             for wd_t in &window.tags {
@@ -56,6 +59,9 @@ impl Workspace {
         false
     }
 
+    /*
+     * given a list of windows, returns a sublist of the windows that this workspace is displaying
+     */
     pub fn displayed_windows<'a>(&self, windows: Vec<&'a mut Window>) -> Vec<&'a mut Window> {
         let found: Vec<&mut Window> = windows
             .into_iter()
@@ -70,6 +76,7 @@ impl Workspace {
         self.layout.update_windows(self, mine);
     }
 }
+
 
 fn mark_visable(windows: &mut Vec<&mut Window>) {
     for w in windows {

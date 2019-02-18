@@ -41,9 +41,9 @@ impl<DM: DisplayServer> Manager<DM> {
         m
     }
 
-    fn active_workspace(&self) -> Option<&Workspace> {
+    fn active_workspace(&mut self) -> Option<&mut Workspace> {
         if self.active_wp_index < self.workspaces.len() {
-            return Some(&self.workspaces[self.active_wp_index]);
+            return Some(&mut self.workspaces[self.active_wp_index]);
         }
         None
     }
@@ -110,8 +110,23 @@ impl<DM: DisplayServer> Manager<DM> {
      */
     fn goto_tags(&mut self, tags: Vec<&String>) {
         if let Some(workspace) = self.active_workspace() {
-            //workspace.tags(tags)
+            if tags.len() == 1 {
+                workspace.show_tag(tags[0].clone());
+            }
+            self.update_windows();
         }
+    }
+
+    /*
+     * move the current focused window to a given tag
+     */
+    fn move_to_tags(&mut self, tags: Vec<&String>) {
+        //if let Some(workspace) = self.active_workspace() {
+        //    if tags.len() == 1 {
+        //        workspace.show_tag(tags[0].clone());
+        //    }
+        //    self.update_windows();
+        //}
     }
 
     /*
@@ -125,9 +140,14 @@ impl<DM: DisplayServer> Manager<DM> {
             Command::GotoTag => {
                 if let Some(val) = &value {
                     self.goto_tags(vec![val]);
-                    //println!("goto tag {:#?}", val);
                 }
             }
+            Command::MoveToTag => {
+                if let Some(val) = &value {
+                    self.move_to_tags(vec![val]);
+                }
+            }
+
             //MovetoWorkspace => {},
             _ => {}
         }
