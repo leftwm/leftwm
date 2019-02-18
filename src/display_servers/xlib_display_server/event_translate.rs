@@ -1,10 +1,14 @@
 use super::event_queue::EventQueueItem;
-use super::utils::window::*;
 use super::utils::command::CommandBuilder;
+use super::utils::window::*;
 use super::XWrap;
 use x11_dl::xlib;
 
-pub fn from_xevent(xw: &XWrap, command_builder :&CommandBuilder, raw_event: xlib::XEvent) -> Option<EventQueueItem> {
+pub fn from_xevent(
+    xw: &XWrap,
+    command_builder: &CommandBuilder,
+    raw_event: xlib::XEvent,
+) -> Option<EventQueueItem> {
     match raw_event.get_type() {
         // new window is created
         xlib::MapRequest => {
@@ -66,7 +70,7 @@ pub fn from_xevent(xw: &XWrap, command_builder :&CommandBuilder, raw_event: xlib
         //}
         xlib::KeyPress => {
             let event = xlib::XKeyEvent::from(raw_event);
-            println!("KeyPress: {:#?} ", event);
+            //println!("KeyPress: {:#?} ", event);
             let sym = xw.keycode_to_keysym(event.keycode);
             command_builder.from_xkeyevent(sym, event)
         }

@@ -15,6 +15,35 @@ pub struct Keybind {
     pub key: String,
 }
 
+impl Config {
+    /*
+     * returns a collection of bindings with the mod key mapped
+     */
+    pub fn mapped_bindings(&self) -> Vec<Keybind> {
+        let mod_key: &String = &self.modkey.clone();
+        let old_binds: &Vec<Keybind> = &self.keybind;
+        old_binds
+            .iter()
+            .map(|k| {
+                let mut keymap = k.clone();
+                let old_mods: &Vec<String> = &k.modifier;
+                let mods = old_mods
+                    .iter()
+                    .map(|m| {
+                        if m == "modkey" {
+                            mod_key.clone()
+                        } else {
+                            m.clone()
+                        }
+                    })
+                    .collect();
+                keymap.modifier = mods;
+                keymap
+            })
+            .collect()
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         let mut commands: Vec<Keybind> = vec![];
@@ -30,7 +59,7 @@ impl Default for Config {
         //add goto workspace
         for i in 1..10 {
             commands.push(Keybind {
-                command: Command::GotoWorkspace,
+                command: Command::GotoTag,
                 value: Some(i.to_string()),
                 modifier: vec!["modkey".to_owned()],
                 key: i.to_string(),
@@ -40,7 +69,7 @@ impl Default for Config {
         //add move to workspace
         for i in 1..10 {
             commands.push(Keybind {
-                command: Command::MovetoWorkspace,
+                command: Command::MoveToTag,
                 value: Some(i.to_string()),
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: i.to_string(),
@@ -48,8 +77,8 @@ impl Default for Config {
         }
 
         Config {
-            modkey: "Mod1".to_owned(),
-            //modkey: "Mod4".to_owned(),
+            modkey: "Mod1".to_owned(), //alt
+            //modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
     }

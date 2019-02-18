@@ -11,8 +11,13 @@ pub fn into_modmask(keys: &Vec<String>) -> ModMask {
         mask |= into_mod(&s);
     }
     //clean the mask
-    mask &= !(xlib::Mod2Mask|xlib::LockMask);
-    mask & (xlib::ShiftMask|xlib::ControlMask|xlib::Mod1Mask|xlib::Mod3Mask|xlib::Mod4Mask|xlib::Mod5Mask)
+    mask &= !(xlib::Mod2Mask | xlib::LockMask);
+    mask & (xlib::ShiftMask
+        | xlib::ControlMask
+        | xlib::Mod1Mask
+        | xlib::Mod3Mask
+        | xlib::Mod4Mask
+        | xlib::Mod5Mask)
 }
 
 pub fn into_mod(key: &str) -> ModMask {

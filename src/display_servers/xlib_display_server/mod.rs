@@ -4,6 +4,7 @@ use super::event_queue::EventQueueItem;
 use super::utils;
 use super::utils::command::CommandBuilder;
 use super::DisplayServer;
+use super::utils::xkeysym_lookup;
 use std::sync::Once;
 
 mod event_translate;
@@ -23,7 +24,7 @@ impl DisplayServer for XlibDisplayServer {
             xw: XWrap::new(),
             command_builder: CommandBuilder::new(config)
         };
-        me.xw.init(); //setup events masks
+        me.xw.init(config); //setup events masks
         me
     }
 

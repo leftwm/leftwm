@@ -47,11 +47,15 @@ fn should_fullscreen_a_single_window() {
     ws.height = 1000;
     ws.width = 2000;
     let mut w = Window::new(WindowHandle::MockHandle(1), None);
+    w.border = 0;
     let windows = vec![&mut w];
     layout.update_windows(&ws, windows);
     assert!(
-        w.height == 1000,
+        w.height() == 1000,
         "window was not size to the correct height"
     );
-    assert!(w.width == 2000, "window was not size to the correct width");
+    assert!(
+        w.width() == 2000,
+        "window was not size to the correct width"
+    );
 }

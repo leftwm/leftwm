@@ -28,10 +28,10 @@ pub struct Window {
     pub name: Option<String>,
     pub tags: Vec<String>,
     pub border: i32,
-    pub height: i32,
-    pub width: i32,
-    pub x: i32,
-    pub y: i32,
+    height: i32,
+    width: i32,
+    x: i32,
+    y: i32,
 }
 
 impl Window {
@@ -61,6 +61,19 @@ impl Window {
     }
     pub fn set_y(&mut self, y: i32) {
         self.y = y
+    }
+
+    pub fn height(&self) -> i32 {
+        self.height - (self.border * 2)
+    }
+    pub fn width(&self) -> i32 {
+        self.width - (self.border * 2)
+    }
+    pub fn x(&self) -> i32 {
+        self.x
+    }
+    pub fn y(&self) -> i32 {
+        self.y
     }
 
     pub fn tag(&mut self, tag: String) {

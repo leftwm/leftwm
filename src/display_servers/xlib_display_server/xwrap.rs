@@ -1,4 +1,6 @@
 use super::utils;
+use super::xkeysym_lookup;
+use super::Config;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::ptr;
@@ -64,7 +66,7 @@ impl XWrap {
             .collect()
     }
 
-    pub fn keycode_to_keysym(&self, keycode: u32 ) -> utils::xkeysym_lookup::XKeysym {
+    pub fn keycode_to_keysym(&self, keycode: u32) -> utils::xkeysym_lookup::XKeysym {
         let sym = unsafe { (self.xlib.XKeycodeToKeysym)(self.display, keycode as u8, 0) };
         sym as u32
     }
@@ -148,24 +150,23 @@ impl XWrap {
 
     pub fn update_window(&self, window: &utils::window::Window) {
         let mut changes = xlib::XWindowChanges {
-            x: window.x,
-            y: window.y,
-            width: window.width,
-            height: window.height,
+            x: window.x(),
+            y: window.y(),
+            width: window.width(),
+            height: window.height(),
             border_width: window.border,
             sibling: 0,    //not unlocked
             stack_mode: 0, //not unlocked
         };
         if let WindowHandle::XlibHandle(h) = window.handle {
-            println!("in xwrap update window: {:#?} ", changes);
             let unlock =
                 xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
             unsafe {
                 (self.xlib.XConfigureWindow)(self.display, h, u32::from(unlock), &mut changes);
                 (self.xlib.XSync)(self.display, 0);
-                let rw: u32 = window.width as u32;
-                let rh: u32 = window.height as u32;
-                (self.xlib.XMoveResizeWindow)(self.display, h, window.x, window.y, rw, rh);
+                let rw: u32 = window.width() as u32;
+                let rh: u32 = window.height() as u32;
+                (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
             }
             self.send_config(window);
             self.update_visable(window);
@@ -198,10 +199,10 @@ impl XWrap {
                 display: self.display,
                 event: handle,
                 window: handle,
-                x: window.x,
-                y: window.y,
-                width: window.width,
-                height: window.height,
+                x: window.x(),
+                y: window.y(),
+                width: window.width(),
+                height: window.height(),
                 border_width: window.border,
                 above: 0,
                 override_redirect: 0,
@@ -331,7 +332,11 @@ impl XWrap {
     pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
         let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, u64::from(keysym)) };
         //grab the keys with and without numlock (Mod2)
-        let mods: Vec<u32> = vec![modifiers, modifiers | xlib::Mod2Mask];
+        let mods: Vec<u32> = vec![
+            modifiers,
+            modifiers | xlib::Mod2Mask,
+            modifiers | xlib::LockMask,
+        ];
         for m in mods {
             unsafe {
                 (self.xlib.XGrabKey)(
@@ -347,7 +352,7 @@ impl XWrap {
         }
     }
 
-    pub fn init(&self) {
+    pub fn init(&self, config: &Config) {
         let root_event_mask: c_long = xlib::ButtonPressMask
             | xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
@@ -358,13 +363,27 @@ impl XWrap {
             | xlib::PropertyChangeMask;
         for root in self.get_roots() {
             self.subscribe_to_event(root, root_event_mask);
+
+            //cleanup grabs
             unsafe {
                 (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
-                self.grab_keys(root, keysym::XK_1, xlib::Mod1Mask);
-                self.grab_keys(root, keysym::XK_2, xlib::Mod1Mask);
-                self.grab_keys(root, keysym::XK_1, xlib::ShiftMask | xlib::Mod1Mask);
-                self.grab_keys(root, keysym::XK_2, xlib::ShiftMask | xlib::Mod1Mask);
             }
+
+            //grab all the key combos from the config file
+            for kb in config.mapped_bindings() {
+                if let Some(keysym) = xkeysym_lookup::into_keysym(&kb.key) {
+                    let modmask = xkeysym_lookup::into_modmask(&kb.modifier);
+                    self.grab_keys(root, keysym, modmask);
+                }
+            }
+
+            //unsafe {
+            //    (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
+            //    self.grab_keys(root, keysym::XK_1, xlib::Mod1Mask);
+            //    self.grab_keys(root, keysym::XK_2, xlib::Mod1Mask);
+            //    self.grab_keys(root, keysym::XK_1, xlib::ShiftMask | xlib::Mod1Mask);
+            //    self.grab_keys(root, keysym::XK_2, xlib::ShiftMask | xlib::Mod1Mask);
+            //}
         }
         unsafe {
             (self.xlib.XSync)(self.display, 0);
