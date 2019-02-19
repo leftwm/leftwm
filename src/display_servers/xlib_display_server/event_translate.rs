@@ -30,15 +30,15 @@ pub fn from_xevent(
         xlib::DestroyNotify => {
             //println!("DestroyNotify");
             let event = xlib::XDestroyWindowEvent::from(raw_event);
-            println!("DestroyNotify: {:#?}", event);
+            //println!("DestroyNotify: {:#?}", event);
             let h = WindowHandle::XlibHandle(event.window);
             //let h = WindowHandle::XlibHandle(event.window + 2);
             Some(EventQueueItem::WindowDestroy(h))
         }
 
         xlib::ClientMessage => {
-            let event = xlib::XClientMessageEvent::from(raw_event);
-            println!("ClientMessage: {:#?} ", event);
+            //let event = xlib::XClientMessageEvent::from(raw_event);
+            //println!("ClientMessage: {:#?} ", event);
             None
         }
 
@@ -47,11 +47,12 @@ pub fn from_xevent(
         //    println!("ButtonPress: {:#?} ", event);
         //    None
         //}
-        //xlib::EnterNotify => {
-        //    let event = xlib::XEnterWindowEvent::from(raw_event);
-        //    println!("EnterNotify: {:#?} ", event);
-        //    None
-        //}
+        xlib::EnterNotify => {
+            let event = xlib::XEnterWindowEvent::from(raw_event);
+            //println!("EnterNotify: {:#?} ", event);
+            let h = WindowHandle::XlibHandle(event.window);
+            Some(EventQueueItem::FocusedWindow(h))
+        }
         //xlib::LeaveNotify => {
         //    let event = xlib::XLeaveWindowEvent::from(raw_event);
         //    println!("LeaveNotify: {:#?} ", event);
@@ -87,10 +88,11 @@ pub fn from_xevent(
         //    {};
         //    None
         //}
-        //xlib::FocusIn => {
-        //    println!("FocusIn");
-        //    None
-        //}
+        xlib::FocusIn => {
+            let event = xlib::XFocusChangeEvent::from(raw_event);
+            println!("FocusIn: {:#?} ", event);
+            None
+        }
         //xlib::FocusOut => {
         //    println!("FocusOut");
         //    None

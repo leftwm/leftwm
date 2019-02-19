@@ -6,6 +6,7 @@ pub enum EventQueueItem {
     Command(Command, Option<String>),
     WindowCreate(window::Window),
     WindowDestroy(window::WindowHandle),
+    FocusedWindow(window::WindowHandle),
     ScreenCreate(Screen),
 }
 

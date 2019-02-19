@@ -22,6 +22,7 @@ pub struct Manager<DM: DisplayServer> {
     pub tags: Vec<String>, //list of all known tags
     pub ds: DM,
     active_wp_index: usize,
+    focused_window_handle: Option<WindowHandle>,
     config: Config,
 }
 
@@ -35,7 +36,8 @@ impl<DM: DisplayServer> Manager<DM> {
             workspaces: Vec::new(),
             tags: Vec::new(),
             active_wp_index: 0,
-            config: config,
+            focused_window_handle: None,
+            config,
         };
         config::apply_config(&mut m);
         m
@@ -44,6 +46,17 @@ impl<DM: DisplayServer> Manager<DM> {
     fn active_workspace(&mut self) -> Option<&mut Workspace> {
         if self.active_wp_index < self.workspaces.len() {
             return Some(&mut self.workspaces[self.active_wp_index]);
+        }
+        None
+    }
+
+    fn focused_window(&mut self) -> Option<&mut Window> {
+        if let Some(handle) = self.focused_window_handle.clone() {
+            for &mut w in &self.windows {
+                if handle == w.handle {
+                    return Some(&mut w)
+                }
+            }
         }
         None
     }
@@ -101,7 +114,21 @@ impl<DM: DisplayServer> Manager<DM> {
             EventQueueItem::WindowCreate(w) => self.on_new_window(w),
             EventQueueItem::WindowDestroy(window_handle) => self.on_destroy_window(window_handle),
             EventQueueItem::ScreenCreate(s) => self.on_new_screen(s),
+            EventQueueItem::FocusedWindow(window_handle) => self.update_focused_window(window_handle),
             EventQueueItem::Command(command, value) => self.on_command(command, value),
+        }
+    }
+
+    /*
+     * set the focused window if we know about the handle
+     */
+    fn update_focused_window(&mut self, handle: WindowHandle){
+        self.focused_window_handle = None;
+        for w in &self.windows {
+            if w.handle == handle {
+                self.focused_window_handle = Some(handle);
+                return;
+            }
         }
     }
 
@@ -121,6 +148,7 @@ impl<DM: DisplayServer> Manager<DM> {
      * move the current focused window to a given tag
      */
     fn move_to_tags(&mut self, tags: Vec<&String>) {
+
         //if let Some(workspace) = self.active_workspace() {
         //    if tags.len() == 1 {
         //        workspace.show_tag(tags[0].clone());

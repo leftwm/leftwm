@@ -3,8 +3,8 @@ use super::event_queue;
 use super::event_queue::EventQueueItem;
 use super::utils;
 use super::utils::command::CommandBuilder;
-use super::DisplayServer;
 use super::utils::xkeysym_lookup;
+use super::DisplayServer;
 use std::sync::Once;
 
 mod event_translate;
@@ -20,9 +20,9 @@ pub struct XlibDisplayServer {
 
 impl DisplayServer for XlibDisplayServer {
     fn new(config: &Config) -> XlibDisplayServer {
-        let me = XlibDisplayServer { 
+        let me = XlibDisplayServer {
             xw: XWrap::new(),
-            command_builder: CommandBuilder::new(config)
+            command_builder: CommandBuilder::new(config),
         };
         me.xw.init(config); //setup events masks
         me
@@ -42,7 +42,7 @@ impl DisplayServer for XlibDisplayServer {
             }
         });
         let xlib_event = self.xw.get_next_event();
-        let event = event_translate::from_xevent(&self.xw, &self.command_builder ,xlib_event);
+        let event = event_translate::from_xevent(&self.xw, &self.command_builder, xlib_event);
         if let Some(e) = event {
             //if we have a new windows go ahead and subscribe to its events
             if let EventQueueItem::WindowCreate(new_win) = &e {
@@ -68,6 +68,7 @@ impl XlibDisplayServer {
         }
         // tell manager about existing windows
         for w in &self.find_all_windows() {
+            self.xw.subscribe_to_window_events(w);
             let e = EventQueueItem::WindowCreate(w.clone());
             events.push(e);
         }
