@@ -90,8 +90,9 @@ pub fn from_xevent(
         //}
         xlib::FocusIn => {
             let event = xlib::XFocusChangeEvent::from(raw_event);
-            println!("FocusIn: {:#?} ", event);
-            None
+            let h = WindowHandle::XlibHandle(event.window);
+            //println!("FocusIn: {:#?} ", event);
+            Some(EventQueueItem::FocusedWindow(h))
         }
         //xlib::FocusOut => {
         //    println!("FocusOut");

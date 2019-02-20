@@ -52,9 +52,9 @@ impl<DM: DisplayServer> Manager<DM> {
 
     fn focused_window(&mut self) -> Option<&mut Window> {
         if let Some(handle) = self.focused_window_handle.clone() {
-            for &mut w in &self.windows {
+            for w in &mut self.windows {
                 if handle == w.handle {
-                    return Some(&mut w)
+                    return Some(w);
                 }
             }
         }
@@ -114,7 +114,9 @@ impl<DM: DisplayServer> Manager<DM> {
             EventQueueItem::WindowCreate(w) => self.on_new_window(w),
             EventQueueItem::WindowDestroy(window_handle) => self.on_destroy_window(window_handle),
             EventQueueItem::ScreenCreate(s) => self.on_new_screen(s),
-            EventQueueItem::FocusedWindow(window_handle) => self.update_focused_window(window_handle),
+            EventQueueItem::FocusedWindow(window_handle) => {
+                self.update_focused_window(window_handle)
+            }
             EventQueueItem::Command(command, value) => self.on_command(command, value),
         }
     }
@@ -122,10 +124,13 @@ impl<DM: DisplayServer> Manager<DM> {
     /*
      * set the focused window if we know about the handle
      */
-    fn update_focused_window(&mut self, handle: WindowHandle){
+    fn update_focused_window(&mut self, handle: WindowHandle) {
         self.focused_window_handle = None;
         for w in &self.windows {
             if w.handle == handle {
+                if let WindowHandle::XlibHandle( xlibh) = &handle {
+                    println!("FOCUSED: {}", xlibh);
+                }
                 self.focused_window_handle = Some(handle);
                 return;
             }
@@ -148,13 +153,13 @@ impl<DM: DisplayServer> Manager<DM> {
      * move the current focused window to a given tag
      */
     fn move_to_tags(&mut self, tags: Vec<&String>) {
-
-        //if let Some(workspace) = self.active_workspace() {
-        //    if tags.len() == 1 {
-        //        workspace.show_tag(tags[0].clone());
-        //    }
-        //    self.update_windows();
-        //}
+        if let Some(window) = self.focused_window() {
+            window.clear_tags();
+            for s in tags{
+                window.tag(s.clone());
+            }
+            self.update_windows();
+        }
     }
 
     /*

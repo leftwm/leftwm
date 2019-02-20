@@ -88,6 +88,10 @@ impl Window {
         self.tags.push(tag);
     }
 
+    pub fn clear_tags(&mut self) {
+        self.tags = vec![];
+    }
+
     pub fn has_tag(&self, tag: String) -> bool {
         self.tags.contains(&tag)
     }
