@@ -86,7 +86,7 @@ fn should_be_able_to_build_a_goto_workspace_command() {
     let bind = builder.find_keybind_for(keysym, ev);
     match bind {
         Some(b) => {
-            assert!(b.command == Command::GotoWorkspace, "wrong command found");
+            assert!(b.command == Command::GotoTag, "wrong command found");
             assert!(b.value == Some("1".to_owned()), "wrong value found");
         }
         None => {
@@ -104,7 +104,7 @@ fn should_be_able_to_build_a_goto_workspace_command_with_numlock() {
     let bind = builder.find_keybind_for(keysym, ev);
     match bind {
         Some(b) => {
-            assert!(b.command == Command::GotoWorkspace, "wrong command found");
+            assert!(b.command == Command::GotoTag, "wrong command found");
             assert!(b.value == Some("1".to_owned()), "wrong value found");
         }
         None => {

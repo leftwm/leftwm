@@ -6,9 +6,7 @@ use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::ptr;
 use std::slice;
 use utils::window::WindowHandle;
-use x11_dl::keysym;
 use x11_dl::xlib;
-//type ErrorCallback = extern "C" fn (*mut xlib::Display, *mut xlib::XErrorEvent) -> c_int;
 
 pub struct XWrap {
     xlib: xlib::Xlib,
