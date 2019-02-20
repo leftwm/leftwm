@@ -8,21 +8,17 @@ use super::utils::screen::Screen;
 use super::utils::window::Window;
 use super::utils::window::WindowHandle;
 use super::utils::workspace::Workspace;
-
-pub trait DisplayEventHandler {
-    fn on_new_window(&mut self, window: Window);
-    fn on_new_screen(&mut self, screen: Screen);
-}
+use std::collections::VecDeque;
 
 #[derive(Clone)]
 pub struct Manager<DM: DisplayServer> {
-    pub windows: Vec<Window>,
     pub screens: Vec<Screen>,
+    pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub tags: Vec<String>, //list of all known tags
     pub ds: DM,
-    active_wp_index: usize,
-    focused_window_handle: Option<WindowHandle>,
+    focused_workspace_history: VecDeque<usize>,
+    focused_window_history: VecDeque<WindowHandle>,
     config: Config,
 }
 
@@ -35,8 +31,8 @@ impl<DM: DisplayServer> Manager<DM> {
             screens: Vec::new(),
             workspaces: Vec::new(),
             tags: Vec::new(),
-            active_wp_index: 0,
-            focused_window_handle: None,
+            focused_workspace_history: vec![0],
+            focused_window_history: vec![],
             config,
         };
         config::apply_config(&mut m);
@@ -44,18 +40,21 @@ impl<DM: DisplayServer> Manager<DM> {
     }
 
     fn active_workspace(&mut self) -> Option<&mut Workspace> {
-        if self.active_wp_index < self.workspaces.len() {
-            return Some(&mut self.workspaces[self.active_wp_index]);
+        let index = self.focused_workspace_history[0];
+        if index < self.workspaces.len() {
+            return Some(&mut self.workspaces[index]);
         }
         None
     }
 
     fn focused_window(&mut self) -> Option<&mut Window> {
-        if let Some(handle) = self.focused_window_handle.clone() {
-            for w in &mut self.windows {
-                if handle == w.handle {
-                    return Some(w);
-                }
+        if self.focused_window_history.len() == 0 {
+            return None;
+        }
+        let handle = self.focused_window_history[0];
+        for w in &mut self.windows {
+            if handle == w.handle {
+                return Some(w);
             }
         }
         None
@@ -95,6 +94,7 @@ impl<DM: DisplayServer> Manager<DM> {
     fn on_new_screen(&mut self, screen: Screen) {
         let tag_index = self.workspaces.len();
         let mut workspace = Workspace::from_screen(&screen);
+        workspace.name = tag_index.to_string();
         let next_tag = self.tags[tag_index].clone();
         workspace.show_tag(next_tag);
         self.workspaces.push(workspace);
@@ -125,13 +125,16 @@ impl<DM: DisplayServer> Manager<DM> {
      * set the focused window if we know about the handle
      */
     fn update_focused_window(&mut self, handle: WindowHandle) {
-        self.focused_window_handle = None;
+        while self.focused_window_history.len() > 10 {
+            self.focused_window_history.pop_back();
+        }
+        //self.focused_window_handle = None;
         for w in &self.windows {
             if w.handle == handle {
-                if let WindowHandle::XlibHandle( xlibh) = &handle {
+                if let WindowHandle::XlibHandle(xlibh) = &handle {
                     println!("FOCUSED: {}", xlibh);
                 }
-                self.focused_window_handle = Some(handle);
+                self.focused_window_history.push_front(handle);
                 return;
             }
         }
@@ -155,7 +158,7 @@ impl<DM: DisplayServer> Manager<DM> {
     fn move_to_tags(&mut self, tags: Vec<&String>) {
         if let Some(window) = self.focused_window() {
             window.clear_tags();
-            for s in tags{
+            for s in tags {
                 window.tag(s.clone());
             }
             self.update_windows();
@@ -188,23 +191,51 @@ impl<DM: DisplayServer> Manager<DM> {
 }
 
 #[allow(dead_code)]
-fn mock_manager() -> Manager<MockDisplayServer> {
+fn mock_manager(screen_counts: i32) -> Manager<MockDisplayServer> {
     let mut manager: Manager<MockDisplayServer> = Manager::new();
-    for s in manager.ds.create_fake_screens(1) {
+    for s in manager.ds.create_fake_screens(screen_counts) {
         manager.on_new_screen(s);
     }
     manager
 }
 
 #[test]
-fn should_have_mock_workspaces() {
-    let manager = mock_manager();
-    assert!(manager.workspaces.len() == 1)
+fn creating_two_screens_should_tag_them_with_first_and_second_tags() {
+    let manager = mock_manager(3); //creates two screens
+    assert!(manager.workspaces[0].has_tag("1"));
+    assert!(manager.workspaces[1].has_tag("2"));
+    assert!(manager.workspaces[2].has_tag("3"));
 }
 
 #[test]
+fn should_default_to_first_screen() {
+    let mut manager = mock_manager(4); //creates two screens
+    let expected = manager.workspaces[0].clone();
+    let actual = manager.active_workspace().unwrap();
+    assert!(actual == &expected);
+}
+
+#[test]
+fn two_workspaces_should_never_view_the_same_tag() {
+    let mut manager = mock_manager(4); //creates two screens
+    manager.goto_tags(vec![&"4".to_owned()]);
+    let wp1 = manager.active_workspace().unwrap();
+    assert!(wp1.has_tag("4"));
+    let wp4 = manager.workspaces[3].clone();
+    assert!(
+        !wp4.has_tag("4"),
+        "Expected this workspace to nolonger be displaying 4"
+    );
+}
+
+//#[test]
+//fn should_not_be_able_to_display_the_same_tag_twice() {
+//    let manager = mock_manager(3); //creates two screens
+//}
+
+#[test]
 fn adding_a_second_window_should_resize_the_first() {
-    let mut manager = mock_manager();
+    let mut manager = mock_manager(1);
     let w1 = Window::new(WindowHandle::MockHandle(1), None);
     let w2 = Window::new(WindowHandle::MockHandle(2), None);
     manager.on_new_window(w1);
@@ -218,7 +249,7 @@ fn adding_a_second_window_should_resize_the_first() {
 
 #[test]
 fn removeing_a_window_should_remove_it_from_the_list_of_managed_windows() {
-    let mut manager = mock_manager();
+    let mut manager = mock_manager(1);
     let w1 = Window::new(WindowHandle::MockHandle(1), None);
     let w2 = Window::new(WindowHandle::MockHandle(2), None);
     manager.on_new_window(w1);
@@ -232,7 +263,7 @@ fn removeing_a_window_should_remove_it_from_the_list_of_managed_windows() {
 
 #[test]
 fn removeing_a_window_should_resize_the_windows_left_in_the_workspace() {
-    let mut manager = mock_manager();
+    let mut manager = mock_manager(1);
     let w1 = Window::new(WindowHandle::MockHandle(1), None);
     let w2 = Window::new(WindowHandle::MockHandle(2), None);
     manager.on_new_window(w1);

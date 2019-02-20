@@ -4,6 +4,7 @@ use super::window::Window;
 
 #[derive(Clone)]
 pub struct Workspace {
+    pub name: String,
     layout: Box<Layout>,
     pub tags: Vec<String>,
     pub height: i32,
@@ -12,9 +13,16 @@ pub struct Workspace {
     pub y: i32,
 }
 
+impl PartialEq for Workspace {
+    fn eq(&self, other: &Workspace) -> bool {
+        self.name == other.name
+    }
+}
+
 impl Default for Workspace {
     fn default() -> Self {
         Workspace {
+            name: "".to_owned(),
             layout: Box::new(DefaultLayout {}),
             tags: vec![],
             height: 600,
@@ -32,6 +40,7 @@ impl Workspace {
 
     pub fn from_screen(screen: &Screen) -> Workspace {
         Workspace {
+            name: "".to_owned(),
             layout: Box::new(DefaultLayout {}),
             tags: vec![],
             height: screen.height,
@@ -45,15 +54,22 @@ impl Workspace {
         self.tags = vec![tag.clone()];
     }
 
+    pub fn has_tag(&self, tag: &str) -> bool {
+        for t in &self.tags {
+            if tag == t {
+                return true
+            }
+        }
+        false
+    }
+
     /*
      * returns true if the workspace is displays a given window
      */
     pub fn is_displaying(&self, window: &Window) -> bool {
-        for ws_t in &self.tags {
-            for wd_t in &window.tags {
-                if ws_t == wd_t {
-                    return true;
-                }
+        for wd_t in &window.tags {
+            if self.has_tag( wd_t ) {
+                return true
             }
         }
         false
