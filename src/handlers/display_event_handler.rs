@@ -1,7 +1,6 @@
 use super::DisplayEvent;
 use super::Manager;
 
-#[derive(Clone)]
 pub struct DisplayEventHandler {}
 
 impl DisplayEventHandler {
@@ -13,7 +12,17 @@ impl DisplayEventHandler {
      * process a collection of events, and apply them changes to a manager
      * returns true if changes need to be rendered
      */
-    pub fn process(&self, manager: &mut Manager, events: DisplayEvent) -> bool {
+    pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
+        match event {
+            _ => {}
+            //DisplayEvent::WindowCreate(w) => self.on_new_window(w),
+            //DisplayEvent::WindowDestroy(window_handle) => self.on_destroy_window(window_handle),
+            //DisplayEvent::ScreenCreate(s) => self.on_new_screen(s),
+            //DisplayEvent::FocusedWindow(window_handle) => {
+            //    self.update_focused_window(window_handle)
+            //}
+            //EventQueueItem::Command(command, value) => self.on_command(command, value),
+        }
         false
     }
 }

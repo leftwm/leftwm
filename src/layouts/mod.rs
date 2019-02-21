@@ -42,6 +42,7 @@ impl Layout for EvenHorizontal {
 
 #[test]
 fn should_fullscreen_a_single_window() {
+    use super::models::WindowHandle;
     let layout = EvenHorizontal {};
     let mut ws = Workspace::new();
     ws.height = 1000;
