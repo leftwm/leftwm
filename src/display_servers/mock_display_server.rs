@@ -1,8 +1,8 @@
-use super::config::Config;
-use super::event_queue::EventQueueItem;
-use super::utils;
+use super::DisplayEvent;
 use super::DisplayServer;
 use super::Screen;
+use super::Config;
+use super::Window;
 
 #[derive(Clone)]
 pub struct MockDisplayServer {
@@ -15,11 +15,11 @@ impl DisplayServer for MockDisplayServer {
     }
 
     //testing a couple mock event
-    fn get_next_events(&self) -> Vec<EventQueueItem> {
+    fn get_next_events(&self) -> Vec<DisplayEvent> {
         vec![]
     }
 
-    fn update_windows(&self, _: Vec<&utils::window::Window>) {}
+    fn update_windows(&self, _: Vec<&Window>) {}
 }
 
 impl MockDisplayServer {

@@ -1,11 +1,11 @@
 use super::utils;
-use super::xkeysym_lookup;
 use super::Config;
+use super::Window;
+use super::WindowHandle;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::ptr;
 use std::slice;
-use utils::window::WindowHandle;
 use x11_dl::xlib;
 
 pub struct XWrap {
@@ -146,7 +146,7 @@ impl XWrap {
     //    }
     //}
 
-    pub fn update_window(&self, window: &utils::window::Window) {
+    pub fn update_window(&self, window: &Window) {
         let mut changes = xlib::XWindowChanges {
             x: window.x(),
             y: window.y(),
@@ -171,8 +171,7 @@ impl XWrap {
         }
     }
 
-    pub fn update_visable(&self, window: &utils::window::Window) {
-        use utils::window::WindowHandle;
+    pub fn update_visable(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             unsafe {
                 if window.visable {
@@ -187,8 +186,7 @@ impl XWrap {
     /**
      * used to send and XConfigureEvent for a changed window to the xserver
      */
-    pub fn send_config(&self, window: &utils::window::Window) {
-        use utils::window::WindowHandle;
+    pub fn send_config(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let config = xlib::XConfigureEvent {
                 type_: xlib::ConfigureNotify,
@@ -316,7 +314,7 @@ impl XWrap {
         }
     }
 
-    pub fn subscribe_to_window_events(&self, window: &utils::window::Window) {
+    pub fn subscribe_to_window_events(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let mask = xlib::EnterWindowMask
                 | xlib::FocusChangeMask
@@ -369,8 +367,8 @@ impl XWrap {
 
             //grab all the key combos from the config file
             for kb in config.mapped_bindings() {
-                if let Some(keysym) = xkeysym_lookup::into_keysym(&kb.key) {
-                    let modmask = xkeysym_lookup::into_modmask(&kb.modifier);
+                if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
+                    let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
                     self.grab_keys(root, keysym, modmask);
                 }
             }

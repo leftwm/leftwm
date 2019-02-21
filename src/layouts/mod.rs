@@ -1,5 +1,5 @@
-use super::utils::window::*;
-use super::utils::workspace::Workspace;
+use super::models::Window;
+use super::models::Workspace;
 
 pub trait Layout: LayoutClone {
     fn update_windows(&self, workspace: &Workspace, windows: Vec<&mut Window>);

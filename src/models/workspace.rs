@@ -1,6 +1,6 @@
 use super::layouts::*;
-use super::screen::Screen;
-use super::window::Window;
+use super::Screen;
+use super::Window;
 
 #[derive(Clone)]
 pub struct Workspace {
@@ -57,7 +57,7 @@ impl Workspace {
     pub fn has_tag(&self, tag: &str) -> bool {
         for t in &self.tags {
             if tag == t {
-                return true
+                return true;
             }
         }
         false
@@ -68,8 +68,8 @@ impl Workspace {
      */
     pub fn is_displaying(&self, window: &Window) -> bool {
         for wd_t in &window.tags {
-            if self.has_tag( wd_t ) {
-                return true
+            if self.has_tag(wd_t) {
+                return true;
             }
         }
         false
@@ -92,7 +92,6 @@ impl Workspace {
         self.layout.update_windows(self, mine);
     }
 }
-
 
 fn mark_visable(windows: &mut Vec<&mut Window>) {
     for w in windows {

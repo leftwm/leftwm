@@ -1,39 +1,85 @@
-use super::display_servers::DisplayServer;
-use super::manager::Manager;
-use super::utils;
-use std::fs;
-use toml;
-use xdg;
-mod config_structs;
-pub use config_structs::*;
+mod keybind;
 
-pub fn apply_config<T: DisplayServer>(manager: &mut Manager<T>) {
-    // default to tags 1 to 9
-    for i in 1..10 {
-        manager.tags.push(i.to_string());
+use super::Command;
+use std::default::Default;
+
+pub use keybind::Keybind;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Config {
+    pub modkey: String,
+    pub keybind: Vec<Keybind>,
+}
+
+pub fn load() -> Config {
+    Config::default()
+}
+
+impl Config {
+    /*
+     * returns a collection of bindings with the mod key mapped
+     */
+    pub fn mapped_bindings(&self) -> Vec<Keybind> {
+        let mod_key: &String = &self.modkey.clone();
+        let old_binds: &Vec<Keybind> = &self.keybind;
+        old_binds
+            .iter()
+            .map(|k| {
+                let mut keymap = k.clone();
+                let old_mods: &Vec<String> = &k.modifier;
+                let mods = old_mods
+                    .iter()
+                    .map(|m| {
+                        if m == "modkey" {
+                            mod_key.clone()
+                        } else {
+                            m.clone()
+                        }
+                    })
+                    .collect();
+                keymap.modifier = mods;
+                keymap
+            })
+            .collect()
     }
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        let mut commands: Vec<Keybind> = vec![];
 
-pub fn parse_config() -> Config {
-    let path = config_path();
-    let config_contents = fs::read_to_string(path).expect("Something went wrong reading the file");
-    let config = toml::from_str::<Config>(&config_contents);
-    match config {
-        Ok(cfg) => cfg,
-        Err(_) => Config::default(),
-    }
-}
+        //Alt + Shift + Enter => Open A Shell
+        commands.push(Keybind {
+            command: Command::Execute,
+            value: Some("termite".to_owned()),
+            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+            key: "Enter".to_owned(),
+        });
 
-fn config_path() -> std::path::PathBuf {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("whatawm").unwrap();
-    let config_path = xdg_dirs
-        .place_config_file("config.toml")
-        .expect("cannot create configuration directory");
-    if !config_path.exists() {
-        let config = Config::default();
-        let toml = toml::to_string(&config).unwrap();
-        fs::write(&config_path, toml).expect("Unable to write config.toml file");
+        //add goto workspace
+        for i in 1..10 {
+            commands.push(Keybind {
+                command: Command::GotoTag,
+                value: Some(i.to_string()),
+                modifier: vec!["modkey".to_owned()],
+                key: i.to_string(),
+            });
+        }
+
+        //add move to workspace
+        for i in 1..10 {
+            commands.push(Keybind {
+                command: Command::MoveToTag,
+                value: Some(i.to_string()),
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: i.to_string(),
+            });
+        }
+
+        Config {
+            modkey: "Mod1".to_owned(), //alt
+            //modkey: "Mod4".to_owned(), //win key
+            keybind: commands,
+        }
     }
-    config_path
 }

@@ -1,21 +1,17 @@
-use super::event_queue::EventQueueItem;
-use super::utils::command::CommandBuilder;
-use super::utils::window::*;
+use super::DisplayEvent;
+use super::Window;
+use super::WindowHandle;
 use super::XWrap;
 use x11_dl::xlib;
 
-pub fn from_xevent(
-    xw: &XWrap,
-    command_builder: &CommandBuilder,
-    raw_event: xlib::XEvent,
-) -> Option<EventQueueItem> {
+pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
     match raw_event.get_type() {
         // new window is created
         xlib::MapRequest => {
             let event = xlib::XMapRequestEvent::from(raw_event);
             let name = xw.get_window_name(event.window);
             let w = Window::new(WindowHandle::XlibHandle(event.window), name);
-            Some(EventQueueItem::WindowCreate(w))
+            Some(DisplayEvent::WindowCreate(w))
         }
 
         //// window is deleted
@@ -33,7 +29,7 @@ pub fn from_xevent(
             //println!("DestroyNotify: {:#?}", event);
             let h = WindowHandle::XlibHandle(event.window);
             //let h = WindowHandle::XlibHandle(event.window + 2);
-            Some(EventQueueItem::WindowDestroy(h))
+            Some(DisplayEvent::WindowDestroy(h))
         }
 
         xlib::ClientMessage => {
@@ -51,7 +47,7 @@ pub fn from_xevent(
             let event = xlib::XEnterWindowEvent::from(raw_event);
             //println!("EnterNotify: {:#?} ", event);
             let h = WindowHandle::XlibHandle(event.window);
-            Some(EventQueueItem::FocusedWindow(h))
+            Some(DisplayEvent::FocusedWindow(h))
         }
         //xlib::LeaveNotify => {
         //    let event = xlib::XLeaveWindowEvent::from(raw_event);
@@ -73,7 +69,8 @@ pub fn from_xevent(
             let event = xlib::XKeyEvent::from(raw_event);
             //println!("KeyPress: {:#?} ", event);
             let sym = xw.keycode_to_keysym(event.keycode);
-            command_builder.from_xkeyevent(sym, event)
+            None
+            //command_builder.from_xkeyevent(sym, event)
         }
         //xlib::KeyRelease => {
         //    let event = xlib::XKeyEvent::from(raw_event);
@@ -92,7 +89,7 @@ pub fn from_xevent(
             let event = xlib::XFocusChangeEvent::from(raw_event);
             let h = WindowHandle::XlibHandle(event.window);
             //println!("FocusIn: {:#?} ", event);
-            Some(EventQueueItem::FocusedWindow(h))
+            Some(DisplayEvent::FocusedWindow(h))
         }
         //xlib::FocusOut => {
         //    println!("FocusOut");

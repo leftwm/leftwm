@@ -1,24 +1,19 @@
-mod config;
-mod display_servers;
-mod event_queue;
-mod layouts;
-mod manager;
-mod utils;
-use display_servers::*;
-use manager::Manager;
+extern crate whata;
 
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
+fn get_events<T: whata::DisplayServer>(ds: &T) -> Vec<whata::DisplayEvent>{
+    ds.get_next_events()
+}
 
 fn main() {
-    let mut manager: Manager<XlibDisplayServer> = Manager::new();
+    let mut manager = whata::Manager::default();
+    let event_handler = whata::DisplayEventHandler::new();
+    let display_server: whata::XlibDisplayServer = whata::DisplayServer::new(&manager.config);
 
     //main event loop
     loop {
-        let events = manager.ds.get_next_events();
+        let events = get_events(&display_server);
         for event in events {
-            manager.on_event(event)
+            let needs_update = event_handler.process(&mut manager, event);
         }
     }
 }
