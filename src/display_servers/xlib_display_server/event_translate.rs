@@ -69,8 +69,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             let event = xlib::XKeyEvent::from(raw_event);
             //println!("KeyPress: {:#?} ", event);
             let sym = xw.keycode_to_keysym(event.keycode);
-            None
-            //command_builder.from_xkeyevent(sym, event)
+            Some(DisplayEvent::KeyCombo(event.state, sym))
         }
         //xlib::KeyRelease => {
         //    let event = xlib::XKeyEvent::from(raw_event);

@@ -1,5 +1,7 @@
 use super::DisplayEvent;
 use super::Manager;
+use super::ScreenCreateHandler;
+use super::WindowHandler;
 
 pub struct DisplayEventHandler {}
 
@@ -14,8 +16,10 @@ impl DisplayEventHandler {
      */
     pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
         match event {
-            _ => {}
-            //DisplayEvent::WindowCreate(w) => self.on_new_window(w),
+            DisplayEvent::ScreenCreate(s) => ScreenCreateHandler::new().process(manager, s ),
+            DisplayEvent::WindowCreate(w) => WindowHandler::new().created(manager, w ),
+            _ => { false }
+            //DisplayEvent::WindowCreate(w) => ScreenCreateHandler::new().process(&mut manager, s )
             //DisplayEvent::WindowDestroy(window_handle) => self.on_destroy_window(window_handle),
             //DisplayEvent::ScreenCreate(s) => self.on_new_screen(s),
             //DisplayEvent::FocusedWindow(window_handle) => {
@@ -23,7 +27,6 @@ impl DisplayEventHandler {
             //}
             //EventQueueItem::Command(command, value) => self.on_command(command, value),
         }
-        false
     }
 }
 

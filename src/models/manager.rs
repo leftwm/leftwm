@@ -34,3 +34,38 @@ impl Default for Manager {
         }
     }
 }
+
+impl Manager {
+
+    /*
+     * return the currently focused workspace
+     */
+    pub fn focused_workspace(&mut self) -> Option<&mut Workspace> {
+        if self.focused_workspace_history.len() == 0 { return None }
+        let index = self.focused_workspace_history[0];
+        Some( &mut self.workspaces[index] )
+    }
+
+    /*
+     * return the currently focused tag
+     */
+    pub fn focused_tag(&mut self) -> Option<String> {
+        if self.focused_tag_history.len() == 0 { return None }
+        Some( self.focused_tag_history[0].clone() )
+    }
+
+    /*
+     * return the currently focused window
+     */
+    pub fn focused_window(&mut self) -> Option<&mut Window> {
+        if self.focused_window_history.len() == 0 { return None }
+        let handle = self.focused_window_history[0].clone();
+        for w in &mut self.windows {
+            if handle == w.handle {
+                return Some(w);
+            }
+        }
+        None
+    }
+
+}

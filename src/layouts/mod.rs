@@ -23,7 +23,7 @@ impl Clone for Box<Layout> {
 
 pub type DefaultLayout = EvenHorizontal;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EvenHorizontal {}
 impl Layout for EvenHorizontal {
     fn update_windows(&self, workspace: &Workspace, windows: Vec<&mut Window>) {
