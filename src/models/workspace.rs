@@ -79,23 +79,18 @@ impl Workspace {
      * given a list of windows, returns a sublist of the windows that this workspace is displaying
      */
     pub fn displayed_windows<'a>(&self, windows: Vec<&'a mut Window>) -> Vec<&'a mut Window> {
-        let found: Vec<&mut Window> = windows
+        windows
             .into_iter()
             .filter(|w| self.is_displaying(w))
-            .collect();
-        found
+            .collect::<Vec<&mut Window>>()
     }
 
     pub fn update_windows(&self, windows: Vec<&mut Window>) {
         let mut mine = self.displayed_windows(windows);
-        mark_visable(&mut mine);
+        for w in mine.iter_mut() {
+            w.visable = true;
+        }
         self.layout.update_windows(self, mine);
-    }
-}
-
-fn mark_visable(windows: &mut Vec<&mut Window>) {
-    for w in windows {
-        w.visable = true;
     }
 }
 
