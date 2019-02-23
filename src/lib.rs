@@ -1,5 +1,5 @@
 mod command;
-mod command_builder;
+//mod command_builder;
 mod config;
 mod display_event;
 mod display_servers;

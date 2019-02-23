@@ -13,8 +13,7 @@ pub struct Workspace {
     pub y: i32,
 }
 
-impl PartialEq for Workspace {
-    fn eq(&self, other: &Workspace) -> bool {
+impl PartialEq for Workspace { fn eq(&self, other: &Workspace) -> bool {
         self.name == other.name
     }
 }

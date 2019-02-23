@@ -17,6 +17,7 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     } else {
         window.tags = vec![manager.tags[0].clone()]
     }
-    manager.windows.push(window);
+    manager.windows.push(window.clone());
+    focus_handler::focus_window(manager, &window);
     true
 }
