@@ -1,32 +1,21 @@
-use super::DisplayEvent;
-use super::Manager;
-use super::ScreenCreateHandler;
-use super::WindowHandler;
+use super::*;
 
-pub struct DisplayEventHandler {}
-
-impl DisplayEventHandler {
-    pub fn new() -> DisplayEventHandler {
-        DisplayEventHandler {}
-    }
-
-    /*
-     * process a collection of events, and apply them changes to a manager
-     * returns true if changes need to be rendered
-     */
-    pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
-        match event {
-            DisplayEvent::ScreenCreate(s) => ScreenCreateHandler::new().process(manager, s ),
-            DisplayEvent::WindowCreate(w) => WindowHandler::new().created(manager, w ),
-            _ => { false }
-            //DisplayEvent::WindowCreate(w) => ScreenCreateHandler::new().process(&mut manager, s )
-            //DisplayEvent::WindowDestroy(window_handle) => self.on_destroy_window(window_handle),
-            //DisplayEvent::ScreenCreate(s) => self.on_new_screen(s),
-            //DisplayEvent::FocusedWindow(window_handle) => {
-            //    self.update_focused_window(window_handle)
-            //}
-            //EventQueueItem::Command(command, value) => self.on_command(command, value),
-        }
+/*
+ * process a collection of events, and apply them changes to a manager
+ * returns true if changes need to be rendered
+ */
+pub fn process(manager: &mut Manager, event: DisplayEvent) -> bool {
+    match event {
+        DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s ),
+        DisplayEvent::WindowCreate(w) => window_handler::created(manager, w ),
+        _ => { false }
+        //DisplayEvent::WindowCreate(w) => ScreenCreateHandler::new().process(&mut manager, s )
+        //DisplayEvent::WindowDestroy(window_handle) => self.on_destroy_window(window_handle),
+        //DisplayEvent::ScreenCreate(s) => self.on_new_screen(s),
+        //DisplayEvent::FocusedWindow(window_handle) => {
+        //    self.update_focused_window(window_handle)
+        //}
+        //EventQueueItem::Command(command, value) => self.on_command(command, value),
     }
 }
 

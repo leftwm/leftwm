@@ -1,7 +1,7 @@
+use super::Config;
 use super::DisplayEvent;
 use super::DisplayServer;
 use super::Screen;
-use super::Config;
 use super::Window;
 
 #[derive(Clone)]
@@ -20,14 +20,4 @@ impl DisplayServer for MockDisplayServer {
     }
 
     fn update_windows(&self, _: Vec<&Window>) {}
-}
-
-impl MockDisplayServer {
-    pub fn create_fake_screens(&self, count: i32) -> Vec<Screen> {
-        let mut screens = vec![];
-        for _ in 0..count {
-            screens.push(Screen::default());
-        }
-        screens
-    }
 }

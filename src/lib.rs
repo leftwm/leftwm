@@ -2,7 +2,6 @@ mod command;
 mod command_builder;
 mod config;
 mod display_event;
-//mod display_event_handler;
 mod display_servers;
 mod handlers;
 mod layouts;
@@ -16,7 +15,7 @@ pub use command::Command;
 pub use display_event::DisplayEvent;
 pub use display_servers::DisplayServer;
 pub use display_servers::XlibDisplayServer;
-pub use handlers::DisplayEventHandler;
+pub use handlers::display_event_handler;
 pub use models::Manager;
 pub use models::Window;
 
