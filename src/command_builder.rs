@@ -25,8 +25,8 @@ impl CommandBuilder {
         CommandBuilder { keybinds: lookup }
     }
 
-    pub fn find_keybind_for(&self, key: XKeysym, event: XKeyEvent) -> Option<&Keybind> {
-        let mut mask = event.state;
+    pub fn find_keybind_for(&self, m: ModMask, key: XKeysym) -> Option<&Keybind> {
+        let mut mask = m;
         mask &= !(xlib::Mod2Mask | xlib::LockMask);
         mask &= xlib::ShiftMask
             | xlib::ControlMask
@@ -41,10 +41,11 @@ impl CommandBuilder {
     //Command((Command, Option<String>)),
     pub fn from_xkeyevent(
         &self,
+        mask: ModMask,
         key: XKeysym,
-        event: XKeyEvent,
+        //event: XKeyEvent,
     ) -> Option<(Command, Option<String>)> {
-        let keybind = self.find_keybind_for(key, event);
+        let keybind = self.find_keybind_for(mask, key);
         match keybind {
             Some(bind) => {
                 let cmd = bind.command.clone();

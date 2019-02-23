@@ -21,3 +21,20 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     focus_handler::focus_window(manager, &window);
     true
 }
+
+/*
+ * process a collection of events, and apply them changes to a manager
+ * returns true if changes need to be rendered
+ */
+pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
+    let start_size = manager.windows.len();
+    manager.windows = manager
+        .windows
+        .iter()
+        .filter(|w| &w.handle != handle)
+        .map(|w| w.clone())
+        .collect();
+    //if we removed the focused window, focus the last window
+    focus_handler::focus_last_window_that_exists(manager);
+    start_size != manager.windows.len()
+}

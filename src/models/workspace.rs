@@ -1,6 +1,7 @@
 use super::layouts::*;
 use super::Screen;
 use super::Window;
+use std::fmt;
 
 #[derive(Clone)]
 pub struct Workspace {
@@ -13,7 +14,14 @@ pub struct Workspace {
     pub y: i32,
 }
 
-impl PartialEq for Workspace { fn eq(&self, other: &Workspace) -> bool {
+impl fmt::Debug for Workspace {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Workspace {{ name: {}, tags: {:?} }}", self.name, self.tags)
+    }
+}
+
+impl PartialEq for Workspace {
+    fn eq(&self, other: &Workspace) -> bool {
         self.name == other.name
     }
 }

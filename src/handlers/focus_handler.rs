@@ -3,11 +3,11 @@ use super::*;
 /*
  * marks a workspace as the focused workspace
  */
-pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) {
+pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool{
     //no new history for if no change
     if let Some(fws) = manager.focused_workspace() {
         if fws.name == workspace.name {
-            return;
+            return false;
         }
     }
     //clean old ones
@@ -23,17 +23,31 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) {
         index += 1;
     }
     //make sure this workspaces tag is focused
-    workspace.tags.iter().for_each(|t| focus_tag(manager, t))
+    workspace.tags.iter().for_each(|t| { focus_tag(manager, t); });
+    true
 }
 
 /*
  * marks a window as the focused window
  */
-pub fn focus_window(manager: &mut Manager, window: &Window) {
+pub fn focus_window_by_handle(manager: &mut Manager, handle: &WindowHandle) -> bool{
+    let found: Vec<Window> = manager
+        .windows
+        .iter()
+        .filter(|w| &w.handle == handle)
+        .map(|w| w.clone())
+        .collect();
+    if found.len() == 1 {
+        return focus_window(manager, &found[0])
+    }
+    false
+}
+
+pub fn focus_window(manager: &mut Manager, window: &Window) -> bool {
     //no new history for if no change
     if let Some(fw) = manager.focused_window() {
         if fw.handle == window.handle {
-            return;
+            return false;
         }
     }
     //clean old ones
@@ -45,17 +59,33 @@ pub fn focus_window(manager: &mut Manager, window: &Window) {
         .focused_window_history
         .push_front(window.handle.clone());
     //make sure this windows tag is focused
-    window.tags.iter().for_each(|t| focus_tag(manager, t))
+    window.tags.iter().for_each(|t| { focus_tag(manager, t); });
+    true
+}
+
+/*
+ * loops over the history and focuses the last window that still exists
+ */
+pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
+    let history = manager.focused_window_history.clone();
+    for handle in history{
+        for w in manager.windows.clone(){
+            if w.handle == handle{
+                return focus_window(manager, &w);
+            }
+        }
+    }
+    false
 }
 
 /*
  * marks a tag as the focused tag
  */
-pub fn focus_tag(manager: &mut Manager, tag: &String) {
+pub fn focus_tag(manager: &mut Manager, tag: &String) -> bool {
     //no new history for if no change
     if let Some(t) = manager.focused_tag() {
         if &t == tag {
-            return;
+            return false;
         }
     }
     //clean old ones
@@ -71,7 +101,8 @@ pub fn focus_tag(manager: &mut Manager, tag: &String) {
         .filter(|w| w.has_tag(tag))
         .map(|w| w.clone())
         .collect();
-    to_focus.iter().for_each(|w| focus_workspace(manager, &w));
+    to_focus.iter().for_each(|w| { focus_workspace(manager, &w); });
+    true
 }
 
 #[test]

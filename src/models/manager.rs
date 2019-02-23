@@ -1,17 +1,15 @@
-use super::config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
 use super::Workspace;
 use std::collections::VecDeque;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub tags: Vec<String>, //list of all known tags
-    pub config: config::Config,
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
@@ -19,7 +17,6 @@ pub struct Manager {
 
 impl Default for Manager {
     fn default() -> Manager {
-        let config = config::load();
         Manager {
             windows: Vec::new(),
             screens: Vec::new(),
@@ -28,7 +25,6 @@ impl Default for Manager {
             focused_workspace_history: VecDeque::new(),
             focused_window_history: VecDeque::new(),
             focused_tag_history: VecDeque::new(),
-            config,
         }
     }
 }
