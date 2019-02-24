@@ -10,9 +10,7 @@ fn main() {
     let mut manager = Manager::default();
     let config = config::load();
     let display_server: XlibDisplayServer = DisplayServer::new(&config);
-    let handler = DisplayEventHandler {
-        config: config
-    };
+    let handler = DisplayEventHandler { config: config };
 
     //main event loop
     loop {

@@ -14,8 +14,7 @@ impl DisplayEventHandler{
      * returns true if changes need to be rendered
      */
     pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
-        //println!("EVENT: {:?}", event);
-        //println!("state: {:?}", manager);
+        println!("EVENT: {:?}", event);
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s ),
             DisplayEvent::WindowCreate(w) => window_handler::created(manager, w ),
@@ -26,15 +25,18 @@ impl DisplayEventHandler{
                 let build = CommandBuilder::new(&self.config);
                 let command = build.from_xkeyevent( mod_mask, xkeysym );
                 if let Some((cmd, val)) = command {
-                    return command_handler::process(manager, cmd, val);
+                    command_handler::process(manager, cmd, val)
+                } else {
+                    false
                 }
-                false
             },
+            //_ => false,
         };
 
         if update_needed {
             self.update_windows(manager);
         }
+        println!("state: {:?}", manager);
 
         update_needed
     }
@@ -45,6 +47,7 @@ impl DisplayEventHandler{
      * based on the new state of the WM
      */
     fn update_windows(&self, manager: &mut Manager) {
+        println!("in update window");
         let all_windows = &mut manager.windows;
         let all: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();
         for w in all {

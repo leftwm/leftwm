@@ -58,14 +58,12 @@ impl XlibDisplayServer {
         let mut events = vec![];
         // tell manager about existing screens
         for s in self.xw.get_screens() {
-            println!("FOUND SCREEN!!");
             let screen = Screen::from(&s);
             let e = DisplayEvent::ScreenCreate(screen);
             events.push(e);
         }
         // tell manager about existing windows
         for w in &self.find_all_windows() {
-            println!("FOUND WINDOW!!");
             self.xw.subscribe_to_window_events(w);
             let e = DisplayEvent::WindowCreate(w.clone());
             events.push(e);
