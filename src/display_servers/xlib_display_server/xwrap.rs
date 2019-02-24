@@ -1,5 +1,6 @@
 use super::utils;
 use super::Config;
+use super::Screen;
 use super::Window;
 use super::WindowHandle;
 use std::ffi::CString;
@@ -46,7 +47,29 @@ impl XWrap {
     }
 
     //returns all the screens the display
-    pub fn get_screens(&self) -> Vec<xlib::Screen> {
+    pub fn get_screens(&self) -> Vec<Screen> {
+        use x11_dl::xinerama::XineramaScreenInfo;
+        use x11_dl::xinerama::Xlib;
+        let xlib = Xlib::open().unwrap();
+        let xinerama = unsafe { (xlib.XineramaIsActive)(self.display) } > 0;
+        if xinerama {
+            
+            let mut screen_count = 0;
+            let info_array_raw = unsafe { (xlib.XineramaQueryScreens)(self.display, &mut screen_count) };
+            //take ownership of the array
+            let xinerama_infos: &[XineramaScreenInfo] = unsafe{ slice::from_raw_parts(info_array_raw, screen_count as usize) };
+            xinerama_infos.iter().map(|i| Screen::from(i) ).collect()
+        } 
+        else {
+            //NON-XINERAMA
+            let roots: Vec<xlib::XWindowAttributes> = self.get_roots().iter().map(|w| self.get_window_attrs(*w).unwrap() ).collect();
+            roots.iter().map(|w| Screen::from(w) ).collect()
+        }
+
+    }
+
+    //returns all the screens the display
+    pub fn get_xscreens(&self) -> Vec<xlib::Screen> {
         let mut screens = Vec::new();
         let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
         for screen_num in 0..(screen_count) {
@@ -58,7 +81,7 @@ impl XWrap {
 
     //returns all the roots the display
     pub fn get_roots(&self) -> Vec<xlib::Window> {
-        self.get_screens()
+        self.get_xscreens()
             .into_iter()
             .map(|mut s| unsafe { (self.xlib.XRootWindowOfScreen)(&mut s) })
             .collect()

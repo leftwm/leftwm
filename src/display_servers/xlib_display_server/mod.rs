@@ -57,8 +57,7 @@ impl XlibDisplayServer {
     fn initial_events(&self) -> Vec<DisplayEvent> {
         let mut events = vec![];
         // tell manager about existing screens
-        for s in self.xw.get_screens() {
-            let screen = Screen::from(&s);
+        for screen in self.xw.get_screens() {
             let e = DisplayEvent::ScreenCreate(screen);
             events.push(e);
         }
