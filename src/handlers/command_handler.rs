@@ -2,6 +2,7 @@ use super::*;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
+
         Command::MoveToTag => {
             if let Some(tag) = val {
                 if let Some(window) = manager.focused_window() {
@@ -15,16 +16,10 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
         Command::GotoTag => {
             if let Some(tag) = val {
-                if !manager.tags.contains(&tag) {
-                    manager.tags.push(tag.clone());
-                }
-                if let Some(workspace) = manager.focused_workspace() {
-                    workspace.show_tag(tag.clone());
-                    focus_handler::focus_tag(manager, &tag);
-                    return true;
-                }
+                goto_tag_handler::process(manager, tag)
+            } else {
+                false
             }
-            true
         }
 
         Command::Execute => false,

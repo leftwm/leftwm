@@ -16,7 +16,11 @@ pub struct Workspace {
 
 impl fmt::Debug for Workspace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Workspace {{ name: {}, tags: {:?} }}", self.name, self.tags)
+        write!(
+            f,
+            "Workspace {{ name: {}, tags: {:?}, x: {}, y: {} }}",
+            self.name, self.tags, self.x, self.y
+        )
     }
 }
 
@@ -52,8 +56,8 @@ impl Workspace {
             tags: vec![],
             height: screen.height,
             width: screen.width,
-            x: 0,
-            y: 0,
+            x: screen.x,
+            y: screen.y,
         }
     }
 
@@ -97,7 +101,7 @@ impl Workspace {
         for w in mine.iter_mut() {
             w.visable = true;
         }
-        self.layout.update_windows(self, mine);
+        self.layout.update_windows(self, &mut mine);
     }
 }
 

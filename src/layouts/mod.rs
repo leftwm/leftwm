@@ -2,7 +2,7 @@ use super::models::Window;
 use super::models::Workspace;
 
 pub trait Layout: LayoutClone {
-    fn update_windows(&self, workspace: &Workspace, windows: Vec<&mut Window>);
+    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>);
 }
 
 pub trait LayoutClone {
@@ -26,11 +26,11 @@ pub type DefaultLayout = EvenHorizontal;
 #[derive(Clone, Debug)]
 pub struct EvenHorizontal {}
 impl Layout for EvenHorizontal {
-    fn update_windows(&self, workspace: &Workspace, windows: Vec<&mut Window>) {
+    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         let width_f = workspace.width as f32 / windows.len() as f32;
         let width = width_f.floor() as i32;
         let mut x = 0;
-        for w in windows {
+        for w in windows.iter_mut() {
             w.set_height(workspace.height);
             w.set_width(width);
             w.set_x(workspace.x + x);
@@ -49,8 +49,8 @@ fn should_fullscreen_a_single_window() {
     ws.width = 2000;
     let mut w = Window::new(WindowHandle::MockHandle(1), None);
     w.border = 0;
-    let windows = vec![&mut w];
-    layout.update_windows(&ws, windows);
+    let mut windows = vec![&mut w];
+    layout.update_windows(&ws, &mut windows );
     assert!(
         w.height() == 1000,
         "window was not size to the correct height"
