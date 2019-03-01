@@ -66,4 +66,28 @@ impl Manager {
         }
         None
     }
+
+    pub fn workspaces_display(&self) -> String {
+        let list: Vec<String> = self
+            .workspaces
+            .iter()
+            .map(|w| {
+                let tags = w.tags.join(",");
+                format!("[{}]", tags)
+            })
+            .collect();
+        list.join(" ")
+    }
+
+    pub fn windows_display(&self) -> String {
+        let list: Vec<String> = self
+            .windows
+            .iter()
+            .map(|w| {
+                let tags = w.tags.join(",");
+                format!("[{:?}:{}]", w.handle, tags)
+            })
+            .collect();
+        list.join(" ")
+    }
 }

@@ -1,6 +1,6 @@
-extern crate whata;
+extern crate leftwm;
 
-use whata::*;
+use leftwm::*;
 
 fn get_events<T: DisplayServer>(ds: &T) -> Vec<DisplayEvent> {
     ds.get_next_events()

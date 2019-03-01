@@ -1,15 +1,15 @@
 [package]
-name = "whatawm"
+name = "leftwm"
 version = "0.1.0"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 edition = "2018"
 
 [lib]
-name = "whata"
+name = "leftwm"
 path = "src/lib.rs"
 
 [[bin]]
-name = "whatawm"
+name = "leftwm"
 path = "src/wm.rs"
 
 [dependencies]

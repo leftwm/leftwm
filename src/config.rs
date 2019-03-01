@@ -51,9 +51,17 @@ impl Default for Config {
         //Alt + Shift + Enter => Open A Shell
         commands.push(Keybind {
             command: Command::Execute,
+            value: Some("dmenu".to_owned()),
+            modifier: vec!["modkey".to_owned()],
+            key: "p".to_owned(),
+        });
+
+        //Alt + Shift + Enter => Open A Shell
+        commands.push(Keybind {
+            command: Command::Execute,
             value: Some("termite".to_owned()),
             modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
-            key: "Enter".to_owned(),
+            key: "Return".to_owned(),
         });
 
         //add goto workspace

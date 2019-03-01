@@ -49,7 +49,7 @@ impl CommandBuilder {
         match keybind {
             Some(bind) => {
                 let cmd = bind.command.clone();
-                let val = Some(bind.key.clone());
+                let val = bind.value.clone();
                 Some((cmd, val))
             }
             None => None,

@@ -2,7 +2,6 @@ use super::*;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
-
         Command::MoveToTag => {
             if let Some(tag) = val {
                 if let Some(window) = manager.focused_window() {
@@ -22,7 +21,15 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
         }
 
-        Command::Execute => false,
+        Command::Execute => {
+            if let Some(cmd) = val {
+                println!("{}", cmd);
+                false
+            } else {
+                println!("NO VAL");
+                false
+            }
+        }
         Command::CloseWindow => false,
         Command::SwapTags => false,
     }

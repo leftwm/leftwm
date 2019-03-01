@@ -1,14 +1,24 @@
 use super::*;
 
 pub fn process(manager: &mut Manager, tag: String) -> bool {
+    //if we are going to a new tag record it in the list of avalable tags
     if !manager.tags.contains(&tag) {
         manager.tags.push(tag.clone());
     }
-    if let Some(workspace) = manager.focused_workspace() {
-        workspace.show_tag(tag.clone());
-        focus_handler::focus_tag(manager, &tag);
-        return true;
+    let new_tags = vec![tag.clone()];
+    //no focus safey check
+    if manager.focused_workspace().is_none() {
+        return false;
     }
+    let old_tags = manager.focused_workspace().unwrap().tags.clone(); 
+    for wp in &mut manager.workspaces {
+        if wp.tags == new_tags {
+            wp.tags = old_tags.clone();
+        }
+    }
+    let active_workspace = manager.focused_workspace().unwrap();
+    active_workspace.tags = new_tags;
+    focus_handler::focus_tag(manager, &tag );
     true
 }
 
