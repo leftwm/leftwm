@@ -21,7 +21,7 @@ impl Clone for Box<Layout> {
     }
 }
 
-pub type DefaultLayout = EvenHorizontal;
+pub type DefaultLayout = EvenVertical;
 
 #[derive(Clone, Debug)]
 pub struct EvenHorizontal {}
@@ -40,6 +40,23 @@ impl Layout for EvenHorizontal {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct EvenVertical {}
+impl Layout for EvenVertical {
+    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+        let height_f = workspace.height as f32 / windows.len() as f32;
+        let height = height_f.floor() as i32;
+        let mut y = 0;
+        for w in windows.iter_mut() {
+            w.set_height(height);
+            w.set_width(workspace.width);
+            w.set_x(workspace.x);
+            w.set_y(workspace.y + y);
+            y += height;
+        }
+    }
+}
+
 #[test]
 fn should_fullscreen_a_single_window() {
     use super::models::WindowHandle;
@@ -50,7 +67,7 @@ fn should_fullscreen_a_single_window() {
     let mut w = Window::new(WindowHandle::MockHandle(1), None);
     w.border = 0;
     let mut windows = vec![&mut w];
-    layout.update_windows(&ws, &mut windows );
+    layout.update_windows(&ws, &mut windows);
     assert!(
         w.height() == 1000,
         "window was not size to the correct height"
