@@ -80,10 +80,11 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         //    println!("ButtonRelease");
         //    None
         //}
-        //xlib::MotionNotify => {
-        //    {};
-        //    None
-        //}
+        xlib::MotionNotify => {
+            let event = xlib::XMotionEvent::from(raw_event);
+            let h = WindowHandle::XlibHandle(event.window);
+            Some(DisplayEvent::Movement(h, event.x_root, event.y_root ))
+        }
         xlib::FocusIn => {
             let event = xlib::XFocusChangeEvent::from(raw_event);
             let h = WindowHandle::XlibHandle(event.window);

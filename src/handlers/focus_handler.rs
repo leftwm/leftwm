@@ -74,6 +74,15 @@ fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
     true
 }
 
+
+pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bool {
+    manager.workspaces.iter_mut().any(|w| {
+        if w.contains_point(x,y){
+        }
+        false
+    })
+}
+
 /*
  * loops over the history and focuses the last window that still exists
  */

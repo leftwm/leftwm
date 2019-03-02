@@ -2,6 +2,7 @@ use super::{models::Screen, models::Window, models::WindowHandle, ModMask, XKeys
 
 #[derive(Debug)]
 pub enum DisplayEvent {
+    Movement(WindowHandle, i32, i32),
     KeyCombo(ModMask, XKeysym),
     WindowCreate(Window),
     WindowDestroy(WindowHandle),

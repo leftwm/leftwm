@@ -5,7 +5,8 @@ use std::fmt;
 
 #[derive(Clone)]
 pub struct Workspace {
-    pub name: String,
+    pub id: i32,
+    //pub name: String,
     layout: Box<Layout>,
     pub tags: Vec<String>,
     pub height: i32,
@@ -18,22 +19,22 @@ impl fmt::Debug for Workspace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Workspace {{ name: {}, tags: {:?}, x: {}, y: {} }}",
-            self.name, self.tags, self.x, self.y
+            "Workspace {{ id: {}, tags: {:?}, x: {}, y: {} }}",
+            self.id, self.tags, self.x, self.y
         )
     }
 }
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Workspace) -> bool {
-        self.name == other.name
+        self.id == other.id
     }
 }
 
 impl Default for Workspace {
     fn default() -> Self {
         Workspace {
-            name: "".to_owned(),
+            id: -1,
             layout: Box::new(DefaultLayout {}),
             tags: vec![],
             height: 600,
@@ -63,6 +64,10 @@ impl Workspace {
 
     pub fn show_tag(&mut self, tag: String) {
         self.tags = vec![tag.clone()];
+    }
+
+    pub fn contains_point(&self, x: i32, y: i32) -> bool {
+        self.x > x && self.y > y && (self.x + self.width) < x && (self.y + self.height) < y
     }
 
     pub fn has_tag(&self, tag: &str) -> bool {

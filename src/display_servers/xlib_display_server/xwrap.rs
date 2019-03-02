@@ -53,19 +53,30 @@ impl XWrap {
         let xlib = Xlib::open().unwrap();
         let xinerama = unsafe { (xlib.XineramaIsActive)(self.display) } > 0;
         if xinerama {
-            
+            let root = self.get_default_root();
             let mut screen_count = 0;
-            let info_array_raw = unsafe { (xlib.XineramaQueryScreens)(self.display, &mut screen_count) };
+            let info_array_raw =
+                unsafe { (xlib.XineramaQueryScreens)(self.display, &mut screen_count) };
             //take ownership of the array
-            let xinerama_infos: &[XineramaScreenInfo] = unsafe{ slice::from_raw_parts(info_array_raw, screen_count as usize) };
-            xinerama_infos.iter().map(|i| Screen::from(i) ).collect()
-        } 
-        else {
+            let xinerama_infos: &[XineramaScreenInfo] =
+                unsafe { slice::from_raw_parts(info_array_raw, screen_count as usize) };
+            xinerama_infos
+                .iter()
+                .map(|i| {
+                    let mut s = Screen::from(i);
+                    s.root = root.clone();
+                    s
+                })
+                .collect()
+        } else {
             //NON-XINERAMA
-            let roots: Vec<xlib::XWindowAttributes> = self.get_roots().iter().map(|w| self.get_window_attrs(*w).unwrap() ).collect();
-            roots.iter().map(|w| Screen::from(w) ).collect()
+            let roots: Vec<xlib::XWindowAttributes> = self
+                .get_roots()
+                .iter()
+                .map(|w| self.get_window_attrs(*w).unwrap())
+                .collect();
+            roots.iter().map(|w| Screen::from(w)).collect()
         }
-
     }
 
     //returns all the screens the display
@@ -73,10 +84,16 @@ impl XWrap {
         let mut screens = Vec::new();
         let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
         for screen_num in 0..(screen_count) {
-            let screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_num) };
+            let mut screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_num) };
             screens.push(screen);
         }
         screens
+    }
+
+    //returns all the screens the display
+    pub fn get_default_root(&self) -> WindowHandle {
+        let root = unsafe { (self.xlib.XDefaultRootWindow)(self.display) };
+        WindowHandle::XlibHandle(root)
     }
 
     //returns all the roots the display

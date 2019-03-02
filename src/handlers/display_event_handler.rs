@@ -29,15 +29,22 @@ impl DisplayEventHandler {
                     false
                 }
             }
+            DisplayEvent::Movement(handle, x, y) => {
+                if manager.screens.iter().any(|s| s.root == handle) {
+                    focus_handler::focus_workspace_under_cursor(manager, x, y)
+                } else {
+                    false
+                }
+            }
             //_ => false,
         };
 
         if update_needed {
             self.update_windows(manager);
+            println!("WINDOWS: {}", manager.windows_display() );
+            println!("WORKSPACES: {}", manager.workspaces_display() );
         }
 
-        println!("WINDOWS: {}", manager.windows_display() );
-        println!("WORKSPACES: {}", manager.workspaces_display() );
 
         //println!("state: {:?}", manager);
         //println!("state: {:?}", manager.windows);
