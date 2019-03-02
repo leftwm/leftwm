@@ -17,7 +17,14 @@ fn main() {
         let events = get_events(&display_server);
         for event in events {
             let needs_update = handler.process(&mut manager, event);
-            //println!("state: {:?}", manager);
+
+            while manager.actions.len() > 0 {
+                if let Some(act) = manager.actions.pop_front(){
+                    display_server.execute_action(act);
+                }
+            }
+
+            //if we need to update the displayed state
             if needs_update {
                 let windows: Vec<&Window> = (&manager.windows).iter().map(|w| w).collect();
                 display_server.update_windows(windows);

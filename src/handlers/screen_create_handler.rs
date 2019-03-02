@@ -7,7 +7,7 @@ use super::*;
 pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     let tag_index = manager.workspaces.len();
     let mut workspace = Workspace::from_screen(&screen);
-    workspace.name = tag_index.to_string();
+    workspace.id = tag_index as i32;
     //make sure are enough tags for this new screen
     if manager.tags.len() <= tag_index {
         manager.tags.push((tag_index + 1).to_string());

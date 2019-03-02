@@ -21,7 +21,8 @@ impl Clone for Box<Layout> {
     }
 }
 
-pub type DefaultLayout = EvenVertical;
+//pub type DefaultLayout = EvenVertical;
+pub type DefaultLayout = EvenHorizontal;
 
 #[derive(Clone, Debug)]
 pub struct EvenHorizontal {}

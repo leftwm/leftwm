@@ -6,7 +6,7 @@ use super::*;
 pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     //no new history for if no change
     if let Some(fws) = manager.focused_workspace() {
-        if fws.name == workspace.name {
+        if fws.id == workspace.id {
             return false;
         }
     }
@@ -17,7 +17,7 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     //add this focus to the history
     let mut index = 0;
     for ws in &manager.workspaces {
-        if ws.name == workspace.name {
+        if ws.id == workspace.id {
             manager.focused_workspace_history.push_front(index);
         }
         index += 1;
@@ -74,13 +74,28 @@ fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
     true
 }
 
-
 pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bool {
-    manager.workspaces.iter_mut().any(|w| {
-        if w.contains_point(x,y){
+    let mut focused_id = -1;
+    if let Some(f) = manager.focused_workspace() {
+        focused_id = f.id.clone();
+    }
+    println!("id: {}, {}, {}", focused_id, x,y);
+    let to_focus: Option<Workspace> = {
+        let mut f: Option<Workspace> = None;
+        for w in &manager.workspaces {
+            if w.contains_point(x, y) {
+                if w.id != focused_id {
+                    f = Some(w.clone());
+                }
+                break;
+            }
         }
-        false
-    })
+        f.clone()
+    };
+    if let Some(w) = to_focus {
+        return focus_workspace(manager, &w);
+    }
+    false
 }
 
 /*
@@ -135,7 +150,7 @@ fn focusing_a_workspace_should_make_it_active() {
     let expected = manager.workspaces[0].clone();
     focus_workspace(&mut manager, &expected);
     let actual = manager.focused_workspace().unwrap();
-    assert_eq!("0", actual.name);
+    assert_eq!(0, actual.id);
 }
 
 #[test]
@@ -206,8 +221,8 @@ fn focusing_a_tag_should_focus_its_workspace() {
     screen_create_handler::process(&mut manager, Screen::default());
     focus_tag(&mut manager, &"1".to_owned());
     let actual = manager.focused_workspace().unwrap();
-    let expected = "0".to_owned();
-    assert_eq!(actual.name, expected);
+    let expected = 0;
+    assert_eq!(actual.id, expected);
 }
 
 #[test]
@@ -244,7 +259,7 @@ fn focusing_a_window_should_focus_workspace() {
     let mut window = Window::new(WindowHandle::MockHandle(1), None);
     window.tag("2".to_owned());
     focus_window(&mut manager, &window);
-    let actual = manager.focused_workspace().unwrap().name.clone();
-    let expected = manager.workspaces[1].name.clone();
+    let actual = manager.focused_workspace().unwrap().id.clone();
+    let expected = manager.workspaces[1].id.clone();
     assert_eq!(expected, actual);
 }

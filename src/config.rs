@@ -51,7 +51,7 @@ impl Default for Config {
         //Alt + Shift + Enter => Open A Shell
         commands.push(Keybind {
             command: Command::Execute,
-            value: Some("dmenu".to_owned()),
+            value: Some("dmenu_run".to_owned()),
             modifier: vec!["modkey".to_owned()],
             key: "p".to_owned(),
         });
@@ -62,6 +62,14 @@ impl Default for Config {
             value: Some("termite".to_owned()),
             modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
             key: "Return".to_owned(),
+        });
+
+        //Alt + Shift + q => kill focused window
+        commands.push(Keybind {
+            command: Command::CloseWindow,
+            value: None,
+            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+            key: "q".to_owned(),
         });
 
         //add goto workspace
@@ -85,8 +93,8 @@ impl Default for Config {
         }
 
         Config {
-            modkey: "Mod1".to_owned(), //alt
-            //modkey: "Mod4".to_owned(), //win key
+            //modkey: "Mod1".to_owned(), //alt
+            modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
     }

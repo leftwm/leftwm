@@ -27,7 +27,7 @@ impl fmt::Debug for Workspace {
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Workspace) -> bool {
-        self.id == other.id
+        self.id != -1 && self.id == other.id
     }
 }
 
@@ -52,7 +52,7 @@ impl Workspace {
 
     pub fn from_screen(screen: &Screen) -> Workspace {
         Workspace {
-            name: "".to_owned(),
+            id: -1,
             layout: Box::new(DefaultLayout {}),
             tags: vec![],
             height: screen.height,

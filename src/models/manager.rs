@@ -1,7 +1,8 @@
-use super::Screen;
-use super::Window;
-use super::WindowHandle;
-use super::Workspace;
+use crate::display_action::DisplayAction;
+use crate::models::Screen;
+use crate::models::Window;
+use crate::models::WindowHandle;
+use crate::models::Workspace;
 use std::collections::VecDeque;
 
 #[derive(Clone, Debug)]
@@ -13,6 +14,7 @@ pub struct Manager {
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
+    pub actions: VecDeque<DisplayAction>,
 }
 
 impl Default for Manager {
@@ -25,6 +27,7 @@ impl Default for Manager {
             focused_workspace_history: VecDeque::new(),
             focused_window_history: VecDeque::new(),
             focused_tag_history: VecDeque::new(),
+            actions: VecDeque::new(),
         }
     }
 }
@@ -68,16 +71,16 @@ impl Manager {
     }
 
     pub fn workspaces_display(&mut self) -> String {
-        let mut focused_name = "-1".to_owned();
+        let mut focused_id = -1;
         if let Some(f) = self.focused_workspace() {
-            focused_name = f.name.clone();
+            focused_id = f.id.clone();
         }
         let list: Vec<String> = self
             .workspaces
             .iter()
             .map(|w| {
                 let tags = w.tags.join(",");
-                if w.name == focused_name {
+                if w.id == focused_id {
                     format!("({})", tags)
                 } else {
                     format!("[{}]", tags)

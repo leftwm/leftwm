@@ -1,13 +1,15 @@
-use super::utils;
-use super::Config;
-use super::DisplayEvent;
-use super::DisplayServer;
-use super::Screen;
-use super::Window;
-use super::WindowHandle;
+use crate::utils;
+use crate::config::Config;
+use crate::DisplayEvent;
+use crate::DisplayServer;
+use crate::models::Screen;
+use crate::models::Window;
+use crate::models::WindowHandle;
+use crate::display_action::DisplayAction;
 use std::sync::Once;
 
 mod event_translate;
+mod xatom;
 mod xwrap;
 use xwrap::XWrap;
 
@@ -48,6 +50,14 @@ impl DisplayServer for XlibDisplayServer {
         }
         events
     }
+
+    fn execute_action(&self, act: DisplayAction) -> Result<(), Box<std::error::Error>> {
+        match act {
+            DisplayAction::KillWindow(w) => self.xw.kill_window(w)
+        }
+        Ok(())
+    }
+
 }
 
 impl XlibDisplayServer {

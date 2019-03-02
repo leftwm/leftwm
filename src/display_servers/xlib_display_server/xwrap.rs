@@ -3,6 +3,7 @@ use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
+use super::xatom::XAtom;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::ptr;
@@ -12,6 +13,7 @@ use x11_dl::xlib;
 pub struct XWrap {
     xlib: xlib::Xlib,
     display: *mut xlib::Display,
+    atoms: XAtom,
 }
 
 impl XWrap {
@@ -19,14 +21,14 @@ impl XWrap {
         let xlib = xlib::Xlib::open().unwrap();
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
-        let xw = XWrap { xlib, display };
 
-        ////On xlib error
-        //let error_q = xw.q.clone();
-        //let lam :ErrorCallback =  |_: *mut xlib::Display, er: *mut xlib::XErrorEvent|  {
-        //    let _ = error_q.lock();
-        //    0
-        //};
+        let atoms = XAtom::new(&xlib, display);
+
+        let xw = XWrap { 
+            xlib, 
+            display,
+            atoms,
+        };
 
         extern "C" fn on_error_from_xlib(
             _: *mut xlib::Display,
@@ -347,6 +349,34 @@ impl XWrap {
     //    };
     //    return Err(())
     //}
+    pub fn kill_window(&self, h: WindowHandle) {
+        if let WindowHandle::XlibHandle(handle) = h {
+            let mut msg: xlib::XClientMessageEvent = unsafe { std::mem::uninitialized() };
+            msg.type_ = xlib::ClientMessage;
+            msg.window = handle;
+            msg.message_type = self.atoms.WMProtocols;
+            msg.format = 32;
+            msg.data.set_long( 0, self.atoms.WMDelete as i64 );
+            //msg.data.longs[0] = self.atoms.WMDelete as i64;
+            //msg.data.longs[0] = proto;
+            //msg.data.longs[1] = current_time;
+
+
+            //let msg = xlib::XClientMessageEvent {
+            //    type_: xlib::ClientMessage,
+            //    serial: c_ulong,
+            //    send_event: Bool,
+            //    display: *mut Display,
+            //    window: Window,
+            //    message_type: Atom,
+            //    format: c_int,
+            //    data: ClientMessageData,
+            //};
+            let mut event: xlib::XEvent = xlib::XClientMessageEvent::into(msg);
+            let mask = xlib::NoEventMask;
+            unsafe{ (self.xlib.XSendEvent)(self.display, handle, 0, mask, &mut event); }
+        }
+    }
 
     pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long) {
         unsafe {

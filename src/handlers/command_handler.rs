@@ -1,4 +1,6 @@
 use super::*;
+use crate::display_action::DisplayAction;
+use crate::models::WindowHandle;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
@@ -23,14 +25,22 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
         Command::Execute => {
             if let Some(cmd) = val {
-                println!("{}", cmd);
+                use std::process::Command;
+                Command::new(&cmd).spawn();
+                println!("{}", &cmd);
                 false
             } else {
                 println!("NO VAL");
                 false
             }
         }
-        Command::CloseWindow => false,
+        Command::CloseWindow => {
+            if let Some(window) = manager.focused_window() {
+                let act = DisplayAction::KillWindow(window.handle.clone());
+                manager.actions.push_back( act );
+            }
+            false
+        },
         Command::SwapTags => false,
     }
 }

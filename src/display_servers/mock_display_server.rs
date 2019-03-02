@@ -3,6 +3,7 @@ use super::DisplayEvent;
 use super::DisplayServer;
 use super::Screen;
 use super::Window;
+use crate::display_action::DisplayAction;
 
 #[derive(Clone)]
 pub struct MockDisplayServer {
@@ -20,4 +21,8 @@ impl DisplayServer for MockDisplayServer {
     }
 
     fn update_windows(&self, _: Vec<&Window>) {}
+
+    fn execute_action(&self, _: DisplayAction) -> Result<(), Box<std::error::Error>> {
+        Ok(())
+    }
 }
