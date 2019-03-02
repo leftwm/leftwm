@@ -3,7 +3,7 @@ use super::*;
 /*
  * marks a workspace as the focused workspace
  */
-pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool{
+pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     //no new history for if no change
     if let Some(fws) = manager.focused_workspace() {
         if fws.name == workspace.name {
@@ -23,14 +23,16 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool{
         index += 1;
     }
     //make sure this workspaces tag is focused
-    workspace.tags.iter().for_each(|t| { focus_tag(manager, t); });
+    workspace.tags.iter().for_each(|t| {
+        focus_tag(manager, t);
+    });
     true
 }
 
 /*
  * marks a window as the focused window
  */
-pub fn focus_window_by_handle(manager: &mut Manager, handle: &WindowHandle) -> bool{
+pub fn focus_window_by_handle(manager: &mut Manager, handle: &WindowHandle) -> bool {
     let found: Vec<Window> = manager
         .windows
         .iter()
@@ -38,12 +40,23 @@ pub fn focus_window_by_handle(manager: &mut Manager, handle: &WindowHandle) -> b
         .map(|w| w.clone())
         .collect();
     if found.len() == 1 {
-        return focus_window(manager, &found[0])
+        return focus_window(manager, &found[0]);
     }
     false
 }
 
 pub fn focus_window(manager: &mut Manager, window: &Window) -> bool {
+    let result = _focus_window_work(manager, window);
+    //make sure this windows tag is focused
+    window.tags.iter().for_each(|t| {
+        println!("focus the tag");
+        focus_tag(manager, t);
+    });
+    result
+}
+
+fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
+    println!("in focus_window");
     //no new history for if no change
     if let Some(fw) = manager.focused_window() {
         if fw.handle == window.handle {
@@ -58,8 +71,6 @@ pub fn focus_window(manager: &mut Manager, window: &Window) -> bool {
     manager
         .focused_window_history
         .push_front(window.handle.clone());
-    //make sure this windows tag is focused
-    window.tags.iter().for_each(|t| { focus_tag(manager, t); });
     true
 }
 
@@ -68,9 +79,9 @@ pub fn focus_window(manager: &mut Manager, window: &Window) -> bool {
  */
 pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
     let history = manager.focused_window_history.clone();
-    for handle in history{
-        for w in manager.windows.clone(){
-            if w.handle == handle{
+    for handle in history {
+        for w in manager.windows.clone() {
+            if w.handle == handle {
                 return focus_window(manager, &w);
             }
         }
@@ -101,7 +112,9 @@ pub fn focus_tag(manager: &mut Manager, tag: &String) -> bool {
         .filter(|w| w.has_tag(tag))
         .map(|w| w.clone())
         .collect();
-    to_focus.iter().for_each(|w| { focus_workspace(manager, &w); });
+    to_focus.iter().for_each(|w| {
+        focus_workspace(manager, &w);
+    });
     true
 }
 
@@ -211,4 +224,18 @@ fn focusing_a_window_should_focus_its_tag() {
     focus_window(&mut manager, &window);
     let actual = manager.focused_tag().unwrap();
     assert_eq!("2", actual);
+}
+
+#[test]
+fn focusing_a_window_should_focus_workspace() {
+    let mut manager = Manager::default();
+    screen_create_handler::process(&mut manager, Screen::default());
+    screen_create_handler::process(&mut manager, Screen::default());
+    screen_create_handler::process(&mut manager, Screen::default());
+    let mut window = Window::new(WindowHandle::MockHandle(1), None);
+    window.tag("2".to_owned());
+    focus_window(&mut manager, &window);
+    let actual = manager.focused_workspace().unwrap().name.clone();
+    let expected = manager.workspaces[1].name.clone();
+    assert_eq!(expected, actual);
 }

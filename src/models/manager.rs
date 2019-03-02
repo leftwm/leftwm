@@ -67,13 +67,21 @@ impl Manager {
         None
     }
 
-    pub fn workspaces_display(&self) -> String {
+    pub fn workspaces_display(&mut self) -> String {
+        let mut focused_name = "-1".to_owned();
+        if let Some(f) = self.focused_workspace() {
+            focused_name = f.name.clone();
+        }
         let list: Vec<String> = self
             .workspaces
             .iter()
             .map(|w| {
                 let tags = w.tags.join(",");
-                format!("[{}]", tags)
+                if w.name == focused_name {
+                    format!("({})", tags)
+                } else {
+                    format!("[{}]", tags)
+                }
             })
             .collect();
         list.join(" ")
