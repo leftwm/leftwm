@@ -2,6 +2,7 @@ use std::ffi::CString;
 use std::os::raw::{c_uchar, c_ulong};
 use x11_dl::xlib;
 
+#[derive(Clone, Debug)]
 pub struct XAtom {
     pub WMProtocols: c_ulong,
     pub WMDelete: c_ulong,

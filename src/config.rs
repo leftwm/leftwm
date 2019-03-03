@@ -48,7 +48,7 @@ impl Default for Config {
     fn default() -> Self {
         let mut commands: Vec<Keybind> = vec![];
 
-        //Alt + Shift + Enter => Open A Shell
+        //Mod + Shift + Enter => Open A Shell
         commands.push(Keybind {
             command: Command::Execute,
             value: Some("dmenu_run".to_owned()),
@@ -56,7 +56,7 @@ impl Default for Config {
             key: "p".to_owned(),
         });
 
-        //Alt + Shift + Enter => Open A Shell
+        //Mod + Shift + Enter => Open A Shell
         commands.push(Keybind {
             command: Command::Execute,
             value: Some("termite".to_owned()),
@@ -64,12 +64,20 @@ impl Default for Config {
             key: "Return".to_owned(),
         });
 
-        //Alt + Shift + q => kill focused window
+        //Mod + Shift + q => kill focused window
         commands.push(Keybind {
             command: Command::CloseWindow,
             value: None,
             modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
             key: "q".to_owned(),
+        });
+
+        //Mod + crtl + l => lock the screen
+        commands.push(Keybind {
+            command: Command::Execute,
+            value: Some("i3lock --color 000000".to_owned()),
+            modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+            key: "l".to_owned(),
         });
 
         //add goto workspace

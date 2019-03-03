@@ -27,6 +27,7 @@ impl XWrap {
         assert!(!display.is_null(), "Null pointer in display");
 
         let atoms = XAtom::new(&xlib, display);
+        println!("XATOMS: {:?}", atoms);
 
         let xw = XWrap {
             xlib,
@@ -230,32 +231,45 @@ impl XWrap {
     }
 
     //this code is ran one time when a window is added to the managers list of windows
-    pub fn setup_managed_window(&self, h: WindowHandle){
+    pub fn setup_managed_window(&self, h: WindowHandle) {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
-
-            unsafe{
+            unsafe {
                 //let Xlib know we are managing this window
                 let list = vec![handle as u8].as_ptr();
-                (self.xlib.XChangeProperty)(self.display, handle, self.atoms.NetClientList, 
-                                            xlib::XA_WINDOW, 32, xlib::PropModeAppend, list , 1 );
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    handle,
+                    self.atoms.NetClientList,
+                    xlib::XA_WINDOW,
+                    32,
+                    xlib::PropModeAppend,
+                    list,
+                    1,
+                );
             }
 
-            self.set_window_state( &h );
-
+            self.set_window_state(&h);
         }
     }
 
-    fn set_window_state( &self, handle: &WindowHandle){
+    fn set_window_state(&self, handle: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = handle {
-            unsafe{
+            unsafe {
                 let list = vec![NormalState, 0].as_ptr();
-                (self.xlib.XChangeProperty)(self.display, handle.clone(), self.atoms.WMState, 
-                                            self.atoms.WMState, 32, xlib::PropModeReplace, list , 2 );
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    handle.clone(),
+                    self.atoms.WMState,
+                    self.atoms.WMState,
+                    32,
+                    xlib::PropModeReplace,
+                    list,
+                    2,
+                );
             }
         }
     }
-
 
     /**
      * used to send and XConfigureEvent for a changed window to the xserver
@@ -288,6 +302,15 @@ impl XWrap {
                 );
             }
         }
+    }
+
+    fn send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) {
+        if self.can_send_xevent_atom(window, atom) {}
+    }
+
+    //return true if the underlying window exsepts this type of atom:protocal
+    fn can_send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
+        false
     }
 
     pub fn get_transient_for(&self, window: xlib::Window) -> Option<xlib::Window> {
@@ -427,7 +450,6 @@ impl XWrap {
         }
     }
 
-
     pub fn init(&self, config: &Config) {
         let root_event_mask: c_long = xlib::ButtonPressMask
             | xlib::SubstructureRedirectMask
@@ -445,8 +467,17 @@ impl XWrap {
             unsafe {
                 let size: i32 = self.atoms.into_chars().len() as i32;
                 let atom_as_chars = self.atoms.into_chars().as_ptr();
-                (self.xlib.XChangeProperty)(self.display, root, self.atoms.NetSupported, xlib::XA_ATOM, 32, xlib::PropModeReplace, atom_as_chars , size );
-                (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList );
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    root,
+                    self.atoms.NetSupported,
+                    xlib::XA_ATOM,
+                    32,
+                    xlib::PropModeReplace,
+                    atom_as_chars,
+                    size,
+                );
+                (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
             }
 
             //cleanup grabs
