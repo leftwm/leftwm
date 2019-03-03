@@ -7,6 +7,7 @@ use crate::models::WindowHandle;
 
 #[derive(Clone, Debug)]
 pub enum DisplayAction {
-    KillWindow(WindowHandle),
-    AddedWindow(WindowHandle), //get triggered after a new window is discovered and WE are managing it
+    KillWindow(WindowHandle),      // nicely ask a window if it would please close at its convenience
+    AddedWindow(WindowHandle),     // get triggered after a new window is discovered and WE are managing it
+    WindowTakeFocus(WindowHandle), // tell a window that it is to become focused
 }

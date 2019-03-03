@@ -51,6 +51,7 @@ impl DisplayServer for XlibDisplayServer {
         match act {
             DisplayAction::KillWindow(w) => self.xw.kill_window(w),
             DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w),
+            DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
         }
         Ok(())
     }

@@ -1,4 +1,5 @@
 use super::*;
+use crate::display_action::DisplayAction;
 use crate::utils::logging::*;
 
 /*
@@ -72,6 +73,9 @@ fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
     manager
         .focused_window_history
         .push_front(window.handle.clone());
+    // inform the window it will be taking focus
+    let act = DisplayAction::WindowTakeFocus(window.handle.clone());
+    manager.actions.push_back(act);
     true
 }
 

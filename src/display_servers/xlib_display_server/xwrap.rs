@@ -304,13 +304,32 @@ impl XWrap {
         }
     }
 
-    fn send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) {
-        if self.can_send_xevent_atom(window, atom) {}
+    fn send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
+        if self.can_send_xevent_atom(window, atom) {
+            let mut msg: xlib::XClientMessageEvent = unsafe { std::mem::uninitialized() };
+            msg.type_ = xlib::ClientMessage;
+            msg.window = window;
+            msg.message_type = self.atoms.WMProtocols;
+            msg.format = 32;
+            msg.data.set_long(0, atom as i64);
+            msg.data.set_long(1, xlib::CurrentTime as i64);
+            let mut ev: xlib::XEvent = msg.into();
+            unsafe { (self.xlib.XSendEvent)(self.display, window, 0, xlib::NoEventMask, &mut ev) };
+            return true;
+        }
+        false
     }
 
     //return true if the underlying window exsepts this type of atom:protocal
     fn can_send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
-        false
+        unsafe {
+            let mut array: *mut xlib::Atom = std::mem::zeroed();
+            let mut length: c_int = std::mem::zeroed();
+            let status: xlib::Status =
+                (self.xlib.XGetWMProtocols)(self.display, window, &mut array, &mut length);
+            let protocols: &[xlib::Atom] = slice::from_raw_parts(array, length as usize);
+            status > 0 && protocols.contains(&atom)
+        }
     }
 
     pub fn get_transient_for(&self, window: xlib::Window) -> Option<xlib::Window> {
@@ -391,22 +410,16 @@ impl XWrap {
     //    };
     //    return Err(())
     //}
+
+    pub fn window_take_focus(&self, h: WindowHandle){
+        if let WindowHandle::XlibHandle(handle) = h {
+            self.send_xevent_atom( handle, self.atoms.WMTakeFocus );
+        }
+    }
+    
     pub fn kill_window(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
-            let mut msg: xlib::XClientMessageEvent = unsafe { std::mem::uninitialized() };
-            msg.type_ = xlib::ClientMessage;
-            msg.window = handle;
-            msg.message_type = self.atoms.WMProtocols;
-            msg.format = 32;
-            msg.data.set_long(0, self.atoms.WMDelete as i64);
-            //msg.data.longs[0] = self.atoms.WMDelete as i64;
-            //msg.data.longs[0] = proto;
-            //msg.data.longs[1] = current_time;
-            let mut event: xlib::XEvent = xlib::XClientMessageEvent::into(msg);
-            let mask = xlib::NoEventMask;
-            unsafe {
-                (self.xlib.XSendEvent)(self.display, handle, 0, mask, &mut event);
-            }
+            self.send_xevent_atom( handle, self.atoms.WMDelete );
         }
     }
 
