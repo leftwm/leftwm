@@ -16,6 +16,7 @@ pub struct Window {
     pub name: Option<String>,
     pub tags: Vec<String>,
     pub border: i32,
+    pub margin: i32,
     height: i32,
     width: i32,
     x: i32,
@@ -30,7 +31,8 @@ impl Window {
             floating: false,
             name,
             tags: Vec::new(),
-            border: 5,
+            border: 1,
+            margin: 10,
             height: 600,
             width: 800,
             x: 0,
@@ -45,23 +47,27 @@ impl Window {
         self.width = width
     }
     pub fn set_x(&mut self, x: i32) {
-        self.x = x
+        self.x = x 
     }
     pub fn set_y(&mut self, y: i32) {
         self.y = y
     }
 
     pub fn height(&self) -> i32 {
-        self.height - (self.border * 2)
+        self.height 
+            - (self.margin * 2)
+            - (self.border * 2)
     }
     pub fn width(&self) -> i32 {
-        self.width - (self.border * 2)
+        self.width 
+            - (self.margin * 2)
+            - (self.border * 2)
     }
     pub fn x(&self) -> i32 {
-        self.x
+        self.x + self.margin
     }
     pub fn y(&self) -> i32 {
-        self.y
+        self.y + self.margin
     }
 
     pub fn tag(&mut self, tag: String) {
