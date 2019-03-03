@@ -10,6 +10,10 @@ use std::ptr;
 use std::slice;
 use x11_dl::xlib;
 
+const WithdrawnState: u8 = 0;
+const NormalState: u8 = 1;
+const IconicState: u8 = 2;
+
 pub struct XWrap {
     xlib: xlib::Xlib,
     display: *mut xlib::Display,
@@ -225,6 +229,34 @@ impl XWrap {
         }
     }
 
+    //this code is ran one time when a window is added to the managers list of windows
+    pub fn setup_managed_window(&self, h: WindowHandle){
+        self.subscribe_to_window_events(&h);
+        if let WindowHandle::XlibHandle(handle) = h {
+
+            unsafe{
+                //let Xlib know we are managing this window
+                let list = vec![handle as u8].as_ptr();
+                (self.xlib.XChangeProperty)(self.display, handle, self.atoms.NetClientList, 
+                                            xlib::XA_WINDOW, 32, xlib::PropModeAppend, list , 1 );
+            }
+
+            self.set_window_state( &h );
+
+        }
+    }
+
+    fn set_window_state( &self, handle: &WindowHandle){
+        if let WindowHandle::XlibHandle(handle) = handle {
+            unsafe{
+                let list = vec![NormalState, 0].as_ptr();
+                (self.xlib.XChangeProperty)(self.display, handle.clone(), self.atoms.WMState, 
+                                            self.atoms.WMState, 32, xlib::PropModeReplace, list , 2 );
+            }
+        }
+    }
+
+
     /**
      * used to send and XConfigureEvent for a changed window to the xserver
      */
@@ -256,19 +288,6 @@ impl XWrap {
                 );
             }
         }
-
-        //ce.type = ConfigureNotify;
-        //ce.display = dpy;
-        //ce.event = c->win;
-        //ce.window = c->win;
-        //ce.x = c->x;
-        //ce.y = c->y;
-        //ce.width = c->w;
-        //ce.height = c->h;
-        //ce.border_width = c->bw;
-        //ce.above = None;
-        //ce.override_redirect = False;
-        //XSendEvent(dpy, c->win, False, StructureNotifyMask, (XEvent *)&ce);
     }
 
     pub fn get_transient_for(&self, window: xlib::Window) -> Option<xlib::Window> {
@@ -374,13 +393,13 @@ impl XWrap {
         }
     }
 
-    pub fn subscribe_to_window_events(&self, window: &Window) {
-        if let WindowHandle::XlibHandle(handle) = window.handle {
+    pub fn subscribe_to_window_events(&self, handle: &WindowHandle) {
+        if let WindowHandle::XlibHandle(handle) = handle {
             let mask = xlib::EnterWindowMask
                 | xlib::FocusChangeMask
                 | xlib::PropertyChangeMask
                 | xlib::StructureNotifyMask;
-            self.subscribe_to_event(handle, mask);
+            self.subscribe_to_event(handle.clone(), mask);
             //might want to grab buttons here???
         }
     }
@@ -429,7 +448,6 @@ impl XWrap {
                 (self.xlib.XChangeProperty)(self.display, root, self.atoms.NetSupported, xlib::XA_ATOM, 32, xlib::PropModeReplace, atom_as_chars , size );
                 (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList );
             }
-            //XDeleteProperty(dpy, root, netatom[NetClientList]);
 
             //cleanup grabs
             unsafe {

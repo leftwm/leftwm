@@ -1,11 +1,11 @@
-use crate::utils;
 use crate::config::Config;
-use crate::DisplayEvent;
-use crate::DisplayServer;
+use crate::display_action::DisplayAction;
 use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
-use crate::display_action::DisplayAction;
+use crate::utils;
+use crate::DisplayEvent;
+use crate::DisplayServer;
 use std::sync::Once;
 
 mod event_translate;
@@ -42,10 +42,6 @@ impl DisplayServer for XlibDisplayServer {
         let xlib_event = self.xw.get_next_event();
         let event = event_translate::from_xevent(&self.xw, xlib_event);
         if let Some(e) = event {
-            //if we have a new windows go ahead and subscribe to its events
-            if let DisplayEvent::WindowCreate(new_win) = &e {
-                self.xw.subscribe_to_window_events(new_win);
-            }
             events.push(e)
         }
         events
@@ -53,11 +49,11 @@ impl DisplayServer for XlibDisplayServer {
 
     fn execute_action(&self, act: DisplayAction) -> Result<(), Box<std::error::Error>> {
         match act {
-            DisplayAction::KillWindow(w) => self.xw.kill_window(w)
+            DisplayAction::KillWindow(w) => self.xw.kill_window(w),
+            DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w),
         }
         Ok(())
     }
-
 }
 
 impl XlibDisplayServer {
@@ -73,7 +69,6 @@ impl XlibDisplayServer {
         }
         // tell manager about existing windows
         for w in &self.find_all_windows() {
-            self.xw.subscribe_to_window_events(w);
             let e = DisplayEvent::WindowCreate(w.clone());
             events.push(e);
         }

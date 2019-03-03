@@ -1,4 +1,5 @@
 use super::*;
+use crate::display_action::DisplayAction;
 
 /*
  * process a collection of events, and apply them changes to a manager
@@ -19,6 +20,10 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     }
     manager.windows.push(window.clone());
     focus_handler::focus_window(manager, &window);
+
+    //let the DS know we are managing this window
+    let act = DisplayAction::AddedWindow(window.handle.clone());
+    manager.actions.push_back(act);
     true
 }
 

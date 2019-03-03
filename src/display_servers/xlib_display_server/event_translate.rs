@@ -7,12 +7,20 @@ use x11_dl::xlib;
 
 pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
     match raw_event.get_type() {
+
         // new window is created
         xlib::MapRequest => {
             let event = xlib::XMapRequestEvent::from(raw_event);
             let name = xw.get_window_name(event.window);
-            let w = Window::new(WindowHandle::XlibHandle(event.window), name);
-            Some(DisplayEvent::WindowCreate(w))
+            let trans = xw.get_transient_for(event.window);
+            if trans.is_none() {
+                let w = Window::new(WindowHandle::XlibHandle(event.window), name);
+                Some(DisplayEvent::WindowCreate(w))
+            } else {
+                //TODO: this is a trans for another window it should float 
+                let w = Window::new(WindowHandle::XlibHandle(event.window), name);
+                Some(DisplayEvent::WindowCreate(w))
+            }
         }
 
         // window is deleted

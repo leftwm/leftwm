@@ -17,6 +17,7 @@ pub struct XAtom {
     pub NetClientList: c_ulong,
 }
 
+
 impl XAtom {
     pub fn into_chars(&self) -> Vec<c_uchar> {
         let mut chars: Vec<c_uchar> = vec![];

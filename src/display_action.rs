@@ -8,4 +8,5 @@ use crate::models::WindowHandle;
 #[derive(Clone, Debug)]
 pub enum DisplayAction {
     KillWindow(WindowHandle),
+    AddedWindow(WindowHandle), //get triggered after a new window is discovered and WE are managing it
 }
