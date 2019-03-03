@@ -1,9 +1,11 @@
 use super::*;
+use crate::utils::logging::*;
 
 /*
  * marks a workspace as the focused workspace
  */
 pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
+    log_info("FOCUS_WORKSPACE", &workspace.id.to_string());
     //no new history for if no change
     if let Some(fws) = manager.focused_workspace() {
         if fws.id == workspace.id {
@@ -49,14 +51,13 @@ pub fn focus_window(manager: &mut Manager, window: &Window) -> bool {
     let result = _focus_window_work(manager, window);
     //make sure this windows tag is focused
     window.tags.iter().for_each(|t| {
-        println!("focus the tag");
         focus_tag(manager, t);
     });
     result
 }
 
 fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
-    println!("in focus_window");
+    log_info("FOCUS_WINDOW", &format!("{:?}", window.handle));
     //no new history for if no change
     if let Some(fw) = manager.focused_window() {
         if fw.handle == window.handle {
@@ -79,7 +80,6 @@ pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bo
     if let Some(f) = manager.focused_workspace() {
         focused_id = f.id.clone();
     }
-    println!("id: {}, {}, {}", focused_id, x,y);
     let to_focus: Option<Workspace> = {
         let mut f: Option<Workspace> = None;
         for w in &manager.workspaces {
@@ -117,6 +117,7 @@ pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
  * marks a tag as the focused tag
  */
 pub fn focus_tag(manager: &mut Manager, tag: &String) -> bool {
+    log_info("FOCUS_TAG", tag);
     //no new history for if no change
     if let Some(t) = manager.focused_tag() {
         if &t == tag {

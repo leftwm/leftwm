@@ -2,6 +2,7 @@ use super::DisplayEvent;
 use super::Window;
 use super::WindowHandle;
 use super::XWrap;
+use crate::utils::logging::*;
 use x11_dl::xlib;
 
 pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
@@ -14,163 +15,164 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             Some(DisplayEvent::WindowCreate(w))
         }
 
-        //// window is deleted
-        //xlib::UnmapNotify => {
-        //    //println!("UnmapNotify");
-        //    let event = xlib::XUnmapEvent::from(raw_event);
-        //    let h = WindowHandle::XlibHandle(event.window);
-        //    Some(EventQueueItem::WindowDelete(h))
-        //}
+        // window is deleted
+        xlib::UnmapNotify => {
+            log_xevent(&format!("UnmapNotify"));
+            let event = xlib::XUnmapEvent::from(raw_event);
+            let h = WindowHandle::XlibHandle(event.window);
+            None
+            //Some(EventQueueItem::WindowDelete(h))
+        }
 
         // window is deleted
         xlib::DestroyNotify => {
-            //println!("DestroyNotify");
+            //log_xevent( &format!("DestroyNotify") );
             let event = xlib::XDestroyWindowEvent::from(raw_event);
-            //println!("DestroyNotify: {:#?}", event);
+            log_xevent(&format!("DestroyNotify: {:#?}", event));
             let h = WindowHandle::XlibHandle(event.window);
             //let h = WindowHandle::XlibHandle(event.window + 2);
             Some(DisplayEvent::WindowDestroy(h))
         }
 
         xlib::ClientMessage => {
-            //let event = xlib::XClientMessageEvent::from(raw_event);
-            //println!("ClientMessage: {:#?} ", event);
+            let event = xlib::XClientMessageEvent::from(raw_event);
+            log_xevent(&format!("ClientMessage: {:#?} ", event));
             None
         }
 
-        //xlib::ButtonPress => {
-        //    let event = xlib::XButtonPressedEvent::from(raw_event);
-        //    println!("ButtonPress: {:#?} ", event);
-        //    None
-        //}
+        xlib::ButtonPress => {
+            let event = xlib::XButtonPressedEvent::from(raw_event);
+            log_xevent(&format!("ButtonPress: {:#?} ", event));
+            None
+        }
         xlib::EnterNotify => {
             let event = xlib::XEnterWindowEvent::from(raw_event);
-            //println!("EnterNotify: {:#?} ", event);
+            log_xevent(&format!("EnterNotify: {:#?} ", event));
             let h = WindowHandle::XlibHandle(event.window);
             Some(DisplayEvent::FocusedWindow(h))
         }
-        //xlib::LeaveNotify => {
-        //    let event = xlib::XLeaveWindowEvent::from(raw_event);
-        //    println!("LeaveNotify: {:#?} ", event);
-        //    None
-        //}
-        //xlib::PropertyNotify => {
-        //    let event = xlib::XPropertyEvent::from(raw_event);
-        //    println!("PropertyNotify: {:#?} ", event);
-        //    None
-        //}
+        xlib::LeaveNotify => {
+            let event = xlib::XLeaveWindowEvent::from(raw_event);
+            log_xevent(&format!("LeaveNotify: {:#?} ", event));
+            None
+        }
+        xlib::PropertyNotify => {
+            let event = xlib::XPropertyEvent::from(raw_event);
+            log_xevent(&format!("PropertyNotify: {:#?} ", event));
+            None
+        }
 
-        //xlib::MapNotify => {
-        //    let event = xlib::XMappingEvent::from(raw_event);
-        //    println!("MapNotify: {:#?} ", event);
-        //    None
-        //}
+        xlib::MapNotify => {
+            let event = xlib::XMappingEvent::from(raw_event);
+            log_xevent(&format!("MapNotify: {:#?} ", event));
+            None
+        }
         xlib::KeyPress => {
             let event = xlib::XKeyEvent::from(raw_event);
             let sym = xw.keycode_to_keysym(event.keycode);
-            //println!("KeyPress: {:#?} ", event);
+            //log_xevent( &format!("KeyPress: {:#?} ", event) );
             Some(DisplayEvent::KeyCombo(event.state, sym))
         }
-        //xlib::KeyRelease => {
-        //    let event = xlib::XKeyEvent::from(raw_event);
-        //    println!("release: {:#?} ", event);
-        //    None
-        //}
-        //xlib::ButtonRelease => {
-        //    println!("ButtonRelease");
-        //    None
-        //}
+        xlib::KeyRelease => {
+            let event = xlib::XKeyEvent::from(raw_event);
+            log_xevent(&format!("release: {:#?} ", event));
+            None
+        }
+        xlib::ButtonRelease => {
+            log_xevent(&format!("ButtonRelease"));
+            None
+        }
         xlib::MotionNotify => {
             let event = xlib::XMotionEvent::from(raw_event);
             let h = WindowHandle::XlibHandle(event.window);
-            Some(DisplayEvent::Movement(h, event.x_root, event.y_root ))
+            Some(DisplayEvent::Movement(h, event.x_root, event.y_root))
         }
         xlib::FocusIn => {
             let event = xlib::XFocusChangeEvent::from(raw_event);
             let h = WindowHandle::XlibHandle(event.window);
-            //println!("FocusIn: {:#?} ", event);
+            //log_xevent( &format!("FocusIn: {:#?} ", event) );
             Some(DisplayEvent::FocusedWindow(h))
         }
-        //xlib::FocusOut => {
-        //    println!("FocusOut");
-        //    None
-        //}
-        //xlib::KeymapNotify => {
-        //    println!("KeymapNotify");
-        //    None
-        //}
-        //xlib::Expose => {
-        //    println!("Expose");
-        //    None
-        //}
-        //xlib::GraphicsExpose => {
-        //    println!("GraphicsExpose");
-        //    None
-        //}
-        //xlib::NoExpose => {
-        //    println!("NoExpose");
-        //    None
-        //}
-        //xlib::VisibilityNotify => {
-        //    println!("VisibilityNotify");
-        //    None
-        //}
-        //xlib::CreateNotify => {
-        //    println!("CreateNotify");
-        //    None
-        //}
-        //xlib::ReparentNotify => {
-        //    println!("ReparentNotify");
-        //    None
-        //}
-        //xlib::ConfigureNotify => {
-        //    println!("ConfigureNotify");
-        //    None
-        //}
-        //xlib::ConfigureRequest => {
-        //    println!("ConfigureRequest");
-        //    None
-        //}
-        //xlib::GravityNotify => {
-        //    println!("GravityNotify");
-        //    None
-        //}
-        //xlib::ResizeRequest => {
-        //    println!("ResizeRequest");
-        //    None
-        //}
-        //xlib::CirculateNotify => {
-        //    println!("CirculateNotify");
-        //    None
-        //}
-        //xlib::CirculateRequest => {
-        //    println!("CirculateRequest");
-        //    None
-        //}
-        //xlib::SelectionClear => {
-        //    println!("SelectionClear");
-        //    None
-        //}
-        //xlib::SelectionRequest => {
-        //    println!("SelectionRequest");
-        //    None
-        //}
-        //xlib::SelectionNotify => {
-        //    println!("SelectionNotify");
-        //    None
-        //}
-        //xlib::ColormapNotify => {
-        //    println!("ColormapNotify");
-        //    None
-        //}
-        //xlib::MappingNotify => {
-        //    println!("MappingNotify");
-        //    None
-        //}
-        //xlib::GenericEvent => {
-        //    println!("GenericEvent");
-        //    None
-        //}
+        xlib::FocusOut => {
+            log_xevent(&format!("FocusOut"));
+            None
+        }
+        xlib::KeymapNotify => {
+            log_xevent(&format!("KeymapNotify"));
+            None
+        }
+        xlib::Expose => {
+            log_xevent(&format!("Expose"));
+            None
+        }
+        xlib::GraphicsExpose => {
+            log_xevent(&format!("GraphicsExpose"));
+            None
+        }
+        xlib::NoExpose => {
+            log_xevent(&format!("NoExpose"));
+            None
+        }
+        xlib::VisibilityNotify => {
+            log_xevent(&format!("VisibilityNotify"));
+            None
+        }
+        xlib::CreateNotify => {
+            log_xevent(&format!("CreateNotify"));
+            None
+        }
+        xlib::ReparentNotify => {
+            log_xevent(&format!("ReparentNotify"));
+            None
+        }
+        xlib::ConfigureNotify => {
+            log_xevent(&format!("ConfigureNotify"));
+            None
+        }
+        xlib::ConfigureRequest => {
+            log_xevent(&format!("ConfigureRequest"));
+            None
+        }
+        xlib::GravityNotify => {
+            log_xevent(&format!("GravityNotify"));
+            None
+        }
+        xlib::ResizeRequest => {
+            log_xevent(&format!("ResizeRequest"));
+            None
+        }
+        xlib::CirculateNotify => {
+            log_xevent(&format!("CirculateNotify"));
+            None
+        }
+        xlib::CirculateRequest => {
+            log_xevent(&format!("CirculateRequest"));
+            None
+        }
+        xlib::SelectionClear => {
+            log_xevent(&format!("SelectionClear"));
+            None
+        }
+        xlib::SelectionRequest => {
+            log_xevent(&format!("SelectionRequest"));
+            None
+        }
+        xlib::SelectionNotify => {
+            log_xevent(&format!("SelectionNotify"));
+            None
+        }
+        xlib::ColormapNotify => {
+            log_xevent(&format!("ColormapNotify"));
+            None
+        }
+        xlib::MappingNotify => {
+            log_xevent(&format!("MappingNotify"));
+            None
+        }
+        xlib::GenericEvent => {
+            log_xevent(&format!("GenericEvent"));
+            None
+        }
         _ => None,
     }
 }

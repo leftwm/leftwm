@@ -1,6 +1,7 @@
 use super::*;
 use crate::display_action::DisplayAction;
 use crate::models::WindowHandle;
+use crate::utils::logging::*;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
@@ -27,20 +28,19 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             if let Some(cmd) = val {
                 use std::process::Command;
                 Command::new(&cmd).spawn();
-                println!("{}", &cmd);
+                log_info("EXECUTE", &cmd);
                 false
             } else {
-                println!("NO VAL");
                 false
             }
         }
         Command::CloseWindow => {
             if let Some(window) = manager.focused_window() {
                 let act = DisplayAction::KillWindow(window.handle.clone());
-                manager.actions.push_back( act );
+                manager.actions.push_back(act);
             }
             false
-        },
+        }
         Command::SwapTags => false,
     }
 }

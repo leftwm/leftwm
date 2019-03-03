@@ -1,9 +1,9 @@
 use super::utils;
+use super::xatom::XAtom;
 use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
-use super::xatom::XAtom;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::ptr;
@@ -24,8 +24,8 @@ impl XWrap {
 
         let atoms = XAtom::new(&xlib, display);
 
-        let xw = XWrap { 
-            xlib, 
+        let xw = XWrap {
+            xlib,
             display,
             atoms,
         };
@@ -356,25 +356,15 @@ impl XWrap {
             msg.window = handle;
             msg.message_type = self.atoms.WMProtocols;
             msg.format = 32;
-            msg.data.set_long( 0, self.atoms.WMDelete as i64 );
+            msg.data.set_long(0, self.atoms.WMDelete as i64);
             //msg.data.longs[0] = self.atoms.WMDelete as i64;
             //msg.data.longs[0] = proto;
             //msg.data.longs[1] = current_time;
-
-
-            //let msg = xlib::XClientMessageEvent {
-            //    type_: xlib::ClientMessage,
-            //    serial: c_ulong,
-            //    send_event: Bool,
-            //    display: *mut Display,
-            //    window: Window,
-            //    message_type: Atom,
-            //    format: c_int,
-            //    data: ClientMessageData,
-            //};
             let mut event: xlib::XEvent = xlib::XClientMessageEvent::into(msg);
             let mask = xlib::NoEventMask;
-            unsafe{ (self.xlib.XSendEvent)(self.display, handle, 0, mask, &mut event); }
+            unsafe {
+                (self.xlib.XSendEvent)(self.display, handle, 0, mask, &mut event);
+            }
         }
     }
 
@@ -418,6 +408,7 @@ impl XWrap {
         }
     }
 
+
     pub fn init(&self, config: &Config) {
         let root_event_mask: c_long = xlib::ButtonPressMask
             | xlib::SubstructureRedirectMask
@@ -427,8 +418,18 @@ impl XWrap {
             | xlib::LeaveWindowMask
             | xlib::StructureNotifyMask
             | xlib::PropertyChangeMask;
-        for root in self.get_roots() {
+
+        if let WindowHandle::XlibHandle(root) = self.get_default_root() {
             self.subscribe_to_event(root, root_event_mask);
+
+            //EWMH junk
+            unsafe {
+                let size: i32 = self.atoms.into_chars().len() as i32;
+                let atom_as_chars = self.atoms.into_chars().as_ptr();
+                (self.xlib.XChangeProperty)(self.display, root, self.atoms.NetSupported, xlib::XA_ATOM, 32, xlib::PropModeReplace, atom_as_chars , size );
+                (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList );
+            }
+            //XDeleteProperty(dpy, root, netatom[NetClientList]);
 
             //cleanup grabs
             unsafe {
@@ -442,15 +443,8 @@ impl XWrap {
                     self.grab_keys(root, keysym, modmask);
                 }
             }
-
-            //unsafe {
-            //    (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
-            //    self.grab_keys(root, keysym::XK_1, xlib::Mod1Mask);
-            //    self.grab_keys(root, keysym::XK_2, xlib::Mod1Mask);
-            //    self.grab_keys(root, keysym::XK_1, xlib::ShiftMask | xlib::Mod1Mask);
-            //    self.grab_keys(root, keysym::XK_2, xlib::ShiftMask | xlib::Mod1Mask);
-            //}
         }
+
         unsafe {
             (self.xlib.XSync)(self.display, 0);
         }

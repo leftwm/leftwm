@@ -1,5 +1,5 @@
 use std::ffi::CString;
-use std::os::raw::c_ulong;
+use std::os::raw::{c_uchar, c_ulong};
 use x11_dl::xlib;
 
 pub struct XAtom {
@@ -18,6 +18,23 @@ pub struct XAtom {
 }
 
 impl XAtom {
+    pub fn into_chars(&self) -> Vec<c_uchar> {
+        let mut chars: Vec<c_uchar> = vec![];
+        chars.push(self.WMProtocols as u8);
+        chars.push(self.WMDelete as u8);
+        chars.push(self.WMState as u8);
+        chars.push(self.WMTakeFocus as u8);
+        chars.push(self.NetActiveWindow as u8);
+        chars.push(self.NetSupported as u8);
+        chars.push(self.NetWMName as u8);
+        chars.push(self.NetWMState as u8);
+        chars.push(self.NetWMFullscreen as u8);
+        chars.push(self.NetWMWindowType as u8);
+        chars.push(self.NetWMWindowTypeDialog as u8);
+        chars.push(self.NetClientList as u8);
+        chars
+    }
+
     pub fn new(xlib: &xlib::Xlib, dpy: *mut xlib::Display) -> XAtom {
         unsafe {
             XAtom {

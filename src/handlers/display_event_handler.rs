@@ -1,4 +1,5 @@
 use super::*;
+use crate::utils::logging::*;
 
 pub struct DisplayEventHandler {
     pub config: Config,
@@ -10,7 +11,7 @@ impl DisplayEventHandler {
      * returns true if changes need to be rendered
      */
     pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
-        //println!("EVENT: {:?}", event);
+        log_info("DISPLAY_EVENT", &(format!("{:?}", event)));
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
             DisplayEvent::WindowCreate(w) => window_handler::created(manager, w),
@@ -22,7 +23,7 @@ impl DisplayEventHandler {
                 //look through the config and build a command if its defined in the config
                 let build = CommandBuilder::new(&self.config);
                 let command = build.from_xkeyevent(mod_mask, xkeysym);
-                println!("{:?}", command);
+                //println!("{:?}", command);
                 if let Some((cmd, val)) = command {
                     command_handler::process(manager, cmd, val)
                 } else {
@@ -41,11 +42,9 @@ impl DisplayEventHandler {
 
         if update_needed {
             self.update_windows(manager);
-            println!("WINDOWS: {}", manager.windows_display());
-            println!("WORKSPACES: {}", manager.workspaces_display());
         }
 
-        println!("WORKSPACES: {}", manager.workspaces_display());
+        //println!("WORKSPACES: {}", manager.workspaces_display());
 
         //println!("state: {:?}", manager);
         //println!("state: {:?}", manager.windows);
@@ -58,7 +57,10 @@ impl DisplayEventHandler {
      * based on the new state of the WM
      */
     fn update_windows(&self, manager: &mut Manager) {
-        println!("in update window");
+        log_info("WINDOWS", &manager.windows_display());
+        log_info("WORKSPACES", &manager.workspaces_display());
+        let state_str = format!("{:?}", manager);
+        log_info("FULL_STATE", &state_str);
         let all_windows = &mut manager.windows;
         let all: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();
         for w in all {

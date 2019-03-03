@@ -7,6 +7,7 @@ fn get_events<T: DisplayServer>(ds: &T) -> Vec<DisplayEvent> {
 }
 
 fn main() {
+    println!("BOOT:");
     let mut manager = Manager::default();
     let config = config::load();
     let display_server: XlibDisplayServer = DisplayServer::new(&config);
