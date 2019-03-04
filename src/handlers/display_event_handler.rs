@@ -58,6 +58,7 @@ impl DisplayEventHandler {
      */
     fn update_windows(&self, manager: &mut Manager) {
         log_info("WINDOWS", &manager.windows_display());
+        log_info("TAGS", &manager.tags_display());
         log_info("WORKSPACES", &manager.workspaces_display());
         let state_str = format!("{:?}", manager);
         log_info("FULL_STATE", &state_str);

@@ -70,6 +70,25 @@ impl Manager {
         None
     }
 
+    pub fn tags_display(&mut self) -> String {
+        let mut active: Vec<String> = vec![];
+        for w in &self.workspaces {
+            active.extend(w.tags.clone())
+        }
+        let parts: Vec<String> = self
+            .tags
+            .iter()
+            .map(|t| {
+                if active.contains(t) {
+                    format!("[{}]", t)
+                } else {
+                    format!(" {} ", t)
+                }
+            })
+            .collect();
+        parts.join(" | ")
+    }
+
     pub fn workspaces_display(&mut self) -> String {
         let mut focused_id = -1;
         if let Some(f) = self.focused_workspace() {
