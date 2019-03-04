@@ -27,10 +27,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::Execute => {
             if let Some(cmd) = val {
                 use std::process::Command;
-                Command::new("sh")
-                    .arg("-c")
-                    .arg(&cmd)
-                    .spawn();
+                Command::new("sh").arg("-c").arg(&cmd).spawn();
                 log_info("EXECUTE", &cmd);
                 false
             } else {
@@ -56,6 +53,19 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 manager.workspaces[manager.focused_workspace_history[0]] = a;
                 manager.workspaces[manager.focused_workspace_history[1]] = b;
                 return true;
+            }
+            false
+        }
+
+        Command::MoveToLastWorkspace => {
+            if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
+                let wp_tags = &manager.workspaces[manager.focused_workspace_history[1]]
+                    .tags
+                    .clone();
+                if let Some(window) = manager.focused_window() {
+                    window.tags = vec![wp_tags[0].clone()];
+                    return true;
+                }
             }
             false
         }

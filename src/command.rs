@@ -5,4 +5,5 @@ pub enum Command {
     SwapTags,
     GotoTag,
     MoveToTag,
+    MoveToLastWorkspace,
 }

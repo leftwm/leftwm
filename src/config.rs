@@ -80,11 +80,19 @@ impl Default for Config {
             key: "l".to_owned(),
         });
 
-        //Mod + Shift + q => swap the tags on the last to active workspaces
+        //Mod + Shift + w => swap the tags on the last to active workspaces
         commands.push(Keybind {
             command: Command::SwapTags,
             value: None,
             modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+            key: "w".to_owned(),
+        });
+
+        //Mod + w => move the active window to the previous workspace
+        commands.push(Keybind {
+            command: Command::SwapTags,
+            value: None,
+            modifier: vec!["modkey".to_owned()],
             key: "w".to_owned(),
         });
 
