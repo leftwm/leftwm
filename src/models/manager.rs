@@ -75,12 +75,14 @@ impl Manager {
         for w in &self.workspaces {
             active.extend(w.tags.clone())
         }
+        let mut wraps = vec![('<', '>'), ('(', ')'), ('{', '}'), ('[', ']')];
         let parts: Vec<String> = self
             .tags
             .iter()
             .map(|t| {
                 if active.contains(t) {
-                    format!("[{}]", t)
+                    let wrap = wraps.pop().unwrap();
+                    format!("{}{}{}", wrap.0, t, wrap.1)
                 } else {
                     format!(" {} ", t)
                 }

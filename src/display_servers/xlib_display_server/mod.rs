@@ -7,6 +7,7 @@ use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
 use std::sync::Once;
+use x11_dl::xlib;
 
 mod event_translate;
 mod xatom;
@@ -17,11 +18,14 @@ static SETUP: Once = Once::new();
 
 pub struct XlibDisplayServer {
     xw: XWrap,
+    root: xlib::Window,
 }
 
 impl DisplayServer for XlibDisplayServer {
     fn new(config: &Config) -> XlibDisplayServer {
-        let me = XlibDisplayServer { xw: XWrap::new() };
+        let wrap = XWrap::new();
+        let root = wrap.get_default_root();
+        let me = XlibDisplayServer { xw: wrap, root };
         me.xw.init(config); //setup events masks
         me
     }

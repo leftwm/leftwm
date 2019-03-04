@@ -55,10 +55,10 @@ impl Workspace {
             id: -1,
             layout: Box::new(DefaultLayout {}),
             tags: vec![],
-            height: screen.height,
+            height: screen.height - 20,
             width: screen.width,
             x: screen.x,
-            y: screen.y,
+            y: screen.y + 20,
         }
     }
 
@@ -67,7 +67,9 @@ impl Workspace {
     }
 
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
-        self.x > x && self.y > y && (self.x + self.width) < x && (self.y + self.height) < y
+        let maxx = self.x + self.width;
+        let maxy = self.y + self.height;
+        (self.x <= x && x <= maxx) && (self.y <= y && y <= maxy)
     }
 
     pub fn has_tag(&self, tag: &str) -> bool {

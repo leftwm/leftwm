@@ -60,7 +60,7 @@ impl XWrap {
         let xlib = Xlib::open().unwrap();
         let xinerama = unsafe { (xlib.XineramaIsActive)(self.display) } > 0;
         if xinerama {
-            let root = self.get_default_root();
+            let root = self.get_default_root_handle();
             let mut screen_count = 0;
             let info_array_raw =
                 unsafe { (xlib.XineramaQueryScreens)(self.display, &mut screen_count) };
@@ -98,9 +98,12 @@ impl XWrap {
     }
 
     //returns all the screens the display
-    pub fn get_default_root(&self) -> WindowHandle {
-        let root = unsafe { (self.xlib.XDefaultRootWindow)(self.display) };
-        WindowHandle::XlibHandle(root)
+    pub fn get_default_root_handle(&self) -> WindowHandle {
+        WindowHandle::XlibHandle(self.get_default_root())
+    }
+
+    pub fn get_default_root(&self) -> xlib::Window {
+        unsafe { (self.xlib.XDefaultRootWindow)(self.display) }
     }
 
     //returns all the roots the display
@@ -411,15 +414,15 @@ impl XWrap {
     //    return Err(())
     //}
 
-    pub fn window_take_focus(&self, h: WindowHandle){
+    pub fn window_take_focus(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
-            self.send_xevent_atom( handle, self.atoms.WMTakeFocus );
+            self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
         }
     }
-    
+
     pub fn kill_window(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
-            self.send_xevent_atom( handle, self.atoms.WMDelete );
+            self.send_xevent_atom(handle, self.atoms.WMDelete);
         }
     }
 
@@ -473,37 +476,36 @@ impl XWrap {
             | xlib::StructureNotifyMask
             | xlib::PropertyChangeMask;
 
-        if let WindowHandle::XlibHandle(root) = self.get_default_root() {
-            self.subscribe_to_event(root, root_event_mask);
+        let root = self.get_default_root();
+        self.subscribe_to_event(root, root_event_mask);
 
-            //EWMH junk
-            unsafe {
-                let size: i32 = self.atoms.into_chars().len() as i32;
-                let atom_as_chars = self.atoms.into_chars().as_ptr();
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    root,
-                    self.atoms.NetSupported,
-                    xlib::XA_ATOM,
-                    32,
-                    xlib::PropModeReplace,
-                    atom_as_chars,
-                    size,
-                );
-                (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
-            }
+        //EWMH junk
+        unsafe {
+            let size: i32 = self.atoms.into_chars().len() as i32;
+            let atom_as_chars = self.atoms.into_chars().as_ptr();
+            (self.xlib.XChangeProperty)(
+                self.display,
+                root,
+                self.atoms.NetSupported,
+                xlib::XA_ATOM,
+                32,
+                xlib::PropModeReplace,
+                atom_as_chars,
+                size,
+            );
+            (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
+        }
 
-            //cleanup grabs
-            unsafe {
-                (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
-            }
+        //cleanup grabs
+        unsafe {
+            (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
+        }
 
-            //grab all the key combos from the config file
-            for kb in config.mapped_bindings() {
-                if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
-                    let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
-                    self.grab_keys(root, keysym, modmask);
-                }
+        //grab all the key combos from the config file
+        for kb in config.mapped_bindings() {
+            if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
+                let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
+                self.grab_keys(root, keysym, modmask);
             }
         }
 
