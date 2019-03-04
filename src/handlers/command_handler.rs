@@ -27,13 +27,17 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::Execute => {
             if let Some(cmd) = val {
                 use std::process::Command;
-                Command::new(&cmd).spawn();
+                Command::new("sh")
+                    .arg("-c")
+                    .arg(&cmd)
+                    .spawn();
                 log_info("EXECUTE", &cmd);
                 false
             } else {
                 false
             }
         }
+
         Command::CloseWindow => {
             if let Some(window) = manager.focused_window() {
                 let act = DisplayAction::KillWindow(window.handle.clone());
@@ -41,6 +45,19 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             false
         }
-        Command::SwapTags => false,
+
+        Command::SwapTags => {
+            if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
+                let mut a = manager.workspaces[manager.focused_workspace_history[0]].clone();
+                let mut b = manager.workspaces[manager.focused_workspace_history[1]].clone();
+                let swap = a.tags.clone();
+                a.tags = b.tags.clone();
+                b.tags = swap;
+                manager.workspaces[manager.focused_workspace_history[0]] = a;
+                manager.workspaces[manager.focused_workspace_history[1]] = b;
+                return true;
+            }
+            false
+        }
     }
 }

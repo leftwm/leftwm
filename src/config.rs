@@ -48,7 +48,7 @@ impl Default for Config {
     fn default() -> Self {
         let mut commands: Vec<Keybind> = vec![];
 
-        //Mod + Shift + Enter => Open A Shell
+        //Mod + Shift + Enter => Open dmenu
         commands.push(Keybind {
             command: Command::Execute,
             value: Some("dmenu_run".to_owned()),
@@ -78,6 +78,14 @@ impl Default for Config {
             value: Some("i3lock --color 000000".to_owned()),
             modifier: vec!["modkey".to_owned(), "Control".to_owned()],
             key: "l".to_owned(),
+        });
+
+        //Mod + Shift + q => swap the tags on the last to active workspaces
+        commands.push(Keybind {
+            command: Command::SwapTags,
+            value: None,
+            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+            key: "w".to_owned(),
         });
 
         //add goto workspace
