@@ -19,6 +19,7 @@ pub use display_servers::XlibDisplayServer;
 pub use handlers::display_event_handler::DisplayEventHandler;
 pub use models::Manager;
 pub use models::Window;
+pub use utils::logging;
 
 #[macro_use]
 extern crate serde_derive;

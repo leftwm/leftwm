@@ -110,7 +110,7 @@ impl Default for Config {
 
         //Mod + Shift + w => swap the tags on the last to active workspaces
         commands.push(Keybind {
-            command: Command::SwapTags,
+            command: Command::MoveToLastWorkspace,
             value: None,
             modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
             key: "w".to_owned(),
