@@ -36,8 +36,19 @@ impl Manager {
     /*
      * return the currently focused workspace
      */
-    pub fn focused_workspace(&mut self) -> Option<&mut Workspace> {
-        if self.focused_workspace_history.len() == 0 {
+    pub fn focused_workspace(&self) -> Option<&Workspace> {
+        if self.focused_workspace_history.is_empty() {
+            return None;
+        }
+        let index = self.focused_workspace_history[0];
+        Some(&self.workspaces[index])
+    }
+
+    /*
+     * return the currently focused workspace
+     */
+    pub fn focused_workspace_mut(&mut self) -> Option<&mut Workspace> {
+        if self.focused_workspace_history.is_empty() {
             return None;
         }
         let index = self.focused_workspace_history[0];
@@ -47,8 +58,8 @@ impl Manager {
     /*
      * return the currently focused tag
      */
-    pub fn focused_tag(&mut self) -> Option<String> {
-        if self.focused_tag_history.len() == 0 {
+    pub fn focused_tag(&self) -> Option<String> {
+        if self.focused_tag_history.is_empty() {
             return None;
         }
         Some(self.focused_tag_history[0].clone())
@@ -57,8 +68,24 @@ impl Manager {
     /*
      * return the currently focused window
      */
-    pub fn focused_window(&mut self) -> Option<&mut Window> {
-        if self.focused_window_history.len() == 0 {
+    pub fn focused_window(&self) -> Option<&Window> {
+        if self.focused_window_history.is_empty() {
+            return None;
+        }
+        let handle = self.focused_window_history[0].clone();
+        for w in &self.windows {
+            if handle == w.handle {
+                return Some(w);
+            }
+        }
+        None
+    }
+
+    /*
+     * return the currently focused window
+     */
+    pub fn focused_window_mut(&mut self) -> Option<&mut Window> {
+        if self.focused_window_history.is_empty() {
             return None;
         }
         let handle = self.focused_window_history[0].clone();
@@ -70,7 +97,7 @@ impl Manager {
         None
     }
 
-    pub fn tags_display(&mut self) -> String {
+    pub fn tags_display(&self) -> String {
         let mut active: Vec<String> = vec![];
         for w in &self.workspaces {
             active.extend(w.tags.clone())
@@ -91,7 +118,7 @@ impl Manager {
         parts.join(" | ")
     }
 
-    pub fn workspaces_display(&mut self) -> String {
+    pub fn workspaces_display(&self) -> String {
         let mut focused_id = -1;
         if let Some(f) = self.focused_workspace() {
             focused_id = f.id.clone();

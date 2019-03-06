@@ -219,7 +219,7 @@ fn should_default_to_first_screen() {
 fn two_workspaces_should_never_view_the_same_tag() {
     let mut manager = mock_manager(4); //creates two screens
     manager.goto_tags(vec![&"4".to_owned()]);
-    let wp1 = manager.active_workspace().unwrap();
+    let wp1 = manager.active_workspace_mut().unwrap();
     assert!(wp1.has_tag("4"));
     let wp4 = manager.workspaces[3].clone();
     assert!(

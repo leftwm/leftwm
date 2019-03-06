@@ -10,15 +10,15 @@ pub fn process(manager: &mut Manager, tag: String) -> bool {
     if manager.focused_workspace().is_none() {
         return false;
     }
-    let old_tags = manager.focused_workspace().unwrap().tags.clone(); 
+    let old_tags = manager.focused_workspace().unwrap().tags.clone();
     for wp in &mut manager.workspaces {
         if wp.tags == new_tags {
             wp.tags = old_tags.clone();
         }
     }
-    let active_workspace = manager.focused_workspace().unwrap();
+    let active_workspace = manager.focused_workspace_mut().unwrap();
     active_workspace.tags = new_tags;
-    focus_handler::focus_tag(manager, &tag );
+    focus_handler::focus_tag(manager, &tag);
     true
 }
 

@@ -55,10 +55,10 @@ impl Workspace {
             id: -1,
             layout: Box::new(DefaultLayout {}),
             tags: vec![],
-            height: screen.height - 20,
+            height: screen.height,
             width: screen.width,
             x: screen.x,
-            y: screen.y + 20,
+            y: screen.y,
         }
     }
 

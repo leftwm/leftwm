@@ -7,7 +7,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
     match command {
         Command::MoveToTag => {
             if let Some(tag) = val {
-                if let Some(window) = manager.focused_window() {
+                if let Some(window) = manager.focused_window_mut() {
                     window.clear_tags();
                     window.tag(tag);
                     return true;
@@ -62,7 +62,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 let wp_tags = &manager.workspaces[manager.focused_workspace_history[1]]
                     .tags
                     .clone();
-                if let Some(window) = manager.focused_window() {
+                if let Some(window) = manager.focused_window_mut() {
                     window.tags = vec![wp_tags[0].clone()];
                     return true;
                 }
