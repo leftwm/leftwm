@@ -1,4 +1,5 @@
 use super::WindowHandle;
+use crate::config::WorkspaceConfig;
 use std::convert::From;
 use x11_dl::xlib;
 
@@ -19,6 +20,18 @@ impl Screen {
             width,
             x,
             y,
+        }
+    }
+}
+
+impl From<&WorkspaceConfig> for Screen {
+    fn from(wsc: &WorkspaceConfig) -> Self {
+        Screen {
+            root: WindowHandle::MockHandle(0),
+            height: wsc.height,
+            width: wsc.width,
+            x: wsc.x,
+            y: wsc.y,
         }
     }
 }

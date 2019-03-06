@@ -19,13 +19,18 @@ static SETUP: Once = Once::new();
 pub struct XlibDisplayServer {
     xw: XWrap,
     root: xlib::Window,
+    config: Config,
 }
 
 impl DisplayServer for XlibDisplayServer {
     fn new(config: &Config) -> XlibDisplayServer {
         let wrap = XWrap::new();
         let root = wrap.get_default_root();
-        let me = XlibDisplayServer { xw: wrap, root };
+        let me = XlibDisplayServer {
+            xw: wrap,
+            root,
+            config: config.clone(),
+        };
         me.xw.init(config); //setup events masks
         me
     }
@@ -67,10 +72,19 @@ impl XlibDisplayServer {
      */
     fn initial_events(&self) -> Vec<DisplayEvent> {
         let mut events = vec![];
-        // tell manager about existing screens
-        for screen in self.xw.get_screens() {
-            let e = DisplayEvent::ScreenCreate(screen);
-            events.push(e);
+        if self.config.workspace.is_empty() {
+            // tell manager about existing screens
+            for screen in self.xw.get_screens() {
+                let e = DisplayEvent::ScreenCreate(screen);
+                events.push(e);
+            }
+        } else {
+            for wsc in &self.config.workspace {
+                let mut screen = Screen::from( wsc );
+                screen.root = WindowHandle::XlibHandle( self.root.clone() );
+                let e = DisplayEvent::ScreenCreate(screen);
+                events.push(e);
+            }
         }
         // tell manager about existing windows
         for w in &self.find_all_windows() {

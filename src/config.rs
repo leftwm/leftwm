@@ -1,18 +1,46 @@
 mod keybind;
+mod workspace_config;
 
 use super::Command;
 use std::default::Default;
+use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+use toml;
+use xdg::BaseDirectories;
 
 pub use keybind::Keybind;
+pub use workspace_config::WorkspaceConfig;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub modkey: String,
+    pub workspace: Vec<WorkspaceConfig>,
     pub keybind: Vec<Keybind>,
 }
 
 pub fn load() -> Config {
-    Config::default()
+    match load_from_file() {
+        Ok(cfg) => cfg,
+        Err(_) => Config::default(),
+    }
+}
+
+fn load_from_file() -> Result<Config, Box<std::error::Error>> {
+    let path = BaseDirectories::with_prefix("leftwm")?;
+    let config_filename = path.place_config_file("config.toml")?;
+    if Path::new(&config_filename).exists() {
+        let contents = fs::read_to_string(config_filename)?;
+        let config: Config = toml::from_str(&contents)?;
+        Ok(config)
+    } else {
+        let config = Config::default();
+        let toml = toml::to_string(&config).unwrap();
+        let mut file = File::create(&config_filename)?;
+        file.write_all(&toml.as_bytes())?;
+        Ok(config)
+    }
 }
 
 impl Config {
@@ -117,7 +145,7 @@ impl Default for Config {
         }
 
         Config {
-            //modkey: "Mod1".to_owned(), //alt
+            workspace: vec![],
             modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
