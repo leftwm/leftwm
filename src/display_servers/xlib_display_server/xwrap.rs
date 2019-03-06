@@ -10,9 +10,10 @@ use std::ptr;
 use std::slice;
 use x11_dl::xlib;
 
-const WithdrawnState: u8 = 0;
-const NormalState: u8 = 1;
-const IconicState: u8 = 2;
+type WindowState = u8;
+const WITHDRAWN_STATE: WindowState = 0;
+const NORMAL_STATE: WindowState = 1;
+const ICONIC_STATE: WindowState = 2;
 
 pub struct XWrap {
     xlib: xlib::Xlib,
@@ -251,15 +252,32 @@ impl XWrap {
                     1,
                 );
             }
-
-            self.set_window_state(&h);
+            self.set_window_state(&h, NORMAL_STATE);
         }
     }
 
-    fn set_window_state(&self, handle: &WindowHandle) {
+    //this code is ran one when a window is destoryed
+    pub fn teardown_managed_window(&self, h: WindowHandle) {
+        if let WindowHandle::XlibHandle(handle) = h {
+            unsafe {
+
+		(self.xlib.XGrabServer)(self.display);
+		//(self.xlib.XSetErrorHandler)(xerrordummy);
+		(self.xlib.XUngrabButton)(self.display, xlib::AnyButton as u32, xlib::AnyModifier, handle);
+		self.set_window_state(&h, WITHDRAWN_STATE);
+		(self.xlib.XSync)(self.display, 0);
+		//(self.xlib.XSetErrorHandler)(xerror);
+		(self.xlib.XUngrabServer)(self.display);
+
+            }
+            self.set_window_state(&h, NORMAL_STATE);
+        }
+    }
+
+    fn set_window_state(&self, handle: &WindowHandle, state: WindowState) {
         if let WindowHandle::XlibHandle(handle) = handle {
             unsafe {
-                let list = vec![NormalState, 0].as_ptr();
+                let list = vec![state, 0].as_ptr();
                 (self.xlib.XChangeProperty)(
                     self.display,
                     handle.clone(),

@@ -60,6 +60,7 @@ impl DisplayServer for XlibDisplayServer {
         match act {
             DisplayAction::KillWindow(w) => self.xw.kill_window(w),
             DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w),
+            DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
             DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
         }
         Ok(())
@@ -80,8 +81,8 @@ impl XlibDisplayServer {
             }
         } else {
             for wsc in &self.config.workspace {
-                let mut screen = Screen::from( wsc );
-                screen.root = WindowHandle::XlibHandle( self.root.clone() );
+                let mut screen = Screen::from(wsc);
+                screen.root = WindowHandle::XlibHandle(self.root.clone());
                 let e = DisplayEvent::ScreenCreate(screen);
                 events.push(e);
             }
