@@ -20,6 +20,7 @@ pub use handlers::display_event_handler::DisplayEventHandler;
 pub use models::Manager;
 pub use models::Window;
 pub use utils::logging;
+pub use utils::child_process;
 
 #[macro_use]
 extern crate serde_derive;

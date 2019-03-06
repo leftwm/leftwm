@@ -126,13 +126,12 @@ impl Manager {
         let list: Vec<String> = self
             .workspaces
             .iter()
-            .rev()
             .map(|w| {
                 let tags = w.tags.join(",");
                 if w.id == focused_id {
                     format!("({})", tags)
                 } else {
-                    format!("[{}]", tags)
+                    format!(" {} ", tags)
                 }
             })
             .collect();
