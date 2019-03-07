@@ -198,46 +198,58 @@ impl XWrap {
     //}
 
     pub fn update_window(&self, window: &Window) {
-        let mut changes = xlib::XWindowChanges {
-            x: window.x(),
-            y: window.y(),
-            width: window.width(),
-            height: window.height(),
-            border_width: window.border,
-            sibling: 0,    //not unlocked
-            stack_mode: 0, //not unlocked
-        };
         if let WindowHandle::XlibHandle(h) = window.handle {
-            let unlock =
-                xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
-            unsafe {
-                (self.xlib.XConfigureWindow)(self.display, h, u32::from(unlock), &mut changes);
-                (self.xlib.XSync)(self.display, 0);
-                let rw: u32 = window.width() as u32;
-                let rh: u32 = window.height() as u32;
-                (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
+            if window.visable {
+                let mut changes = xlib::XWindowChanges {
+                    x: window.x(),
+                    y: window.y(),
+                    width: window.width(),
+                    height: window.height(),
+                    border_width: window.border,
+                    sibling: 0,    //not unlocked
+                    stack_mode: 0, //not unlocked
+                };
+                let unlock =
+                    xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
+                unsafe {
+                    (self.xlib.XConfigureWindow)(self.display, h, u32::from(unlock), &mut changes);
+                    (self.xlib.XSync)(self.display, 0);
+                    let rw: u32 = window.width() as u32;
+                    let rh: u32 = window.height() as u32;
+                    (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
+                }
+                self.send_config(window);
+            } else {
+                unsafe {
+                    //if not visable x is <---- way over there <----
+                    (self.xlib.XMoveWindow)(self.display, h, window.width() * -2, window.y());
+                }
             }
-            self.send_config(window);
-            self.update_visable(window);
+            //self.update_visable(window);
         }
     }
 
-    pub fn update_visable(&self, window: &Window) {
-        if let WindowHandle::XlibHandle(handle) = window.handle {
-            unsafe {
-                if window.visable {
-                    (self.xlib.XMapWindow)(self.display, handle);
-                } else {
-                    (self.xlib.XUnmapWindow)(self.display, handle);
-                }
-            }
-        }
-    }
+    //pub fn update_visable(&self, window: &Window) {
+    //    if let WindowHandle::XlibHandle(handle) = window.handle {
+    //        unsafe {
+    //            if window.visable {
+    //                (self.xlib.XMapWindow)(self.display, handle);
+    //            } else {
+    //                (self.xlib.XUnmapWindow)(self.display, handle);
+    //            }
+    //        }
+    //    }
+    //}
 
     //this code is ran one time when a window is added to the managers list of windows
     pub fn setup_managed_window(&self, h: WindowHandle) {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
+            //make sure the window is mapped
+            unsafe {
+                (self.xlib.XMapWindow)(self.display, handle);
+            }
+
             unsafe {
                 //let Xlib know we are managing this window
                 let list = vec![handle as u8].as_ptr();
@@ -260,15 +272,18 @@ impl XWrap {
     pub fn teardown_managed_window(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             unsafe {
-
-		(self.xlib.XGrabServer)(self.display);
-		//(self.xlib.XSetErrorHandler)(xerrordummy);
-		(self.xlib.XUngrabButton)(self.display, xlib::AnyButton as u32, xlib::AnyModifier, handle);
-		self.set_window_state(&h, WITHDRAWN_STATE);
-		(self.xlib.XSync)(self.display, 0);
-		//(self.xlib.XSetErrorHandler)(xerror);
-		(self.xlib.XUngrabServer)(self.display);
-
+                (self.xlib.XGrabServer)(self.display);
+                //(self.xlib.XSetErrorHandler)(xerrordummy);
+                (self.xlib.XUngrabButton)(
+                    self.display,
+                    xlib::AnyButton as u32,
+                    xlib::AnyModifier,
+                    handle,
+                );
+                self.set_window_state(&h, WITHDRAWN_STATE);
+                (self.xlib.XSync)(self.display, 0);
+                //(self.xlib.XSetErrorHandler)(xerror);
+                (self.xlib.XUngrabServer)(self.display);
             }
             self.set_window_state(&h, NORMAL_STATE);
         }
