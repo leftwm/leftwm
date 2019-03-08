@@ -18,6 +18,7 @@ const ICONIC_STATE: WindowState = 2;
 pub struct XWrap {
     xlib: xlib::Xlib,
     display: *mut xlib::Display,
+    root: xlib::Window,
     atoms: XAtom,
 }
 
@@ -29,10 +30,12 @@ impl XWrap {
 
         let atoms = XAtom::new(&xlib, display);
         println!("XATOMS: {:?}", atoms);
+        let root = unsafe { (xlib.XDefaultRootWindow)(display) };
 
         let xw = XWrap {
             xlib,
             display,
+            root,
             atoms,
         };
 
@@ -104,7 +107,7 @@ impl XWrap {
     }
 
     pub fn get_default_root(&self) -> xlib::Window {
-        unsafe { (self.xlib.XDefaultRootWindow)(self.display) }
+        self.root
     }
 
     //returns all the roots the display
@@ -475,6 +478,33 @@ impl XWrap {
             //might want to grab buttons here???
         }
     }
+
+    pub fn get_pointer_location(&self) -> Option<(i32,i32)> {
+        let mut root: xlib::Window = 0;
+        let mut window: xlib::Window = 0;
+        let mut root_x: c_int = 0;
+        let mut root_y: c_int = 0;
+        let mut win_x: c_int = 0;
+        let mut win_y: c_int = 0;
+        let mut state: c_uint = 0;
+        unsafe{
+            let success = (self.xlib.XQueryPointer)(
+                    self.display,
+                    self.root,
+                    &mut root,
+                    &mut window,
+                    &mut root_x,
+                    &mut root_y,
+                    &mut win_x,
+                    &mut win_y,
+                    &mut state
+                );
+            if success > 0 {
+                return Some((root_x, root_y));
+            }
+        }
+        None
+    } 
 
     pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
         let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, u64::from(keysym)) };

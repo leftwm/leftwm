@@ -15,8 +15,8 @@ impl DisplayEventHandler {
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
             DisplayEvent::WindowCreate(w) => window_handler::created(manager, w),
-            DisplayEvent::FocusedWindow(handle) => {
-                focus_handler::focus_window_by_handle(manager, &handle)
+            DisplayEvent::FocusedWindow(handle,x,y) => {
+                focus_handler::focus_window_by_handle(manager, &handle,x,y)
             }
             DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {

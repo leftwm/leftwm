@@ -35,7 +35,12 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
 /*
  * marks a window as the focused window
  */
-pub fn focus_window_by_handle(manager: &mut Manager, handle: &WindowHandle) -> bool {
+pub fn focus_window_by_handle(
+    manager: &mut Manager,
+    handle: &WindowHandle,
+    x: i32,
+    y: i32,
+) -> bool {
     let found: Vec<Window> = manager
         .windows
         .iter()
@@ -43,17 +48,33 @@ pub fn focus_window_by_handle(manager: &mut Manager, handle: &WindowHandle) -> b
         .map(|w| w.clone())
         .collect();
     if found.len() == 1 {
-        return focus_window(manager, &found[0]);
+        return focus_window(manager, &found[0], x, y);
     }
     false
 }
 
-pub fn focus_window(manager: &mut Manager, window: &Window) -> bool {
+pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> bool {
     let result = _focus_window_work(manager, window);
-    //make sure this windows tag is focused
-    window.tags.iter().for_each(|t| {
-        focus_tag(manager, t);
-    });
+    
+    // if the x,y mouse location is inside the to workspace for this window, it needs to be focused
+    // this is so the focus of the window gets passed to the underlying workspace
+    if !window.tags.is_empty() {
+        let main_tag = window.tags[0].clone();
+
+        let to_focus: Vec<Workspace> = manager
+            .workspaces
+            .iter()
+            .filter(|w| w.has_tag(&main_tag))
+            .map(|w| w.clone())
+            .collect();
+        to_focus.iter().for_each(|w| {
+            if w.contains_point(x,y) {
+                focus_workspace(manager, &w);
+            }
+        });
+
+    
+    }
     result
 }
 
@@ -110,7 +131,7 @@ pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
     for handle in history {
         for w in manager.windows.clone() {
             if w.handle == handle {
-                return focus_window(manager, &w);
+                return _focus_window_work(manager, &w);
             }
         }
     }

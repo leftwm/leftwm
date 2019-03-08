@@ -7,7 +7,6 @@ use x11_dl::xlib;
 
 pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
     match raw_event.get_type() {
-
         // new window is created
         xlib::MapRequest => {
             let event = xlib::XMapRequestEvent::from(raw_event);
@@ -17,7 +16,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
                 let w = Window::new(WindowHandle::XlibHandle(event.window), name);
                 Some(DisplayEvent::WindowCreate(w))
             } else {
-                //TODO: this is a trans for another window it should float 
+                //TODO: this is a trans for another window it should float
                 let w = Window::new(WindowHandle::XlibHandle(event.window), name);
                 Some(DisplayEvent::WindowCreate(w))
             }
@@ -57,7 +56,11 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             let event = xlib::XEnterWindowEvent::from(raw_event);
             log_xevent(&format!("EnterNotify: {:#?} ", event));
             let h = WindowHandle::XlibHandle(event.window);
-            Some(DisplayEvent::FocusedWindow(h))
+            let mouse_loc = xw.get_pointer_location();
+            match mouse_loc {
+                Some(loc) => Some(DisplayEvent::FocusedWindow(h, loc.0, loc.1)),
+                None => None,
+            }
         }
         xlib::LeaveNotify => {
             let event = xlib::XLeaveWindowEvent::from(raw_event);
@@ -99,7 +102,12 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             let event = xlib::XFocusChangeEvent::from(raw_event);
             let h = WindowHandle::XlibHandle(event.window);
             //log_xevent( &format!("FocusIn: {:#?} ", event) );
-            Some(DisplayEvent::FocusedWindow(h))
+            //Some(DisplayEvent::FocusedWindow(h))
+            let mouse_loc = xw.get_pointer_location();
+            match mouse_loc {
+                Some(loc) => Some(DisplayEvent::FocusedWindow(h, loc.0, loc.1)),
+                None => None,
+            }
         }
         xlib::FocusOut => {
             log_xevent(&format!("FocusOut"));

@@ -6,6 +6,6 @@ pub enum DisplayEvent {
     KeyCombo(ModMask, XKeysym),
     WindowCreate(Window),
     WindowDestroy(WindowHandle),
-    FocusedWindow(WindowHandle),
+    FocusedWindow(WindowHandle, i32, i32),
     ScreenCreate(Screen),
 }
