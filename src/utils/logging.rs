@@ -5,5 +5,5 @@ pub fn log_info(type_: &str, content: &str) {
 }
 
 pub fn log_xevent(_content: &str) {
-    //println!("{}: {}", "XEVENT".cyan(), content);
+    //println!("{}: {}", "XEVENT".cyan(), _content);
 }

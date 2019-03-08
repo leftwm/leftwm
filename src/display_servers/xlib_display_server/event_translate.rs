@@ -10,18 +10,19 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         // new window is created
         xlib::MapRequest => {
             let event = xlib::XMapRequestEvent::from(raw_event);
-            let name = xw.get_window_name(event.window);
-            let _trans = xw.get_transient_for(event.window);
-            let w = Window::new(WindowHandle::XlibHandle(event.window), name);
-            Some(DisplayEvent::WindowCreate(w))
-            //TODO: this is a trans for another window it should float
-            //if trans.is_none() {
-            //    let w = Window::new(WindowHandle::XlibHandle(event.window), name);
-            //    Some(DisplayEvent::WindowCreate(w))
-            //} else {
-            //    let w = Window::new(WindowHandle::XlibHandle(event.window), name);
-            //    Some(DisplayEvent::WindowCreate(w))
-            //}
+            match xw.get_window_attrs(event.window) {
+                Ok(attr) => {
+                    if attr.override_redirect > 0 {
+                        None
+                    } else {
+                        let name = xw.get_window_name(event.window);
+                        //let _trans = xw.get_transient_for(event.window);
+                        let w = Window::new(WindowHandle::XlibHandle(event.window), name);
+                        Some(DisplayEvent::WindowCreate(w))
+                    }
+                }
+                Err(_) => None,
+            }
         }
 
         // window is deleted
@@ -31,6 +32,19 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             log_xevent(&format!("UnmapNotify {:?}", event));
             None
             //Some(EventQueueItem::WindowDelete(h))
+        }
+
+        xlib::CreateNotify => {
+            let _event = xlib::XCreateWindowEvent::from(raw_event);
+            //log_xevent(&format!("CreateNotify_EVENT: {:?}", event));
+            None
+            //if event.parent == kw.get_default_root() {
+            //    let name = xw.get_window_name(event.window);
+            //    let w = Window::new(WindowHandle::XlibHandle(event.window), name);
+            //    Some(DisplayEvent::WindowCreate(w))
+            //} else {
+            //    None
+            //}
         }
 
         // window is deleted
@@ -135,16 +149,13 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             log_xevent(&format!("VisibilityNotify"));
             None
         }
-        xlib::CreateNotify => {
-            log_xevent(&format!("CreateNotify"));
-            None
-        }
         xlib::ReparentNotify => {
             log_xevent(&format!("ReparentNotify"));
             None
         }
         xlib::ConfigureNotify => {
-            log_xevent(&format!("ConfigureNotify"));
+            let event = xlib::XConfigureEvent::from(raw_event);
+            log_xevent(&format!("ConfigureNotify: {:#?}", event));
             None
         }
         xlib::ConfigureRequest => {
