@@ -11,22 +11,24 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         xlib::MapRequest => {
             let event = xlib::XMapRequestEvent::from(raw_event);
             let name = xw.get_window_name(event.window);
-            let trans = xw.get_transient_for(event.window);
-            if trans.is_none() {
-                let w = Window::new(WindowHandle::XlibHandle(event.window), name);
-                Some(DisplayEvent::WindowCreate(w))
-            } else {
-                //TODO: this is a trans for another window it should float
-                let w = Window::new(WindowHandle::XlibHandle(event.window), name);
-                Some(DisplayEvent::WindowCreate(w))
-            }
+            let _trans = xw.get_transient_for(event.window);
+            let w = Window::new(WindowHandle::XlibHandle(event.window), name);
+            Some(DisplayEvent::WindowCreate(w))
+            //TODO: this is a trans for another window it should float
+            //if trans.is_none() {
+            //    let w = Window::new(WindowHandle::XlibHandle(event.window), name);
+            //    Some(DisplayEvent::WindowCreate(w))
+            //} else {
+            //    let w = Window::new(WindowHandle::XlibHandle(event.window), name);
+            //    Some(DisplayEvent::WindowCreate(w))
+            //}
         }
 
         // window is deleted
         xlib::UnmapNotify => {
-            log_xevent(&format!("UnmapNotify"));
             let event = xlib::XUnmapEvent::from(raw_event);
-            let h = WindowHandle::XlibHandle(event.window);
+            let _h = WindowHandle::XlibHandle(event.window);
+            log_xevent(&format!("UnmapNotify {:?}", event));
             None
             //Some(EventQueueItem::WindowDelete(h))
         }

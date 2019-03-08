@@ -82,7 +82,7 @@ impl XlibDisplayServer {
         } else {
             for wsc in &self.config.workspace {
                 let mut screen = Screen::from(wsc);
-                screen.root = WindowHandle::XlibHandle(self.root.clone());
+                screen.root = WindowHandle::XlibHandle(self.root);
                 let e = DisplayEvent::ScreenCreate(screen);
                 events.push(e);
             }

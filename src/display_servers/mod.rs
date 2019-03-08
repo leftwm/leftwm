@@ -2,8 +2,6 @@ use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Screen;
 use crate::models::Window;
-use crate::models::WindowHandle;
-use crate::utils;
 use crate::DisplayEvent;
 mod mock_display_server;
 mod xlib_display_server;

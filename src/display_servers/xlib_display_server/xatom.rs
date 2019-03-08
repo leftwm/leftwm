@@ -2,7 +2,11 @@ use std::ffi::CString;
 use std::os::raw::{c_uchar, c_ulong};
 use x11_dl::xlib;
 
+
+
+//#![allow(non_snake_case)]
 #[derive(Clone, Debug)]
+#[allow(non_snake_case)]
 pub struct XAtom {
     pub WMProtocols: c_ulong,
     pub WMDelete: c_ulong,
@@ -18,9 +22,8 @@ pub struct XAtom {
     pub NetClientList: c_ulong,
 }
 
-
 impl XAtom {
-    pub fn into_chars(&self) -> Vec<c_uchar> {
+    pub fn as_chars(&self) -> Vec<c_uchar> {
         let mut chars: Vec<c_uchar> = vec![];
         chars.push(self.WMProtocols as u8);
         chars.push(self.WMDelete as u8);

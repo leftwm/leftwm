@@ -3,7 +3,7 @@ mod screen;
 mod window;
 mod workspace;
 
-use crate::{config, layouts};
+use crate::layouts;
 
 pub use manager::Manager;
 pub use screen::Screen;

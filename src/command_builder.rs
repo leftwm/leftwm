@@ -6,7 +6,6 @@ use super::ModMask;
 use super::XKeysym;
 use std::collections::HashMap;
 use x11_dl::xlib;
-use x11_dl::xlib::XKeyEvent;
 
 pub struct CommandBuilder {
     keybinds: HashMap<(ModMask, XKeysym), Keybind>,

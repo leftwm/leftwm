@@ -1,9 +1,4 @@
 extern crate leftwm;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::Error;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 
 use leftwm::child_process::Nanny;
 use leftwm::*;
@@ -12,28 +7,15 @@ fn get_events<T: DisplayServer>(ds: &T) -> Vec<DisplayEvent> {
     ds.get_next_events()
 }
 
-fn main() -> Result<(), Error> {
-    {
-        let mut manager = Box::new(Manager::default());
-        let mut process_nanny = Box::new(Nanny::new());
-        let config = config::load();
-        let display_server: XlibDisplayServer = DisplayServer::new(&config);
-        let handler = DisplayEventHandler { config: config };
-
-        let stopit = Arc::new(AtomicBool::new(false));
-        signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&stopit))?;
-        signal_hook::flag::register(signal_hook::SIGINT, Arc::clone(&stopit))?;
-        while !stopit.load(Ordering::Relaxed) {
-            event_loop(&mut manager, &mut process_nanny, &display_server, &handler);
-        }
+fn main() {
+    let mut manager = Box::new(Manager::default());
+    let mut process_nanny = Box::new(Nanny::new());
+    let config = config::load();
+    let display_server: XlibDisplayServer = DisplayServer::new(&config);
+    let handler = DisplayEventHandler { config };
+    loop {
+        event_loop(&mut manager, &mut process_nanny, &display_server, &handler);
     }
-
-    //NOTE: at this point all the things from the last block are cleaned up :)
-    println!("EXITING!!!");
-    //let mut file = std::fs::File::create("/home/lex/foo.txt")?;
-    //file.write_all(b"Hello, world!")?;
-
-    Ok(())
 }
 
 fn event_loop(
@@ -50,9 +32,9 @@ fn event_loop(
         for event in events {
             let needs_update = handler.process(manager, event);
 
-            while manager.actions.len() > 0 {
+            while !manager.actions.is_empty() {
                 if let Some(act) = manager.actions.pop_front() {
-                    display_server.execute_action(act);
+                    let _ = display_server.execute_action(act);
                 }
             }
 

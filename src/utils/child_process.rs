@@ -37,7 +37,7 @@ impl Nanny {
         let workspaces = manager.workspaces_display();
         let tags = manager.tags_display();
         let state = format!(" {}        {}\n", tags, workspaces);
-        self.send_state_to_stdin(&state);
+        let _ = self.send_state_to_stdin(&state);
 
         //cleanup dead sockets
         self.children.retain(|s| s.is_alive());
@@ -59,12 +59,12 @@ impl Nanny {
         all.difference(&running).map(|s| s.clone()).collect()
     }
 
-    fn send_state_to_stdin(&mut self, info: &String) -> Result<(), Box<std::error::Error>> {
+    fn send_state_to_stdin(&mut self, info: &str) -> Result<(), Box<std::error::Error>> {
         for child in self.children.iter_mut() {
             let p = &mut child.process;
             let std_op = &mut p.stdin;
             if let Some(std) = std_op {
-                std.write_all(info.as_bytes());
+                let _ = std.write_all(info.as_bytes());
             }
         }
         Ok(())

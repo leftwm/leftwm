@@ -13,7 +13,7 @@ use x11_dl::xlib;
 type WindowState = u8;
 const WITHDRAWN_STATE: WindowState = 0;
 const NORMAL_STATE: WindowState = 1;
-const ICONIC_STATE: WindowState = 2;
+//const ICONIC_STATE: WindowState = 2;
 
 pub struct XWrap {
     xlib: xlib::Xlib,
@@ -95,7 +95,7 @@ impl XWrap {
         let mut screens = Vec::new();
         let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
         for screen_num in 0..(screen_count) {
-            let mut screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_num) };
+            let screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_num) };
             screens.push(screen);
         }
         screens
@@ -298,7 +298,7 @@ impl XWrap {
                 let list = vec![state, 0].as_ptr();
                 (self.xlib.XChangeProperty)(
                     self.display,
-                    handle.clone(),
+                    *handle,
                     self.atoms.WMState,
                     self.atoms.WMState,
                     32,
@@ -479,7 +479,7 @@ impl XWrap {
         }
     }
 
-    pub fn get_pointer_location(&self) -> Option<(i32,i32)> {
+    pub fn get_pointer_location(&self) -> Option<(i32, i32)> {
         let mut root: xlib::Window = 0;
         let mut window: xlib::Window = 0;
         let mut root_x: c_int = 0;
@@ -487,24 +487,24 @@ impl XWrap {
         let mut win_x: c_int = 0;
         let mut win_y: c_int = 0;
         let mut state: c_uint = 0;
-        unsafe{
+        unsafe {
             let success = (self.xlib.XQueryPointer)(
-                    self.display,
-                    self.root,
-                    &mut root,
-                    &mut window,
-                    &mut root_x,
-                    &mut root_y,
-                    &mut win_x,
-                    &mut win_y,
-                    &mut state
-                );
+                self.display,
+                self.root,
+                &mut root,
+                &mut window,
+                &mut root_x,
+                &mut root_y,
+                &mut win_x,
+                &mut win_y,
+                &mut state,
+            );
             if success > 0 {
                 return Some((root_x, root_y));
             }
         }
         None
-    } 
+    }
 
     pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
         let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, u64::from(keysym)) };
@@ -544,8 +544,8 @@ impl XWrap {
 
         //EWMH junk
         unsafe {
-            let size: i32 = self.atoms.into_chars().len() as i32;
-            let atom_as_chars = self.atoms.into_chars().as_ptr();
+            let size: i32 = self.atoms.as_chars().len() as i32;
+            let atom_as_chars = self.atoms.as_chars().as_ptr();
             (self.xlib.XChangeProperty)(
                 self.display,
                 root,

@@ -1,6 +1,5 @@
 use super::*;
 use crate::display_action::DisplayAction;
-use crate::models::WindowHandle;
 use crate::utils::logging::*;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
@@ -27,7 +26,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::Execute => {
             if let Some(cmd) = val {
                 use std::process::Command;
-                Command::new("sh").arg("-c").arg(&cmd).spawn();
+                let _ = Command::new("sh").arg("-c").arg(&cmd).spawn();
                 log_info("EXECUTE", &cmd);
                 false
             } else {

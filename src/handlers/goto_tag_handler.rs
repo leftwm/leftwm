@@ -22,6 +22,7 @@ pub fn process(manager: &mut Manager, tag: String) -> bool {
     true
 }
 
+#[allow(dead_code)]
 fn two_screen_mock_manager() -> Manager {
     let mut manager = Manager::default();
     screen_create_handler::process(&mut manager, Screen::default());
