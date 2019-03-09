@@ -2,6 +2,7 @@ use super::DisplayEvent;
 use super::Window;
 use super::WindowHandle;
 use super::XWrap;
+use super::DisplayServerMode;
 use crate::utils::logging::*;
 use x11_dl::xlib;
 
@@ -65,8 +66,13 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
 
         xlib::ButtonPress => {
             let event = xlib::XButtonPressedEvent::from(raw_event);
-            log_xevent(&format!("ButtonPress: {:#?} ", event));
-            None
+            let h = WindowHandle::XlibHandle(event.window);
+            Some(DisplayEvent::MouseCombo(event.state, event.button, h))
+        }
+        xlib::ButtonRelease => {
+            let event = xlib::XButtonEvent::from(raw_event);
+            log_xevent(&format!("ButtonRelease: {:?}", event));
+            Some(DisplayEvent::ChangeToNormalMode)
         }
         xlib::EnterNotify => {
             let event = xlib::XEnterWindowEvent::from(raw_event);
@@ -105,14 +111,17 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             log_xevent(&format!("release: {:#?} ", event));
             None
         }
-        xlib::ButtonRelease => {
-            log_xevent(&format!("ButtonRelease"));
-            None
-        }
         xlib::MotionNotify => {
             let event = xlib::XMotionEvent::from(raw_event);
-            let h = WindowHandle::XlibHandle(event.window);
-            Some(DisplayEvent::Movement(h, event.x_root, event.y_root))
+            let event_h = WindowHandle::XlibHandle(event.window);
+            let offset_x = event.x_root - xw.mode_origin.0;
+            let offset_y = event.y_root - xw.mode_origin.1;
+            println!("XWRAP_MODE: {:?}", &xw.mode );
+            match &xw.mode {
+                DisplayServerMode::NormalMode => Some(DisplayEvent::Movement(event_h, event.x_root, event.y_root)),
+                DisplayServerMode::MovingWindow(h) => Some(DisplayEvent::MoveWindow(h.clone(), offset_x, offset_y)),
+                DisplayServerMode::ResizingWindow(h) => Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y)),
+            }
         }
         xlib::FocusIn => {
             let event = xlib::XFocusChangeEvent::from(raw_event);

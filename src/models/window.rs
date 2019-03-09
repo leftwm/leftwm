@@ -17,10 +17,11 @@ pub struct Window {
     pub tags: Vec<String>,
     pub border: i32,
     pub margin: i32,
-    height: i32,
-    width: i32,
-    x: i32,
-    y: i32,
+    pub normal_loc: (i32, i32),
+    pub normal_size: (i32, i32),
+    pub floating_loc: Option<(i32, i32)>,
+    pub floating_size: Option<(i32, i32)>,
+    pub start_loc: Option<(i32, i32)>,
 }
 
 impl Window {
@@ -33,41 +34,57 @@ impl Window {
             tags: Vec::new(),
             border: 1,
             margin: 10,
-            height: 600,
-            width: 800,
-            x: 0,
-            y: 0,
+            normal_loc: (0, 0),
+            normal_size: (0, 0),
+            floating_loc: None,
+            floating_size: None,
+            start_loc: None,
         }
     }
 
-    pub fn set_height(&mut self, height: i32) {
-        self.height = height
-    }
     pub fn set_width(&mut self, width: i32) {
-        self.width = width
+        self.normal_size.0 = width
     }
-    pub fn set_x(&mut self, x: i32) {
-        self.x = x 
-    }
-    pub fn set_y(&mut self, y: i32) {
-        self.y = y
+    pub fn set_height(&mut self, height: i32) {
+        self.normal_size.1 = height
     }
 
-    pub fn height(&self) -> i32 {
-        self.height 
-            - (self.margin * 2)
-            - (self.border * 2)
-    }
     pub fn width(&self) -> i32 {
-        self.width 
-            - (self.margin * 2)
-            - (self.border * 2)
+        if self.floating && !self.floating_size.is_none() {
+            self.floating_size.unwrap().0
+        } else {
+            self.normal_size.0 - (self.margin * 2) - (self.border * 2)
+        }
     }
+    pub fn height(&self) -> i32 {
+        if self.floating && !self.floating_size.is_none() {
+            self.floating_size.unwrap().1
+        } else {
+            self.normal_size.1 - (self.margin * 2) - (self.border * 2)
+        }
+    }
+
+    pub fn set_x(&mut self, x: i32) {
+        self.normal_loc.0 = x
+    }
+    pub fn set_y(&mut self, y: i32) {
+        self.normal_loc.1 = y
+    }
+
     pub fn x(&self) -> i32 {
-        self.x + self.margin
+        if self.floating && !self.floating_loc.is_none() {
+            self.floating_loc.unwrap().0
+        } else {
+            self.normal_loc.0 + self.margin
+        }
     }
+
     pub fn y(&self) -> i32 {
-        self.y + self.margin
+        if self.floating && !self.floating_loc.is_none() {
+            self.floating_loc.unwrap().1
+        } else {
+            self.normal_loc.1 + self.margin
+        }
     }
 
     pub fn tag(&mut self, tag: String) {

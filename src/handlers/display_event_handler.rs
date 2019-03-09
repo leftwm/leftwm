@@ -1,5 +1,6 @@
 use super::*;
 use crate::utils::logging::*;
+use crate::display_action::DisplayAction;
 
 pub struct DisplayEventHandler {
     pub config: Config,
@@ -19,17 +20,29 @@ impl DisplayEventHandler {
                 focus_handler::focus_window_by_handle(manager, &handle,x,y)
             }
             DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
+
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
                 let build = CommandBuilder::new(&self.config);
                 let command = build.from_xkeyevent(mod_mask, xkeysym);
-                //println!("{:?}", command);
                 if let Some((cmd, val)) = command {
                     command_handler::process(manager, cmd, val)
                 } else {
                     false
                 }
             }
+
+            DisplayEvent::MouseCombo(mod_mask, button, handle) => { 
+                mouse_combo_handler::process( manager, mod_mask, button, handle )
+            },
+
+            DisplayEvent::ChangeToNormalMode => {
+                //look through the config and build a command if its defined in the config
+                let act = DisplayAction::NormalMode;
+                manager.actions.push_back( act );
+                false
+            }
+
             DisplayEvent::Movement(handle, x, y) => {
                 if manager.screens.iter().any(|s| s.root == handle) {
                     focus_handler::focus_workspace_under_cursor(manager, x, y)
@@ -37,6 +50,9 @@ impl DisplayEventHandler {
                     false
                 }
             }
+
+            DisplayEvent::MoveWindow(handle,x,y) => window_move_handler::process(manager, &handle,x,y),
+            DisplayEvent::ResizeWindow(handle,x,y) => window_resize_handler::process(manager, &handle,x,y),
             //_ => false,
         };
 
@@ -65,7 +81,7 @@ impl DisplayEventHandler {
         let all_windows = &mut manager.windows;
         let all: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();
         for w in all {
-            w.visable = w.tags.is_empty();
+            w.visable = w.tags.is_empty() || w.floating;
         } // if not tagged force it to display
         for ws in &mut manager.workspaces {
             let windows: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();

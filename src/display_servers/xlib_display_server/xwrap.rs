@@ -1,9 +1,12 @@
 use super::utils;
 use super::xatom::XAtom;
+use super::xcursor::XCursor;
 use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
+use crate::utils::xkeysym_lookup::ModMask;
+use crate::DisplayServerMode;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::ptr;
@@ -13,6 +16,10 @@ use x11_dl::xlib;
 type WindowState = u8;
 const WITHDRAWN_STATE: WindowState = 0;
 const NORMAL_STATE: WindowState = 1;
+
+const BUTTONMASK: i64 = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
+const MOUSEMASK: i64 = BUTTONMASK | xlib::PointerMotionMask;
+
 //const ICONIC_STATE: WindowState = 2;
 
 pub struct XWrap {
@@ -20,6 +27,10 @@ pub struct XWrap {
     display: *mut xlib::Display,
     root: xlib::Window,
     atoms: XAtom,
+    cursors: XCursor,
+    pub mode: DisplayServerMode,
+    pub mod_key_mask: ModMask,
+    pub mode_origin: (i32, i32),
 }
 
 impl XWrap {
@@ -29,6 +40,7 @@ impl XWrap {
         assert!(!display.is_null(), "Null pointer in display");
 
         let atoms = XAtom::new(&xlib, display);
+        let cursors = XCursor::new(&xlib, display);
         println!("XATOMS: {:?}", atoms);
         let root = unsafe { (xlib.XDefaultRootWindow)(display) };
 
@@ -37,6 +49,10 @@ impl XWrap {
             display,
             root,
             atoms,
+            cursors,
+            mode: DisplayServerMode::NormalMode,
+            mod_key_mask: 0,
+            mode_origin: (0, 0),
         };
 
         extern "C" fn on_error_from_xlib(
@@ -268,6 +284,10 @@ impl XWrap {
                 );
             }
             self.set_window_state(&h, NORMAL_STATE);
+
+            unsafe {
+                (self.xlib.XSync)(self.display, 0);
+            }
         }
     }
 
@@ -450,9 +470,36 @@ impl XWrap {
     //    return Err(())
     //}
 
+    pub fn move_to_top(&self, handle: WindowHandle) {
+        if let WindowHandle::XlibHandle(window) = handle {
+            unsafe {
+                (self.xlib.XRaiseWindow)(self.display, window);
+            }
+        }
+    }
+
     pub fn window_take_focus(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
+            //println!("WINDOW_TAKE_FOCUS: {}", handle);
+
+            //tell the window to take focus
             self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
+
+            unsafe {
+                //cleanup all old watches
+                (self.xlib.XUngrabButton)(
+                    self.display,
+                    xlib::AnyButton as u32,
+                    xlib::AnyModifier,
+                    handle,
+                ); //cleanup
+
+                //just watchout for these mouse combos se we can act on them
+                self.grab_buttons(handle, xlib::Button1, self.mod_key_mask);
+                self.grab_buttons(handle, xlib::Button1, self.mod_key_mask | xlib::ShiftMask);
+                self.grab_buttons(handle, xlib::Button3, self.mod_key_mask);
+                self.grab_buttons(handle, xlib::Button3, self.mod_key_mask | xlib::ShiftMask);
+            }
         }
     }
 
@@ -504,6 +551,31 @@ impl XWrap {
             }
         }
         None
+    }
+
+    pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
+        //grab the keys with and without numlock (Mod2)
+        let mods: Vec<u32> = vec![
+            modifiers,
+            modifiers | xlib::Mod2Mask,
+            modifiers | xlib::LockMask,
+        ];
+        for m in mods {
+            unsafe {
+                (self.xlib.XGrabButton)(
+                    self.display,
+                    button,
+                    m,
+                    window,
+                    0,
+                    BUTTONMASK as u32,
+                    xlib::GrabModeAsync,
+                    xlib::GrabModeSync,
+                    0,
+                    0,
+                );
+            }
+        }
     }
 
     pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
@@ -574,6 +646,53 @@ impl XWrap {
 
         unsafe {
             (self.xlib.XSync)(self.display, 0);
+        }
+    }
+
+    pub fn set_mode(&mut self, mode: DisplayServerMode) {
+        //prevent resizing and moveing or root
+        match &mode {
+            DisplayServerMode::MovingWindow(h) | DisplayServerMode::ResizingWindow(h) => {
+                if h == &self.get_default_root_handle() {
+                    return;
+                }
+            }
+            _ => {}
+        }
+        if self.mode == DisplayServerMode::NormalMode && mode != DisplayServerMode::NormalMode {
+            crate::logging::log_info("SET_MODE", &format!("mode: {:?}", mode));
+            self.mode = mode.clone();
+            //safe this point as the start of the move/resize
+            if let Some(loc) = self.get_pointer_location() {
+                self.mode_origin = loc;
+            }
+            unsafe {
+                let cursor = match mode {
+                    DisplayServerMode::ResizingWindow(_) => self.cursors.resize,
+                    DisplayServerMode::MovingWindow(_) => self.cursors.move_,
+                    DisplayServerMode::NormalMode => self.cursors.normal,
+                };
+                //grab the mouse
+                (self.xlib.XGrabPointer)(
+                    self.display,
+                    self.root,
+                    0,
+                    MOUSEMASK as u32,
+                    xlib::GrabModeAsync,
+                    xlib::GrabModeAsync,
+                    0,
+                    cursor,
+                    xlib::CurrentTime,
+                );
+            }
+        }
+        if mode == DisplayServerMode::NormalMode {
+            //release the mouse grab
+            crate::logging::log_info("SET_MODE", &format!("mode: {:?}", mode));
+            unsafe {
+                (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
+            }
+            self.mode = mode;
         }
     }
 

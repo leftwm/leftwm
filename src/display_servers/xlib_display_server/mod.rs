@@ -6,6 +6,7 @@ use crate::models::WindowHandle;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
+use crate::DisplayServerMode;
 use std::sync::Once;
 use x11_dl::xlib;
 
@@ -13,6 +14,8 @@ mod event_translate;
 mod xatom;
 mod xwrap;
 use xwrap::XWrap;
+
+mod xcursor;
 
 static SETUP: Once = Once::new();
 
@@ -26,11 +29,13 @@ impl DisplayServer for XlibDisplayServer {
     fn new(config: &Config) -> XlibDisplayServer {
         let wrap = XWrap::new();
         let root = wrap.get_default_root();
-        let me = XlibDisplayServer {
+        let mut me = XlibDisplayServer {
             xw: wrap,
             root,
             config: config.clone(),
         };
+
+        me.xw.mod_key_mask = utils::xkeysym_lookup::into_mod(&config.modkey);
         me.xw.init(config); //setup events masks
         me
     }
@@ -56,12 +61,20 @@ impl DisplayServer for XlibDisplayServer {
         events
     }
 
-    fn execute_action(&self, act: DisplayAction) -> Result<(), Box<std::error::Error>> {
+    fn execute_action(&mut self, act: DisplayAction) -> Result<(), Box<std::error::Error>> {
         match act {
             DisplayAction::KillWindow(w) => self.xw.kill_window(w),
             DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w),
             DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
             DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
+            DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),
+            DisplayAction::StartMovingWindow(w) => {
+                self.xw.set_mode(DisplayServerMode::MovingWindow(w))
+            }
+            DisplayAction::StartResizingWindow(w) => {
+                self.xw.set_mode(DisplayServerMode::ResizingWindow(w))
+            }
+            DisplayAction::NormalMode => self.xw.set_mode(DisplayServerMode::NormalMode),
         }
         Ok(())
     }

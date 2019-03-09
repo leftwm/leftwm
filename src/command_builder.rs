@@ -21,7 +21,9 @@ impl CommandBuilder {
                 lookup.insert(id, b);
             }
         }
-        CommandBuilder { keybinds: lookup }
+        CommandBuilder {
+            keybinds: lookup,
+        }
     }
 
     pub fn find_keybind_for(&self, m: ModMask, key: XKeysym) -> Option<&Keybind> {
@@ -54,4 +56,7 @@ impl CommandBuilder {
             None => None,
         }
     }
+
+
+
 }

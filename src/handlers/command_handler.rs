@@ -8,6 +8,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             if let Some(tag) = val {
                 if let Some(window) = manager.focused_window_mut() {
                     window.clear_tags();
+                    window.floating = false;
                     window.tag(tag);
                     return true;
                 }
@@ -66,6 +67,11 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     return true;
                 }
             }
+            false
+        }
+
+        Command::MouseMoveWindow => {
+            log_info("MOUSE_MOVE", "start mouse move");
             false
         }
     }

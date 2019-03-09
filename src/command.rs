@@ -6,4 +6,5 @@ pub enum Command {
     GotoTag,
     MoveToTag,
     MoveToLastWorkspace,
+    MouseMoveWindow,
 }

@@ -11,17 +11,17 @@ fn main() {
     let mut manager = Box::new(Manager::default());
     let mut process_nanny = Box::new(Nanny::new());
     let config = config::load();
-    let display_server: XlibDisplayServer = DisplayServer::new(&config);
+    let mut display_server: XlibDisplayServer = DisplayServer::new(&config);
     let handler = DisplayEventHandler { config };
     loop {
-        event_loop(&mut manager, &mut process_nanny, &display_server, &handler);
+        event_loop(&mut manager, &mut process_nanny, &mut display_server, &handler);
     }
 }
 
 fn event_loop(
     manager: &mut Manager,
     process_nanny: &mut Nanny,
-    display_server: &XlibDisplayServer,
+    display_server: &mut XlibDisplayServer,
     handler: &DisplayEventHandler,
 ) {
     println!("BOOT:");

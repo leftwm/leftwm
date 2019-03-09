@@ -2,8 +2,6 @@ use std::ffi::CString;
 use std::os::raw::{c_uchar, c_ulong};
 use x11_dl::xlib;
 
-
-
 //#![allow(non_snake_case)]
 #[derive(Clone, Debug)]
 #[allow(non_snake_case)]

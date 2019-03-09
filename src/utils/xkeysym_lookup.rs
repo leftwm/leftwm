@@ -4,6 +4,7 @@ use x11_dl::xlib;
 
 pub type XKeysym = c_uint;
 pub type ModMask = c_uint;
+pub type Button = c_uint;
 
 pub fn into_modmask(keys: &Vec<String>) -> ModMask {
     let mut mask = 0;
