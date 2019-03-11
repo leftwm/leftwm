@@ -1,6 +1,6 @@
 use super::*;
-use crate::utils::logging::*;
 use crate::display_action::DisplayAction;
+use crate::utils::logging::*;
 
 pub struct DisplayEventHandler {
     pub config: Config,
@@ -16,8 +16,9 @@ impl DisplayEventHandler {
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
             DisplayEvent::WindowCreate(w) => window_handler::created(manager, w),
-            DisplayEvent::FocusedWindow(handle,x,y) => {
-                focus_handler::focus_window_by_handle(manager, &handle,x,y)
+            DisplayEvent::WindowChange(w) => window_handler::changed(manager, w),
+            DisplayEvent::FocusedWindow(handle, x, y) => {
+                focus_handler::focus_window_by_handle(manager, &handle, x, y)
             }
             DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
 
@@ -32,14 +33,14 @@ impl DisplayEventHandler {
                 }
             }
 
-            DisplayEvent::MouseCombo(mod_mask, button, handle) => { 
-                mouse_combo_handler::process( manager, mod_mask, button, handle )
-            },
+            DisplayEvent::MouseCombo(mod_mask, button, handle) => {
+                mouse_combo_handler::process(manager, mod_mask, button, handle)
+            }
 
             DisplayEvent::ChangeToNormalMode => {
                 //look through the config and build a command if its defined in the config
                 let act = DisplayAction::NormalMode;
-                manager.actions.push_back( act );
+                manager.actions.push_back(act);
                 false
             }
 
@@ -51,8 +52,12 @@ impl DisplayEventHandler {
                 }
             }
 
-            DisplayEvent::MoveWindow(handle,x,y) => window_move_handler::process(manager, &handle,x,y),
-            DisplayEvent::ResizeWindow(handle,x,y) => window_resize_handler::process(manager, &handle,x,y),
+            DisplayEvent::MoveWindow(handle, x, y) => {
+                window_move_handler::process(manager, &handle, x, y)
+            }
+            DisplayEvent::ResizeWindow(handle, x, y) => {
+                window_resize_handler::process(manager, &handle, x, y)
+            }
             //_ => false,
         };
 

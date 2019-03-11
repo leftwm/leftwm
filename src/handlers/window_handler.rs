@@ -44,3 +44,14 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     focus_handler::focus_last_window_that_exists(manager);
     start_size != manager.windows.len()
 }
+
+
+pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
+    for w in manager.windows.iter_mut() {
+        if w.handle == change.handle {
+            change.update(w);
+            return true;
+        }
+    }
+    false
+}

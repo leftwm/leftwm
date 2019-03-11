@@ -11,6 +11,7 @@ pub enum WindowHandle {
 #[derive(Debug, Clone)]
 pub struct Window {
     pub handle: WindowHandle,
+    pub transient: Option<WindowHandle>,
     pub visable: bool,
     pub floating: bool,
     pub name: Option<String>,
@@ -28,6 +29,7 @@ impl Window {
     pub fn new(h: WindowHandle, name: Option<String>) -> Window {
         Window {
             handle: h,
+            transient: None,
             visable: false,
             floating: false,
             name,

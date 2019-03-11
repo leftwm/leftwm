@@ -14,7 +14,12 @@ fn main() {
     let mut display_server: XlibDisplayServer = DisplayServer::new(&config);
     let handler = DisplayEventHandler { config };
     loop {
-        event_loop(&mut manager, &mut process_nanny, &mut display_server, &handler);
+        event_loop(
+            &mut manager,
+            &mut process_nanny,
+            &mut display_server,
+            &handler,
+        );
     }
 }
 
@@ -32,16 +37,17 @@ fn event_loop(
         for event in events {
             let needs_update = handler.process(manager, event);
 
-            while !manager.actions.is_empty() {
-                if let Some(act) = manager.actions.pop_front() {
-                    let _ = display_server.execute_action(act);
-                }
-            }
-
             //if we need to update the displayed state
             if needs_update {
                 let windows: Vec<&Window> = (&manager.windows).iter().map(|w| w).collect();
                 display_server.update_windows(windows);
+            }
+
+            //preform any actions requested by the handler
+            while !manager.actions.is_empty() {
+                if let Some(act) = manager.actions.pop_front() {
+                    let _ = display_server.execute_action(act);
+                }
             }
 
             //inform all child processes of the new state

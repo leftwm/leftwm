@@ -1,8 +1,9 @@
 use super::DisplayEvent;
+use super::DisplayServerMode;
 use super::Window;
 use super::WindowHandle;
 use super::XWrap;
-use super::DisplayServerMode;
+use crate::models::WindowChange;
 use crate::utils::logging::*;
 use x11_dl::xlib;
 
@@ -17,8 +18,11 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
                         None
                     } else {
                         let name = xw.get_window_name(event.window);
-                        //let _trans = xw.get_transient_for(event.window);
-                        let w = Window::new(WindowHandle::XlibHandle(event.window), name);
+                        let mut w = Window::new(WindowHandle::XlibHandle(event.window), name);
+                        let trans = xw.get_transient_for(event.window);
+                        if let Some(trans) = trans {
+                            w.transient = Some(WindowHandle::XlibHandle(trans));
+                        }
                         Some(DisplayEvent::WindowCreate(w))
                     }
                 }
@@ -89,10 +93,35 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             log_xevent(&format!("LeaveNotify: {:#?} ", event));
             None
         }
+
         xlib::PropertyNotify => {
             let event = xlib::XPropertyEvent::from(raw_event);
-            log_xevent(&format!("PropertyNotify: {:#?} ", event));
-            None
+            let handle = WindowHandle::XlibHandle(event.window);
+            if event.window == xw.get_default_root() || event.state == xlib::PropertyDelete {
+                return None;
+            }
+            match event.atom {
+                xlib::XA_WM_TRANSIENT_FOR => {
+                    let mut change = WindowChange::new(handle);
+                    let trans = xw.get_transient_for(event.window);
+                    if let Some(trans) = trans {
+                        change.transient = Some(Some(WindowHandle::XlibHandle(trans)));
+                    } else {
+                        change.transient = Some(None);
+                    }
+                    Some( DisplayEvent::WindowChange(change) )
+                },
+                xlib::XA_WM_NORMAL_HINTS => {
+                    //update size hints
+                    None
+                },
+                xlib::XA_WM_HINTS => {
+                    // TODO: update wm hints 
+                    // never focus, is urgent
+                    None
+                },
+                _ => None,
+            }
         }
 
         xlib::MapNotify => {
@@ -116,11 +145,17 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             let event_h = WindowHandle::XlibHandle(event.window);
             let offset_x = event.x_root - xw.mode_origin.0;
             let offset_y = event.y_root - xw.mode_origin.1;
-            println!("XWRAP_MODE: {:?}", &xw.mode );
+            println!("XWRAP_MODE: {:?}", &xw.mode);
             match &xw.mode {
-                DisplayServerMode::NormalMode => Some(DisplayEvent::Movement(event_h, event.x_root, event.y_root)),
-                DisplayServerMode::MovingWindow(h) => Some(DisplayEvent::MoveWindow(h.clone(), offset_x, offset_y)),
-                DisplayServerMode::ResizingWindow(h) => Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y)),
+                DisplayServerMode::NormalMode => {
+                    Some(DisplayEvent::Movement(event_h, event.x_root, event.y_root))
+                }
+                DisplayServerMode::MovingWindow(h) => {
+                    Some(DisplayEvent::MoveWindow(h.clone(), offset_x, offset_y))
+                }
+                DisplayServerMode::ResizingWindow(h) => {
+                    Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y))
+                }
             }
         }
         xlib::FocusIn => {

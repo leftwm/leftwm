@@ -1,4 +1,5 @@
-use super::{models::Screen, models::Window, models::WindowHandle, ModMask, XKeysym, Button};
+use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask, XKeysym};
+use crate::models::WindowChange;
 
 #[derive(Debug)]
 pub enum DisplayEvent {
@@ -6,6 +7,7 @@ pub enum DisplayEvent {
     KeyCombo(ModMask, XKeysym),
     MouseCombo(ModMask, Button, WindowHandle),
     WindowCreate(Window),
+    WindowChange(WindowChange),
     WindowDestroy(WindowHandle),
     FocusedWindow(WindowHandle, i32, i32),
     MoveWindow(WindowHandle, i32, i32),
