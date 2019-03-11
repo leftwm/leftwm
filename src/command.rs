@@ -7,4 +7,6 @@ pub enum Command {
     MoveToTag,
     MoveToLastWorkspace,
     MouseMoveWindow,
+    NextLayout,
+    PreviousLayout,
 }

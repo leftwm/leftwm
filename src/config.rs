@@ -124,6 +124,22 @@ impl Default for Config {
             key: "w".to_owned(),
         });
 
+        //Mod + up => change to the next layout
+        commands.push(Keybind {
+            command: Command::NextLayout,
+            value: None,
+            modifier: vec!["modkey".to_owned()],
+            key: "Up".to_owned(),
+        });
+
+        //Mod + down => change to the previous layout
+        commands.push(Keybind {
+            command: Command::PreviousLayout,
+            value: None,
+            modifier: vec!["modkey".to_owned()],
+            key: "Down".to_owned(),
+        });
+
         //add goto workspace
         for i in 1..10 {
             commands.push(Keybind {

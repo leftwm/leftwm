@@ -2,12 +2,12 @@ use super::layouts::*;
 use super::Screen;
 use super::Window;
 use std::fmt;
+use std::collections::VecDeque;
 
 #[derive(Clone)]
 pub struct Workspace {
     pub id: i32,
-    //pub name: String,
-    layout: Box<Layout>,
+    layouts: VecDeque<Box<Layout>>,
     pub tags: Vec<String>,
     pub height: i32,
     pub width: i32,
@@ -35,7 +35,7 @@ impl Default for Workspace {
     fn default() -> Self {
         Workspace {
             id: -1,
-            layout: Box::new(DefaultLayout {}),
+            layouts: get_all_layouts(),
             tags: vec![],
             height: 600,
             width: 800,
@@ -53,7 +53,7 @@ impl Workspace {
     pub fn from_screen(screen: &Screen) -> Workspace {
         Workspace {
             id: -1,
-            layout: Box::new(DefaultLayout {}),
+            layouts: get_all_layouts(),
             tags: vec![],
             height: screen.height,
             width: screen.width,
@@ -79,6 +79,20 @@ impl Workspace {
             }
         }
         false
+    }
+
+    pub fn next_layout(&mut self){
+        let layout = self.layouts.pop_front();
+        if let Some(layout) = layout {
+            self.layouts.push_back(layout);
+        }
+    }
+
+    pub fn prev_layout(&mut self){
+        let layout = self.layouts.pop_back();
+        if let Some(layout) = layout {
+            self.layouts.push_front(layout);
+        }
     }
 
     /*
@@ -108,7 +122,7 @@ impl Workspace {
         for w in mine.iter_mut() {
             w.visable = true;
         }
-        self.layout.update_windows(self, &mut mine);
+        self.layouts[0].update_windows(self, &mut mine);
     }
 }
 

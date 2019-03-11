@@ -1,5 +1,6 @@
 use super::models::Window;
 use super::models::Workspace;
+use std::collections::VecDeque;
 
 pub trait Layout: LayoutClone {
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>);
@@ -21,8 +22,15 @@ impl Clone for Box<Layout> {
     }
 }
 
+pub fn get_all_layouts() -> VecDeque<Box<Layout>> {
+    let mut layouts = VecDeque::new();
+    layouts.push_back( Box::new(EvenHorizontal{}) as Box<Layout> );  
+    layouts.push_back( Box::new(EvenVertical{}) as Box<Layout> );  
+    layouts
+}
+
 //pub type DefaultLayout = EvenVertical;
-pub type DefaultLayout = EvenHorizontal;
+//pub type DefaultLayout = EvenHorizontal;
 
 #[derive(Clone, Debug)]
 pub struct EvenHorizontal {}

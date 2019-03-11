@@ -70,6 +70,21 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             false
         }
 
+        Command::NextLayout => {
+            if let Some(workspace) = manager.focused_workspace_mut() {
+                workspace.next_layout();
+                return true;
+            }
+            false
+        }
+        Command::PreviousLayout => {
+            if let Some(workspace) = manager.focused_workspace_mut() {
+                workspace.prev_layout();
+                return true;
+            }
+            false
+        }
+
         Command::MouseMoveWindow => {
             log_info("MOUSE_MOVE", "start mouse move");
             false
