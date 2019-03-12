@@ -1,9 +1,9 @@
+use super::event_translate_property_notify;
 use super::DisplayEvent;
 use super::DisplayServerMode;
 use super::Window;
 use super::WindowHandle;
 use super::XWrap;
-use super::event_translate_property_notify;
 use crate::utils::logging::*;
 use x11_dl::xlib;
 

@@ -18,7 +18,15 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     } else {
         window.tags = vec![manager.tags[0].clone()]
     }
-    //window.margin = 25;
+
+    if window.must_float() {
+        //window.set_floating(true);
+        //window.set_visable(true);
+        //window.tags = vec![]; 
+        window.floating_loc=Some(window.normal_loc);
+        window.floating_size=Some((400,400));
+    }
+
     manager.windows.push(window.clone());
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
 

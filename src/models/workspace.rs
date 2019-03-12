@@ -1,8 +1,8 @@
 use super::layouts::*;
 use super::Screen;
 use super::Window;
-use std::fmt;
 use std::collections::VecDeque;
+use std::fmt;
 
 #[derive(Clone)]
 pub struct Workspace {
@@ -81,14 +81,14 @@ impl Workspace {
         false
     }
 
-    pub fn next_layout(&mut self){
+    pub fn next_layout(&mut self) {
         let layout = self.layouts.pop_front();
         if let Some(layout) = layout {
             self.layouts.push_back(layout);
         }
     }
 
-    pub fn prev_layout(&mut self){
+    pub fn prev_layout(&mut self) {
         let layout = self.layouts.pop_back();
         if let Some(layout) = layout {
             self.layouts.push_front(layout);
@@ -113,14 +113,14 @@ impl Workspace {
     pub fn displayed_windows<'a>(&self, windows: Vec<&'a mut Window>) -> Vec<&'a mut Window> {
         windows
             .into_iter()
-            .filter(|w| self.is_displaying(w) && !w.floating() )
+            .filter(|w| self.is_displaying(w) && !w.floating())
             .collect::<Vec<&mut Window>>()
     }
 
     pub fn update_windows(&self, windows: Vec<&mut Window>) {
         let mut mine = self.displayed_windows(windows);
         for w in mine.iter_mut() {
-            w.visable = true;
+            w.set_visable(true);
         }
         self.layouts[0].update_windows(self, &mut mine);
     }

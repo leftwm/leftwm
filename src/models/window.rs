@@ -12,7 +12,7 @@ pub enum WindowHandle {
 pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
-    pub visable: bool,
+    visable: bool,
     floating: bool,
     pub name: Option<String>,
     pub tags: Vec<String>,
@@ -44,13 +44,20 @@ impl Window {
         }
     }
 
+    pub fn set_visable(&mut self, value: bool) {
+        self.visable = value;
+    }
+    pub fn visable(&self) -> bool {
+        self.visable || self.floating()
+    }
+
     pub fn set_floating(&mut self, value: bool) {
         self.floating = value;
     }
-    pub fn floating(&self) -> bool{
+    pub fn floating(&self) -> bool {
         self.floating || self.must_float()
     }
-    pub fn must_float(&self) -> bool{
+    pub fn must_float(&self) -> bool {
         !self.transient.is_none()
     }
 
@@ -62,14 +69,14 @@ impl Window {
     }
 
     pub fn width(&self) -> i32 {
-        if self.floating && !self.floating_size.is_none() {
+        if self.floating() && !self.floating_size.is_none() {
             self.floating_size.unwrap().0
         } else {
             self.normal_size.0 - (self.margin * 2) - (self.border * 2)
         }
     }
     pub fn height(&self) -> i32 {
-        if self.floating && !self.floating_size.is_none() {
+        if self.floating() && !self.floating_size.is_none() {
             self.floating_size.unwrap().1
         } else {
             self.normal_size.1 - (self.margin * 2) - (self.border * 2)
@@ -84,7 +91,7 @@ impl Window {
     }
 
     pub fn x(&self) -> i32 {
-        if self.floating && !self.floating_loc.is_none() {
+        if self.floating() && !self.floating_loc.is_none() {
             self.floating_loc.unwrap().0
         } else {
             self.normal_loc.0 + self.margin
@@ -92,7 +99,7 @@ impl Window {
     }
 
     pub fn y(&self) -> i32 {
-        if self.floating && !self.floating_loc.is_none() {
+        if self.floating() && !self.floating_loc.is_none() {
             self.floating_loc.unwrap().1
         } else {
             self.normal_loc.1 + self.margin

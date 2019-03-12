@@ -218,7 +218,7 @@ impl XWrap {
 
     pub fn update_window(&self, window: &Window) {
         if let WindowHandle::XlibHandle(h) = window.handle {
-            if window.visable {
+            if window.visable() {
                 let mut changes = xlib::XWindowChanges {
                     x: window.x(),
                     y: window.y(),
