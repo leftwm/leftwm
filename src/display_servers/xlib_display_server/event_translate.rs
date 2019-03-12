@@ -3,7 +3,7 @@ use super::DisplayServerMode;
 use super::Window;
 use super::WindowHandle;
 use super::XWrap;
-use crate::models::WindowChange;
+use super::event_translate_property_notify;
 use crate::utils::logging::*;
 use x11_dl::xlib;
 
@@ -96,32 +96,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
 
         xlib::PropertyNotify => {
             let event = xlib::XPropertyEvent::from(raw_event);
-            let handle = WindowHandle::XlibHandle(event.window);
-            if event.window == xw.get_default_root() || event.state == xlib::PropertyDelete {
-                return None;
-            }
-            match event.atom {
-                xlib::XA_WM_TRANSIENT_FOR => {
-                    let mut change = WindowChange::new(handle);
-                    let trans = xw.get_transient_for(event.window);
-                    if let Some(trans) = trans {
-                        change.transient = Some(Some(WindowHandle::XlibHandle(trans)));
-                    } else {
-                        change.transient = Some(None);
-                    }
-                    Some( DisplayEvent::WindowChange(change) )
-                },
-                xlib::XA_WM_NORMAL_HINTS => {
-                    //update size hints
-                    None
-                },
-                xlib::XA_WM_HINTS => {
-                    // TODO: update wm hints 
-                    // never focus, is urgent
-                    None
-                },
-                _ => None,
-            }
+            event_translate_property_notify::from_event(xw, event)
         }
 
         xlib::MapNotify => {

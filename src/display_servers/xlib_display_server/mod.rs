@@ -11,6 +11,7 @@ use std::sync::Once;
 use x11_dl::xlib;
 
 mod event_translate;
+mod event_translate_property_notify;
 mod xatom;
 mod xwrap;
 use xwrap::XWrap;

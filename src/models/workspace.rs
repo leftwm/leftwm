@@ -113,7 +113,7 @@ impl Workspace {
     pub fn displayed_windows<'a>(&self, windows: Vec<&'a mut Window>) -> Vec<&'a mut Window> {
         windows
             .into_iter()
-            .filter(|w| self.is_displaying(w) && !w.floating)
+            .filter(|w| self.is_displaying(w) && !w.floating() )
             .collect::<Vec<&mut Window>>()
     }
 

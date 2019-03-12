@@ -86,7 +86,7 @@ impl DisplayEventHandler {
         let all_windows = &mut manager.windows;
         let all: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();
         for w in all {
-            w.visable = w.tags.is_empty() || w.floating;
+            w.visable = w.tags.is_empty() || w.floating();
         } // if not tagged force it to display
         for ws in &mut manager.workspaces {
             let windows: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();

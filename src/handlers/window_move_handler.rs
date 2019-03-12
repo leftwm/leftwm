@@ -13,7 +13,7 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
 
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
     //println!("MOVING_WINDOW: {:?}", &window.handle);
-    window.floating = true;
+    window.set_floating( true );
     if window.floating_loc.is_none() {
         window.floating_loc = Some((window.x(), window.y()));
     }
@@ -42,7 +42,7 @@ fn snap_to_workspaces(window: &mut Window, workspaces: &Vec<Workspace>) -> bool 
 
 fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
         if should_snap( window, workspace ) {
-            window.floating = false;
+            window.set_floating( false );
             window.tags = workspace.tags.clone();
             return true;
         }
@@ -53,6 +53,9 @@ fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
 //to be snapable, the window must be inside the workspace AND the a side must be close to 
 //the workspaces edge
 fn should_snap(window: &Window, workspace: &Workspace) -> bool {
+    if window.must_float() {
+        return false;
+    }
     if let Some(loc) = window.floating_loc {
         //get window sides
         let win_left = loc.0;

@@ -11,7 +11,7 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
 }
 
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
-    window.floating = true;
+    window.set_floating(true);
     if window.floating_size.is_none() {
         window.floating_size = Some((window.width(), window.height()));
     }

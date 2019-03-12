@@ -23,8 +23,8 @@ const MOUSEMASK: i64 = BUTTONMASK | xlib::PointerMotionMask;
 //const ICONIC_STATE: WindowState = 2;
 
 pub struct XWrap {
-    xlib: xlib::Xlib,
-    display: *mut xlib::Display,
+    pub xlib: xlib::Xlib,
+    pub display: *mut xlib::Display,
     root: xlib::Window,
     atoms: XAtom,
     cursors: XCursor,

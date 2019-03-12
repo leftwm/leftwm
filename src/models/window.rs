@@ -13,7 +13,7 @@ pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
     pub visable: bool,
-    pub floating: bool,
+    floating: bool,
     pub name: Option<String>,
     pub tags: Vec<String>,
     pub border: i32,
@@ -42,6 +42,16 @@ impl Window {
             floating_size: None,
             start_loc: None,
         }
+    }
+
+    pub fn set_floating(&mut self, value: bool) {
+        self.floating = value;
+    }
+    pub fn floating(&self) -> bool{
+        self.floating || self.must_float()
+    }
+    pub fn must_float(&self) -> bool{
+        !self.transient.is_none()
     }
 
     pub fn set_width(&mut self, width: i32) {
