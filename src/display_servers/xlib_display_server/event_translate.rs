@@ -22,6 +22,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
                         let trans = xw.get_transient_for(event.window);
                         if let Some(trans) = trans {
                             w.transient = Some(WindowHandle::XlibHandle(trans));
+                            w.floating_size = xw.get_hint_sizing_as_tuple(event.window);
                         }
                         Some(DisplayEvent::WindowCreate(w))
                     }
@@ -120,7 +121,6 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             let event_h = WindowHandle::XlibHandle(event.window);
             let offset_x = event.x_root - xw.mode_origin.0;
             let offset_y = event.y_root - xw.mode_origin.1;
-            println!("XWRAP_MODE: {:?}", &xw.mode);
             match &xw.mode {
                 DisplayServerMode::NormalMode => {
                     Some(DisplayEvent::Movement(event_h, event.x_root, event.y_root))

@@ -12,7 +12,6 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
 }
 
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
-    //println!("MOVING_WINDOW: {:?}", &window.handle);
     window.set_floating( true );
     if window.floating_loc.is_none() {
         window.floating_loc = Some((window.x(), window.y()));

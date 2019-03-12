@@ -41,7 +41,6 @@ impl XWrap {
 
         let atoms = XAtom::new(&xlib, display);
         let cursors = XCursor::new(&xlib, display);
-        println!("XATOMS: {:?}", atoms);
         let root = unsafe { (xlib.XDefaultRootWindow)(display) };
 
         let xw = XWrap {
@@ -549,6 +548,51 @@ impl XWrap {
             if success > 0 {
                 return Some((root_x, root_y));
             }
+        }
+        None
+    }
+
+    pub fn get_hint_sizing(&self, window: xlib::Window) -> Option<xlib::XSizeHints> {
+        let mut xsize: xlib::XSizeHints = unsafe { std::mem::uninitialized() };
+        let mut msize: c_long = xlib::PSize;
+        let status =
+            unsafe { (self.xlib.XGetWMNormalHints)(self.display, window, &mut xsize, &mut msize) };
+        match status {
+            0 => None,
+            _ => Some(xsize),
+        }
+    }
+
+    pub fn get_hint_sizing_as_tuple(&self, window: xlib::Window) -> Option<(i32, i32)> {
+        if let Some(size) = self.get_hint_sizing(window) {
+            let mut w = size.width;
+            let mut h = size.height;
+
+            if w == 0 {
+                w = size.base_width
+            }
+            if h == 0 {
+                h = size.base_height
+            }
+
+            if size.min_width != 0 && size.min_width > w {
+                w = size.min_width
+            }
+            if size.min_height != 0 && size.min_height > h {
+                h = size.min_height
+            }
+
+            if size.max_width != 0 && size.max_width < w {
+                w = size.max_width
+            }
+            if size.max_height != 0 && size.max_height < h {
+                h = size.max_height
+            }
+
+            if w == 0 || h == 0 {
+                return None;
+            }
+            return Some((w, h));
         }
         None
     }

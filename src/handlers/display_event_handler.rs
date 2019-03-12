@@ -65,11 +65,6 @@ impl DisplayEventHandler {
             self.update_windows(manager);
         }
 
-        //println!("WORKSPACES: {}", manager.workspaces_display());
-
-        //println!("state: {:?}", manager);
-        //println!("state: {:?}", manager.windows);
-
         update_needed
     }
 

@@ -19,12 +19,12 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
         window.tags = vec![manager.tags[0].clone()]
     }
 
-    if window.must_float() {
-        //window.set_floating(true);
-        //window.set_visable(true);
-        //window.tags = vec![]; 
-        window.floating_loc=Some(window.normal_loc);
-        window.floating_size=Some((400,400));
+    if window.floating() {
+        window.floating_loc = Some(window.normal_loc);
+        match window.floating_size {
+            None => window.floating_size = Some((400, 400)),
+            _ => {}
+        }
     }
 
     manager.windows.push(window.clone());
@@ -52,7 +52,6 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     focus_handler::focus_last_window_that_exists(manager);
     start_size != manager.windows.len()
 }
-
 
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
     for w in manager.windows.iter_mut() {
