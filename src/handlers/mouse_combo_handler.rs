@@ -12,7 +12,7 @@ pub fn process(
     handle: WindowHandle,
 ) -> bool {
     //look through the config and build a command if its defined in the config
-    let act = build_action(modmask, button, handle.clone());
+    let act = build_action(manager, modmask, button, handle.clone());
     if let Some(act) = act {
         //new move/resize. while the old starting points
         for w in &mut manager.windows {
@@ -27,10 +27,29 @@ pub fn process(
     false
 }
 
-fn build_action(_mod_mask: ModMask, button: Button, window: WindowHandle) -> Option<DisplayAction> {
+fn build_action(
+    manager: &Manager,
+    _mod_mask: ModMask,
+    button: Button,
+    window: WindowHandle,
+) -> Option<DisplayAction> {
     match button {
-        xlib::Button1 => Some(DisplayAction::StartMovingWindow(window)),
-        xlib::Button3 => Some(DisplayAction::StartResizingWindow(window)),
+        xlib::Button1 => {
+            for w in &manager.windows {
+                if w.handle == window && w.can_move() {
+                    return Some(DisplayAction::StartMovingWindow(window));
+                }
+            }
+            None
+        }
+        xlib::Button3 => {
+            for w in &manager.windows {
+                if w.handle == window && w.can_resize() {
+                    return Some(DisplayAction::StartResizingWindow(window));
+                }
+            }
+            None
+        }
         _ => None,
     }
 }

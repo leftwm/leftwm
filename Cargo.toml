@@ -12,6 +12,10 @@ path = "src/lib.rs"
 name = "leftwm"
 path = "src/wm.rs"
 
+#[[bin]]
+#name = "test"
+#path = "src/test.rs"
+
 [dependencies]
 x11-dl = "2.18.3"
 toml = "0.4.10"

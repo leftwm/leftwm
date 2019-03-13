@@ -1,3 +1,4 @@
+use super::event_translate_client_message;
 use super::event_translate_property_notify;
 use super::DisplayEvent;
 use super::DisplayServerMode;
@@ -12,18 +13,23 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         // new window is created
         xlib::MapRequest => {
             let event = xlib::XMapRequestEvent::from(raw_event);
+            let handle = WindowHandle::XlibHandle(event.window);
+            //first subscribe to window events so we don't miss any
+            xw.subscribe_to_window_events(&handle);
+
             match xw.get_window_attrs(event.window) {
                 Ok(attr) => {
                     if attr.override_redirect > 0 {
                         None
                     } else {
                         let name = xw.get_window_name(event.window);
-                        let mut w = Window::new(WindowHandle::XlibHandle(event.window), name);
+                        let mut w = Window::new(handle, name);
                         let trans = xw.get_transient_for(event.window);
                         if let Some(trans) = trans {
                             w.transient = Some(WindowHandle::XlibHandle(trans));
-                            w.floating_size = xw.get_hint_sizing_as_tuple(event.window);
                         }
+                        w.floating_size = xw.get_hint_sizing_as_tuple(event.window);
+                        w.type_ = xw.get_window_type(event.window);
                         Some(DisplayEvent::WindowCreate(w))
                     }
                 }
@@ -65,8 +71,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
 
         xlib::ClientMessage => {
             let event = xlib::XClientMessageEvent::from(raw_event);
-            log_xevent(&format!("ClientMessage: {:#?} ", event));
-            None
+            event_translate_client_message::from_event(xw, event)
         }
 
         xlib::ButtonPress => {

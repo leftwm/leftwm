@@ -1,3 +1,4 @@
+use super::WindowType;
 use x11_dl::xlib;
 
 type MockHandle = i32;
@@ -15,6 +16,7 @@ pub struct Window {
     visable: bool,
     floating: bool,
     pub name: Option<String>,
+    pub type_: WindowType,
     pub tags: Vec<String>,
     pub border: i32,
     pub margin: i32,
@@ -33,6 +35,7 @@ impl Window {
             visable: false,
             floating: false,
             name,
+            type_: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
             margin: 10,
@@ -58,7 +61,13 @@ impl Window {
         self.floating || self.must_float()
     }
     pub fn must_float(&self) -> bool {
-        !self.transient.is_none()
+        !self.transient.is_none() || self.type_ == WindowType::Dock
+    }
+    pub fn can_move(&self) -> bool {
+        self.type_ != WindowType::Dock
+    }
+    pub fn can_resize(&self) -> bool {
+        self.type_ != WindowType::Dock
     }
 
     pub fn set_width(&mut self, width: i32) {

@@ -5,29 +5,34 @@ use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
+use crate::models::DockArea;
+use crate::models::WindowChange;
+use crate::models::WindowType;
 use crate::utils::xkeysym_lookup::ModMask;
+use crate::DisplayEvent;
 use crate::DisplayServerMode;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_uint};
+use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
 use std::slice;
 use x11_dl::xlib;
 
-type WindowState = u8;
-const WITHDRAWN_STATE: WindowState = 0;
-const NORMAL_STATE: WindowState = 1;
+//type WindowStateConst = u8;
+//const WITHDRAWN_STATE: WindowStateConst = 0;
+//const NORMAL_STATE: WindowStateConst = 1;
+//const ICONIC_STATE: WindowStateConst = 2;
+const MAX_PROPERTY_VALUE_LEN: i64 = 4096;
 
 const BUTTONMASK: i64 = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
 const MOUSEMASK: i64 = BUTTONMASK | xlib::PointerMotionMask;
-
-//const ICONIC_STATE: WindowState = 2;
 
 pub struct XWrap {
     pub xlib: xlib::Xlib,
     pub display: *mut xlib::Display,
     root: xlib::Window,
-    atoms: XAtom,
+    pub atoms: XAtom,
     cursors: XCursor,
+    pub tags: Vec<String>,
     pub mode: DisplayServerMode,
     pub mod_key_mask: ModMask,
     pub mode_origin: (i32, i32),
@@ -49,6 +54,7 @@ impl XWrap {
             root,
             atoms,
             cursors,
+            tags: vec![],
             mode: DisplayServerMode::NormalMode,
             mod_key_mask: 0,
             mode_origin: (0, 0),
@@ -190,6 +196,118 @@ impl XWrap {
         Ok(attrs)
     }
 
+    pub fn get_atom_prop_value(
+        &self,
+        window: xlib::Window,
+        prop: xlib::Atom,
+    ) -> Option<xlib::Atom> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::uninitialized() };
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                prop,
+                0,
+                MAX_PROPERTY_VALUE_LEN / 4,
+                xlib::False,
+                xlib::XA_ATOM,
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut nitems_return,
+                &mut prop_return,
+            );
+            if status == xlib::Success as i32 {
+                let atom = *(prop_return as *const xlib::Atom);
+                return Some(atom);
+            } else {
+                None
+            }
+        }
+    }
+
+    pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
+        if let Some(value) = self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
+            if value == self.atoms.NetWMWindowTypeDock {
+                return WindowType::Dock;
+            }
+            if value == self.atoms.NetWMWindowTypeDialog {
+                return WindowType::Dialog;
+            }
+        }
+        WindowType::Normal
+    }
+
+    /* EWMH support used for bars such as polybar */
+    pub fn init_destops_hints(&self, tags: Vec<String>) {
+        let tag_length = tags.len();
+        //set the number of desktop
+        let data = vec![tag_length as u32];
+        self.set_desktop_prop(&data, self.atoms.NetNumberOfDesktops);
+        //set a current desktop
+        let data = vec![0 as u32, xlib::CurrentTime as u32];
+        self.set_desktop_prop(&data, self.atoms.NetCurrentDesktop);
+        //set desktop names
+        let mut text: xlib::XTextProperty = unsafe { std::mem::uninitialized() };
+        unsafe {
+            let mut clist_tags: Vec<*mut c_char> = tags
+                .iter()
+                .map(|x| CString::new(x.clone()).unwrap().into_raw())
+                .collect();
+            let ptr = clist_tags.as_mut_ptr();
+            (self.xlib.Xutf8TextListToTextProperty)(
+                self.display,
+                ptr,
+                clist_tags.len() as i32,
+                xlib::XUTF8StringStyle,
+                &mut text,
+            );
+            std::mem::forget(clist_tags);
+            (self.xlib.XSetTextProperty)(
+                self.display,
+                self.get_default_root(),
+                &mut text,
+                self.atoms.NetDesktopNames,
+            );
+        }
+        //set a viewport
+        let data = vec![0 as u32, 0 as u32];
+        self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
+    }
+
+    fn set_desktop_prop(&self, data: &Vec<u32>, atom: c_ulong) {
+        let xdata = data.clone();
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                self.get_default_root(),
+                atom,
+                xlib::XA_CARDINAL,
+                32,
+                xlib::PropModeReplace,
+                xdata.as_ptr() as *const u8,
+                data.len() as i32,
+            );
+            std::mem::forget(xdata);
+        }
+    }
+
+    pub fn set_current_desktop(&self, current_tags: &String) {
+        let mut indexes: Vec<u32> = vec![];
+        for (i, tag) in self.tags.iter().enumerate() {
+            if current_tags.contains(tag) {
+                indexes.push(i as u32);
+            }
+        }
+        if indexes.is_empty() {
+            indexes.push(0)
+        }
+        self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
+    }
+
     //pub fn get_parent_window(&self, window: xlib::Window) -> Option<xlib::Window> {
     //    unsafe {
     //        let mut root_return: xlib::Window = std::mem::zeroed();
@@ -260,7 +378,7 @@ impl XWrap {
     //}
 
     //this code is ran one time when a window is added to the managers list of windows
-    pub fn setup_managed_window(&self, h: WindowHandle) {
+    pub fn setup_managed_window(&self, h: WindowHandle) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             //make sure the window is mapped
@@ -270,7 +388,7 @@ impl XWrap {
 
             unsafe {
                 //let Xlib know we are managing this window
-                let list = vec![handle as u8].as_ptr();
+                let list = vec![handle];
                 (self.xlib.XChangeProperty)(
                     self.display,
                     handle,
@@ -278,14 +396,73 @@ impl XWrap {
                     xlib::XA_WINDOW,
                     32,
                     xlib::PropModeAppend,
-                    list,
+                    list.as_ptr() as *const u8,
                     1,
                 );
+                std::mem::forget(list);
             }
-            self.set_window_state(&h, NORMAL_STATE);
 
             unsafe {
                 (self.xlib.XSync)(self.display, 0);
+            }
+
+            if self.get_window_type(handle) == WindowType::Dock {
+                if let Some(dock_area) = self.get_window_strut_array(handle) {
+                    let dems = self.screens_area_dimensions();
+                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                        let mut change = WindowChange::new(h);
+                        println!("XYHW: {:?}", xywh);
+                        change.floating_loc = Some((xywh.x, xywh.y));
+                        change.floating_size = Some((xywh.w, xywh.h));
+                        change.type_ = Some(WindowType::Dock);
+                        return Some(DisplayEvent::WindowChange(change));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn screens_area_dimensions(&self) -> (i32, i32) {
+        let mut height = 0;
+        let mut width = 0;
+        for s in self.get_screens() {
+            height = std::cmp::max(height, s.height + s.y);
+            width = std::cmp::max(width, s.width + s.x);
+        }
+        (height, width)
+    }
+
+    pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut bytes_after_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::uninitialized() };
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMStrutPartial,
+                0,
+                MAX_PROPERTY_VALUE_LEN,
+                xlib::False,
+                xlib::XA_CARDINAL,
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut bytes_after_return,
+                &mut prop_return,
+            );
+            if status == xlib::Success as i32 {
+                let array_ptr = prop_return as *const i64;
+                let slice = slice::from_raw_parts(array_ptr, nitems_return as usize);
+                if slice.len() == 12 {
+                    return Some(DockArea::from(slice));
+                }
+                None
+            } else {
+                None
             }
         }
     }
@@ -302,32 +479,33 @@ impl XWrap {
                     xlib::AnyModifier,
                     handle,
                 );
-                self.set_window_state(&h, WITHDRAWN_STATE);
+                //self.set_window_state(&h, WITHDRAWN_STATE);
                 (self.xlib.XSync)(self.display, 0);
                 //(self.xlib.XSetErrorHandler)(xerror);
                 (self.xlib.XUngrabServer)(self.display);
             }
-            self.set_window_state(&h, NORMAL_STATE);
+            //self.set_window_state(&h, NORMAL_STATE);
         }
     }
 
-    fn set_window_state(&self, handle: &WindowHandle, state: WindowState) {
-        if let WindowHandle::XlibHandle(handle) = handle {
-            unsafe {
-                let list = vec![state, 0].as_ptr();
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    *handle,
-                    self.atoms.WMState,
-                    self.atoms.WMState,
-                    32,
-                    xlib::PropModeReplace,
-                    list,
-                    2,
-                );
-            }
-        }
-    }
+    //fn set_window_state(&self, handle: &WindowHandle, state: WindowState) {
+    //    if let WindowHandle::XlibHandle(handle) = handle {
+    //        unsafe {
+    //            let list = vec![state as u32, 0 as u32];
+    //            (self.xlib.XChangeProperty)(
+    //                self.display,
+    //                *handle,
+    //                self.atoms.WMState,
+    //                self.atoms.WMState,
+    //                32,
+    //                xlib::PropModeReplace,
+    //                list.as_ptr() as *const u8,
+    //                2,
+    //            );
+    //            std::mem::forget(list);
+    //        }
+    //    }
+    //}
 
     /**
      * used to send and XConfigureEvent for a changed window to the xserver
@@ -479,8 +657,6 @@ impl XWrap {
 
     pub fn window_take_focus(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
-            //println!("WINDOW_TAKE_FOCUS: {}", handle);
-
             //tell the window to take focus
             self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
 
@@ -521,7 +697,6 @@ impl XWrap {
                 | xlib::PropertyChangeMask
                 | xlib::StructureNotifyMask;
             self.subscribe_to_event(handle.clone(), mask);
-            //might want to grab buttons here???
         }
     }
 
@@ -575,19 +750,19 @@ impl XWrap {
                 h = size.base_height
             }
 
-            if size.min_width != 0 && size.min_width > w {
-                w = size.min_width
-            }
-            if size.min_height != 0 && size.min_height > h {
-                h = size.min_height
-            }
+            //if size.min_width != 0 && size.min_width > w {
+            //    w = size.min_width
+            //}
+            //if size.min_height != 0 && size.min_height > h {
+            //    h = size.min_height
+            //}
 
-            if size.max_width != 0 && size.max_width < w {
-                w = size.max_width
-            }
-            if size.max_height != 0 && size.max_height < h {
-                h = size.max_height
-            }
+            //if size.max_width != 0 && size.max_width < w {
+            //    w = size.max_width
+            //}
+            //if size.max_height != 0 && size.max_height < h {
+            //    h = size.max_height
+            //}
 
             if w == 0 || h == 0 {
                 return None;
@@ -645,7 +820,7 @@ impl XWrap {
         }
     }
 
-    pub fn init(&self, config: &Config) {
+    pub fn init(&mut self, config: &Config) {
         let root_event_mask: c_long = xlib::ButtonPressMask
             | xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
@@ -660,8 +835,9 @@ impl XWrap {
 
         //EWMH junk
         unsafe {
-            let size: i32 = self.atoms.as_chars().len() as i32;
-            let atom_as_chars = self.atoms.as_chars().as_ptr();
+            let supported = self.atoms.net_supported();
+            let supported_ptr: *const xlib::Atom = supported.as_ptr();
+            let size = supported.len() as i32;
             (self.xlib.XChangeProperty)(
                 self.display,
                 root,
@@ -669,11 +845,16 @@ impl XWrap {
                 xlib::XA_ATOM,
                 32,
                 xlib::PropModeReplace,
-                atom_as_chars,
+                supported_ptr as *const u8,
                 size,
             );
+            std::mem::forget(supported);
             (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
         }
+
+        let tags = config.get_list_of_tags();
+        self.tags = tags.clone();
+        self.init_destops_hints(tags);
 
         //cleanup grabs
         unsafe {

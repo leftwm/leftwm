@@ -1,5 +1,6 @@
 use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask, XKeysym};
 use crate::models::WindowChange;
+use crate::Command;
 
 #[derive(Debug)]
 pub enum DisplayEvent {
@@ -13,5 +14,6 @@ pub enum DisplayEvent {
     MoveWindow(WindowHandle, i32, i32),
     ResizeWindow(WindowHandle, i32, i32),
     ScreenCreate(Screen),
+    SendCommand(Command, Option<String>),
     ChangeToNormalMode,
 }

@@ -33,6 +33,10 @@ impl DisplayEventHandler {
                 }
             }
 
+            DisplayEvent::SendCommand(command, value) => {
+                command_handler::process(manager, command, value)
+            }
+
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
                 mouse_combo_handler::process(manager, mod_mask, button, handle)
             }

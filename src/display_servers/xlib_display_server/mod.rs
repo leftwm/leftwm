@@ -11,10 +11,11 @@ use std::sync::Once;
 use x11_dl::xlib;
 
 mod event_translate;
+mod event_translate_client_message;
 mod event_translate_property_notify;
 mod xatom;
 mod xwrap;
-use xwrap::XWrap;
+pub use xwrap::XWrap;
 
 mod xcursor;
 
@@ -62,10 +63,12 @@ impl DisplayServer for XlibDisplayServer {
         events
     }
 
-    fn execute_action(&mut self, act: DisplayAction) -> Result<(), Box<std::error::Error>> {
+    fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
         match act {
             DisplayAction::KillWindow(w) => self.xw.kill_window(w),
-            DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w),
+            DisplayAction::AddedWindow(w) => {
+                return self.xw.setup_managed_window(w);
+            }
             DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
             DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
             DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),
@@ -76,8 +79,9 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.set_mode(DisplayServerMode::ResizingWindow(w))
             }
             DisplayAction::NormalMode => self.xw.set_mode(DisplayServerMode::NormalMode),
+            DisplayAction::SetCurrentTags(tags) => self.xw.set_current_desktop(&tags),
         }
-        Ok(())
+        None
     }
 }
 

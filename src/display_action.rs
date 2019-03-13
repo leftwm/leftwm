@@ -14,5 +14,6 @@ pub enum DisplayAction {
     WindowTakeFocus(WindowHandle), // tell a window that it is to become focused
     StartResizingWindow(WindowHandle), // tell the DM we are going to resize a window and only send that type of events
     StartMovingWindow(WindowHandle), // tell the DM we are going to move a window and only send that type of events
+    SetCurrentTags(String),          // Used to let the WM know of the current tag changes
     NormalMode, // tell the DM to return to normal mode if it is not (ie resize a window or moving a window)
 }

@@ -11,6 +11,7 @@ fn main() {
     let mut manager = Box::new(Manager::default());
     let mut process_nanny = Box::new(Nanny::new());
     let config = config::load();
+    manager.tags = config.get_list_of_tags();
     let mut display_server: XlibDisplayServer = DisplayServer::new(&config);
     let handler = DisplayEventHandler { config };
     loop {
@@ -32,26 +33,32 @@ fn event_loop(
     println!("BOOT:");
 
     //main event loop
+    let mut events_remainder = vec![];
     loop {
-        let events = get_events(display_server);
+        let mut events = get_events(display_server);
+        events.append(&mut events_remainder);
+
+        let mut needs_update = false;
         for event in events {
-            let needs_update = handler.process(manager, event);
+            needs_update = handler.process(manager, event) || needs_update;
+        }
 
-            //if we need to update the displayed state
-            if needs_update {
-                let windows: Vec<&Window> = (&manager.windows).iter().map(|w| w).collect();
-                display_server.update_windows(windows);
-            }
+        //if we need to update the displayed state
+        if needs_update {
+            let windows: Vec<&Window> = (&manager.windows).iter().map(|w| w).collect();
+            display_server.update_windows(windows);
+        }
 
-            //preform any actions requested by the handler
-            while !manager.actions.is_empty() {
-                if let Some(act) = manager.actions.pop_front() {
-                    let _ = display_server.execute_action(act);
+        //preform any actions requested by the handler
+        while !manager.actions.is_empty() {
+            if let Some(act) = manager.actions.pop_front() {
+                if let Some(event) = display_server.execute_action(act) {
+                    events_remainder.push(event);
                 }
             }
-
-            //inform all child processes of the new state
-            process_nanny.update_children(&manager);
         }
+
+        //inform all child processes of the new state
+        process_nanny.update_children(&manager);
     }
 }

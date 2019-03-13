@@ -23,7 +23,7 @@ impl Default for Manager {
             windows: Vec::new(),
             screens: Vec::new(),
             workspaces: Vec::new(),
-            tags: Vec::new(),
+            tags: vec![],
             focused_workspace_history: VecDeque::new(),
             focused_window_history: VecDeque::new(),
             focused_tag_history: VecDeque::new(),

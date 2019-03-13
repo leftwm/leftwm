@@ -29,6 +29,8 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     workspace.tags.iter().for_each(|t| {
         focus_tag(manager, t);
     });
+    // create an action to inform the DM
+    update_current_tags(manager);
     true
 }
 
@@ -55,7 +57,7 @@ pub fn focus_window_by_handle(
 
 pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> bool {
     let result = _focus_window_work(manager, window);
-    
+
     // if the x,y mouse location is inside the to workspace for this window, it needs to be focused
     // this is so the focus of the window gets passed to the underlying workspace
     if !window.tags.is_empty() {
@@ -68,12 +70,10 @@ pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> b
             .map(|w| w.clone())
             .collect();
         to_focus.iter().for_each(|w| {
-            if w.contains_point(x,y) {
+            if w.contains_point(x, y) {
                 focus_workspace(manager, &w);
             }
         });
-
-    
     }
     result
 }
@@ -168,6 +168,20 @@ pub fn focus_tag(manager: &mut Manager, tag: &String) -> bool {
     true
 }
 
+/*
+ * Create an action to inform the DM of the new current tags
+ */
+pub fn update_current_tags(manager: &mut Manager) {
+    if let Some(workspace) = manager.focused_workspace() {
+        let tags = workspace.tags.clone();
+        if tags.is_empty() {
+            manager
+                .actions
+                .push_back(DisplayAction::SetCurrentTags(tags[0].clone()));
+        }
+    }
+}
+
 #[test]
 fn focusing_a_workspace_should_make_it_active() {
     let mut manager = Manager::default();
@@ -199,7 +213,7 @@ fn focusing_a_window_should_make_it_active() {
     window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(1), None));
     window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(2), None));
     let expected = manager.windows[0].clone();
-    focus_window(&mut manager, &expected);
+    focus_window(&mut manager, &expected,0,0);
     let actual = manager.focused_window().unwrap().handle.clone();
     assert_eq!(expected.handle, actual);
 }
@@ -210,10 +224,10 @@ fn focusing_the_same_window_shouldnt_add_to_the_history() {
     screen_create_handler::process(&mut manager, Screen::default());
     let window = Window::new(WindowHandle::MockHandle(1), None);
     window_handler::created(&mut manager, window.clone());
-    focus_window(&mut manager, &window);
+    focus_window(&mut manager, &window,0,0);
     let start_length = manager.focused_workspace_history.len();
     window_handler::created(&mut manager, window.clone());
-    focus_window(&mut manager, &window);
+    focus_window(&mut manager, &window,0,0);
     let end_length = manager.focused_workspace_history.len();
     assert_eq!(start_length, end_length, "expected no new history event");
 }
@@ -271,7 +285,7 @@ fn focusing_a_window_should_focus_its_tag() {
     screen_create_handler::process(&mut manager, Screen::default());
     let mut window = Window::new(WindowHandle::MockHandle(1), None);
     window.tag("2".to_owned());
-    focus_window(&mut manager, &window);
+    focus_window(&mut manager, &window,0,0);
     let actual = manager.focused_tag().unwrap();
     assert_eq!("2", actual);
 }
@@ -284,7 +298,7 @@ fn focusing_a_window_should_focus_workspace() {
     screen_create_handler::process(&mut manager, Screen::default());
     let mut window = Window::new(WindowHandle::MockHandle(1), None);
     window.tag("2".to_owned());
-    focus_window(&mut manager, &window);
+    focus_window(&mut manager, &window,0,0);
     let actual = manager.focused_workspace().unwrap().id.clone();
     let expected = manager.workspaces[1].id.clone();
     assert_eq!(expected, actual);

@@ -24,8 +24,8 @@ impl Clone for Box<Layout> {
 
 pub fn get_all_layouts() -> VecDeque<Box<Layout>> {
     let mut layouts = VecDeque::new();
-    layouts.push_back( Box::new(EvenHorizontal{}) as Box<Layout> );  
-    layouts.push_back( Box::new(EvenVertical{}) as Box<Layout> );  
+    layouts.push_back(Box::new(EvenHorizontal {}) as Box<Layout>);
+    layouts.push_back(Box::new(EvenVertical {}) as Box<Layout>);
     layouts
 }
 
@@ -75,6 +75,7 @@ fn should_fullscreen_a_single_window() {
     ws.width = 2000;
     let mut w = Window::new(WindowHandle::MockHandle(1), None);
     w.border = 0;
+    w.margin = 0;
     let mut windows = vec![&mut w];
     layout.update_windows(&ws, &mut windows);
     assert!(

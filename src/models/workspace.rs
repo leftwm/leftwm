@@ -128,8 +128,9 @@ impl Workspace {
 
 #[test]
 fn empty_ws_should_not_contain_window() {
+    use super::WindowHandle;
     let subject = Workspace::new();
-    let w: Window = unsafe { std::mem::zeroed() };
+    let w = Window::new(WindowHandle::MockHandle(1), None);
     assert!(
         subject.is_displaying(&w) == false,
         "workspace incorrectly owns window"
@@ -138,9 +139,10 @@ fn empty_ws_should_not_contain_window() {
 
 #[test]
 fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
+    use super::WindowHandle;
     let mut subject = Workspace::new();
     subject.show_tag("test".to_owned());
-    let mut w: Window = unsafe { std::mem::zeroed() };
+    let mut w = Window::new(WindowHandle::MockHandle(1), None);
     w.tag("test".to_owned());
     assert!(
         subject.is_displaying(&w) == true,
@@ -150,9 +152,10 @@ fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_displ
 
 #[test]
 fn displayed_windows_should_return_a_list_of_display_windows() {
+    use super::WindowHandle;
     let mut subject = Workspace::new();
     subject.show_tag("test".to_owned());
-    let mut w: Window = unsafe { std::mem::zeroed() };
+    let mut w = Window::new(WindowHandle::MockHandle(1), None);
     w.tag("test".to_owned());
     let windows = vec![&mut w];
     assert!(

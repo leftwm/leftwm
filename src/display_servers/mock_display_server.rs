@@ -22,7 +22,7 @@ impl DisplayServer for MockDisplayServer {
 
     fn update_windows(&self, _: Vec<&Window>) {}
 
-    fn execute_action(&mut self, _: DisplayAction) -> Result<(), Box<std::error::Error>> {
-        Ok(())
+    fn execute_action(&mut self, _: DisplayAction) -> Option<DisplayEvent> {
+        None
     }
 }

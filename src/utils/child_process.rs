@@ -6,7 +6,7 @@ use std::process::{Command, Stdio};
 
 //static CHILD_LIST: &'static [&'static str] =
 //    &["compton", "lemonbar -B '#99ffffff' -F '#000000' -d"];
-static CHILD_LIST: &'static [&'static str] = &["lemonbar -B #aaffffff -F #000000 -d"];
+static CHILD_LIST: &'static [&'static str] = &["lemonbar -B #aaffffff -F #000000"];
 
 pub struct Nanny {
     children: Vec<ChildProcess>,
