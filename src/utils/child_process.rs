@@ -1,5 +1,4 @@
 use crate::models::Manager;
-use crate::utils::logging;
 use std::collections::HashSet;
 use std::io::prelude::*;
 use std::process::{Command, Stdio};
@@ -78,7 +77,6 @@ struct ChildProcess {
 
 impl ChildProcess {
     fn new(cmd: String) -> Result<ChildProcess, Box<std::error::Error>> {
-        logging::log_info("CHILD_PROCESS:", &cmd);
         let mut parts = cmd.split(" ");
         let head = parts.next().unwrap();
         let arguments: Vec<&str> = parts.collect();

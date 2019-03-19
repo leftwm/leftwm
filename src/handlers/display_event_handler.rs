@@ -12,7 +12,6 @@ impl DisplayEventHandler {
      * returns true if changes need to be rendered
      */
     pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
-        log_info("DISPLAY_EVENT", &(format!("{:?}", event)));
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
             DisplayEvent::WindowCreate(w) => window_handler::created(manager, w),
@@ -77,11 +76,7 @@ impl DisplayEventHandler {
      * based on the new state of the WM
      */
     fn update_windows(&self, manager: &mut Manager) {
-        log_info("WINDOWS", &manager.windows_display());
-        log_info("TAGS", &manager.tags_display());
-        log_info("WORKSPACES", &manager.workspaces_display());
         let state_str = format!("{:?}", manager);
-        log_info("FULL_STATE", &state_str);
         let all_windows = &mut manager.windows;
         let all: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();
         for w in all {

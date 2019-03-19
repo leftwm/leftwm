@@ -28,7 +28,6 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             if let Some(cmd) = val {
                 use std::process::Command;
                 let _ = Command::new("sh").arg("-c").arg(&cmd).spawn();
-                log_info("EXECUTE", &cmd);
                 false
             } else {
                 false
@@ -85,10 +84,6 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             false
         }
 
-        Command::MouseMoveWindow => {
-            log_info("MOUSE_MOVE", "start mouse move");
-            false
-        }
+        Command::MouseMoveWindow => false,
     }
 }
-

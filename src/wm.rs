@@ -30,8 +30,6 @@ fn event_loop(
     display_server: &mut XlibDisplayServer,
     handler: &DisplayEventHandler,
 ) {
-    println!("BOOT:");
-
     //main event loop
     let mut events_remainder = vec![];
     loop {

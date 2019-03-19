@@ -411,7 +411,6 @@ impl XWrap {
                     let dems = self.screens_area_dimensions();
                     if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
                         let mut change = WindowChange::new(h);
-                        println!("XYHW: {:?}", xywh);
                         change.floating_loc = Some((xywh.x, xywh.y));
                         change.floating_size = Some((xywh.w, xywh.h));
                         change.type_ = Some(WindowType::Dock);
@@ -821,9 +820,9 @@ impl XWrap {
     }
 
     pub fn init(&mut self, config: &Config) {
-        let root_event_mask: c_long = xlib::ButtonPressMask
-            | xlib::SubstructureRedirectMask
+        let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
+            | xlib::ButtonPressMask
             | xlib::PointerMotionMask
             | xlib::EnterWindowMask
             | xlib::LeaveWindowMask
@@ -831,6 +830,18 @@ impl XWrap {
             | xlib::PropertyChangeMask;
 
         let root = self.get_default_root();
+
+        let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::uninitialized() };
+        attrs.cursor = self.cursors.normal;
+        attrs.event_mask = root_event_mask;
+
+        unsafe{
+            (self.xlib.XChangeWindowAttributes)(self.display, 
+                                                self.get_default_root(), 
+                                                xlib::CWEventMask | xlib::CWCursor, 
+                                                &mut attrs );
+        }
+
         self.subscribe_to_event(root, root_event_mask);
 
         //EWMH junk
@@ -849,9 +860,11 @@ impl XWrap {
                 size,
             );
             std::mem::forget(supported);
+            //cleanup the client list
             (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
         }
 
+        //EWMH stuff for desktops
         let tags = config.get_list_of_tags();
         self.tags = tags.clone();
         self.init_destops_hints(tags);
@@ -885,7 +898,6 @@ impl XWrap {
             _ => {}
         }
         if self.mode == DisplayServerMode::NormalMode && mode != DisplayServerMode::NormalMode {
-            crate::logging::log_info("SET_MODE", &format!("mode: {:?}", mode));
             self.mode = mode.clone();
             //safe this point as the start of the move/resize
             if let Some(loc) = self.get_pointer_location() {
@@ -913,7 +925,6 @@ impl XWrap {
         }
         if mode == DisplayServerMode::NormalMode {
             //release the mouse grab
-            crate::logging::log_info("SET_MODE", &format!("mode: {:?}", mode));
             unsafe {
                 (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
             }

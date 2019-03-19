@@ -10,6 +10,11 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         return goto_tag_by_index(xw, event.data.get_long(0));
     }
 
+    if event.message_type == xw.atoms.NetActiveWindow {
+        let atom_name = xw.atoms.get_name(event.message_type);
+        crate::logging::log_info("XClientMessageEvent", &format!("{:?} {:?}", atom_name, event));
+    }
+
     //if event.message_type == xw.atoms.NetWMState {
     //    println!("EVENT: {:?}", event);
     //    let data = event.data.get_long(1);

@@ -13,6 +13,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         // new window is created
         xlib::MapRequest => {
             let event = xlib::XMapRequestEvent::from(raw_event);
+            log_xevent(&format!("MapRequest {:?}", event));
             let handle = WindowHandle::XlibHandle(event.window);
             //first subscribe to window events so we don't miss any
             xw.subscribe_to_window_events(&handle);
@@ -48,6 +49,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
 
         xlib::CreateNotify => {
             let _event = xlib::XCreateWindowEvent::from(raw_event);
+            log_xevent(&format!("CreateNotify {:?}", _event));
             //log_xevent(&format!("CreateNotify_EVENT: {:?}", event));
             None
             //if event.parent == kw.get_default_root() {
@@ -63,7 +65,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         xlib::DestroyNotify => {
             //log_xevent( &format!("DestroyNotify") );
             let event = xlib::XDestroyWindowEvent::from(raw_event);
-            log_xevent(&format!("DestroyNotify: {:#?}", event));
+            log_xevent(&format!("DestroyNotify: {:?}", event));
             let h = WindowHandle::XlibHandle(event.window);
             //let h = WindowHandle::XlibHandle(event.window + 2);
             Some(DisplayEvent::WindowDestroy(h))
@@ -71,11 +73,13 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
 
         xlib::ClientMessage => {
             let event = xlib::XClientMessageEvent::from(raw_event);
+            log_xevent(&format!("ClientMessage {:?}", event));
             event_translate_client_message::from_event(xw, event)
         }
 
         xlib::ButtonPress => {
             let event = xlib::XButtonPressedEvent::from(raw_event);
+            log_xevent(&format!("ButtonPress {:?}", event));
             let h = WindowHandle::XlibHandle(event.window);
             Some(DisplayEvent::MouseCombo(event.state, event.button, h))
         }
@@ -86,7 +90,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         }
         xlib::EnterNotify => {
             let event = xlib::XEnterWindowEvent::from(raw_event);
-            log_xevent(&format!("EnterNotify: {:#?} ", event));
+            log_xevent(&format!("EnterNotify: {:?} ", event));
             let h = WindowHandle::XlibHandle(event.window);
             let mouse_loc = xw.get_pointer_location();
             match mouse_loc {
@@ -96,29 +100,31 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         }
         xlib::LeaveNotify => {
             let event = xlib::XLeaveWindowEvent::from(raw_event);
-            log_xevent(&format!("LeaveNotify: {:#?} ", event));
+            log_xevent(&format!("LeaveNotify: {:?} ", event));
             None
         }
 
         xlib::PropertyNotify => {
             let event = xlib::XPropertyEvent::from(raw_event);
+            log_xevent(&format!("PropertyNotify {:?}", event));
             event_translate_property_notify::from_event(xw, event)
         }
 
         xlib::MapNotify => {
             let event = xlib::XMappingEvent::from(raw_event);
-            log_xevent(&format!("MapNotify: {:#?} ", event));
+            log_xevent(&format!("MapNotify: {:?} ", event));
             None
         }
         xlib::KeyPress => {
             let event = xlib::XKeyEvent::from(raw_event);
+            log_xevent(&format!("KeyPress: {:?} ", event));
             let sym = xw.keycode_to_keysym(event.keycode);
-            //log_xevent( &format!("KeyPress: {:#?} ", event) );
+            //log_xevent( &format!("KeyPress: {:?} ", event) );
             Some(DisplayEvent::KeyCombo(event.state, sym))
         }
         xlib::KeyRelease => {
             let event = xlib::XKeyEvent::from(raw_event);
-            log_xevent(&format!("release: {:#?} ", event));
+            log_xevent(&format!("release: {:?} ", event));
             None
         }
         xlib::MotionNotify => {
@@ -140,8 +146,9 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         }
         xlib::FocusIn => {
             let event = xlib::XFocusChangeEvent::from(raw_event);
+            log_xevent(&format!("FocusIn: {:?} ", event));
             let h = WindowHandle::XlibHandle(event.window);
-            //log_xevent( &format!("FocusIn: {:#?} ", event) );
+            //log_xevent( &format!("FocusIn: {:?} ", event) );
             //Some(DisplayEvent::FocusedWindow(h))
             let mouse_loc = xw.get_pointer_location();
             match mouse_loc {
@@ -179,7 +186,7 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
         }
         xlib::ConfigureNotify => {
             let event = xlib::XConfigureEvent::from(raw_event);
-            log_xevent(&format!("ConfigureNotify: {:#?}", event));
+            log_xevent(&format!("ConfigureNotify: {:?}", event));
             None
         }
         xlib::ConfigureRequest => {
@@ -226,6 +233,9 @@ pub fn from_xevent(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> 
             log_xevent(&format!("GenericEvent"));
             None
         }
-        _ => None,
+        _other => {
+            log_xevent(&format!("OTHER: (unknown event) : {:?}", raw_event));
+            None
+        }
     }
 }
