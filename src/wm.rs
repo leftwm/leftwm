@@ -1,6 +1,5 @@
 extern crate leftwm;
 
-use leftwm::child_process::Nanny;
 use leftwm::*;
 
 fn get_events<T: DisplayServer>(ds: &T) -> Vec<DisplayEvent> {
@@ -9,24 +8,15 @@ fn get_events<T: DisplayServer>(ds: &T) -> Vec<DisplayEvent> {
 
 fn main() {
     let mut manager = Box::new(Manager::default());
-    let mut process_nanny = Box::new(Nanny::new());
     let config = config::load();
     manager.tags = config.get_list_of_tags();
     let mut display_server: XlibDisplayServer = DisplayServer::new(&config);
     let handler = DisplayEventHandler { config };
-    loop {
-        event_loop(
-            &mut manager,
-            &mut process_nanny,
-            &mut display_server,
-            &handler,
-        );
-    }
+    event_loop(&mut manager, &mut display_server, &handler);
 }
 
 fn event_loop(
     manager: &mut Manager,
-    process_nanny: &mut Nanny,
     display_server: &mut XlibDisplayServer,
     handler: &DisplayEventHandler,
 ) {
@@ -55,8 +45,5 @@ fn event_loop(
                 }
             }
         }
-
-        //inform all child processes of the new state
-        process_nanny.update_children(&manager);
     }
 }

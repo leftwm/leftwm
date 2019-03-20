@@ -19,3 +19,5 @@ make sure this is at the end of your .xinitrc file
 exec dbus-launch /path_to_leftwm/leftwm
 ```
 
+
+

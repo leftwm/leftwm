@@ -1,6 +1,6 @@
 [package]
 name = "leftwm"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 edition = "2018"
 
@@ -9,12 +9,12 @@ name = "leftwm"
 path = "src/lib.rs"
 
 [[bin]]
-name = "leftwm"
+name = "leftwm-worker"
 path = "src/wm.rs"
 
-#[[bin]]
-#name = "test"
-#path = "src/test.rs"
+[[bin]]
+name = "leftwm"
+path = "src/bin.rs"
 
 [dependencies]
 x11-dl = "2.18.3"
