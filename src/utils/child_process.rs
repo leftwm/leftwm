@@ -1,5 +1,5 @@
-use std::env;
-use std::fs::{self, DirEntry};
+use dirs;
+use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -12,7 +12,7 @@ impl Nanny {
     }
 
     pub fn autostart(&self) {
-        if let Some(mut path) = env::home_dir() {
+        if let Some(mut path) = dirs::home_dir() {
             path.push(".config");
             path.push("autostart");
             if let Ok(files) = list_desktop_files(&path) {

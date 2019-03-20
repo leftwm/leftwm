@@ -1,6 +1,5 @@
 use super::*;
 use crate::display_action::DisplayAction;
-use crate::utils::logging::*;
 
 /*
  * marks a workspace as the focused workspace

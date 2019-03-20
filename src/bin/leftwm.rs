@@ -16,6 +16,5 @@ fn main() {
                 .status()
                 .expect("failed to start leftwm");
         }
-
     }
 }
