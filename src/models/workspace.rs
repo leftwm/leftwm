@@ -119,9 +119,7 @@ impl Workspace {
 
     pub fn update_windows(&self, windows: Vec<&mut Window>) {
         let mut mine = self.displayed_windows(windows);
-        for w in mine.iter_mut() {
-            w.set_visable(true);
-        }
+        mine.iter_mut().for_each(|w| w.set_visable(true));
         self.layouts[0].update_windows(self, &mut mine);
     }
 }

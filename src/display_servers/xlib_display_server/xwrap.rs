@@ -656,26 +656,6 @@ impl XWrap {
 
     pub fn window_take_focus(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
-
-            unsafe{
-                (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToPointerRoot, xlib::CurrentTime);
-
-                //set it as the NetActiveWindow
-                let list = vec![handle];
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    self.get_default_root(),
-                    self.atoms.NetActiveWindow,
-                    xlib::XA_WINDOW,
-                    32,
-                    xlib::PropModeReplace,
-                    list.as_ptr() as *const c_uchar,
-                    1,
-                );
-                std::mem::forget(list);
-
-            }
-
             //tell the window to take focus
             self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
 
@@ -700,14 +680,6 @@ impl XWrap {
     pub fn kill_window(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             self.send_xevent_atom(handle, self.atoms.WMDelete);
-            //cleanup 
-            unsafe{
-                (self.xlib.XGrabServer)(self.display);
-                (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll );
-                (self.xlib.XKillClient)(self.display, handle );
-                (self.xlib.XSync)(self.display, xlib::False);
-                (self.xlib.XUngrabServer)(self.display);
-            }
         }
     }
 

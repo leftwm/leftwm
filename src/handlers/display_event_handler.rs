@@ -1,6 +1,5 @@
 use super::*;
 use crate::display_action::DisplayAction;
-use crate::utils::logging::*;
 
 pub struct DisplayEventHandler {
     pub config: Config,
@@ -76,15 +75,18 @@ impl DisplayEventHandler {
      * based on the new state of the WM
      */
     fn update_windows(&self, manager: &mut Manager) {
-        let state_str = format!("{:?}", manager);
+        let _state_str = format!("{:?}", manager);
+
+        manager
+            .windows
+            .iter_mut()
+            .for_each(|w| w.set_visable(w.tags.is_empty() || w.floating()));
+
         let all_windows = &mut manager.windows;
-        let all: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();
-        for w in all {
-            w.set_visable(w.tags.is_empty() || w.floating());
-        } // if not tagged force it to display
-        for ws in &mut manager.workspaces {
-            let windows: Vec<&mut Window> = all_windows.iter_mut().map(|w| w).collect();
-            ws.update_windows(windows);
-        }
+
+        manager.workspaces.iter_mut().for_each(|ws| {
+            let windows: Vec<&mut Window> = all_windows.iter_mut().collect();
+            ws.update_windows(windows)
+        });
     }
 }

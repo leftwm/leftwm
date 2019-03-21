@@ -1,3 +1,7 @@
+#[macro_use]
+extern crate log;
+extern crate env_logger;
+
 mod command;
 mod command_builder;
 pub mod config;
@@ -28,11 +32,3 @@ pub use utils::logging;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
-
-//#[cfg(test)]
-//Mod tests {
-//    #[test]
-//    fn it_works() {
-//        assert_eq!(2 + 2, 4);
-//    }
-//}

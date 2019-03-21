@@ -8,14 +8,6 @@ edition = "2018"
 name = "leftwm"
 path = "src/lib.rs"
 
-[[bin]]
-name = "leftwm-worker"
-path = "src/wm.rs"
-
-[[bin]]
-name = "leftwm"
-path = "src/bin.rs"
-
 [dependencies]
 x11-dl = "2.18.3"
 toml = "0.4.10"
@@ -24,3 +16,6 @@ serde = "*"
 serde_derive = "*"
 xdg = "2.2.0"
 signal-hook = "0.1.7"
+env_logger = "0.6.1"
+log = "0.4.0"
+dirs = "1.0.5"

@@ -1,6 +1,5 @@
 use super::*;
 use crate::display_action::DisplayAction;
-use crate::utils::logging::*;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
