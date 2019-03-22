@@ -220,12 +220,11 @@ impl XWrap {
                 &mut nitems_return,
                 &mut prop_return,
             );
-            if status == xlib::Success as i32 {
+            if status == xlib::Success as i32 && !prop_return.is_null() {
                 let atom = *(prop_return as *const xlib::Atom);
                 return Some(atom);
-            } else {
-                None
             }
+            None
         }
     }
 
@@ -835,11 +834,13 @@ impl XWrap {
         attrs.cursor = self.cursors.normal;
         attrs.event_mask = root_event_mask;
 
-        unsafe{
-            (self.xlib.XChangeWindowAttributes)(self.display, 
-                                                self.get_default_root(), 
-                                                xlib::CWEventMask | xlib::CWCursor, 
-                                                &mut attrs );
+        unsafe {
+            (self.xlib.XChangeWindowAttributes)(
+                self.display,
+                self.get_default_root(),
+                xlib::CWEventMask | xlib::CWCursor,
+                &mut attrs,
+            );
         }
 
         self.subscribe_to_event(root, root_event_mask);
