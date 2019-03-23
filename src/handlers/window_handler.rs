@@ -1,5 +1,6 @@
 use super::*;
 use crate::display_action::DisplayAction;
+use crate::models::XYHW;
 
 /*
  * process a collection of events, and apply them changes to a manager
@@ -19,8 +20,13 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
         window.tags = vec![manager.tags[0].clone()]
     }
 
-    if window.floating() {
-        window.floating = Some(window.normal);
+    if let Some(trans) = &window.transient {
+        if window.floating.is_none() {
+            window.floating = Some( XYHW::default() ); //make sure we have a value to modify
+        }
+        if let Some(parent) = find_window( manager, &trans ){
+            window.floating = Some( calc_center_of_parent( &window, parent ) );
+        }
     }
 
     manager.windows.push(window.clone());
@@ -58,3 +64,36 @@ pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
     }
     false
 }
+
+
+
+fn calc_center_of_parent(window: &Window, parent: &Window) -> XYHW {
+    let mut xyhw = match window.floating {
+        Some(f) => f,
+        None => XYHW::default()
+    };
+
+    //make sure this window has a real height/width first
+    if xyhw.h == 0 || xyhw.w == 0 {
+        xyhw.h = parent.height() / 2;
+        xyhw.w = parent.width() / 2;
+    }
+
+    xyhw.x = parent.x() + ( parent.width() / 2 ) - ( xyhw.w / 2 );
+    xyhw.y = parent.y() + ( parent.height() / 2 ) - ( xyhw.h / 2 );
+
+    xyhw
+}
+
+fn find_window<'w>( manager :&'w Manager, handle: &WindowHandle ) -> Option<&'w Window> {
+    for win in &manager.windows {
+        if &win.handle == handle {
+            let r: &Window = win;
+            return Some( r );
+        }
+    }
+    None
+}
+
+
+
