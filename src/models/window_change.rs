@@ -1,6 +1,7 @@
 use super::Window;
 use super::WindowHandle;
 use super::WindowType;
+use crate::models::XYHW;
 
 #[derive(Debug, Clone)]
 pub struct WindowChange {
@@ -8,8 +9,7 @@ pub struct WindowChange {
     pub transient: Option<Option<WindowHandle>>,
     pub name: Option<Option<String>>,
     pub type_: Option<WindowType>,
-    pub floating_loc: Option<(i32, i32)>,
-    pub floating_size: Option<(i32, i32)>,
+    pub floating: Option<XYHW>,
 }
 
 impl WindowChange {
@@ -19,8 +19,7 @@ impl WindowChange {
             transient: None,
             name: None,
             type_: None,
-            floating_loc: None,
-            floating_size: None,
+            floating: None,
         }
     }
 
@@ -31,11 +30,8 @@ impl WindowChange {
         if let Some(name) = &self.name {
             window.name = name.clone();
         }
-        if let Some(floating_loc) = self.floating_loc {
-            window.floating_loc = Some(floating_loc);
-        }
-        if let Some(floating_size) = self.floating_size {
-            window.floating_size = Some(floating_size);
+        if let Some(floating) = self.floating {
+            window.floating = Some(floating);
         }
         if let Some(type_) = &self.type_ {
             window.type_ = type_.clone();

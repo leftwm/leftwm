@@ -12,21 +12,25 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
 }
 
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
-    window.set_floating( true );
-    if window.floating_loc.is_none() {
-        window.floating_loc = Some((window.x(), window.y()));
+    window.set_floating(true);
+    if window.floating.is_none() {
+        let mut floating = XYHW::default();
+        floating.w = window.width();
+        floating.h = window.height();
+        window.floating = Some(floating);
     }
     if window.start_loc.is_none() {
-        window.start_loc = window.floating_loc.clone();
+        let floating = window.floating.unwrap();
+        window.start_loc = Some((floating.x, floating.y));
     }
 
     //they must have a value, it is safe to unwrap
-    let floating = &mut window.floating_loc.unwrap();
+    let floating = &mut window.floating.unwrap();
     let starting = &window.start_loc.unwrap();
 
-    floating.0 = starting.0 + offset_x;
-    floating.1 = starting.1 + offset_y;
-    window.floating_loc = Some(floating.clone());
+    floating.x = starting.0 + offset_x;
+    floating.y = starting.1 + offset_y;
+    window.floating = Some(floating.clone());
 }
 
 //if the windows is really close to a workspace, snap to it
@@ -40,31 +44,32 @@ fn snap_to_workspaces(window: &mut Window, workspaces: &Vec<Workspace>) -> bool 
 }
 
 fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
-        if should_snap( window, workspace ) {
-            window.set_floating( false );
-            window.tags = workspace.tags.clone();
-            return true;
-        }
+    if should_snap(window, workspace) {
+        window.set_floating(false);
+        window.tags = workspace.tags.clone();
+        return true;
+    }
     false
 }
 
-
-//to be snapable, the window must be inside the workspace AND the a side must be close to 
+//to be snapable, the window must be inside the workspace AND the a side must be close to
 //the workspaces edge
 fn should_snap(window: &Window, workspace: &Workspace) -> bool {
     if window.must_float() {
         return false;
     }
-    if let Some(loc) = window.floating_loc {
+    if let Some(loc) = window.floating {
         //get window sides
-        let win_left = loc.0;
+        let win_left = loc.x;
         let win_right = win_left + window.width();
-        let win_top = loc.1;
+        let win_top = loc.y;
         let win_bottom = win_top + window.height();
         //check for conatins
-        let center_x = loc.0 + ( window.width() / 2);
-        let center_y = loc.1 + ( window.height() / 2);
-        if !workspace.contains_point( center_x, center_y) { return false }
+        let center_x = loc.x + (window.width() / 2);
+        let center_y = loc.y + (window.height() / 2);
+        if !workspace.contains_point(center_x, center_y) {
+            return false;
+        }
 
         //check for close edge
         let dist = 10;
@@ -72,14 +77,18 @@ fn should_snap(window: &Window, workspace: &Workspace) -> bool {
         let ws_right = workspace.x + workspace.width;
         let ws_top = workspace.y;
         let ws_bottom = workspace.y + workspace.height;
-        if (win_top - ws_top).abs() < dist { return true; } 
-        if (win_bottom - ws_bottom).abs() < dist { return true; } 
-        if (win_left - ws_left).abs() < dist { return true; } 
-        if (win_right - ws_right).abs() < dist { return true; } 
+        if (win_top - ws_top).abs() < dist {
+            return true;
+        }
+        if (win_bottom - ws_bottom).abs() < dist {
+            return true;
+        }
+        if (win_left - ws_left).abs() < dist {
+            return true;
+        }
+        if (win_right - ws_right).abs() < dist {
+            return true;
+        }
     }
     false
 }
-
-
-
-

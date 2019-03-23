@@ -49,7 +49,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
 fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
     let handle = WindowHandle::XlibHandle(window);
     let mut change = WindowChange::new(handle);
-    let size = xw.get_hint_sizing_as_tuple(window)?;
-    change.floating_size = Some(size);
+    let hint = xw.get_hint_sizing_as_xyhw(window)?;
+    change.floating = Some(hint);
     Some(change)
 }

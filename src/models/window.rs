@@ -1,4 +1,5 @@
 use super::WindowType;
+use crate::models::XYHW;
 use x11_dl::xlib;
 
 type MockHandle = i32;
@@ -14,16 +15,14 @@ pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
     visable: bool,
-    floating: bool,
+    is_floating: bool,
     pub name: Option<String>,
     pub type_: WindowType,
     pub tags: Vec<String>,
     pub border: i32,
     pub margin: i32,
-    pub normal_loc: (i32, i32),
-    pub normal_size: (i32, i32),
-    pub floating_loc: Option<(i32, i32)>,
-    pub floating_size: Option<(i32, i32)>,
+    pub normal: XYHW,
+    pub floating: Option<XYHW>,
     pub start_loc: Option<(i32, i32)>,
 }
 
@@ -33,16 +32,14 @@ impl Window {
             handle: h,
             transient: None,
             visable: false,
-            floating: false,
+            is_floating: false,
             name,
             type_: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
             margin: 10,
-            normal_loc: (0, 0),
-            normal_size: (0, 0),
-            floating_loc: None,
-            floating_size: None,
+            normal: XYHW::default(),
+            floating: None,
             start_loc: None,
         }
     }
@@ -55,10 +52,10 @@ impl Window {
     }
 
     pub fn set_floating(&mut self, value: bool) {
-        self.floating = value;
+        self.is_floating = value;
     }
     pub fn floating(&self) -> bool {
-        self.floating || self.must_float()
+        self.is_floating || self.must_float()
     }
     pub fn must_float(&self) -> bool {
         !self.transient.is_none() || self.type_ == WindowType::Dock
@@ -71,47 +68,47 @@ impl Window {
     }
 
     pub fn set_width(&mut self, width: i32) {
-        self.normal_size.0 = width
+        self.normal.w = width
     }
     pub fn set_height(&mut self, height: i32) {
-        self.normal_size.1 = height
+        self.normal.h = height
     }
 
     pub fn width(&self) -> i32 {
-        if self.floating() && !self.floating_size.is_none() {
-            self.floating_size.unwrap().0
+        if self.floating() && !self.floating.is_none() {
+            self.floating.unwrap().w
         } else {
-            self.normal_size.0 - (self.margin * 2) - (self.border * 2)
+            self.normal.w - (self.margin * 2) - (self.border * 2)
         }
     }
     pub fn height(&self) -> i32 {
-        if self.floating() && !self.floating_size.is_none() {
-            self.floating_size.unwrap().1
+        if self.floating() && !self.floating.is_none() {
+            self.floating.unwrap().h
         } else {
-            self.normal_size.1 - (self.margin * 2) - (self.border * 2)
+            self.normal.h - (self.margin * 2) - (self.border * 2)
         }
     }
 
     pub fn set_x(&mut self, x: i32) {
-        self.normal_loc.0 = x
+        self.normal.x = x
     }
     pub fn set_y(&mut self, y: i32) {
-        self.normal_loc.1 = y
+        self.normal.y = y
     }
 
     pub fn x(&self) -> i32 {
-        if self.floating() && !self.floating_loc.is_none() {
-            self.floating_loc.unwrap().0
+        if self.floating() && !self.floating.is_none() {
+            self.floating.unwrap().x
         } else {
-            self.normal_loc.0 + self.margin
+            self.normal.x + self.margin
         }
     }
 
     pub fn y(&self) -> i32 {
-        if self.floating() && !self.floating_loc.is_none() {
-            self.floating_loc.unwrap().1
+        if self.floating() && !self.floating.is_none() {
+            self.floating.unwrap().y
         } else {
-            self.normal_loc.1 + self.margin
+            self.normal.y + self.margin
         }
     }
 

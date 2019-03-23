@@ -20,11 +20,7 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     }
 
     if window.floating() {
-        window.floating_loc = Some(window.normal_loc);
-        match window.floating_size {
-            None => window.floating_size = Some((400, 400)),
-            _ => {}
-        }
+        window.floating = Some(window.normal);
     }
 
     manager.windows.push(window.clone());

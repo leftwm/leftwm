@@ -1,9 +1,20 @@
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Copy)]
 pub struct XYHW{
     pub x: i32,
     pub y: i32,
     pub h: i32,
     pub w: i32,
+}
+
+impl Default for XYHW {
+    fn default() -> Self {
+        XYHW{
+            x:0,
+            y:0,
+            w:0,
+            h:0,
+        }
+    }
 }
 
 impl XYHW{

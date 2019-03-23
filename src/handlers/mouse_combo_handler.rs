@@ -1,5 +1,6 @@
 use crate::display_action::DisplayAction;
 use crate::models::Manager;
+use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::utils::xkeysym_lookup::Button;
 use crate::utils::xkeysym_lookup::ModMask;
@@ -16,9 +17,8 @@ pub fn process(
     if let Some(act) = act {
         //new move/resize. while the old starting points
         for w in &mut manager.windows {
-            w.start_loc = None;
-            if !w.floating() {
-                w.floating_loc = None;
+            if w.handle == handle {
+                cleanup_window_to_start_floating(w);
             }
         }
         manager.actions.push_back(act);
@@ -52,4 +52,15 @@ fn build_action(
         }
         _ => None,
     }
+}
+
+fn cleanup_window_to_start_floating(window: &mut Window) {
+    if window.floating.is_none() {
+        window.floating = Some(window.normal.clone());
+    }
+    let mut floating = window.floating.unwrap();
+    floating.x = window.x();
+    floating.y = window.y();
+    window.floating = Some(floating.clone());
+    window.start_loc = None;
 }

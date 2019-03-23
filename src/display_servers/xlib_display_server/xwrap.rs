@@ -411,8 +411,7 @@ impl XWrap {
                     let dems = self.screens_area_dimensions();
                     if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
                         let mut change = WindowChange::new(h);
-                        change.floating_loc = Some((xywh.x, xywh.y));
-                        change.floating_size = Some((xywh.w, xywh.h));
+                        change.floating = Some( xywh.clone() );
                         change.type_ = Some(WindowType::Dock);
                         return Some(DisplayEvent::WindowChange(change));
                     }
@@ -811,36 +810,26 @@ impl XWrap {
         }
     }
 
-    pub fn get_hint_sizing_as_tuple(&self, window: xlib::Window) -> Option<(i32, i32)> {
+    pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XYHW> {
         if let Some(size) = self.get_hint_sizing(window) {
-            let mut w = size.width;
-            let mut h = size.height;
+    
+            let mut xyhw = XYHW{
+                x: size.x,
+                y: size.y,
+                w: size.width,
+                h: size.height,
+            };
 
-            if w == 0 {
-                w = size.base_width
+            if xyhw.w == 0 {
+                xyhw.w = size.base_width
             }
-            if h == 0 {
-                h = size.base_height
+            if xyhw.h == 0 {
+                xyhw.h = size.base_height
             }
-
-            //if size.min_width != 0 && size.min_width > w {
-            //    w = size.min_width
-            //}
-            //if size.min_height != 0 && size.min_height > h {
-            //    h = size.min_height
-            //}
-
-            //if size.max_width != 0 && size.max_width < w {
-            //    w = size.max_width
-            //}
-            //if size.max_height != 0 && size.max_height < h {
-            //    h = size.max_height
-            //}
-
-            if w == 0 || h == 0 {
+            if xyhw.w == 0 || xyhw.h == 0 {
                 return None;
             }
-            return Some((w, h));
+            return Some(xyhw);
         }
         None
     }
