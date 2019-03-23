@@ -27,12 +27,19 @@ const MAX_PROPERTY_VALUE_LEN: i64 = 4096;
 const BUTTONMASK: i64 = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
 const MOUSEMASK: i64 = BUTTONMASK | xlib::PointerMotionMask;
 
+pub struct Colors {
+    normal: c_ulong,
+    active: c_ulong,
+    //urgent: c_ulong,
+}
+
 pub struct XWrap {
     pub xlib: xlib::Xlib,
     pub display: *mut xlib::Display,
     root: xlib::Window,
     pub atoms: XAtom,
     cursors: XCursor,
+    colors: Colors,
     pub tags: Vec<String>,
     pub mode: DisplayServerMode,
     pub mod_key_mask: ModMask,
@@ -48,6 +55,10 @@ impl XWrap {
         let atoms = XAtom::new(&xlib, display);
         let cursors = XCursor::new(&xlib, display);
         let root = unsafe { (xlib.XDefaultRootWindow)(display) };
+        let colors = Colors {
+            normal: 0,
+            active: 0,
+        };
 
         let xw = XWrap {
             xlib,
@@ -55,6 +66,7 @@ impl XWrap {
             root,
             atoms,
             cursors,
+            colors,
             tags: vec![],
             mode: DisplayServerMode::NormalMode,
             mod_key_mask: 0,
@@ -333,7 +345,7 @@ impl XWrap {
     //    }
     //}
 
-    pub fn update_window(&self, window: &Window) {
+    pub fn update_window(&self, window: &Window, is_focused: bool) {
         if let WindowHandle::XlibHandle(h) = window.handle {
             if window.visable() {
                 let mut changes = xlib::XWindowChanges {
@@ -353,6 +365,12 @@ impl XWrap {
                     let rw: u32 = window.width() as u32;
                     let rh: u32 = window.height() as u32;
                     (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
+
+                    let color: c_ulong = match is_focused {
+                        true => self.colors.active,
+                        false => self.colors.normal,
+                    };
+                    (self.xlib.XSetWindowBorder)(self.display, h, color);
                 }
                 self.send_config(window);
             } else {
@@ -361,21 +379,8 @@ impl XWrap {
                     (self.xlib.XMoveWindow)(self.display, h, window.width() * -2, window.y());
                 }
             }
-            //self.update_visable(window);
         }
     }
-
-    //pub fn update_visable(&self, window: &Window) {
-    //    if let WindowHandle::XlibHandle(handle) = window.handle {
-    //        unsafe {
-    //            if window.visable {
-    //                (self.xlib.XMapWindow)(self.display, handle);
-    //            } else {
-    //                (self.xlib.XUnmapWindow)(self.display, handle);
-    //            }
-    //        }
-    //    }
-    //}
 
     //this code is ran one time when a window is added to the managers list of windows
     pub fn setup_managed_window(&self, h: WindowHandle) -> Option<DisplayEvent> {
@@ -411,7 +416,7 @@ impl XWrap {
                     let dems = self.screens_area_dimensions();
                     if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
                         let mut change = WindowChange::new(h);
-                        change.floating = Some( xywh.clone() );
+                        change.floating = Some(xywh.clone());
                         change.type_ = Some(WindowType::Dock);
                         return Some(DisplayEvent::WindowChange(change));
                     }
@@ -812,8 +817,7 @@ impl XWrap {
 
     pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XYHW> {
         if let Some(size) = self.get_hint_sizing(window) {
-    
-            let mut xyhw = XYHW{
+            let mut xyhw = XYHW {
                 x: size.x,
                 y: size.y,
                 w: size.width,
@@ -882,6 +886,24 @@ impl XWrap {
         }
     }
 
+    fn load_colors(&self, _config: &Config) -> Colors {
+        Colors {
+            normal: self.get_color("#000000"),
+            active: self.get_color("#FF0000"),
+        }
+    }
+
+    fn get_color(&self, color: &str) -> c_ulong {
+        let screen = unsafe { (self.xlib.XDefaultScreen)(self.display) };
+        let cmap: xlib::Colormap = unsafe { (self.xlib.XDefaultColormap)(self.display, screen) };
+        let color_cstr = CString::new(color).unwrap().into_raw();
+        let mut color: xlib::XColor = unsafe { std::mem::uninitialized() };
+        unsafe {
+            (self.xlib.XAllocNamedColor)(self.display, cmap, color_cstr, &mut color, &mut color);
+        }
+        color.pixel
+    }
+
     pub fn init(&mut self, config: &Config) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
@@ -893,6 +915,7 @@ impl XWrap {
             | xlib::PropertyChangeMask;
 
         let root = self.get_default_root();
+        self.colors = self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::uninitialized() };
         attrs.cursor = self.cursors.normal;

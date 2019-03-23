@@ -43,9 +43,13 @@ impl DisplayServer for XlibDisplayServer {
         me
     }
 
-    fn update_windows(&self, windows: Vec<&Window>) {
+    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window> ){
         for window in windows {
-            self.xw.update_window(&window)
+            let is_focused = match focused_window {
+                Some(f) => f.handle == window.handle,
+                None => false
+            };
+            self.xw.update_window(&window, is_focused);
         }
     }
 

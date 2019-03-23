@@ -49,7 +49,8 @@ fn event_loop(
         //if we need to update the displayed state
         if needs_update {
             let windows: Vec<&Window> = (&manager.windows).iter().map(|w| w).collect();
-            display_server.update_windows(windows);
+            let focused = manager.focused_window();
+            display_server.update_windows(windows, focused);
         }
 
         //preform any actions requested by the handler

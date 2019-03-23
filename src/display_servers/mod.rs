@@ -14,6 +14,6 @@ pub use self::xlib_display_server::XlibDisplayServer;
 pub trait DisplayServer {
     fn new(config: &Config) -> Self;
     fn get_next_events(&self) -> Vec<DisplayEvent>;
-    fn update_windows(&self, windows: Vec<&Window>);
+    fn update_windows(&self, windows: Vec<&Window>, focused: Option<&Window>);
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent>;
 }

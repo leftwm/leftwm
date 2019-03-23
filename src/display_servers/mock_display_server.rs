@@ -20,7 +20,7 @@ impl DisplayServer for MockDisplayServer {
         vec![]
     }
 
-    fn update_windows(&self, _: Vec<&Window>) {}
+    fn update_windows(&self, _: Vec<&Window>, _: Option<&Window>) {}
 
     fn execute_action(&mut self, _: DisplayAction) -> Option<DisplayEvent> {
         None
