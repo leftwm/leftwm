@@ -1,6 +1,7 @@
 use super::layouts::*;
-use super::Screen;
-use super::Window;
+use crate::models::Screen;
+use crate::models::Window;
+use crate::models::XYHW;
 use std::collections::VecDeque;
 use std::fmt;
 
@@ -9,10 +10,9 @@ pub struct Workspace {
     pub id: i32,
     layouts: VecDeque<Box<Layout>>,
     pub tags: Vec<String>,
-    pub height: i32,
-    pub width: i32,
-    pub x: i32,
-    pub y: i32,
+    pub avoid: Vec<XYHW>,
+    xyhw: XYHW,
+    xyhw_avoided: XYHW,
 }
 
 impl fmt::Debug for Workspace {
@@ -20,7 +20,7 @@ impl fmt::Debug for Workspace {
         write!(
             f,
             "Workspace {{ id: {}, tags: {:?}, x: {}, y: {} }}",
-            self.id, self.tags, self.x, self.y
+            self.id, self.tags, self.xyhw.x, self.xyhw.y
         )
     }
 }
@@ -37,10 +37,19 @@ impl Default for Workspace {
             id: -1,
             layouts: get_all_layouts(),
             tags: vec![],
-            height: 600,
-            width: 800,
-            x: 0,
-            y: 0,
+            avoid: vec![],
+            xyhw: XYHW {
+                h: 600,
+                w: 800,
+                x: 0,
+                y: 0,
+            },
+            xyhw_avoided: XYHW {
+                h: 600,
+                w: 800,
+                x: 0,
+                y: 0,
+            },
         }
     }
 }
@@ -55,10 +64,19 @@ impl Workspace {
             id: -1,
             layouts: get_all_layouts(),
             tags: vec![],
-            height: screen.height,
-            width: screen.width,
-            x: screen.x,
-            y: screen.y,
+            avoid: vec![],
+            xyhw: XYHW {
+                h: screen.height,
+                w: screen.width,
+                x: screen.x,
+                y: screen.y,
+            },
+            xyhw_avoided: XYHW {
+                h: screen.height,
+                w: screen.width,
+                x: screen.x,
+                y: screen.y,
+            },
         }
     }
 
@@ -67,9 +85,7 @@ impl Workspace {
     }
 
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
-        let maxx = self.x + self.width;
-        let maxy = self.y + self.height;
-        (self.x <= x && x <= maxx) && (self.y <= y && y <= maxy)
+        self.xyhw.contains_point(x, y)
     }
 
     pub fn has_tag(&self, tag: &str) -> bool {
@@ -121,6 +137,27 @@ impl Workspace {
         let mut mine = self.displayed_windows(windows);
         mine.iter_mut().for_each(|w| w.set_visable(true));
         self.layouts[0].update_windows(self, &mut mine);
+    }
+
+    pub fn x(&self) -> i32 {
+        self.xyhw_avoided.x
+    }
+    pub fn y(&self) -> i32 {
+        self.xyhw_avoided.y
+    }
+    pub fn height(&self) -> i32 {
+        self.xyhw_avoided.h
+    }
+    pub fn width(&self) -> i32 {
+        self.xyhw_avoided.w
+    }
+
+    pub fn update_avoided_areas(&mut self) {
+        let mut xyhw = self.xyhw.clone();
+        for a in &self.avoid {
+            xyhw = xyhw.without(a);
+        }
+        self.xyhw_avoided = xyhw;
     }
 }
 
