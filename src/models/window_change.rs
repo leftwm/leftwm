@@ -35,8 +35,10 @@ impl WindowChange {
         }
         if let Some(type_) = &self.type_ {
             window.type_ = type_.clone();
-            window.margin = 0;
-            window.border = 0;
+            if window.type_ == WindowType::Dock {
+                window.border = 0;
+                window.margin = 0;
+            }
         }
     }
 }
