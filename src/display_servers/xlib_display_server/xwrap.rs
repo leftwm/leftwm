@@ -307,9 +307,9 @@ impl XWrap {
         }
     }
 
-    pub fn set_current_viewport(&self, tags: Vec<&String> ) {
+    pub fn set_current_viewport(&self, tags: Vec<&String>) {
         let mut indexes: Vec<u32> = vec![];
-        for tag in tags{ 
+        for tag in tags {
             for (i, mytag) in self.tags.iter().enumerate() {
                 if tag.contains(mytag) {
                     indexes.push(i as u32);

@@ -40,6 +40,8 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     //let the DS know we are managing this window
     let act = DisplayAction::AddedWindow(window.handle.clone());
     manager.actions.push_back(act);
+    let act = DisplayAction::WindowTakeFocus(window.handle.clone());
+    manager.actions.push_back(act);
 
     true
 }
