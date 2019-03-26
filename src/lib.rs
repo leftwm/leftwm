@@ -26,6 +26,7 @@ pub use display_servers::XlibDisplayServer;
 pub use handlers::display_event_handler::DisplayEventHandler;
 pub use models::Manager;
 pub use models::Window;
+pub use models::Workspace;
 pub use utils::child_process;
 pub use utils::logging;
 

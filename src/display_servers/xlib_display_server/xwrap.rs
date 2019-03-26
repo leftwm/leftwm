@@ -307,6 +307,22 @@ impl XWrap {
         }
     }
 
+    pub fn set_current_viewport(&self, tags: Vec<&String> ) {
+        let mut indexes: Vec<u32> = vec![];
+        for tag in tags{ 
+            for (i, mytag) in self.tags.iter().enumerate() {
+                if tag.contains(mytag) {
+                    indexes.push(i as u32);
+                }
+            }
+        }
+        if indexes.is_empty() {
+            indexes.push(0)
+        }
+        self.set_desktop_prop(&indexes, self.atoms.NetDesktopViewport);
+        //self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
+    }
+
     pub fn set_current_desktop(&self, current_tags: &String) {
         let mut indexes: Vec<u32> = vec![];
         for (i, tag) in self.tags.iter().enumerate() {

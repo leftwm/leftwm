@@ -1,0 +1,32 @@
+#!/bin/bash
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+#boot compton if it exists
+if [ -x "$(command -v compton)" ]; then
+  compton &> /dev/null & 
+fi
+
+
+
+#boot polybar based on the number of monitors found
+if [ -x "$(command -v polybar)" ]; then
+  pkill polybar
+  monitors="$(polybar -m | sed s/:.*// | tac)"
+  monitor_count="$(polybar -m | wc -l)"
+  if [ $monitor_count = "1" ]; then
+    polybar -c "$SCRIPTPATH/polybar.config" single &> /dev/null &
+    exit 0
+  fi
+
+  first=true
+  while read -r display; do
+    if [ "$first" = true ]; then
+      MONITOR=$display polybar -c "$SCRIPTPATH/polybar.config" primary &> /dev/null &
+      first=false
+    else 
+      MONITOR=$display polybar -c "$SCRIPTPATH/polybar.config" secondary &> /dev/null &
+    fi
+  done <<< "$monitors"
+  exit 0
+fi

@@ -51,6 +51,9 @@ fn event_loop(
             let windows: Vec<&Window> = (&manager.windows).iter().map(|w| w).collect();
             let focused = manager.focused_window();
             display_server.update_windows(windows, focused);
+            let workspaces: Vec<&Workspace> = (&manager.workspaces).iter().map(|w| w).collect();
+            let focused = manager.focused_workspace();
+            display_server.update_workspaces(workspaces, focused);
         }
 
         //preform any actions requested by the handler

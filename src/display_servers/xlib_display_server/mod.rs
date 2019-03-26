@@ -3,6 +3,7 @@ use crate::display_action::DisplayAction;
 use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
+use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
@@ -43,14 +44,29 @@ impl DisplayServer for XlibDisplayServer {
         me
     }
 
-    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window> ){
+    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {
         for window in windows {
             let is_focused = match focused_window {
                 Some(f) => f.handle == window.handle,
-                None => false
+                None => false,
             };
             self.xw.update_window(&window, is_focused);
         }
+    }
+
+    fn update_workspaces(&self, workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
+        if let Some(focused) = focused {
+            for tag in &focused.tags {
+                self.xw.set_current_desktop( tag );
+            }
+        }
+        let mut tags: Vec<&String> = vec![];
+        for w in workspaces{
+            for t in &w.tags{
+                tags.push( t );
+            }
+        }
+        self.xw.set_current_viewport( tags );
     }
 
     fn get_next_events(&self) -> Vec<DisplayEvent> {
