@@ -152,11 +152,11 @@ impl Default for Config {
             key: "q".to_owned(),
         });
 
-        //Mod + crtl + r => restart leftwm
+        //Mod + shift + r => restart leftwm
         commands.push(Keybind {
             command: Command::Execute,
             value: Some("pkill leftwm-worker".to_owned()),
-            modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
             key: "r".to_owned(),
         });
 

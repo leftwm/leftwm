@@ -32,9 +32,11 @@ fn event_loop(
     display_server: &mut XlibDisplayServer,
     handler: &DisplayEventHandler,
 ) {
+    let mut socket = Socket::new();
     //main event loop
     let mut events_remainder = vec![];
     loop {
+        socket.write_manager_state(manager);
         let mut events = get_events(display_server);
         events.append(&mut events_remainder);
 

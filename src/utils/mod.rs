@@ -1,3 +1,3 @@
 pub mod child_process;
-pub mod logging;
+pub mod socket;
 pub mod xkeysym_lookup;

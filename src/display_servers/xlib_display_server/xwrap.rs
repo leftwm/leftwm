@@ -427,19 +427,44 @@ impl XWrap {
                 (self.xlib.XSync)(self.display, 0);
             }
 
-            if self.get_window_type(handle) == WindowType::Dock {
-                if let Some(dock_area) = self.get_window_strut_array(handle) {
-                    let dems = self.screens_area_dimensions();
-                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
-                        let mut change = WindowChange::new(h);
-                        change.floating = Some(xywh.clone());
-                        change.type_ = Some(WindowType::Dock);
-                        return Some(DisplayEvent::WindowChange(change));
+            match self.get_window_type(handle) {
+                WindowType::Dock => {
+                    if let Some(dock_area) = self.get_window_strut_array(handle) {
+                        let dems = self.screens_area_dimensions();
+                        if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                            let mut change = WindowChange::new(h);
+                            change.floating = Some(xywh.clone());
+                            change.type_ = Some(WindowType::Dock);
+                            return Some(DisplayEvent::WindowChange(change));
+                        }
                     }
+                }
+                _ => {
+                    let _ = self.move_cursor_to_window(handle);
                 }
             }
         }
         None
+    }
+
+    fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), ()> {
+        let attrs = self.get_window_attrs(window)?;
+        let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
+        let none: c_int = 0;
+        unsafe {
+            (self.xlib.XWarpPointer)(
+                self.display,
+                none as u64,
+                self.get_default_root(),
+                none,
+                none,
+                none as u32,
+                none as u32,
+                point.0,
+                point.1,
+            );
+        }
+        Ok(())
     }
 
     pub fn screens_area_dimensions(&self) -> (i32, i32) {

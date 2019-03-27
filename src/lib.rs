@@ -1,7 +1,3 @@
-#[macro_use]
-extern crate log;
-extern crate env_logger;
-
 mod command;
 mod command_builder;
 pub mod config;
@@ -28,7 +24,7 @@ pub use models::Manager;
 pub use models::Window;
 pub use models::Workspace;
 pub use utils::child_process;
-pub use utils::logging;
+pub use utils::socket::Socket;
 
 #[macro_use]
 extern crate serde_derive;
