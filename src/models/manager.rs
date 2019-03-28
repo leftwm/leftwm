@@ -1,4 +1,5 @@
 use crate::display_action::DisplayAction;
+use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
@@ -10,6 +11,7 @@ pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
+    pub mode: Mode,
     pub tags: Vec<String>, //list of all known tags
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
@@ -23,6 +25,7 @@ impl Default for Manager {
             windows: Vec::new(),
             screens: Vec::new(),
             workspaces: Vec::new(),
+            mode: Mode::NormalMode,
             tags: vec![],
             focused_workspace_history: VecDeque::new(),
             focused_window_history: VecDeque::new(),

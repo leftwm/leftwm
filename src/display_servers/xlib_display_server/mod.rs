@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::display_action::DisplayAction;
+use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
@@ -7,7 +8,6 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
-use crate::DisplayServerMode;
 use std::sync::Once;
 use x11_dl::xlib;
 
@@ -57,16 +57,16 @@ impl DisplayServer for XlibDisplayServer {
     fn update_workspaces(&self, workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
             for tag in &focused.tags {
-                self.xw.set_current_desktop( tag );
+                self.xw.set_current_desktop(tag);
             }
         }
         let mut tags: Vec<&String> = vec![];
-        for w in workspaces{
-            for t in &w.tags{
-                tags.push( t );
+        for w in workspaces {
+            for t in &w.tags {
+                tags.push(t);
             }
         }
-        self.xw.set_current_viewport( tags );
+        self.xw.set_current_viewport(tags);
     }
 
     fn get_next_events(&self) -> Vec<DisplayEvent> {
@@ -92,15 +92,11 @@ impl DisplayServer for XlibDisplayServer {
                 return self.xw.setup_managed_window(w);
             }
             DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
-            DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
+            DisplayAction::WindowTakeFocus(w, force) => self.xw.window_take_focus(w, force),
             DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),
-            DisplayAction::StartMovingWindow(w) => {
-                self.xw.set_mode(DisplayServerMode::MovingWindow(w))
-            }
-            DisplayAction::StartResizingWindow(w) => {
-                self.xw.set_mode(DisplayServerMode::ResizingWindow(w))
-            }
-            DisplayAction::NormalMode => self.xw.set_mode(DisplayServerMode::NormalMode),
+            DisplayAction::StartMovingWindow(w) => self.xw.set_mode(Mode::MovingWindow(w)),
+            DisplayAction::StartResizingWindow(w) => self.xw.set_mode(Mode::ResizingWindow(w)),
+            DisplayAction::NormalMode => self.xw.set_mode(Mode::NormalMode),
             DisplayAction::SetCurrentTags(tags) => self.xw.set_current_desktop(&tags),
         }
         None

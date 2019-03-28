@@ -71,7 +71,7 @@ fn should_fullscreen_a_single_window() {
     use super::models::WindowHandle;
     let layout = EvenHorizontal {};
     //size defaults to 600x800
-    let mut ws = Workspace::new();
+    let ws = Workspace::new();
     let mut w = Window::new(WindowHandle::MockHandle(1), None);
     w.border = 0;
     w.margin = 0;
@@ -81,8 +81,5 @@ fn should_fullscreen_a_single_window() {
         w.height() == 600,
         "window was not size to the correct height"
     );
-    assert!(
-        w.width() == 800,
-        "window was not size to the correct width"
-    );
+    assert!(w.width() == 800, "window was not size to the correct width");
 }

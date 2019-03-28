@@ -1,10 +1,10 @@
 use super::event_translate_client_message;
 use super::event_translate_property_notify;
 use super::DisplayEvent;
-use super::DisplayServerMode;
 use super::Window;
 use super::WindowHandle;
 use super::XWrap;
+use crate::models::Mode;
 use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
@@ -66,9 +66,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let h = WindowHandle::XlibHandle(event.window);
                 Some(DisplayEvent::MouseCombo(event.state, event.button, h))
             }
-            xlib::ButtonRelease => {
-                Some(DisplayEvent::ChangeToNormalMode)
-            }
+            xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
             xlib::EnterNotify => {
                 let event = xlib::XEnterWindowEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
@@ -96,13 +94,13 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let offset_x = event.x_root - xw.mode_origin.0;
                 let offset_y = event.y_root - xw.mode_origin.1;
                 match &xw.mode {
-                    DisplayServerMode::NormalMode => {
+                    Mode::NormalMode => {
                         Some(DisplayEvent::Movement(event_h, event.x_root, event.y_root))
                     }
-                    DisplayServerMode::MovingWindow(h) => {
+                    Mode::MovingWindow(h) => {
                         Some(DisplayEvent::MoveWindow(h.clone(), offset_x, offset_y))
                     }
-                    DisplayServerMode::ResizingWindow(h) => {
+                    Mode::ResizingWindow(h) => {
                         Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y))
                     }
                 }

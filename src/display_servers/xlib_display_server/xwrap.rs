@@ -6,12 +6,12 @@ use super::Screen;
 use super::Window;
 use super::WindowHandle;
 use crate::models::DockArea;
+use crate::models::Mode;
 use crate::models::WindowChange;
 use crate::models::WindowType;
 use crate::models::XYHW;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
-use crate::DisplayServerMode;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
@@ -41,7 +41,7 @@ pub struct XWrap {
     cursors: XCursor,
     colors: Colors,
     pub tags: Vec<String>,
-    pub mode: DisplayServerMode,
+    pub mode: Mode,
     pub mod_key_mask: ModMask,
     pub mode_origin: (i32, i32),
 }
@@ -68,7 +68,7 @@ impl XWrap {
             cursors,
             colors,
             tags: vec![],
-            mode: DisplayServerMode::NormalMode,
+            mode: Mode::NormalMode,
             mod_key_mask: 0,
             mode_origin: (0, 0),
         };
@@ -740,9 +740,9 @@ impl XWrap {
         })
     }
 
-    pub fn window_take_focus(&self, h: WindowHandle) {
+    pub fn window_take_focus(&self, h: WindowHandle, force: bool) {
         if let WindowHandle::XlibHandle(handle) = h {
-            if !self.is_window_under_cursor(handle) {
+            if !force && !self.is_window_under_cursor(handle) {
                 return;
             }
 
@@ -1016,17 +1016,17 @@ impl XWrap {
         }
     }
 
-    pub fn set_mode(&mut self, mode: DisplayServerMode) {
+    pub fn set_mode(&mut self, mode: Mode) {
         //prevent resizing and moveing or root
         match &mode {
-            DisplayServerMode::MovingWindow(h) | DisplayServerMode::ResizingWindow(h) => {
+            Mode::MovingWindow(h) | Mode::ResizingWindow(h) => {
                 if h == &self.get_default_root_handle() {
                     return;
                 }
             }
             _ => {}
         }
-        if self.mode == DisplayServerMode::NormalMode && mode != DisplayServerMode::NormalMode {
+        if self.mode == Mode::NormalMode && mode != Mode::NormalMode {
             self.mode = mode.clone();
             //safe this point as the start of the move/resize
             if let Some(loc) = self.get_pointer_location() {
@@ -1034,9 +1034,9 @@ impl XWrap {
             }
             unsafe {
                 let cursor = match mode {
-                    DisplayServerMode::ResizingWindow(_) => self.cursors.resize,
-                    DisplayServerMode::MovingWindow(_) => self.cursors.move_,
-                    DisplayServerMode::NormalMode => self.cursors.normal,
+                    Mode::ResizingWindow(_) => self.cursors.resize,
+                    Mode::MovingWindow(_) => self.cursors.move_,
+                    Mode::NormalMode => self.cursors.normal,
                 };
                 //grab the mouse
                 (self.xlib.XGrabPointer)(
@@ -1052,7 +1052,7 @@ impl XWrap {
                 );
             }
         }
-        if mode == DisplayServerMode::NormalMode {
+        if mode == Mode::NormalMode {
             //release the mouse grab
             unsafe {
                 (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);

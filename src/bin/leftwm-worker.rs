@@ -12,9 +12,6 @@ fn get_events<T: DisplayServer>(ds: &T) -> Vec<DisplayEvent> {
 
 fn main() {
     env_logger::init();
-
-    info!("Starting leftwm");
-
     let result = panic::catch_unwind(|| {
         let mut manager = Box::new(Manager::default());
         let config = config::load();
@@ -23,7 +20,6 @@ fn main() {
         let handler = DisplayEventHandler { config };
         event_loop(&mut manager, &mut display_server, &handler);
     });
-
     info!("Completed: {:?}", result);
 }
 
@@ -36,15 +32,14 @@ fn event_loop(
     //main event loop
     let mut events_remainder = vec![];
     loop {
-        socket.write_manager_state(manager);
+        if manager.mode == Mode::NormalMode {
+            socket.write_manager_state(manager);
+        }
         let mut events = get_events(display_server);
         events.append(&mut events_remainder);
 
-        debug!("Processing {} events", events.len());
-
         let mut needs_update = false;
         for event in events {
-            debug!("Event {:?}", event);
             needs_update = handler.process(manager, event) || needs_update;
         }
 
@@ -62,11 +57,9 @@ fn event_loop(
         while !manager.actions.is_empty() {
             if let Some(act) = manager.actions.pop_front() {
                 if let Some(event) = display_server.execute_action(act) {
-                    debug!("Extra Event {:?}", event);
                     events_remainder.push(event);
                 }
             }
         }
-        debug!("Found {} extra events", events_remainder.len());
     }
 }

@@ -1,5 +1,6 @@
 mod dock_area;
 mod manager;
+mod mode;
 mod screen;
 mod window;
 mod window_change;
@@ -12,6 +13,7 @@ use crate::layouts;
 
 pub use dock_area::DockArea;
 pub use manager::Manager;
+pub use mode::Mode;
 pub use screen::Screen;
 pub use window::Window;
 pub use window::WindowHandle;

@@ -40,6 +40,7 @@ impl DisplayEventHandler {
             }
 
             DisplayEvent::ChangeToNormalMode => {
+                manager.mode = Mode::NormalMode;
                 //look through the config and build a command if its defined in the config
                 let act = DisplayAction::NormalMode;
                 manager.actions.push_back(act);

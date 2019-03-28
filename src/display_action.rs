@@ -11,7 +11,7 @@ pub enum DisplayAction {
     AddedWindow(WindowHandle), // get triggered after a new window is discovered and WE are managing it
     MoveToTop(WindowHandle),   // send a window to the top move location
     DestroyedWindow(WindowHandle), // tell the DS we no longer care about the this window and other cleanup
-    WindowTakeFocus(WindowHandle), // tell a window that it is to become focused
+    WindowTakeFocus(WindowHandle, bool), // tell a window that it is to become focused
     StartResizingWindow(WindowHandle), // tell the DM we are going to resize a window and only send that type of events
     StartMovingWindow(WindowHandle), // tell the DM we are going to move a window and only send that type of events
     SetCurrentTags(String),          // Used to let the WM know of the current tag changes

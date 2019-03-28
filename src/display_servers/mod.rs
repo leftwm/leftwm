@@ -4,11 +4,9 @@ use crate::models::Screen;
 use crate::models::Window;
 use crate::models::Workspace;
 use crate::DisplayEvent;
-mod display_server_mode;
 mod mock_display_server;
 pub mod xlib_display_server;
 
-pub use self::display_server_mode::DisplayServerMode;
 pub use self::mock_display_server::MockDisplayServer;
 pub use self::xlib_display_server::XlibDisplayServer;
 

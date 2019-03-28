@@ -1,5 +1,6 @@
 use crate::display_action::DisplayAction;
 use crate::models::Manager;
+use crate::models::Mode;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::utils::xkeysym_lookup::Button;
@@ -28,7 +29,7 @@ pub fn process(
 }
 
 fn build_action(
-    manager: &Manager,
+    manager: &mut Manager,
     _mod_mask: ModMask,
     button: Button,
     window: WindowHandle,
@@ -37,6 +38,7 @@ fn build_action(
         xlib::Button1 => {
             for w in &manager.windows {
                 if w.handle == window && w.can_move() {
+                    manager.mode = Mode::MovingWindow(window.clone());
                     return Some(DisplayAction::StartMovingWindow(window));
                 }
             }
@@ -45,6 +47,7 @@ fn build_action(
         xlib::Button3 => {
             for w in &manager.windows {
                 if w.handle == window && w.can_resize() {
+                    manager.mode = Mode::ResizingWindow(window.clone());
                     return Some(DisplayAction::StartResizingWindow(window));
                 }
             }
