@@ -35,13 +35,12 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     }
 
     manager.windows.push(window.clone());
-    focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
 
     //let the DS know we are managing this window
     let act = DisplayAction::AddedWindow(window.handle.clone());
     manager.actions.push_back(act);
-    let act = DisplayAction::WindowTakeFocus(window.handle.clone(), false);
-    manager.actions.push_back(act);
+
+    focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
 
     true
 }

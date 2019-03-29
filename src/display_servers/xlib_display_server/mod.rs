@@ -92,7 +92,7 @@ impl DisplayServer for XlibDisplayServer {
                 return self.xw.setup_managed_window(w);
             }
             DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
-            DisplayAction::WindowTakeFocus(w, force) => self.xw.window_take_focus(w, force),
+            DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
             DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),
             DisplayAction::StartMovingWindow(w) => self.xw.set_mode(Mode::MovingWindow(w)),
             DisplayAction::StartResizingWindow(w) => self.xw.set_mode(Mode::ResizingWindow(w)),

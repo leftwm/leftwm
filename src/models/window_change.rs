@@ -7,6 +7,7 @@ use crate::models::XYHW;
 pub struct WindowChange {
     pub handle: WindowHandle,
     pub transient: Option<Option<WindowHandle>>,
+    pub never_focus: Option<bool>,
     pub name: Option<Option<String>>,
     pub type_: Option<WindowType>,
     pub floating: Option<XYHW>,
@@ -17,6 +18,7 @@ impl WindowChange {
         WindowChange {
             handle: h,
             transient: None,
+            never_focus: None,
             name: None,
             type_: None,
             floating: None,
@@ -29,6 +31,9 @@ impl WindowChange {
         }
         if let Some(name) = &self.name {
             window.name = name.clone();
+        }
+        if let Some(nf) = self.never_focus {
+            window.never_focus = nf;
         }
         if let Some(floating) = self.floating {
             window.floating = Some(floating);

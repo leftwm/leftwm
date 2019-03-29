@@ -447,6 +447,23 @@ impl XWrap {
         None
     }
 
+    fn grab_mouse_clicks(&self, handle: xlib::Window) {
+        unsafe {
+            //cleanup all old watches
+            (self.xlib.XUngrabButton)(
+                self.display,
+                xlib::AnyButton as u32,
+                xlib::AnyModifier,
+                handle,
+            ); //cleanup
+               //just watchout for these mouse combos so we can act on them
+            self.grab_buttons(handle, xlib::Button1, self.mod_key_mask);
+            self.grab_buttons(handle, xlib::Button1, self.mod_key_mask | xlib::ShiftMask);
+            self.grab_buttons(handle, xlib::Button3, self.mod_key_mask);
+            self.grab_buttons(handle, xlib::Button3, self.mod_key_mask | xlib::ShiftMask);
+        }
+    }
+
     fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), ()> {
         let attrs = self.get_window_attrs(window)?;
         let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
@@ -740,51 +757,37 @@ impl XWrap {
         })
     }
 
-    pub fn window_take_focus(&self, h: WindowHandle, force: bool) {
-        if let WindowHandle::XlibHandle(handle) = h {
-            if !force && !self.is_window_under_cursor(handle) {
-                return;
+    pub fn window_take_focus(&self, window: Window) {
+        if let WindowHandle::XlibHandle(handle) = window.handle {
+
+            self.grab_mouse_clicks(handle);
+
+            if !window.never_focus {
+                //mark this window as the NetActiveWindow
+                unsafe {
+                    (self.xlib.XSetInputFocus)(
+                        self.display,
+                        handle,
+                        xlib::RevertToPointerRoot,
+                        xlib::CurrentTime,
+                    );
+                    let list = vec![handle];
+                    (self.xlib.XChangeProperty)(
+                        self.display,
+                        self.get_default_root(),
+                        self.atoms.NetActiveWindow,
+                        xlib::XA_WINDOW,
+                        32,
+                        xlib::PropModeReplace,
+                        list.as_ptr() as *const c_uchar,
+                        1,
+                    );
+                    std::mem::forget(list);
+                }
             }
 
             //tell the window to take focus
             self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
-
-            //mark this window as the NetActiveWindow
-            unsafe {
-                (self.xlib.XSetInputFocus)(
-                    self.display,
-                    handle,
-                    xlib::RevertToPointerRoot,
-                    xlib::CurrentTime,
-                );
-                let list = vec![handle];
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    self.get_default_root(),
-                    self.atoms.NetActiveWindow,
-                    xlib::XA_WINDOW,
-                    32,
-                    xlib::PropModeReplace,
-                    list.as_ptr() as *const c_uchar,
-                    1,
-                );
-                std::mem::forget(list);
-            }
-            unsafe {
-                //cleanup all old watches
-                (self.xlib.XUngrabButton)(
-                    self.display,
-                    xlib::AnyButton as u32,
-                    xlib::AnyModifier,
-                    handle,
-                ); //cleanup
-
-                //just watchout for these mouse combos se we can act on them
-                self.grab_buttons(handle, xlib::Button1, self.mod_key_mask);
-                self.grab_buttons(handle, xlib::Button1, self.mod_key_mask | xlib::ShiftMask);
-                self.grab_buttons(handle, xlib::Button3, self.mod_key_mask);
-                self.grab_buttons(handle, xlib::Button3, self.mod_key_mask | xlib::ShiftMask);
-            }
         }
     }
 
@@ -843,6 +846,17 @@ impl XWrap {
             }
         }
         None
+    }
+
+    pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
+        unsafe {
+            let hints_ptr: *const xlib::XWMHints = (self.xlib.XGetWMHints)(self.display, window);
+            if hints_ptr.is_null() {
+                return None;
+            }
+            let hints: xlib::XWMHints = *hints_ptr;
+            Some(hints)
+        }
     }
 
     pub fn get_hint_sizing(&self, window: xlib::Window) -> Option<xlib::XSizeHints> {
