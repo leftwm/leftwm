@@ -67,7 +67,14 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 Some(DisplayEvent::MouseCombo(event.state, event.button, h))
             }
             xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
+
             xlib::EnterNotify => {
+                let crossing = xlib::XCrossingEvent::from(raw_event);
+                if (crossing.mode != xlib::NotifyNormal || crossing.detail == xlib::NotifyInferior)
+                    && crossing.window != xw.get_default_root()
+                {
+                    return None;
+                }
                 let event = xlib::XEnterWindowEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
                 let mouse_loc = xw.get_pointer_location();
@@ -106,13 +113,14 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 }
             }
             xlib::FocusIn => {
-                let event = xlib::XFocusChangeEvent::from(raw_event);
-                let h = WindowHandle::XlibHandle(event.window);
-                let mouse_loc = xw.get_pointer_location();
-                match mouse_loc {
-                    Some(loc) => Some(DisplayEvent::FocusedWindow(h, loc.0, loc.1)),
-                    None => None,
-                }
+                None
+                //let event = xlib::XFocusChangeEvent::from(raw_event);
+                //let h = WindowHandle::XlibHandle(event.window);
+                //let mouse_loc = xw.get_pointer_location();
+                //match mouse_loc {
+                //    Some(loc) => Some(DisplayEvent::FocusedWindow(h, loc.0, loc.1)),
+                //    None => None,
+                //}
             }
 
             _ => None,

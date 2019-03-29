@@ -31,11 +31,14 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
             None
         }
         xlib::XA_WM_HINTS => {
-            //let atom_name = xw.atoms.get_name(event.atom);
-            //crate::logging::log_info("XPropertyEvent", &format!("{:?} {:?}", atom_name, event));
-            // TODO: update wm hints
-            // never focus, is urgent
-            //println!("XA_WM_HINTS");
+            if let Some(hints) = xw.get_wmhints(event.window) {
+                if hints.flags & xlib::InputHint != 0 {
+                    let handle = WindowHandle::XlibHandle(event.window);
+                    let mut change = WindowChange::new(handle);
+                    change.never_focus = Some( hints.input == 0);
+                    return Some(DisplayEvent::WindowChange(change));
+                }
+            }
             None
         }
         _ => {

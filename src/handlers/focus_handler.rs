@@ -55,12 +55,14 @@ pub fn focus_window_by_handle(
 
 pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> bool {
     let result = _focus_window_work(manager, window);
+    if result == false {
+        return false;
+    }
 
     // if the x,y mouse location is inside the to workspace for this window, it needs to be focused
     // this is so the focus of the window gets passed to the underlying workspace
     if !window.tags.is_empty() {
         let main_tag = window.tags[0].clone();
-
         let to_focus: Vec<Workspace> = manager
             .workspaces
             .iter()
@@ -77,6 +79,7 @@ pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> b
 }
 
 fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
+    println!("FOCUS: {:?}", window);
     //no new history for if no change
     if let Some(fw) = manager.focused_window() {
         if fw.handle == window.handle {
@@ -92,7 +95,7 @@ fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
         .focused_window_history
         .push_front(window.handle.clone());
     // inform the window it will be taking focus
-    let act = DisplayAction::WindowTakeFocus(window.handle.clone(), false);
+    let act = DisplayAction::WindowTakeFocus(window.clone());
     manager.actions.push_back(act);
     true
 }
@@ -128,8 +131,6 @@ pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
     for handle in history {
         for w in manager.windows.clone() {
             if w.handle == handle {
-                let act = DisplayAction::WindowTakeFocus(w.handle.clone(), true);
-                manager.actions.push_back(act);
                 return _focus_window_work(manager, &w);
             }
         }
