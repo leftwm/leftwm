@@ -13,7 +13,7 @@ A theme has only two requirements. An “up” and a “down” executable/scrip
 # Setup / selection of theme
 
 To select a theme all that is required is that it’s located at: ~/.config/leftwm/themes/current
-It is strongly recommended that you to this with a symlink. For example up all your themes in the folder ~/.config/leftwm/themes and switch between them using a symlink
+It is strongly recommended that you do this with a symlink. For example up all your themes in the folder ~/.config/leftwm/themes and switch between them using a symlink
 
 A command such as this would set basic_polybar to the current theme.
 
