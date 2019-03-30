@@ -2,7 +2,8 @@ use dirs;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
+use xdg::BaseDirectories;
 
 pub struct Nanny {}
 
@@ -22,6 +23,23 @@ impl Nanny {
                 }
             }
         }
+    }
+
+    pub fn boot_current_theme(&self) -> Result<(), Box<std::error::Error>> {
+        let mut path = BaseDirectories::with_prefix("leftwm")?.create_config_directory("")?;
+        path.push("themes");
+        path.push("current");
+        path.push("up");
+        println!("PATH: {:?}", path);
+        if path.is_file() {
+            println!("is file: {:?}", &path);
+            Command::new(&path)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .spawn()?;
+            println!("booted: {:?}", &path);
+        }
+        Ok(())
     }
 }
 

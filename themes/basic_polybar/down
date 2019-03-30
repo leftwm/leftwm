@@ -1,0 +1,5 @@
+#!/bin/bash
+
+pkill compton 
+pkill polybar
+

@@ -70,10 +70,8 @@ bar = subprocess.Popen(['lemonbar','-fDejaVu Sans:size=10' ,'-F#FFFFFFFF', '-B#a
 while True:
     data = read_socket()
     if data != None:
-        #print( data )
         formated = format(data)
         bar.stdin.write(formated)
-        #print( formated )
 
 
 

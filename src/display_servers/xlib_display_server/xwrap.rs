@@ -403,7 +403,7 @@ impl XWrap {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             //make sure the window is mapped
-            unsafe {
+           unsafe {
                 (self.xlib.XMapWindow)(self.display, handle);
             }
 
@@ -716,50 +716,49 @@ impl XWrap {
         }
     }
 
-    fn is_window_under_cursor(&self, window: xlib::Window) -> bool {
-        if let Some(mouse) = self.get_pointer_location() {
-            if let Ok(xyhw) = self.get_window_geometry(window) {
-                return xyhw.contains_point(mouse.0, mouse.1);
-            }
-        }
-        false
-    }
+    //fn is_window_under_cursor(&self, window: xlib::Window) -> bool {
+    //    if let Some(mouse) = self.get_pointer_location() {
+    //        if let Ok(xyhw) = self.get_window_geometry(window) {
+    //            return xyhw.contains_point(mouse.0, mouse.1);
+    //        }
+    //    }
+    //    false
+    //}
 
-    fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHW, ()> {
-        let mut root_return: xlib::Window = 0;
-        let mut x_return: c_int = 0;
-        let mut y_return: c_int = 0;
-        let mut width_return: c_uint = 0;
-        let mut height_return: c_uint = 0;
-        let mut border_width_return: c_uint = 0;
-        let mut depth_return: c_uint = 0;
-        unsafe {
-            let status = (self.xlib.XGetGeometry)(
-                self.display,
-                window,
-                &mut root_return,
-                &mut x_return,
-                &mut y_return,
-                &mut width_return,
-                &mut height_return,
-                &mut border_width_return,
-                &mut depth_return,
-            );
-            if status == 0 {
-                return Err(());
-            }
-        }
-        Ok(XYHW {
-            x: x_return,
-            y: y_return,
-            w: width_return as i32,
-            h: height_return as i32,
-        })
-    }
+    //fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHW, ()> {
+    //    let mut root_return: xlib::Window = 0;
+    //    let mut x_return: c_int = 0;
+    //    let mut y_return: c_int = 0;
+    //    let mut width_return: c_uint = 0;
+    //    let mut height_return: c_uint = 0;
+    //    let mut border_width_return: c_uint = 0;
+    //    let mut depth_return: c_uint = 0;
+    //    unsafe {
+    //        let status = (self.xlib.XGetGeometry)(
+    //            self.display,
+    //            window,
+    //            &mut root_return,
+    //            &mut x_return,
+    //            &mut y_return,
+    //            &mut width_return,
+    //            &mut height_return,
+    //            &mut border_width_return,
+    //            &mut depth_return,
+    //        );
+    //        if status == 0 {
+    //            return Err(());
+    //        }
+    //    }
+    //    Ok(XYHW {
+    //        x: x_return,
+    //        y: y_return,
+    //        w: width_return as i32,
+    //        h: height_return as i32,
+    //    })
+    //}
 
     pub fn window_take_focus(&self, window: Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
-
             self.grab_mouse_clicks(handle);
 
             if !window.never_focus {

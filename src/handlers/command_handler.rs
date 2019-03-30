@@ -25,8 +25,13 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
         Command::Execute => {
             if let Some(cmd) = val {
-                use std::process::Command;
-                let _ = Command::new("sh").arg("-c").arg(&cmd).spawn();
+                use std::process::{Command, Stdio};
+                let _ = Command::new("sh")
+                    .arg("-c")
+                    .arg(&cmd)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .spawn();
                 false
             } else {
                 false

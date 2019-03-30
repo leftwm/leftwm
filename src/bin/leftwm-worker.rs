@@ -3,8 +3,10 @@ extern crate leftwm;
 extern crate log;
 extern crate env_logger;
 
+use leftwm::child_process::Nanny;
 use leftwm::*;
 use std::panic;
+use std::sync::Once;
 
 fn get_events<T: DisplayServer>(ds: &T) -> Vec<DisplayEvent> {
     ds.get_next_events()
@@ -29,6 +31,10 @@ fn event_loop(
     handler: &DisplayEventHandler,
 ) {
     let mut socket = Socket::new();
+
+    //start the current theme
+    let after_first_loop: Once = Once::new();
+
     //main event loop
     let mut events_remainder = vec![];
     loop {
@@ -61,5 +67,10 @@ fn event_loop(
                 }
             }
         }
+
+        //after the very first loop boot the theme. we need the unix socket to already exist
+        after_first_loop.call_once(|| {
+            let result = Nanny::new().boot_current_theme();
+        });
     }
 }
