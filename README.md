@@ -5,7 +5,7 @@
 
 Left is a tiling window manager written in rust for stability and performance. The core of left is designed to do one thing and one thing well. Be a window manager. Because you probably want more than just a black screen leftwm is built around the concept of theming. With themes you can choose between different bar / compositor / background / colors, whatever makes you happy.   
 
-Leftwm has been built from the very beginning to support multiple screen and have been builds around ultrawide monitors. You will see this with the default key bindings
+Leftwm has been built from the very beginning to support multiple screens and has been built around ultrawide monitors. You will see this with the default key bindings
 
 ## Left is NOT
 
