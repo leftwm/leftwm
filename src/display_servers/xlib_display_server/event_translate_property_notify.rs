@@ -35,13 +35,18 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
                 if hints.flags & xlib::InputHint != 0 {
                     let handle = WindowHandle::XlibHandle(event.window);
                     let mut change = WindowChange::new(handle);
-                    change.never_focus = Some( hints.input == 0);
+                    change.never_focus = Some(hints.input == 0);
                     return Some(DisplayEvent::WindowChange(change));
                 }
             }
             None
         }
+        xlib::XA_WM_NAME => update_title(xw, event.window),
         _ => {
+            if event.atom == xw.atoms.NetWMName {
+                return update_title(xw, event.window);
+            }
+
             //let atom_name = xw.atoms.get_name(event.atom);
             //crate::logging::log_info("XPropertyEvent", &format!("{:?} {:?}", atom_name, event));
             None
@@ -56,3 +61,13 @@ fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<Windo
     change.floating = Some(hint);
     Some(change)
 }
+
+
+fn update_title(xw: &XWrap, window: xlib::Window) -> Option<DisplayEvent> {
+    let title = xw.get_window_name( window );
+    let handle = WindowHandle::XlibHandle(window);
+    let mut change = WindowChange::new(handle);
+    change.name = Some(title);
+    Some(DisplayEvent::WindowChange(change))
+}
+

@@ -7,7 +7,10 @@ if [ -x "$(command -v compton)" ]; then
   compton &> /dev/null & 
 fi
 
-
+#set background
+if [ -x "$(command -v feh)" ]; then
+  feh --bg-scale $SCRIPTPATH/background.jpg
+fi
 
 #boot polybar based on the number of monitors found
 if [ -x "$(command -v polybar)" ]; then

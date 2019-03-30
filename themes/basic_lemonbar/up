@@ -7,6 +7,12 @@ if [ -x "$(command -v compton)" ]; then
   compton &> /dev/null & 
 fi
 
+#set background
+if [ -x "$(command -v feh)" ]; then
+  feh --bg-scale $SCRIPTPATH/background.jpg
+fi
+
+#boot lemonbar and pipe the status of left into it
 if [ -x "$(command -v lemonbar)" ]; then
   pkill lemonbar
   $SCRIPTPATH/pipe_status_to_lemonbar &

@@ -63,6 +63,7 @@ fn socket_writer(
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ManagerState {
+    pub window_title: Option<String>,
     pub desktop_names: Vec<String>,
     pub viewports: Vec<String>,
     pub active_desktop: Vec<String>,
@@ -77,7 +78,12 @@ impl From<&Manager> for ManagerState {
             Some(ws) => ws.tags.clone(),
             None => vec!["".to_owned()],
         };
+        let window_title = match manager.focused_window() {
+            Some(win) => win.name.clone(),
+            None => None,
+        };
         ManagerState {
+            window_title,
             desktop_names: manager.tags.clone(),
             viewports,
             active_desktop,

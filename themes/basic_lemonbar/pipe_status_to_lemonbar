@@ -48,6 +48,7 @@ def format_for_tag_list(active, focused, displayed ,tags):
 
 def format_for_viewport(index, viewport, json):
     output = "%{l}" + format_for_tag_list( viewport, json["active_desktop"], json["viewports"], json["desktop_names"] )
+    output += "%{c}" + (json["window_title"] or '')
     output += "%{r}" + time() + '    '
     return '%{{S{}}}'.format( index ) + output
 
