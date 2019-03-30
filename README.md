@@ -30,7 +30,7 @@ Mod + w => switch the desktops for each screen. Desktops [1][2] changes to [2][1
 Mod + shift + w => move window to the other desktop
 Mod + (⬆️⬇️) => switch between layouts
 Mod + shift + enter => open a terminal
-Mod + alt + L => lock the screen
+Mod + ctrl + L => lock the screen
 Mod + shift + Q => close the current window
 Mod + shift + R => reload leftwm and it's config
 ```
