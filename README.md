@@ -23,6 +23,7 @@ The settings file to change key bindings and the default mod key can be found at
 ```
 
 ### Default keys
+```
 Mod + (1-9) => switch to a desktop/tag
 Mod + shift + (1-9) => move the focused window to desktop/tag
 Mod + w => switch the desktops for each screen. Desktops [1][2] changes to [2][1]
@@ -32,6 +33,7 @@ Mod + shift + enter => open a terminal
 Mod + alt + L => lock the screen
 Mod + shift + Q => close the current window
 Mod + shift + R => reload leftwm and it's config
+```
 
 ### Workspaces
 By default workspaces have a one to one relationship with screens, but this is configurable. There are many reasons you might want to change this, but the main reason is for ultrawide monitors. You might want to have two or even three workspaces on a single screen. 
