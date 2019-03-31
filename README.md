@@ -82,6 +82,13 @@ You should now see leftwm in your list of available window managers.
 ### Starting with startx or a login such as slim
 make sure this is at the end of your .xinitrc file
 ```bash .xinitrc
-exec dbus-launch /path_to_leftwm/leftwm
+exec dbus-launch leftwm
 ```
 
+### Select a theme
+If you want to see more than a black screen when you login, select a theme
+```bash 
+mkdir -p ~/.config/leftwm/themes
+cd ~/.config/leftwm/themes
+ln -s PATH_TO_THE_THEME_YOU_LIKE current
+```
