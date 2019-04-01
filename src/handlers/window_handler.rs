@@ -29,6 +29,8 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
         }
     }
 
+    window.update_for_theme(&manager.theme_setting);
+
     //if floating, make sure the window has a floating XYHW
     if window.floating() && window.floating.is_none() {
         window.floating = Some(window.normal);

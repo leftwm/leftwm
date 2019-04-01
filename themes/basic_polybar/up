@@ -12,24 +12,14 @@ if [ -x "$(command -v feh)" ]; then
   feh --bg-scale $SCRIPTPATH/background.jpg
 fi
 
+echo "LoadTheme $SCRIPTPATH/theme.toml" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+
 #boot polybar based on the number of monitors found
 if [ -x "$(command -v polybar)" ]; then
   pkill polybar
   monitors="$(polybar -m | sed s/:.*// | tac)"
-  monitor_count="$(polybar -m | wc -l)"
-  if [ $monitor_count = "1" ]; then
-    polybar -c "$SCRIPTPATH/polybar.config" single &> /dev/null &
-    exit 0
-  fi
-
-  first=true
   while read -r display; do
-    if [ "$first" = true ]; then
-      MONITOR=$display polybar -c "$SCRIPTPATH/polybar.config" primary &> /dev/null &
-      first=false
-    else 
-      MONITOR=$display polybar -c "$SCRIPTPATH/polybar.config" secondary &> /dev/null &
-    fi
+    MONITOR=$display polybar -c "$SCRIPTPATH/polybar.config" mainbar &> /dev/null &
   done <<< "$monitors"
   exit 0
 fi

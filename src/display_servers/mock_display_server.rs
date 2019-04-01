@@ -4,6 +4,7 @@ use super::DisplayServer;
 use super::Screen;
 use super::Window;
 use super::Workspace;
+use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 
 #[derive(Clone)]
@@ -23,6 +24,8 @@ impl DisplayServer for MockDisplayServer {
 
     fn update_windows(&self, _: Vec<&Window>, _: Option<&Window>) {}
     fn update_workspaces(&self, _: Vec<&Workspace>, _: Option<&Workspace>) {}
+
+    fn update_theme_settings(&mut self, _: ThemeSetting) {}
 
     fn execute_action(&mut self, _: DisplayAction) -> Option<DisplayEvent> {
         None

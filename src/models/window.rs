@@ -1,4 +1,5 @@
 use super::WindowType;
+use crate::config::ThemeSetting;
 use crate::models::XYHW;
 use x11_dl::xlib;
 
@@ -43,6 +44,16 @@ impl Window {
             normal: XYHW::default(),
             floating: None,
             start_loc: None,
+        }
+    }
+
+    pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
+        if self.type_ == WindowType::Normal {
+            self.margin = theme.margin as i32;
+            self.border = theme.border_width as i32;
+        } else {
+            self.margin = 0;
+            self.border = 0;
         }
     }
 
