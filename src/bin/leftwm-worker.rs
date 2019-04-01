@@ -68,8 +68,6 @@ fn event_loop(
             }
         }
 
-        println!("{:#?}", manager.windows);
-
         //after the very first loop boot the theme. we need the unix socket to already exist
         after_first_loop.call_once(|| {
             let _ = Nanny::new().boot_current_theme();
