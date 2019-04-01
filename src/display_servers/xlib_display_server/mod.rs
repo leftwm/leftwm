@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::display_action::DisplayAction;
+use crate::config::ThemeSetting;
 use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::Window;
@@ -27,6 +28,7 @@ pub struct XlibDisplayServer {
     xw: XWrap,
     root: xlib::Window,
     config: Config,
+    theme: ThemeSetting,
 }
 
 impl DisplayServer for XlibDisplayServer {
@@ -36,12 +38,18 @@ impl DisplayServer for XlibDisplayServer {
         let mut me = XlibDisplayServer {
             xw: wrap,
             root,
+            theme: ThemeSetting::default(),
             config: config.clone(),
         };
 
         me.xw.mod_key_mask = utils::xkeysym_lookup::into_mod(&config.modkey);
-        me.xw.init(config); //setup events masks
+        me.xw.init(config, &me.theme); //setup events masks
         me
+    }
+
+    fn update_theme_settings(&mut self, settings: ThemeSetting) {
+        self.theme = settings;
+        self.xw.load_colors( &self.theme );
     }
 
     fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {

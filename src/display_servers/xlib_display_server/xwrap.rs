@@ -5,6 +5,7 @@ use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
+use crate::config::ThemeSetting;
 use crate::models::DockArea;
 use crate::models::Mode;
 use crate::models::WindowChange;
@@ -29,8 +30,8 @@ const MOUSEMASK: i64 = BUTTONMASK | xlib::PointerMotionMask;
 
 pub struct Colors {
     normal: c_ulong,
+    floating: c_ulong,
     active: c_ulong,
-    //urgent: c_ulong,
 }
 
 pub struct XWrap {
@@ -55,8 +56,10 @@ impl XWrap {
         let atoms = XAtom::new(&xlib, display);
         let cursors = XCursor::new(&xlib, display);
         let root = unsafe { (xlib.XDefaultRootWindow)(display) };
+
         let colors = Colors {
             normal: 0,
+            floating: 0,
             active: 0,
         };
 
@@ -384,7 +387,9 @@ impl XWrap {
 
                     let color: c_ulong = match is_focused {
                         true => self.colors.active,
-                        false => self.colors.normal,
+                        false => {
+                            if window.floating() { self.colors.floating } else { self.colors.normal }
+                        }
                     };
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
                 }
@@ -403,7 +408,7 @@ impl XWrap {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             //make sure the window is mapped
-           unsafe {
+            unsafe {
                 (self.xlib.XMapWindow)(self.display, handle);
             }
 
@@ -643,10 +648,10 @@ impl XWrap {
     }
 
     pub fn get_window_name(&self, window: xlib::Window) -> Option<String> {
-        if let Ok(text) = self.get_text_prop( window, self.atoms.NetWMName ){
+        if let Ok(text) = self.get_text_prop(window, self.atoms.NetWMName) {
             return Some(text);
         }
-        if let Ok(text) = self.get_text_prop( window, xlib::XA_WM_NAME ){
+        if let Ok(text) = self.get_text_prop(window, xlib::XA_WM_NAME) {
             return Some(text);
         }
         None
@@ -654,24 +659,20 @@ impl XWrap {
 
     ////get the WMName of a window
     pub fn get_text_prop(&self, window: xlib::Window, atom: xlib::Atom) -> Result<String, ()> {
-        unsafe{
-            let mut ptr : *mut *mut c_char = std::mem::zeroed();
+        unsafe {
+            let mut ptr: *mut *mut c_char = std::mem::zeroed();
             let mut ptr_len: c_int = 0;
             let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
-            let status :c_int = (self.xlib.XGetTextProperty)(
-                self.display,
-                window,
-                &mut text_prop,
-                atom);
-            if status == 0 { return Err( () ) }
-            (self.xlib.XTextPropertyToStringList)(
-                &mut text_prop,
-                &mut ptr,
-                &mut ptr_len );
+            let status: c_int =
+                (self.xlib.XGetTextProperty)(self.display, window, &mut text_prop, atom);
+            if status == 0 {
+                return Err(());
+            }
+            (self.xlib.XTextPropertyToStringList)(&mut text_prop, &mut ptr, &mut ptr_len);
             let _raw: &[*mut c_char] = slice::from_raw_parts(ptr, ptr_len as usize);
             for _i in 0..ptr_len {
                 if let Ok(s) = CString::from_raw(*ptr).into_string() {
-                    return Ok(s)
+                    return Ok(s);
                 }
             }
         };
@@ -935,11 +936,12 @@ impl XWrap {
         }
     }
 
-    fn load_colors(&self, _config: &Config) -> Colors {
-        Colors {
-            normal: self.get_color("#000000"),
-            active: self.get_color("#FF0000"),
-        }
+    pub fn load_colors(&mut self, theme: &ThemeSetting) {
+        self.colors = Colors {
+            normal: self.get_color(&theme.default_border_color),
+            floating: self.get_color(&theme.floating_border_color),
+            active: self.get_color(&theme.focused_border_color),
+        };
     }
 
     fn get_color(&self, color: &str) -> c_ulong {
@@ -953,7 +955,7 @@ impl XWrap {
         color.pixel
     }
 
-    pub fn init(&mut self, config: &Config) {
+    pub fn init(&mut self, config: &Config, theme: &ThemeSetting) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
@@ -964,7 +966,8 @@ impl XWrap {
             | xlib::PropertyChangeMask;
 
         let root = self.get_default_root();
-        self.colors = self.load_colors(config);
+        self.load_colors(theme);
+        //self.colors = self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::uninitialized() };
         attrs.cursor = self.cursors.normal;

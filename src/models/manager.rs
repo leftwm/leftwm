@@ -1,3 +1,4 @@
+use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::Screen;
@@ -12,6 +13,7 @@ pub struct Manager {
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub mode: Mode,
+    pub theme_setting: ThemeSetting,
     pub tags: Vec<String>, //list of all known tags
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
@@ -26,6 +28,7 @@ impl Default for Manager {
             screens: Vec::new(),
             workspaces: Vec::new(),
             mode: Mode::NormalMode,
+            theme_setting: ThemeSetting::default(),
             tags: vec![],
             focused_workspace_history: VecDeque::new(),
             focused_window_history: VecDeque::new(),

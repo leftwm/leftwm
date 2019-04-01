@@ -1,5 +1,6 @@
 mod keybind;
 mod workspace_config;
+mod theme_setting;
 
 use super::Command;
 use std::default::Default;
@@ -13,6 +14,7 @@ use xdg::BaseDirectories;
 
 pub use keybind::Keybind;
 pub use workspace_config::WorkspaceConfig;
+pub use theme_setting::ThemeSetting;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {

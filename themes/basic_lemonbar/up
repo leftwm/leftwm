@@ -7,6 +7,8 @@ if [ -x "$(command -v compton)" ]; then
   compton &> /dev/null & 
 fi
 
+echo "LoadTheme $SCRIPTPATH/theme.toml" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+
 #set background
 if [ -x "$(command -v feh)" ]; then
   feh --bg-scale $SCRIPTPATH/background.jpg

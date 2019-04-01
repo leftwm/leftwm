@@ -8,20 +8,20 @@ use std::thread;
 use xdg::BaseDirectories;
 
 type StateStream = Result<Sender<ManagerState>, Box<std::error::Error>>;
-pub struct Socket {
+pub struct StateSocket {
     state_stream: StateStream,
 }
 
-impl Socket {
-    pub fn new() -> Socket {
-        Socket {
-            state_stream: Socket::build_listener(),
+impl StateSocket {
+    pub fn new() -> StateSocket {
+        StateSocket {
+            state_stream: StateSocket::build_listener(),
         }
     }
 
     fn build_listener() -> StateStream {
         let base = BaseDirectories::with_prefix("leftwm")?;
-        let socket_file = base.place_runtime_file("leftwm.sock")?;
+        let socket_file = base.place_runtime_file("current_state.sock")?;
         let (tx, mut rx): (Sender<ManagerState>, Receiver<ManagerState>) = mpsc::channel();
         let listener = match UnixListener::bind(&socket_file) {
             Ok(m) => m,

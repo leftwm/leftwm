@@ -9,7 +9,7 @@ import datetime
 
 # Create a UDS socket
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-server_address = os.environ['XDG_RUNTIME_DIR'] + '/leftwm/leftwm.sock'
+server_address = os.environ['XDG_RUNTIME_DIR'] + '/leftwm/current_state.sock'
 sock.connect(server_address)
 
 read_buffer = ""
