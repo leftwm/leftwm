@@ -15,8 +15,8 @@ if [ -x "$(command -v feh)" ]; then
 fi
 
 #boot lemonbar and pipe the status of left into it
-if [ -x "$(command -v lemonbar)" ]; then
+if [ -x "$(command -v xmobar)" ]; then
   pkill xmobar
-  ruby $SCRIPTPATH/parse.rb | xmobar $SCRIPTPATH/left &
+  ruby $SCRIPTPATH/parse.rb | xmobar $SCRIPTPATH/xmobar_left_config &
 fi
 
