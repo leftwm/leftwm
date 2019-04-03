@@ -69,7 +69,7 @@ With left there are two types of configs. First there are config settings that a
 The appearance of your desktop is different. It’s fun to try new looks and feels. It’s fun to tweak and customize the appearance ( AKA: ricing ). It’s fun to share so others can experience your cool awesome desktop. Leftwm is built around this concept. By pulling all these settings out into themes, you can now easily tweak, switch, and share your experiences. 
 
 
-## Manual Setup (no-package manager)
+## Manual Setup (no package manager)
 
 ### Using a graphical login such as LightDM, GDM, LXDM, and others
 
