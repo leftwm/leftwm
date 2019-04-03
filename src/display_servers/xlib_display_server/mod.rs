@@ -69,12 +69,6 @@ impl DisplayServer for XlibDisplayServer {
             }
         }
         let mut tags: Vec<&String> = vec![];
-        for w in workspaces {
-            for t in &w.tags {
-                tags.push(t);
-            }
-        }
-        self.xw.set_current_viewport(tags);
     }
 
     fn get_next_events(&self) -> Vec<DisplayEvent> {

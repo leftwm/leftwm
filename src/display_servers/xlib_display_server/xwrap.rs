@@ -257,7 +257,8 @@ impl XWrap {
     }
 
     /* EWMH support used for bars such as polybar */
-    pub fn init_destops_hints(&self, tags: Vec<String>) {
+    pub fn init_desktops_hints(&self) {
+        let tags = &self.tags;
         let tag_length = tags.len();
         //set the number of desktop
         let data = vec![tag_length as u32];
@@ -1007,7 +1008,7 @@ impl XWrap {
         //EWMH stuff for desktops
         let tags = config.get_list_of_tags();
         self.tags = tags.clone();
-        self.init_destops_hints(tags);
+        self.init_desktops_hints();
 
         //cleanup grabs
         unsafe {
