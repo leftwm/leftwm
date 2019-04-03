@@ -469,7 +469,7 @@ impl XWrap {
         }
     }
 
-    fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), ()> {
+    pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), ()> {
         let attrs = self.get_window_attrs(window)?;
         let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
         let none: c_int = 0;

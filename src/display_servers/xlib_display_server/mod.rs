@@ -98,7 +98,12 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::KillWindow(w) => self.xw.kill_window(w),
             DisplayAction::AddedWindow(w) => {
                 return self.xw.setup_managed_window(w);
-            }
+            },
+            DisplayAction::MoveMouseOver(handle) => {
+                if let WindowHandle::XlibHandle(win) = handle {
+                    let _ = self.xw.move_cursor_to_window(win);
+                } 
+            },
             DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
             DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
             DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),

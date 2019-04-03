@@ -1,5 +1,6 @@
 use super::*;
 use crate::display_action::DisplayAction;
+use crate::utils::helpers;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
@@ -87,6 +88,64 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             false
         }
+
+        Command::MoveWindowUp => {
+            let handle = match manager.focused_window() {
+                Some(h) => h.handle.clone(),
+                _ => { return false; }
+            };
+            let tags = match manager.focused_workspace() {
+                Some(w) => w.tags.clone(),
+                _ => { return false; }
+            };
+            let for_active_workspace = |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) };
+            let mut to_reorder = helpers::vec_extract( &mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { &x.handle == &handle };
+            helpers::reorder_vec( &mut to_reorder, is_handle, -1);
+            manager.windows.append( &mut to_reorder );
+            let act = DisplayAction::MoveMouseOver(handle);
+            manager.actions.push_back(act);
+            true
+        }
+
+        Command::MoveWindowDown => {
+            let handle = match manager.focused_window() {
+                Some(h) => h.handle.clone(),
+                _ => { return false; }
+            };
+            let tags = match manager.focused_workspace() {
+                Some(w) => w.tags.clone(),
+                _ => { return false; }
+            };
+            let for_active_workspace = |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) };
+            let mut to_reorder = helpers::vec_extract( &mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { &x.handle == &handle };
+            helpers::reorder_vec( &mut to_reorder, is_handle, 1);
+            manager.windows.append( &mut to_reorder );
+            let act = DisplayAction::MoveMouseOver(handle);
+            manager.actions.push_back(act);
+            true
+        }
+
+
+        Command::FocusWindowUp => {
+            //if let Some(workspace) = manager.focused_workspace_mut() {
+            //    workspace.next_layout();
+            //    return true;
+            //}
+            false
+        }
+        Command::FocusWindowDown => {
+            //if let Some(workspace) = manager.focused_workspace_mut() {
+            //    workspace.prev_layout();
+            //    return true;
+            //}
+            false
+        }
+
+
+
+
 
         Command::MouseMoveWindow => false,
     }

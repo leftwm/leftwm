@@ -79,7 +79,6 @@ pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> b
 }
 
 fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
-    println!("FOCUS: {:?}", window);
     //no new history for if no change
     if let Some(fw) = manager.focused_window() {
         if fw.handle == window.handle {

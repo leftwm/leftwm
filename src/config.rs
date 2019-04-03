@@ -186,6 +186,35 @@ impl Default for Config {
             key: "w".to_owned(),
         });
 
+
+        commands.push(Keybind {
+            command: Command::MoveWindowUp,
+            value: None,
+            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+            key: "Up".to_owned(),
+        });
+        commands.push(Keybind {
+            command: Command::MoveWindowDown,
+            value: None,
+            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+            key: "Down".to_owned(),
+        });
+
+
+        commands.push(Keybind {
+            command: Command::FocusWindowUp,
+            value: None,
+            modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+            key: "Up".to_owned(),
+        });
+        commands.push(Keybind {
+            command: Command::FocusWindowDown,
+            value: None,
+            modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+            key: "Down".to_owned(),
+        });
+
+
         //Mod + up => change to the next layout
         commands.push(Keybind {
             command: Command::NextLayout,
@@ -193,7 +222,6 @@ impl Default for Config {
             modifier: vec!["modkey".to_owned()],
             key: "Up".to_owned(),
         });
-
         //Mod + down => change to the previous layout
         commands.push(Keybind {
             command: Command::PreviousLayout,
