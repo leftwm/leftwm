@@ -129,23 +129,44 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
 
         Command::FocusWindowUp => {
-            //if let Some(workspace) = manager.focused_workspace_mut() {
-            //    workspace.next_layout();
-            //    return true;
-            //}
-            false
+            let handle = match manager.focused_window() {
+                Some(h) => h.handle.clone(),
+                _ => { return false; }
+            };
+            let tags = match manager.focused_workspace() {
+                Some(w) => w.tags.clone(),
+                _ => { return false; }
+            };
+            let for_active_workspace = |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) };
+            let mut window_group = helpers::vec_extract( &mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { &x.handle == &handle };
+            if let Some(new_focused) = helpers::relative_find( &window_group, is_handle, -1){
+                let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                manager.actions.push_back(act);
+            }
+            manager.windows.append( &mut window_group );
+            true
         }
+
         Command::FocusWindowDown => {
-            //if let Some(workspace) = manager.focused_workspace_mut() {
-            //    workspace.prev_layout();
-            //    return true;
-            //}
-            false
+            let handle = match manager.focused_window() {
+                Some(h) => h.handle.clone(),
+                _ => { return false; }
+            };
+            let tags = match manager.focused_workspace() {
+                Some(w) => w.tags.clone(),
+                _ => { return false; }
+            };
+            let for_active_workspace = |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) };
+            let mut window_group = helpers::vec_extract( &mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { &x.handle == &handle };
+            if let Some(new_focused) = helpers::relative_find( &window_group, is_handle, 1){
+                let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                manager.actions.push_back(act);
+            }
+            manager.windows.append( &mut window_group );
+            true
         }
-
-
-
-
 
         Command::MouseMoveWindow => false,
     }

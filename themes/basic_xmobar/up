@@ -17,6 +17,6 @@ fi
 #boot lemonbar and pipe the status of left into it
 if [ -x "$(command -v lemonbar)" ]; then
   pkill xmobar
-  ruby parse.rb | xmobar $SCRIPTPATH/left &
+  ruby $SCRIPTPATH/parse.rb | xmobar $SCRIPTPATH/left &
 fi
 
