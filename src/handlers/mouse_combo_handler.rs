@@ -19,6 +19,9 @@ pub fn process(
         //new move/resize. while the old starting points
         for w in &mut manager.windows {
             if w.handle == handle {
+                if !w.floating() {
+                    w.floating = Some(w.normal.clone());
+                }
                 cleanup_window_to_start_floating(w);
             }
         }

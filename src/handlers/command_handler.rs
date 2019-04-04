@@ -98,7 +98,9 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 Some(w) => w.tags.clone(),
                 _ => { return false; }
             };
-            let for_active_workspace = |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) };
+            let for_active_workspace = |x: &Window| -> bool { 
+                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
+            };
             let mut to_reorder = helpers::vec_extract( &mut manager.windows, for_active_workspace);
             let is_handle = |x: &Window| -> bool { &x.handle == &handle };
             helpers::reorder_vec( &mut to_reorder, is_handle, -1);
@@ -117,7 +119,9 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 Some(w) => w.tags.clone(),
                 _ => { return false; }
             };
-            let for_active_workspace = |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) };
+            let for_active_workspace = |x: &Window| -> bool { 
+                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
+            };
             let mut to_reorder = helpers::vec_extract( &mut manager.windows, for_active_workspace);
             let is_handle = |x: &Window| -> bool { &x.handle == &handle };
             helpers::reorder_vec( &mut to_reorder, is_handle, 1);
@@ -137,7 +141,9 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 Some(w) => w.tags.clone(),
                 _ => { return false; }
             };
-            let for_active_workspace = |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) };
+            let for_active_workspace = |x: &Window| -> bool { 
+                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
+            };
             let mut window_group = helpers::vec_extract( &mut manager.windows, for_active_workspace);
             let is_handle = |x: &Window| -> bool { &x.handle == &handle };
             if let Some(new_focused) = helpers::relative_find( &window_group, is_handle, -1){
@@ -157,7 +163,9 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 Some(w) => w.tags.clone(),
                 _ => { return false; }
             };
-            let for_active_workspace = |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) };
+            let for_active_workspace = |x: &Window| -> bool { 
+                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
+            };
             let mut window_group = helpers::vec_extract( &mut manager.windows, for_active_workspace);
             let is_handle = |x: &Window| -> bool { &x.handle == &handle };
             if let Some(new_focused) = helpers::relative_find( &window_group, is_handle, 1){
