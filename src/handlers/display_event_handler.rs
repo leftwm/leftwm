@@ -1,5 +1,6 @@
 use super::*;
 use crate::display_action::DisplayAction;
+use crate::utils::window_updater::update_windows;
 
 pub struct DisplayEventHandler {
     pub config: Config,
@@ -65,29 +66,11 @@ impl DisplayEventHandler {
         };
 
         if update_needed {
-            self.update_windows(manager);
+            update_windows(manager);
         }
 
         update_needed
     }
 
-    /*
-     * step over all the windows for each workspace and updates all the things
-     * based on the new state of the WM
-     */
-    fn update_windows(&self, manager: &mut Manager) {
-        let _state_str = format!("{:?}", manager);
 
-        manager
-            .windows
-            .iter_mut()
-            .for_each(|w| w.set_visable(w.tags.is_empty() || w.floating()));
-
-        let all_windows = &mut manager.windows;
-
-        manager.workspaces.iter_mut().for_each(|ws| {
-            let windows: Vec<&mut Window> = all_windows.iter_mut().collect();
-            ws.update_windows(windows)
-        });
-    }
 }

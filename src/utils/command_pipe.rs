@@ -66,7 +66,7 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
         return Ok(ExternalCommand::Reload);
     } else if s.starts_with("LoadTheme ") {
         return build_load_theme(s.clone());
-    } else if s.starts_with("GotoTag ") {
+    } else if s.starts_with("SendWorkspaceToTag ") {
         return build_goto_tag(s.clone());
     }
     Err(())
@@ -83,12 +83,18 @@ fn build_load_theme(mut raw: String) -> std::result::Result<ExternalCommand, ()>
 }
 
 fn build_goto_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "GotoTag ");
-    if let Ok(i) = raw.parse::<i32>() {
-        Ok( ExternalCommand::GotoTag(i) )
-    } else {
-        Err(())
-    }
+    crop_head(&mut raw, "SendWorkspaceToTag ");
+    let parts: Vec<&str> = raw.split(" ").collect();
+    if parts.len() != 2 { return Err(()) }
+    let ws_index = match parts[0].parse::<usize>() {
+        Ok(x) => x,
+        Err(_) => { return Err(()); }
+    };
+    let tag_index = match parts[1].parse::<usize>() {
+        Ok(x) => x,
+        Err(_) => { return Err(()); }
+    };
+    Ok( ExternalCommand::SendWorkspaceToTag(ws_index, tag_index) )
 }
 
 fn crop_head(s: &mut String, head: &str) {
@@ -108,6 +114,6 @@ pub enum ExternalCommand {
     LoadTheme(PathBuf),
     UnloadTheme,
     Reload,
-    GotoTag(i32),
+    SendWorkspaceToTag(usize, usize),
 }
 

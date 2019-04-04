@@ -11,7 +11,7 @@ pub struct Workspace {
     layouts: VecDeque<Box<Layout>>,
     pub tags: Vec<String>,
     pub avoid: Vec<XYHW>,
-    xyhw: XYHW,
+    pub xyhw: XYHW,
     xyhw_avoided: XYHW,
 }
 

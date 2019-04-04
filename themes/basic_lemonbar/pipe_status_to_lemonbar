@@ -47,7 +47,8 @@ def format_for_tag_list(active, focused, displayed ,tags):
     return output
 
 def format_for_viewport(index, viewport, json):
-    output = "%{l}" + format_for_tag_list( viewport, json["active_desktop"], json["viewports"], json["desktop_names"] )
+    focused = json["viewports"][index]["tags"]
+    output = "%{l}" + format_for_tag_list( viewport, json["active_desktop"], focused, json["desktop_names"] )
     output += "%{c}" + (json["window_title"] or '')
     output += "%{r}" + time() + '    '
     return '%{{S{}}}'.format( index ) + output
@@ -61,7 +62,7 @@ def format(json):
     return '{}\n'.format( output )
 
 
-bar = subprocess.Popen(['lemonbar','-fDejaVu Sans:size=10' ,'-F#FFFFFFFF', '-B#aa222222', '-p'], 
+bar = subprocess.Popen(['lemonbar','-fDejaVu Sans:size=10' ,'-F#FFFFFFFF', '-B#aa222222', '-p'],
                        stdin=subprocess.PIPE,
                        stdout=subprocess.DEVNULL,
                        stderr=subprocess.DEVNULL,

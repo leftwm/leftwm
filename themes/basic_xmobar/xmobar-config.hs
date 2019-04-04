@@ -1,3 +1,5 @@
+
+
 Config { font = "-misc-fixed-*-*-*-*-13-*-*-*-*-*-*-*"
     , bgColor = "black"
     , fgColor = "grey"

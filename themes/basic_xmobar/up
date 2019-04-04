@@ -2,6 +2,8 @@
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
+%SCRIPTPATH/down
+
 #boot compton if it exists
 if [ -x "$(command -v compton)" ]; then
   compton &> /dev/null & 
@@ -16,7 +18,6 @@ fi
 
 #boot lemonbar and pipe the status of left into it
 if [ -x "$(command -v xmobar)" ]; then
-  pkill xmobar
-  ruby $SCRIPTPATH/parse.rb | xmobar $SCRIPTPATH/xmobar_left_config &
+  ruby $SCRIPTPATH/control.rb &
 fi
 

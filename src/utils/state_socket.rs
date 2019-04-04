@@ -62,17 +62,31 @@ fn socket_writer(
 }
 
 #[derive(Serialize, Debug, Clone)]
+pub struct Viewport {
+    pub tags: Vec<String>,
+    pub h: u32,
+    pub w: u32,
+    pub x: i32,
+    pub y: i32,
+}
+#[derive(Serialize, Debug, Clone)]
 pub struct ManagerState {
     pub window_title: Option<String>,
     pub desktop_names: Vec<String>,
-    pub viewports: Vec<String>,
+    pub viewports: Vec<Viewport>,
     pub active_desktop: Vec<String>,
 }
 impl From<&Manager> for ManagerState {
     fn from(manager: &Manager) -> Self {
-        let mut viewports = vec![];
+        let mut viewports: Vec<Viewport> = vec![];
         for ws in &manager.workspaces {
-            viewports.extend_from_slice(&ws.tags);
+            viewports.push( Viewport {
+                tags: ws.tags.clone(),
+                x: ws.xyhw.x,
+                y: ws.xyhw.y,
+                h: ws.xyhw.h as u32,
+                w: ws.xyhw.w as u32,
+            });
         }
         let active_desktop = match manager.focused_workspace() {
             Some(ws) => ws.tags.clone(),

@@ -62,13 +62,12 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn update_workspaces(&self, workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
+    fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
             for tag in &focused.tags {
                 self.xw.set_current_desktop(tag);
             }
         }
-        let mut tags: Vec<&String> = vec![];
     }
 
     fn get_next_events(&self) -> Vec<DisplayEvent> {
