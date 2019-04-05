@@ -3,12 +3,15 @@ use super::WindowHandle;
 use super::WindowType;
 use crate::models::XYHW;
 
+type MaybeWindowHandle = Option<WindowHandle>;
+type MaybeName = Option<String>;
+
 #[derive(Debug, Clone)]
 pub struct WindowChange {
     pub handle: WindowHandle,
-    pub transient: Option<Option<WindowHandle>>,
+    pub transient: Option<MaybeWindowHandle>,
     pub never_focus: Option<bool>,
-    pub name: Option<Option<String>>,
+    pub name: Option<MaybeName>,
     pub type_: Option<WindowType>,
     pub floating: Option<XYHW>,
 }

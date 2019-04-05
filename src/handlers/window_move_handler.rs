@@ -30,11 +30,11 @@ fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
 
     floating.x = starting.0 + offset_x;
     floating.y = starting.1 + offset_y;
-    window.floating = Some(floating.clone());
+    window.floating = Some(*floating);
 }
 
 //if the windows is really close to a workspace, snap to it
-fn snap_to_workspaces(window: &mut Window, workspaces: &Vec<Workspace>) -> bool {
+fn snap_to_workspaces(window: &mut Window, workspaces: &[Workspace]) -> bool {
     for workspace in workspaces {
         if snap_to_workspace(window, &workspace) {
             return true;

@@ -16,12 +16,10 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
         manager.focused_workspace_history.pop_back();
     }
     //add this focus to the history
-    let mut index = 0;
-    for ws in &manager.workspaces {
+    for (index, ws) in manager.workspaces.iter().enumerate() {
         if ws.id == workspace.id {
             manager.focused_workspace_history.push_front(index);
         }
-        index += 1;
     }
     //make sure this workspaces tag is focused
     workspace.tags.iter().for_each(|t| {
@@ -45,7 +43,7 @@ pub fn focus_window_by_handle(
         .windows
         .iter()
         .filter(|w| &w.handle == handle)
-        .map(|w| w.clone())
+        .cloned()
         .collect();
     if found.len() == 1 {
         return focus_window(manager, &found[0], x, y);
@@ -55,7 +53,7 @@ pub fn focus_window_by_handle(
 
 pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> bool {
     let result = _focus_window_work(manager, window);
-    if result == false {
+    if !result {
         return false;
     }
 
@@ -67,7 +65,7 @@ pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> b
             .workspaces
             .iter()
             .filter(|w| w.has_tag(&main_tag))
-            .map(|w| w.clone())
+            .cloned()
             .collect();
         to_focus.iter().for_each(|w| {
             if w.contains_point(x, y) {
@@ -102,7 +100,7 @@ fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
 pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bool {
     let mut focused_id = -1;
     if let Some(f) = manager.focused_workspace() {
-        focused_id = f.id.clone();
+        focused_id = f.id;
     }
     let to_focus: Option<Workspace> = {
         let mut f: Option<Workspace> = None;
@@ -140,10 +138,10 @@ pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
 /*
  * marks a tag as the focused tag
  */
-pub fn focus_tag(manager: &mut Manager, tag: &String) -> bool {
+pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     //no new history for if no change
     if let Some(t) = manager.focused_tag() {
-        if &t == tag {
+        if t == tag {
             return false;
         }
     }
@@ -152,13 +150,13 @@ pub fn focus_tag(manager: &mut Manager, tag: &String) -> bool {
         manager.focused_tag_history.pop_back();
     }
     //add this focus to the history
-    manager.focused_tag_history.push_front(tag.clone());
+    manager.focused_tag_history.push_front(tag.to_string());
     // check each workspace, if its displaying this tag it should be focused too
     let to_focus: Vec<Workspace> = manager
         .workspaces
         .iter()
         .filter(|w| w.has_tag(tag))
-        .map(|w| w.clone())
+        .cloned()
         .collect();
     to_focus.iter().for_each(|w| {
         focus_workspace(manager, &w);

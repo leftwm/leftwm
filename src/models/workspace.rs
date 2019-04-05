@@ -153,7 +153,7 @@ impl Workspace {
     }
 
     pub fn update_avoided_areas(&mut self) {
-        let mut xyhw = self.xyhw.clone();
+        let mut xyhw = self.xyhw;
         for a in &self.avoid {
             xyhw = xyhw.without(a);
         }

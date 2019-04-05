@@ -24,7 +24,7 @@ impl DisplayEventHandler {
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
                 let build = CommandBuilder::new(&self.config);
-                let command = build.from_xkeyevent(mod_mask, xkeysym);
+                let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some((cmd, val)) = command {
                     command_handler::process(manager, cmd, val)
                 } else {
@@ -71,6 +71,4 @@ impl DisplayEventHandler {
 
         update_needed
     }
-
-
 }
