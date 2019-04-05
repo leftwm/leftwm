@@ -20,7 +20,7 @@ pub fn process(
         for w in &mut manager.windows {
             if w.handle == handle {
                 if !w.floating() {
-                    w.floating = Some(w.normal.clone());
+                    w.floating = Some(w.normal);
                 }
                 cleanup_window_to_start_floating(w);
             }
@@ -62,11 +62,11 @@ fn build_action(
 
 fn cleanup_window_to_start_floating(window: &mut Window) {
     if window.floating.is_none() {
-        window.floating = Some(window.normal.clone());
+        window.floating = Some(window.normal);
     }
     let mut floating = window.floating.unwrap();
     floating.x = window.x();
     floating.y = window.y();
-    window.floating = Some(floating.clone());
+    window.floating = Some(floating);
     window.start_loc = None;
 }

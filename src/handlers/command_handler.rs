@@ -92,19 +92,23 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::MoveWindowUp => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle.clone(),
-                _ => { return false; }
+                _ => {
+                    return false;
+                }
             };
             let tags = match manager.focused_workspace() {
                 Some(w) => w.tags.clone(),
-                _ => { return false; }
+                _ => {
+                    return false;
+                }
             };
-            let for_active_workspace = |x: &Window| -> bool { 
+            let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            let mut to_reorder = helpers::vec_extract( &mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { &x.handle == &handle };
-            helpers::reorder_vec( &mut to_reorder, is_handle, -1);
-            manager.windows.append( &mut to_reorder );
+            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+            manager.windows.append(&mut to_reorder);
             let act = DisplayAction::MoveMouseOver(handle);
             manager.actions.push_back(act);
             true
@@ -113,66 +117,77 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::MoveWindowDown => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle.clone(),
-                _ => { return false; }
+                _ => {
+                    return false;
+                }
             };
             let tags = match manager.focused_workspace() {
                 Some(w) => w.tags.clone(),
-                _ => { return false; }
+                _ => {
+                    return false;
+                }
             };
-            let for_active_workspace = |x: &Window| -> bool { 
+            let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            let mut to_reorder = helpers::vec_extract( &mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { &x.handle == &handle };
-            helpers::reorder_vec( &mut to_reorder, is_handle, 1);
-            manager.windows.append( &mut to_reorder );
+            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            helpers::reorder_vec(&mut to_reorder, is_handle, 1);
+            manager.windows.append(&mut to_reorder);
             let act = DisplayAction::MoveMouseOver(handle);
             manager.actions.push_back(act);
             true
         }
 
-
         Command::FocusWindowUp => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle.clone(),
-                _ => { return false; }
+                _ => {
+                    return false;
+                }
             };
             let tags = match manager.focused_workspace() {
                 Some(w) => w.tags.clone(),
-                _ => { return false; }
+                _ => {
+                    return false;
+                }
             };
-            let for_active_workspace = |x: &Window| -> bool { 
+            let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            let mut window_group = helpers::vec_extract( &mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { &x.handle == &handle };
-            if let Some(new_focused) = helpers::relative_find( &window_group, is_handle, -1){
+            let mut window_group = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, -1) {
                 let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
                 manager.actions.push_back(act);
             }
-            manager.windows.append( &mut window_group );
+            manager.windows.append(&mut window_group);
             true
         }
 
         Command::FocusWindowDown => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle.clone(),
-                _ => { return false; }
+                _ => {
+                    return false;
+                }
             };
             let tags = match manager.focused_workspace() {
                 Some(w) => w.tags.clone(),
-                _ => { return false; }
+                _ => {
+                    return false;
+                }
             };
-            let for_active_workspace = |x: &Window| -> bool { 
+            let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            let mut window_group = helpers::vec_extract( &mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { &x.handle == &handle };
-            if let Some(new_focused) = helpers::relative_find( &window_group, is_handle, 1){
+            let mut window_group = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, 1) {
                 let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
                 manager.actions.push_back(act);
             }
-            manager.windows.append( &mut window_group );
+            manager.windows.append(&mut window_group);
             true
         }
 

@@ -57,7 +57,7 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
         .windows
         .iter()
         .filter(|w| &w.handle != handle)
-        .map(|w| w.clone())
+        .cloned()
         .collect();
     //if we removed the focused window, focus the last window
     focus_handler::focus_last_window_that_exists(manager);

@@ -1,11 +1,11 @@
 use std::collections::VecDeque;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Result};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use xdg::BaseDirectories;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Result};
 
 type Queue = Arc<Mutex<VecDeque<ExternalCommand>>>;
 type ResultQueue = Result<Queue>;
@@ -14,6 +14,11 @@ pub struct CommandPipe {
     queue: ResultQueue,
 }
 
+impl Default for CommandPipe {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl CommandPipe {
     pub fn new() -> CommandPipe {
         CommandPipe {
@@ -46,7 +51,7 @@ impl CommandPipe {
                 let file = File::open(&pipe_file).unwrap();
                 for line in BufReader::new(file).lines() {
                     if let Ok(l) = line {
-                        if let Ok(cmd) = parse_command(l){
+                        if let Ok(cmd) = parse_command(l) {
                             let mut my_q = q2.lock().unwrap();
                             my_q.push_back(cmd);
                         }
@@ -56,7 +61,6 @@ impl CommandPipe {
         });
         Ok(q)
     }
-
 }
 
 fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
@@ -84,17 +88,23 @@ fn build_load_theme(mut raw: String) -> std::result::Result<ExternalCommand, ()>
 
 fn build_goto_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
     crop_head(&mut raw, "SendWorkspaceToTag ");
-    let parts: Vec<&str> = raw.split(" ").collect();
-    if parts.len() != 2 { return Err(()) }
+    let parts: Vec<&str> = raw.split(' ').collect();
+    if parts.len() != 2 {
+        return Err(());
+    }
     let ws_index = match parts[0].parse::<usize>() {
         Ok(x) => x,
-        Err(_) => { return Err(()); }
+        Err(_) => {
+            return Err(());
+        }
     };
     let tag_index = match parts[1].parse::<usize>() {
         Ok(x) => x,
-        Err(_) => { return Err(()); }
+        Err(_) => {
+            return Err(());
+        }
     };
-    Ok( ExternalCommand::SendWorkspaceToTag(ws_index, tag_index) )
+    Ok(ExternalCommand::SendWorkspaceToTag(ws_index, tag_index))
 }
 
 fn crop_head(s: &mut String, head: &str) {
@@ -116,4 +126,3 @@ pub enum ExternalCommand {
     Reload,
     SendWorkspaceToTag(usize, usize),
 }
-

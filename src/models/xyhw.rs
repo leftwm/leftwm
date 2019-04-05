@@ -28,7 +28,7 @@ impl XYHW {
      * Trim a XYHW out of another XYHW so that they don't overlap
      */
     pub fn without(&self, other: &XYHW) -> XYHW {
-        let mut without = self.clone();
+        let mut without = *self;
         if other.w > other.h {
             //horizontal trim
             if other.y > self.y + (self.h / 2) {

@@ -12,6 +12,12 @@ pub struct StateSocket {
     state_stream: StateStream,
 }
 
+impl Default for StateSocket {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StateSocket {
     pub fn new() -> StateSocket {
         StateSocket {
@@ -31,11 +37,8 @@ impl StateSocket {
             }
         };
         thread::spawn(move || loop {
-            match listener.accept() {
-                Ok((socket, _)) => {
-                    let _ = socket_writer(socket, &mut rx);
-                }
-                Err(_) => {}
+            if let Ok((socket, _)) = listener.accept() {
+                let _ = socket_writer(socket, &mut rx);
             }
         });
         Ok(tx)
@@ -80,7 +83,7 @@ impl From<&Manager> for ManagerState {
     fn from(manager: &Manager) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         for ws in &manager.workspaces {
-            viewports.push( Viewport {
+            viewports.push(Viewport {
                 tags: ws.tags.clone(),
                 x: ws.xyhw.x,
                 y: ws.xyhw.y,

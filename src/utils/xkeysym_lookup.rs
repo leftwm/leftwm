@@ -6,7 +6,7 @@ pub type XKeysym = c_uint;
 pub type ModMask = c_uint;
 pub type Button = c_uint;
 
-pub fn into_modmask(keys: &Vec<String>) -> ModMask {
+pub fn into_modmask(keys: &[String]) -> ModMask {
     let mut mask = 0;
     for s in keys {
         mask |= into_mod(&s);
