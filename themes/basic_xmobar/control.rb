@@ -31,17 +31,27 @@ def start_bars viewports
   end 
 end
 
-def format_for_view index, hash
+def format_for_view ws_index, hash
+  displayed_tags = hash['viewports'].map{|vp| vp['tags'] }.flatten.uniq
+
   text = hash['desktop_names'].each_with_index.map do |name, tag_index|
-      if hash['active_desktop'].include?(name)
-        # add active color
-        "<action=`#{CURRENT_PATH}/change_to_tag #{index} #{tag_index}`><fc=#FF0000>  #{name}  </fc></action>"
-      elsif hash['viewports'][index]['tags'].include?(name)
-        # add inactive color
-        "<action=`#{CURRENT_PATH}/change_to_tag #{index} #{tag_index}`><fc=#0000FF>  #{name}  </fc></action>"
-      else
-        "<action=`#{CURRENT_PATH}/change_to_tag #{index} #{tag_index}`>  #{name}  </action>"
-      end
+
+    tag_is_focused = hash['active_desktop'].include?(name)
+    is_displayed   = displayed_tags.include?( name )
+
+    mode = :normal
+    mode = :alt     if is_displayed && !tag_is_focused
+    mode = :focused if is_displayed && tag_is_focused
+      
+    case mode
+    when :focused
+      "<action=`#{CURRENT_PATH}/change_to_tag #{ws_index} #{tag_index}`><fc=#FF0000>  #{name}  </fc></action>"
+    when :alt
+      "<action=`#{CURRENT_PATH}/change_to_tag #{ws_index} #{tag_index}`><fc=#FFAAAA>  #{name}  </fc></action>"
+    else #normal
+      "<action=`#{CURRENT_PATH}/change_to_tag #{ws_index} #{tag_index}`><fc=#FFFFFF>  #{name}  </fc></action>"
+    end
+      
     end.join('')
     text = text + "<fc=#555555>     #{ hash['window_title'] }</fc>"
     text
