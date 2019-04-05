@@ -5,20 +5,30 @@ use crate::utils::helpers;
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
         Command::MoveToTag => {
-            if let Some(tag) = val {
-                if let Some(window) = manager.focused_window_mut() {
-                    window.clear_tags();
-                    window.set_floating(false);
-                    window.tag(tag);
-                    return true;
+            if let Some(tag_num_string) = val {
+                if let Ok(tag_num) = tag_num_string.parse::<usize>() {
+                    if tag_num > manager.tags.len() || tag_num < 1{
+                        return false;
+                    }
+                    let tag = manager.tags[ tag_num - 1].clone();
+                    if let Some(window) = manager.focused_window_mut() {
+                        window.clear_tags();
+                        window.set_floating(false);
+                        window.tag(tag);
+                        return true;
+                    }
                 }
             }
             false
         }
 
         Command::GotoTag => {
-            if let Some(tag) = val {
-                goto_tag_handler::process(manager, tag)
+            if let Some(tag_num) = val {
+                if let Ok(tag_num) = tag_num.parse::<usize>() {
+                    goto_tag_handler::process(manager, tag_num)
+                } else {
+                    false
+                }
             } else {
                 false
             }

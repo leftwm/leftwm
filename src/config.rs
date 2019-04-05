@@ -19,14 +19,18 @@ pub use workspace_config::WorkspaceConfig;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub modkey: String,
-    pub workspace: Vec<WorkspaceConfig>,
+    pub workspaces: Option<Vec<WorkspaceConfig>>,
+    pub tags: Option<Vec<String>>,
     pub keybind: Vec<Keybind>,
 }
 
 pub fn load() -> Config {
     match load_from_file() {
         Ok(cfg) => cfg,
-        Err(_) => Config::default(),
+        Err(err) => {
+            println!("ERROR LOADING CONFIG: {:?}", err);
+            Config::default()
+        },
     }
 }
 
@@ -34,8 +38,11 @@ fn load_from_file() -> Result<Config, Box<std::error::Error>> {
     let path = BaseDirectories::with_prefix("leftwm")?;
     let config_filename = path.place_config_file("config.toml")?;
     if Path::new(&config_filename).exists() {
+        let default = Config::default();
         let contents = fs::read_to_string(config_filename)?;
-        let config: Config = toml::from_str(&contents)?;
+        let mut config: Config = toml::from_str(&contents)?;
+        if config.workspaces.is_none() { config.workspaces = default.workspaces }
+        if config.tags.is_none() { config.tags = default.tags }
         Ok(config)
     } else {
         let config = Config::default();
@@ -111,18 +118,10 @@ impl Config {
     }
 
     pub fn get_list_of_tags(&self) -> Vec<String> {
-        //TODO: get a list of tags from the config
-        vec![
-            "1".to_owned(),
-            "2".to_owned(),
-            "3".to_owned(),
-            "4".to_owned(),
-            "5".to_owned(),
-            "6".to_owned(),
-            "7".to_owned(),
-            "8".to_owned(),
-            "9".to_owned(),
-        ]
+        if let Some( tags ) = &self.tags {
+            return tags.clone();
+        }
+        Config::default().tags.unwrap()
     }
 }
 
@@ -246,10 +245,16 @@ impl Default for Config {
             });
         }
 
+        //let tags = vec!["A","B","C","D","E","F","G","H","I"].iter().map( |s| s.to_string() ).collect();
+        let tags = vec!["1","2","3","4","5","6","7","8","9"].iter().map( |s| s.to_string() ).collect();
+
         Config {
-            workspace: vec![],
+            workspaces: Some(vec![]),
+            tags: Some( tags ),
             modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
     }
 }
+
+

@@ -115,18 +115,20 @@ impl XlibDisplayServer {
      */
     fn initial_events(&self) -> Vec<DisplayEvent> {
         let mut events = vec![];
-        if self.config.workspace.is_empty() {
-            // tell manager about existing screens
-            for screen in self.xw.get_screens() {
-                let e = DisplayEvent::ScreenCreate(screen);
-                events.push(e);
-            }
-        } else {
-            for wsc in &self.config.workspace {
-                let mut screen = Screen::from(wsc);
-                screen.root = WindowHandle::XlibHandle(self.root);
-                let e = DisplayEvent::ScreenCreate(screen);
-                events.push(e);
+        if let Some(workspaces) = &self.config.workspaces {
+            if workspaces.is_empty() {
+                // tell manager about existing screens
+                for screen in self.xw.get_screens() {
+                    let e = DisplayEvent::ScreenCreate(screen);
+                    events.push(e);
+                }
+            } else {
+                for wsc in workspaces {
+                    let mut screen = Screen::from(wsc);
+                    screen.root = WindowHandle::XlibHandle(self.root);
+                    let e = DisplayEvent::ScreenCreate(screen);
+                    events.push(e);
+                }
             }
         }
         // tell manager about existing windows

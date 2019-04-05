@@ -35,8 +35,7 @@ fn process_work(manager: &mut Manager, command: ExternalCommand) -> bool {
             if ws_index < manager.workspaces.len() && tag_index < manager.tags.len() {
                 let workspace = &manager.workspaces[ws_index].clone();
                 focus_handler::focus_workspace(manager, workspace);
-                let tag = manager.tags[tag_index].clone();
-                goto_tag_handler::process(manager, tag);
+                goto_tag_handler::process(manager, tag_index + 1);
                 return true;
             }
         }

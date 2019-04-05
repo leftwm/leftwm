@@ -55,6 +55,15 @@ height = 1440
 width = 1720
 ```
 
+### Tags / Desktops
+The default tags are 1-9. they can be renamed in the config file be setting the
+list of tags.
+
+Here is an example config changing the list of available tags. NOTE: switching
+between in the key bindings doesn't change based on the name.
+```
+tags = ["Web", "Code", "Shell", "Music", "Connect"]
+```
 
 
 ### Leftwm is EWMH compliant. 

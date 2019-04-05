@@ -1,11 +1,17 @@
 use super::*;
 
-pub fn process(manager: &mut Manager, tag: String) -> bool {
-    //if we are going to a new tag record it in the list of avalable tags
-    if !manager.tags.contains(&tag) {
-        manager.tags.push(tag.clone());
+pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
+    ////if we are going to a new tag record it in the list of avalable tags
+    //if !manager.tags.contains(&tag) {
+    //    manager.tags.push(tag.clone());
+    //}
+
+    if tag_num > manager.tags.len() || tag_num < 1{
+        return false;
     }
-    let new_tags = vec![tag.clone()];
+
+    let tag = manager.tags[ tag_num - 1].clone();
+    let new_tags = vec![ tag.clone() ];
     //no focus safey check
     if manager.focused_workspace().is_none() {
         return false;

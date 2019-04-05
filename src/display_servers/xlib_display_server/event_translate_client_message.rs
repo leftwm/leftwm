@@ -26,8 +26,8 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
 
 fn goto_tag_by_index(xw: &XWrap, index: i64) -> Option<DisplayEvent> {
     if index >= 0 && index < xw.tags.len() as i64 {
-        let tag_name = xw.tags[index as usize].clone();
-        Some(DisplayEvent::SendCommand(Command::GotoTag, Some(tag_name)))
+        let tag_num = index + 1;
+        Some(DisplayEvent::SendCommand(Command::GotoTag, Some( tag_num.to_string() )))
     } else {
         None
     }
