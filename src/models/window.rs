@@ -71,7 +71,7 @@ impl Window {
         self.is_floating || self.must_float()
     }
     pub fn must_float(&self) -> bool {
-        !self.transient.is_none() || self.type_ == WindowType::Dock
+        self.transient.is_some() || self.type_ == WindowType::Dock
     }
     pub fn can_move(&self) -> bool {
         self.type_ != WindowType::Dock
@@ -88,14 +88,14 @@ impl Window {
     }
 
     pub fn width(&self) -> i32 {
-        if self.floating() && !self.floating.is_none() {
+        if self.floating() && self.floating.is_some() {
             self.floating.unwrap().w
         } else {
             self.normal.w - (self.margin * 2) - (self.border * 2)
         }
     }
     pub fn height(&self) -> i32 {
-        if self.floating() && !self.floating.is_none() {
+        if self.floating() && self.floating.is_some() {
             self.floating.unwrap().h
         } else {
             self.normal.h - (self.margin * 2) - (self.border * 2)
@@ -110,7 +110,7 @@ impl Window {
     }
 
     pub fn x(&self) -> i32 {
-        if self.floating() && !self.floating.is_none() {
+        if self.floating() && self.floating.is_some() {
             self.floating.unwrap().x
         } else {
             self.normal.x + self.margin
@@ -118,7 +118,7 @@ impl Window {
     }
 
     pub fn y(&self) -> i32 {
-        if self.floating() && !self.floating.is_none() {
+        if self.floating() && self.floating.is_some() {
             self.floating.unwrap().y
         } else {
             self.normal.y + self.margin

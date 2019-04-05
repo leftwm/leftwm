@@ -7,6 +7,11 @@ use xdg::BaseDirectories;
 
 pub struct Nanny {}
 
+impl Default for Nanny {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl Nanny {
     pub fn new() -> Nanny {
         Nanny {}

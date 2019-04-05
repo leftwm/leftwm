@@ -1,3 +1,7 @@
+#[cfg_attr(
+    feature = "clippy",
+    allow(clippy::cast_ptr_alignment, clippy::cast_lossless)
+)]
 mod command;
 mod command_builder;
 pub mod config;

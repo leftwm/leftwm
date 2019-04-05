@@ -1,6 +1,6 @@
 mod keybind;
-mod workspace_config;
 mod theme_setting;
+mod workspace_config;
 
 use super::Command;
 use std::default::Default;
@@ -13,8 +13,8 @@ use toml;
 use xdg::BaseDirectories;
 
 pub use keybind::Keybind;
-pub use workspace_config::WorkspaceConfig;
 pub use theme_setting::ThemeSetting;
+pub use workspace_config::WorkspaceConfig;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
@@ -48,7 +48,7 @@ fn load_from_file() -> Result<Config, Box<std::error::Error>> {
 
 fn is_program_in_path(program: &str) -> bool {
     if let Ok(path) = env::var("PATH") {
-        for p in path.split(":") {
+        for p in path.split(':') {
             let p_str = format!("{}/{}", p, program);
             if fs::metadata(p_str).is_ok() {
                 return true;
@@ -186,7 +186,6 @@ impl Default for Config {
             key: "w".to_owned(),
         });
 
-
         commands.push(Keybind {
             command: Command::MoveWindowUp,
             value: None,
@@ -199,7 +198,6 @@ impl Default for Config {
             modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
             key: "Down".to_owned(),
         });
-
 
         commands.push(Keybind {
             command: Command::FocusWindowUp,

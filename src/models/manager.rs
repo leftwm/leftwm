@@ -127,7 +127,7 @@ impl Manager {
     pub fn workspaces_display(&self) -> String {
         let mut focused_id = -1;
         if let Some(f) = self.focused_workspace() {
-            focused_id = f.id.clone();
+            focused_id = f.id;
         }
         let list: Vec<String> = self
             .workspaces

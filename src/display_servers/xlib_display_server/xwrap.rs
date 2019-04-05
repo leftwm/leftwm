@@ -47,6 +47,11 @@ pub struct XWrap {
     pub mode_origin: (i32, i32),
 }
 
+impl Default for XWrap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl XWrap {
     pub fn new() -> XWrap {
         let xlib = xlib::Xlib::open().unwrap();
@@ -123,7 +128,7 @@ impl XWrap {
                 .iter()
                 .map(|w| self.get_window_attrs(*w).unwrap())
                 .collect();
-            roots.iter().map(|w| Screen::from(w)).collect()
+            roots.iter().map(Screen::from).collect()
         }
     }
 
@@ -236,7 +241,8 @@ impl XWrap {
                 &mut nitems_return,
                 &mut prop_return,
             );
-            if status == xlib::Success as i32 && !prop_return.is_null() {
+            if status == i32::from(xlib::Success) && !prop_return.is_null() {
+                #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
                 let atom = *(prop_return as *const xlib::Atom);
                 return Some(atom);
             }
@@ -294,8 +300,8 @@ impl XWrap {
         self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
     }
 
-    fn set_desktop_prop(&self, data: &Vec<u32>, atom: c_ulong) {
-        let xdata = data.clone();
+    fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
+        let xdata = data.to_owned();
         unsafe {
             (self.xlib.XChangeProperty)(
                 self.display,
@@ -327,7 +333,7 @@ impl XWrap {
         //self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
     }
 
-    pub fn set_current_desktop(&self, current_tags: &String) {
+    pub fn set_current_desktop(&self, current_tags: &str) {
         let mut indexes: Vec<u32> = vec![];
         for (i, tag) in self.tags.iter().enumerate() {
             if current_tags.contains(tag) {
@@ -386,12 +392,14 @@ impl XWrap {
                     let rh: u32 = window.height() as u32;
                     (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
 
-                    let color: c_ulong = match is_focused {
-                        true => self.colors.active,
-                        false => {
-                            if window.floating() { self.colors.floating } else { self.colors.normal }
-                        }
+                    let color: c_ulong = if is_focused {
+                        self.colors.active
+                    } else if window.floating() {
+                        self.colors.floating
+                    } else {
+                        self.colors.normal
                     };
+
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
                 }
                 self.send_config(window);
@@ -439,7 +447,7 @@ impl XWrap {
                         let dems = self.screens_area_dimensions();
                         if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
                             let mut change = WindowChange::new(h);
-                            change.floating = Some(xywh.clone());
+                            change.floating = Some(xywh);
                             change.type_ = Some(WindowType::Dock);
                             return Some(DisplayEvent::WindowChange(change));
                         }
@@ -521,7 +529,8 @@ impl XWrap {
                 &mut bytes_after_return,
                 &mut prop_return,
             );
-            if status == xlib::Success as i32 {
+            if status == i32::from(xlib::Success) {
+                #[allow(clippy::cast_ptr_alignment)]
                 let array_ptr = prop_return as *const i64;
                 let slice = slice::from_raw_parts(array_ptr, nitems_return as usize);
                 if slice.len() == 12 {
