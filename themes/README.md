@@ -5,6 +5,11 @@ With left there are two types of configs. First there are config settings that a
 The appearance of your desktop is different. It’s fun to try new looks and feels. It’s fun to tweak and customize the appearance ( AKA: ricing ). It’s fun to share so others can experience your cool awesome desktop. Leftwm is built around this concept. By pulling all these settings out into themes, you can now easily tweak, switch, and share your experiences. 
 
 
+# We want your themes
+
+We are looking to expand the list of available themes for an upcoming release. If you enjoy making desktops look good please consider shairing (making a pull request).
+
+
 # Requirements for a theme
 
 A theme has only two requirements. An “up” and a “down” executable/script. They can be written in whatever makes you happy. The up script you guessed it starts up all the things that make your script unique and awesome. The down script restores the environment to an un-themes state. A theme should be self contained if possible so that it can be shared and doesn’t interfere with other themes. For example when booting an application with a config file, put the config file in the theme folder instead of ~/.config. This way other themes can use the same application 
