@@ -42,13 +42,13 @@ By default workspaces have a one to one relationship with screens, but this is c
 
 Here is an example config changing the way workspaces are defined (~/.config/leftwm/config.toml)
 ```
-[[workspace]]
+[[workspaces]]
 y = 0
 x = 0
 height = 1440
 width = 1720
 
-[[workspace]]
+[[workspaces]]
 y = 0
 x = 1720
 height = 1440
