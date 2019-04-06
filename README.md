@@ -1,4 +1,4 @@
-# Leftwm - A window manager for Adventurers
+# LeftWM - A window manager for Adventurers
 
 
 ## Why go left 
