@@ -9,8 +9,10 @@ LeftWM has been built from the very beginning to support multiple screens and ha
 
 ## Left is NOT
 
-Left is not a compositor
-Left is not a lock screen. 
+Left is not a compositor.
+
+Left is not a lock screen.
+
 Left is not a bar there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
 
 
