@@ -4,7 +4,8 @@ SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
 #boot compton if it exists
 if [ -x "$(command -v compton)" ]; then
-  compton &> /dev/null & 
+  pkill compton
+  compton --config $SCRIPTPATH/compton.conf &> /dev/null & 
 fi
 
 #set background

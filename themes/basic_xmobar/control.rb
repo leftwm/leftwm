@@ -1,6 +1,7 @@
 #!/bin/env ruby
 
 require 'json'
+require 'pry'
 require 'pty'
 require 'socket'
 SOCKET_FILE = "#{ENV["XDG_RUNTIME_DIR"]}/leftwm/current_state.sock"
@@ -33,15 +34,17 @@ end
 
 def format_for_view ws_index, hash
   displayed_tags = hash['viewports'].map{|vp| vp['tags'] }.flatten.uniq
+  viewports_tags = hash['viewports'][ws_index]['tags'] 
 
   text = hash['desktop_names'].each_with_index.map do |name, tag_index|
 
-    tag_is_focused = hash['active_desktop'].include?(name)
+    #tag_is_focused = hash['active_desktop'].include?(name)
     is_displayed   = displayed_tags.include?( name )
+    is_mine        = viewports_tags.include?( name )
 
     mode = :normal
-    mode = :alt     if is_displayed && !tag_is_focused
-    mode = :focused if is_displayed && tag_is_focused
+    mode = :alt     if is_displayed && !is_mine
+    mode = :focused if is_displayed && is_mine
       
     case mode
     when :focused
