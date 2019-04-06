@@ -56,11 +56,10 @@ width = 1720
 ```
 
 ### Tags / Desktops
-The default tags are 1-9. they can be renamed in the config file be setting the
+The default tags are 1-9. They can be renamed in the config file by setting the
 list of tags.
 
-Here is an example config changing the list of available tags. NOTE: switching
-between in the key bindings doesn't change based on the name.
+Here is an example config changing the list of available tags. NOTE: tag navigation (Mod + #) doesn't change based on the name of the tag
 ```
 tags = ["Web", "Code", "Shell", "Music", "Connect"]
 ```
