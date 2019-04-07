@@ -1,6 +1,6 @@
 use crate::config::Config;
-use crate::display_action::DisplayAction;
 use crate::config::ThemeSetting;
+use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::Window;
@@ -49,7 +49,7 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_theme_settings(&mut self, settings: ThemeSetting) {
         self.theme = settings;
-        self.xw.load_colors( &self.theme );
+        self.xw.load_colors(&self.theme);
     }
 
     fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {
@@ -64,9 +64,13 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            for tag in &focused.tags {
-                self.xw.set_current_desktop(tag);
-            }
+            focused
+                .tags
+                .iter()
+                .for_each(|tag| self.xw.set_current_desktop(tag));
+            //for tag in &focused.tags {
+            //self.xw.set_current_desktop(tag);
+            //}
         }
     }
 
@@ -91,12 +95,12 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::KillWindow(w) => self.xw.kill_window(w),
             DisplayAction::AddedWindow(w) => {
                 return self.xw.setup_managed_window(w);
-            },
+            }
             DisplayAction::MoveMouseOver(handle) => {
                 if let WindowHandle::XlibHandle(win) = handle {
                     let _ = self.xw.move_cursor_to_window(win);
-                } 
-            },
+                }
+            }
             DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
             DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
             DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),
@@ -118,45 +122,45 @@ impl XlibDisplayServer {
         if let Some(workspaces) = &self.config.workspaces {
             if workspaces.is_empty() {
                 // tell manager about existing screens
-                for screen in self.xw.get_screens() {
+                self.xw.get_screens().into_iter().for_each(|screen| {
                     let e = DisplayEvent::ScreenCreate(screen);
                     events.push(e);
-                }
+                });
             } else {
-                for wsc in workspaces {
+                workspaces.iter().for_each(|wsc| {
                     let mut screen = Screen::from(wsc);
                     screen.root = WindowHandle::XlibHandle(self.root);
                     let e = DisplayEvent::ScreenCreate(screen);
                     events.push(e);
-                }
+                });
             }
         }
+
         // tell manager about existing windows
-        for w in &self.find_all_windows() {
+        self.find_all_windows().into_iter().for_each(|w| {
             let e = DisplayEvent::WindowCreate(w.clone());
             events.push(e);
-        }
+        });
+
         events
     }
 
     fn find_all_windows(&self) -> Vec<Window> {
         let mut all: Vec<Window> = Vec::new();
         match self.xw.get_all_windows() {
-            Ok(handles) => {
-                for handle in handles {
-                    let attrs = self.xw.get_window_attrs(handle).unwrap();
+            Ok(handles) => handles.into_iter().for_each(|handle| {
+                let attrs = self.xw.get_window_attrs(handle).unwrap();
 
-                    let managed = match self.xw.get_transient_for(handle) {
-                        Some(_) => attrs.map_state == 2,
-                        _ => attrs.override_redirect <= 0 && attrs.map_state == 2,
-                    };
-                    if managed {
-                        let name = self.xw.get_window_name(handle);
-                        let w = Window::new(WindowHandle::XlibHandle(handle), name);
-                        all.push(w);
-                    }
+                let managed = match self.xw.get_transient_for(handle) {
+                    Some(_) => attrs.map_state == 2,
+                    _ => attrs.override_redirect <= 0 && attrs.map_state == 2,
+                };
+                if managed {
+                    let name = self.xw.get_window_name(handle);
+                    let w = Window::new(WindowHandle::XlibHandle(handle), name);
+                    all.push(w);
                 }
-            }
+            }),
             Err(err) => {
                 println!("ERROR: {}", err);
             }

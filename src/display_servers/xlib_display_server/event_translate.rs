@@ -23,20 +23,19 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 xw.subscribe_to_window_events(&handle);
 
                 match xw.get_window_attrs(event.window) {
-                    Ok(attr) => {
-                        if attr.override_redirect > 0 {
-                            None
-                        } else {
-                            let name = xw.get_window_name(event.window);
-                            let mut w = Window::new(handle, name);
-                            let trans = xw.get_transient_for(event.window);
-                            w.floating = xw.get_hint_sizing_as_xyhw(event.window);
-                            if let Some(trans) = trans {
-                                w.transient = Some(WindowHandle::XlibHandle(trans));
-                            }
-                            w.type_ = xw.get_window_type(event.window);
-                            Some(DisplayEvent::WindowCreate(w))
+                    Ok(attr) if attr.override_redirect > 0 => None,
+                    Ok(_attr) => {
+                        let name = xw.get_window_name(event.window);
+                        let mut w = Window::new(handle, name);
+                        let trans = xw.get_transient_for(event.window);
+                        w.floating = xw.get_hint_sizing_as_xyhw(event.window);
+
+                        if let Some(trans) = trans {
+                            w.transient = Some(WindowHandle::XlibHandle(trans));
                         }
+
+                        w.type_ = xw.get_window_type(event.window);
+                        Some(DisplayEvent::WindowCreate(w))
                     }
                     Err(_) => None,
                 }
@@ -78,10 +77,8 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let event = xlib::XEnterWindowEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
                 let mouse_loc = xw.get_pointer_location();
-                match mouse_loc {
-                    Some(loc) => Some(DisplayEvent::FocusedWindow(h, loc.0, loc.1)),
-                    None => None,
-                }
+
+                mouse_loc.and_then(|loc| Some(DisplayEvent::FocusedWindow(h, loc.0, loc.1)))
             }
 
             xlib::PropertyNotify => {

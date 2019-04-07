@@ -4,49 +4,36 @@ use crate::utils::helpers;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
+        Command::MoveToTag if val.is_none() => false,
+        Command::MoveToTag if !is_num(&val) => false,
+        Command::MoveToTag if to_num(&val) > manager.tags.len() => false,
+        Command::MoveToTag if to_num(&val) < 1 => false,
         Command::MoveToTag => {
-            if let Some(tag_num_string) = val {
-                if let Ok(tag_num) = tag_num_string.parse::<usize>() {
-                    if tag_num > manager.tags.len() || tag_num < 1{
-                        return false;
-                    }
-                    let tag = manager.tags[ tag_num - 1].clone();
-                    if let Some(window) = manager.focused_window_mut() {
-                        window.clear_tags();
-                        window.set_floating(false);
-                        window.tag(tag);
-                        return true;
-                    }
-                }
+            let tag_num = to_num(&val);
+            let tag = manager.tags[tag_num - 1].clone();
+            if let Some(window) = manager.focused_window_mut() {
+                window.clear_tags();
+                window.set_floating(false);
+                window.tag(tag);
+                return true;
             }
             false
         }
 
-        Command::GotoTag => {
-            if let Some(tag_num) = val {
-                if let Ok(tag_num) = tag_num.parse::<usize>() {
-                    goto_tag_handler::process(manager, tag_num)
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        }
+        Command::GotoTag if val.is_none() => false,
+        Command::GotoTag if !is_num(&val) => false,
+        Command::GotoTag => goto_tag_handler::process(manager, to_num(&val)),
 
+        Command::Execute if val.is_none() => false,
         Command::Execute => {
-            if let Some(cmd) = val {
-                use std::process::{Command, Stdio};
-                let _ = Command::new("sh")
-                    .arg("-c")
-                    .arg(&cmd)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::null())
-                    .spawn();
-                false
-            } else {
-                false
-            }
+            use std::process::{Command, Stdio};
+            let _ = Command::new("sh")
+                .arg("-c")
+                .arg(&val.unwrap())
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .spawn();
+            false
         }
 
         Command::CloseWindow => {
@@ -203,4 +190,19 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
         Command::MouseMoveWindow => false,
     }
+}
+
+/// Is the string passed in a valid number
+fn is_num(val: &Option<String>) -> bool {
+    match val {
+        Some(num) => num.parse::<usize>().is_ok(),
+        None => false,
+    }
+}
+
+/// Convert the option string to a number
+fn to_num(val: &Option<String>) -> usize {
+    val.as_ref()
+        .and_then(|num| num.parse::<usize>().ok())
+        .unwrap_or_default()
 }
