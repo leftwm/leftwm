@@ -1025,12 +1025,12 @@ impl XWrap {
         }
 
         //grab all the key combos from the config file
-        for kb in config.mapped_bindings() {
+        config.mapped_bindings().iter().for_each(|kb| {
             if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
                 let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
                 self.grab_keys(root, keysym, modmask);
             }
-        }
+        });
 
         unsafe {
             (self.xlib.XSync)(self.display, 0);

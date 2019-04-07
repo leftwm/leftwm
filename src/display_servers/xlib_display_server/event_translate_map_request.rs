@@ -13,21 +13,18 @@ pub fn from_event(xw: &XWrap, event: xlib::XMapRequestEvent) -> Option<DisplayEv
     xw.subscribe_to_window_events(&handle);
 
     match xw.get_window_attrs(event.window) {
+        Ok(attr) if attr.override_redirect > 0 => None,
         Ok(attr) => {
-            if attr.override_redirect > 0 {
-                None
-            } else {
-                let name = xw.get_window_name(event.window);
-                let mut w = Window::new(handle, name);
-                w.floating = xw.get_hint_sizing_as_xyhw(event.window);
-                let trans = xw.get_transient_for(event.window);
-                if let Some(trans) = trans {
-                    w.transient = Some(WindowHandle::XlibHandle(trans));
-                    let _ = update_if_transient(xw, &mut w, trans);
-                }
-                w.type_ = xw.get_window_type(event.window);
-                Some(DisplayEvent::WindowCreate(w))
+            let name = xw.get_window_name(event.window);
+            let mut w = Window::new(handle, name);
+            w.floating = xw.get_hint_sizing_as_xyhw(event.window);
+            let trans = xw.get_transient_for(event.window);
+            if let Some(trans) = trans {
+                w.transient = Some(WindowHandle::XlibHandle(trans));
+                let _ = update_if_transient(xw, &mut w, trans);
             }
+            w.type_ = xw.get_window_type(event.window);
+            Some(DisplayEvent::WindowCreate(w))
         }
         Err(_) => None,
     }
@@ -37,16 +34,13 @@ fn update_if_transient(xw: &XWrap, window: &mut Window, trans: xlib::Window) -> 
     log_info("TRANS", "in update_if_transient");
 
     //get a loc/sizing for the new transient window. if we can't default to something so we can fill in the reset
-    let mut xyhw = match window.floating {
-        Some(f) => f,
-        None => XYHW::default(),
-    };
+    let mut xyhw = window.floating.unwrap_or_default();
 
     let parent_geo = xw.get_window_geometry(trans)?;
     let parent_attrs = xw.get_window_attrs(trans)?;
 
-    log_info("TRANS GEO", &format!("{:?}", parent_geo) );
-    log_info("TRANS ATTRS", &format!("{:?}", parent_attrs) );
+    log_info("TRANS GEO", &format!("{:?}", parent_geo));
+    log_info("TRANS ATTRS", &format!("{:?}", parent_attrs));
 
     //first we need to make sure the trans has a height/width
     if xyhw.h == 0 || xyhw.w == 0 {
@@ -54,15 +48,15 @@ fn update_if_transient(xw: &XWrap, window: &mut Window, trans: xlib::Window) -> 
         xyhw.w = parent_geo.w / 2;
     }
 
-    log_info("TRANS XYHW", &format!("{:?}", xyhw) );
+    log_info("TRANS XYHW", &format!("{:?}", xyhw));
 
     //center the trans loc in the middle on the parent
     xyhw.x = parent_attrs.x + (parent_geo.w / 2) - (xyhw.w / 2);
     xyhw.y = parent_attrs.y + (parent_geo.h / 2) - (xyhw.h / 2);
-    log_info("TRANS XYHW", &format!("{:?}", xyhw) );
+    log_info("TRANS XYHW", &format!("{:?}", xyhw));
 
     window.floating = Some(xyhw);
-    log_info("TRANS WINDOW", &format!("{:?}", window) );
+    log_info("TRANS WINDOW", &format!("{:?}", window));
 
     Ok(())
 }

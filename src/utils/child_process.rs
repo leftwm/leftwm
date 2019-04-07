@@ -18,16 +18,20 @@ impl Nanny {
     }
 
     pub fn autostart(&self) {
-        if let Some(mut path) = dirs::home_dir() {
-            path.push(".config");
-            path.push("autostart");
-            if let Ok(files) = list_desktop_files(&path) {
-                for file in files {
+        dirs::home_dir()
+            .and_then(|mut path| {
+                path.push(".config");
+                path.push("autostart");
+                Some(path)
+            })
+            .and_then(|path| list_desktop_files(&path).ok())
+            .and_then(|files| {
+                files.iter().for_each(|file| {
                     let _ = boot_desktop_file(&file);
                     println!("PATH: {:?}", file);
-                }
-            }
-        }
+                });
+                Some(files)
+            });
     }
 
     pub fn boot_current_theme(&self) -> Result<(), Box<std::error::Error>> {
