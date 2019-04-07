@@ -1,15 +1,37 @@
 use crate::models::Manager;
+use bytes::{BufMut, BytesMut};
+use futures::future::{self, Either};
+use futures::sync::mpsc;
+use futures::{Future, Stream};
+use std::collections::HashMap;
 use std::fs;
-use std::io::prelude::*;
-use std::os::unix::net::{UnixListener, UnixStream};
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{Arc, Mutex};
 use std::thread;
+use tokio::io;
+use tokio::prelude::*;
+use tokio_uds::{UnixListener, UnixStream};
+
+use uuid::Uuid;
 use xdg::BaseDirectories;
 
-type StateStream = Result<Sender<ManagerState>, Box<std::error::Error>>;
+type Tx = mpsc::UnboundedSender<String>;
+type Rx = mpsc::UnboundedReceiver<String>;
+type Server = Result<Arc<Mutex<Shared>>, Box<std::error::Error>>;
+
 pub struct StateSocket {
-    state_stream: StateStream,
+    server: Server,
+    last_state: String,
+}
+
+struct Shared {
+    peers: HashMap<Uuid, Tx>,
+}
+impl Shared {
+    fn new() -> Self {
+        Shared {
+            peers: HashMap::new(),
+        }
+    }
 }
 
 impl Default for StateSocket {
@@ -21,46 +43,147 @@ impl Default for StateSocket {
 impl StateSocket {
     pub fn new() -> StateSocket {
         StateSocket {
-            state_stream: StateSocket::build_listener(),
+            server: StateSocket::build_listener(),
+            last_state: "".to_string(),
         }
     }
 
-    fn build_listener() -> StateStream {
+    fn build_listener() -> Server {
         let base = BaseDirectories::with_prefix("leftwm")?;
         let socket_file = base.place_runtime_file("current_state.sock")?;
-        let (tx, mut rx): (Sender<ManagerState>, Receiver<ManagerState>) = mpsc::channel();
-        let listener = match UnixListener::bind(&socket_file) {
-            Ok(m) => m,
-            Err(_) => {
-                fs::remove_file(&socket_file).unwrap();
-                UnixListener::bind(&socket_file).unwrap()
-            }
-        };
+        let state = Arc::new(Mutex::new(Shared::new()));
+        let return_state = state.clone();
         thread::spawn(move || loop {
-            if let Ok((socket, _)) = listener.accept() {
-                let _ = socket_writer(socket, &mut rx);
-            }
+            let thread_state = state.clone();
+            let listener = match UnixListener::bind(&socket_file) {
+                Ok(m) => m,
+                Err(_) => {
+                    fs::remove_file(&socket_file).unwrap();
+                    UnixListener::bind(&socket_file).unwrap()
+                }
+            };
+            let server = listener
+                .incoming()
+                .map_err(|e| eprintln!("accept failed = {:?}", e))
+                .for_each(move |sock| {
+                    process(sock, thread_state.clone());
+                    Ok(())
+                });
+            tokio::run(server);
         });
-        Ok(tx)
+        Ok(return_state)
     }
 
-    pub fn write_manager_state(&mut self, manager: &Manager) {
+    pub fn write_manager_state(&mut self, manager: &Manager) -> Result<(), Box<std::error::Error>> {
         let state: ManagerState = manager.into();
-        if let Ok(stream) = &self.state_stream {
-            let _ = stream.send(state);
+        let mut json = serde_json::to_string(&state)?;
+        json.push_str("\n");
+        if json != self.last_state {
+            if let Ok(server) = &self.server {
+                for (_, tx) in server.lock().unwrap().peers.iter() {
+                    tx.unbounded_send(json.clone()).unwrap();
+                }
+            }
+            self.last_state = json;
+        }
+        Ok(())
+    }
+}
+
+struct Lines {
+    socket: UnixStream,
+    wr: BytesMut,
+}
+
+impl Lines {
+    fn new(socket: UnixStream) -> Self {
+        Lines {
+            socket,
+            wr: BytesMut::new(),
+        }
+    }
+
+    fn buffer(&mut self, line: &[u8]) {
+        self.wr.reserve(line.len());
+        self.wr.put(line);
+    }
+
+    fn poll_flush(&mut self) -> Poll<(), io::Error> {
+        while !self.wr.is_empty() {
+            let n = try_ready!(self.socket.poll_write(&self.wr));
+            assert!(n > 0);
+            let _ = self.wr.split_to(n);
+        }
+        Ok(Async::Ready(()))
+    }
+}
+
+impl Stream for Lines {
+    type Item = ();
+    type Error = io::Error;
+
+    fn poll(&mut self) -> Poll<Option<()>, Self::Error> {
+        Ok(Async::Ready(Some(())))
+    }
+}
+
+fn process(socket: UnixStream, state: Arc<Mutex<Shared>>) {
+    let lines = Lines::new(socket);
+
+    let connection = lines
+        .into_future()
+        .map_err(|(e, _)| e)
+        .and_then(|(name, lines)| {
+            match name {
+                Some(_) => {}
+                None => {
+                    return Either::A(future::ok(()));
+                }
+            };
+            let peer = Peer::new(state, lines);
+            Either::B(peer)
+        })
+        .map_err(|_e| {});
+    tokio::spawn(connection);
+}
+
+struct Peer {
+    lines: Lines,
+    state: Arc<Mutex<Shared>>,
+    rx: Rx,
+    id: Uuid,
+}
+
+impl Peer {
+    fn new(state: Arc<Mutex<Shared>>, lines: Lines) -> Peer {
+        let id = Uuid::new_v4();
+        let (tx, rx) = mpsc::unbounded();
+        state.lock().unwrap().peers.insert(id, tx);
+        Peer {
+            lines,
+            state,
+            rx,
+            id,
         }
     }
 }
 
-fn socket_writer(
-    mut stream: UnixStream,
-    rx: &mut Receiver<ManagerState>,
-) -> Result<(), Box<std::error::Error>> {
-    loop {
-        let state: ManagerState = rx.recv()?;
-        let mut json = serde_json::to_string(&state)?;
-        json.push_str("\n");
-        stream.write_all(json.as_bytes())?;
+impl Drop for Peer {
+    fn drop(&mut self) {
+        self.state.lock().unwrap().peers.remove(&self.id);
+    }
+}
+
+impl Future for Peer {
+    type Item = ();
+    type Error = io::Error;
+    fn poll(&mut self) -> Poll<(), io::Error> {
+        //while there are lines to read
+        while let Async::Ready(Some(s)) = self.rx.poll().unwrap() {
+            self.lines.buffer(&s.as_bytes());
+        }
+        let _ = self.lines.poll_flush();
+        Ok(Async::NotReady)
     }
 }
 

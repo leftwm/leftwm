@@ -12,6 +12,8 @@ mod handlers;
 mod layouts;
 mod models;
 mod utils;
+#[macro_use]
+extern crate futures;
 
 use utils::xkeysym_lookup::Button;
 use utils::xkeysym_lookup::ModMask;
