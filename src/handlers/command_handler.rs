@@ -19,37 +19,11 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             false
         }
-        //Command::MoveToTag => {
-        //if let Some(tag_num_string) = val {
-        //if let Ok(tag_num) = tag_num_string.parse::<usize>() {
-        //if tag_num > manager.tags.len() || tag_num < 1 {
-        //return false;
-        //}
-        //let tag = manager.tags[tag_num - 1].clone();
-        //if let Some(window) = manager.focused_window_mut() {
-        //window.clear_tags();
-        //window.set_floating(false);
-        //window.tag(tag);
-        //return true;
-        //}
-        //}
-        //}
-        //false
-        //}
+
         Command::GotoTag if val.is_none() => false,
         Command::GotoTag if !is_num(&val) => false,
         Command::GotoTag => goto_tag_handler::process(manager, to_num(&val)),
-        //Command::GotoTag => {
-        //if let Some(tag_num) = val {
-        //if let Ok(tag_num) = tag_num.parse::<usize>() {
-        //goto_tag_handler::process(manager, tag_num)
-        //} else {
-        //false
-        //}
-        //} else {
-        //false
-        //}
-        //}
+
         Command::Execute if val.is_none() => false,
         Command::Execute => {
             use std::process::{Command, Stdio};
@@ -61,20 +35,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 .spawn();
             false
         }
-        //Command::Execute => {
-        //if let Some(cmd) = val {
-        //use std::process::{Command, Stdio};
-        //let _ = Command::new("sh")
-        //.arg("-c")
-        //.arg(&cmd)
-        //.stdin(Stdio::null())
-        //.stdout(Stdio::null())
-        //.spawn();
-        //false
-        //} else {
-        //false
-        //}
-        //}
+
         Command::CloseWindow => {
             if let Some(window) = manager.focused_window() {
                 let act = DisplayAction::KillWindow(window.handle.clone());
