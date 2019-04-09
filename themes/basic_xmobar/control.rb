@@ -1,8 +1,6 @@
 #!/bin/env ruby
 
 require 'json'
-require 'pry'
-require 'pty'
 require 'socket'
 SOCKET_FILE = "#{ENV["XDG_RUNTIME_DIR"]}/leftwm/current_state.sock"
 CURRENT_PATH = File.expand_path(File.dirname(__FILE__))
