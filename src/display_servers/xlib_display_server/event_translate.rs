@@ -1,10 +1,10 @@
 use super::event_translate_client_message;
 use super::event_translate_property_notify;
 use super::DisplayEvent;
-use super::Window;
-use super::WindowHandle;
 use super::XWrap;
 use crate::models::Mode;
+use crate::models::Window;
+use crate::models::WindowHandle;
 use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
@@ -33,7 +33,6 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         if let Some(trans) = trans {
                             w.transient = Some(WindowHandle::XlibHandle(trans));
                         }
-
                         w.type_ = xw.get_window_type(event.window);
                         Some(DisplayEvent::WindowCreate(w))
                     }
@@ -44,8 +43,12 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             // window is deleted
             xlib::UnmapNotify => {
                 let event = xlib::XUnmapEvent::from(raw_event);
-                let _h = WindowHandle::XlibHandle(event.window);
-                None
+                if event.send_event != xlib::False {
+                    let h = WindowHandle::XlibHandle(event.window);
+                    Some(DisplayEvent::WindowDestroy(h))
+                } else {
+                    None
+                }
             }
 
             // window is deleted

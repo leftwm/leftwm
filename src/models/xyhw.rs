@@ -64,6 +64,18 @@ impl XYHW {
         }
         without
     }
+
+
+    pub fn center_halfed(&self) -> XYHW {
+        XYHW {
+            x: self.x + (self.w / 2) - (self.w / 4),
+            y: self.y + (self.h / 2) - (self.h / 4),
+            h: (self.h / 2),
+            w: (self.w / 2),
+        }
+    }
+
+
 }
 
 #[test]

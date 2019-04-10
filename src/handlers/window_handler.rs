@@ -16,6 +16,12 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     let mut window = a_window;
     if let Some(ws) = manager.focused_workspace() {
         window.tags = ws.tags.clone();
+
+        //if dialog, center in workspace
+        if window.type_ == WindowType::Dialog {
+            window.floating = Some(ws.center_halfed());
+            window.set_floating(true);
+        }
     } else {
         window.tags = vec![manager.tags[0].clone()]
     }

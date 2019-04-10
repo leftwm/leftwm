@@ -71,7 +71,9 @@ impl Window {
         self.is_floating || self.must_float()
     }
     pub fn must_float(&self) -> bool {
-        self.transient.is_some() || self.type_ == WindowType::Dock
+        self.transient.is_some()
+            || self.type_ == WindowType::Dock
+            || self.type_ == WindowType::Splash
     }
     pub fn can_move(&self) -> bool {
         self.type_ != WindowType::Dock
