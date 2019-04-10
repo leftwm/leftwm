@@ -72,7 +72,7 @@ tags = ["Web", "Code", "Shell", "Music", "Connect"]
 
 
 
-## One of the core concepts/featchers of LeftWM is theming 
+## One of the core concepts/features of LeftWM is theming 
 
 With left there are two types of configs. First there are config settings that are specific to you but don’t really change. These are settings like keybindings. Workspace locations, and names of desktops/tags. These settings can be found in ~/.config/leftwm/config.toml
 
