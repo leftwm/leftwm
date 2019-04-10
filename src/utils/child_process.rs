@@ -28,7 +28,6 @@ impl Nanny {
             .and_then(|files| {
                 files.iter().for_each(|file| {
                     let _ = boot_desktop_file(&file);
-                    println!("PATH: {:?}", file);
                 });
                 Some(files)
             });
@@ -39,14 +38,11 @@ impl Nanny {
         path.push("themes");
         path.push("current");
         path.push("up");
-        println!("PATH: {:?}", path);
         if path.is_file() {
-            println!("is file: {:?}", &path);
             Command::new(&path)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .spawn()?;
-            println!("booted: {:?}", &path);
         }
         Ok(())
     }
