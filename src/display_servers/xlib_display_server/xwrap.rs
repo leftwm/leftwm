@@ -252,13 +252,27 @@ impl XWrap {
 
     pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
         if let Some(value) = self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
-            if value == self.atoms.NetWMWindowTypeDesktop { return WindowType::Desktop }
-            if value == self.atoms.NetWMWindowTypeDock { return WindowType::Dock }
-            if value == self.atoms.NetWMWindowTypeToolbar { return WindowType::Toolbar }
-            if value == self.atoms.NetWMWindowTypeMenu { return WindowType::Menu }
-            if value == self.atoms.NetWMWindowTypeUtility { return WindowType::Utility }
-            if value == self.atoms.NetWMWindowTypeSplash { return WindowType::Splash }
-            if value == self.atoms.NetWMWindowTypeDialog { return WindowType::Dialog }
+            if value == self.atoms.NetWMWindowTypeDesktop {
+                return WindowType::Desktop;
+            }
+            if value == self.atoms.NetWMWindowTypeDock {
+                return WindowType::Dock;
+            }
+            if value == self.atoms.NetWMWindowTypeToolbar {
+                return WindowType::Toolbar;
+            }
+            if value == self.atoms.NetWMWindowTypeMenu {
+                return WindowType::Menu;
+            }
+            if value == self.atoms.NetWMWindowTypeUtility {
+                return WindowType::Utility;
+            }
+            if value == self.atoms.NetWMWindowTypeSplash {
+                return WindowType::Splash;
+            }
+            if value == self.atoms.NetWMWindowTypeDialog {
+                return WindowType::Dialog;
+            }
         }
         WindowType::Normal
     }
@@ -799,14 +813,16 @@ impl XWrap {
 
     pub fn kill_window(&self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
-            self.send_xevent_atom(handle, self.atoms.WMDelete);
-            //cleanup
-            unsafe {
-                (self.xlib.XGrabServer)(self.display);
-                (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
-                (self.xlib.XKillClient)(self.display, handle);
-                (self.xlib.XSync)(self.display, xlib::False);
-                (self.xlib.XUngrabServer)(self.display);
+            //nicely ask the window to close
+            if !self.send_xevent_atom(handle, self.atoms.WMDelete) {
+                //force kill the app
+                unsafe {
+                    (self.xlib.XGrabServer)(self.display);
+                    (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
+                    (self.xlib.XKillClient)(self.display, handle);
+                    (self.xlib.XSync)(self.display, xlib::False);
+                    (self.xlib.XUngrabServer)(self.display);
+                }
             }
         }
     }
