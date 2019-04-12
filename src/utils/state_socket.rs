@@ -1,4 +1,5 @@
 use crate::models::Manager;
+use crate::models::dto::*;
 use bytes::{BufMut, BytesMut};
 use futures::future::{self, Either};
 use futures::sync::mpsc;
@@ -20,7 +21,7 @@ type Server = Result<Arc<Mutex<Shared>>, Box<std::error::Error>>;
 
 pub struct StateSocket {
     server: Server,
-    last_state: String,
+    last_state: Arc<Mutex<String>>, //last_state: String
 }
 
 struct Shared {
@@ -42,19 +43,21 @@ impl Default for StateSocket {
 
 impl StateSocket {
     pub fn new() -> StateSocket {
+        let last_state = Arc::new(Mutex::new("".to_owned()));
         StateSocket {
-            server: StateSocket::build_listener(),
-            last_state: "".to_string(),
+            server: StateSocket::build_listener(last_state.clone()),
+            last_state,
         }
     }
 
-    fn build_listener() -> Server {
+    fn build_listener(last_state: Arc<Mutex<String>>) -> Server {
         let base = BaseDirectories::with_prefix("leftwm")?;
         let socket_file = base.place_runtime_file("current_state.sock")?;
         let state = Arc::new(Mutex::new(Shared::new()));
         let return_state = state.clone();
         thread::spawn(move || loop {
             let thread_state = state.clone();
+            let thread_last_state = last_state.clone();
             let listener = match UnixListener::bind(&socket_file) {
                 Ok(m) => m,
                 Err(_) => {
@@ -66,7 +69,7 @@ impl StateSocket {
                 .incoming()
                 .map_err(|e| eprintln!("accept failed = {:?}", e))
                 .for_each(move |sock| {
-                    process(sock, thread_state.clone());
+                    process(sock, thread_state.clone(), thread_last_state.clone());
                     Ok(())
                 });
             tokio::run(server);
@@ -78,13 +81,14 @@ impl StateSocket {
         let state: ManagerState = manager.into();
         let mut json = serde_json::to_string(&state)?;
         json.push_str("\n");
-        if json != self.last_state {
+        let mut lc = self.last_state.lock().unwrap();
+        if json != *lc {
             if let Ok(server) = &self.server {
                 for (_, tx) in server.lock().unwrap().peers.iter() {
                     tx.unbounded_send(json.clone()).unwrap();
                 }
             }
-            self.last_state = json;
+            *lc = json;
         }
         Ok(())
     }
@@ -127,7 +131,7 @@ impl Stream for Lines {
     }
 }
 
-fn process(socket: UnixStream, state: Arc<Mutex<Shared>>) {
+fn process(socket: UnixStream, state: Arc<Mutex<Shared>>, last_state: Arc<Mutex<String>>) {
     let lines = Lines::new(socket);
 
     let connection = lines
@@ -140,7 +144,7 @@ fn process(socket: UnixStream, state: Arc<Mutex<Shared>>) {
                     return Either::A(future::ok(()));
                 }
             };
-            let peer = Peer::new(state, lines);
+            let peer = Peer::new(state, lines, last_state);
             Either::B(peer)
         })
         .map_err(|_e| {});
@@ -155,9 +159,11 @@ struct Peer {
 }
 
 impl Peer {
-    fn new(state: Arc<Mutex<Shared>>, lines: Lines) -> Peer {
+    fn new(state: Arc<Mutex<Shared>>, lines: Lines, last_state: Arc<Mutex<String>>) -> Peer {
         let id = Uuid::new_v4();
         let (tx, rx) = mpsc::unbounded();
+        let json = last_state.lock().unwrap().clone();
+        tx.unbounded_send(json).unwrap();
         state.lock().unwrap().peers.insert(id, tx);
         Peer {
             lines,
@@ -184,49 +190,5 @@ impl Future for Peer {
         }
         let _ = self.lines.poll_flush();
         Ok(Async::NotReady)
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct Viewport {
-    pub tags: Vec<String>,
-    pub h: u32,
-    pub w: u32,
-    pub x: i32,
-    pub y: i32,
-}
-#[derive(Serialize, Debug, Clone)]
-pub struct ManagerState {
-    pub window_title: Option<String>,
-    pub desktop_names: Vec<String>,
-    pub viewports: Vec<Viewport>,
-    pub active_desktop: Vec<String>,
-}
-impl From<&Manager> for ManagerState {
-    fn from(manager: &Manager) -> Self {
-        let mut viewports: Vec<Viewport> = vec![];
-        for ws in &manager.workspaces {
-            viewports.push(Viewport {
-                tags: ws.tags.clone(),
-                x: ws.xyhw.x,
-                y: ws.xyhw.y,
-                h: ws.xyhw.h as u32,
-                w: ws.xyhw.w as u32,
-            });
-        }
-        let active_desktop = match manager.focused_workspace() {
-            Some(ws) => ws.tags.clone(),
-            None => vec!["".to_owned()],
-        };
-        let window_title = match manager.focused_window() {
-            Some(win) => win.name.clone(),
-            None => None,
-        };
-        ManagerState {
-            window_title,
-            desktop_names: manager.tags.clone(),
-            viewports,
-            active_desktop,
-        }
     }
 }

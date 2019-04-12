@@ -1,26 +1,29 @@
 #!/bin/bash
+export SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+$SCRIPTPATH/down
 
 #boot compton if it exists
 if [ -x "$(command -v compton)" ]; then
-  pkill compton
-  compton --config $SCRIPTPATH/compton.conf &> /dev/null & 
+  compton &> /dev/null & 
 fi
+
+#set the theme.toml config
+echo "LoadTheme $SCRIPTPATH/theme.toml" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+
 
 #set background
 if [ -x "$(command -v feh)" ]; then
   feh --bg-scale $SCRIPTPATH/background.jpg
 fi
 
-echo "LoadTheme $SCRIPTPATH/theme.toml" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
 
-#boot polybar based on the number of monitors found
-if [ -x "$(command -v polybar)" ]; then
-  pkill polybar
-  monitors="$(polybar -m | sed s/:.*// | tac)"
-  while read -r display; do
-    MONITOR=$display polybar -c "$SCRIPTPATH/polybar.config" mainbar &> /dev/null &
-  done <<< "$monitors"
-  exit 0
-fi
+index=0
+leftwm-state -q -n -t $SCRIPTPATH/sizes.liquid | sed -r '/^\s*$/d' | while read -r width x y
+do 
+  barname="mainbar$index"
+  offsetx=$x width=$width polybar -c $SCRIPTPATH/polybar.config $barname &> /dev/null &
+  #offsetx=$x width=$width polybar -c $SCRIPTPATH/polybar.config mainbar &> /dev/null &
+  let index=index+1
+done
+

@@ -1,0 +1,18 @@
+{% assign mine_open = '%{F#000000}%{B#FFFFFF}' %}
+{% assign mine_close = '%{B-}%{F-}' %}
+{% assign visable_open = '%{F#000000}%{B#999999}' %}
+{% assign visable_close = '%{B-}%{F-}' %}
+
+{% for tag in workspace.tags %}
+{% if tag.mine %}
+{{mine_open}}  {{ tag.name }}  {{mine_close}}
+{% elsif tag.visable  %}
+{{visable_open}}  {{ tag.name }}  {{visable_close}}
+{% else tag.visable  %}
+  {{ tag.name }}  
+{% endif %}
+{% endfor %}
+%{c}
+{{ window_title }}
+%{r}
+{{ localtime }}   

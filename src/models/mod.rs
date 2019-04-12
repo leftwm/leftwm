@@ -9,6 +9,7 @@ mod window_type;
 mod workspace;
 mod xyhw;
 
+pub mod dto;
 use crate::layouts;
 
 pub use dock_area::DockArea;

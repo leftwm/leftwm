@@ -1,0 +1,10 @@
+{% for tag in workspace.tags %}
+{% if tag.mine %}
+<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FF0000>  {{tag.name}}  </fc></action>
+{% elsif tag.visable  %}
+<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FF9999>  {{tag.name}}  </fc></action>
+{% else tag.visable  %}
+<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FFFFFF>  {{tag.name}}  </fc></action>
+{% endif %}
+{% endfor %}
+<fc=#555555>     {{ window_title }}</fc>

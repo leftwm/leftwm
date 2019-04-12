@@ -1,23 +1,24 @@
 #!/bin/bash
-
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-
-%SCRIPTPATH/down
+export SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
 #boot compton if it exists
 if [ -x "$(command -v compton)" ]; then
   compton &> /dev/null & 
 fi
 
+#set the theme.toml config
 echo "LoadTheme $SCRIPTPATH/theme.toml" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+
 
 #set background
 if [ -x "$(command -v feh)" ]; then
   feh --bg-scale $SCRIPTPATH/background.jpg
 fi
 
-#boot lemonbar and pipe the status of left into it
-if [ -x "$(command -v xmobar)" ]; then
-  ruby $SCRIPTPATH/control.rb &
-fi
+index=0
+leftwm-state -q -n -t $SCRIPTPATH/sizes.liquid | sed -r '/^\s*$/d' | while read size
+do 
+   leftwm-state -w $index -t $SCRIPTPATH/template.liquid | xmobar -p "$size" $SCRIPTPATH/xmobar-config.hs &
+   let index=index+1
+done
 
