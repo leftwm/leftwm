@@ -10,8 +10,10 @@ mod display_event;
 pub mod display_servers;
 mod handlers;
 mod layouts;
-mod models;
+pub mod models;
 mod utils;
+#[macro_use]
+extern crate futures;
 
 use utils::xkeysym_lookup::Button;
 use utils::xkeysym_lookup::ModMask;

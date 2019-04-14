@@ -40,7 +40,7 @@ fn event_loop(
     let mut events_remainder = vec![];
     loop {
         if manager.mode == Mode::NormalMode {
-            state_socket.write_manager_state(manager);
+            let _ = state_socket.write_manager_state(manager);
         }
         let mut events = get_events(display_server);
         events.append(&mut events_remainder);
@@ -51,7 +51,7 @@ fn event_loop(
         }
         if let Some(cmd) = command_pipe.read_command() {
             needs_update = external_command_handler::process(manager, cmd) || needs_update;
-            display_server.update_theme_settings( manager.theme_setting.clone() );
+            display_server.update_theme_settings(manager.theme_setting.clone());
         }
 
         //if we need to update the displayed state

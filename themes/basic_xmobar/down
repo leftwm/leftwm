@@ -13,4 +13,5 @@ echo "UnloadTheme" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
 ps -alh | grep xmobar_control_script | awk '{print $3}' | xargs kill
 pkill compton
 pkill xmobar
+pkill xmobar
 
