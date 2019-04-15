@@ -88,6 +88,8 @@ The appearance of your desktop is different. It’s fun to try new looks and fee
 ```bash
 cd /usr/bin
 sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm
+sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-worker
+sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-state
 ```
 You should now see LeftWM in your list of available window managers.
 
