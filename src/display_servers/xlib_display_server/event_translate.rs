@@ -29,11 +29,16 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         let mut w = Window::new(handle, name);
                         let trans = xw.get_transient_for(event.window);
                         w.floating = xw.get_hint_sizing_as_xyhw(event.window);
-
+                        if w.floating.is_none() {
+                            if let Ok(size) = xw.get_window_geometry(event.window) {
+                                w.floating = Some(size);
+                            }
+                        }
                         if let Some(trans) = trans {
                             w.transient = Some(WindowHandle::XlibHandle(trans));
                         }
                         w.type_ = xw.get_window_type(event.window);
+
                         Some(DisplayEvent::WindowCreate(w))
                     }
                     Err(_) => None,

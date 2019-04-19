@@ -28,25 +28,32 @@ impl WindowChange {
         }
     }
 
-    pub fn update(&self, window: &mut Window) {
+    pub fn update(&self, window: &mut Window) -> bool {
+        let mut changed = false;
         if let Some(trans) = &self.transient {
+            changed = window.transient.is_none() || &window.transient != trans;
             window.transient = trans.clone();
         }
         if let Some(name) = &self.name {
+            changed = changed || window.name.is_none() || &window.name != name;
             window.name = name.clone();
         }
         if let Some(nf) = self.never_focus {
+            changed = changed || window.never_focus != nf;
             window.never_focus = nf;
         }
         if let Some(floating) = self.floating {
+            changed = changed || window.floating.is_none() || window.floating.unwrap() != floating;
             window.floating = Some(floating);
         }
         if let Some(type_) = &self.type_ {
+            changed = changed || &window.type_ != type_;
             window.type_ = type_.clone();
             if window.type_ == WindowType::Dock {
                 window.border = 0;
                 window.margin = 0;
             }
         }
+        changed
     }
 }

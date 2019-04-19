@@ -1,17 +1,23 @@
 use super::DisplayEvent;
-use super::WindowHandle;
 use super::XWrap;
 use crate::models::WindowChange;
+use crate::models::WindowHandle;
+use crate::models::WindowType;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
     if event.window == xw.get_default_root() || event.state == xlib::PropertyDelete {
         return None;
     }
+
+    let event_name = xw.atoms.get_name(event.atom);
+    println!(
+        "WINDOW: {}, Event:{}, {}",
+        event.window, event.atom, event_name
+    );
+
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {
-            //let atom_name = xw.atoms.get_name(event.atom);
-            //crate::logging::log_info("XPropertyEvent", &format!("{:?} {:?}", atom_name, event));
             let handle = WindowHandle::XlibHandle(event.window);
             let mut change = WindowChange::new(handle);
             let trans = xw.get_transient_for(event.window);
@@ -23,14 +29,10 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
 
             Some(DisplayEvent::WindowChange(change))
         }
-        xlib::XA_WM_NORMAL_HINTS => {
-            //let atom_name = xw.atoms.get_name(event.atom);
-            //crate::logging::log_info("XPropertyEvent", &format!("{:?} {:?}", atom_name, event));
-            match build_change_for_size_hints(xw, event.window) {
-                Some(change) => Some(DisplayEvent::WindowChange(change)),
-                None => None,
-            }
-        }
+        xlib::XA_WM_NORMAL_HINTS => match build_change_for_size_hints(xw, event.window) {
+            Some(change) => Some(DisplayEvent::WindowChange(change)),
+            None => None,
+        },
         xlib::XA_WM_HINTS => match xw.get_wmhints(event.window) {
             Some(hints) if hints.flags & xlib::InputHint != 0 => {
                 let handle = WindowHandle::XlibHandle(event.window);
@@ -47,11 +49,36 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
                 return update_title(xw, event.window);
             }
 
-            //let atom_name = xw.atoms.get_name(event.atom);
-            //crate::logging::log_info("XPropertyEvent", &format!("{:?} {:?}", atom_name, event));
+            if event.atom == xw.atoms.NetWMStrut || event.atom == xw.atoms.NetWMStrutPartial {
+                if xw.get_window_type(event.window) == WindowType::Dock {
+                    if let Some(change) = build_change_for_size_strut_partial(xw, event.window) {
+                        return Some(DisplayEvent::WindowChange(change));
+                    }
+                }
+            }
+
+            //if event.atom == xw.atoms.NetWMStrut || event.atom == xw.atoms.NetWMStrutPartial {
+            //    if xw.get_window_type(event.window) == WindowType::Dock {
+            //        if let Some(change) = build_change_for_size_strut_partial(xw, event.window) {
+            //            return Some(DisplayEvent::WindowChange(change));
+            //        }
+            //    }
+            //}
+
             None
         }
     }
+}
+
+fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
+    let handle = WindowHandle::XlibHandle(window);
+    let mut change = WindowChange::new(handle);
+    let dock_area = xw.get_window_strut_array(window)?;
+    let dems = xw.screens_area_dimensions();
+    let xywh = dock_area.as_xyhw(dems.0, dems.1)?;
+    change.floating = Some(xywh);
+    change.type_ = Some(WindowType::Dock);
+    Some(change)
 }
 
 fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {

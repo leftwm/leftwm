@@ -524,6 +524,17 @@ impl XWrap {
     }
 
     pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
+        if let Some(d) = self.get_window_strut_array_strut_partial(window) {
+            return Some(d);
+        }
+        if let Some(d) = self.get_window_strut_array_strut(window) {
+            return Some(d);
+        }
+        None
+    }
+
+    //new way to get strut
+    fn get_window_strut_array_strut_partial(&self, window: xlib::Window) -> Option<DockArea> {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
         let mut type_return: xlib::Atom = 0;
@@ -534,6 +545,42 @@ impl XWrap {
                 self.display,
                 window,
                 self.atoms.NetWMStrutPartial,
+                0,
+                MAX_PROPERTY_VALUE_LEN,
+                xlib::False,
+                xlib::XA_CARDINAL,
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut bytes_after_return,
+                &mut prop_return,
+            );
+            if status == i32::from(xlib::Success) {
+                #[allow(clippy::cast_ptr_alignment)]
+                let array_ptr = prop_return as *const i64;
+                let slice = slice::from_raw_parts(array_ptr, nitems_return as usize);
+                if slice.len() == 12 {
+                    return Some(DockArea::from(slice));
+                }
+                None
+            } else {
+                None
+            }
+        }
+    }
+
+    //old way to get strut
+    fn get_window_strut_array_strut(&self, window: xlib::Window) -> Option<DockArea> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut bytes_after_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::uninitialized() };
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMStrut,
                 0,
                 MAX_PROPERTY_VALUE_LEN,
                 xlib::False,
@@ -746,37 +793,37 @@ impl XWrap {
     //    false
     //}
 
-    //fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHW, ()> {
-    //    let mut root_return: xlib::Window = 0;
-    //    let mut x_return: c_int = 0;
-    //    let mut y_return: c_int = 0;
-    //    let mut width_return: c_uint = 0;
-    //    let mut height_return: c_uint = 0;
-    //    let mut border_width_return: c_uint = 0;
-    //    let mut depth_return: c_uint = 0;
-    //    unsafe {
-    //        let status = (self.xlib.XGetGeometry)(
-    //            self.display,
-    //            window,
-    //            &mut root_return,
-    //            &mut x_return,
-    //            &mut y_return,
-    //            &mut width_return,
-    //            &mut height_return,
-    //            &mut border_width_return,
-    //            &mut depth_return,
-    //        );
-    //        if status == 0 {
-    //            return Err(());
-    //        }
-    //    }
-    //    Ok(XYHW {
-    //        x: x_return,
-    //        y: y_return,
-    //        w: width_return as i32,
-    //        h: height_return as i32,
-    //    })
-    //}
+    pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHW, ()> {
+        let mut root_return: xlib::Window = 0;
+        let mut x_return: c_int = 0;
+        let mut y_return: c_int = 0;
+        let mut width_return: c_uint = 0;
+        let mut height_return: c_uint = 0;
+        let mut border_width_return: c_uint = 0;
+        let mut depth_return: c_uint = 0;
+        unsafe {
+            let status = (self.xlib.XGetGeometry)(
+                self.display,
+                window,
+                &mut root_return,
+                &mut x_return,
+                &mut y_return,
+                &mut width_return,
+                &mut height_return,
+                &mut border_width_return,
+                &mut depth_return,
+            );
+            if status == 0 {
+                return Err(());
+            }
+        }
+        Ok(XYHW {
+            x: x_return,
+            y: y_return,
+            w: width_return as i32,
+            h: height_return as i32,
+        })
+    }
 
     pub fn window_take_focus(&self, window: Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {

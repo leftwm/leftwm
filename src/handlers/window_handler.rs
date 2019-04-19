@@ -77,11 +77,11 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
     for w in manager.windows.iter_mut() {
         if w.handle == change.handle {
-            change.update(w);
+            let changed = change.update(w);
             if w.type_ == WindowType::Dock {
                 update_workspace_avoid_list(manager);
             }
-            return true;
+            return changed;
         }
     }
     false
