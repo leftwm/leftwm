@@ -78,6 +78,12 @@ With left there are two types of configs. First there are config settings that a
 
 The appearance of your desktop is different. It’s fun to try new looks and feels. It’s fun to tweak and customize the appearance ( AKA: ricing ). It’s fun to share so others can experience your cool awesome desktop. LeftWM is built around this concept. By pulling all these settings out into themes, you can now easily tweak, switch, and share your experiences. 
 
+## Setup (with package manager)
+
+LeftWM is available in AUR as well as crates.io. Both are good options for simple installation. Please note, if installing with crates.io you will need to link to the xsession desktop file if you want to be able to login to LeftWM from a graphical login screen. 
+```bash
+sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
+```
 
 ## Manual Setup (no package manager)
 
