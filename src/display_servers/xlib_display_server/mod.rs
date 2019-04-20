@@ -59,6 +59,9 @@ impl DisplayServer for XlibDisplayServer {
                 None => false,
             };
             self.xw.update_window(&window, is_focused);
+            if window.fullscreen {
+                self.xw.move_to_top(window.handle.clone());
+            }
         }
     }
 
@@ -68,9 +71,6 @@ impl DisplayServer for XlibDisplayServer {
                 .tags
                 .iter()
                 .for_each(|tag| self.xw.set_current_desktop(tag));
-            //for tag in &focused.tags {
-            //self.xw.set_current_desktop(tag);
-            //}
         }
     }
 

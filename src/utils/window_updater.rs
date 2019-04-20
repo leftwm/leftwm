@@ -9,10 +9,15 @@ pub fn update_windows(manager: &mut Manager) {
     manager
         .windows
         .iter_mut()
-        .for_each(|w| w.set_visable(w.tags.is_empty() || w.floating()));
+        .for_each(|w| w.set_visable(w.tags.is_empty() || w.floating() || w.fullscreen));
     let all_windows = &mut manager.windows;
     manager.workspaces.iter_mut().for_each(|ws| {
-        let windows: Vec<&mut Window> = all_windows.iter_mut().collect();
-        ws.update_windows(windows)
+        let mut windows: Vec<&mut Window> = all_windows.iter_mut().collect();
+        ws.update_windows(&mut windows);
+
+        windows
+            .iter_mut()
+            .filter(|w| ws.is_displaying(w) && w.fullscreen)
+            .for_each(|w| w.floating = Some(ws.xyhw) );
     });
 }

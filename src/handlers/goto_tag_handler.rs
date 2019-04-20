@@ -6,12 +6,12 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     //    manager.tags.push(tag.clone());
     //}
 
-    if tag_num > manager.tags.len() || tag_num < 1{
+    if tag_num > manager.tags.len() || tag_num < 1 {
         return false;
     }
 
-    let tag = manager.tags[ tag_num - 1].clone();
-    let new_tags = vec![ tag.clone() ];
+    let tag = manager.tags[tag_num - 1].clone();
+    let new_tags = vec![tag.clone()];
     //no focus safey check
     if manager.focused_workspace().is_none() {
         return false;
@@ -39,7 +39,7 @@ fn two_screen_mock_manager() -> Manager {
 #[test]
 fn going_to_a_workspace_that_is_already_visable_should_not_duplicate_the_workspace() {
     let mut manager = two_screen_mock_manager();
-    process(&mut manager, "1".to_owned());
+    process(&mut manager, 1);
     assert_eq!(manager.workspaces[0].tags, ["2".to_owned()]);
     assert_eq!(manager.workspaces[1].tags, ["1".to_owned()]);
 }

@@ -10,11 +10,11 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
         return None;
     }
 
-    let event_name = xw.atoms.get_name(event.atom);
-    println!(
-        "WINDOW: {}, Event:{}, {}",
-        event.window, event.atom, event_name
-    );
+    //let event_name = xw.atoms.get_name(event.atom);
+    //println!(
+    //    "WINDOW: {}, Event:{}, {}",
+    //    event.window, event.atom, event_name
+    //);
 
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {
@@ -56,14 +56,6 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
                     }
                 }
             }
-
-            //if event.atom == xw.atoms.NetWMStrut || event.atom == xw.atoms.NetWMStrutPartial {
-            //    if xw.get_window_type(event.window) == WindowType::Dock {
-            //        if let Some(change) = build_change_for_size_strut_partial(xw, event.window) {
-            //            return Some(DisplayEvent::WindowChange(change));
-            //        }
-            //    }
-            //}
 
             None
         }

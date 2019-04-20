@@ -3,7 +3,7 @@ use super::models::Workspace;
 use std::collections::VecDeque;
 
 pub trait Layout: LayoutClone {
-    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>);
+    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>);
 }
 
 pub trait LayoutClone {
@@ -30,11 +30,10 @@ pub fn get_all_layouts() -> VecDeque<Box<Layout>> {
     layouts
 }
 
-
 #[derive(Clone, Debug)]
 pub struct EvenHorizontal {}
 impl Layout for EvenHorizontal {
-    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let width_f = workspace.width() as f32 / windows.len() as f32;
         let width = width_f.floor() as i32;
         let mut x = 0;
@@ -51,7 +50,7 @@ impl Layout for EvenHorizontal {
 #[derive(Clone, Debug)]
 pub struct EvenVertical {}
 impl Layout for EvenVertical {
-    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let height_f = workspace.height() as f32 / windows.len() as f32;
         let height = height_f.floor() as i32;
         let mut y = 0;
@@ -68,10 +67,11 @@ impl Layout for EvenVertical {
 #[derive(Clone, Debug)]
 pub struct MainAndVertStack {}
 impl Layout for MainAndVertStack {
-    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
-
+    fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let window_count = windows.len();
-        if window_count == 0 { return }
+        if window_count == 0 {
+            return;
+        }
 
         let width = match window_count {
             1 => workspace.width() as i32,
@@ -81,16 +81,16 @@ impl Layout for MainAndVertStack {
         //build build the main window.
         let mut iter = windows.iter_mut();
         {
-            if let Some(first) = iter.next(){
-                first.set_height( workspace.height() );
-                first.set_width( width );
-                first.set_x( workspace.x() );
-                first.set_y( workspace.y() );
+            if let Some(first) = iter.next() {
+                first.set_height(workspace.height());
+                first.set_width(width);
+                first.set_x(workspace.x());
+                first.set_y(workspace.y());
             }
         }
-        
+
         //stack all the others
-        let height_f = workspace.height() as f32 / ( window_count - 1 ) as f32;
+        let height_f = workspace.height() as f32 / (window_count - 1) as f32;
         let height = height_f.floor() as i32;
         let mut y = 0;
         for w in iter {
@@ -113,7 +113,8 @@ fn should_fullscreen_a_single_window() {
     w.border = 0;
     w.margin = 0;
     let mut windows = vec![&mut w];
-    layout.update_windows(&ws, &mut windows);
+    let mut windows_filters = windows.iter_mut().filter(|f| true).collect();
+    layout.update_windows(&ws, &mut windows_filters);
     assert!(
         w.height() == 600,
         "window was not size to the correct height"

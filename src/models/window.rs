@@ -23,6 +23,7 @@ pub struct Window {
     pub tags: Vec<String>,
     pub border: i32,
     pub margin: i32,
+    pub fullscreen: bool,
     pub normal: XYHW,
     pub floating: Option<XYHW>,
     pub start_loc: Option<(i32, i32)>,
@@ -41,6 +42,7 @@ impl Window {
             tags: Vec::new(),
             border: 1,
             margin: 10,
+            fullscreen: false,
             normal: XYHW::default(),
             floating: None,
             start_loc: None,
@@ -74,6 +76,7 @@ impl Window {
         self.transient.is_some()
             || self.type_ == WindowType::Dock
             || self.type_ == WindowType::Splash
+            || self.fullscreen
     }
     pub fn can_move(&self) -> bool {
         self.type_ != WindowType::Dock

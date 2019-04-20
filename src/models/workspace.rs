@@ -126,15 +126,18 @@ impl Workspace {
     /*
      * given a list of windows, returns a sublist of the windows that this workspace is displaying
      */
-    pub fn displayed_windows<'a>(&self, windows: Vec<&'a mut Window>) -> Vec<&'a mut Window> {
-        windows
-            .into_iter()
-            .filter(|w| self.is_displaying(w) && !w.floating())
-            .collect::<Vec<&mut Window>>()
-    }
+    //pub fn displayed_windows<'a>(&self, windows: &mut Vec<&'a mut Window>) -> &mut Vec<&'a mut Window> {
+    //    windows
+    //        .into_iter()
+    //        .filter(|w| self.is_displaying(w) && !w.floating())
+    //        .collect::<&mut Vec<&mut Window>>()
+    //}
 
-    pub fn update_windows(&self, windows: Vec<&mut Window>) {
-        let mut mine = self.displayed_windows(windows);
+    pub fn update_windows(&self, windows: &mut Vec<&mut Window>) {
+        let mut mine: Vec<&mut &mut Window> = windows
+            .iter_mut()
+            .filter(|w| self.is_displaying(w) && !w.floating())
+            .collect();
         mine.iter_mut().for_each(|w| w.set_visable(true));
         self.layouts[0].update_windows(self, &mut mine);
     }
@@ -185,20 +188,6 @@ fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_displ
     w.tag("test".to_owned());
     assert!(
         subject.is_displaying(&w) == true,
-        "workspace should include window"
-    );
-}
-
-#[test]
-fn displayed_windows_should_return_a_list_of_display_windows() {
-    use super::WindowHandle;
-    let mut subject = Workspace::new();
-    subject.show_tag("test".to_owned());
-    let mut w = Window::new(WindowHandle::MockHandle(1), None);
-    w.tag("test".to_owned());
-    let windows = vec![&mut w];
-    assert!(
-        subject.displayed_windows(windows).len() == 1,
         "workspace should include window"
     );
 }

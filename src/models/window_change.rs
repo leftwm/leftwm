@@ -14,6 +14,8 @@ pub struct WindowChange {
     pub name: Option<MaybeName>,
     pub type_: Option<WindowType>,
     pub floating: Option<XYHW>,
+    pub toggle_fullscreen: Option<bool>,
+    pub set_fullscreen: Option<bool>,
 }
 
 impl WindowChange {
@@ -25,6 +27,8 @@ impl WindowChange {
             name: None,
             type_: None,
             floating: None,
+            toggle_fullscreen: None,
+            set_fullscreen: None,
         }
     }
 
@@ -53,6 +57,14 @@ impl WindowChange {
                 window.border = 0;
                 window.margin = 0;
             }
+        }
+        if self.toggle_fullscreen.is_some() {
+            window.fullscreen = !window.fullscreen;
+            return true;
+        }
+        if let Some(fs) = self.set_fullscreen {
+            changed = changed || window.fullscreen != fs;
+            window.fullscreen = fs;
         }
         changed
     }

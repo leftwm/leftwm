@@ -24,6 +24,10 @@ impl XYHW {
         (self.x <= x && x <= maxx) && (self.y <= y && y <= maxy)
     }
 
+    pub fn volume(&self) -> u64 {
+        self.h as u64 * self.w as u64
+    }
+
     /*
      * Trim a XYHW out of another XYHW so that they don't overlap
      */
@@ -65,7 +69,6 @@ impl XYHW {
         without
     }
 
-
     pub fn center_halfed(&self) -> XYHW {
         XYHW {
             x: self.x + (self.w / 2) - (self.w / 4),
@@ -74,8 +77,6 @@ impl XYHW {
             w: (self.w / 2),
         }
     }
-
-
 }
 
 #[test]
