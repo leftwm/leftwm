@@ -48,6 +48,11 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     let act = DisplayAction::AddedWindow(window.handle.clone());
     manager.actions.push_back(act);
 
+    if window.type_ == WindowType::Dialog {
+        let act = DisplayAction::MoveToTop(window.handle.clone());
+        manager.actions.push_back(act);
+    }
+
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
 
     true
