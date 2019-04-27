@@ -10,7 +10,7 @@ use crate::models::DockArea;
 use crate::models::Mode;
 use crate::models::WindowChange;
 use crate::models::WindowType;
-use crate::models::XYHW;
+use crate::models::XYHWChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
 use std::ffi::CString;
@@ -462,7 +462,7 @@ impl XWrap {
                         let dems = self.screens_area_dimensions();
                         if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
                             let mut change = WindowChange::new(h);
-                            change.floating = Some(xywh);
+                            change.floating = Some(xywh.into());
                             change.type_ = Some(WindowType::Dock);
                             return Some(DisplayEvent::WindowChange(change));
                         }
@@ -751,6 +751,17 @@ impl XWrap {
         Err(())
     }
 
+    ////get the XAtom name
+    pub fn get_xatom_name(&self, atom: xlib::Atom) -> Result<String, ()> {
+        unsafe {
+            let cstring = (self.xlib.XGetAtomName)(self.display, atom);
+            if let Ok(s) = CString::from_raw(cstring).into_string() {
+                return Ok(s);
+            }
+        };
+        Err(())
+    }
+
     ////get the WMName of a window
     //pub fn get_wmname(&self, window: xlib::Window) -> Result<String, ()> {
     //    unsafe{
@@ -793,7 +804,7 @@ impl XWrap {
     //    false
     //}
 
-    pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHW, ()> {
+    pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHWChange, ()> {
         let mut root_return: xlib::Window = 0;
         let mut x_return: c_int = 0;
         let mut y_return: c_int = 0;
@@ -817,11 +828,12 @@ impl XWrap {
                 return Err(());
             }
         }
-        Ok(XYHW {
-            x: x_return,
-            y: y_return,
-            w: width_return as i32,
-            h: height_return as i32,
+        Ok(XYHWChange {
+            x: Some(x_return),
+            y: Some(y_return),
+            w: Some(width_return as i32),
+            h: Some(height_return as i32),
+            ..Default::default()
         })
     }
 
@@ -939,24 +951,43 @@ impl XWrap {
         }
     }
 
-    pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XYHW> {
-        if let Some(size) = self.get_hint_sizing(window) {
-            let mut xyhw = XYHW {
-                x: size.x,
-                y: size.y,
-                w: size.width,
-                h: size.height,
-            };
+    pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XYHWChange> {
+        let hint = self.get_hint_sizing(window);
+        if let Some(size) = hint {
+            let mut xyhw = XYHWChange::default();
 
-            if xyhw.w == 0 {
-                xyhw.w = size.base_width
+            if (size.flags & xlib::PBaseSize) != 0 {
+                xyhw.w = Some(size.base_width);
+                xyhw.h = Some(size.base_height);
+            } else if (size.flags & xlib::PMinSize) != 0 {
+                xyhw.minw = Some(size.min_width);
+                xyhw.minh = Some(size.min_height);
             }
-            if xyhw.h == 0 {
-                xyhw.h = size.base_height
+
+            if size.flags & xlib::PResizeInc != 0 {
+                xyhw.w = Some(size.width_inc);
+                xyhw.h = Some(size.height_inc);
             }
-            if xyhw.w == 0 || xyhw.h == 0 {
-                return None;
+
+            if size.flags & xlib::PMaxSize != 0 {
+                xyhw.maxw = Some(size.max_width);
+                xyhw.maxh = Some(size.max_height);
             }
+
+            if size.flags & xlib::PMinSize != 0 {
+                xyhw.minw = Some(size.min_width);
+                xyhw.minh = Some(size.min_height);
+            } else if size.flags & xlib::PBaseSize != 0 {
+                xyhw.w = Some(size.base_width);
+                xyhw.h = Some(size.base_height);
+            }
+
+            //TODO: support min/max aspect
+            //if size.flags & xlib::PAspect != 0 {
+            //    //c->mina = (float)size.min_aspect.y / size.min_aspect.x;
+            //    //c->maxa = (float)size.max_aspect.x / size.max_aspect.y;
+            //}
+
             return Some(xyhw);
         }
         None

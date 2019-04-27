@@ -8,6 +8,7 @@ mod window_state;
 mod window_type;
 mod workspace;
 mod xyhw;
+mod xyhw_change;
 
 pub mod dto;
 use crate::layouts;
@@ -23,3 +24,5 @@ pub use window_state::WindowState;
 pub use window_type::WindowType;
 pub use workspace::Workspace;
 pub use xyhw::XYHW;
+pub use xyhw::XYHWBuilder;
+pub use xyhw_change::XYHWChange;

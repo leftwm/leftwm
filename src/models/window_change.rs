@@ -1,7 +1,7 @@
 use super::Window;
 use super::WindowHandle;
 use super::WindowType;
-use crate::models::XYHW;
+use crate::models::XYHWChange;
 
 type MaybeWindowHandle = Option<WindowHandle>;
 type MaybeName = Option<String>;
@@ -13,7 +13,7 @@ pub struct WindowChange {
     pub never_focus: Option<bool>,
     pub name: Option<MaybeName>,
     pub type_: Option<WindowType>,
-    pub floating: Option<XYHW>,
+    pub floating: Option<XYHWChange>,
     pub toggle_fullscreen: Option<bool>,
     pub set_fullscreen: Option<bool>,
 }
@@ -46,9 +46,8 @@ impl WindowChange {
             changed = changed || window.never_focus != nf;
             window.never_focus = nf;
         }
-        if let Some(floating) = self.floating {
-            changed = changed || window.floating.is_none() || window.floating.unwrap() != floating;
-            window.floating = Some(floating);
+        if let Some(floating_change) = self.floating {
+            changed = changed || floating_change.update_window( window );
         }
         if let Some(type_) = &self.type_ {
             changed = changed || &window.type_ != type_;
@@ -68,4 +67,7 @@ impl WindowChange {
         }
         changed
     }
+
+
+
 }

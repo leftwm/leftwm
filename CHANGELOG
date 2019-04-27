@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix Several small papercuts and bug fixes 
 ### Added
 - Keyboard navigation between workspaces 
+- min/max window size support
 
 
 ## [0.1.8] - 2017-04-19

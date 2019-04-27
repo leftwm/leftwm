@@ -6,15 +6,15 @@ use crate::models::WindowType;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
-    if event.window == xw.get_default_root() || event.state == xlib::PropertyDelete {
-        return None;
-    }
-
-    //let event_name = xw.atoms.get_name(event.atom);
+    //let event_name = xw.get_xatom_name(event.atom).unwrap();
     //println!(
     //    "WINDOW: {}, Event:{}, {}",
     //    event.window, event.atom, event_name
     //);
+
+    if event.window == xw.get_default_root() || event.state == xlib::PropertyDelete {
+        return None;
+    }
 
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {
@@ -68,7 +68,7 @@ fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Opti
     let dock_area = xw.get_window_strut_array(window)?;
     let dems = xw.screens_area_dimensions();
     let xywh = dock_area.as_xyhw(dems.0, dems.1)?;
-    change.floating = Some(xywh);
+    change.floating = Some(xywh.into());
     change.type_ = Some(WindowType::Dock);
     Some(change)
 }

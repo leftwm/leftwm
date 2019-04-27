@@ -2,6 +2,7 @@ use super::layouts::*;
 use crate::models::Screen;
 use crate::models::Window;
 use crate::models::XYHW;
+use crate::models::XYHWBuilder;
 use std::collections::VecDeque;
 use std::fmt;
 
@@ -20,7 +21,10 @@ impl fmt::Debug for Workspace {
         write!(
             f,
             "Workspace {{ id: {}, tags: {:?}, x: {}, y: {} }}",
-            self.id, self.tags, self.xyhw.x, self.xyhw.y
+            self.id,
+            self.tags,
+            self.xyhw.x(),
+            self.xyhw.y()
         )
     }
 }
@@ -38,18 +42,8 @@ impl Default for Workspace {
             layouts: get_all_layouts(),
             tags: vec![],
             avoid: vec![],
-            xyhw: XYHW {
-                h: 600,
-                w: 800,
-                x: 0,
-                y: 0,
-            },
-            xyhw_avoided: XYHW {
-                h: 600,
-                w: 800,
-                x: 0,
-                y: 0,
-            },
+            xyhw: XYHWBuilder::default().into(),
+            xyhw_avoided: XYHWBuilder::default().into(),
         }
     }
 }
@@ -65,18 +59,21 @@ impl Workspace {
             layouts: get_all_layouts(),
             tags: vec![],
             avoid: vec![],
-            xyhw: XYHW {
+
+            xyhw: XYHWBuilder {
                 h: screen.height,
                 w: screen.width,
                 x: screen.x,
                 y: screen.y,
-            },
-            xyhw_avoided: XYHW {
+                ..Default::default()
+            }.into(),
+            xyhw_avoided: XYHWBuilder{
                 h: screen.height,
                 w: screen.width,
                 x: screen.x,
                 y: screen.y,
-            },
+                ..Default::default()
+            }.into(),
         }
     }
 
@@ -143,16 +140,16 @@ impl Workspace {
     }
 
     pub fn x(&self) -> i32 {
-        self.xyhw_avoided.x
+        self.xyhw_avoided.x()
     }
     pub fn y(&self) -> i32 {
-        self.xyhw_avoided.y
+        self.xyhw_avoided.y()
     }
     pub fn height(&self) -> i32 {
-        self.xyhw_avoided.h
+        self.xyhw_avoided.h()
     }
     pub fn width(&self) -> i32 {
-        self.xyhw_avoided.w
+        self.xyhw_avoided.w()
     }
 
     pub fn center_halfed(&self) -> XYHW {

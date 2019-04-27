@@ -18,6 +18,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             // new window is created
             xlib::MapRequest => {
                 let event = xlib::XMapRequestEvent::from(raw_event);
+                //println!("MapRequest {:?}", event);
                 let handle = WindowHandle::XlibHandle(event.window);
                 //first subscribe to window events so we don't miss any
                 xw.subscribe_to_window_events(&handle);
@@ -28,12 +29,17 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         let name = xw.get_window_name(event.window);
                         let mut w = Window::new(handle, name);
                         let trans = xw.get_transient_for(event.window);
-                        w.floating = xw.get_hint_sizing_as_xyhw(event.window);
+
+                        if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
+                            hint.update_window(&mut w);
+                        }
+
                         if w.floating.is_none() {
-                            if let Ok(size) = xw.get_window_geometry(event.window) {
-                                w.floating = Some(size);
+                            if let Ok(geo) = xw.get_window_geometry(event.window) {
+                                geo.update_window(&mut w);
                             }
                         }
+
                         if let Some(trans) = trans {
                             w.transient = Some(WindowHandle::XlibHandle(trans));
                         }
@@ -48,6 +54,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             // window is deleted
             xlib::UnmapNotify => {
                 let event = xlib::XUnmapEvent::from(raw_event);
+                //println!("UnmapNotify {:?}", event);
                 if event.send_event != xlib::False {
                     let h = WindowHandle::XlibHandle(event.window);
                     Some(DisplayEvent::WindowDestroy(h))
@@ -65,6 +72,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
             xlib::ClientMessage => {
                 let event = xlib::XClientMessageEvent::from(raw_event);
+                //println!("ClientMessage {:?}", event);
                 event_translate_client_message::from_event(xw, event)
             }
 
@@ -76,13 +84,14 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
 
             xlib::EnterNotify => {
+                let event = xlib::XEnterWindowEvent::from(raw_event);
+                //println!("EnterNotify {:?}", event);
                 let crossing = xlib::XCrossingEvent::from(raw_event);
                 if (crossing.mode != xlib::NotifyNormal || crossing.detail == xlib::NotifyInferior)
                     && crossing.window != xw.get_default_root()
                 {
                     return None;
                 }
-                let event = xlib::XEnterWindowEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
                 let mouse_loc = xw.get_pointer_location();
 
@@ -91,17 +100,20 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
             xlib::PropertyNotify => {
                 let event = xlib::XPropertyEvent::from(raw_event);
+                //println!("PropertyNotify {:?}", event);
                 event_translate_property_notify::from_event(xw, event)
             }
 
             xlib::KeyPress => {
                 let event = xlib::XKeyEvent::from(raw_event);
+                //println!("KeyPress {:?}", event);
                 let sym = xw.keycode_to_keysym(event.keycode);
                 Some(DisplayEvent::KeyCombo(event.state, sym))
             }
 
             xlib::MotionNotify => {
                 let event = xlib::XMotionEvent::from(raw_event);
+                //println!("MotionNotify {:?}", event);
                 let event_h = WindowHandle::XlibHandle(event.window);
                 let offset_x = event.x_root - xw.mode_origin.0;
                 let offset_y = event.y_root - xw.mode_origin.1;
@@ -118,17 +130,15 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 }
             }
             xlib::FocusIn => {
-                None
                 //let event = xlib::XFocusChangeEvent::from(raw_event);
-                //let h = WindowHandle::XlibHandle(event.window);
-                //let mouse_loc = xw.get_pointer_location();
-                //match mouse_loc {
-                //    Some(loc) => Some(DisplayEvent::FocusedWindow(h, loc.0, loc.1)),
-                //    None => None,
-                //}
+                //println!("FocusIn {:?}", event);
+                None
             }
 
-            _ => None,
+            _other => {
+                //println!("Other {:?}", other);
+                None
+            }
         }
     }
 }

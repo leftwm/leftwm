@@ -1,3 +1,4 @@
+use crate::models::XYHWBuilder;
 use crate::models::XYHW;
 
 #[derive(Clone, Debug, Default)]
@@ -56,39 +57,47 @@ impl DockArea {
     }
 
     fn xyhw_from_top(&self) -> XYHW {
-        XYHW {
+        XYHWBuilder {
             x: self.top_start_x,
             y: 0,
             h: self.top,
             w: self.top_end_x - self.top_start_x,
+            ..Default::default()
         }
+        .into()
     }
 
     fn xyhw_from_bottom(&self, screen_height: i32) -> XYHW {
-        XYHW {
+        XYHWBuilder {
             x: self.bottom_start_x,
             y: screen_height - self.bottom,
             h: self.bottom,
             w: self.bottom_end_x - self.bottom_start_x,
+            ..Default::default()
         }
+        .into()
     }
 
     fn xyhw_from_left(&self) -> XYHW {
-        XYHW {
+        XYHWBuilder {
             x: 0,
             y: self.left_start_y,
             h: self.left_end_y - self.left_start_y,
             w: self.left,
+            ..Default::default()
         }
+        .into()
     }
 
     fn xyhw_from_right(&self, screen_width: i32) -> XYHW {
-        XYHW {
+        XYHWBuilder {
             x: screen_width - self.right,
             y: self.right_start_y,
             h: self.right_end_y - self.right_start_y,
             w: self.right,
+            ..Default::default()
         }
+        .into()
     }
 }
 
@@ -100,12 +109,14 @@ fn should_be_able_to_build_from_top() {
         top_end_x: 200,
         ..Default::default()
     };
-    let expected = XYHW {
+    let expected: XYHW = XYHWBuilder {
         h: 2,
         w: 190,
         x: 10,
         y: 0,
-    };
+        ..Default::default()
+    }
+    .into();
     assert_eq!(area.xyhw_from_top(), expected);
 }
 
@@ -117,12 +128,14 @@ fn should_be_able_to_build_from_bottom() {
         bottom_end_x: 200,
         ..Default::default()
     };
-    let expected = XYHW {
+    let expected: XYHW = XYHWBuilder {
         h: 2,
         w: 190,
         x: 10,
         y: 998,
-    };
+        ..Default::default()
+    }
+    .into();
     assert_eq!(area.xyhw_from_bottom(1000), expected);
 }
 
@@ -134,12 +147,14 @@ fn should_be_able_to_build_from_left() {
         left_end_y: 200,
         ..Default::default()
     };
-    let expected = XYHW {
+    let expected: XYHW = XYHWBuilder {
         h: 190,
         w: 2,
         x: 0,
         y: 10,
-    };
+        ..Default::default()
+    }
+    .into();
     assert_eq!(area.xyhw_from_left(), expected);
 }
 
@@ -151,11 +166,13 @@ fn should_be_able_to_build_from_right() {
         right_end_y: 200,
         ..Default::default()
     };
-    let expected = XYHW {
+    let expected: XYHW = XYHWBuilder {
         h: 190,
         w: 2,
         x: 1998,
         y: 10,
-    };
+        ..Default::default()
+    }
+    .into();
     assert_eq!(area.xyhw_from_right(2000), expected);
 }

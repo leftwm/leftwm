@@ -14,22 +14,22 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
     window.set_floating(true);
     if window.floating.is_none() {
-        let mut floating = XYHW::default();
-        floating.w = window.width();
-        floating.h = window.height();
+        let mut floating:XYHW = XYHWBuilder::default().into();
+        floating.set_w(window.width());
+        floating.set_h(window.height());
         window.floating = Some(floating);
     }
     if window.start_loc.is_none() {
         let floating = window.floating.unwrap();
-        window.start_loc = Some((floating.x, floating.y));
+        window.start_loc = Some((floating.x(), floating.y()));
     }
 
     //they must have a value, it is safe to unwrap
     let floating = &mut window.floating.unwrap();
     let starting = &window.start_loc.unwrap();
 
-    floating.x = starting.0 + offset_x;
-    floating.y = starting.1 + offset_y;
+    floating.set_x(starting.0 + offset_x);
+    floating.set_y(starting.1 + offset_y);
     window.floating = Some(*floating);
 }
 
@@ -60,13 +60,13 @@ fn should_snap(window: &Window, workspace: &Workspace) -> bool {
     }
     if let Some(loc) = window.floating {
         //get window sides
-        let win_left = loc.x;
+        let win_left = loc.x();
         let win_right = win_left + window.width();
-        let win_top = loc.y;
+        let win_top = loc.y();
         let win_bottom = win_top + window.height();
         //check for conatins
-        let center_x = loc.x + (window.width() / 2);
-        let center_y = loc.y + (window.height() / 2);
+        let center_x = loc.x() + (window.width() / 2);
+        let center_y = loc.y() + (window.height() / 2);
         if !workspace.contains_point(center_x, center_y) {
             return false;
         }

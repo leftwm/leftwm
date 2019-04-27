@@ -16,9 +16,8 @@ pub struct ManagerState {
     pub active_desktop: Vec<String>,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TagsForWorkspace{
+pub struct TagsForWorkspace {
     pub name: String,
     pub index: usize,
     pub mine: bool,
@@ -26,7 +25,7 @@ pub struct TagsForWorkspace{
     pub focused: bool,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct DisplayWorkspace{
+pub struct DisplayWorkspace {
     pub h: u32,
     pub w: u32,
     pub x: i32,
@@ -35,45 +34,66 @@ pub struct DisplayWorkspace{
     pub tags: Vec<TagsForWorkspace>,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct DisplayState{
+pub struct DisplayState {
     pub window_title: String,
-    pub workspaces: Vec<DisplayWorkspace>
+    pub workspaces: Vec<DisplayWorkspace>,
 }
-
 
 impl Into<DisplayState> for ManagerState {
     fn into(self) -> DisplayState {
-        let visable: Vec<String> = self.viewports.iter().flat_map(|vp| vp.tags.clone() ).collect();
-        let workspaces = self.viewports.iter().enumerate()
-            .map(|(i, vp)| viewport_into_display_workspace(&self.desktop_names, &self.active_desktop, &visable,  &vp, i) ).collect();
-        DisplayState{
+        let visable: Vec<String> = self
+            .viewports
+            .iter()
+            .flat_map(|vp| vp.tags.clone())
+            .collect();
+        let workspaces = self
+            .viewports
+            .iter()
+            .enumerate()
+            .map(|(i, vp)| {
+                viewport_into_display_workspace(
+                    &self.desktop_names,
+                    &self.active_desktop,
+                    &visable,
+                    &vp,
+                    i,
+                )
+            })
+            .collect();
+        DisplayState {
             workspaces,
-            window_title: self.window_title.unwrap_or( "".to_owned() ),
+            window_title: self.window_title.unwrap_or("".to_owned()),
         }
     }
 }
 
-fn viewport_into_display_workspace( all_tags: &Vec<String>,  focused: &Vec<String>, visable: &Vec<String>, viewport: &Viewport, ws_index: usize ) -> DisplayWorkspace {
-    let tags: Vec<TagsForWorkspace> = all_tags.iter().enumerate().map(|(index,t)| {
-        TagsForWorkspace{
+fn viewport_into_display_workspace(
+    all_tags: &Vec<String>,
+    focused: &Vec<String>,
+    visable: &Vec<String>,
+    viewport: &Viewport,
+    ws_index: usize,
+) -> DisplayWorkspace {
+    let tags: Vec<TagsForWorkspace> = all_tags
+        .iter()
+        .enumerate()
+        .map(|(index, t)| TagsForWorkspace {
             name: t.clone(),
             index,
             mine: viewport.tags.contains(t),
             visable: visable.contains(t),
             focused: focused.contains(t),
-        }
-    }).collect();
-    DisplayWorkspace{
+        })
+        .collect();
+    DisplayWorkspace {
         tags,
         h: viewport.h,
         w: viewport.w,
         x: viewport.x,
         y: viewport.y,
-        index: ws_index
+        index: ws_index,
     }
 }
-
-
 
 impl From<&Manager> for ManagerState {
     fn from(manager: &Manager) -> Self {
@@ -81,10 +101,10 @@ impl From<&Manager> for ManagerState {
         for ws in &manager.workspaces {
             viewports.push(Viewport {
                 tags: ws.tags.clone(),
-                x: ws.xyhw.x,
-                y: ws.xyhw.y,
-                h: ws.xyhw.h as u32,
-                w: ws.xyhw.w as u32,
+                x: ws.xyhw.x(),
+                y: ws.xyhw.y(),
+                h: ws.xyhw.h() as u32,
+                w: ws.xyhw.w() as u32,
             });
         }
         let active_desktop = match manager.focused_workspace() {
@@ -103,5 +123,3 @@ impl From<&Manager> for ManagerState {
         }
     }
 }
-
-

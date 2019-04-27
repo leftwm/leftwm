@@ -65,8 +65,8 @@ fn cleanup_window_to_start_floating(window: &mut Window) {
         window.floating = Some(window.normal);
     }
     let mut floating = window.floating.unwrap();
-    floating.x = window.x();
-    floating.y = window.y();
+    floating.set_x(window.x());
+    floating.set_y(window.y());
     window.floating = Some(floating);
     window.start_loc = None;
 }

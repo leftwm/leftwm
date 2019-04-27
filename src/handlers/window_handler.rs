@@ -28,7 +28,7 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
 
     if let Some(trans) = &window.transient {
         if window.floating.is_none() {
-            window.floating = Some(XYHW::default()); //make sure we have a value to modify
+            window.floating = Some(XYHWBuilder::default().into()); //make sure we have a value to modify
         }
         if let Some(parent) = find_window(manager, &trans) {
             window.floating = Some(calc_center_of_parent(&window, parent));
@@ -48,10 +48,9 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     let act = DisplayAction::AddedWindow(window.handle.clone());
     manager.actions.push_back(act);
 
-    if window.type_ == WindowType::Dialog {
-        let act = DisplayAction::MoveToTop(window.handle.clone());
-        manager.actions.push_back(act);
-    }
+    //new windows should be on the top of the stack
+    let act = DisplayAction::MoveToTop(window.handle.clone());
+    manager.actions.push_back(act);
 
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
 
@@ -95,17 +94,17 @@ pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
 fn calc_center_of_parent(window: &Window, parent: &Window) -> XYHW {
     let mut xyhw = match window.floating {
         Some(f) => f,
-        None => XYHW::default(),
+        None => XYHWBuilder::default().into(),
     };
 
     //make sure this window has a real height/width first
-    if xyhw.h == 0 || xyhw.w == 0 {
-        xyhw.h = parent.height() / 2;
-        xyhw.w = parent.width() / 2;
+    if xyhw.h() == 0 || xyhw.w() == 0 {
+        xyhw.set_h(parent.height() / 2);
+        xyhw.set_w(parent.width() / 2);
     }
 
-    xyhw.x = parent.x() + (parent.width() / 2) - (xyhw.w / 2);
-    xyhw.y = parent.y() + (parent.height() / 2) - (xyhw.h / 2);
+    xyhw.set_x(parent.x() + (parent.width() / 2) - (xyhw.w() / 2));
+    xyhw.set_y(parent.y() + (parent.height() / 2) - (xyhw.h() / 2));
 
     xyhw
 }

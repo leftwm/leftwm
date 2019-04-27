@@ -1,5 +1,6 @@
 use super::WindowType;
 use crate::config::ThemeSetting;
+use crate::models::XYHWBuilder;
 use crate::models::XYHW;
 use x11_dl::xlib;
 
@@ -43,7 +44,7 @@ impl Window {
             border: 1,
             margin: 10,
             fullscreen: false,
-            normal: XYHW::default(),
+            normal: XYHWBuilder::default().into(),
             floating: None,
             start_loc: None,
         }
@@ -86,47 +87,47 @@ impl Window {
     }
 
     pub fn set_width(&mut self, width: i32) {
-        self.normal.w = width
+        self.normal.set_w(width)
     }
     pub fn set_height(&mut self, height: i32) {
-        self.normal.h = height
+        self.normal.set_h(height)
     }
 
     pub fn width(&self) -> i32 {
         if self.floating() && self.floating.is_some() {
-            self.floating.unwrap().w
+            self.floating.unwrap().w()
         } else {
-            self.normal.w - (self.margin * 2) - (self.border * 2)
+            self.normal.w() - (self.margin * 2) - (self.border * 2)
         }
     }
     pub fn height(&self) -> i32 {
         if self.floating() && self.floating.is_some() {
-            self.floating.unwrap().h
+            self.floating.unwrap().h()
         } else {
-            self.normal.h - (self.margin * 2) - (self.border * 2)
+            self.normal.h() - (self.margin * 2) - (self.border * 2)
         }
     }
 
     pub fn set_x(&mut self, x: i32) {
-        self.normal.x = x
+        self.normal.set_x(x)
     }
     pub fn set_y(&mut self, y: i32) {
-        self.normal.y = y
+        self.normal.set_y(y)
     }
 
     pub fn x(&self) -> i32 {
         if self.floating() && self.floating.is_some() {
-            self.floating.unwrap().x
+            self.floating.unwrap().x()
         } else {
-            self.normal.x + self.margin
+            self.normal.x() + self.margin
         }
     }
 
     pub fn y(&self) -> i32 {
         if self.floating() && self.floating.is_some() {
-            self.floating.unwrap().y
+            self.floating.unwrap().y()
         } else {
-            self.normal.y + self.margin
+            self.normal.y() + self.margin
         }
     }
 
