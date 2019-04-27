@@ -27,6 +27,7 @@ where
     removed
 }
 
+//shifts a object left or right in an Vec by a given amount
 pub fn reorder_vec<T, F>(list: &mut Vec<T>, test: F, shift: i32)
 where
     F: Fn(&T) -> bool,

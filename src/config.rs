@@ -30,7 +30,7 @@ pub fn load() -> Config {
         Err(err) => {
             println!("ERROR LOADING CONFIG: {:?}", err);
             Config::default()
-        },
+        }
     }
 }
 
@@ -41,8 +41,12 @@ fn load_from_file() -> Result<Config, Box<std::error::Error>> {
         let default = Config::default();
         let contents = fs::read_to_string(config_filename)?;
         let mut config: Config = toml::from_str(&contents)?;
-        if config.workspaces.is_none() { config.workspaces = default.workspaces }
-        if config.tags.is_none() { config.tags = default.tags }
+        if config.workspaces.is_none() {
+            config.workspaces = default.workspaces
+        }
+        if config.tags.is_none() {
+            config.tags = default.tags
+        }
         Ok(config)
     } else {
         let config = Config::default();
@@ -118,7 +122,7 @@ impl Config {
     }
 
     pub fn get_list_of_tags(&self) -> Vec<String> {
-        if let Some( tags ) = &self.tags {
+        if let Some(tags) = &self.tags {
             return tags.clone();
         }
         Config::default().tags.unwrap()
@@ -217,12 +221,24 @@ impl Default for Config {
             modifier: vec!["modkey".to_owned(), "Control".to_owned()],
             key: "Up".to_owned(),
         });
-        //Mod + down => change to the previous layout
         commands.push(Keybind {
             command: Command::PreviousLayout,
             value: None,
             modifier: vec!["modkey".to_owned(), "Control".to_owned()],
             key: "Down".to_owned(),
+        });
+
+        commands.push(Keybind {
+            command: Command::FocusWorkspaceNext,
+            value: None,
+            modifier: vec!["Control".to_owned()],
+            key: "Right".to_owned(),
+        });
+        commands.push(Keybind {
+            command: Command::FocusWorkspacePrevious,
+            value: None,
+            modifier: vec!["Control".to_owned()],
+            key: "Left".to_owned(),
         });
 
         //add goto workspace
@@ -246,15 +262,16 @@ impl Default for Config {
         }
 
         //let tags = vec!["A","B","C","D","E","F","G","H","I"].iter().map( |s| s.to_string() ).collect();
-        let tags = vec!["1","2","3","4","5","6","7","8","9"].iter().map( |s| s.to_string() ).collect();
+        let tags = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
 
         Config {
             workspaces: Some(vec![]),
-            tags: Some( tags ),
+            tags: Some(tags),
             modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
     }
 }
-
-

@@ -8,6 +8,8 @@ pub enum Command {
     MoveWindowDown,
     FocusWindowUp,
     FocusWindowDown,
+    FocusWorkspaceNext,
+    FocusWorkspacePrevious,
     MoveToTag,
     MoveToLastWorkspace,
     MouseMoveWindow,

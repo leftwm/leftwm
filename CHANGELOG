@@ -1,0 +1,45 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+### Fixed
+- Fix Several small papercuts and bug fixes 
+### Added
+- Keyboard navigation between workspaces 
+
+
+## [0.1.8] - 2017-04-19
+### Fixed
+- Fix Several small papercuts and bug fixes 
+
+
+## [0.1.7] - 2017-04-15
+### Fixed
+- Fix issues with multiscreen bars
+- Cleanup and refactor code
+### Added
+- leftwm-state to get state info from leftwm for bars
+- Added template system for theme creation 
+
+
+## [0.1.6] - 2017-04-5
+### Fixed
+- Bugs and issues with bars
+- Several small bugs fixes
+### Added
+- Renaming of tags
+- keycombos to refocusing windows
+- Added layout - Main/Stacked
+
+
+
+
+
+
+
+
+
+

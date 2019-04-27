@@ -188,6 +188,73 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             true
         }
 
+        Command::FocusWorkspaceNext => {
+            let current = manager.focused_workspace();
+            if current.is_none() {
+                return false;
+            }
+            let current = current.unwrap();
+            let mut index = match manager
+                .workspaces
+                .iter()
+                .enumerate()
+                .find(|&x| x.1 == current)
+            {
+                Some(x) => x.0,
+                None => {
+                    return false;
+                }
+            };
+            index += 1;
+            if index >= manager.workspaces.len() {
+                index = 0;
+            }
+            let workspace = manager.workspaces[index].clone();
+            focus_handler::focus_workspace(manager, &workspace);
+            if let Some(window) = manager.windows.iter().find(|w| workspace.is_displaying(w) ){
+                let window = window.clone();
+                focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
+                let act = DisplayAction::MoveMouseOver(window.handle);
+                manager.actions.push_back(act);
+            }
+            true
+        }
+
+
+        Command::FocusWorkspacePrevious => {
+            let current = manager.focused_workspace();
+            if current.is_none() {
+                return false;
+            }
+            let current = current.unwrap();
+            let mut index = match manager
+                .workspaces
+                .iter()
+                .enumerate()
+                .find(|&x| x.1 == current)
+            {
+                Some(x) => x.0 as i32,
+                None => {
+                    return false;
+                }
+            };
+            index -= 1;
+            if index < 0 {
+                index = (manager.workspaces.len() as i32) - 1;
+            }
+            let workspace = manager.workspaces[index as usize].clone();
+            focus_handler::focus_workspace(manager, &workspace);
+            if let Some(window) = manager.windows.iter().find(|w| workspace.is_displaying(w) ){
+                let window = window.clone();
+                focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
+                let act = DisplayAction::MoveMouseOver(window.handle);
+                manager.actions.push_back(act);
+            }
+            true
+        }
+
+
+
         Command::MouseMoveWindow => false,
     }
 }
