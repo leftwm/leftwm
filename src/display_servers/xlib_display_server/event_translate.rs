@@ -66,6 +66,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             // window is deleted
             xlib::DestroyNotify => {
                 let event = xlib::XDestroyWindowEvent::from(raw_event);
+                //println!("DestroyNotify {:?}", event);
                 let h = WindowHandle::XlibHandle(event.window);
                 Some(DisplayEvent::WindowDestroy(h))
             }
@@ -78,10 +79,14 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
             xlib::ButtonPress => {
                 let event = xlib::XButtonPressedEvent::from(raw_event);
+                //println!("ButtonPress {:?}", event);
                 let h = WindowHandle::XlibHandle(event.window);
                 Some(DisplayEvent::MouseCombo(event.state, event.button, h))
             }
-            xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
+            xlib::ButtonRelease => {
+                //println!("ButtonRelease");
+                Some(DisplayEvent::ChangeToNormalMode)
+            }
 
             xlib::EnterNotify => {
                 let event = xlib::XEnterWindowEvent::from(raw_event);
@@ -130,13 +135,13 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 }
             }
             xlib::FocusIn => {
-                //let event = xlib::XFocusChangeEvent::from(raw_event);
+                let event = xlib::XFocusChangeEvent::from(raw_event);
                 //println!("FocusIn {:?}", event);
                 None
             }
 
             _other => {
-                //println!("Other {:?}", other);
+                //println!("Other {:?}", _other);
                 None
             }
         }

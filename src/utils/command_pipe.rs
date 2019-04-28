@@ -6,6 +6,9 @@ use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use xdg::BaseDirectories;
+use std::ptr;
+use std::ffi::CString;
+use x11_dl::xlib;
 
 type Queue = Arc<Mutex<VecDeque<ExternalCommand>>>;
 type ResultQueue = Result<Queue>;
@@ -46,7 +49,14 @@ impl CommandPipe {
                 .status()?;
         }
         let q2: Queue = q.clone();
+
         thread::spawn(move || loop {
+
+            let mut xlib = xlib::Xlib::open().unwrap();
+            let dpy = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
+            assert!(!dpy.is_null(), "Null pointer in display");
+            let root = unsafe { (xlib.XDefaultRootWindow)(dpy) };
+
             loop {
                 let file = File::open(&pipe_file).unwrap();
                 for line in BufReader::new(file).lines() {
@@ -54,12 +64,25 @@ impl CommandPipe {
                         if let Ok(cmd) = parse_command(l) {
                             let mut my_q = q2.lock().unwrap();
                             my_q.push_back(cmd);
+                            create_unblocking_event( &mut xlib, dpy, root );
                         }
                     }
                 }
             }
         });
         Ok(q)
+    }
+}
+
+// the main event loop cannot process this external command until an event come in
+// we ca generating a fake pointless event to unblock the event loop
+fn create_unblocking_event(xlib: &mut xlib::Xlib, dpy: *mut xlib::Display, root: xlib::Window) {
+    let mut current: xlib::Window = 0;
+    let mut revert: i32 = 0;
+    unsafe{
+        (xlib.XGetInputFocus)(dpy, &mut current, &mut revert);
+        (xlib.XSetInputFocus)(dpy, root, xlib::RevertToPointerRoot, xlib::CurrentTime);
+        (xlib.XSetInputFocus)(dpy, current, revert, xlib::CurrentTime);
     }
 }
 
