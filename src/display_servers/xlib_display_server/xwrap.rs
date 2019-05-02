@@ -81,6 +81,20 @@ impl XWrap {
             mode_origin: (0, 0),
         };
 
+        //check that another WM is not running
+        extern "C" fn startup_check_for_other_wm(
+            _: *mut xlib::Display,
+            _: *mut xlib::XErrorEvent,
+        ) -> c_int {
+            eprintln!("ERROR: another window manager is already running");
+            ::std::process::exit(-1);
+        }
+        unsafe {
+            (xw.xlib.XSetErrorHandler)(Some(startup_check_for_other_wm));
+            (xw.xlib.XSelectInput)(xw.display, root, xlib::SubstructureRedirectMask);
+            (xw.xlib.XSync)(xw.display, xlib::False);
+        };
+
         extern "C" fn on_error_from_xlib(
             _: *mut xlib::Display,
             er: *mut xlib::XErrorEvent,
@@ -95,6 +109,7 @@ impl XWrap {
 
         unsafe {
             (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
+            (xw.xlib.XSync)(xw.display, xlib::False);
         };
         xw
     }
