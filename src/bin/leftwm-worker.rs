@@ -86,9 +86,13 @@ fn event_loop(
 fn load_old_windows_state(manager: &mut Manager) {
     if let Ok(old_manager) = load_old_state() {
         for window in &mut manager.windows {
-            if let Some(old) = old_manager.windows.iter().find(|w| w.handle == window.handle)
+            if let Some(old) = old_manager
+                .windows
+                .iter()
+                .find(|w| w.handle == window.handle)
             {
                 window.floating = old.floating;
+                window.set_floating(old.floating());
                 window.normal = old.normal;
                 window.tags = old.tags.clone();
             }
