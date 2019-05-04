@@ -3,6 +3,8 @@ pub enum Command {
     Execute,
     CloseWindow,
     SwapTags,
+    SoftReload,
+    HardReload,
     GotoTag,
     MoveWindowUp,
     MoveWindowDown,

@@ -1,6 +1,6 @@
 use crate::models::WindowHandle;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Mode {
     ResizingWindow(WindowHandle),
     MovingWindow(WindowHandle),

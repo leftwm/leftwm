@@ -1,14 +1,15 @@
 use super::layouts::*;
 use crate::models::Screen;
 use crate::models::Window;
-use crate::models::XYHW;
 use crate::models::XYHWBuilder;
+use crate::models::XYHW;
 use std::collections::VecDeque;
 use std::fmt;
 
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: i32,
+    #[serde(skip)]
     layouts: VecDeque<Box<Layout>>,
     pub tags: Vec<String>,
     pub avoid: Vec<XYHW>,
@@ -66,14 +67,16 @@ impl Workspace {
                 x: screen.x,
                 y: screen.y,
                 ..Default::default()
-            }.into(),
-            xyhw_avoided: XYHWBuilder{
+            }
+            .into(),
+            xyhw_avoided: XYHWBuilder {
                 h: screen.height,
                 w: screen.width,
                 x: screen.x,
                 y: screen.y,
                 ..Default::default()
-            }.into(),
+            }
+            .into(),
         }
     }
 

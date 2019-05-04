@@ -7,7 +7,7 @@ use crate::models::WindowHandle;
 use crate::models::Workspace;
 use std::collections::VecDeque;
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,

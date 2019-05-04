@@ -6,13 +6,13 @@ use x11_dl::xlib;
 
 type MockHandle = i32;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,

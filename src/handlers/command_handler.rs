@@ -211,7 +211,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             let workspace = manager.workspaces[index].clone();
             focus_handler::focus_workspace(manager, &workspace);
-            if let Some(window) = manager.windows.iter().find(|w| workspace.is_displaying(w) ){
+            if let Some(window) = manager.windows.iter().find(|w| workspace.is_displaying(w)) {
                 let window = window.clone();
                 focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
                 let act = DisplayAction::MoveMouseOver(window.handle);
@@ -219,7 +219,6 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             true
         }
-
 
         Command::FocusWorkspacePrevious => {
             let current = manager.focused_workspace();
@@ -244,7 +243,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             let workspace = manager.workspaces[index as usize].clone();
             focus_handler::focus_workspace(manager, &workspace);
-            if let Some(window) = manager.windows.iter().find(|w| workspace.is_displaying(w) ){
+            if let Some(window) = manager.windows.iter().find(|w| workspace.is_displaying(w)) {
                 let window = window.clone();
                 focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
                 let act = DisplayAction::MoveMouseOver(window.handle);
@@ -253,9 +252,14 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             true
         }
 
-
-
         Command::MouseMoveWindow => false,
+
+        Command::SoftReload => {
+            let state_data = serde_json::to_string(&manager).unwrap();
+            let _ = std::fs::write("/tmp/leftwm.state", state_data);
+            ::std::process::exit(0);
+        }
+        Command::HardReload => ::std::process::exit(0),
     }
 }
 

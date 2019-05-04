@@ -3,7 +3,7 @@ use crate::config::WorkspaceConfig;
 use std::convert::From;
 use x11_dl::xlib;
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Screen {
     pub root: WindowHandle,
     pub height: i32,

@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct XYHW {
     x: i32,
     y: i32,
@@ -10,7 +10,7 @@ pub struct XYHW {
     maxh: i32,
 }
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct XYHWBuilder {
     pub x: i32,
     pub y: i32,

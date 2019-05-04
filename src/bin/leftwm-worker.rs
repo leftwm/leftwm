@@ -76,6 +76,30 @@ fn event_loop(
         //after the very first loop boot the theme. we need the unix socket to already exist
         after_first_loop.call_once(|| {
             let _ = Nanny::new().boot_current_theme();
+
+            //load old windows state
+            load_old_windows_state(manager);
         });
     }
+}
+
+fn load_old_windows_state(manager: &mut Manager) {
+    if let Ok(old_manager) = load_old_state() {
+        for window in &mut manager.windows {
+            if let Some(old) = old_manager.windows.iter().find(|w| w.handle == window.handle)
+            {
+                window.floating = old.floating;
+                window.normal = old.normal;
+                window.tags = old.tags.clone();
+            }
+        }
+    }
+}
+
+fn load_old_state() -> Result<Manager, Box<std::error::Error>> {
+    let statefile = "/tmp/leftwm.state";
+    let data: String = std::fs::read_to_string(statefile)?;
+    let _ = std::fs::remove_file(statefile);
+    let manager: Manager = serde_json::from_str(&data)?;
+    Ok(manager)
 }

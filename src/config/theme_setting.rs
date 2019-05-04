@@ -11,7 +11,7 @@ struct ThemeSettingLoadable {
     focused_border_color: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ThemeSetting {
     pub border_width: u32,
     pub margin: u32,

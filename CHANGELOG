@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix Several small papercuts and bug fixes 
 ### Added
+- reloading while keeping current window state
 - Keyboard navigation between workspaces 
 - min/max window size support
 
