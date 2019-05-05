@@ -54,6 +54,16 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
 
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
 
+    if let Some(cmd) = &manager.theme_setting.on_new_window_cmd {
+        use std::process::{Command, Stdio};
+        let _ = Command::new("sh")
+            .arg("-c")
+            .arg(&cmd)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .spawn();
+    }
+
     true
 }
 

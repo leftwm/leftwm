@@ -9,6 +9,7 @@ struct ThemeSettingLoadable {
     default_border_color: Option<String>,
     floating_border_color: Option<String>,
     focused_border_color: Option<String>,
+    on_new_window: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -18,6 +19,7 @@ pub struct ThemeSetting {
     pub default_border_color: String,
     pub floating_border_color: String,
     pub focused_border_color: String,
+    pub on_new_window_cmd: Option<String>,
 }
 
 /// Convert Theme Setting Loadable into Theme Settings
@@ -40,6 +42,7 @@ impl From<ThemeSettingLoadable> for ThemeSetting {
         if let Some(x) = file.focused_border_color {
             theme.focused_border_color = x
         }
+        theme.on_new_window_cmd = file.on_new_window;
         theme
     }
 }
@@ -68,6 +71,7 @@ impl Default for ThemeSetting {
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
             focused_border_color: "#FF0000".to_owned(),
+            on_new_window_cmd: None,
         }
     }
 }

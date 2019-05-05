@@ -135,7 +135,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 }
             }
             xlib::FocusIn => {
-                let event = xlib::XFocusChangeEvent::from(raw_event);
+                //let event = xlib::XFocusChangeEvent::from(raw_event);
                 //println!("FocusIn {:?}", event);
                 None
             }
