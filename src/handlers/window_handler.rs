@@ -94,6 +94,9 @@ pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
             let changed = change.update(w);
             if w.type_ == WindowType::Dock {
                 update_workspace_avoid_list(manager);
+                //don't left changes from docks re-render the worker. This will result in an
+                //infinite loop. Just be patient a rerender will occur.
+                return false;
             }
             return changed;
         }
