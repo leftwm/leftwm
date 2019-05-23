@@ -116,11 +116,11 @@ impl Window {
     }
 
     pub fn border(&self) -> i32 {
-         if self.fullscreen {
-             0
-         } else {
-             self.border
-         }
+        if self.fullscreen {
+            0
+        } else {
+            self.border
+        }
     }
 
     pub fn x(&self) -> i32 {
