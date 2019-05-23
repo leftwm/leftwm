@@ -115,6 +115,14 @@ impl Window {
         self.normal.set_y(y)
     }
 
+    pub fn border(&self) -> i32 {
+         if self.fullscreen {
+             0
+         } else {
+             self.border
+         }
+    }
+
     pub fn x(&self) -> i32 {
         if self.floating() && self.floating.is_some() {
             self.floating.unwrap().x()

@@ -409,7 +409,7 @@ impl XWrap {
                     y: window.y(),
                     width: window.width(),
                     height: window.height(),
-                    border_width: window.border,
+                    border_width: window.border(),
                     sibling: 0,    //not unlocked
                     stack_mode: 0, //not unlocked
                 };
@@ -680,7 +680,7 @@ impl XWrap {
                 y: window.y(),
                 width: window.width(),
                 height: window.height(),
-                border_width: window.border,
+                border_width: window.border(),
                 above: 0,
                 override_redirect: 0,
             };
