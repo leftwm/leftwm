@@ -11,6 +11,7 @@ pub enum DisplayAction {
     KillWindow(WindowHandle), // nicely ask a window if it would please close at its convenience
     AddedWindow(WindowHandle), // get triggered after a new window is discovered and WE are managing it
     MoveMouseOver(WindowHandle), // makes sure the mouse is over a given window
+    MoveMouseOverPoint( (i32,i32) ),  // makes sure the mouse is over a given point
     MoveToTop(WindowHandle),   // send a window to the top move location
     DestroyedWindow(WindowHandle), // tell the DS we no longer care about the this window and other cleanup
     WindowTakeFocus(Window),       // tell a window that it is to become focused

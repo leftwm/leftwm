@@ -511,6 +511,10 @@ impl XWrap {
     pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), ()> {
         let attrs = self.get_window_attrs(window)?;
         let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
+        self.move_cursor_to_point(point)
+    }
+
+    pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), ()> {
         let none: c_int = 0;
         unsafe {
             (self.xlib.XWarpPointer)(

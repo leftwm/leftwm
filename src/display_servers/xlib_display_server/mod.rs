@@ -101,6 +101,9 @@ impl DisplayServer for XlibDisplayServer {
                     let _ = self.xw.move_cursor_to_window(win);
                 }
             }
+            DisplayAction::MoveMouseOverPoint(point) => { 
+                let _ = self.xw.move_cursor_to_point(point);
+            },
             DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
             DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
             DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),

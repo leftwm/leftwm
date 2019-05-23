@@ -27,16 +27,18 @@ The settings file to change key bindings and the default mod key can be found at
 ### Default keys
 ```
 Mod + (1-9) => switch to a desktop/tag
-Mod + shift + (1-9) => move the focused window to desktop/tag
-Mod + w => switch the desktops for each screen. Desktops [1][2] changes to [2][1]
-Mod + shift + w => move window to the other desktop
+Mod + Shift + (1-9) => move the focused window to desktop/tag
+Mod + W => switch the desktops for each screen. Desktops [1][2] changes to [2][1]
+Mod + Shift + W => move window to the other desktop
 Mod + (⬆️⬇️) => Focus the different windows in the current workspace
 Mod + Shift + (⬆️⬇️) => Move the different windows in the current workspace
 Mod + Ctrl + (⬆️⬇️) => Switch between different layouts
-Mod + shift + enter => open a terminal
-Mod + ctrl + L => lock the screen
-Mod + shift + Q => close the current window
-Mod + shift + R => reload LeftWM and it's config
+Mod + Shift + (⬅➡) => Switch between different workspaces
+Mod + Shift + Enter => open a terminal
+Mod + Ctrl + L => lock the screen
+Mod + Shift + X => Exit LeftWM
+Mod + Shift + Q => close the current window
+Mod + Shift + R => reload LeftWM and it's config
 ```
 
 ### Workspaces

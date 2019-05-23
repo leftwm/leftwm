@@ -165,10 +165,18 @@ impl Default for Config {
             key: "r".to_owned(),
         });
 
+        //Mod + shift + x => exit leftwm
+        commands.push(Keybind {
+            command: Command::Execute,
+            value: Some("pkill leftwm".to_owned()),
+            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+            key: "x".to_owned(),
+        });
+
         //Mod + crtl + l => lock the screen
         commands.push(Keybind {
             command: Command::Execute,
-            value: Some("i3lock --color 000000".to_owned()),
+            value: Some("slock".to_owned()),
             modifier: vec!["modkey".to_owned(), "Control".to_owned()],
             key: "l".to_owned(),
         });
@@ -231,13 +239,13 @@ impl Default for Config {
         commands.push(Keybind {
             command: Command::FocusWorkspaceNext,
             value: None,
-            modifier: vec!["Control".to_owned()],
+            modifier: vec!["modkey".to_owned()],
             key: "Right".to_owned(),
         });
         commands.push(Keybind {
             command: Command::FocusWorkspacePrevious,
             value: None,
-            modifier: vec!["Control".to_owned()],
+            modifier: vec!["modkey".to_owned()],
             key: "Left".to_owned(),
         });
 

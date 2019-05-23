@@ -211,7 +211,10 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             let workspace = manager.workspaces[index].clone();
             focus_handler::focus_workspace(manager, &workspace);
-            if let Some(window) = manager.windows.iter().find(|w| workspace.is_displaying(w)) {
+            let act = DisplayAction::MoveMouseOverPoint( workspace.xyhw.center() );
+            manager.actions.push_back(act);
+            if let Some(window) = manager.windows.iter()
+                .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal ) {
                 let window = window.clone();
                 focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
                 let act = DisplayAction::MoveMouseOver(window.handle);
@@ -243,7 +246,10 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             let workspace = manager.workspaces[index as usize].clone();
             focus_handler::focus_workspace(manager, &workspace);
-            if let Some(window) = manager.windows.iter().find(|w| workspace.is_displaying(w)) {
+            let act = DisplayAction::MoveMouseOverPoint( workspace.xyhw.center() );
+            manager.actions.push_back(act);
+            if let Some(window) = manager.windows.iter()
+                .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal ) {
                 let window = window.clone();
                 focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
                 let act = DisplayAction::MoveMouseOver(window.handle);
