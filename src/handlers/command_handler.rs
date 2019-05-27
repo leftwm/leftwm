@@ -14,7 +14,9 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             if let Some(window) = manager.focused_window_mut() {
                 window.clear_tags();
                 window.set_floating(false);
-                window.tag(tag);
+                window.tag(tag.clone());
+                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.clone() );
+                manager.actions.push_back(act);
                 return true;
             }
             false

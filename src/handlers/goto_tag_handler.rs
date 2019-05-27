@@ -1,11 +1,6 @@
 use super::*;
 
 pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
-    ////if we are going to a new tag record it in the list of avalable tags
-    //if !manager.tags.contains(&tag) {
-    //    manager.tags.push(tag.clone());
-    //}
-
     if tag_num > manager.tags.len() || tag_num < 1 {
         return false;
     }
