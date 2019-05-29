@@ -59,7 +59,7 @@ impl DisplayServer for XlibDisplayServer {
                 None => false,
             };
             self.xw.update_window(&window, is_focused);
-            if window.fullscreen {
+            if window.is_fullscreen() {
                 self.xw.move_to_top(window.handle.clone());
             }
         }
@@ -74,7 +74,7 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn get_next_events(&self) -> Vec<DisplayEvent> {
+    fn get_next_events(&mut self) -> Vec<DisplayEvent> {
         let mut events = vec![];
         SETUP.call_once(|| {
             for e in self.initial_events() {
@@ -87,6 +87,15 @@ impl DisplayServer for XlibDisplayServer {
         if let Some(e) = event {
             events.push(e)
         }
+
+        for event in &events {
+            if let DisplayEvent::WindowDestroy(h) = event {
+                if let WindowHandle::XlibHandle(w) = h {
+                    self.xw.force_unmapped(*w);
+                }
+            }
+        }
+
         events
     }
 
@@ -101,9 +110,9 @@ impl DisplayServer for XlibDisplayServer {
                     let _ = self.xw.move_cursor_to_window(win);
                 }
             }
-            DisplayAction::MoveMouseOverPoint(point) => { 
+            DisplayAction::MoveMouseOverPoint(point) => {
                 let _ = self.xw.move_cursor_to_point(point);
-            },
+            }
             DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
             DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
             DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),
@@ -111,6 +120,11 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::StartResizingWindow(w) => self.xw.set_mode(Mode::ResizingWindow(w)),
             DisplayAction::NormalMode => self.xw.set_mode(Mode::NormalMode),
             DisplayAction::SetCurrentTags(tags) => self.xw.set_current_desktop(&tags),
+            DisplayAction::SetWindowTags(handle, tag) => {
+                if let WindowHandle::XlibHandle(window) = handle {
+                    self.xw.set_window_desktop(window, &tag)
+                }
+            }
         }
         None
     }

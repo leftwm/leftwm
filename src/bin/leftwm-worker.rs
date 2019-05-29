@@ -8,7 +8,7 @@ use leftwm::*;
 use std::panic;
 use std::sync::Once;
 
-fn get_events<T: DisplayServer>(ds: &T) -> Vec<DisplayEvent> {
+fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
     ds.get_next_events()
 }
 

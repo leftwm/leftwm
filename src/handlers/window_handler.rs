@@ -48,6 +48,12 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     let act = DisplayAction::AddedWindow(window.handle.clone());
     manager.actions.push_back(act);
 
+    //let the DS know the correct desktop to find this window
+    if !window.tags.is_empty() {
+        let act = DisplayAction::SetWindowTags(window.handle.clone(), window.tags[0].clone());
+        manager.actions.push_back(act);
+    }
+
     //new windows should be on the top of the stack
     let act = DisplayAction::MoveToTop(window.handle.clone());
     manager.actions.push_back(act);

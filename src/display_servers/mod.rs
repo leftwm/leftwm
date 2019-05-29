@@ -13,7 +13,7 @@ pub use self::xlib_display_server::XlibDisplayServer;
 
 pub trait DisplayServer {
     fn new(config: &Config) -> Self;
-    fn get_next_events(&self) -> Vec<DisplayEvent>;
+    fn get_next_events(&mut self) -> Vec<DisplayEvent>;
 
     fn update_theme_settings(&mut self, _settings: ThemeSetting) {}
 

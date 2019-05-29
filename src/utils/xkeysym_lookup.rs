@@ -25,8 +25,6 @@ pub fn into_mod(key: &str) -> ModMask {
     match key {
         "None" => xlib::AnyModifier,
         "Shift" => xlib::ShiftMask,
-        //"Lock" => xlib::LockMask,
-        //"CapsLock" => xlib::LockMask,
         "Control" => xlib::ControlMask,
         "Mod1" => xlib::Mod1Mask,
         "Alt" => xlib::Mod1Mask,

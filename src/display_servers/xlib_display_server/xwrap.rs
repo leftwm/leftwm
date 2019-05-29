@@ -9,6 +9,7 @@ use crate::config::ThemeSetting;
 use crate::models::DockArea;
 use crate::models::Mode;
 use crate::models::WindowChange;
+use crate::models::WindowState;
 use crate::models::WindowType;
 use crate::models::XYHWChange;
 use crate::utils::xkeysym_lookup::ModMask;
@@ -41,6 +42,7 @@ pub struct XWrap {
     pub atoms: XAtom,
     cursors: XCursor,
     colors: Colors,
+    managed_windows: Vec<xlib::Window>,
     pub tags: Vec<String>,
     pub mode: Mode,
     pub mod_key_mask: ModMask,
@@ -75,6 +77,7 @@ impl XWrap {
             atoms,
             cursors,
             colors,
+            managed_windows: vec![],
             tags: vec![],
             mode: Mode::NormalMode,
             mod_key_mask: 0,
@@ -292,6 +295,75 @@ impl XWrap {
         WindowType::Normal
     }
 
+    pub fn set_window_states_atoms(&self, window: xlib::Window, states: Vec<xlib::Atom>) {
+        let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMState,
+                xlib::XA_ATOM,
+                32,
+                xlib::PropModeReplace,
+                data.as_ptr() as *const u8,
+                data.len() as i32,
+            );
+            std::mem::forget(data);
+        }
+    }
+
+    pub fn get_window_states_atoms(&self, window: xlib::Window) -> Vec<xlib::Atom> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut bytes_remaining: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::uninitialized() };
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMState,
+                0,
+                MAX_PROPERTY_VALUE_LEN / 4,
+                xlib::False,
+                xlib::XA_ATOM,
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut bytes_remaining,
+                &mut prop_return,
+            );
+            if status == i32::from(xlib::Success) && !prop_return.is_null() {
+                #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
+                //let result = *(prop_return as *const u32);
+                let ptr = prop_return as *const u64;
+                let results: &[xlib::Atom] = slice::from_raw_parts(ptr, nitems_return as usize);
+                return results.to_vec();
+            }
+            vec![]
+        }
+    }
+
+    pub fn get_window_states(&self, window: xlib::Window) -> Vec<WindowState> {
+        self.get_window_states_atoms(window)
+            .iter()
+            .map(|a| match a {
+                x if x == &self.atoms.NetWMStateModal => WindowState::Modal,
+                x if x == &self.atoms.NetWMStateSticky => WindowState::Sticky,
+                x if x == &self.atoms.NetWMStateMaximizedVert => WindowState::MaximizedVert,
+                x if x == &self.atoms.NetWMStateMaximizedHorz => WindowState::MaximizedHorz,
+                x if x == &self.atoms.NetWMStateShaded => WindowState::Shaded,
+                x if x == &self.atoms.NetWMStateSkipTaskbar => WindowState::SkipTaskbar,
+                x if x == &self.atoms.NetWMStateSkipPager => WindowState::SkipPager,
+                x if x == &self.atoms.NetWMStateHidden => WindowState::Hidden,
+                x if x == &self.atoms.NetWMStateFullscreen => WindowState::Fullscreen,
+                x if x == &self.atoms.NetWMStateAbove => WindowState::Above,
+                x if x == &self.atoms.NetWMStateBelow => WindowState::Below,
+                _ => WindowState::Modal,
+            })
+            .collect()
+    }
+
     /* EWMH support used for bars such as polybar */
     pub fn init_desktops_hints(&self) {
         let tags = &self.tags;
@@ -325,9 +397,54 @@ impl XWrap {
                 self.atoms.NetDesktopNames,
             );
         }
+
+        //set the WM NAME
+        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName);
+
+        self.set_desktop_prop_u64(
+            self.get_default_root() as u64,
+            self.atoms.NetSupportingWmCheck,
+            xlib::XA_WINDOW,
+        );
+
         //set a viewport
         let data = vec![0 as u32, 0 as u32];
         self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
+    }
+
+    fn set_desktop_prop_u64(&self, value: u64, atom: c_ulong, type_: c_ulong) {
+        let data = vec![value as u32];
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                self.get_default_root(),
+                atom,
+                type_,
+                32,
+                xlib::PropModeReplace,
+                data.as_ptr() as *const u8,
+                1 as i32,
+            );
+            std::mem::forget(data);
+        }
+    }
+
+    fn set_desktop_prop_string(&self, value: &str, atom: c_ulong) {
+        if let Ok(cstring) = CString::new(value) {
+            unsafe {
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    self.get_default_root(),
+                    atom,
+                    xlib::XA_CARDINAL,
+                    32,
+                    xlib::PropModeReplace,
+                    cstring.as_ptr() as *const u8,
+                    value.len() as i32,
+                );
+                std::mem::forget(cstring);
+            }
+        }
     }
 
     fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
@@ -360,7 +477,32 @@ impl XWrap {
             indexes.push(0)
         }
         self.set_desktop_prop(&indexes, self.atoms.NetDesktopViewport);
-        //self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
+    }
+
+    pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &str) {
+        let mut indexes: Vec<u32> = vec![];
+        for (i, tag) in self.tags.iter().enumerate() {
+            if current_tags.contains(tag) {
+                let tag = i as u32;
+                indexes.push(tag);
+            }
+        }
+        if indexes.is_empty() {
+            indexes.push(0)
+        }
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMDesktop,
+                xlib::XA_CARDINAL,
+                32,
+                xlib::PropModeReplace,
+                indexes.as_ptr() as *const u8,
+                indexes.len() as i32,
+            );
+            std::mem::forget(indexes);
+        }
     }
 
     pub fn set_current_desktop(&self, current_tags: &str) {
@@ -375,31 +517,6 @@ impl XWrap {
         }
         self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
     }
-
-    //pub fn get_parent_window(&self, window: xlib::Window) -> Option<xlib::Window> {
-    //    unsafe {
-    //        let mut root_return: xlib::Window = std::mem::zeroed();
-    //        let mut parent_return: xlib::Window = std::mem::zeroed();
-    //        let mut array: *mut xlib::Window = std::mem::zeroed();
-    //        let mut length: c_uint = std::mem::zeroed();
-    //        let status: xlib::Status = (self.xlib.XQueryTree)(
-    //            self.display,
-    //            window,
-    //            &mut root_return,
-    //            &mut parent_return,
-    //            &mut array,
-    //            &mut length,
-    //        );
-    //        //take ownership of the array
-    //        let _: &[xlib::Window] = slice::from_raw_parts(array, length as usize);
-    //        match status {
-    //            0 /* XcmsFailure */ => { None }
-    //            1 /* XcmsSuccess */ => { Some(parent_return) }
-    //            2 /* XcmsSuccessWithCompression */ => { Some(parent_return) }
-    //            _ => { None }
-    //        }
-    //    }
-    //}
 
     pub fn update_window(&self, window: &Window, is_focused: bool) {
         if let WindowHandle::XlibHandle(h) = window.handle {
@@ -443,9 +560,11 @@ impl XWrap {
     }
 
     //this code is ran one time when a window is added to the managers list of windows
-    pub fn setup_managed_window(&self, h: WindowHandle) -> Option<DisplayEvent> {
+    pub fn setup_managed_window(&mut self, h: WindowHandle) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
+            self.managed_windows.push(handle);
+
             //make sure the window is mapped
             unsafe {
                 (self.xlib.XMapWindow)(self.display, handle);
@@ -456,7 +575,7 @@ impl XWrap {
                 let list = vec![handle];
                 (self.xlib.XChangeProperty)(
                     self.display,
-                    handle,
+                    self.get_default_root(),
                     self.atoms.NetClientList,
                     xlib::XA_WINDOW,
                     32,
@@ -624,45 +743,60 @@ impl XWrap {
         }
     }
 
-    //this code is ran one when a window is destoryed
-    pub fn teardown_managed_window(&self, h: WindowHandle) {
+    //this code is ran once when a window is destoryed
+    pub fn teardown_managed_window(&mut self, h: WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             unsafe {
                 (self.xlib.XGrabServer)(self.display);
-                //(self.xlib.XSetErrorHandler)(xerrordummy);
+
+                //remove this window from the list of managed windows
+                self.managed_windows.retain(|x| *x != handle);
+                self.update_client_list();
+
+                //ungrab all buttons for this window
                 (self.xlib.XUngrabButton)(
                     self.display,
                     xlib::AnyButton as u32,
                     xlib::AnyModifier,
                     handle,
                 );
-                //self.set_window_state(&h, WITHDRAWN_STATE);
                 (self.xlib.XSync)(self.display, 0);
-                //(self.xlib.XSetErrorHandler)(xerror);
                 (self.xlib.XUngrabServer)(self.display);
             }
-            //self.set_window_state(&h, NORMAL_STATE);
         }
     }
 
-    //fn set_window_state(&self, handle: &WindowHandle, state: WindowState) {
-    //    if let WindowHandle::XlibHandle(handle) = handle {
-    //        unsafe {
-    //            let list = vec![state as u32, 0 as u32];
-    //            (self.xlib.XChangeProperty)(
-    //                self.display,
-    //                *handle,
-    //                self.atoms.WMState,
-    //                self.atoms.WMState,
-    //                32,
-    //                xlib::PropModeReplace,
-    //                list.as_ptr() as *const u8,
-    //                2,
-    //            );
-    //            std::mem::forget(list);
-    //        }
-    //    }
-    //}
+    pub fn force_unmapped(&mut self, window: xlib::Window) {
+        let managed = self.managed_windows.contains(&window);
+        if managed {
+            self.managed_windows.retain(|x| *x != window);
+            self.update_client_list();
+        }
+    }
+
+    fn update_client_list(&self) {
+        unsafe {
+            (self.xlib.XDeleteProperty)(
+                self.display,
+                self.get_default_root(),
+                self.atoms.NetClientList,
+            );
+            for w in &self.managed_windows {
+                let list = vec![*w];
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    self.get_default_root(),
+                    self.atoms.NetClientList,
+                    xlib::XA_WINDOW,
+                    32,
+                    xlib::PropModeAppend,
+                    list.as_ptr() as *const u8,
+                    1,
+                );
+                std::mem::forget(list);
+            }
+        }
+    }
 
     /**
      * used to send and XConfigureEvent for a changed window to the xserver
@@ -780,31 +914,6 @@ impl XWrap {
         };
         Err(())
     }
-
-    ////get the WMName of a window
-    //pub fn get_wmname(&self, window: xlib::Window) -> Result<String, ()> {
-    //    unsafe{
-    //        let mut ptr : *mut *mut c_char = std::mem::zeroed();
-    //        let mut ptr_len: c_int = 0;
-    //        let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
-    //        let status :c_int = (self.xlib.XGetWMName)(
-    //            self.display,
-    //            window,
-    //            &mut text_prop );
-    //        if status == 0 { return Err( () ) }
-    //        (self.xlib.XTextPropertyToStringList)(
-    //            &mut text_prop,
-    //            &mut ptr,
-    //            &mut ptr_len );
-    //        let raw: &[*mut c_char] = slice::from_raw_parts(ptr, ptr_len as usize);
-    //        for i in 0..ptr_len {
-    //            if let Ok(s) = CString::from_raw(*ptr).into_string() {
-    //                return Ok(s)
-    //            }
-    //        }
-    //    };
-    //    return Err(())
-    //}
 
     pub fn move_to_top(&self, handle: WindowHandle) {
         if let WindowHandle::XlibHandle(window) = handle {

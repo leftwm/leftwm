@@ -34,6 +34,8 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                             hint.update_window(&mut w);
                         }
 
+                        w.set_states(xw.get_window_states(event.window));
+
                         if w.floating.is_none() {
                             if let Ok(geo) = xw.get_window_geometry(event.window) {
                                 geo.update_window(&mut w);

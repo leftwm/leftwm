@@ -1,5 +1,6 @@
 use super::Window;
 use super::WindowHandle;
+use super::WindowState;
 use super::WindowType;
 use crate::models::XYHWChange;
 
@@ -14,8 +15,7 @@ pub struct WindowChange {
     pub name: Option<MaybeName>,
     pub type_: Option<WindowType>,
     pub floating: Option<XYHWChange>,
-    pub toggle_fullscreen: Option<bool>,
-    pub set_fullscreen: Option<bool>,
+    pub states: Option<Vec<WindowState>>,
 }
 
 impl WindowChange {
@@ -27,12 +27,11 @@ impl WindowChange {
             name: None,
             type_: None,
             floating: None,
-            toggle_fullscreen: None,
-            set_fullscreen: None,
+            states: None,
         }
     }
 
-    pub fn update(&self, window: &mut Window) -> bool {
+    pub fn update(self, window: &mut Window) -> bool {
         let mut changed = false;
         if let Some(trans) = &self.transient {
             changed = window.transient.is_none() || &window.transient != trans;
@@ -47,7 +46,7 @@ impl WindowChange {
             window.never_focus = nf;
         }
         if let Some(floating_change) = self.floating {
-            changed = changed || floating_change.update_window( window );
+            changed = changed || floating_change.update_window(window);
         }
         if let Some(type_) = &self.type_ {
             changed = changed || &window.type_ != type_;
@@ -57,17 +56,10 @@ impl WindowChange {
                 window.margin = 0;
             }
         }
-        if self.toggle_fullscreen.is_some() {
-            window.fullscreen = !window.fullscreen;
-            return true;
-        }
-        if let Some(fs) = self.set_fullscreen {
-            changed = changed || window.fullscreen != fs;
-            window.fullscreen = fs;
+        if let Some(states) = self.states {
+            changed = true;
+            window.set_states(states);
         }
         changed
     }
-
-
-
 }

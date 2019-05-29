@@ -1,3 +1,4 @@
+use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
 use crate::models::XYHWBuilder;
@@ -24,7 +25,7 @@ pub struct Window {
     pub tags: Vec<String>,
     pub border: i32,
     pub margin: i32,
-    pub fullscreen: bool,
+    states: Vec<WindowState>,
     pub normal: XYHW,
     pub floating: Option<XYHW>,
     pub start_loc: Option<(i32, i32)>,
@@ -43,7 +44,7 @@ impl Window {
             tags: Vec::new(),
             border: 1,
             margin: 10,
-            fullscreen: false,
+            states: vec![],
             normal: XYHWBuilder::default().into(),
             floating: None,
             start_loc: None,
@@ -73,11 +74,14 @@ impl Window {
     pub fn floating(&self) -> bool {
         self.is_floating || self.must_float()
     }
+    pub fn is_fullscreen(&self) -> bool {
+        self.states.contains(&WindowState::Fullscreen)
+    }
     pub fn must_float(&self) -> bool {
         self.transient.is_some()
             || self.type_ == WindowType::Dock
             || self.type_ == WindowType::Splash
-            || self.fullscreen
+            || self.is_fullscreen()
     }
     pub fn can_move(&self) -> bool {
         self.type_ != WindowType::Dock
@@ -92,7 +96,9 @@ impl Window {
     pub fn set_height(&mut self, height: i32) {
         self.normal.set_h(height)
     }
-
+    pub fn set_states(&mut self, states: Vec<WindowState>) {
+        self.states = states;
+    }
     pub fn width(&self) -> i32 {
         if self.floating() && self.floating.is_some() {
             self.floating.unwrap().w()
@@ -116,7 +122,7 @@ impl Window {
     }
 
     pub fn border(&self) -> i32 {
-        if self.fullscreen {
+        if self.is_fullscreen() {
             0
         } else {
             self.border
