@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.10] - 2017-05-05
+## [0.1.10] - 2019-06-17
 ### Fixed
 - Stability and performance updates
 - EWMH compatibility fixes
@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Better default key bindings
 
 
-## [0.1.9] - 2017-05-05
+## [0.1.9] - 2019-05-05
 ### Fixed
 - Fix Several small papercuts and bug fixes 
 ### Added
@@ -23,12 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - callback to call theme scripts on new window
 
 
-## [0.1.8] - 2017-04-19
+## [0.1.8] - 2019-04-19
 ### Fixed
 - Fix Several small papercuts and bug fixes 
 
 
-## [0.1.7] - 2017-04-15
+## [0.1.7] - 2019-04-15
 ### Fixed
 - Fix issues with multiscreen bars
 - Cleanup and refactor code
@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added template system for theme creation 
 
 
-## [0.1.6] - 2017-04-5
+## [0.1.6] - 2019-04-5
 ### Fixed
 - Bugs and issues with bars
 - Several small bugs fixes
