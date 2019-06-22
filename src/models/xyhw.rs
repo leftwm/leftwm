@@ -1,3 +1,7 @@
+use std::cmp;
+use std::ops::Add;
+use std::ops::Sub;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct XYHW {
     x: i32,
@@ -52,6 +56,38 @@ impl Default for XYHW {
     }
 }
 
+impl Add for XYHW {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            w: self.w + other.w,
+            h: self.h + other.h,
+            minw: cmp::max(self.minw, other.minw),
+            maxw: cmp::min(self.maxw, other.maxw),
+            minh: cmp::max(self.minh, other.minh),
+            maxh: cmp::min(self.maxh, other.maxh),
+        }
+    }
+}
+
+impl Sub for XYHW {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            w: self.w - other.w,
+            h: self.h - other.h,
+            minw: cmp::max(self.minw, other.minw),
+            maxw: cmp::min(self.maxw, other.maxw),
+            minh: cmp::max(self.minh, other.minh),
+            maxh: cmp::min(self.maxh, other.maxh),
+        }
+    }
+}
+
 impl From<XYHWBuilder> for XYHW {
     fn from(xywh: XYHWBuilder) -> Self {
         let mut b = XYHW {
@@ -94,6 +130,14 @@ impl XYHW {
     }
     pub fn maxh(&self) -> i32 {
         self.maxh
+    }
+
+    pub fn clear_minmax(&mut self) {
+        self.minw = -999_999_999;
+        self.maxw = 999_999_999;
+        self.minh = -999_999_999;
+        self.maxh = 999_999_999;
+        self.update_limits();
     }
 
     pub fn set_x(&mut self, value: i32) {

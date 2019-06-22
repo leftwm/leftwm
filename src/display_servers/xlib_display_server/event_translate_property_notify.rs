@@ -6,12 +6,6 @@ use crate::models::WindowType;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
-    //let event_name = xw.get_xatom_name(event.atom).unwrap();
-    //println!(
-    //    "WINDOW: {}, Event:{}, {}",
-    //    event.window, event.atom, event_name
-    //);
-
     if event.window == xw.get_default_root() || event.state == xlib::PropertyDelete {
         return None;
     }

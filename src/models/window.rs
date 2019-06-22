@@ -19,7 +19,9 @@ pub struct Window {
     pub transient: Option<WindowHandle>,
     visible: bool,
     is_floating: bool,
+    floating: Option<XYHW>,
     pub never_focus: bool,
+    pub debugging: bool,
     pub name: Option<String>,
     pub type_: WindowType,
     pub tags: Vec<String>,
@@ -27,8 +29,7 @@ pub struct Window {
     pub margin: i32,
     states: Vec<WindowState>,
     pub normal: XYHW,
-    pub floating: Option<XYHW>,
-    pub start_loc: Option<(i32, i32)>,
+    pub start_loc: Option<XYHW>,
 }
 
 impl Window {
@@ -38,6 +39,7 @@ impl Window {
             transient: None,
             visible: false,
             is_floating: false,
+            debugging: false,
             never_focus: false,
             name,
             type_: WindowType::Normal,
@@ -64,16 +66,54 @@ impl Window {
     pub fn set_visible(&mut self, value: bool) {
         self.visible = value;
     }
+
     pub fn visible(&self) -> bool {
-        self.visible || self.floating()
+        self.visible
+            || self.type_ == WindowType::Dock
+            || self.type_ == WindowType::Menu
+            || self.type_ == WindowType::Splash
+            || self.type_ == WindowType::Dialog
+            || self.type_ == WindowType::Toolbar
     }
 
     pub fn set_floating(&mut self, value: bool) {
+        if !self.is_floating && value && self.floating.is_none() {
+            //NOTE: We float relative to the normal position.
+            self.reset_float_offset();
+            //let mut new_value = XYHW::default();
+            //new_value.clear_minmax();
+            //self.floating = Some(new_value);
+        }
         self.is_floating = value;
     }
+
     pub fn floating(&self) -> bool {
         self.is_floating || self.must_float()
     }
+
+    pub fn get_floating_offsets(&self) -> Option<XYHW> {
+        self.floating
+    }
+
+    pub fn reset_float_offset(&mut self) {
+        let mut new_value = XYHW::default();
+        new_value.clear_minmax();
+        self.floating = Some(new_value);
+    }
+
+    pub fn set_floating_offsets(&mut self, value: Option<XYHW>) {
+        self.floating = value;
+        if let Some(value) = &mut self.floating {
+            value.clear_minmax();
+        }
+    }
+
+    pub fn set_floating_exact(&mut self, value: XYHW) {
+        let mut new_value = value - self.normal;
+        new_value.clear_minmax();
+        self.floating = Some(new_value);
+    }
+
     pub fn is_fullscreen(&self) -> bool {
         self.states.contains(&WindowState::Fullscreen)
     }
@@ -100,18 +140,34 @@ impl Window {
         self.states = states;
     }
     pub fn width(&self) -> i32 {
-        if self.floating() && self.floating.is_some() {
-            self.floating.unwrap().w()
+        let mut value = 100;
+        if self.is_fullscreen() {
+            value = self.normal.w();
+        } else if self.floating() && self.floating.is_some() {
+            let relative = self.normal + self.floating.unwrap();
+            value = relative.w() - (self.margin * 2) - (self.border * 2);
         } else {
-            self.normal.w() - (self.margin * 2) - (self.border * 2)
+            value = self.normal.w() - (self.margin * 2) - (self.border * 2);
         }
+        if value < 100 {
+            value = 100
+        }
+        value
     }
     pub fn height(&self) -> i32 {
-        if self.floating() && self.floating.is_some() {
-            self.floating.unwrap().h()
+        let mut value = 100;
+        if self.is_fullscreen() {
+            value = self.normal.h();
+        } else if self.floating() && self.floating.is_some() {
+            let relative = self.normal + self.floating.unwrap();
+            value = relative.h() - (self.margin * 2) - (self.border * 2);
         } else {
-            self.normal.h() - (self.margin * 2) - (self.border * 2)
+            value = self.normal.h() - (self.margin * 2) - (self.border * 2);
         }
+        if value < 100 {
+            value = 100
+        }
+        value
     }
 
     pub fn set_x(&mut self, x: i32) {
@@ -130,19 +186,36 @@ impl Window {
     }
 
     pub fn x(&self) -> i32 {
+        if self.is_fullscreen() {
+            return self.normal.x();
+        }
         if self.floating() && self.floating.is_some() {
-            self.floating.unwrap().x()
+            let relative = self.normal + self.floating.unwrap();
+            relative.x() + self.margin
         } else {
             self.normal.x() + self.margin
         }
     }
 
     pub fn y(&self) -> i32 {
+        if self.is_fullscreen() {
+            return self.normal.y();
+        }
         if self.floating() && self.floating.is_some() {
-            self.floating.unwrap().y()
+            let relative = self.normal + self.floating.unwrap();
+            relative.y() + self.margin
         } else {
             self.normal.y() + self.margin
         }
+    }
+
+    pub fn calculated_xyhw(&self) -> XYHW {
+        let mut build = XYHWBuilder::default();
+        build.h = self.height();
+        build.w = self.width();
+        build.x = self.x();
+        build.y = self.y();
+        build.into()
     }
 
     pub fn tag(&mut self, tag: String) {

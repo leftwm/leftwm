@@ -5,6 +5,7 @@ use super::XWrap;
 use crate::models::Mode;
 use crate::models::Window;
 use crate::models::WindowHandle;
+use log::*;
 use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
@@ -36,8 +37,9 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
                         w.set_states(xw.get_window_states(event.window));
 
-                        if w.floating.is_none() {
+                        if w.floating() {
                             if let Ok(geo) = xw.get_window_geometry(event.window) {
+                                info!("geo: {:?}", &geo);
                                 geo.update_window(&mut w);
                             }
                         }
@@ -132,7 +134,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         Some(DisplayEvent::MoveWindow(h.clone(), offset_x, offset_y))
                     }
                     Mode::ResizingWindow(h) => {
-                        Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y))
+                        Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y)) //h, w
                     }
                 }
             }

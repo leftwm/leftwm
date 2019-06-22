@@ -1,6 +1,7 @@
 use super::*;
 use crate::display_action::DisplayAction;
 use crate::models::XYHW;
+use log::*;
 
 /*
  * process a collection of events, and apply them changes to a manager
@@ -19,28 +20,21 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
 
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
-            window.floating = Some(ws.center_halfed());
             window.set_floating(true);
+            window.set_floating_exact(ws.center_halfed());
         }
     } else {
         window.tags = vec![manager.tags[0].clone()]
     }
 
     if let Some(trans) = &window.transient {
-        if window.floating.is_none() {
-            window.floating = Some(XYHWBuilder::default().into()); //make sure we have a value to modify
-        }
         if let Some(parent) = find_window(manager, &trans) {
-            window.floating = Some(calc_center_of_parent(&window, parent));
+            window.set_floating(true);
+            window.set_floating_exact(calc_center_of_parent(&window, parent));
         }
     }
 
     window.update_for_theme(&manager.theme_setting);
-
-    //if floating, make sure the window has a floating XYHW
-    if window.floating() && window.floating.is_none() {
-        window.floating = Some(window.normal);
-    }
 
     manager.windows.push(window.clone());
 
@@ -111,10 +105,7 @@ pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
 }
 
 fn calc_center_of_parent(window: &Window, parent: &Window) -> XYHW {
-    let mut xyhw = match window.floating {
-        Some(f) => f,
-        None => XYHWBuilder::default().into(),
-    };
+    let mut xyhw = window.calculated_xyhw();
 
     //make sure this window has a real height/width first
     if xyhw.h() == 0 || xyhw.w() == 0 {
@@ -141,9 +132,11 @@ fn find_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option<&'w Wi
 pub fn update_workspace_avoid_list(manager: &mut Manager) {
     let mut avoid = vec![];
     for w in &manager.windows {
-        if w.type_ == WindowType::Dock {
-            if let Some(f) = w.floating {
-                avoid.push(f);
+        if w.type_ == WindowType::Dock && w.floating() {
+            trace!("to_avoid w: {:?}", w);
+            if let Some(to_avoid) = w.get_floating_offsets() {
+                trace!("to_avoid: {:?}", &to_avoid);
+                avoid.push(to_avoid);
             }
         }
     }

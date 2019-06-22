@@ -1,8 +1,10 @@
 use super::layouts::*;
 use crate::models::Screen;
 use crate::models::Window;
+use crate::models::WindowType;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
+use log::*;
 use std::collections::VecDeque;
 use std::fmt;
 
@@ -124,22 +126,30 @@ impl Workspace {
     }
 
     /*
-     * given a list of windows, returns a sublist of the windows that this workspace is displaying
+     * returns true if the workspace is to update the locations info of this window
      */
-    //pub fn displayed_windows<'a>(&self, windows: &mut Vec<&'a mut Window>) -> &mut Vec<&'a mut Window> {
-    //    windows
-    //        .into_iter()
-    //        .filter(|w| self.is_displaying(w) && !w.floating())
-    //        .collect::<&mut Vec<&mut Window>>()
-    //}
+    pub fn is_managed(&self, window: &Window) -> bool {
+        self.is_displaying(window) && window.type_ != WindowType::Dock
+    }
 
     pub fn update_windows(&self, windows: &mut Vec<&mut Window>) {
-        let mut mine: Vec<&mut &mut Window> = windows
+        //mark all windows for this workspace as visible
+        let mut all_mine: Vec<&mut &mut Window> = windows
             .iter_mut()
-            .filter(|w| self.is_displaying(w) && !w.floating())
+            .filter(|w| self.is_displaying(w))
             .collect();
-        mine.iter_mut().for_each(|w| w.set_visible(true));
-        self.layouts[0].update_windows(self, &mut mine);
+        all_mine.iter_mut().for_each(|w| w.set_visible(true));
+        //update the location of all non-floating windows
+        let mut managed_nonfloat: Vec<&mut &mut Window> = windows
+            .iter_mut()
+            .filter(|w| self.is_managed(w) && !w.floating())
+            .collect();
+        self.layouts[0].update_windows(self, &mut managed_nonfloat);
+        //update the location of all floating windows
+        windows
+            .iter_mut()
+            .filter(|w| self.is_managed(w) && w.floating())
+            .for_each(|w| w.normal = self.xyhw);
     }
 
     pub fn x(&self) -> i32 {
@@ -164,6 +174,7 @@ impl Workspace {
         for a in &self.avoid {
             xyhw = xyhw.without(a);
         }
+        debug!("calc xyhw_avoided: {:?}", self.xyhw_avoided);
         self.xyhw_avoided = xyhw;
     }
 }

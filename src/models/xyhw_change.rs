@@ -83,12 +83,11 @@ impl XYHWChange {
     }
 
     pub fn update_window(&self, window: &mut Window) -> bool {
-        if window.floating.is_none() {
-            window.floating = Some(XYHWBuilder::default().into());
-        }
-        let mut xyhw = window.floating.unwrap();
-        let changed = self.update(&mut xyhw);
-        window.floating = Some(xyhw);
+        let mut float_offset = window
+            .get_floating_offsets()
+            .unwrap_or(XYHWBuilder::default().into());
+        let changed = self.update(&mut float_offset);
+        window.set_floating_offsets( Some(float_offset) );
         changed
     }
 }
