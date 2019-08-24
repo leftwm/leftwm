@@ -138,7 +138,7 @@ impl Workspace {
             .iter_mut()
             .filter(|w| self.is_displaying(w) && !w.floating())
             .collect();
-        mine.iter_mut().for_each(|w| w.set_visable(true));
+        mine.iter_mut().for_each(|w| w.set_visible(true));
         self.layouts[0].update_windows(self, &mut mine);
     }
 

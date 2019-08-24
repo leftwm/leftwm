@@ -17,7 +17,7 @@ pub enum WindowHandle {
 pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
-    visable: bool,
+    visible: bool,
     is_floating: bool,
     pub never_focus: bool,
     pub name: Option<String>,
@@ -36,7 +36,7 @@ impl Window {
         Window {
             handle: h,
             transient: None,
-            visable: false,
+            visible: false,
             is_floating: false,
             never_focus: false,
             name,
@@ -61,11 +61,11 @@ impl Window {
         }
     }
 
-    pub fn set_visable(&mut self, value: bool) {
-        self.visable = value;
+    pub fn set_visible(&mut self, value: bool) {
+        self.visible = value;
     }
-    pub fn visable(&self) -> bool {
-        self.visable || self.floating()
+    pub fn visible(&self) -> bool {
+        self.visible || self.floating()
     }
 
     pub fn set_floating(&mut self, value: bool) {

@@ -32,7 +32,7 @@ fn two_screen_mock_manager() -> Manager {
 }
 
 #[test]
-fn going_to_a_workspace_that_is_already_visable_should_not_duplicate_the_workspace() {
+fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
     let mut manager = two_screen_mock_manager();
     process(&mut manager, 1);
     assert_eq!(manager.workspaces[0].tags, ["2".to_owned()]);

@@ -21,7 +21,7 @@ pub struct TagsForWorkspace {
     pub name: String,
     pub index: usize,
     pub mine: bool,
-    pub visable: bool,
+    pub visible: bool,
     pub focused: bool,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -41,7 +41,7 @@ pub struct DisplayState {
 
 impl Into<DisplayState> for ManagerState {
     fn into(self) -> DisplayState {
-        let visable: Vec<String> = self
+        let visible: Vec<String> = self
             .viewports
             .iter()
             .flat_map(|vp| vp.tags.clone())
@@ -54,7 +54,7 @@ impl Into<DisplayState> for ManagerState {
                 viewport_into_display_workspace(
                     &self.desktop_names,
                     &self.active_desktop,
-                    &visable,
+                    &visible,
                     &vp,
                     i,
                 )
@@ -70,7 +70,7 @@ impl Into<DisplayState> for ManagerState {
 fn viewport_into_display_workspace(
     all_tags: &Vec<String>,
     focused: &Vec<String>,
-    visable: &Vec<String>,
+    visible: &Vec<String>,
     viewport: &Viewport,
     ws_index: usize,
 ) -> DisplayWorkspace {
@@ -81,7 +81,7 @@ fn viewport_into_display_workspace(
             name: t.clone(),
             index,
             mine: viewport.tags.contains(t),
-            visable: visable.contains(t),
+            visible: visible.contains(t),
             focused: focused.contains(t),
         })
         .collect();

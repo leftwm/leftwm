@@ -520,7 +520,7 @@ impl XWrap {
 
     pub fn update_window(&self, window: &Window, is_focused: bool) {
         if let WindowHandle::XlibHandle(h) = window.handle {
-            if window.visable() {
+            if window.visible() {
                 let mut changes = xlib::XWindowChanges {
                     x: window.x(),
                     y: window.y(),
@@ -552,7 +552,7 @@ impl XWrap {
                 self.send_config(window);
             } else {
                 unsafe {
-                    //if not visable x is <---- way over there <----
+                    //if not visible x is <---- way over there <----
                     (self.xlib.XMoveWindow)(self.display, h, window.width() * -2, window.y());
                 }
             }
