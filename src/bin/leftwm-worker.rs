@@ -7,12 +7,16 @@ use leftwm::*;
 use log::*;
 use std::panic;
 use std::sync::Once;
+use nix::sys::signal::{self, SigHandler, Signal};
 
 fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
     ds.get_next_events()
 }
 
 fn main() {
+    // Avoid zombies, by ignoring SIGCHLD
+    unsafe { signal::signal(Signal::SIGCHLD, SigHandler::SigIgn) }.unwrap();
+
     match Logger::with_env_or_str("leftwm-worker=info, leftwm=info")
         .log_to_file()
         .directory("/tmp/leftwm")

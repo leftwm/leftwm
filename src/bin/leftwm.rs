@@ -2,8 +2,11 @@ extern crate leftwm;
 use leftwm::child_process::Nanny;
 use std::env;
 use std::process::Command;
+use nix::sys::signal::{self, SigHandler, Signal};
 
 fn main() {
+    // Avoid zombies, by ignoring SIGCHLD
+    unsafe { signal::signal(Signal::SIGCHLD, SigHandler::SigIgn) }.unwrap();
     if let Ok(booter) = std::env::current_exe() {
         //boot everything in ~/.config/autostart
         Nanny::new().autostart();
