@@ -5,11 +5,13 @@ use std::process::Command;
 use nix::sys::signal::{self, SigHandler, Signal};
 
 fn main() {
-    // Avoid zombies, by ignoring SIGCHLD
-    unsafe { signal::signal(Signal::SIGCHLD, SigHandler::SigIgn) }.unwrap();
     if let Ok(booter) = std::env::current_exe() {
+        // Avoid zombies, by ignoring SIGCHLD
+        unsafe { signal::signal(Signal::SIGCHLD, SigHandler::SigIgn) }.unwrap();
         //boot everything in ~/.config/autostart
         Nanny::new().autostart();
+        // Restore default handler before leftwm-worker handover
+        unsafe { signal::signal(Signal::SIGCHLD, SigHandler::SigDfl) }.unwrap();
 
         //Fix for JAVA apps so they repaint correctly
         env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
