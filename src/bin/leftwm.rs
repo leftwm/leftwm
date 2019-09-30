@@ -2,16 +2,28 @@ extern crate leftwm;
 use leftwm::child_process::Nanny;
 use std::env;
 use std::process::Command;
+
+use nix::sys::wait;
 use nix::sys::signal::{self, SigHandler, Signal};
 
+extern fn handle_sigchld(signal: libc::c_int) {
+    // TODO: replaced with Signal::try_from() in to-be-released nix crate
+    let signal = Signal::from_c_int(signal).unwrap();
+    if signal == Signal::SIGCHLD {
+        let _ = wait::wait();
+    }
+}
+
+fn install_sigchld_handler() {
+    let handler = SigHandler::Handler(handle_sigchld);
+    unsafe { signal::signal(Signal::SIGCHLD, handler) }.unwrap();
+}
+
 fn main() {
+    install_sigchld_handler();
     if let Ok(booter) = std::env::current_exe() {
-        // Avoid zombies, by ignoring SIGCHLD
-        unsafe { signal::signal(Signal::SIGCHLD, SigHandler::SigIgn) }.unwrap();
         //boot everything in ~/.config/autostart
         Nanny::new().autostart();
-        // Restore default handler before leftwm-worker handover
-        unsafe { signal::signal(Signal::SIGCHLD, SigHandler::SigDfl) }.unwrap();
 
         //Fix for JAVA apps so they repaint correctly
         env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
