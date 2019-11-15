@@ -1,10 +1,9 @@
 extern crate leftwm;
-#[macro_use]
-extern crate log;
-extern crate env_logger;
 
+use flexi_logger::{colored_default_format, Logger};
 use leftwm::child_process::Nanny;
 use leftwm::*;
+use log::*;
 use std::panic;
 use std::sync::Once;
 
@@ -13,7 +12,16 @@ fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
 }
 
 fn main() {
-    env_logger::init();
+    match Logger::with_env_or_str("info")
+        .log_to_file()
+        .directory("/tmp/leftwm")
+        .format(colored_default_format)
+        .start()
+    {
+        Ok(_) => info!("leftwm-worker booted!"),
+        Err(_) => error!("failed to setup logging"),
+    }
+
     let result = panic::catch_unwind(|| {
         let mut manager = Box::new(Manager::default());
         let config = config::load();
@@ -91,8 +99,8 @@ fn load_old_windows_state(manager: &mut Manager) {
                 .iter()
                 .find(|w| w.handle == window.handle)
             {
-                window.floating = old.floating;
                 window.set_floating(old.floating());
+                window.set_floating_offsets(old.get_floating_offsets());
                 window.normal = old.normal;
                 window.tags = old.tags.clone();
             }

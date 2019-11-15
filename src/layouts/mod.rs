@@ -116,7 +116,7 @@ fn should_fullscreen_a_single_window() {
     w.border = 0;
     w.margin = 0;
     let mut windows = vec![&mut w];
-    let mut windows_filters = windows.iter_mut().filter(|f| true).collect();
+    let mut windows_filters = windows.iter_mut().filter(|_f| true).collect();
     layout.update_windows(&ws, &mut windows_filters);
     assert!(
         w.height() == 600,
