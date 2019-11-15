@@ -1,6 +1,5 @@
 use super::*;
 use crate::display_action::DisplayAction;
-use crate::models::XYHW;
 use log::*;
 
 /*
@@ -21,16 +20,20 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
             window.set_floating(true);
-            window.set_floating_exact(ws.center_halfed());
+            let new_float_exact = ws.center_halfed();
+            window.normal = ws.xyhw;
+            window.set_floating_exact(new_float_exact);
         }
     } else {
         window.tags = vec![manager.tags[0].clone()]
     }
 
     if let Some(trans) = &window.transient {
-        if let Some(parent) = find_window(manager, &trans) {
+        if let Some(parent) = find_parent_window(manager, &trans) {
             window.set_floating(true);
-            window.set_floating_exact(calc_center_of_parent(&window, parent));
+            let new_float_exact = parent.calculated_xyhw().center_halfed();
+            window.normal = parent.normal;
+            window.set_floating_exact(new_float_exact);
         }
     }
 
@@ -104,21 +107,6 @@ pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
     false
 }
 
-fn calc_center_of_parent(window: &Window, parent: &Window) -> XYHW {
-    let mut xyhw = window.calculated_xyhw();
-
-    //make sure this window has a real height/width first
-    if xyhw.h() == 0 || xyhw.w() == 0 {
-        xyhw.set_h(parent.height() / 2);
-        xyhw.set_w(parent.width() / 2);
-    }
-
-    xyhw.set_x(parent.x() + (parent.width() / 2) - (xyhw.w() / 2));
-    xyhw.set_y(parent.y() + (parent.height() / 2) - (xyhw.h() / 2));
-
-    xyhw
-}
-
 fn find_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option<&'w Window> {
     for win in &manager.windows {
         if &win.handle == handle {
@@ -127,6 +115,15 @@ fn find_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option<&'w Wi
         }
     }
     None
+}
+
+fn find_parent_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option<&'w Window> {
+    let mut w = find_window(manager, handle);
+    while w.is_some() && w.unwrap().transient.is_some() {
+        let tran = w.unwrap().transient.clone().unwrap();
+        w = find_window(manager, &tran);
+    }
+    w
 }
 
 pub fn update_workspace_avoid_list(manager: &mut Manager) {

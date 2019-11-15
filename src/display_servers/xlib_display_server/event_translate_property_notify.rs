@@ -3,12 +3,16 @@ use super::XWrap;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::models::WindowType;
+use log::*;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
     if event.window == xw.get_default_root() || event.state == xlib::PropertyDelete {
         return None;
     }
+
+    let event_name = xw.get_xatom_name(event.atom).unwrap();
+    trace!("PropertyNotify: {} : {:?}", event_name, &event);
 
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {

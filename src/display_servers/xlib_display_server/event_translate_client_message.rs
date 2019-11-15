@@ -3,9 +3,13 @@ use super::XWrap;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::Command;
+use log::*;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
+    let atom_name = xw.atoms.get_name(event.message_type);
+    trace!("ClientMessage: {} : {:?}", event.window, atom_name);
+
     if event.message_type == xw.atoms.NetCurrentDesktop {
         return goto_tag_by_index(xw, event.data.get_long(0));
     }
