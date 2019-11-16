@@ -259,6 +259,26 @@ impl XYHW {
 }
 
 #[test]
+fn center_halfed() {
+    let a = XYHW {
+        x: 10,
+        y: 10,
+        w: 2000,
+        h: 1000,
+        ..Default::default()
+    };
+    let correct = XYHW {
+        x: 510,
+        y: 260,
+        w: 1000,
+        h: 500,
+        ..Default::default()
+    };
+    let result = a.center_halfed();
+    assert_eq!(result, correct);
+}
+
+#[test]
 fn without_should_trim_from_the_top() {
     let a = XYHW {
         y: 5,

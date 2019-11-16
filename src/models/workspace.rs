@@ -174,7 +174,7 @@ impl Workspace {
         for a in &self.avoid {
             xyhw = xyhw.without(a);
         }
-        debug!("calc xyhw_avoided: {:?}", self.xyhw_avoided);
+        trace!("calc xyhw_avoided: {:?}", self.xyhw_avoided);
         self.xyhw_avoided = xyhw;
     }
 }

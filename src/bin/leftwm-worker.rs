@@ -12,7 +12,7 @@ fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
 }
 
 fn main() {
-    match Logger::with_env_or_str("info")
+    match Logger::with_env_or_str("leftwm-worker=info, leftwm=debug")
         .log_to_file()
         .directory("/tmp/leftwm")
         .format(colored_default_format)
