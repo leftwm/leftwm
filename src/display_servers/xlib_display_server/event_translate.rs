@@ -134,7 +134,8 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         Some(DisplayEvent::MoveWindow(h.clone(), offset_x, offset_y))
                     }
                     Mode::ResizingWindow(h) => {
-                        Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y)) //h, w
+                        Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y))
+                        //h, w
                     }
                 }
             }

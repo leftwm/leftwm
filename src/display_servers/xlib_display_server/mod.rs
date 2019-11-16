@@ -9,6 +9,7 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
+use log::*;
 use std::sync::Once;
 use x11_dl::xlib;
 
@@ -85,6 +86,7 @@ impl DisplayServer for XlibDisplayServer {
         let event = XEvent(&self.xw, xlib_event).into();
 
         if let Some(e) = event {
+            debug!("DisplayEvent: {:?}", e);
             events.push(e)
         }
 
@@ -100,33 +102,62 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
-        match act {
-            DisplayAction::KillWindow(w) => self.xw.kill_window(w),
-            DisplayAction::AddedWindow(w) => {
-                return self.xw.setup_managed_window(w);
+        debug!("DisplayAction: {:?}", act);
+        let event: Option<DisplayEvent> = match act {
+            DisplayAction::KillWindow(w) => {
+                self.xw.kill_window(w);
+                None
             }
+            DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w),
             DisplayAction::MoveMouseOver(handle) => {
                 if let WindowHandle::XlibHandle(win) = handle {
                     let _ = self.xw.move_cursor_to_window(win);
                 }
+                None
             }
             DisplayAction::MoveMouseOverPoint(point) => {
                 let _ = self.xw.move_cursor_to_point(point);
+                None
             }
-            DisplayAction::DestroyedWindow(w) => self.xw.teardown_managed_window(w),
-            DisplayAction::WindowTakeFocus(w) => self.xw.window_take_focus(w),
-            DisplayAction::MoveToTop(w) => self.xw.move_to_top(w),
-            DisplayAction::StartMovingWindow(w) => self.xw.set_mode(Mode::MovingWindow(w)),
-            DisplayAction::StartResizingWindow(w) => self.xw.set_mode(Mode::ResizingWindow(w)),
-            DisplayAction::NormalMode => self.xw.set_mode(Mode::NormalMode),
-            DisplayAction::SetCurrentTags(tags) => self.xw.set_current_desktop(&tags),
+            DisplayAction::DestroyedWindow(w) => {
+                self.xw.teardown_managed_window(w);
+                None
+            }
+            DisplayAction::WindowTakeFocus(w) => {
+                self.xw.window_take_focus(w);
+                None
+            }
+            DisplayAction::MoveToTop(w) => {
+                self.xw.move_to_top(w);
+                None
+            }
+            DisplayAction::StartMovingWindow(w) => {
+                self.xw.set_mode(Mode::MovingWindow(w));
+                None
+            }
+            DisplayAction::StartResizingWindow(w) => {
+                self.xw.set_mode(Mode::ResizingWindow(w));
+                None
+            }
+            DisplayAction::NormalMode => {
+                self.xw.set_mode(Mode::NormalMode);
+                None
+            }
+            DisplayAction::SetCurrentTags(tags) => {
+                self.xw.set_current_desktop(&tags);
+                None
+            }
             DisplayAction::SetWindowTags(handle, tag) => {
                 if let WindowHandle::XlibHandle(window) = handle {
                     self.xw.set_window_desktop(window, &tag)
                 }
+                None
             }
+        };
+        if event.is_some() {
+            debug!("DisplayEvent: {:?}", event);
         }
-        None
+        event
     }
 }
 
