@@ -24,14 +24,15 @@ impl Clone for Box<Layout> {
 
 pub fn get_all_layouts() -> VecDeque<Box<Layout>> {
     let mut layouts = VecDeque::new();
-    layouts.push_back(Box::new(MainAndVertStack {}) as Box<Layout>);
-    layouts.push_back(Box::new(EvenHorizontal {}) as Box<Layout>);
-    layouts.push_back(Box::new(EvenVertical {}) as Box<Layout>);
+    layouts.push_back(Box::new(MainAndVertStack) as Box<Layout>);
+    layouts.push_back(Box::new(EvenHorizontal) as Box<Layout>);
+    layouts.push_back(Box::new(EvenVertical) as Box<Layout>);
     layouts
 }
 
+/// Layout which gives each window full height, but splits the workspace width among them all.
 #[derive(Clone, Debug)]
-pub struct EvenHorizontal {}
+pub struct EvenHorizontal;
 impl Layout for EvenHorizontal {
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let width_f = workspace.width() as f32 / windows.len() as f32;
@@ -47,8 +48,9 @@ impl Layout for EvenHorizontal {
     }
 }
 
+/// Layout which gives each window full width, but splits the workspace height among them all.
 #[derive(Clone, Debug)]
-pub struct EvenVertical {}
+pub struct EvenVertical;
 impl Layout for EvenVertical {
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let height_f = workspace.height() as f32 / windows.len() as f32;
@@ -64,8 +66,10 @@ impl Layout for EvenVertical {
     }
 }
 
+/// Layout which splits the workspace into two columns, gives one window all of the left column,
+/// and divides the right column among all the other windows.
 #[derive(Clone, Debug)]
-pub struct MainAndVertStack {}
+pub struct MainAndVertStack;
 impl Layout for MainAndVertStack {
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let window_count = windows.len();
