@@ -437,7 +437,7 @@ impl XWrap {
                     self.get_default_root(),
                     atom,
                     xlib::XA_CARDINAL,
-                    32,
+                    8,
                     xlib::PropModeReplace,
                     cstring.as_ptr() as *const u8,
                     value.len() as i32,
