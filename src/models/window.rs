@@ -3,6 +3,7 @@ use super::WindowType;
 use crate::config::ThemeSetting;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
+use log::*;
 use x11_dl::xlib;
 
 type MockHandle = i32;
@@ -80,9 +81,6 @@ impl Window {
         if !self.is_floating && value && self.floating.is_none() {
             //NOTE: We float relative to the normal position.
             self.reset_float_offset();
-            //let mut new_value = XYHW::default();
-            //new_value.clear_minmax();
-            //self.floating = Some(new_value);
         }
         self.is_floating = value;
     }
@@ -139,6 +137,7 @@ impl Window {
     pub fn set_states(&mut self, states: Vec<WindowState>) {
         self.states = states;
     }
+
     pub fn width(&self) -> i32 {
         let mut value = 100;
         if self.is_fullscreen() {
@@ -149,7 +148,7 @@ impl Window {
         } else {
             value = self.normal.w() - (self.margin * 2) - (self.border * 2);
         }
-        if value < 100 {
+        if value < 100 && self.type_ != WindowType::Dock {
             value = 100
         }
         value
@@ -164,7 +163,7 @@ impl Window {
         } else {
             value = self.normal.h() - (self.margin * 2) - (self.border * 2);
         }
-        if value < 100 {
+        if value < 100 && self.type_ != WindowType::Dock {
             value = 100
         }
         value
