@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2019-12-16
+### Fixed
+- Stability and performance updates
+- EWMH compatibility fixes
+- The way floating windows move with workspaces
+### Added
+- layout Grid
+- layout Fibonacci
+
+
 ## [0.1.10] - 2019-06-17
 ### Fixed
 - Stability and performance updates

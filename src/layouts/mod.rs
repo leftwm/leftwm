@@ -180,7 +180,9 @@ impl Layout for Fibonacci {
         let window_count = windows.len() as i32;
 
         for i in 0..window_count {
-            if i % 2 != 0 { continue }
+            if i % 2 != 0 {
+                continue;
+            }
 
             let half_width = (width as f32 / 2 as f32).floor() as i32;
             let half_height = (height as f32 / 2 as f32).floor() as i32;
@@ -188,16 +190,28 @@ impl Layout for Fibonacci {
             match window_count - 1 - i {
                 0 => {
                     setter(&mut windows[i as usize], height, width, x, y);
-                },
+                }
                 1 => {
                     setter(&mut windows[i as usize], height, half_width, x, y);
 
-                    setter(&mut windows[(i + 1) as usize], height, half_width, x + half_width, y);
-                },
+                    setter(
+                        &mut windows[(i + 1) as usize],
+                        height,
+                        half_width,
+                        x + half_width,
+                        y,
+                    );
+                }
                 _ => {
                     setter(&mut windows[i as usize], height, half_width, x, y);
 
-                    setter(&mut windows[(i + 1) as usize], half_height, half_width, x + half_width, y);
+                    setter(
+                        &mut windows[(i + 1) as usize],
+                        half_height,
+                        half_width,
+                        x + half_width,
+                        y,
+                    );
 
                     x = x + half_width;
                     y = y + half_height;
@@ -209,7 +223,7 @@ impl Layout for Fibonacci {
     }
 }
 
-fn setter (window: &mut Window, height: i32, width: i32, x: i32, y: i32) {
+fn setter(window: &mut Window, height: i32, width: i32, x: i32, y: i32) {
     window.set_height(height);
     window.set_width(width);
     window.set_x(x);
