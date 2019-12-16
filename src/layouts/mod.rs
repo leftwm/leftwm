@@ -111,7 +111,7 @@ impl Layout for MainAndVertStack {
 
 /// Layout which splits the workspace into N columns, and then splits each column into rows.
 /// Example arrangement (4 windows):
-/// ```
+/// ```text
 /// +---+---+
 /// |   |   |
 /// +---+---+
@@ -119,7 +119,7 @@ impl Layout for MainAndVertStack {
 /// +---+---+
 /// ```
 /// or with 8 windows:
-/// ```
+/// ```text
 /// +---+---+---+
 /// |   |   |   |
 /// |   +---+---+
@@ -158,7 +158,7 @@ impl Layout for GridHorizontal {
 }
 
 /// Fibonacci layout, which divides the workspace in subsequent halves and assignes them to the windows
-///
+/// ```text
 /// +-----------+-----------+
 /// |           |           |
 /// |           |     2     |
@@ -168,7 +168,7 @@ impl Layout for GridHorizontal {
 /// |           |  3  +--+--+
 /// |           |     | 5|-.|
 /// +-----------+-----+-----+
-
+/// ```
 #[derive(Clone, Debug)]
 pub struct Fibonacci;
 impl Layout for Fibonacci {
