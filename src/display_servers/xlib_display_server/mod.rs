@@ -86,7 +86,7 @@ impl DisplayServer for XlibDisplayServer {
         let event = XEvent(&self.xw, xlib_event).into();
 
         if let Some(e) = event {
-            debug!("DisplayEvent: {:?}", e);
+            trace!("DisplayEvent: {:?}", e);
             events.push(e)
         }
 
@@ -102,7 +102,7 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
-        debug!("DisplayAction: {:?}", act);
+        trace!("DisplayAction: {:?}", act);
         let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(w) => {
                 self.xw.kill_window(w);
@@ -155,7 +155,7 @@ impl DisplayServer for XlibDisplayServer {
             }
         };
         if event.is_some() {
-            debug!("DisplayEvent: {:?}", event);
+            trace!("DisplayEvent: {:?}", event);
         }
         event
     }

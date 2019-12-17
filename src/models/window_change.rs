@@ -34,22 +34,42 @@ impl WindowChange {
     pub fn update(self, window: &mut Window) -> bool {
         let mut changed = false;
         if let Some(trans) = &self.transient {
-            changed = window.transient.is_none() || &window.transient != trans;
+            let changed_trans = window.transient.is_none() || &window.transient != trans;
+            //if changed_trans {
+            //    warn!("CHANGED: trans");
+            //}
+            changed = changed || changed_trans;
             window.transient = trans.clone();
         }
         if let Some(name) = &self.name {
-            changed = changed || window.name.is_none() || &window.name != name;
+            let changed_name = window.name.is_none() || &window.name != name;
+            //if changed_name {
+            //    warn!("CHANGED: name");
+            //}
+            changed = changed || changed_name;
             window.name = name.clone();
         }
         if let Some(nf) = self.never_focus {
-            changed = changed || window.never_focus != nf;
+            let changed_nf = window.never_focus != nf;
+            //if changed_nf {
+            //    warn!("CHANGED: nf");
+            //}
+            changed = changed || changed_nf;
             window.never_focus = nf;
         }
         if let Some(floating_change) = self.floating {
-            changed = changed || floating_change.update_window(window);
+            let changed_floating = floating_change.update_window(window);
+            //if changed_floating {
+            //    warn!("CHANGED: floating");
+            //}
+            changed = changed || changed_floating;
         }
         if let Some(type_) = &self.type_ {
-            changed = changed || &window.type_ != type_;
+            let changed_type = &window.type_ != type_;
+            //if changed_type {
+            //    warn!("CHANGED: type");
+            //}
+            changed = changed || changed_type;
             window.type_ = type_.clone();
             if window.type_ == WindowType::Dock {
                 window.border = 0;
@@ -57,7 +77,8 @@ impl WindowChange {
             }
         }
         if let Some(states) = self.states {
-            changed = true;
+            //warn!("CHANGED: state");
+            changed = changed || true;
             window.set_states(states);
         }
         changed

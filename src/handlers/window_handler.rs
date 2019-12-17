@@ -94,12 +94,14 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
     for w in manager.windows.iter_mut() {
         if w.handle == change.handle {
+            debug!("WINDOW CHANGED {:?} {:?}", &w, change);
+            //let old_type = w.type_.clone();
             let changed = change.update(w);
             if w.type_ == WindowType::Dock {
                 update_workspace_avoid_list(manager);
                 //don't left changes from docks re-render the worker. This will result in an
                 //infinite loop. Just be patient a rerender will occur.
-                return false;
+                //return true;
             }
             return changed;
         }
@@ -130,9 +132,7 @@ pub fn update_workspace_avoid_list(manager: &mut Manager) {
     let mut avoid = vec![];
     for w in &manager.windows {
         if w.type_ == WindowType::Dock && w.floating() {
-            trace!("to_avoid w: {:?}", w);
             if let Some(to_avoid) = w.get_floating_offsets() {
-                trace!("to_avoid: {:?}", &to_avoid);
                 avoid.push(to_avoid);
             }
         }

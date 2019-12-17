@@ -1,6 +1,7 @@
 use crate::models::Window;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
+use log::warn;
 
 #[derive(Clone, Debug, PartialEq, Copy)]
 pub struct XYHWChange {
@@ -48,36 +49,60 @@ impl XYHWChange {
     pub fn update(&self, xyhw: &mut XYHW) -> bool {
         let mut changed = false;
         if let Some(x) = self.x {
-            xyhw.set_x(x);
-            changed = true;
+            if xyhw.x() != x {
+                warn!("CHANGE: X");
+                xyhw.set_x(x);
+                changed = true;
+            }
         }
         if let Some(y) = self.y {
-            xyhw.set_y(y);
-            changed = true;
+            if xyhw.y() != y {
+                warn!("CHANGE: Y");
+                xyhw.set_y(y);
+                changed = true;
+            }
         }
         if let Some(w) = self.w {
-            xyhw.set_w(w);
-            changed = true;
+            if xyhw.w() != w {
+                warn!("CHANGE: W");
+                xyhw.set_w(w);
+                changed = true;
+            }
         }
         if let Some(h) = self.h {
-            xyhw.set_h(h);
-            changed = true;
+            if xyhw.h() != h {
+                warn!("CHANGE: H");
+                xyhw.set_h(h);
+                changed = true;
+            }
         }
         if let Some(minw) = self.minw {
-            xyhw.set_minw(minw);
-            changed = true;
+            if xyhw.minw() != minw {
+                warn!("CHANGE: minw");
+                xyhw.set_minw(minw);
+                changed = true;
+            }
         }
         if let Some(maxw) = self.maxw {
-            xyhw.set_maxw(maxw);
-            changed = true;
+            if xyhw.maxw() != maxw {
+                warn!("CHANGE: maxw");
+                xyhw.set_maxw(maxw);
+                changed = true;
+            }
         }
         if let Some(minh) = self.minh {
-            xyhw.set_minh(minh);
-            changed = true;
+            if xyhw.minh() != minh {
+                warn!("CHANGE: minh");
+                xyhw.set_minh(minh);
+                changed = true;
+            }
         }
         if let Some(maxh) = self.maxh {
-            xyhw.set_maxh(maxh);
-            changed = true;
+            if xyhw.maxh() != maxh {
+                warn!("CHANGE: maxh");
+                xyhw.set_maxh(maxh);
+                changed = true;
+            }
         }
         changed
     }
