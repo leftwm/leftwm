@@ -4,12 +4,10 @@ extern crate leftwm;
 extern crate clap;
 
 use clap::{App, Arg};
+use leftwm::errors::Result;
 use leftwm::models::dto::*;
 use std::fs;
 use std::io::prelude::*;
-use std::io::Error;
-use std::io::ErrorKind;
-use std::io::Result;
 use std::os::unix::net::UnixStream;
 use std::str;
 use xdg::BaseDirectories;
@@ -163,10 +161,7 @@ impl StreamReader {
         if let Some(raw) = raw.lines().last() {
             Ok(raw.to_string())
         } else {
-            Err(Error::new(
-                ErrorKind::Other,
-                "couldn't parse bytes into string",
-            ))
+            Err(leftwm::errors::LeftErrorKind::StreamError().into())
         }
     }
 }

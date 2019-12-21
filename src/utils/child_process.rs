@@ -1,3 +1,4 @@
+use crate::errors::Result;
 use dirs;
 use std::fs;
 use std::io;
@@ -33,7 +34,7 @@ impl Nanny {
             });
     }
 
-    pub fn boot_current_theme(&self) -> Result<(), Box<std::error::Error>> {
+    pub fn boot_current_theme(&self) -> Result<()> {
         let mut path = BaseDirectories::with_prefix("leftwm")?.create_config_directory("")?;
         path.push("themes");
         path.push("current");

@@ -1,5 +1,4 @@
 use crate::models::Window;
-use crate::models::XYHWBuilder;
 use crate::models::XYHW;
 
 #[derive(Clone, Debug, PartialEq, Copy)]

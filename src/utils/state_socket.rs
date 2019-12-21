@@ -1,5 +1,6 @@
-use crate::models::Manager;
+use crate::errors::Result;
 use crate::models::dto::*;
+use crate::models::Manager;
 use bytes::{BufMut, BytesMut};
 use futures::future::{self, Either};
 use futures::sync::mpsc;
@@ -17,7 +18,7 @@ use xdg::BaseDirectories;
 
 type Tx = mpsc::UnboundedSender<String>;
 type Rx = mpsc::UnboundedReceiver<String>;
-type Server = Result<Arc<Mutex<Shared>>, Box<std::error::Error>>;
+type Server = Result<Arc<Mutex<Shared>>>;
 
 pub struct StateSocket {
     server: Server,
@@ -77,7 +78,7 @@ impl StateSocket {
         Ok(return_state)
     }
 
-    pub fn write_manager_state(&mut self, manager: &Manager) -> Result<(), Box<std::error::Error>> {
+    pub fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
         let state: ManagerState = manager.into();
         let mut json = serde_json::to_string(&state)?;
         json.push_str("\n");

@@ -2,6 +2,7 @@ extern crate leftwm;
 
 use flexi_logger::{colored_default_format, Logger};
 use leftwm::child_process::Nanny;
+use leftwm::errors::Result;
 use leftwm::*;
 use log::*;
 use std::panic;
@@ -108,7 +109,7 @@ fn load_old_windows_state(manager: &mut Manager) {
     }
 }
 
-fn load_old_state() -> Result<Manager, Box<std::error::Error>> {
+fn load_old_state() -> Result<Manager> {
     let statefile = "/tmp/leftwm.state";
     let data: String = std::fs::read_to_string(statefile)?;
     let _ = std::fs::remove_file(statefile);

@@ -8,6 +8,7 @@ pub mod config;
 mod display_action;
 mod display_event;
 pub mod display_servers;
+pub mod errors;
 mod handlers;
 mod layouts;
 pub mod models;

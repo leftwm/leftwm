@@ -1,3 +1,4 @@
+use crate::errors::Result;
 use std::default::Default;
 use std::fs;
 use std::path::PathBuf;
@@ -57,7 +58,7 @@ impl ThemeSetting {
     }
 }
 
-fn load_theme_file(path: &PathBuf) -> Result<ThemeSettingLoadable, Box<std::error::Error>> {
+fn load_theme_file(path: &PathBuf) -> Result<ThemeSettingLoadable> {
     let contents = fs::read_to_string(path)?;
     let from_file: ThemeSettingLoadable = toml::from_str(&contents)?;
     Ok(from_file)

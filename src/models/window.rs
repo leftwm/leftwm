@@ -3,7 +3,6 @@ use super::WindowType;
 use crate::config::ThemeSetting;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
-use log::*;
 use x11_dl::xlib;
 
 type MockHandle = i32;
@@ -139,7 +138,7 @@ impl Window {
     }
 
     pub fn width(&self) -> i32 {
-        let mut value = 100;
+        let mut value;
         if self.is_fullscreen() {
             value = self.normal.w();
         } else if self.floating() && self.floating.is_some() {
@@ -154,7 +153,7 @@ impl Window {
         value
     }
     pub fn height(&self) -> i32 {
-        let mut value = 100;
+        let mut value;
         if self.is_fullscreen() {
             value = self.normal.h();
         } else if self.floating() && self.floating.is_some() {

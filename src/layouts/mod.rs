@@ -7,28 +7,28 @@ pub trait Layout: LayoutClone {
 }
 
 pub trait LayoutClone {
-    fn clone_box(&self) -> Box<Layout>;
+    fn clone_box(&self) -> Box<dyn Layout>;
 }
 
 impl<T: 'static + Layout + Clone> LayoutClone for T {
-    fn clone_box(&self) -> Box<Layout> {
+    fn clone_box(&self) -> Box<dyn Layout> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<Layout> {
-    fn clone(&self) -> Box<Layout> {
+impl Clone for Box<dyn Layout> {
+    fn clone(&self) -> Box<dyn Layout> {
         self.clone_box()
     }
 }
 
-pub fn get_all_layouts() -> VecDeque<Box<Layout>> {
-    let mut layouts = VecDeque::new();
-    layouts.push_back(Box::new(MainAndVertStack) as Box<Layout>);
-    layouts.push_back(Box::new(GridHorizontal) as Box<Layout>);
-    layouts.push_back(Box::new(EvenHorizontal) as Box<Layout>);
-    layouts.push_back(Box::new(EvenVertical) as Box<Layout>);
-    layouts.push_back(Box::new(Fibonacci) as Box<Layout>);
+pub fn get_all_layouts() -> VecDeque<Box<dyn Layout>> {
+    let mut layouts: VecDeque<Box<dyn Layout>> = VecDeque::new();
+    layouts.push_back(Box::new(MainAndVertStack));
+    layouts.push_back(Box::new(GridHorizontal));
+    layouts.push_back(Box::new(EvenHorizontal));
+    layouts.push_back(Box::new(EvenVertical));
+    layouts.push_back(Box::new(Fibonacci));
     layouts
 }
 

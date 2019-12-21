@@ -4,7 +4,6 @@ use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
-use log::*;
 use std::collections::VecDeque;
 use std::fmt;
 
@@ -12,7 +11,7 @@ use std::fmt;
 pub struct Workspace {
     pub id: i32,
     #[serde(skip)]
-    layouts: VecDeque<Box<Layout>>,
+    layouts: VecDeque<Box<dyn Layout>>,
     pub tags: Vec<String>,
     pub avoid: Vec<XYHW>,
     pub xyhw: XYHW,

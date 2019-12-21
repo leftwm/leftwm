@@ -3,6 +3,7 @@ mod theme_setting;
 mod workspace_config;
 
 use super::Command;
+use crate::errors::Result;
 use std::default::Default;
 use std::env;
 use std::fs;
@@ -34,7 +35,7 @@ pub fn load() -> Config {
     }
 }
 
-fn load_from_file() -> Result<Config, Box<std::error::Error>> {
+fn load_from_file() -> Result<Config> {
     let path = BaseDirectories::with_prefix("leftwm")?;
     let config_filename = path.place_config_file("config.toml")?;
     if Path::new(&config_filename).exists() {
