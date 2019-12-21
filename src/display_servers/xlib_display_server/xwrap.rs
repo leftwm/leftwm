@@ -243,7 +243,7 @@ impl XWrap {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
         let mut type_return: xlib::Atom = 0;
-        let mut prop_return: *mut c_uchar = unsafe { std::mem::uninitialized() };
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::zeroed() };
         unsafe {
             let status = (self.xlib.XGetWindowProperty)(
                 self.display,
@@ -317,7 +317,7 @@ impl XWrap {
         let mut nitems_return: c_ulong = 0;
         let mut bytes_remaining: c_ulong = 0;
         let mut type_return: xlib::Atom = 0;
-        let mut prop_return: *mut c_uchar = unsafe { std::mem::uninitialized() };
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::zeroed() };
         unsafe {
             let status = (self.xlib.XGetWindowProperty)(
                 self.display,
@@ -375,7 +375,7 @@ impl XWrap {
         let data = vec![0 as u32, xlib::CurrentTime as u32];
         self.set_desktop_prop(&data, self.atoms.NetCurrentDesktop);
         //set desktop names
-        let mut text: xlib::XTextProperty = unsafe { std::mem::uninitialized() };
+        let mut text: xlib::XTextProperty = unsafe { std::mem::zeroed() };
         unsafe {
             let mut clist_tags: Vec<*mut c_char> = tags
                 .iter()
@@ -677,7 +677,7 @@ impl XWrap {
         let mut nitems_return: c_ulong = 0;
         let mut type_return: xlib::Atom = 0;
         let mut bytes_after_return: xlib::Atom = 0;
-        let mut prop_return: *mut c_uchar = unsafe { std::mem::uninitialized() };
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::zeroed() };
         unsafe {
             let status = (self.xlib.XGetWindowProperty)(
                 self.display,
@@ -713,7 +713,7 @@ impl XWrap {
         let mut nitems_return: c_ulong = 0;
         let mut type_return: xlib::Atom = 0;
         let mut bytes_after_return: xlib::Atom = 0;
-        let mut prop_return: *mut c_uchar = unsafe { std::mem::uninitialized() };
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::zeroed() };
         unsafe {
             let status = (self.xlib.XGetWindowProperty)(
                 self.display,
@@ -833,7 +833,7 @@ impl XWrap {
 
     fn send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
         if self.can_send_xevent_atom(window, atom) {
-            let mut msg: xlib::XClientMessageEvent = unsafe { std::mem::uninitialized() };
+            let mut msg: xlib::XClientMessageEvent = unsafe { std::mem::zeroed() };
             msg.type_ = xlib::ClientMessage;
             msg.window = window;
             msg.message_type = self.atoms.WMProtocols;
@@ -1069,7 +1069,7 @@ impl XWrap {
     }
 
     pub fn get_hint_sizing(&self, window: xlib::Window) -> Option<xlib::XSizeHints> {
-        let mut xsize: xlib::XSizeHints = unsafe { std::mem::uninitialized() };
+        let mut xsize: xlib::XSizeHints = unsafe { std::mem::zeroed() };
         let mut msize: c_long = xlib::PSize;
         let status =
             unsafe { (self.xlib.XGetWMNormalHints)(self.display, window, &mut xsize, &mut msize) };
@@ -1181,7 +1181,7 @@ impl XWrap {
         let screen = unsafe { (self.xlib.XDefaultScreen)(self.display) };
         let cmap: xlib::Colormap = unsafe { (self.xlib.XDefaultColormap)(self.display, screen) };
         let color_cstr = CString::new(color).unwrap().into_raw();
-        let mut color: xlib::XColor = unsafe { std::mem::uninitialized() };
+        let mut color: xlib::XColor = unsafe { std::mem::zeroed() };
         unsafe {
             (self.xlib.XAllocNamedColor)(self.display, cmap, color_cstr, &mut color, &mut color);
         }
@@ -1202,7 +1202,7 @@ impl XWrap {
         self.load_colors(theme);
         //self.colors = self.load_colors(config);
 
-        let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::uninitialized() };
+        let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
         attrs.event_mask = root_event_mask;
 
@@ -1306,7 +1306,7 @@ impl XWrap {
     }
 
     pub fn get_next_event(&self) -> xlib::XEvent {
-        let mut event: xlib::XEvent = unsafe { std::mem::uninitialized() };
+        let mut event: xlib::XEvent = unsafe { std::mem::zeroed() };
         unsafe {
             (self.xlib.XNextEvent)(self.display, &mut event);
         };
