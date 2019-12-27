@@ -15,7 +15,7 @@ use xdg::BaseDirectories;
 fn main() -> Result<()> {
     let matches = App::new("LeftWM State")
         .author("Lex Childs <lex.childs@gmail.com>")
-        .version("0.2.1")
+        .version("0.2.2")
         .about("prints out the current state of LeftWM")
         .arg(
             Arg::with_name("template")
