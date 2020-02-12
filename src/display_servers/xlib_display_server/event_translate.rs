@@ -4,7 +4,10 @@ use super::DisplayEvent;
 use super::XWrap;
 use crate::models::Mode;
 use crate::models::Window;
+use crate::models::WindowChange;
 use crate::models::WindowHandle;
+use crate::models::WindowType;
+use crate::models::XYHWChange;
 use log::*;
 use x11_dl::xlib;
 
@@ -145,8 +148,35 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 None
             }
 
+            xlib::ConfigureRequest => {
+                let event = xlib::XConfigureRequestEvent::from(raw_event);
+
+                if xw.get_window_type(event.window) == WindowType::Dock {
+                    //log::warn!("ConfigureRequest {:?}", event);
+                    let handle = WindowHandle::XlibHandle(event.window);
+                    let mut change = WindowChange::new(handle);
+                    let mut xyhw = XYHWChange::default();
+                    xyhw.w = Some(event.width);
+                    xyhw.h = Some(event.height);
+                    xyhw.x = Some(event.x);
+                    xyhw.y = Some(event.y);
+                    change.floating = Some(xyhw.into());
+                    //log::warn!("CHANGE {:?}", change);
+                    Some(DisplayEvent::WindowChange(change))
+                } else {
+                    None
+                }
+
+                /*
+                 ConfigureRequest XConfigureRequestEvent { type_: 23, serial: 1157, send_event: 0,
+                 display: 0x5604f8d70a00, parent: 414, window: 62914566, x: 0, y: 0,
+                 width: 450, height: 215, border_width: 0, above: 0, detail: 0, value_mask: 12 }
+                */
+            }
+
             _other => {
-                //println!("Other {:?}", _other);
+                //println!("Xevent Other {:?}", _other);
+                //log::warn!("Xevent Other {:?}", _other);
                 None
             }
         }

@@ -592,15 +592,16 @@ impl XWrap {
 
             match self.get_window_type(handle) {
                 WindowType::Dock => {
-                    if let Some(dock_area) = self.get_window_strut_array(handle) {
-                        let dems = self.screens_area_dimensions();
-                        if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
-                            let mut change = WindowChange::new(h);
-                            change.floating = Some(xywh.into());
-                            change.type_ = Some(WindowType::Dock);
-                            return Some(DisplayEvent::WindowChange(change));
-                        }
-                    }
+                    //if let Some(dock_area) = self.get_window_strut_array(handle) {
+                    //    let dems = self.screens_area_dimensions();
+                    //    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                    //        log::warn!("NEW DOCK: {:?}", handle);
+                    //        let mut change = WindowChange::new(h);
+                    //        change.floating = Some(xywh.into());
+                    //        change.type_ = Some(WindowType::Dock);
+                    //        return Some(DisplayEvent::WindowChange(change));
+                    //    }
+                    //}
                 }
                 _ => {
                     let _ = self.move_cursor_to_window(handle);
