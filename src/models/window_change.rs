@@ -15,6 +15,7 @@ pub struct WindowChange {
     pub name: Option<MaybeName>,
     pub type_: Option<WindowType>,
     pub floating: Option<XYHWChange>,
+    pub strut: Option<XYHWChange>,
     pub states: Option<Vec<WindowState>>,
 }
 
@@ -27,6 +28,7 @@ impl WindowChange {
             name: None,
             type_: None,
             floating: None,
+            strut: None,
             states: None,
         }
     }
@@ -58,11 +60,18 @@ impl WindowChange {
             window.never_focus = nf;
         }
         if let Some(floating_change) = self.floating {
-            let changed_floating = floating_change.update_window(window);
+            let changed_floating = floating_change.update_window_floating(window);
             //if changed_floating {
             //    warn!("CHANGED: floating");
             //}
             changed = changed || changed_floating;
+        }
+        if let Some(strut) = self.strut {
+            let changed_strut = strut.update_window_strut(window);
+            //////if changed_strut {
+            //////    warn!("CHANGED: strut");
+            //////}
+            changed = changed || changed_strut;
         }
         if let Some(type_) = &self.type_ {
             let changed_type = &window.type_ != type_;

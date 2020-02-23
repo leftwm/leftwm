@@ -131,8 +131,9 @@ fn find_parent_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option
 pub fn update_workspace_avoid_list(manager: &mut Manager) {
     let mut avoid = vec![];
     for w in &manager.windows {
-        if w.type_ == WindowType::Dock && w.floating() {
-            if let Some(to_avoid) = w.get_floating_offsets() {
+        if w.type_ == WindowType::Dock && w.strut.is_some() {
+            if let Some(to_avoid) = w.strut {
+                debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
                 avoid.push(to_avoid);
             }
         }

@@ -35,7 +35,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         let trans = xw.get_transient_for(event.window);
 
                         if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
-                            hint.update_window(&mut w);
+                            hint.update_window_floating(&mut w);
                         }
 
                         w.set_states(xw.get_window_states(event.window));
@@ -43,7 +43,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         if w.floating() {
                             if let Ok(geo) = xw.get_window_geometry(event.window) {
                                 info!("geo: {:?}", &geo);
-                                geo.update_window(&mut w);
+                                geo.update_window_floating(&mut w);
                             }
                         }
 
@@ -150,9 +150,9 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
             xlib::ConfigureRequest => {
                 let event = xlib::XConfigureRequestEvent::from(raw_event);
+                let window_type = xw.get_window_type(event.window);
 
-                if xw.get_window_type(event.window) == WindowType::Dock {
-                    //log::warn!("ConfigureRequest {:?}", event);
+                if window_type != WindowType::Normal {
                     let handle = WindowHandle::XlibHandle(event.window);
                     let mut change = WindowChange::new(handle);
                     let mut xyhw = XYHWChange::default();
@@ -161,7 +161,14 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                     xyhw.x = Some(event.x);
                     xyhw.y = Some(event.y);
                     change.floating = Some(xyhw.into());
-                    //log::warn!("CHANGE {:?}", change);
+                    if window_type == WindowType::Dock {
+                        if let Some(dock_area) = xw.get_window_strut_array(event.window) {
+                            let dems = xw.screens_area_dimensions();
+                            if let Some(strut_xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                                change.strut = Some(strut_xywh.into())
+                            }
+                        }
+                    }
                     Some(DisplayEvent::WindowChange(change))
                 } else {
                     None

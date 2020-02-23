@@ -97,13 +97,25 @@ impl XYHWChange {
         changed
     }
 
-    pub fn update_window(&self, window: &mut Window) -> bool {
+    pub fn update_window_floating(&self, window: &mut Window) -> bool {
         let mut changed = false;
         if window.floating() {
             let mut current = window.calculated_xyhw();
             changed = self.update(&mut current);
             window.set_floating_exact(current);
         }
+        changed
+    }
+
+    pub fn update_window_strut(&self, window: &mut Window) -> bool {
+        let mut changed = false;
+        if window.strut.is_none() {
+            window.strut = Some(XYHW::default());
+            changed = true;
+        }
+        let mut xyhw = window.strut.unwrap().clone();
+        changed = self.update(&mut xyhw) || changed;
+        window.strut = Some(xyhw);
         changed
     }
 }

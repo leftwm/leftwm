@@ -30,6 +30,7 @@ pub struct Window {
     states: Vec<WindowState>,
     pub normal: XYHW,
     pub start_loc: Option<XYHW>,
+    pub strut: Option<XYHW>,
 }
 
 impl Window {
@@ -50,6 +51,7 @@ impl Window {
             normal: XYHWBuilder::default().into(),
             floating: None,
             start_loc: None,
+            strut: None,
         }
     }
 
