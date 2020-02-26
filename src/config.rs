@@ -18,6 +18,7 @@ pub use theme_setting::ThemeSetting;
 pub use workspace_config::WorkspaceConfig;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(default)]
 pub struct Config {
     pub modkey: String,
     pub workspaces: Option<Vec<WorkspaceConfig>>,
@@ -39,15 +40,8 @@ fn load_from_file() -> Result<Config> {
     let path = BaseDirectories::with_prefix("leftwm")?;
     let config_filename = path.place_config_file("config.toml")?;
     if Path::new(&config_filename).exists() {
-        let default = Config::default();
         let contents = fs::read_to_string(config_filename)?;
-        let mut config: Config = toml::from_str(&contents)?;
-        if config.workspaces.is_none() {
-            config.workspaces = default.workspaces
-        }
-        if config.tags.is_none() {
-            config.tags = default.tags
-        }
+        let config: Config = toml::from_str(&contents)?;
         Ok(config)
     } else {
         let config = Config::default();
