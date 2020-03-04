@@ -128,7 +128,7 @@ impl Default for Config {
     fn default() -> Self {
         let mut commands: Vec<Keybind> = vec![];
 
-        //Mod + Shift + Enter => Open dmenu
+        //Mod + p => Open dmenu
         commands.push(Keybind {
             command: Command::Execute,
             value: Some("dmenu_run".to_owned()),
@@ -152,7 +152,7 @@ impl Default for Config {
             key: "q".to_owned(),
         });
 
-        //Mod + shift + r => soft reload leftwm
+        //Mod + Shift + r => soft reload leftwm
         commands.push(Keybind {
             command: Command::SoftReload,
             value: None,
@@ -160,7 +160,7 @@ impl Default for Config {
             key: "r".to_owned(),
         });
 
-        //Mod + shift + x => exit leftwm
+        //Mod + Shift + x => exit leftwm
         commands.push(Keybind {
             command: Command::Execute,
             value: Some("pkill leftwm".to_owned()),
@@ -168,7 +168,7 @@ impl Default for Config {
             key: "x".to_owned(),
         });
 
-        //Mod + crtl + l => lock the screen
+        //Mod + Ctrl + l => lock the screen
         commands.push(Keybind {
             command: Command::Execute,
             value: Some("slock".to_owned()),
