@@ -143,7 +143,7 @@ impl Workspace {
             .iter_mut()
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
-        self.layouts[0].update_windows(self, &mut managed_nonfloat);
+        self.current_layout().update_windows(self, &mut managed_nonfloat);
         //update the location of all floating windows
         windows
             .iter_mut()
@@ -174,6 +174,10 @@ impl Workspace {
             xyhw = xyhw.without(a);
         }
         self.xyhw_avoided = xyhw;
+    }
+
+    pub fn current_layout(&self) -> &Box<dyn Layout> {
+        &self.layouts[0]
     }
 }
 

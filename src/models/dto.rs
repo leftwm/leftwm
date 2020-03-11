@@ -7,6 +7,7 @@ pub struct Viewport {
     pub w: u32,
     pub x: i32,
     pub y: i32,
+    pub layout: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManagerState {
@@ -30,6 +31,7 @@ pub struct DisplayWorkspace {
     pub w: u32,
     pub x: i32,
     pub y: i32,
+    pub layout: String,
     pub index: usize,
     pub tags: Vec<TagsForWorkspace>,
 }
@@ -91,6 +93,7 @@ fn viewport_into_display_workspace(
         w: viewport.w,
         x: viewport.x,
         y: viewport.y,
+        layout: viewport.layout.clone(),
         index: ws_index,
     }
 }
@@ -105,6 +108,7 @@ impl From<&Manager> for ManagerState {
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
                 w: ws.xyhw.w() as u32,
+                layout: ws.current_layout().name().into(),
             });
         }
         let active_desktop = match manager.focused_workspace() {
