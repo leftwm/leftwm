@@ -45,7 +45,7 @@ impl DisplayEventHandler {
                 //look through the config and build a command if its defined in the config
                 let act = DisplayAction::NormalMode;
                 manager.actions.push_back(act);
-                false
+                true
             }
 
             DisplayEvent::Movement(handle, x, y) => {
@@ -61,8 +61,7 @@ impl DisplayEventHandler {
             }
             DisplayEvent::ResizeWindow(handle, x, y) => {
                 window_resize_handler::process(manager, &handle, x, y)
-            }
-            //_ => false,
+            } //_ => false,
         };
 
         if update_needed {

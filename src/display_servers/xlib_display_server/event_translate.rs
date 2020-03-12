@@ -111,6 +111,13 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
 
             xlib::PropertyNotify => {
+                //only watch Configure Requests when in normal mode
+                match &xw.mode {
+                    Mode::MovingWindow(_h) => return None,
+                    Mode::ResizingWindow(_h) => return None,
+                    Mode::NormalMode => {}
+                };
+
                 let event = xlib::XPropertyEvent::from(raw_event);
                 //println!("PropertyNotify {:?}", event);
                 event_translate_property_notify::from_event(xw, event)
@@ -151,6 +158,13 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ConfigureRequest => {
                 let event = xlib::XConfigureRequestEvent::from(raw_event);
                 let window_type = xw.get_window_type(event.window);
+
+                //only watch Configure Requests when in normal mode
+                match &xw.mode {
+                    Mode::MovingWindow(_h) => return None,
+                    Mode::ResizingWindow(_h) => return None,
+                    Mode::NormalMode => {}
+                };
 
                 if window_type != WindowType::Normal {
                     let handle = WindowHandle::XlibHandle(event.window);

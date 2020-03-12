@@ -65,12 +65,26 @@ fn event_loop(
 
         //if we need to update the displayed state
         if needs_update {
-            let windows: Vec<&Window> = (&manager.windows).iter().map(|w| w).collect();
-            let focused = manager.focused_window();
-            display_server.update_windows(windows, focused);
-            let workspaces: Vec<&Workspace> = (&manager.workspaces).iter().map(|w| w).collect();
-            let focused = manager.focused_workspace();
-            display_server.update_workspaces(workspaces, focused);
+            match &manager.mode {
+                Mode::NormalMode => {
+                    let windows: Vec<&Window> = (&manager.windows).iter().collect();
+                    let focused = manager.focused_window();
+                    display_server.update_windows(windows, focused);
+                    let workspaces: Vec<&Workspace> =
+                        (&manager.workspaces).iter().map(|w| w).collect();
+                    let focused = manager.focused_workspace();
+                    display_server.update_workspaces(workspaces, focused);
+                }
+                //when (resizing / moving) only deal with the single window
+                Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
+                    let focused = manager.focused_window();
+                    let windows: Vec<&Window> = (&manager.windows)
+                        .iter()
+                        .filter(|w| &w.handle == h)
+                        .collect();
+                    display_server.update_windows(windows, focused);
+                }
+            }
         }
 
         //preform any actions requested by the handler
