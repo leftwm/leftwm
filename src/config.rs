@@ -86,25 +86,17 @@ fn default_terminal<'s>() -> &'s str {
 impl Config {
     /// Returns a collection of bindings with the mod key mapped.
     pub fn mapped_bindings(&self) -> Vec<Keybind> {
-        let mod_key: &String = &self.modkey.clone();
-        let old_binds: &Vec<Keybind> = &self.keybind;
-        old_binds
-            .iter()
-            .map(|k| {
-                let mut keymap = k.clone();
-                let old_mods: &Vec<String> = &k.modifier;
-                let mods = old_mods
-                    .iter()
-                    .map(|m| {
-                        if m == "modkey" {
-                            mod_key.clone()
-                        } else {
-                            m.clone()
-                        }
-                    })
-                    .collect();
-                keymap.modifier = mods;
-                keymap
+        // copy keybinds substituting "modkey" modifier with a new "modkey".
+        self.keybind
+            .clone()
+            .into_iter()
+            .map(|mut keybind| {
+                for m in &mut keybind.modifier {
+                    if m == "modkey" {
+                        *m = self.modkey.clone();
+                    }
+                }
+                keybind
             })
             .collect()
     }

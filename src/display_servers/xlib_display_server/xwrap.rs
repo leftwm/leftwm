@@ -1190,6 +1190,7 @@ impl XWrap {
         color.pixel
     }
 
+    // TODO: split into smaller functions
     pub fn init(&mut self, config: &Config, theme: &ThemeSetting) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
