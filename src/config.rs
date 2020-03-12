@@ -27,13 +27,9 @@ pub struct Config {
 }
 
 pub fn load() -> Config {
-    match load_from_file() {
-        Ok(cfg) => cfg,
-        Err(err) => {
-            println!("ERROR LOADING CONFIG: {:?}", err);
-            Config::default()
-        }
-    }
+    load_from_file()
+        .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))
+        .unwrap_or_default()
 }
 
 fn load_from_file() -> Result<Config> {
@@ -41,8 +37,7 @@ fn load_from_file() -> Result<Config> {
     let config_filename = path.place_config_file("config.toml")?;
     if Path::new(&config_filename).exists() {
         let contents = fs::read_to_string(config_filename)?;
-        let config: Config = toml::from_str(&contents)?;
-        Ok(config)
+        Ok(toml::from_str(&contents)?)
     } else {
         let config = Config::default();
         let toml = toml::to_string(&config).unwrap();
