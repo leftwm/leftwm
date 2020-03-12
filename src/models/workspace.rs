@@ -95,9 +95,7 @@ impl Workspace {
         }
     }
 
-    /*
-     * returns true if the workspace is displays a given window
-     */
+    /// Returns true if the workspace is displays a given window.
     pub fn is_displaying(&self, window: &Window) -> bool {
         for wd_t in &window.tags {
             if self.has_tag(wd_t) {
@@ -107,9 +105,7 @@ impl Workspace {
         false
     }
 
-    /*
-     * returns true if the workspace is to update the locations info of this window
-     */
+    /// Returns true if the workspace is to update the locations info of this window.
     pub fn is_managed(&self, window: &Window) -> bool {
         self.is_displaying(window) && window.type_ != WindowType::Dock
     }
@@ -168,11 +164,16 @@ impl Workspace {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{WindowHandle, BBox};
+    use crate::models::{BBox, WindowHandle};
 
     #[test]
     fn empty_ws_should_not_contain_window() {
-        let subject = Workspace::new(BBox{width: 600, height: 800, x: 0, y: 0});
+        let subject = Workspace::new(BBox {
+            width: 600,
+            height: 800,
+            x: 0,
+            y: 0,
+        });
         let w = Window::new(WindowHandle::MockHandle(1), None);
         assert!(
             subject.is_displaying(&w) == false,
@@ -182,7 +183,12 @@ mod tests {
 
     #[test]
     fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
-        let mut subject = Workspace::new(BBox{width: 600, height: 800, x: 0, y: 0});
+        let mut subject = Workspace::new(BBox {
+            width: 600,
+            height: 800,
+            x: 0,
+            y: 0,
+        });
         subject.show_tag("test".to_owned());
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.tag("test".to_owned());

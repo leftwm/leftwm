@@ -364,7 +364,7 @@ impl XWrap {
             .collect()
     }
 
-    /* EWMH support used for bars such as polybar */
+    /// EWMH support used for bars such as polybar.
     pub fn init_desktops_hints(&self) {
         let tags = &self.tags;
         let tag_length = tags.len();
@@ -800,9 +800,7 @@ impl XWrap {
         }
     }
 
-    /**
-     * used to send and XConfigureEvent for a changed window to the xserver
-     */
+    /// Used to send and XConfigureEvent for a changed window to the xserver .
     pub fn send_config(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let config = xlib::XConfigureEvent {

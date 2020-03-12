@@ -180,5 +180,4 @@ mod tests {
         .into();
         assert_eq!(area.xyhw_from_right(2000), expected);
     }
-
 }

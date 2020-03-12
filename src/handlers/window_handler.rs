@@ -2,10 +2,8 @@ use super::*;
 use crate::display_action::DisplayAction;
 use log::*;
 
-/*
- * process a collection of events, and apply them changes to a manager
- * returns true if changes need to be rendered
- */
+/// Process a collection of events, and apply them changes to a manager.
+/// Returns true if changes need to be rendered.
 pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     //don't add the window if the manager already knows about it
     for w in &manager.windows {
@@ -70,10 +68,8 @@ pub fn created(manager: &mut Manager, a_window: Window) -> bool {
     true
 }
 
-/*
- * process a collection of events, and apply them changes to a manager
- * returns true if changes need to be rendered
- */
+/// Process a collection of events, and apply them changes to a manager.
+/// Returns true if changes need to be rendered.
 pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     let start_size = manager.windows.len();
     manager.windows = manager

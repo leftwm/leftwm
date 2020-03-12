@@ -22,9 +22,7 @@ pub struct Manager {
 }
 
 impl Manager {
-    /*
-     * return the currently focused workspace
-     */
+    /// Return the currently focused workspace.
     pub fn focused_workspace(&self) -> Option<&Workspace> {
         if self.focused_workspace_history.is_empty() {
             return None;
@@ -33,9 +31,7 @@ impl Manager {
         Some(&self.workspaces[index])
     }
 
-    /*
-     * return the currently focused workspace
-     */
+    /// Return the currently focused workspace.
     pub fn focused_workspace_mut(&mut self) -> Option<&mut Workspace> {
         if self.focused_workspace_history.is_empty() {
             return None;
@@ -44,9 +40,7 @@ impl Manager {
         Some(&mut self.workspaces[index])
     }
 
-    /*
-     * return the currently focused tag
-     */
+    /// Return the currently focused tag.
     pub fn focused_tag(&self) -> Option<String> {
         if self.focused_tag_history.is_empty() {
             return None;
@@ -54,9 +48,7 @@ impl Manager {
         Some(self.focused_tag_history[0].clone())
     }
 
-    /*
-     * return the currently focused window
-     */
+    /// Return the currently focused window.
     pub fn focused_window(&self) -> Option<&Window> {
         if self.focused_window_history.is_empty() {
             return None;
@@ -70,9 +62,7 @@ impl Manager {
         None
     }
 
-    /*
-     * return the currently focused window
-     */
+    /// Return the currently focused window.
     pub fn focused_window_mut(&mut self) -> Option<&mut Window> {
         if self.focused_window_history.is_empty() {
             return None;

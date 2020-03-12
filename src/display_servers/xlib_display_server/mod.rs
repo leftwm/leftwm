@@ -162,9 +162,7 @@ impl DisplayServer for XlibDisplayServer {
 }
 
 impl XlibDisplayServer {
-    /**
-     * return a vec of events for setting up state of WM
-     */
+    /// Return a vec of events for setting up state of WM.
     fn initial_events(&self) -> Vec<DisplayEvent> {
         let mut events = vec![];
         if let Some(workspaces) = &self.config.workspaces {

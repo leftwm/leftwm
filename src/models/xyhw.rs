@@ -199,9 +199,7 @@ impl XYHW {
         self.h as u64 * self.w as u64
     }
 
-    /*
-     * Trim a XYHW out of another XYHW so that they don't overlap
-     */
+    /// Trim a XYHW out of another XYHW so that they don't overlap.
     pub fn without(&self, other: &XYHW) -> XYHW {
         let mut without = *self;
         if other.w > other.h {

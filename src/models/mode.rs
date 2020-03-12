@@ -8,7 +8,7 @@ pub enum Mode {
 }
 
 impl Default for Mode {
-    fn default() -> Self{
+    fn default() -> Self {
         Self::NormalMode
     }
 }

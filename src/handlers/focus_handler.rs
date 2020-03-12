@@ -1,9 +1,7 @@
 use super::*;
 use crate::display_action::DisplayAction;
 
-/*
- * marks a workspace as the focused workspace
- */
+/// Marks a workspace as the focused workspace.
 pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     //no new history for if no change
     if let Some(fws) = manager.focused_workspace() {
@@ -30,9 +28,7 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     true
 }
 
-/*
- * marks a window as the focused window
- */
+/// Marks a window as the focused window.
 pub fn focus_window_by_handle(
     manager: &mut Manager,
     handle: &WindowHandle,
@@ -120,9 +116,7 @@ pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bo
     false
 }
 
-/*
- * loops over the history and focuses the last window that still exists
- */
+/// Loops over the history and focuses the last window that still exists.
 pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
     let history = manager.focused_window_history.clone();
     for handle in history {
@@ -164,9 +158,7 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     true
 }
 
-/*
- * Create an action to inform the DM of the new current tags
- */
+/// Create an action to inform the DM of the new current tags.
 pub fn update_current_tags(manager: &mut Manager) {
     if let Some(workspace) = manager.focused_workspace() {
         let tags = workspace.tags.clone();
@@ -303,5 +295,4 @@ mod tests {
         let expected = manager.workspaces[1].id.clone();
         assert_eq!(expected, actual);
     }
-
 }

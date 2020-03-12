@@ -273,5 +273,4 @@ mod tests {
             "was unable to untag the window"
         );
     }
-
 }

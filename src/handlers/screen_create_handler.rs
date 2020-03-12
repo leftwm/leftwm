@@ -44,5 +44,4 @@ mod tests {
         assert!(manager.workspaces[0].has_tag("web"));
         assert!(manager.workspaces[1].has_tag("console"));
     }
-
 }

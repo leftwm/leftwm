@@ -254,13 +254,18 @@ fn setter(window: &mut Window, height: i32, width: i32, x: i32, y: i32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{WindowHandle, BBox};
+    use crate::models::{BBox, WindowHandle};
 
     #[test]
     fn should_fullscreen_a_single_window() {
         let layout = EvenHorizontal {};
         //size defaults to 600x800
-        let mut ws = Workspace::new(BBox{width: 0, height: 0, x: 0, y: 0});
+        let mut ws = Workspace::new(BBox {
+            width: 0,
+            height: 0,
+            x: 0,
+            y: 0,
+        });
         ws.xyhw.set_minh(600);
         ws.xyhw.set_minw(800);
         ws.update_avoided_areas();
