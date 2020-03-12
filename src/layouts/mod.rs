@@ -251,24 +251,29 @@ fn setter(window: &mut Window, height: i32, width: i32, x: i32, y: i32) {
     window.set_y(y);
 }
 
-#[test]
-fn should_fullscreen_a_single_window() {
-    use super::models::WindowHandle;
-    let layout = EvenHorizontal {};
-    //size defaults to 600x800
-    let mut ws = Workspace::new();
-    ws.xyhw.set_minh(600);
-    ws.xyhw.set_minw(800);
-    ws.update_avoided_areas();
-    let mut w = Window::new(WindowHandle::MockHandle(1), None);
-    w.border = 0;
-    w.margin = 0;
-    let mut windows = vec![&mut w];
-    let mut windows_filters = windows.iter_mut().filter(|_f| true).collect();
-    layout.update_windows(&ws, &mut windows_filters);
-    assert!(
-        w.height() == 600,
-        "window was not size to the correct height"
-    );
-    assert!(w.width() == 800, "window was not size to the correct width");
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{WindowHandle, BBox};
+
+    #[test]
+    fn should_fullscreen_a_single_window() {
+        let layout = EvenHorizontal {};
+        //size defaults to 600x800
+        let mut ws = Workspace::new(BBox{width: 0, height: 0, x: 0, y: 0});
+        ws.xyhw.set_minh(600);
+        ws.xyhw.set_minw(800);
+        ws.update_avoided_areas();
+        let mut w = Window::new(WindowHandle::MockHandle(1), None);
+        w.border = 0;
+        w.margin = 0;
+        let mut windows = vec![&mut w];
+        let mut windows_filters = windows.iter_mut().filter(|_f| true).collect();
+        layout.update_windows(&ws, &mut windows_filters);
+        assert!(
+            w.height() == 600,
+            "window was not size to the correct height"
+        );
+        assert!(w.width() == 800, "window was not size to the correct width");
+    }
 }

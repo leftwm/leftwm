@@ -258,133 +258,138 @@ impl XYHW {
     }
 }
 
-#[test]
-fn center_halfed() {
-    let a = XYHW {
-        x: 10,
-        y: 10,
-        w: 2000,
-        h: 1000,
-        ..Default::default()
-    };
-    let correct = XYHW {
-        x: 510,
-        y: 260,
-        w: 1000,
-        h: 500,
-        ..Default::default()
-    };
-    let result = a.center_halfed();
-    assert_eq!(result, correct);
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn without_should_trim_from_the_top() {
-    let a = XYHW {
-        y: 5,
-        h: 1000,
-        w: 1000,
-        ..Default::default()
-    };
-    let b = XYHW {
-        h: 10,
-        w: 100,
-        ..Default::default()
-    };
-    let result = a.without(&b);
-    assert_eq!(
-        result,
-        XYHW {
-            x: 0,
-            y: 10,
-            h: 995,
-            w: 1000,
-            ..Default::default()
-        }
-    );
-}
-
-#[test]
-fn without_should_trim_from_the_left() {
-    let a = XYHW {
-        x: 0,
-        y: 0,
-        h: 1000,
-        w: 1000,
-        ..Default::default()
-    };
-    let b = XYHW {
-        h: 100,
-        w: 10,
-        ..Default::default()
-    };
-    let result = a.without(&b);
-    assert_eq!(
-        result,
-        XYHW {
+    #[test]
+    fn center_halfed() {
+        let a = XYHW {
             x: 10,
-            y: 0,
-            w: 990,
+            y: 10,
+            w: 2000,
             h: 1000,
             ..Default::default()
-        }
-    );
-}
+        };
+        let correct = XYHW {
+            x: 510,
+            y: 260,
+            w: 1000,
+            h: 500,
+            ..Default::default()
+        };
+        let result = a.center_halfed();
+        assert_eq!(result, correct);
+    }
 
-#[test]
-fn without_should_trim_from_the_bottom() {
-    let a = XYHW {
-        x: 0,
-        y: 0,
-        h: 1000,
-        w: 1000,
-        ..Default::default()
-    };
-    let b = XYHW {
-        y: 990,
-        x: 0,
-        h: 10,
-        w: 100,
-        ..Default::default()
-    };
-    let result = a.without(&b);
-    assert_eq!(
-        result,
-        XYHW {
-            x: 0,
-            y: 0,
-            h: 990,
+    #[test]
+    fn without_should_trim_from_the_top() {
+        let a = XYHW {
+            y: 5,
+            h: 1000,
             w: 1000,
             ..Default::default()
-        }
-    );
-}
+        };
+        let b = XYHW {
+            h: 10,
+            w: 100,
+            ..Default::default()
+        };
+        let result = a.without(&b);
+        assert_eq!(
+            result,
+            XYHW {
+                x: 0,
+                y: 10,
+                h: 995,
+                w: 1000,
+                ..Default::default()
+            }
+        );
+    }
 
-#[test]
-fn without_should_trim_from_the_right() {
-    let a = XYHW {
-        x: 0,
-        y: 0,
-        h: 1000,
-        w: 1000,
-        ..Default::default()
-    };
-    let b = XYHW {
-        x: 990,
-        y: 0,
-        h: 100,
-        w: 10,
-        ..Default::default()
-    };
-    let result = a.without(&b);
-    assert_eq!(
-        result,
-        XYHW {
+    #[test]
+    fn without_should_trim_from_the_left() {
+        let a = XYHW {
             x: 0,
             y: 0,
-            w: 990,
             h: 1000,
+            w: 1000,
             ..Default::default()
-        }
-    );
+        };
+        let b = XYHW {
+            h: 100,
+            w: 10,
+            ..Default::default()
+        };
+        let result = a.without(&b);
+        assert_eq!(
+            result,
+            XYHW {
+                x: 10,
+                y: 0,
+                w: 990,
+                h: 1000,
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn without_should_trim_from_the_bottom() {
+        let a = XYHW {
+            x: 0,
+            y: 0,
+            h: 1000,
+            w: 1000,
+            ..Default::default()
+        };
+        let b = XYHW {
+            y: 990,
+            x: 0,
+            h: 10,
+            w: 100,
+            ..Default::default()
+        };
+        let result = a.without(&b);
+        assert_eq!(
+            result,
+            XYHW {
+                x: 0,
+                y: 0,
+                h: 990,
+                w: 1000,
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn without_should_trim_from_the_right() {
+        let a = XYHW {
+            x: 0,
+            y: 0,
+            h: 1000,
+            w: 1000,
+            ..Default::default()
+        };
+        let b = XYHW {
+            x: 990,
+            y: 0,
+            h: 100,
+            w: 10,
+            ..Default::default()
+        };
+        let result = a.without(&b);
+        assert_eq!(
+            result,
+            XYHW {
+                x: 0,
+                y: 0,
+                w: 990,
+                h: 1000,
+                ..Default::default()
+            }
+        );
+    }
 }

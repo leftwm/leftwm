@@ -655,8 +655,8 @@ impl XWrap {
         let mut height = 0;
         let mut width = 0;
         for s in self.get_screens() {
-            height = std::cmp::max(height, s.height + s.y);
-            width = std::cmp::max(width, s.width + s.x);
+            height = std::cmp::max(height, s.bbox.height + s.bbox.y);
+            width = std::cmp::max(width, s.bbox.width + s.bbox.x);
         }
         (height, width)
     }

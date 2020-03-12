@@ -1,5 +1,5 @@
 use super::layouts::*;
-use crate::models::Screen;
+use crate::models::BBox;
 use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::XYHWBuilder;
@@ -37,25 +37,8 @@ impl PartialEq for Workspace {
     }
 }
 
-impl Default for Workspace {
-    fn default() -> Self {
-        Workspace {
-            id: -1,
-            layouts: get_all_layouts(),
-            tags: vec![],
-            avoid: vec![],
-            xyhw: XYHWBuilder::default().into(),
-            xyhw_avoided: XYHWBuilder::default().into(),
-        }
-    }
-}
-
 impl Workspace {
-    pub fn new() -> Workspace {
-        Workspace::default()
-    }
-
-    pub fn from_screen(screen: &Screen) -> Workspace {
+    pub fn new(bbox: BBox) -> Workspace {
         Workspace {
             id: -1,
             layouts: get_all_layouts(),
@@ -63,18 +46,18 @@ impl Workspace {
             avoid: vec![],
 
             xyhw: XYHWBuilder {
-                h: screen.height,
-                w: screen.width,
-                x: screen.x,
-                y: screen.y,
+                h: bbox.height,
+                w: bbox.width,
+                x: bbox.x,
+                y: bbox.y,
                 ..Default::default()
             }
             .into(),
             xyhw_avoided: XYHWBuilder {
-                h: screen.height,
-                w: screen.width,
-                x: screen.x,
-                y: screen.y,
+                h: bbox.height,
+                w: bbox.width,
+                x: bbox.x,
+                y: bbox.y,
                 ..Default::default()
             }
             .into(),
@@ -182,26 +165,30 @@ impl Workspace {
     }
 }
 
-#[test]
-fn empty_ws_should_not_contain_window() {
-    use super::WindowHandle;
-    let subject = Workspace::new();
-    let w = Window::new(WindowHandle::MockHandle(1), None);
-    assert!(
-        subject.is_displaying(&w) == false,
-        "workspace incorrectly owns window"
-    );
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{WindowHandle, BBox};
 
-#[test]
-fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
-    use super::WindowHandle;
-    let mut subject = Workspace::new();
-    subject.show_tag("test".to_owned());
-    let mut w = Window::new(WindowHandle::MockHandle(1), None);
-    w.tag("test".to_owned());
-    assert!(
-        subject.is_displaying(&w) == true,
-        "workspace should include window"
-    );
+    #[test]
+    fn empty_ws_should_not_contain_window() {
+        let subject = Workspace::new(BBox{width: 600, height: 800, x: 0, y: 0});
+        let w = Window::new(WindowHandle::MockHandle(1), None);
+        assert!(
+            subject.is_displaying(&w) == false,
+            "workspace incorrectly owns window"
+        );
+    }
+
+    #[test]
+    fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
+        let mut subject = Workspace::new(BBox{width: 600, height: 800, x: 0, y: 0});
+        subject.show_tag("test".to_owned());
+        let mut w = Window::new(WindowHandle::MockHandle(1), None);
+        w.tag("test".to_owned());
+        assert!(
+            subject.is_displaying(&w) == true,
+            "workspace should include window"
+        );
+    }
 }

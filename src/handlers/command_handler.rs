@@ -1,6 +1,6 @@
 use super::*;
-use crate::state;
 use crate::display_action::DisplayAction;
+use crate::state;
 use crate::utils::helpers;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
