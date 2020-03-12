@@ -7,7 +7,7 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
 
     let tag = manager.tags[tag_num - 1].clone();
     let new_tags = vec![tag.clone()];
-    //no focus safey check
+    //no focus safety check
     if manager.focused_workspace().is_none() {
         return false;
     }
@@ -23,18 +23,22 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     true
 }
 
-#[allow(dead_code)]
-fn two_screen_mock_manager() -> Manager {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    manager
-}
+#[cfg(tests)]
+mod tests {
+    use super::*;
 
-#[test]
-fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
-    let mut manager = two_screen_mock_manager();
-    process(&mut manager, 1);
-    assert_eq!(manager.workspaces[0].tags, ["2".to_owned()]);
-    assert_eq!(manager.workspaces[1].tags, ["1".to_owned()]);
+    #[test]
+    fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
+        let mut manager = two_screen_mock_manager();
+        process(&mut manager, 1);
+        assert_eq!(manager.workspaces[0].tags, ["2".to_owned()]);
+        assert_eq!(manager.workspaces[1].tags, ["1".to_owned()]);
+    }
+
+    fn two_screen_mock_manager() -> Manager {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        manager
+    }
 }

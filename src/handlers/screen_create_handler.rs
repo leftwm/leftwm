@@ -20,23 +20,29 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     false
 }
 
-#[test]
-fn creating_two_screens_should_tag_them_with_first_and_second_tags() {
-    let mut manager = Manager::default();
-    process(&mut manager, Screen::default());
-    process(&mut manager, Screen::default());
-    assert!(manager.workspaces[0].has_tag("1"));
-    assert!(manager.workspaces[1].has_tag("2"));
-}
+#[cfg(tests)]
+mod tests {
+    use super::*;
 
-#[test]
-fn should_be_able_to_add_screens_with_perexisting_tags() {
-    let mut manager = Manager::default();
-    manager.tags.push("web".to_owned());
-    manager.tags.push("console".to_owned());
-    manager.tags.push("code".to_owned());
-    process(&mut manager, Screen::default());
-    process(&mut manager, Screen::default());
-    assert!(manager.workspaces[0].has_tag("web"));
-    assert!(manager.workspaces[1].has_tag("console"));
+    #[test]
+    fn creating_two_screens_should_tag_them_with_first_and_second_tags() {
+        let mut manager = Manager::default();
+        process(&mut manager, Screen::default());
+        process(&mut manager, Screen::default());
+        assert!(manager.workspaces[0].has_tag("1"));
+        assert!(manager.workspaces[1].has_tag("2"));
+    }
+
+    #[test]
+    fn should_be_able_to_add_screens_with_perexisting_tags() {
+        let mut manager = Manager::default();
+        manager.tags.push("web".to_owned());
+        manager.tags.push("console".to_owned());
+        manager.tags.push("code".to_owned());
+        process(&mut manager, Screen::default());
+        process(&mut manager, Screen::default());
+        assert!(manager.workspaces[0].has_tag("web"));
+        assert!(manager.workspaces[1].has_tag("console"));
+    }
+
 }
