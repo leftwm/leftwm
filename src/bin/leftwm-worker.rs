@@ -24,10 +24,10 @@ fn main() {
     }
 
     let result = panic::catch_unwind(|| {
-        let mut manager = Box::new(Manager::default());
+        let mut manager = Manager::default();
         let config = config::load();
         manager.tags = config.get_list_of_tags();
-        let mut display_server: XlibDisplayServer = DisplayServer::new(&config);
+        let mut display_server = XlibDisplayServer::new(&config);
         let handler = DisplayEventHandler { config };
         event_loop(&mut manager, &mut display_server, &handler);
     });

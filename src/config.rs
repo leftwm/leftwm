@@ -84,9 +84,7 @@ fn default_terminal<'s>() -> &'s str {
 }
 
 impl Config {
-    /*
-     * returns a collection of bindings with the mod key mapped
-     */
+    /// Returns a collection of bindings with the mod key mapped.
     pub fn mapped_bindings(&self) -> Vec<Keybind> {
         let mod_key: &String = &self.modkey.clone();
         let old_binds: &Vec<Keybind> = &self.keybind;

@@ -1202,7 +1202,6 @@ impl XWrap {
 
         let root = self.get_default_root();
         self.load_colors(theme);
-        //self.colors = self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
