@@ -21,7 +21,7 @@ pub fn save(manager: &Manager) -> Result<()> {
 pub fn load(manager: &mut Manager) {
     if Path::new(STATE_FILE).exists() {
         match load_old_state() {
-            Ok(old_manager) => apply_old_state(manager, old_manager),
+            Ok(old_manager) => restore_state(manager, &old_manager),
             Err(err) => log::error!("Cannot load old state: {}", err),
         }
     }
@@ -39,7 +39,18 @@ fn load_old_state() -> Result<Manager> {
 }
 
 /// Apply saved state to a running manager.
-fn apply_old_state(manager: &mut Manager, old_manager: Manager) {
+fn restore_state(manager: &mut Manager, old_manager: &Manager) {
+    restore_workspaces(manager, old_manager);
+    restore_windows(manager, old_manager);
+}
+
+/// Restore workspaces layout.
+fn restore_workspaces(_manager: &mut Manager, _old_manager: &Manager) {
+    // TODO: actually restore workspaces
+}
+
+/// Copy windows state.
+fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
     for window in &mut manager.windows {
         if let Some(old) = old_manager
             .windows
