@@ -7,7 +7,7 @@ use crate::models::WindowHandle;
 use crate::models::Workspace;
 use std::collections::VecDeque;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
@@ -19,23 +19,6 @@ pub struct Manager {
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
     pub actions: VecDeque<DisplayAction>,
-}
-
-impl Default for Manager {
-    fn default() -> Manager {
-        Manager {
-            windows: Vec::new(),
-            screens: Vec::new(),
-            workspaces: Vec::new(),
-            mode: Mode::NormalMode,
-            theme_setting: ThemeSetting::default(),
-            tags: vec![],
-            focused_workspace_history: VecDeque::new(),
-            focused_window_history: VecDeque::new(),
-            focused_tag_history: VecDeque::new(),
-            actions: VecDeque::new(),
-        }
-    }
 }
 
 impl Manager {
