@@ -1,6 +1,9 @@
 use super::*;
+use crate::config::STATE_FILE;
 use crate::display_action::DisplayAction;
+use crate::errors::Result;
 use crate::utils::helpers;
+use std::fs::File;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
@@ -268,11 +271,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
         Command::MouseMoveWindow => false,
 
-        Command::SoftReload => {
-            let state_data = serde_json::to_string(&manager).unwrap();
-            let _ = std::fs::write("/tmp/leftwm.state", state_data);
-            ::std::process::exit(0);
-        }
+        Command::SoftReload => soft_reload(&manager),
         Command::HardReload => ::std::process::exit(0),
     }
 }
@@ -290,4 +289,22 @@ fn to_num(val: &Option<String>) -> usize {
     val.as_ref()
         .and_then(|num| num.parse::<usize>().ok())
         .unwrap_or_default()
+}
+
+/// Soft reload the worker.
+///
+/// First write current state to a file and then exit current process.
+fn soft_reload(manager: &Manager) -> ! {
+    if let Err(err) = save_state(manager) {
+        log::error!("Cannot save state: {}", err);
+    }
+    std::process::exit(0);
+}
+
+/// Write current state to a file.
+/// It will be used to restore the state after soft reload.
+fn save_state(manager: &Manager) -> Result<()> {
+    let state_file = File::create(STATE_FILE)?;
+    serde_json::to_writer(state_file, &manager)?;
+    Ok(())
 }

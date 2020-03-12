@@ -26,6 +26,9 @@ pub struct Config {
     pub keybind: Vec<Keybind>,
 }
 
+/// Path to file where state will be dumper upon soft reload.
+pub const STATE_FILE: &str = "/tmp/leftwm.state";
+
 pub fn load() -> Config {
     load_from_file()
         .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))

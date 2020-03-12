@@ -5,7 +5,9 @@ use leftwm::child_process::Nanny;
 use leftwm::errors::Result;
 use leftwm::*;
 use log::*;
+use std::fs::File;
 use std::panic;
+use std::path::Path;
 use std::sync::Once;
 
 fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
@@ -24,11 +26,14 @@ fn main() {
     }
 
     let result = panic::catch_unwind(|| {
-        let mut manager = Manager::default();
         let config = config::load();
+
+        let mut manager = Manager::default();
         manager.tags = config.get_list_of_tags();
+
         let mut display_server = XlibDisplayServer::new(&config);
         let handler = DisplayEventHandler { config };
+
         event_loop(&mut manager, &mut display_server, &handler);
     });
     info!("Completed: {:?}", result);
@@ -98,35 +103,45 @@ fn event_loop(
 
         //after the very first loop boot the theme. we need the unix socket to already exist
         after_first_loop.call_once(|| {
-            let _ = Nanny::new().boot_current_theme();
+            if let Err(err) = Nanny::new().boot_current_theme() {
+                log::error!("Theme loading failed: {}", err);
+            }
 
-            //load old windows state
-            load_old_windows_state(manager);
+            if Path::new(config::STATE_FILE).exists() {
+                load_old_windows_state(manager);
+            }
         });
     }
 }
 
 fn load_old_windows_state(manager: &mut Manager) {
-    if let Ok(old_manager) = load_old_state() {
-        for window in &mut manager.windows {
-            if let Some(old) = old_manager
-                .windows
-                .iter()
-                .find(|w| w.handle == window.handle)
-            {
-                window.set_floating(old.floating());
-                window.set_floating_offsets(old.get_floating_offsets());
-                window.normal = old.normal;
-                window.tags = old.tags.clone();
+    match load_old_state() {
+        Ok(old_manager) => {
+            for window in &mut manager.windows {
+                if let Some(old) = old_manager
+                    .windows
+                    .iter()
+                    .find(|w| w.handle == window.handle)
+                {
+                    window.set_floating(old.floating());
+                    window.set_floating_offsets(old.get_floating_offsets());
+                    window.normal = old.normal;
+                    window.tags = old.tags.clone();
+                }
             }
+        }
+        Err(err) => {
+            log::error!("Cannot load old state: {}", err);
         }
     }
 }
 
 fn load_old_state() -> Result<Manager> {
-    let statefile = "/tmp/leftwm.state";
-    let data: String = std::fs::read_to_string(statefile)?;
-    let _ = std::fs::remove_file(statefile);
-    let manager: Manager = serde_json::from_str(&data)?;
-    Ok(manager)
+    let file = File::open(config::STATE_FILE)?;
+    let old_manager = serde_json::from_reader(file)?;
+    // do not remove state file if it cannot be parsed so we could debug it.
+    if let Err(err) = std::fs::remove_file(config::STATE_FILE) {
+        log::error!("Cannot remove old state file: {}", err);
+    }
+    Ok(old_manager)
 }
