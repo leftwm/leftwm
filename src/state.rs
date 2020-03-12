@@ -24,6 +24,10 @@ pub fn load(manager: &mut Manager) {
             Ok(old_manager) => restore_state(manager, &old_manager),
             Err(err) => log::error!("Cannot load old state: {}", err),
         }
+        // Clean old state.
+        if let Err(err) = std::fs::remove_file(STATE_FILE) {
+            log::error!("Cannot remove old state file: {}", err);
+        }
     }
 }
 
@@ -31,10 +35,6 @@ pub fn load(manager: &mut Manager) {
 fn load_old_state() -> Result<Manager> {
     let file = File::open(STATE_FILE)?;
     let old_manager = serde_json::from_reader(file)?;
-    // do not remove state file if it cannot be parsed so we could debug it.
-    if let Err(err) = std::fs::remove_file(STATE_FILE) {
-        log::error!("Cannot remove old state file: {}", err);
-    }
     Ok(old_manager)
 }
 
@@ -45,8 +45,15 @@ fn restore_state(manager: &mut Manager, old_manager: &Manager) {
 }
 
 /// Restore workspaces layout.
-fn restore_workspaces(_manager: &mut Manager, _old_manager: &Manager) {
-    // TODO: actually restore workspaces
+fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
+    for workspace in &mut manager.workspaces {
+        old_manager.workspaces
+            .iter()
+            .find(|w| w.id == workspace.id)
+            .map(|old_workspace| {
+                workspace.layout = old_workspace.layout.clone();
+            });
+    }
 }
 
 /// Copy windows state.

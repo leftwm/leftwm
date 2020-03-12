@@ -4,14 +4,13 @@ use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
-use std::collections::VecDeque;
 use std::fmt;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: i32,
-    #[serde(skip)]
-    layouts: VecDeque<Box<dyn Layout>>,
+    /// Active layout
+    pub layout: Layout,
     pub tags: Vec<String>,
     pub avoid: Vec<XYHW>,
     pub xyhw: XYHW,
@@ -41,7 +40,7 @@ impl Workspace {
     pub fn new(bbox: BBox) -> Workspace {
         Workspace {
             id: -1,
-            layouts: get_all_layouts(),
+            layout: Layout::default(),
             tags: vec![],
             avoid: vec![],
 
@@ -82,17 +81,11 @@ impl Workspace {
     }
 
     pub fn next_layout(&mut self) {
-        let layout = self.layouts.pop_front();
-        if let Some(layout) = layout {
-            self.layouts.push_back(layout);
-        }
+        self.layout = self.layout.next_layout();
     }
 
     pub fn prev_layout(&mut self) {
-        let layout = self.layouts.pop_back();
-        if let Some(layout) = layout {
-            self.layouts.push_front(layout);
-        }
+        self.layout = self.layout.prev_layout();
     }
 
     /// Returns true if the workspace is displays a given window.
@@ -122,8 +115,7 @@ impl Workspace {
             .iter_mut()
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
-        self.current_layout()
-            .update_windows(self, &mut managed_nonfloat);
+        self.layout.update_windows(self, &mut managed_nonfloat);
         //update the location of all floating windows
         windows
             .iter_mut()
@@ -154,10 +146,6 @@ impl Workspace {
             xyhw = xyhw.without(a);
         }
         self.xyhw_avoided = xyhw;
-    }
-
-    pub fn current_layout(&self) -> &Box<dyn Layout> {
-        &self.layouts[0]
     }
 }
 

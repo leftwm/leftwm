@@ -4,14 +4,14 @@ use log::*;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn created(manager: &mut Manager, a_window: Window) -> bool {
+pub fn created(manager: &mut Manager, mut window: Window) -> bool {
     //don't add the window if the manager already knows about it
     for w in &manager.windows {
-        if w.handle == a_window.handle {
+        if w.handle == window.handle {
             return false;
         }
     }
-    let mut window = a_window;
+
     if let Some(ws) = manager.focused_workspace() {
         window.tags = ws.tags.clone();
 
