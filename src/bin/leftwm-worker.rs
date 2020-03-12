@@ -2,12 +2,10 @@ extern crate leftwm;
 
 use flexi_logger::{colored_default_format, Logger};
 use leftwm::child_process::Nanny;
-use leftwm::errors::Result;
+
 use leftwm::*;
 use log::*;
-use std::fs::File;
 use std::panic;
-use std::path::Path;
 use std::sync::Once;
 
 fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
@@ -107,41 +105,7 @@ fn event_loop(
                 log::error!("Theme loading failed: {}", err);
             }
 
-            if Path::new(config::STATE_FILE).exists() {
-                load_old_windows_state(manager);
-            }
+            leftwm::state::load(manager);
         });
     }
-}
-
-fn load_old_windows_state(manager: &mut Manager) {
-    match load_old_state() {
-        Ok(old_manager) => {
-            for window in &mut manager.windows {
-                if let Some(old) = old_manager
-                    .windows
-                    .iter()
-                    .find(|w| w.handle == window.handle)
-                {
-                    window.set_floating(old.floating());
-                    window.set_floating_offsets(old.get_floating_offsets());
-                    window.normal = old.normal;
-                    window.tags = old.tags.clone();
-                }
-            }
-        }
-        Err(err) => {
-            log::error!("Cannot load old state: {}", err);
-        }
-    }
-}
-
-fn load_old_state() -> Result<Manager> {
-    let file = File::open(config::STATE_FILE)?;
-    let old_manager = serde_json::from_reader(file)?;
-    // do not remove state file if it cannot be parsed so we could debug it.
-    if let Err(err) = std::fs::remove_file(config::STATE_FILE) {
-        log::error!("Cannot remove old state file: {}", err);
-    }
-    Ok(old_manager)
 }

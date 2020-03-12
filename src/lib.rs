@@ -12,6 +12,7 @@ pub mod errors;
 mod handlers;
 mod layouts;
 pub mod models;
+pub mod state;
 mod utils;
 #[macro_use]
 extern crate futures;

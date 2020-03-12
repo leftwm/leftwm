@@ -1,9 +1,7 @@
 use super::*;
-use crate::config::STATE_FILE;
+use crate::state;
 use crate::display_action::DisplayAction;
-use crate::errors::Result;
 use crate::utils::helpers;
-use std::fs::File;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
@@ -295,16 +293,8 @@ fn to_num(val: &Option<String>) -> usize {
 ///
 /// First write current state to a file and then exit current process.
 fn soft_reload(manager: &Manager) -> ! {
-    if let Err(err) = save_state(manager) {
+    if let Err(err) = state::save(manager) {
         log::error!("Cannot save state: {}", err);
     }
     std::process::exit(0);
-}
-
-/// Write current state to a file.
-/// It will be used to restore the state after soft reload.
-fn save_state(manager: &Manager) -> Result<()> {
-    let state_file = File::create(STATE_FILE)?;
-    serde_json::to_writer(state_file, &manager)?;
-    Ok(())
 }
