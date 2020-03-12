@@ -61,7 +61,7 @@ impl DisplayEventHandler {
             }
             DisplayEvent::ResizeWindow(handle, x, y) => {
                 window_resize_handler::process(manager, &handle, x, y)
-            } //_ => false,
+            }
         };
 
         if update_needed {

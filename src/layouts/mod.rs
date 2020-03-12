@@ -37,7 +37,9 @@ pub fn get_all_layouts() -> VecDeque<Box<dyn Layout>> {
 #[derive(Clone, Debug)]
 pub struct EvenHorizontal;
 impl Layout for EvenHorizontal {
-    fn name(&self) -> &'static str { "EvenHorizontal" }
+    fn name(&self) -> &'static str {
+        "EvenHorizontal"
+    }
 
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let width_f = workspace.width() as f32 / windows.len() as f32;
@@ -57,7 +59,9 @@ impl Layout for EvenHorizontal {
 #[derive(Clone, Debug)]
 pub struct EvenVertical;
 impl Layout for EvenVertical {
-    fn name(&self) -> &'static str { "EvenVertical" }
+    fn name(&self) -> &'static str {
+        "EvenVertical"
+    }
 
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let height_f = workspace.height() as f32 / windows.len() as f32;
@@ -78,7 +82,9 @@ impl Layout for EvenVertical {
 #[derive(Clone, Debug)]
 pub struct MainAndVertStack;
 impl Layout for MainAndVertStack {
-    fn name(&self) -> &'static str { "MainAndVertStack" }
+    fn name(&self) -> &'static str {
+        "MainAndVertStack"
+    }
 
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let window_count = windows.len();
@@ -138,7 +144,9 @@ impl Layout for MainAndVertStack {
 #[derive(Clone, Debug)]
 pub struct GridHorizontal;
 impl Layout for GridHorizontal {
-    fn name(&self) -> &'static str { "GridHorizontal" }
+    fn name(&self) -> &'static str {
+        "GridHorizontal"
+    }
 
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let window_count = windows.len() as i32;
@@ -181,7 +189,9 @@ impl Layout for GridHorizontal {
 #[derive(Clone, Debug)]
 pub struct Fibonacci;
 impl Layout for Fibonacci {
-    fn name(&self) -> &'static str { "Fibonacci" }
+    fn name(&self) -> &'static str {
+        "Fibonacci"
+    }
 
     fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         let mut x = workspace.x();

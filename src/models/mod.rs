@@ -23,6 +23,6 @@ pub use window_change::WindowChange;
 pub use window_state::WindowState;
 pub use window_type::WindowType;
 pub use workspace::Workspace;
-pub use xyhw::XYHW;
 pub use xyhw::XYHWBuilder;
+pub use xyhw::XYHW;
 pub use xyhw_change::XYHWChange;

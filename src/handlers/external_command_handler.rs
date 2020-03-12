@@ -4,9 +4,9 @@ use crate::utils::command_pipe::ExternalCommand;
 use crate::utils::window_updater::update_windows;
 
 pub fn process(manager: &mut Manager, command: ExternalCommand) -> bool {
-    let needs_redraw = process_work( manager, command );
+    let needs_redraw = process_work(manager, command);
     if needs_redraw {
-        update_windows( manager );
+        update_windows(manager);
     }
     needs_redraw
 }
@@ -45,6 +45,3 @@ fn process_work(manager: &mut Manager, command: ExternalCommand) -> bool {
 
     false
 }
-
-
-

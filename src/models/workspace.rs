@@ -143,7 +143,8 @@ impl Workspace {
             .iter_mut()
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
-        self.current_layout().update_windows(self, &mut managed_nonfloat);
+        self.current_layout()
+            .update_windows(self, &mut managed_nonfloat);
         //update the location of all floating windows
         windows
             .iter_mut()
