@@ -1,6 +1,5 @@
 use super::*;
 use crate::display_action::DisplayAction;
-use log::*;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
@@ -90,7 +89,7 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
     for w in manager.windows.iter_mut() {
         if w.handle == change.handle {
-            debug!("WINDOW CHANGED {:?} {:?}", &w, change);
+            log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
             //let old_type = w.type_.clone();
             let changed = change.update(w);
             if w.type_ == WindowType::Dock {
@@ -129,7 +128,7 @@ pub fn update_workspace_avoid_list(manager: &mut Manager) {
     for w in &manager.windows {
         if w.type_ == WindowType::Dock && w.strut.is_some() {
             if let Some(to_avoid) = w.strut {
-                debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
+                log::debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
                 avoid.push(to_avoid);
             }
         }

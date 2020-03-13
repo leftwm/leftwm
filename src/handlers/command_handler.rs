@@ -269,8 +269,15 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
         Command::MouseMoveWindow => false,
 
-        Command::SoftReload => soft_reload(&manager),
-        Command::HardReload => ::std::process::exit(0),
+        Command::SoftReload => {
+            manager.soft_reload();
+            false
+
+        },
+        Command::HardReload => {
+            manager.hard_reload();
+            false
+        }
     }
 }
 
@@ -287,14 +294,4 @@ fn to_num(val: &Option<String>) -> usize {
     val.as_ref()
         .and_then(|num| num.parse::<usize>().ok())
         .unwrap_or_default()
-}
-
-/// Soft reload the worker.
-///
-/// First write current state to a file and then exit current process.
-fn soft_reload(manager: &Manager) -> ! {
-    if let Err(err) = state::save(manager) {
-        log::error!("Cannot save state: {}", err);
-    }
-    std::process::exit(0);
 }
