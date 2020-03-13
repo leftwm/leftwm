@@ -1,5 +1,6 @@
 use super::models::Window;
 use super::models::Workspace;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Layout {

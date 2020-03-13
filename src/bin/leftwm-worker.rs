@@ -1,5 +1,3 @@
-extern crate leftwm;
-
 use flexi_logger::{colored_default_format, Logger};
 use leftwm::child_process::Nanny;
 
@@ -15,7 +13,9 @@ fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
 fn main() {
     match Logger::with_env_or_str("leftwm-worker=info, leftwm=info")
         .log_to_file()
+        .append()
         .directory("/tmp/leftwm")
+        .suppress_timestamp()
         .format(colored_default_format)
         .start()
     {

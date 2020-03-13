@@ -4,6 +4,7 @@ use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Serialize, Deserialize, Clone)]

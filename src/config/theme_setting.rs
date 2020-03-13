@@ -1,4 +1,5 @@
 use crate::errors::Result;
+use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::fs;
 use std::path::PathBuf;

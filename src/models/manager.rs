@@ -5,6 +5,7 @@ use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]

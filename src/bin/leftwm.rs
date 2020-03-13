@@ -1,4 +1,3 @@
-extern crate leftwm;
 use leftwm::child_process::Nanny;
 use std::env;
 use std::process::Command;

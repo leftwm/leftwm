@@ -115,7 +115,7 @@ impl Lines {
 
     fn poll_flush(&mut self) -> Poll<(), io::Error> {
         while !self.wr.is_empty() {
-            let n = try_ready!(self.socket.poll_write(&self.wr));
+            let n = futures::try_ready!(self.socket.poll_write(&self.wr));
             assert!(n > 0);
             let _ = self.wr.split_to(n);
         }

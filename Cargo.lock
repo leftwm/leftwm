@@ -6,7 +6,7 @@ version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5e63fd144e18ba274ae7095c0197a870a7b9468abc801dd62f190d80817d2ec"
 dependencies = [
- "memchr",
+ "memchr 2.3.3",
 ]
 
 [[package]]
@@ -229,6 +229,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cstr-argument"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "514570a4b719329df37f93448a70df2baac553020d0eb43a8dfa9c1f5ba7b658"
+dependencies = [
+ "cfg-if",
+ "memchr 1.0.2",
+]
+
+[[package]]
 name = "deunicode"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -395,6 +405,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8b7a7c0c47db5545ed3fef7468ee7bb5b74691498139e4b3f6a20685dc6dd8e"
 
 [[package]]
+name = "journald"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bcb7be1adb39850efce1ef6581210e6e9b7f5e20fd8898d9e556d14852f97b6"
+dependencies = [
+ "cstr-argument",
+ "libc",
+ "libsystemd-sys",
+ "log",
+ "utf8-cstr",
+]
+
+[[package]]
 name = "kernel32-sys"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -420,6 +443,7 @@ dependencies = [
  "dirs",
  "flexi_logger",
  "futures",
+ "journald",
  "liquid",
  "log",
  "serde",
@@ -438,6 +462,16 @@ name = "libc"
 version = "0.2.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eb147597cdf94ed43ab7a9038716637d2d1bf2bc571da995d0028dec06bd3018"
+
+[[package]]
+name = "libsystemd-sys"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7b98458cd04a5c3aacba6f1a3a3c4b9abcb0ae4d66a055eee502e0d52dc226b"
+dependencies = [
+ "libc",
+ "pkg-config",
+]
 
 [[package]]
 name = "liquid"
@@ -556,6 +590,15 @@ name = "maybe-uninit"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
+
+[[package]]
+name = "memchr"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "148fab2e51b4f1cfc66da2a7c32981d1d3c083a803978268bb11fe4b86925e7a"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "memchr"
@@ -883,7 +926,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "322cf97724bea3ee221b78fe25ac9c46114ebb51747ad5babd51a2fc6a8235a8"
 dependencies = [
  "aho-corasick",
- "memchr",
+ "memchr 2.3.3",
  "regex-syntax",
  "thread_local",
 ]
@@ -1318,6 +1361,12 @@ dependencies = [
  "matches",
  "percent-encoding",
 ]
+
+[[package]]
+name = "utf8-cstr"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55bcbb425141152b10d5693095950b51c3745d019363fc2929ffd8f61449b628"
 
 [[package]]
 name = "uuid"

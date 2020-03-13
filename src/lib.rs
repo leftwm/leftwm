@@ -14,8 +14,6 @@ mod layouts;
 pub mod models;
 pub mod state;
 mod utils;
-#[macro_use]
-extern crate futures;
 
 use utils::xkeysym_lookup::Button;
 use utils::xkeysym_lookup::ModMask;
@@ -35,7 +33,3 @@ pub use models::Workspace;
 pub use utils::child_process;
 pub use utils::command_pipe::CommandPipe;
 pub use utils::state_socket::StateSocket;
-
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;

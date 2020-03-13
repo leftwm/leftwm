@@ -32,3 +32,4 @@ liquid = "0.19.0"
 chrono = "0.4.10"
 futures = "0.1.29"
 uuid = { version = "0.8.1", features = ["serde", "v4"] }
+journald = "0.6.0"
