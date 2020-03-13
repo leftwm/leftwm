@@ -79,6 +79,10 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
 
             xlib::ClientMessage => {
+                match &xw.mode {
+                    Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
+                    Mode::NormalMode => {}
+                };
                 let event = xlib::XClientMessageEvent::from(raw_event);
                 //println!("ClientMessage {:?}", event);
                 event_translate_client_message::from_event(xw, event)
@@ -96,6 +100,10 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
 
             xlib::EnterNotify => {
+                match &xw.mode {
+                    Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
+                    Mode::NormalMode => {}
+                };
                 let event = xlib::XEnterWindowEvent::from(raw_event);
                 //println!("EnterNotify {:?}", event);
                 let crossing = xlib::XCrossingEvent::from(raw_event);
@@ -111,10 +119,8 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
 
             xlib::PropertyNotify => {
-                //only watch Configure Requests when in normal mode
                 match &xw.mode {
-                    Mode::MovingWindow(_h) => return None,
-                    Mode::ResizingWindow(_h) => return None,
+                    Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
                     Mode::NormalMode => {}
                 };
 
@@ -156,15 +162,12 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
 
             xlib::ConfigureRequest => {
-                let event = xlib::XConfigureRequestEvent::from(raw_event);
-                let window_type = xw.get_window_type(event.window);
-
-                //only watch Configure Requests when in normal mode
                 match &xw.mode {
-                    Mode::MovingWindow(_h) => return None,
-                    Mode::ResizingWindow(_h) => return None,
+                    Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
                     Mode::NormalMode => {}
                 };
+                let event = xlib::XConfigureRequestEvent::from(raw_event);
+                let window_type = xw.get_window_type(event.window);
 
                 if window_type != WindowType::Normal {
                     let handle = WindowHandle::XlibHandle(event.window);
