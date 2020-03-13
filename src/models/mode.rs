@@ -6,3 +6,9 @@ pub enum Mode {
     MovingWindow(WindowHandle),
     NormalMode,
 }
+
+impl Default for Mode {
+    fn default() -> Self {
+        Self::NormalMode
+    }
+}

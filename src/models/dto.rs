@@ -1,4 +1,5 @@
 use crate::models::Manager;
+use crate::layouts::Layout;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Viewport {
@@ -7,7 +8,7 @@ pub struct Viewport {
     pub w: u32,
     pub x: i32,
     pub y: i32,
-    pub layout: String,
+    pub layout: Layout,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManagerState {
@@ -31,7 +32,7 @@ pub struct DisplayWorkspace {
     pub w: u32,
     pub x: i32,
     pub y: i32,
-    pub layout: String,
+    pub layout: Layout,
     pub index: usize,
     pub tags: Vec<TagsForWorkspace>,
 }
@@ -108,7 +109,7 @@ impl From<&Manager> for ManagerState {
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
                 w: ws.xyhw.w() as u32,
-                layout: ws.current_layout().name().into(),
+                layout: ws.layout.clone(),
             });
         }
         let active_desktop = match manager.focused_workspace() {

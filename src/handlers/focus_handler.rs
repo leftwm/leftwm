@@ -1,9 +1,7 @@
 use super::*;
 use crate::display_action::DisplayAction;
 
-/*
- * marks a workspace as the focused workspace
- */
+/// Marks a workspace as the focused workspace.
 pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     //no new history for if no change
     if let Some(fws) = manager.focused_workspace() {
@@ -30,9 +28,7 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     true
 }
 
-/*
- * marks a window as the focused window
- */
+/// Marks a window as the focused window.
 pub fn focus_window_by_handle(
     manager: &mut Manager,
     handle: &WindowHandle,
@@ -120,9 +116,7 @@ pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bo
     false
 }
 
-/*
- * loops over the history and focuses the last window that still exists
- */
+/// Loops over the history and focuses the last window that still exists.
 pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
     let history = manager.focused_window_history.clone();
     for handle in history {
@@ -164,9 +158,7 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     true
 }
 
-/*
- * Create an action to inform the DM of the new current tags
- */
+/// Create an action to inform the DM of the new current tags.
 pub fn update_current_tags(manager: &mut Manager) {
     if let Some(workspace) = manager.focused_workspace() {
         let tags = workspace.tags.clone();
@@ -178,124 +170,129 @@ pub fn update_current_tags(manager: &mut Manager) {
     }
 }
 
-#[test]
-fn focusing_a_workspace_should_make_it_active() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    let expected = manager.workspaces[0].clone();
-    focus_workspace(&mut manager, &expected);
-    let actual = manager.focused_workspace().unwrap();
-    assert_eq!(0, actual.id);
-}
+#[cfg(tests)]
+mod tests {
+    use super::*;
 
-#[test]
-fn focusing_the_same_workspace_shouldnt_add_to_the_history() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    let ws = manager.workspaces[0].clone();
-    focus_workspace(&mut manager, &ws);
-    let start_length = manager.focused_workspace_history.len();
-    focus_workspace(&mut manager, &ws);
-    let end_length = manager.focused_workspace_history.len();
-    assert_eq!(start_length, end_length, "expected no new history event");
-}
+    #[test]
+    fn focusing_a_workspace_should_make_it_active() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        let expected = manager.workspaces[0].clone();
+        focus_workspace(&mut manager, &expected);
+        let actual = manager.focused_workspace().unwrap();
+        assert_eq!(0, actual.id);
+    }
 
-#[test]
-fn focusing_a_window_should_make_it_active() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(1), None));
-    window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(2), None));
-    let expected = manager.windows[0].clone();
-    focus_window(&mut manager, &expected, 0, 0);
-    let actual = manager.focused_window().unwrap().handle.clone();
-    assert_eq!(expected.handle, actual);
-}
+    #[test]
+    fn focusing_the_same_workspace_shouldnt_add_to_the_history() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        let ws = manager.workspaces[0].clone();
+        focus_workspace(&mut manager, &ws);
+        let start_length = manager.focused_workspace_history.len();
+        focus_workspace(&mut manager, &ws);
+        let end_length = manager.focused_workspace_history.len();
+        assert_eq!(start_length, end_length, "expected no new history event");
+    }
 
-#[test]
-fn focusing_the_same_window_shouldnt_add_to_the_history() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    let window = Window::new(WindowHandle::MockHandle(1), None);
-    window_handler::created(&mut manager, window.clone());
-    focus_window(&mut manager, &window, 0, 0);
-    let start_length = manager.focused_workspace_history.len();
-    window_handler::created(&mut manager, window.clone());
-    focus_window(&mut manager, &window, 0, 0);
-    let end_length = manager.focused_workspace_history.len();
-    assert_eq!(start_length, end_length, "expected no new history event");
-}
+    #[test]
+    fn focusing_a_window_should_make_it_active() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(1), None));
+        window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(2), None));
+        let expected = manager.windows[0].clone();
+        focus_window(&mut manager, &expected, 0, 0);
+        let actual = manager.focused_window().unwrap().handle.clone();
+        assert_eq!(expected.handle, actual);
+    }
 
-#[test]
-fn focusing_a_tag_should_make_it_active() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    let expected = "Bla".to_owned();
-    focus_tag(&mut manager, &expected);
-    let accual = manager.focused_tag().unwrap();
-    assert_eq!(accual, expected);
-}
+    #[test]
+    fn focusing_the_same_window_shouldnt_add_to_the_history() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        let window = Window::new(WindowHandle::MockHandle(1), None);
+        window_handler::created(&mut manager, window.clone());
+        focus_window(&mut manager, &window, 0, 0);
+        let start_length = manager.focused_workspace_history.len();
+        window_handler::created(&mut manager, window.clone());
+        focus_window(&mut manager, &window, 0, 0);
+        let end_length = manager.focused_workspace_history.len();
+        assert_eq!(start_length, end_length, "expected no new history event");
+    }
 
-#[test]
-fn focusing_the_same_tag_shouldnt_add_to_the_history() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    let tag = "Bla".to_owned();
-    focus_tag(&mut manager, &tag);
-    let start_length = manager.focused_tag_history.len();
-    focus_tag(&mut manager, &tag);
-    let end_length = manager.focused_tag_history.len();
-    assert_eq!(start_length, end_length, "expected no new history event");
-}
+    #[test]
+    fn focusing_a_tag_should_make_it_active() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        let expected = "Bla".to_owned();
+        focus_tag(&mut manager, &expected);
+        let accual = manager.focused_tag().unwrap();
+        assert_eq!(accual, expected);
+    }
 
-#[test]
-fn focusing_a_tag_should_focus_its_workspace() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    focus_tag(&mut manager, &"1".to_owned());
-    let actual = manager.focused_workspace().unwrap();
-    let expected = 0;
-    assert_eq!(actual.id, expected);
-}
+    #[test]
+    fn focusing_the_same_tag_shouldnt_add_to_the_history() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        let tag = "Bla".to_owned();
+        focus_tag(&mut manager, &tag);
+        let start_length = manager.focused_tag_history.len();
+        focus_tag(&mut manager, &tag);
+        let end_length = manager.focused_tag_history.len();
+        assert_eq!(start_length, end_length, "expected no new history event");
+    }
 
-#[test]
-fn focusing_a_workspace_should_focus_its_tag() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    let ws = manager.workspaces[1].clone();
-    focus_workspace(&mut manager, &ws);
-    let actual = manager.focused_tag().unwrap();
-    assert_eq!("2", actual);
-}
+    #[test]
+    fn focusing_a_tag_should_focus_its_workspace() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        focus_tag(&mut manager, &"1".to_owned());
+        let actual = manager.focused_workspace().unwrap();
+        let expected = 0;
+        assert_eq!(actual.id, expected);
+    }
 
-#[test]
-fn focusing_a_window_should_focus_its_tag() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    let mut window = Window::new(WindowHandle::MockHandle(1), None);
-    window.tag("2".to_owned());
-    focus_window(&mut manager, &window, 0, 0);
-    let actual = manager.focused_tag().unwrap();
-    assert_eq!("2", actual);
-}
+    #[test]
+    fn focusing_a_workspace_should_focus_its_tag() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        let ws = manager.workspaces[1].clone();
+        focus_workspace(&mut manager, &ws);
+        let actual = manager.focused_tag().unwrap();
+        assert_eq!("2", actual);
+    }
 
-#[test]
-fn focusing_a_window_should_focus_workspace() {
-    let mut manager = Manager::default();
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    screen_create_handler::process(&mut manager, Screen::default());
-    let mut window = Window::new(WindowHandle::MockHandle(1), None);
-    window.tag("2".to_owned());
-    focus_window(&mut manager, &window, 0, 0);
-    let actual = manager.focused_workspace().unwrap().id.clone();
-    let expected = manager.workspaces[1].id.clone();
-    assert_eq!(expected, actual);
+    #[test]
+    fn focusing_a_window_should_focus_its_tag() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        let mut window = Window::new(WindowHandle::MockHandle(1), None);
+        window.tag("2".to_owned());
+        focus_window(&mut manager, &window, 0, 0);
+        let actual = manager.focused_tag().unwrap();
+        assert_eq!("2", actual);
+    }
+
+    #[test]
+    fn focusing_a_window_should_focus_workspace() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
+        let mut window = Window::new(WindowHandle::MockHandle(1), None);
+        window.tag("2".to_owned());
+        focus_window(&mut manager, &window, 0, 0);
+        let actual = manager.focused_workspace().unwrap().id.clone();
+        let expected = manager.workspaces[1].id.clone();
+        assert_eq!(expected, actual);
+    }
 }

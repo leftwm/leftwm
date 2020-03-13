@@ -2,7 +2,7 @@ extern crate leftwm;
 
 use flexi_logger::{colored_default_format, Logger};
 use leftwm::child_process::Nanny;
-use leftwm::errors::Result;
+
 use leftwm::*;
 use log::*;
 use std::panic;
@@ -24,11 +24,14 @@ fn main() {
     }
 
     let result = panic::catch_unwind(|| {
-        let mut manager = Box::new(Manager::default());
         let config = config::load();
+
+        let mut manager = Manager::default();
         manager.tags = config.get_list_of_tags();
-        let mut display_server: XlibDisplayServer = DisplayServer::new(&config);
+
+        let mut display_server = XlibDisplayServer::new(&config);
         let handler = DisplayEventHandler { config };
+
         event_loop(&mut manager, &mut display_server, &handler);
     });
     info!("Completed: {:?}", result);
@@ -98,35 +101,11 @@ fn event_loop(
 
         //after the very first loop boot the theme. we need the unix socket to already exist
         after_first_loop.call_once(|| {
-            let _ = Nanny::new().boot_current_theme();
+            if let Err(err) = Nanny::new().boot_current_theme() {
+                log::error!("Theme loading failed: {}", err);
+            }
 
-            //load old windows state
-            load_old_windows_state(manager);
+            leftwm::state::load(manager);
         });
     }
-}
-
-fn load_old_windows_state(manager: &mut Manager) {
-    if let Ok(old_manager) = load_old_state() {
-        for window in &mut manager.windows {
-            if let Some(old) = old_manager
-                .windows
-                .iter()
-                .find(|w| w.handle == window.handle)
-            {
-                window.set_floating(old.floating());
-                window.set_floating_offsets(old.get_floating_offsets());
-                window.normal = old.normal;
-                window.tags = old.tags.clone();
-            }
-        }
-    }
-}
-
-fn load_old_state() -> Result<Manager> {
-    let statefile = "/tmp/leftwm.state";
-    let data: String = std::fs::read_to_string(statefile)?;
-    let _ = std::fs::remove_file(statefile);
-    let manager: Manager = serde_json::from_str(&data)?;
-    Ok(manager)
 }

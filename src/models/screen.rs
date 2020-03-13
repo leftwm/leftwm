@@ -6,20 +6,24 @@ use x11_dl::xlib;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Screen {
     pub root: WindowHandle,
-    pub height: i32,
-    pub width: i32,
+    #[serde(flatten)]
+    pub bbox: BBox,
+}
+
+/// Screen Bounding Box
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct BBox {
     pub x: i32,
     pub y: i32,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl Screen {
-    pub fn new(height: i32, width: i32, x: i32, y: i32) -> Screen {
+    pub fn new(bbox: BBox) -> Screen {
         Screen {
             root: WindowHandle::MockHandle(0),
-            height,
-            width,
-            x,
-            y,
+            bbox,
         }
     }
 }
@@ -28,10 +32,12 @@ impl From<&WorkspaceConfig> for Screen {
     fn from(wsc: &WorkspaceConfig) -> Self {
         Screen {
             root: WindowHandle::MockHandle(0),
-            height: wsc.height,
-            width: wsc.width,
-            x: wsc.x,
-            y: wsc.y,
+            bbox: BBox {
+                height: wsc.height,
+                width: wsc.width,
+                x: wsc.x,
+                y: wsc.y,
+            },
         }
     }
 }
@@ -40,10 +46,12 @@ impl From<&xlib::XWindowAttributes> for Screen {
     fn from(root: &xlib::XWindowAttributes) -> Self {
         Screen {
             root: WindowHandle::XlibHandle(root.root),
-            height: root.height,
-            width: root.width,
-            x: root.x,
-            y: root.y,
+            bbox: BBox {
+                height: root.height,
+                width: root.width,
+                x: root.x,
+                y: root.y,
+            },
         }
     }
 }
@@ -52,10 +60,12 @@ impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
     fn from(root: &x11_dl::xinerama::XineramaScreenInfo) -> Self {
         Screen {
             root: WindowHandle::MockHandle(0),
-            height: root.height.into(),
-            width: root.width.into(),
-            x: root.x_org.into(),
-            y: root.y_org.into(),
+            bbox: BBox {
+                height: root.height.into(),
+                width: root.width.into(),
+                x: root.x_org.into(),
+                y: root.y_org.into(),
+            },
         }
     }
 }
@@ -64,10 +74,12 @@ impl Default for Screen {
     fn default() -> Self {
         Screen {
             root: WindowHandle::MockHandle(0),
-            height: 600,
-            width: 800,
-            x: 0,
-            y: 0,
+            bbox: BBox {
+                height: 600,
+                width: 800,
+                x: 0,
+                y: 0,
+            },
         }
     }
 }

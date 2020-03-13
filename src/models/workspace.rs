@@ -1,17 +1,16 @@
 use super::layouts::*;
-use crate::models::Screen;
+use crate::models::BBox;
 use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
-use std::collections::VecDeque;
 use std::fmt;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: i32,
-    #[serde(skip)]
-    layouts: VecDeque<Box<dyn Layout>>,
+    /// Active layout
+    pub layout: Layout,
     pub tags: Vec<String>,
     pub avoid: Vec<XYHW>,
     pub xyhw: XYHW,
@@ -37,44 +36,27 @@ impl PartialEq for Workspace {
     }
 }
 
-impl Default for Workspace {
-    fn default() -> Self {
-        Workspace {
-            id: -1,
-            layouts: get_all_layouts(),
-            tags: vec![],
-            avoid: vec![],
-            xyhw: XYHWBuilder::default().into(),
-            xyhw_avoided: XYHWBuilder::default().into(),
-        }
-    }
-}
-
 impl Workspace {
-    pub fn new() -> Workspace {
-        Workspace::default()
-    }
-
-    pub fn from_screen(screen: &Screen) -> Workspace {
+    pub fn new(bbox: BBox) -> Workspace {
         Workspace {
             id: -1,
-            layouts: get_all_layouts(),
+            layout: Layout::default(),
             tags: vec![],
             avoid: vec![],
 
             xyhw: XYHWBuilder {
-                h: screen.height,
-                w: screen.width,
-                x: screen.x,
-                y: screen.y,
+                h: bbox.height,
+                w: bbox.width,
+                x: bbox.x,
+                y: bbox.y,
                 ..Default::default()
             }
             .into(),
             xyhw_avoided: XYHWBuilder {
-                h: screen.height,
-                w: screen.width,
-                x: screen.x,
-                y: screen.y,
+                h: bbox.height,
+                w: bbox.width,
+                x: bbox.x,
+                y: bbox.y,
                 ..Default::default()
             }
             .into(),
@@ -99,22 +81,14 @@ impl Workspace {
     }
 
     pub fn next_layout(&mut self) {
-        let layout = self.layouts.pop_front();
-        if let Some(layout) = layout {
-            self.layouts.push_back(layout);
-        }
+        self.layout = self.layout.next_layout();
     }
 
     pub fn prev_layout(&mut self) {
-        let layout = self.layouts.pop_back();
-        if let Some(layout) = layout {
-            self.layouts.push_front(layout);
-        }
+        self.layout = self.layout.prev_layout();
     }
 
-    /*
-     * returns true if the workspace is displays a given window
-     */
+    /// Returns true if the workspace is displays a given window.
     pub fn is_displaying(&self, window: &Window) -> bool {
         for wd_t in &window.tags {
             if self.has_tag(wd_t) {
@@ -124,9 +98,7 @@ impl Workspace {
         false
     }
 
-    /*
-     * returns true if the workspace is to update the locations info of this window
-     */
+    /// Returns true if the workspace is to update the locations info of this window.
     pub fn is_managed(&self, window: &Window) -> bool {
         self.is_displaying(window) && window.type_ != WindowType::Dock
     }
@@ -143,7 +115,7 @@ impl Workspace {
             .iter_mut()
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
-        self.current_layout().update_windows(self, &mut managed_nonfloat);
+        self.layout.update_windows(self, &mut managed_nonfloat);
         //update the location of all floating windows
         windows
             .iter_mut()
@@ -175,32 +147,42 @@ impl Workspace {
         }
         self.xyhw_avoided = xyhw;
     }
+}
 
-    pub fn current_layout(&self) -> &Box<dyn Layout> {
-        &self.layouts[0]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{BBox, WindowHandle};
+
+    #[test]
+    fn empty_ws_should_not_contain_window() {
+        let subject = Workspace::new(BBox {
+            width: 600,
+            height: 800,
+            x: 0,
+            y: 0,
+        });
+        let w = Window::new(WindowHandle::MockHandle(1), None);
+        assert!(
+            subject.is_displaying(&w) == false,
+            "workspace incorrectly owns window"
+        );
     }
-}
 
-#[test]
-fn empty_ws_should_not_contain_window() {
-    use super::WindowHandle;
-    let subject = Workspace::new();
-    let w = Window::new(WindowHandle::MockHandle(1), None);
-    assert!(
-        subject.is_displaying(&w) == false,
-        "workspace incorrectly owns window"
-    );
-}
-
-#[test]
-fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
-    use super::WindowHandle;
-    let mut subject = Workspace::new();
-    subject.show_tag("test".to_owned());
-    let mut w = Window::new(WindowHandle::MockHandle(1), None);
-    w.tag("test".to_owned());
-    assert!(
-        subject.is_displaying(&w) == true,
-        "workspace should include window"
-    );
+    #[test]
+    fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
+        let mut subject = Workspace::new(BBox {
+            width: 600,
+            height: 800,
+            x: 0,
+            y: 0,
+        });
+        subject.show_tag("test".to_owned());
+        let mut w = Window::new(WindowHandle::MockHandle(1), None);
+        w.tag("test".to_owned());
+        assert!(
+            subject.is_displaying(&w) == true,
+            "workspace should include window"
+        );
+    }
 }

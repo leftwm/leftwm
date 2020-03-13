@@ -101,78 +101,83 @@ impl DockArea {
     }
 }
 
-#[test]
-fn should_be_able_to_build_from_top() {
-    let area = DockArea {
-        top: 2,
-        top_start_x: 10,
-        top_end_x: 200,
-        ..Default::default()
-    };
-    let expected: XYHW = XYHWBuilder {
-        h: 2,
-        w: 190,
-        x: 10,
-        y: 0,
-        ..Default::default()
-    }
-    .into();
-    assert_eq!(area.xyhw_from_top(), expected);
-}
+#[cfg(tests)]
+mod tests {
+    use super::*;
 
-#[test]
-fn should_be_able_to_build_from_bottom() {
-    let area = DockArea {
-        bottom: 2,
-        bottom_start_x: 10,
-        bottom_end_x: 200,
-        ..Default::default()
-    };
-    let expected: XYHW = XYHWBuilder {
-        h: 2,
-        w: 190,
-        x: 10,
-        y: 998,
-        ..Default::default()
+    #[test]
+    fn should_be_able_to_build_from_top() {
+        let area = DockArea {
+            top: 2,
+            top_start_x: 10,
+            top_end_x: 200,
+            ..Default::default()
+        };
+        let expected: XYHW = XYHWBuilder {
+            h: 2,
+            w: 190,
+            x: 10,
+            y: 0,
+            ..Default::default()
+        }
+        .into();
+        assert_eq!(area.xyhw_from_top(), expected);
     }
-    .into();
-    assert_eq!(area.xyhw_from_bottom(1000), expected);
-}
 
-#[test]
-fn should_be_able_to_build_from_left() {
-    let area = DockArea {
-        left: 2,
-        left_start_y: 10,
-        left_end_y: 200,
-        ..Default::default()
-    };
-    let expected: XYHW = XYHWBuilder {
-        h: 190,
-        w: 2,
-        x: 0,
-        y: 10,
-        ..Default::default()
+    #[test]
+    fn should_be_able_to_build_from_bottom() {
+        let area = DockArea {
+            bottom: 2,
+            bottom_start_x: 10,
+            bottom_end_x: 200,
+            ..Default::default()
+        };
+        let expected: XYHW = XYHWBuilder {
+            h: 2,
+            w: 190,
+            x: 10,
+            y: 998,
+            ..Default::default()
+        }
+        .into();
+        assert_eq!(area.xyhw_from_bottom(1000), expected);
     }
-    .into();
-    assert_eq!(area.xyhw_from_left(), expected);
-}
 
-#[test]
-fn should_be_able_to_build_from_right() {
-    let area = DockArea {
-        right: 2,
-        right_start_y: 10,
-        right_end_y: 200,
-        ..Default::default()
-    };
-    let expected: XYHW = XYHWBuilder {
-        h: 190,
-        w: 2,
-        x: 1998,
-        y: 10,
-        ..Default::default()
+    #[test]
+    fn should_be_able_to_build_from_left() {
+        let area = DockArea {
+            left: 2,
+            left_start_y: 10,
+            left_end_y: 200,
+            ..Default::default()
+        };
+        let expected: XYHW = XYHWBuilder {
+            h: 190,
+            w: 2,
+            x: 0,
+            y: 10,
+            ..Default::default()
+        }
+        .into();
+        assert_eq!(area.xyhw_from_left(), expected);
     }
-    .into();
-    assert_eq!(area.xyhw_from_right(2000), expected);
+
+    #[test]
+    fn should_be_able_to_build_from_right() {
+        let area = DockArea {
+            right: 2,
+            right_start_y: 10,
+            right_end_y: 200,
+            ..Default::default()
+        };
+        let expected: XYHW = XYHWBuilder {
+            h: 190,
+            w: 2,
+            x: 1998,
+            y: 10,
+            ..Default::default()
+        }
+        .into();
+        assert_eq!(area.xyhw_from_right(2000), expected);
+    }
 }

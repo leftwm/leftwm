@@ -7,7 +7,7 @@ use crate::models::WindowHandle;
 use crate::models::Workspace;
 use std::collections::VecDeque;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
@@ -21,27 +21,8 @@ pub struct Manager {
     pub actions: VecDeque<DisplayAction>,
 }
 
-impl Default for Manager {
-    fn default() -> Manager {
-        Manager {
-            windows: Vec::new(),
-            screens: Vec::new(),
-            workspaces: Vec::new(),
-            mode: Mode::NormalMode,
-            theme_setting: ThemeSetting::default(),
-            tags: vec![],
-            focused_workspace_history: VecDeque::new(),
-            focused_window_history: VecDeque::new(),
-            focused_tag_history: VecDeque::new(),
-            actions: VecDeque::new(),
-        }
-    }
-}
-
 impl Manager {
-    /*
-     * return the currently focused workspace
-     */
+    /// Return the currently focused workspace.
     pub fn focused_workspace(&self) -> Option<&Workspace> {
         if self.focused_workspace_history.is_empty() {
             return None;
@@ -50,9 +31,7 @@ impl Manager {
         Some(&self.workspaces[index])
     }
 
-    /*
-     * return the currently focused workspace
-     */
+    /// Return the currently focused workspace.
     pub fn focused_workspace_mut(&mut self) -> Option<&mut Workspace> {
         if self.focused_workspace_history.is_empty() {
             return None;
@@ -61,9 +40,7 @@ impl Manager {
         Some(&mut self.workspaces[index])
     }
 
-    /*
-     * return the currently focused tag
-     */
+    /// Return the currently focused tag.
     pub fn focused_tag(&self) -> Option<String> {
         if self.focused_tag_history.is_empty() {
             return None;
@@ -71,9 +48,7 @@ impl Manager {
         Some(self.focused_tag_history[0].clone())
     }
 
-    /*
-     * return the currently focused window
-     */
+    /// Return the currently focused window.
     pub fn focused_window(&self) -> Option<&Window> {
         if self.focused_window_history.is_empty() {
             return None;
@@ -87,9 +62,7 @@ impl Manager {
         None
     }
 
-    /*
-     * return the currently focused window
-     */
+    /// Return the currently focused window.
     pub fn focused_window_mut(&mut self) -> Option<&mut Window> {
         if self.focused_window_history.is_empty() {
             return None;

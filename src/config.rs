@@ -27,13 +27,9 @@ pub struct Config {
 }
 
 pub fn load() -> Config {
-    match load_from_file() {
-        Ok(cfg) => cfg,
-        Err(err) => {
-            println!("ERROR LOADING CONFIG: {:?}", err);
-            Config::default()
-        }
-    }
+    load_from_file()
+        .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))
+        .unwrap_or_default()
 }
 
 fn load_from_file() -> Result<Config> {
@@ -41,8 +37,7 @@ fn load_from_file() -> Result<Config> {
     let config_filename = path.place_config_file("config.toml")?;
     if Path::new(&config_filename).exists() {
         let contents = fs::read_to_string(config_filename)?;
-        let config: Config = toml::from_str(&contents)?;
-        Ok(config)
+        Ok(toml::from_str(&contents)?)
     } else {
         let config = Config::default();
         let toml = toml::to_string(&config).unwrap();
@@ -89,29 +84,19 @@ fn default_terminal<'s>() -> &'s str {
 }
 
 impl Config {
-    /*
-     * returns a collection of bindings with the mod key mapped
-     */
+    /// Returns a collection of bindings with the mod key mapped.
     pub fn mapped_bindings(&self) -> Vec<Keybind> {
-        let mod_key: &String = &self.modkey.clone();
-        let old_binds: &Vec<Keybind> = &self.keybind;
-        old_binds
-            .iter()
-            .map(|k| {
-                let mut keymap = k.clone();
-                let old_mods: &Vec<String> = &k.modifier;
-                let mods = old_mods
-                    .iter()
-                    .map(|m| {
-                        if m == "modkey" {
-                            mod_key.clone()
-                        } else {
-                            m.clone()
-                        }
-                    })
-                    .collect();
-                keymap.modifier = mods;
-                keymap
+        // copy keybinds substituting "modkey" modifier with a new "modkey".
+        self.keybind
+            .clone()
+            .into_iter()
+            .map(|mut keybind| {
+                for m in &mut keybind.modifier {
+                    if m == "modkey" {
+                        *m = self.modkey.clone();
+                    }
+                }
+                keybind
             })
             .collect()
     }
@@ -126,126 +111,117 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        let mut commands: Vec<Keybind> = vec![];
+        let mut commands = vec![
+            // Mod + p => Open dmenu
+            Keybind {
+                command: Command::Execute,
+                value: Some("dmenu_run".to_owned()),
+                modifier: vec!["modkey".to_owned()],
+                key: "p".to_owned(),
+            },
+            // Mod + Shift + Enter => Open A Shell
+            Keybind {
+                command: Command::Execute,
+                value: Some(default_terminal().to_owned()),
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "Return".to_owned(),
+            },
+            // Mod + Shift + q => kill focused window
+            Keybind {
+                command: Command::CloseWindow,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "q".to_owned(),
+            },
+            // Mod + Shift + r => soft reload leftwm
+            Keybind {
+                command: Command::SoftReload,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "r".to_owned(),
+            },
+            // Mod + Shift + x => exit leftwm
+            Keybind {
+                command: Command::Execute,
+                value: Some("pkill leftwm".to_owned()),
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "x".to_owned(),
+            },
+            // Mod + Ctrl + l => lock the screen
+            Keybind {
+                command: Command::Execute,
+                value: Some("slock".to_owned()),
+                modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+                key: "l".to_owned(),
+            },
+            // Mod + Shift + w => swap the tags on the last to active workspaces
+            Keybind {
+                command: Command::MoveToLastWorkspace,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "w".to_owned(),
+            },
+            // Mod + w => move the active window to the previous workspace
+            Keybind {
+                command: Command::SwapTags,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "w".to_owned(),
+            },
+            Keybind {
+                command: Command::MoveWindowUp,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "Up".to_owned(),
+            },
+            Keybind {
+                command: Command::MoveWindowDown,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "Down".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWindowUp,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "Up".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWindowDown,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "Down".to_owned(),
+            },
+            Keybind {
+                command: Command::NextLayout,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+                key: "Up".to_owned(),
+            },
+            Keybind {
+                command: Command::PreviousLayout,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+                key: "Down".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWorkspaceNext,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "Right".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWorkspacePrevious,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "Left".to_owned(),
+            },
+        ];
 
-        //Mod + p => Open dmenu
-        commands.push(Keybind {
-            command: Command::Execute,
-            value: Some("dmenu_run".to_owned()),
-            modifier: vec!["modkey".to_owned()],
-            key: "p".to_owned(),
-        });
+        const WORKSPACES_NUM: usize = 10;
 
-        //Mod + Shift + Enter => Open A Shell
-        commands.push(Keybind {
-            command: Command::Execute,
-            value: Some(default_terminal().to_owned()),
-            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
-            key: "Return".to_owned(),
-        });
-
-        //Mod + Shift + q => kill focused window
-        commands.push(Keybind {
-            command: Command::CloseWindow,
-            value: None,
-            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
-            key: "q".to_owned(),
-        });
-
-        //Mod + Shift + r => soft reload leftwm
-        commands.push(Keybind {
-            command: Command::SoftReload,
-            value: None,
-            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
-            key: "r".to_owned(),
-        });
-
-        //Mod + Shift + x => exit leftwm
-        commands.push(Keybind {
-            command: Command::Execute,
-            value: Some("pkill leftwm".to_owned()),
-            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
-            key: "x".to_owned(),
-        });
-
-        //Mod + Ctrl + l => lock the screen
-        commands.push(Keybind {
-            command: Command::Execute,
-            value: Some("slock".to_owned()),
-            modifier: vec!["modkey".to_owned(), "Control".to_owned()],
-            key: "l".to_owned(),
-        });
-
-        //Mod + Shift + w => swap the tags on the last to active workspaces
-        commands.push(Keybind {
-            command: Command::MoveToLastWorkspace,
-            value: None,
-            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
-            key: "w".to_owned(),
-        });
-
-        //Mod + w => move the active window to the previous workspace
-        commands.push(Keybind {
-            command: Command::SwapTags,
-            value: None,
-            modifier: vec!["modkey".to_owned()],
-            key: "w".to_owned(),
-        });
-
-        commands.push(Keybind {
-            command: Command::MoveWindowUp,
-            value: None,
-            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
-            key: "Up".to_owned(),
-        });
-        commands.push(Keybind {
-            command: Command::MoveWindowDown,
-            value: None,
-            modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
-            key: "Down".to_owned(),
-        });
-
-        commands.push(Keybind {
-            command: Command::FocusWindowUp,
-            value: None,
-            modifier: vec!["modkey".to_owned()],
-            key: "Up".to_owned(),
-        });
-        commands.push(Keybind {
-            command: Command::FocusWindowDown,
-            value: None,
-            modifier: vec!["modkey".to_owned()],
-            key: "Down".to_owned(),
-        });
-
-        commands.push(Keybind {
-            command: Command::NextLayout,
-            value: None,
-            modifier: vec!["modkey".to_owned(), "Control".to_owned()],
-            key: "Up".to_owned(),
-        });
-        commands.push(Keybind {
-            command: Command::PreviousLayout,
-            value: None,
-            modifier: vec!["modkey".to_owned(), "Control".to_owned()],
-            key: "Down".to_owned(),
-        });
-
-        commands.push(Keybind {
-            command: Command::FocusWorkspaceNext,
-            value: None,
-            modifier: vec!["modkey".to_owned()],
-            key: "Right".to_owned(),
-        });
-        commands.push(Keybind {
-            command: Command::FocusWorkspacePrevious,
-            value: None,
-            modifier: vec!["modkey".to_owned()],
-            key: "Left".to_owned(),
-        });
-
-        //add goto workspace
-        for i in 1..10 {
+        // add "goto workspace"
+        for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
                 command: Command::GotoTag,
                 value: Some(i.to_string()),
@@ -254,8 +230,8 @@ impl Default for Config {
             });
         }
 
-        //add move to workspace
-        for i in 1..10 {
+        // and "move to workspace"
+        for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
                 command: Command::MoveToTag,
                 value: Some(i.to_string()),

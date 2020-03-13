@@ -364,7 +364,7 @@ impl XWrap {
             .collect()
     }
 
-    /* EWMH support used for bars such as polybar */
+    /// EWMH support used for bars such as polybar.
     pub fn init_desktops_hints(&self) {
         let tags = &self.tags;
         let tag_length = tags.len();
@@ -655,8 +655,8 @@ impl XWrap {
         let mut height = 0;
         let mut width = 0;
         for s in self.get_screens() {
-            height = std::cmp::max(height, s.height + s.y);
-            width = std::cmp::max(width, s.width + s.x);
+            height = std::cmp::max(height, s.bbox.height + s.bbox.y);
+            width = std::cmp::max(width, s.bbox.width + s.bbox.x);
         }
         (height, width)
     }
@@ -800,9 +800,7 @@ impl XWrap {
         }
     }
 
-    /**
-     * used to send and XConfigureEvent for a changed window to the xserver
-     */
+    /// Used to send and XConfigureEvent for a changed window to the xserver .
     pub fn send_config(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let config = xlib::XConfigureEvent {
@@ -1190,6 +1188,7 @@ impl XWrap {
         color.pixel
     }
 
+    // TODO: split into smaller functions
     pub fn init(&mut self, config: &Config, theme: &ThemeSetting) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
@@ -1202,7 +1201,6 @@ impl XWrap {
 
         let root = self.get_default_root();
         self.load_colors(theme);
-        //self.colors = self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;

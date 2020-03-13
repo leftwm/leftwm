@@ -1,5 +1,6 @@
 use super::*;
 use crate::display_action::DisplayAction;
+use crate::state;
 use crate::utils::helpers;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
@@ -15,7 +16,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 window.clear_tags();
                 window.set_floating(false);
                 window.tag(tag.clone());
-                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.clone() );
+                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.clone());
                 manager.actions.push_back(act);
                 return true;
             }
@@ -213,10 +214,13 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             let workspace = manager.workspaces[index].clone();
             focus_handler::focus_workspace(manager, &workspace);
-            let act = DisplayAction::MoveMouseOverPoint( workspace.xyhw.center() );
+            let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
             manager.actions.push_back(act);
-            if let Some(window) = manager.windows.iter()
-                .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal ) {
+            if let Some(window) = manager
+                .windows
+                .iter()
+                .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
+            {
                 let window = window.clone();
                 focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
                 let act = DisplayAction::MoveMouseOver(window.handle);
@@ -248,10 +252,13 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             let workspace = manager.workspaces[index as usize].clone();
             focus_handler::focus_workspace(manager, &workspace);
-            let act = DisplayAction::MoveMouseOverPoint( workspace.xyhw.center() );
+            let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
             manager.actions.push_back(act);
-            if let Some(window) = manager.windows.iter()
-                .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal ) {
+            if let Some(window) = manager
+                .windows
+                .iter()
+                .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
+            {
                 let window = window.clone();
                 focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
                 let act = DisplayAction::MoveMouseOver(window.handle);
@@ -262,11 +269,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
         Command::MouseMoveWindow => false,
 
-        Command::SoftReload => {
-            let state_data = serde_json::to_string(&manager).unwrap();
-            let _ = std::fs::write("/tmp/leftwm.state", state_data);
-            ::std::process::exit(0);
-        }
+        Command::SoftReload => soft_reload(&manager),
         Command::HardReload => ::std::process::exit(0),
     }
 }
@@ -284,4 +287,14 @@ fn to_num(val: &Option<String>) -> usize {
     val.as_ref()
         .and_then(|num| num.parse::<usize>().ok())
         .unwrap_or_default()
+}
+
+/// Soft reload the worker.
+///
+/// First write current state to a file and then exit current process.
+fn soft_reload(manager: &Manager) -> ! {
+    if let Err(err) = state::save(manager) {
+        log::error!("Cannot save state: {}", err);
+    }
+    std::process::exit(0);
 }

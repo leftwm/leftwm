@@ -7,10 +7,8 @@ pub struct DisplayEventHandler {
 }
 
 impl DisplayEventHandler {
-    /*
-     * process a collection of events, and apply them changes to a manager
-     * returns true if changes need to be rendered
-     */
+    /// Process a collection of events, and apply them changes to a manager.
+    /// Returns true if changes need to be rendered.
     pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
@@ -61,7 +59,7 @@ impl DisplayEventHandler {
             }
             DisplayEvent::ResizeWindow(handle, x, y) => {
                 window_resize_handler::process(manager, &handle, x, y)
-            } //_ => false,
+            }
         };
 
         if update_needed {
