@@ -47,7 +47,8 @@ fn restore_state(manager: &mut Manager, old_manager: &Manager) {
 /// Restore workspaces layout.
 fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
     for workspace in &mut manager.workspaces {
-        old_manager.workspaces
+        old_manager
+            .workspaces
             .iter()
             .find(|w| w.id == workspace.id)
             .map(|old_workspace| {

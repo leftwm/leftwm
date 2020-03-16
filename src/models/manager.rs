@@ -1,3 +1,4 @@
+use crate::state;
 use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
@@ -5,6 +6,7 @@ use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
@@ -19,6 +21,8 @@ pub struct Manager {
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
     pub actions: VecDeque<DisplayAction>,
+    #[serde(skip)]
+    pub reload_requested: bool,
 }
 
 impl Manager {
@@ -127,5 +131,20 @@ impl Manager {
             })
             .collect();
         list.join(" ")
+    }
+
+    /// Soft reload the worker.
+    ///
+    /// First write current state to a file and then exit current process.
+    pub fn soft_reload(&mut self) {
+        if let Err(err) = state::save(self) {
+            log::error!("Cannot save state: {}", err);
+        }
+        self.hard_reload();
+    }
+
+    /// Reload the worker without saving state.
+    pub fn hard_reload(&mut self) {
+        self.reload_requested = true;
     }
 }

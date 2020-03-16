@@ -1,5 +1,6 @@
 use crate::models::Window;
 use crate::models::WindowHandle;
+use serde::{Deserialize, Serialize};
 
 /// These are responses from the Window manager.
 /// The display server should act on these actions.

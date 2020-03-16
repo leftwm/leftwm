@@ -4,6 +4,7 @@ mod workspace_config;
 
 use super::Command;
 use crate::errors::Result;
+use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::env;
 use std::fs;

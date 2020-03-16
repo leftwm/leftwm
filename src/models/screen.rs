@@ -1,5 +1,6 @@
 use super::WindowHandle;
 use crate::config::WorkspaceConfig;
+use serde::{Deserialize, Serialize};
 use std::convert::From;
 use x11_dl::xlib;
 

@@ -9,7 +9,6 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
-use log::*;
 use std::sync::Once;
 use x11_dl::xlib;
 
@@ -86,7 +85,7 @@ impl DisplayServer for XlibDisplayServer {
         let event = XEvent(&self.xw, xlib_event).into();
 
         if let Some(e) = event {
-            trace!("DisplayEvent: {:?}", e);
+            log::trace!("DisplayEvent: {:?}", e);
             events.push(e)
         }
 
@@ -102,7 +101,7 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
-        trace!("DisplayAction: {:?}", act);
+        log::trace!("DisplayAction: {:?}", act);
         let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(w) => {
                 self.xw.kill_window(w);
@@ -155,7 +154,7 @@ impl DisplayServer for XlibDisplayServer {
             }
         };
         if event.is_some() {
-            trace!("DisplayEvent: {:?}", event);
+            log::trace!("DisplayEvent: {:?}", event);
         }
         event
     }

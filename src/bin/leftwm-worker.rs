@@ -1,10 +1,6 @@
-extern crate leftwm;
-
-use flexi_logger::{colored_default_format, Logger};
 use leftwm::child_process::Nanny;
 
 use leftwm::*;
-use log::*;
 use std::panic;
 use std::sync::Once;
 
@@ -12,18 +8,13 @@ fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
     ds.get_next_events()
 }
 
-fn main() {
-    match Logger::with_env_or_str("leftwm-worker=info, leftwm=info")
-        .log_to_file()
-        .directory("/tmp/leftwm")
-        .format(colored_default_format)
-        .start()
-    {
-        Ok(_) => info!("leftwm-worker booted!"),
-        Err(_) => error!("failed to setup logging"),
-    }
+use slog::{o, Drain};
 
-    let result = panic::catch_unwind(|| {
+fn main() {
+    let _log_guard = setup_logging();
+    log::info!("leftwm-worker booted!");
+
+    let completed = panic::catch_unwind(|| {
         let config = config::load();
 
         let mut manager = Manager::default();
@@ -34,7 +25,11 @@ fn main() {
 
         event_loop(&mut manager, &mut display_server, &handler);
     });
-    info!("Completed: {:?}", result);
+
+    match completed {
+        Ok(_) => log::info!("Completed"),
+        Err(err) => log::error!("Completed with error: {:?}", err),
+    }
 }
 
 fn event_loop(
@@ -61,6 +56,7 @@ fn event_loop(
         for event in events {
             needs_update = handler.process(manager, event) || needs_update;
         }
+
         if let Some(cmd) = command_pipe.read_command() {
             needs_update = external_command_handler::process(manager, cmd) || needs_update;
             display_server.update_theme_settings(manager.theme_setting.clone());
@@ -107,5 +103,41 @@ fn event_loop(
 
             leftwm::state::load(manager);
         });
+
+        if manager.reload_requested {
+            break;
+        }
     }
+}
+
+/// Log to both stdout and journald.
+fn setup_logging() -> slog_scope::GlobalLoggerGuard {
+    #[cfg(feature = "slog-journald")]
+    let journald = slog_journald::JournaldDrain.ignore_res();
+
+    #[cfg(feature = "slog-term")]
+    let stdout = slog_term::CompactFormat::new(slog_term::TermDecorator::new().stdout().build())
+        .build()
+        .ignore_res();
+
+    #[cfg(all(feature = "slog-journald",  feature = "slog-term"))]
+    let drain = slog::Duplicate(journald, stdout).ignore_res();
+    #[cfg(all(feature = "slog-journald",  not(feature = "slog-term")))]
+    let drain = journald;
+    #[cfg(all(not(feature = "slog-journald"),  feature = "slog-term"))]
+    let drain = stdout;
+
+    // Set level filters from RUST_LOG. Defaults to `info`.
+    let envlogger = slog_envlogger::LogBuilder::new(drain)
+        .parse(&std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))
+        .build()
+        .ignore_res();
+
+    let logger = slog::Logger::root(slog_async::Async::default(envlogger).ignore_res(), o!());
+
+    slog_stdlog::init().unwrap_or_else(|err| {
+        eprintln!("failed to setup logging: {}", err);
+    });
+
+    slog_scope::set_global_logger(logger)
 }

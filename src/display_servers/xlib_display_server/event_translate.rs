@@ -8,7 +8,6 @@ use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::models::WindowType;
 use crate::models::XYHWChange;
-use log::*;
 use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
@@ -42,7 +41,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
                         if w.floating() {
                             if let Ok(geo) = xw.get_window_geometry(event.window) {
-                                info!("geo: {:?}", &geo);
+                                log::debug!("geo: {geo:?}", geo=geo);
                                 geo.update_window_floating(&mut w);
                             }
                         }

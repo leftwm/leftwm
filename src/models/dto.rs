@@ -1,5 +1,6 @@
-use crate::models::Manager;
 use crate::layouts::Layout;
+use crate::models::Manager;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Viewport {

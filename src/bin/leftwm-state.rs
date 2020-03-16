@@ -1,9 +1,4 @@
-extern crate leftwm;
-
-#[macro_use]
-extern crate clap;
-
-use clap::{App, Arg};
+use clap::{App, Arg, value_t};
 use leftwm::errors::Result;
 use leftwm::models::dto::*;
 use std::fs;

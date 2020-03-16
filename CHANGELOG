@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `workspace.layout` to `leftwm-state` output.
+- Layouts are now preserved between reloads.
+
 ## [0.2.3] - 2019-2-11
 ### Fixed
 - Sizing and loading issues with docks
@@ -33,17 +38,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.9] - 2019-05-05
 ### Fixed
-- Fix Several small papercuts and bug fixes 
+- Fix Several small papercuts and bug fixes
 ### Added
 - reloading while keeping current window state
-- Keyboard navigation between workspaces 
+- Keyboard navigation between workspaces
 - min/max window size support
 - callback to call theme scripts on new window
 
 
 ## [0.1.8] - 2019-04-19
 ### Fixed
-- Fix Several small papercuts and bug fixes 
+- Fix Several small papercuts and bug fixes
 
 
 ## [0.1.7] - 2019-04-15
@@ -52,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cleanup and refactor code
 ### Added
 - leftwm-state to get state info from leftwm for bars
-- Added template system for theme creation 
+- Added template system for theme creation
 
 
 ## [0.1.6] - 2019-04-5
@@ -63,13 +68,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renaming of tags
 - keycombos to refocusing windows
 - Added layout - Main/Stacked
-
-
-
-
-
-
-
-
-
-
