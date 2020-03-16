@@ -21,8 +21,11 @@ fn main() {
             //
             // Left is to fast for some logging managers. We need to
             // wait to give the logging manager a second to boot.
-            let delay = std::time::Duration::from_millis(2000);
-            std::thread::sleep(delay);
+            #[cfg(feature = "slow-dm-fix")]
+            {
+                let delay = std::time::Duration::from_millis(2000);
+                std::thread::sleep(delay);
+            }
         }
     }
 }
