@@ -25,34 +25,37 @@ impl Layout {
             Self::GridHorizontal => Self::EvenHorizontal,
             Self::EvenHorizontal => Self::EvenVertical,
             Self::EvenVertical => Self::Fibonacci,
-            Self::Fibonacci => Self::MainAndVertStack,
+            Self::Fibonacci => Self::Maximized,
+            Self::Maximized => Self::MainAndVertStack,
         }
     }
 
     pub fn prev_layout(&self) -> Self {
         match self {
-            Self::MainAndVertStack => Self::Fibonacci,
+            Self::MainAndVertStack => Self::Maximized,
             Self::GridHorizontal => Self::MainAndVertStack,
             Self::EvenHorizontal => Self::GridHorizontal,
             Self::EvenVertical => Self::EvenHorizontal,
             Self::Fibonacci => Self::EvenVertical,
+            Self::Maximized => Self::Fibonacci,
         }
     }
 
-    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         match self {
             Self::MainAndVertStack => main_and_vert_stack(workspace, windows),
             Self::GridHorizontal => grid_horizontal(workspace, windows),
             Self::EvenHorizontal => even_horizontal(workspace, windows),
             Self::EvenVertical => even_vertical(workspace, windows),
             Self::Fibonacci => fibonacci(workspace, windows),
+            Self::Maximized => maximized(workspace, windows),
         }
     }
 }
 
 /// Layout which splits the workspace into two columns, gives one window all of the left column,
 /// and divides the right column among all the other windows.
-fn main_and_vert_stack(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+fn main_and_vert_stack(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len();
     if window_count == 0 {
         return;
@@ -106,7 +109,7 @@ fn main_and_vert_stack(workspace: &Workspace, windows: &mut Vec<&mut &mut Window
 /// |   |   |   |
 /// +---+---+---+
 /// ```
-fn grid_horizontal(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+fn grid_horizontal(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len() as i32;
 
     // choose the number of columns so that we get close to an even NxN grid.
@@ -132,7 +135,7 @@ fn grid_horizontal(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
 }
 
 /// Layout which gives each window full height, but splits the workspace width among them all.
-fn even_horizontal(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+fn even_horizontal(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let width_f = workspace.width() as f32 / windows.len() as f32;
     let width = width_f.floor() as i32;
     let mut x = 0;
@@ -146,7 +149,7 @@ fn even_horizontal(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
 }
 
 /// Layout which gives each window full width, but splits the workspace height among them all.
-fn even_vertical(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+fn even_vertical(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let height_f = workspace.height() as f32 / windows.len() as f32;
     let height = height_f.floor() as i32;
     let mut y = 0;
@@ -171,7 +174,7 @@ fn even_vertical(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
 /// |           |     | 5|-.|
 /// +-----------+-----+-----+
 /// ```
-fn fibonacci(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+fn fibonacci(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let mut x = workspace.x();
     let mut y = workspace.y();
     let mut height = workspace.height() as i32;
