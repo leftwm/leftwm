@@ -619,6 +619,7 @@ impl XWrap {
                 xlib::AnyModifier,
                 handle,
             ); //cleanup
+
             //just watchout for these mouse combos so we can act on them
             self.grab_buttons(handle, xlib::Button1, self.mod_key_mask);
             self.grab_buttons(handle, xlib::Button1, self.mod_key_mask | xlib::ShiftMask);

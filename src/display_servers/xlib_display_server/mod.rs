@@ -65,10 +65,9 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_workspaces(&self, _workspaces: &[Workspace], focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            focused
-                .tags
-                .iter()
-                .for_each(|tag| self.xw.set_current_desktop(tag));
+            for tag in &focused.tags {
+                self.xw.set_current_desktop(tag)
+            }
         }
     }
 

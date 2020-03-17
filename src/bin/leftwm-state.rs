@@ -1,4 +1,4 @@
-use clap::{App, Arg, value_t};
+use clap::{value_t, App, Arg};
 use leftwm::errors::Result;
 use leftwm::models::dto::*;
 use std::fs;

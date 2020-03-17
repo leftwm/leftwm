@@ -1,4 +1,3 @@
-use crate::state;
 use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
@@ -6,6 +5,7 @@ use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
+use crate::state;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 

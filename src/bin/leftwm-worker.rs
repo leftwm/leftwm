@@ -4,10 +4,6 @@ use leftwm::*;
 use std::panic;
 use std::sync::Once;
 
-fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
-    ds.get_next_events()
-}
-
 use slog::{o, Drain};
 
 fn main() {
@@ -49,7 +45,7 @@ fn event_loop(
         if manager.mode == Mode::NormalMode {
             let _ = state_socket.write_manager_state(manager);
         }
-        let mut events = get_events(display_server);
+        let mut events = display_server.get_next_events();
         events.append(&mut events_remainder);
 
         let mut needs_update = false;
@@ -66,12 +62,13 @@ fn event_loop(
         if needs_update {
             match &manager.mode {
                 Mode::NormalMode => {
-                    let focused = manager.focused_window();
+                    let focused_window = manager.focused_window();
                     for window in &manager.windows {
-                        display_server.update_window(window, focused);
+                        display_server.update_window(window, focused_window);
                     }
 
-                    display_server.update_workspaces(&manager.workspaces, manager.focused_workspace());
+                    let focused_workspace = manager.focused_workspace();
+                    display_server.update_workspaces(&manager.workspaces, focused_workspace);
                 }
                 //when (resizing / moving) only deal with the single window
                 Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
@@ -119,11 +116,11 @@ fn setup_logging() -> slog_scope::GlobalLoggerGuard {
         .build()
         .ignore_res();
 
-    #[cfg(all(feature = "slog-journald",  feature = "slog-term"))]
+    #[cfg(all(feature = "slog-journald", feature = "slog-term"))]
     let drain = slog::Duplicate(journald, stdout).ignore_res();
-    #[cfg(all(feature = "slog-journald",  not(feature = "slog-term")))]
+    #[cfg(all(feature = "slog-journald", not(feature = "slog-term")))]
     let drain = journald;
-    #[cfg(all(not(feature = "slog-journald"),  feature = "slog-term"))]
+    #[cfg(all(not(feature = "slog-journald"), feature = "slog-term"))]
     let drain = stdout;
 
     // Set level filters from RUST_LOG. Defaults to `info`.

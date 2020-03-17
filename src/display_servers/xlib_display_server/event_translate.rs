@@ -41,7 +41,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
                         if w.floating() {
                             if let Ok(geo) = xw.get_window_geometry(event.window) {
-                                log::debug!("geo: {geo:?}", geo=geo);
+                                log::debug!("geo: {geo:?}", geo = geo);
                                 geo.update_window_floating(&mut w);
                             }
                         }
