@@ -207,7 +207,7 @@ impl XlibDisplayServer {
                 }
             }),
             Err(err) => {
-                println!("ERROR: {}", err);
+                log::error!("ERROR: {}", err);
             }
         }
         all

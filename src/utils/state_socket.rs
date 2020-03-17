@@ -68,7 +68,7 @@ impl StateSocket {
             };
             let server = listener
                 .incoming()
-                .map_err(|e| eprintln!("accept failed = {:?}", e))
+                .map_err(|e| log::error!("accept failed = {:?}", e))
                 .for_each(move |sock| {
                     process(sock, thread_state.clone(), thread_last_state.clone());
                     Ok(())

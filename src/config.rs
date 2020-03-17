@@ -29,7 +29,7 @@ pub struct Config {
 
 pub fn load() -> Config {
     load_from_file()
-        .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))
+        .map_err(|err| log::error!("ERROR LOADING CONFIG: {:?}", err))
         .unwrap_or_default()
 }
 

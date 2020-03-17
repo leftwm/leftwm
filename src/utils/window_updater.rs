@@ -24,7 +24,7 @@ pub fn update_windows(manager: &mut Manager) {
             });
 
         windows.iter().filter(|x| x.debugging).for_each(|w| {
-            println!("{:?}", w);
+            log::debug!("{:?}", w);
         });
     });
 }
