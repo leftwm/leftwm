@@ -45,6 +45,7 @@ fn event_loop(
         if manager.mode == Mode::NormalMode {
             let _ = state_socket.write_manager_state(manager);
         }
+
         let mut events = display_server.get_next_events();
         events.append(&mut events_remainder);
 

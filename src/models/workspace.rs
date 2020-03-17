@@ -91,8 +91,8 @@ impl Workspace {
 
     /// Returns true if the workspace is displays a given window.
     pub fn is_displaying(&self, window: &Window) -> bool {
-        for wd_t in &window.tags {
-            if self.has_tag(wd_t) {
+        for tag in &window.tags {
+            if self.has_tag(tag) {
                 return true;
             }
         }
@@ -104,24 +104,27 @@ impl Workspace {
         self.is_displaying(window) && window.type_ != WindowType::Dock
     }
 
-    pub fn update_windows(&self, windows: &mut Vec<&mut Window>) {
+    pub fn update_windows(&self, windows: &mut [&mut Window]) {
         //mark all windows for this workspace as visible
-        let mut all_mine: Vec<&mut &mut Window> = windows
-            .iter_mut()
-            .filter(|w| self.is_displaying(w))
-            .collect();
-        all_mine.iter_mut().for_each(|w| w.set_visible(true));
+        for window in windows.iter_mut() {
+            if self.is_displaying(window) {
+                window.set_visible(true);
+            }
+        }
+
         //update the location of all non-floating windows
-        let mut managed_nonfloat: Vec<&mut &mut Window> = windows
+        let mut managed_nonfloat = windows
             .iter_mut()
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
         self.layout.update_windows(self, &mut managed_nonfloat);
-        //update the location of all floating windows
-        windows
-            .iter_mut()
-            .filter(|w| self.is_managed(w) && w.floating())
-            .for_each(|w| w.normal = self.xyhw);
+
+        // update the location of all floating windows
+        for window in windows.iter_mut() {
+            if window.floating() && self.is_managed(window) {
+                window.normal = self.xyhw
+            }
+        }
     }
 
     pub fn x(&self) -> i32 {

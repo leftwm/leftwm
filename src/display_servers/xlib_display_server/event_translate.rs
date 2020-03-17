@@ -93,6 +93,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let h = WindowHandle::XlibHandle(event.window);
                 Some(DisplayEvent::MouseCombo(event.state, event.button, h))
             }
+
             xlib::ButtonRelease => {
                 //println!("ButtonRelease");
                 Some(DisplayEvent::ChangeToNormalMode)

@@ -1,30 +1,28 @@
 use crate::models::Manager;
-use crate::models::Window;
 
-/*
- * step over all the windows for each workspace and updates all the things
- * based on the new state of the WM
- */
+/// Step over all the windows for each workspace and updates all the
+/// things based on the new state of the WM.
 pub fn update_windows(manager: &mut Manager) {
-    manager
-        .windows
-        .iter_mut()
-        .for_each(|w| w.set_visible(w.tags.is_empty() || w.is_fullscreen()));
-    let all_windows = &mut manager.windows;
-    manager.workspaces.iter_mut().for_each(|ws| {
-        let mut windows: Vec<&mut Window> = all_windows.iter_mut().collect();
-        ws.update_windows(&mut windows);
+    // hide windows without tags as well as fullscreen ones.
+    for window in &mut manager.windows {
+        window.set_visible(window.tags.is_empty() || window.is_fullscreen())
+    }
 
-        windows
-            .iter_mut()
-            .filter(|w| ws.is_displaying(w) && w.is_fullscreen())
-            .for_each(|w| {
-                w.set_floating(false);
-                w.normal = ws.xyhw;
-            });
+    for workspace in &manager.workspaces {
+        workspace.update_windows(&mut manager.windows.iter_mut().collect::<Vec<_>>());
 
-        windows.iter().filter(|x| x.debugging).for_each(|w| {
-            log::debug!("{:?}", w);
-        });
-    });
+        // Handle fullscreen windows
+        for window in &mut manager.windows {
+            if window.is_fullscreen() && workspace.is_displaying(window) {
+                window.set_floating(false);
+                window.normal = workspace.xyhw;
+            }
+        }
+    }
+
+    for window in &manager.windows {
+        if window.debugging {
+            log::debug!("{:?}", window);
+        }
+    }
 }
