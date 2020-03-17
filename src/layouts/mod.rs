@@ -284,8 +284,7 @@ mod tests {
         w.border = 0;
         w.margin = 0;
         let mut windows = vec![&mut w];
-        let mut windows_filters = windows.iter_mut().filter(|_f| true).collect();
-        even_horizontal(&ws, &mut windows_filters);
+        even_horizontal(&ws, &mut windows);
         assert!(
             w.height() == 600,
             "window was not size to the correct height"
