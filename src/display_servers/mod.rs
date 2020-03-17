@@ -19,7 +19,7 @@ pub trait DisplayServer {
 
     fn update_window(&self, _window: &Window, _focused: Option<&Window>) {}
 
-    fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
+    fn update_workspaces(&self, _workspaces: &[Workspace], _focused: Option<&Workspace>) {}
 
     fn execute_action(&mut self, _act: DisplayAction) -> Option<DisplayEvent> {
         None

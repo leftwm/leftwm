@@ -71,9 +71,7 @@ fn event_loop(
                         display_server.update_window(window, focused);
                     }
 
-                    let workspaces = manager.workspaces.iter().collect();
-                    let focused = manager.focused_workspace();
-                    display_server.update_workspaces(workspaces, focused);
+                    display_server.update_workspaces(&manager.workspaces, manager.focused_workspace());
                 }
                 //when (resizing / moving) only deal with the single window
                 Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {

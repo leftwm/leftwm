@@ -63,7 +63,7 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
+    fn update_workspaces(&self, _workspaces: &[Workspace], focused: Option<&Workspace>) {
         if let Some(focused) = focused {
             focused
                 .tags
