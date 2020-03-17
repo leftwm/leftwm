@@ -54,30 +54,14 @@ impl Manager {
 
     /// Return the currently focused window.
     pub fn focused_window(&self) -> Option<&Window> {
-        if self.focused_window_history.is_empty() {
-            return None;
-        }
-        let handle = self.focused_window_history[0].clone();
-        for w in &self.windows {
-            if handle == w.handle {
-                return Some(w);
-            }
-        }
-        None
+        let handle = self.focused_window_history.get(0)?;
+        self.windows.iter().find(|w| &w.handle == handle)
     }
 
     /// Return the currently focused window.
     pub fn focused_window_mut(&mut self) -> Option<&mut Window> {
-        if self.focused_window_history.is_empty() {
-            return None;
-        }
-        let handle = self.focused_window_history[0].clone();
-        for w in &mut self.windows {
-            if handle == w.handle {
-                return Some(w);
-            }
-        }
-        None
+        let handle = self.focused_window_history.get(0)?;
+        self.windows.iter_mut().find(|w| &w.handle == handle)
     }
 
     pub fn tags_display(&self) -> String {
