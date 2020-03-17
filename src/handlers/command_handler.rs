@@ -1,6 +1,6 @@
 use super::*;
 use crate::display_action::DisplayAction;
-use crate::state;
+use crate::layouts::Layout;
 use crate::utils::helpers;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
@@ -84,6 +84,19 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::PreviousLayout => {
             if let Some(workspace) = manager.focused_workspace_mut() {
                 workspace.prev_layout();
+                return true;
+            }
+            false
+        }
+
+        Command::ToggleMaximized => {
+            if let Some(workspace) = manager.focused_workspace_mut() {
+                workspace.layout = if workspace.layout == Layout::Maximized {
+                    // TODO: restore prev layout
+                    Layout::MainAndVertStack
+                } else {
+                    Layout::Maximized
+                };
                 return true;
             }
             false
@@ -272,8 +285,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::SoftReload => {
             manager.soft_reload();
             false
-
-        },
+        }
         Command::HardReload => {
             manager.hard_reload();
             false

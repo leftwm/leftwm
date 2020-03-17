@@ -19,4 +19,5 @@ pub enum Command {
     MouseMoveWindow,
     NextLayout,
     PreviousLayout,
+    ToggleMaximized,
 }

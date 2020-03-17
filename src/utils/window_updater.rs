@@ -8,8 +8,9 @@ pub fn update_windows(manager: &mut Manager) {
         window.set_visible(window.tags.is_empty() || window.is_fullscreen())
     }
 
+    let focused_window = manager.focused_window().cloned();
     for workspace in &manager.workspaces {
-        workspace.update_windows(&mut manager.windows);
+        workspace.update_windows(&mut manager.windows, &focused_window);
 
         // Handle fullscreen windows
         for window in &mut manager.windows {

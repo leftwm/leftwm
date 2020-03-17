@@ -37,21 +37,11 @@ impl CommandBuilder {
         self.keybinds.get(&id)
     }
 
-    //Command((Command, Option<String>)),
-    pub fn xkeyevent(
-        &self,
-        mask: ModMask,
-        key: XKeysym,
-        //event: XKeyEvent,
-    ) -> Option<(Command, Option<String>)> {
-        let keybind = self.find_keybind_for(mask, key);
-        match keybind {
-            Some(bind) => {
-                let cmd = bind.command.clone();
-                let val = bind.value.clone();
-                Some((cmd, val))
-            }
-            None => None,
-        }
+    pub fn xkeyevent(&self, mask: ModMask, key: XKeysym) -> Option<(Command, Option<String>)> {
+        self.find_keybind_for(mask, key).map(|bind| {
+            let cmd = bind.command.clone();
+            let val = bind.value.clone();
+            (cmd, val)
+        })
     }
 }

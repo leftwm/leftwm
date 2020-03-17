@@ -2,13 +2,14 @@ use super::models::Window;
 use super::models::Workspace;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
     MainAndVertStack,
     GridHorizontal,
     EvenHorizontal,
     EvenVertical,
     Fibonacci,
+    Maximized,
 }
 
 impl Default for Layout {
@@ -41,14 +42,19 @@ impl Layout {
         }
     }
 
-    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+    pub fn update_windows(
+        &self,
+        workspace: &Workspace,
+        windows: &mut Vec<&mut Window>,
+        focused_window: &Option<Window>,
+    ) {
         match self {
             Self::MainAndVertStack => main_and_vert_stack(workspace, windows),
             Self::GridHorizontal => grid_horizontal(workspace, windows),
             Self::EvenHorizontal => even_horizontal(workspace, windows),
             Self::EvenVertical => even_vertical(workspace, windows),
             Self::Fibonacci => fibonacci(workspace, windows),
-            Self::Maximized => maximized(workspace, windows),
+            Self::Maximized => maximized(workspace, windows, focused_window),
         }
     }
 }
@@ -219,6 +225,32 @@ fn fibonacci(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
                 y = y + half_height;
                 width = half_width;
                 height = half_height;
+            }
+        }
+    }
+}
+
+/// Show one maximized window.
+fn maximized(
+    workspace: &Workspace,
+    windows: &mut Vec<&mut Window>,
+    focused_window: &Option<Window>,
+) {
+    let main_window = match focused_window {
+        Some(window) => window,
+        None => return,
+    };
+
+    for window in windows {
+        if workspace.is_displaying(window) {
+            if main_window.handle == window.handle {
+                window.set_height(workspace.height());
+                window.set_width(workspace.width());
+                window.set_x(workspace.x());
+                window.set_y(workspace.y());
+                window.set_visible(true);
+            } else {
+                window.set_visible(false);
             }
         }
     }

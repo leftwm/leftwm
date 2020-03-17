@@ -134,6 +134,12 @@ impl Default for Config {
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "q".to_owned(),
             },
+            Keybind {
+                command: Command::ToggleMaximized,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "m".to_owned(),
+            },
             // Mod + Shift + r => soft reload leftwm
             Keybind {
                 command: Command::SoftReload,

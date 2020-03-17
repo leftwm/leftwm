@@ -104,7 +104,7 @@ impl Workspace {
         self.is_displaying(window) && window.type_ != WindowType::Dock
     }
 
-    pub fn update_windows(&self, windows: &mut [Window]) {
+    pub fn update_windows(&self, windows: &mut [Window], focused_window: &Option<Window>) {
         // mark all windows for this workspace as visible
         for window in windows.iter_mut() {
             if self.is_displaying(window) {
@@ -117,7 +117,8 @@ impl Workspace {
             .iter_mut()
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
-        self.layout.update_windows(self, &mut managed_nonfloat);
+        self.layout
+            .update_windows(self, &mut managed_nonfloat, focused_window);
 
         // update the location of all floating windows
         for window in windows.iter_mut() {
