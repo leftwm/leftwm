@@ -17,7 +17,7 @@ pub trait DisplayServer {
 
     fn update_theme_settings(&mut self, _settings: ThemeSetting) {}
 
-    fn update_windows(&self, _windows: Vec<&Window>, _focused: Option<&Window>) {}
+    fn update_window(&self, _window: &Window, _focused: Option<&Window>) {}
 
     fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
 

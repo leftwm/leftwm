@@ -66,22 +66,23 @@ fn event_loop(
         if needs_update {
             match &manager.mode {
                 Mode::NormalMode => {
-                    let windows: Vec<&Window> = (&manager.windows).iter().collect();
                     let focused = manager.focused_window();
-                    display_server.update_windows(windows, focused);
-                    let workspaces: Vec<&Workspace> =
-                        (&manager.workspaces).iter().map(|w| w).collect();
+                    for window in &manager.windows {
+                        display_server.update_window(window, focused);
+                    }
+
+                    let workspaces = manager.workspaces.iter().collect();
                     let focused = manager.focused_workspace();
                     display_server.update_workspaces(workspaces, focused);
                 }
                 //when (resizing / moving) only deal with the single window
                 Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
                     let focused = manager.focused_window();
-                    let windows: Vec<&Window> = (&manager.windows)
-                        .iter()
-                        .filter(|w| &w.handle == h)
-                        .collect();
-                    display_server.update_windows(windows, focused);
+                    if let Some(window) = manager.windows.iter().find(|w| &w.handle == h) {
+                        display_server.update_window(window, focused);
+                    } else {
+                        log::error!("Cannot find resizing/moving window: {:?}", h);
+                    }
                 }
             }
         }

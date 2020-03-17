@@ -52,16 +52,14 @@ impl DisplayServer for XlibDisplayServer {
         self.xw.load_colors(&self.theme);
     }
 
-    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {
-        for window in windows {
-            let is_focused = match focused_window {
-                Some(f) => f.handle == window.handle,
-                None => false,
-            };
-            self.xw.update_window(&window, is_focused);
-            if window.is_fullscreen() {
-                self.xw.move_to_top(window.handle.clone());
-            }
+    fn update_window(&self, window: &Window, focused_window: Option<&Window>) {
+        let is_focused = match focused_window {
+            Some(f) => f.handle == window.handle,
+            None => false,
+        };
+        self.xw.update_window(&window, is_focused);
+        if window.is_fullscreen() {
+            self.xw.move_to_top(window.handle.clone());
         }
     }
 

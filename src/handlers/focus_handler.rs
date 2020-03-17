@@ -48,7 +48,7 @@ pub fn focus_window_by_handle(
 }
 
 pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> bool {
-    let result = _focus_window_work(manager, window);
+    let result = focus_window_work(manager, window);
     if !result {
         return false;
     }
@@ -72,7 +72,7 @@ pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> b
     result
 }
 
-fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
+fn focus_window_work(manager: &mut Manager, window: &Window) -> bool {
     //no new history for if no change
     if let Some(fw) = manager.focused_window() {
         if fw.handle == window.handle {
@@ -122,7 +122,7 @@ pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
     for handle in history {
         for w in manager.windows.clone() {
             if w.handle == handle {
-                return _focus_window_work(manager, &w);
+                return focus_window_work(manager, &w);
             }
         }
     }
