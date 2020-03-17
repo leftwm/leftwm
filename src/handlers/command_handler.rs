@@ -90,16 +90,16 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         }
 
         Command::ToggleMaximized => {
-            if let Some(workspace) = manager.focused_workspace_mut() {
-                workspace.layout = if workspace.layout == Layout::Maximized {
-                    // TODO: restore prev layout
-                    Layout::MainAndVertStack
-                } else {
-                    Layout::Maximized
-                };
-                return true;
+            let index = manager.focused_workspace_history.get(0).copied().unwrap_or(0);
+            let current_layout = manager.workspaces[index].layout.clone();
+            if current_layout == Layout::Maximized {
+                let new_layout = manager.layouts_history.pop().unwrap_or_default();
+                manager.workspaces[index].layout = new_layout;
+            } else {
+                manager.layouts_history.push(current_layout);
+                manager.workspaces[index].layout = Layout::Maximized;
             }
-            false
+            true
         }
 
         Command::MoveWindowUp => {

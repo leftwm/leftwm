@@ -1,10 +1,7 @@
 use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
-use crate::models::Mode;
-use crate::models::Screen;
-use crate::models::Window;
-use crate::models::WindowHandle;
-use crate::models::Workspace;
+use crate::models::{Mode, Screen, Window, WindowHandle, Workspace};
+use crate::layouts::Layout;
 use crate::state;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
@@ -20,6 +17,7 @@ pub struct Manager {
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
+    pub layouts_history: Vec<Layout>,
     pub actions: VecDeque<DisplayAction>,
     #[serde(skip)]
     pub reload_requested: bool,
