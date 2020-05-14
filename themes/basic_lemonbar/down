@@ -11,5 +11,6 @@ echo "UnloadTheme" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
 
 pkill lemonbar
 pkill compton
+pkill picom 
 pkill lemonbar
 
