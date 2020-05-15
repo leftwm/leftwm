@@ -1,4 +1,4 @@
-use clap::{App, Arg, value_t};
+use clap::{value_t, App, Arg};
 use leftwm::errors::Result;
 use leftwm::models::dto::*;
 use std::fs;
@@ -10,7 +10,7 @@ use xdg::BaseDirectories;
 fn main() -> Result<()> {
     let matches = App::new("LeftWM State")
         .author("Lex Childs <lex.childs@gmail.com>")
-        .version("0.2.2")
+        .version("0.2.3")
         .about("prints out the current state of LeftWM")
         .arg(
             Arg::with_name("template")
