@@ -289,13 +289,13 @@ fn center_main(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
 
     let primary_width = match window_count {
         1 => workspace.width() as i32,
-        _ => (workspace.width() as f32 / 2 as f32).floor() as i32,
+        _ => (workspace.width() as f32 / 2.0).floor() as i32,
     };
 
     let primary_x = match window_count {
         1 => 0 as i32,
-        2 => (workspace.width() as f32 / 2 as f32).floor() as i32,
-        _ => (workspace.width() as f32 / 4 as f32).floor() as i32,
+        2 => (workspace.width() as f32 / 2.0).floor() as i32,
+        _ => (workspace.width() as f32 / 4.0).floor() as i32,
     };
 
     let mut iter = windows.iter_mut();
@@ -312,8 +312,8 @@ fn center_main(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
 
     let secondary_width = match window_count {
         1 => 0,
-        2 => (workspace.width() as f32 / 2 as f32).floor() as i32,
-        _ => (workspace.width() as f32 / 4 as f32).floor() as i32,
+        2 => (workspace.width() as f32 / 2.0).floor() as i32,
+        _ => (workspace.width() as f32 / 4.0).floor() as i32,
     };
 
     // build the second window
@@ -327,16 +327,18 @@ fn center_main(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
     }
 
     // stack all the others
-    let height_f = workspace.height() as f32 / (window_count - 2) as f32;
-    let height = height_f.floor() as i32;
-    let mut y = 0;
+    if window_count > 2 {
+        let height_f = workspace.height() as f32 / (window_count - 2) as f32;
+        let height = height_f.floor() as i32;
+        let mut y = 0;
 
-    for w in iter {
-        w.set_height(height);
-        w.set_width(secondary_width);
-        w.set_x(workspace.x() + primary_width + secondary_width);
-        w.set_y(workspace.y() + y);
-        y += height;
+        for w in iter {
+            w.set_height(height);
+            w.set_width(secondary_width);
+            w.set_x(workspace.x() + primary_width + secondary_width);
+            w.set_y(workspace.y() + y);
+            y += height;
+        }
     }
 }
 
