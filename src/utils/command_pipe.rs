@@ -15,7 +15,6 @@ type ResultQueue = Result<Queue>;
 pub struct CommandPipe {
     queue: ResultQueue,
 }
-
 impl Default for CommandPipe {
     fn default() -> Self {
         Self::new()
@@ -90,10 +89,35 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
     } else if s.starts_with("Reload") {
         return Ok(ExternalCommand::Reload);
     } else if s.starts_with("LoadTheme ") {
-        return build_load_theme(s.clone());
+        return build_load_theme(s);
     } else if s.starts_with("SendWorkspaceToTag ") {
-        return build_goto_tag(s.clone());
+        return build_send_workspace_to_tag(s);
+    } else if s.starts_with("SendWindowToTag ") {
+        return build_send_window_to_tag(s);
+    } else if s.starts_with("SwapScreens") {
+        return Ok(ExternalCommand::SwapScreens);
+    } else if s.starts_with("MoveWindowToLastWorkspace") {
+        return Ok(ExternalCommand::MoveWindowToLastWorkspace);
+    } else if s.starts_with("MoveWindowUp") {
+        return Ok(ExternalCommand::MoveWindowUp);
+    } else if s.starts_with("MoveWindowDown") {
+        return Ok(ExternalCommand::MoveWindowDown);
+    } else if s.starts_with("FocusWindowUp") {
+        return Ok(ExternalCommand::FocusWindowUp);
+    } else if s.starts_with("FocusWindowDown") {
+        return Ok(ExternalCommand::FocusWindowDown);
+    } else if s.starts_with("FocusWorkspaceNext") {
+        return Ok(ExternalCommand::FocusWorkspaceNext);
+    } else if s.starts_with("FocusWorkspacePrevious") {
+        return Ok(ExternalCommand::FocusWorkspacePrevious);
+    } else if s.starts_with("NextLayout") {
+        return Ok(ExternalCommand::NextLayout);
+    } else if s.starts_with("PreviousLayout") {
+        return Ok(ExternalCommand::PreviousLayout);
+    } else if s.starts_with("CloseWindow") {
+        return Ok(ExternalCommand::CloseWindow);
     }
+
     Err(())
 }
 
@@ -107,7 +131,22 @@ fn build_load_theme(mut raw: String) -> std::result::Result<ExternalCommand, ()>
     }
 }
 
-fn build_goto_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
+fn build_send_window_to_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
+    crop_head(&mut raw, "SendWindowToTag ");
+    let parts: Vec<&str> = raw.split(' ').collect();
+    if parts.len() != 1 {
+        return Err(());
+    }
+    let tag_index = match parts[0].parse::<usize>() {
+        Ok(x) => x,
+        Err(_) => {
+            return Err(());
+        }
+    };
+    Ok(ExternalCommand::SendWindowToTag(tag_index))
+}
+
+fn build_send_workspace_to_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
     crop_head(&mut raw, "SendWorkspaceToTag ");
     let parts: Vec<&str> = raw.split(' ').collect();
     if parts.len() != 2 {
@@ -146,4 +185,16 @@ pub enum ExternalCommand {
     UnloadTheme,
     Reload,
     SendWorkspaceToTag(usize, usize),
+    SendWindowToTag(usize),
+    SwapScreens,
+    MoveWindowToLastWorkspace,
+    MoveWindowUp,
+    MoveWindowDown,
+    FocusWindowUp,
+    FocusWindowDown,
+    FocusWorkspaceNext,
+    FocusWorkspacePrevious,
+    CloseWindow,
+    NextLayout,
+    PreviousLayout,
 }

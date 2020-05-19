@@ -1,6 +1,5 @@
 use super::*;
 use crate::display_action::DisplayAction;
-use crate::state;
 use crate::utils::helpers;
 
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
@@ -272,8 +271,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::SoftReload => {
             manager.soft_reload();
             false
-
-        },
+        }
         Command::HardReload => {
             manager.hard_reload();
             false

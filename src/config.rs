@@ -24,6 +24,7 @@ pub struct Config {
     pub modkey: String,
     pub workspaces: Option<Vec<WorkspaceConfig>>,
     pub tags: Option<Vec<String>>,
+    //pub layouts: Option<Vec<String>>,
     pub keybind: Vec<Keybind>,
 }
 
@@ -246,9 +247,22 @@ impl Default for Config {
             .map(|s| s.to_string())
             .collect();
 
+        //let layouts = vec![
+        //    "MainAndVertStack",
+        //    "GridHorizontal",
+        //    "EvenHorizontal",
+        //    "EvenVertical",
+        //    "Fibonacci",
+        //    "CenterMain",
+        //]
+        //.iter()
+        //.map(|s| s.to_string())
+        //.collect();
+
         Config {
             workspaces: Some(vec![]),
             tags: Some(tags),
+            //layouts: Some(layouts),
             modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
