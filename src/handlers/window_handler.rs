@@ -61,7 +61,8 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
             .arg(&cmd)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
-            .spawn();
+            .spawn()
+            .map(|child| manager.children.insert(child));
     }
 
     true
