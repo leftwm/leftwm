@@ -34,7 +34,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 .arg(&val.unwrap())
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
-                .spawn();
+                .spawn()
+                .map(|child| manager.children.insert(child));
             false
         }
 
