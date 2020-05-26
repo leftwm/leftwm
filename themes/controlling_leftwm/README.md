@@ -6,7 +6,7 @@ file.
 This folder has example of how to send command to LeftWM using its external pipe
 file.
 
-A full list of supported command can be found here:
+A full list of supported commands can be found here:
 
 ```
 LoadTheme PATH_TO_THEME
