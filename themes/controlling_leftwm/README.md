@@ -8,6 +8,7 @@ file.
 
 A full list of supported command can be found here:
 
+```
 LoadTheme PATH_TO_THEME
 UnloadTheme
 Reload
@@ -24,5 +25,6 @@ FocusWorkspacePrevious
 CloseWindow
 NextLayout
 PreviousLayout
+```
 
 
