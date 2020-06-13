@@ -40,7 +40,8 @@ slog-journald = { version = "2.1.1", optional = true }
 slog-term = { version = "2.5.0", optional = true }
 
 [features]
-default = ["slog-journald", "slow-dm-fix"]
+default = ["slow-dm-fix", "slog-term"]
+journald = ["slog-journald", "slow-dm-fix"]
 
 # Sleep on restart
 slow-dm-fix = []

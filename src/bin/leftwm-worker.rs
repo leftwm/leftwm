@@ -120,11 +120,11 @@ fn setup_logging() -> slog_scope::GlobalLoggerGuard {
         .build()
         .ignore_res();
 
-    #[cfg(all(feature = "slog-journald",  feature = "slog-term"))]
+    #[cfg(all(feature = "slog-journald", feature = "slog-term"))]
     let drain = slog::Duplicate(journald, stdout).ignore_res();
-    #[cfg(all(feature = "slog-journald",  not(feature = "slog-term")))]
+    #[cfg(all(feature = "slog-journald", not(feature = "slog-term")))]
     let drain = journald;
-    #[cfg(all(not(feature = "slog-journald"),  feature = "slog-term"))]
+    #[cfg(all(not(feature = "slog-journald"), feature = "slog-term"))]
     let drain = stdout;
 
     // Set level filters from RUST_LOG. Defaults to `info`.
