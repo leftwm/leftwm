@@ -101,6 +101,10 @@ sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm
 sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-worker
 sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-state
 ```
+and
+```bash
+sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
+```
 You should now see LeftWM in your list of available window managers.
 
 ### Starting with startx or a login such as slim
