@@ -1,8 +1,8 @@
-use leftwm::child_process::Nanny;
+use leftwm::child_process::{self, Nanny};
 
 use leftwm::*;
 use std::panic;
-use std::sync::Once;
+use std::sync::{atomic::Ordering, Once};
 
 fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
     ds.get_next_events()
@@ -19,6 +19,8 @@ fn main() {
 
         let mut manager = Manager::default();
         manager.tags = config.get_list_of_tags();
+
+        child_process::register_child_hook(manager.reap_requested.clone());
 
         let mut display_server = XlibDisplayServer::new(&config);
         let handler = DisplayEventHandler { config };
@@ -97,12 +99,19 @@ fn event_loop(
 
         //after the very first loop boot the theme. we need the unix socket to already exist
         after_first_loop.call_once(|| {
-            if let Err(err) = Nanny::new().boot_current_theme() {
-                log::error!("Theme loading failed: {}", err);
+            match Nanny::new().boot_current_theme() {
+                Ok(child) => {
+                    child.map(|child| manager.children.insert(child));
+                }
+                Err(err) => log::error!("Theme loading failed: {}", err),
             }
 
             leftwm::state::load(manager);
         });
+
+        if manager.reap_requested.swap(false, Ordering::SeqCst) {
+            manager.children.reap();
+        }
 
         if manager.reload_requested {
             break;

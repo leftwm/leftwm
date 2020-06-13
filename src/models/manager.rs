@@ -1,4 +1,3 @@
-use crate::state;
 use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
@@ -6,10 +5,13 @@ use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
+use crate::state;
+use crate::utils::child_process::Children;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::sync::{atomic::AtomicBool, Arc};
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
@@ -21,6 +23,10 @@ pub struct Manager {
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
     pub actions: VecDeque<DisplayAction>,
+    #[serde(skip)]
+    pub children: Children,
+    #[serde(skip)]
+    pub reap_requested: Arc<AtomicBool>,
     #[serde(skip)]
     pub reload_requested: bool,
 }

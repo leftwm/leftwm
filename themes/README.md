@@ -23,6 +23,7 @@ It is strongly recommended that you do this with a symlink. For example up all y
 A command such as this would set basic_polybar to the current theme.
 
 ```
+mkdir -p ~/.config/leftwm/themes/
 ln -s ~/.config/leftwm/themes/basic_polybar ~/.config/leftwm/themes/current
 ```
 

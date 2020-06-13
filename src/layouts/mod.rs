@@ -9,7 +9,7 @@ mod fibonacci;
 mod grid_horizontal;
 mod main_and_vert_stack;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
     MainAndVertStack,
     GridHorizontal,
@@ -21,34 +21,36 @@ pub enum Layout {
 
 impl Default for Layout {
     fn default() -> Self {
-        Self::MainAndVertStack
+        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+        layouts.first().unwrap().clone()
+    }
+}
+
+const LAYOUTS: &'static [&'static str] = &[
+    "MainAndVertStack",
+    "GridHorizontal",
+    "EvenHorizontal",
+    "EvenVertical",
+    "Fibonacci",
+    "CenterMain",
+];
+
+impl From<&str> for Layout {
+    fn from(s: &str) -> Self {
+        match s {
+            "MainAndVertStack" => Self::MainAndVertStack,
+            "GridHorizontal" => Self::GridHorizontal,
+            "EvenHorizontal" => Self::EvenHorizontal,
+            "EvenVertical" => Self::EvenVertical,
+            "Fibonacci" => Self::Fibonacci,
+            "CenterMain" => Self::CenterMain,
+            _ => Self::MainAndVertStack,
+        }
     }
 }
 
 // This is tedious, but simple and effective.
 impl Layout {
-    pub fn next_layout(&self) -> Self {
-        match self {
-            Self::MainAndVertStack => Self::GridHorizontal,
-            Self::GridHorizontal => Self::EvenHorizontal,
-            Self::EvenHorizontal => Self::EvenVertical,
-            Self::EvenVertical => Self::Fibonacci,
-            Self::Fibonacci => Self::CenterMain,
-            Self::CenterMain => Self::MainAndVertStack,
-        }
-    }
-
-    pub fn prev_layout(&self) -> Self {
-        match self {
-            Self::MainAndVertStack => Self::CenterMain,
-            Self::GridHorizontal => Self::MainAndVertStack,
-            Self::EvenHorizontal => Self::GridHorizontal,
-            Self::EvenVertical => Self::EvenHorizontal,
-            Self::Fibonacci => Self::EvenVertical,
-            Self::CenterMain => Self::Fibonacci,
-        }
-    }
-
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         match self {
             Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
@@ -58,6 +60,30 @@ impl Layout {
             Self::Fibonacci => fibonacci::update(workspace, windows),
             Self::CenterMain => center_main::update(workspace, windows),
         }
+    }
+
+    pub fn next_layout(&self) -> Self {
+        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+        let mut index = match layouts.iter().position(|x| x == self) {
+            Some(x) => x as isize,
+            None => return "Fibonacci".into(),
+        } + 1;
+        if index >= layouts.len() as isize {
+            index = 0;
+        }
+        layouts[index as usize].clone()
+    }
+
+    pub fn prev_layout(&self) -> Self {
+        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+        let mut index = match layouts.iter().position(|x| x == self) {
+            Some(x) => x as isize,
+            None => return "Fibonacci".into(),
+        } - 1;
+        if index < 0 {
+            index = layouts.len() as isize - 1;
+        }
+        layouts[index as usize].clone()
     }
 }
 
