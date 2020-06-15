@@ -69,7 +69,7 @@ tags = ["Web", "Code", "Shell", "Music", "Connect"]
 ```
 
 
-### LeftWM is EWMH compliant. 
+### LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant.
 
 
 
