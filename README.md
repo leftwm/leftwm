@@ -113,10 +113,13 @@ make sure this is at the end of your .xinitrc file
 exec dbus-launch leftwm
 ```
 
-### Select a theme
+### Themes
 If you want to see more than a black screen when you login, select a theme
 ```bash 
 mkdir -p ~/.config/leftwm/themes
 cd ~/.config/leftwm/themes
 ln -s PATH_TO_THE_THEME_YOU_LIKE current
 ```
+LeftWM comes packaged with a couple default plain themes. There is also a [community repository for sharing themes](https://github.com/leftwm/leftwm-community-themes)
+
+For more information about themes checkout our theme guide [here](https://github.com/leftwm/leftwm/tree/master/themes).
