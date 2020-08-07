@@ -26,6 +26,43 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::GotoTag if !is_num(&val) => false,
         Command::GotoTag => goto_tag_handler::process(manager, to_num(&val)),
 
+        Command::FocusNextTag => {
+            let current = manager.focused_tag();
+            let current = current.unwrap();
+            let mut index = match manager.tags.iter().position(|x| x == &current) {
+                Some(x) => x + 1,
+                None => {
+                    return false;
+                }
+            };
+
+            index += 1;
+
+            if index > manager.tags.len() {
+                index = 1;
+            }
+
+            goto_tag_handler::process(manager, index)
+        }
+
+        Command::FocusPreviousTag => {
+            let current = manager.focused_tag();
+            let current = current.unwrap();
+            let mut index = match manager.tags.iter().position(|x| x == &current) {
+                Some(x) => x + 1,
+                None => {
+                    return false;
+                }
+            };
+
+            index -= 1;
+            if index < 1 {
+                index = manager.tags.len();
+            }
+
+            goto_tag_handler::process(manager, index)
+        }
+
         Command::Execute if val.is_none() => false,
         Command::Execute => {
             use std::process::{Command, Stdio};
