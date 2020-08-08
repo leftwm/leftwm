@@ -70,6 +70,13 @@ fn process_work(manager: &mut Manager, command: ExternalCommand) -> bool {
             return command_handler::process(manager, Command::FocusWindowDown, None);
         }
 
+        ExternalCommand::FocusNextTag => {
+            return command_handler::process(manager, Command::FocusNextTag, None);
+        }
+        ExternalCommand::FocusPreviousTag => {
+            return command_handler::process(manager, Command::FocusPreviousTag, None);
+        }
+
         ExternalCommand::FocusWorkspaceNext => {
             return command_handler::process(manager, Command::FocusWorkspaceNext, None);
         }
