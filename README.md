@@ -38,7 +38,7 @@ Mod + Shift + Enter => open a terminal
 Mod + Ctrl + L => lock the screen
 Mod + Shift + X => Exit LeftWM
 Mod + Shift + Q => close the current window
-Mod + Shift + R => reload LeftWM and it's config
+Mod + Shift + R => reload LeftWM and its config
 ```
 
 ### Workspaces

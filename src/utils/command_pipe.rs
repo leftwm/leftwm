@@ -106,6 +106,10 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
         return Ok(ExternalCommand::FocusWindowUp);
     } else if s.starts_with("FocusWindowDown") {
         return Ok(ExternalCommand::FocusWindowDown);
+    } else if s.starts_with("FocusNextTag") {
+        return Ok(ExternalCommand::FocusNextTag);
+    } else if s.starts_with("FocusPreviousTag") {
+        return Ok(ExternalCommand::FocusPreviousTag);
     } else if s.starts_with("FocusWorkspaceNext") {
         return Ok(ExternalCommand::FocusWorkspaceNext);
     } else if s.starts_with("FocusWorkspacePrevious") {
@@ -192,6 +196,8 @@ pub enum ExternalCommand {
     MoveWindowDown,
     FocusWindowUp,
     FocusWindowDown,
+    FocusNextTag,
+    FocusPreviousTag,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     CloseWindow,
