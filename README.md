@@ -1,5 +1,5 @@
 # LeftWM - A window manager for Adventurers
-![enter image description here](screenshots/4.jpg)
+![Screenshot of LeftWM in action](screenshots/4.jpg)
 
 ## Why go left 
 
