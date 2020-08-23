@@ -222,8 +222,11 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
             // set first in line
             manager.windows.append(&mut to_reorder);
-            let act = DisplayAction::MoveMouseOver(handle);
-            manager.actions.push_back(act);
+            // focus follows the window only if it was not on the master
+            if index > 0 {
+                let act = DisplayAction::MoveMouseOver(handle);
+                manager.actions.push_back(act);
+            }
             true
         }
 
