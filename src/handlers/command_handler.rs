@@ -176,6 +176,50 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             true
         }
 
+        Command::MoveWindowMaster => {
+            let handle = match manager.focused_window() {
+                Some(h) => h.handle.clone(),
+                _ => {
+                    return false;
+                }
+            };
+            let tags = match manager.focused_workspace() {
+                Some(w) => w.tags.clone(),
+                _ => {
+                    return false;
+                }
+            };
+            let for_active_workspace = |x: &Window| -> bool {
+                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
+            };
+            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            // helpers::reorder_vec(&mut to_reorder, is_handle, -3);
+            // set first in line
+            let list = &mut to_reorder;
+            let len = list.len() as i32;
+            let (index, item) = match list.iter().enumerate().find(|&x| is_handle(&x.1)) {
+                Some(x) => (x.0, x.1.clone()),
+                None => {
+                    return false;
+                }
+            };
+            list.remove(index);
+            let mut new_index = 0;
+            if new_index < 0 {
+                new_index += len
+            }
+            if new_index >= len {
+                new_index -= len
+            }
+            list.insert(new_index as usize, item);
+            // set first in line
+            manager.windows.append(&mut to_reorder);
+            let act = DisplayAction::MoveMouseOver(handle);
+            manager.actions.push_back(act);
+            true
+        }
+
         Command::FocusWindowUp => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle.clone(),
