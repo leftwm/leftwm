@@ -205,7 +205,13 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 }
             };
             list.remove(index);
-            let mut new_index = 0;
+            let mut new_index: i32;
+            match index {
+                0 => new_index = 1,
+                _ => {
+                    new_index = 0;
+                }
+            }
             if new_index < 0 {
                 new_index += len
             }
@@ -213,6 +219,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 new_index -= len
             }
             list.insert(new_index as usize, item);
+
             // set first in line
             manager.windows.append(&mut to_reorder);
             let act = DisplayAction::MoveMouseOver(handle);
