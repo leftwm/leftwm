@@ -176,7 +176,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             true
         }
 
-        Command::MoveWindowMaster => {
+        Command::MoveWindowTop => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle.clone(),
                 _ => {
@@ -194,8 +194,6 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             };
             let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
             let is_handle = |x: &Window| -> bool { x.handle == handle };
-            // helpers::reorder_vec(&mut to_reorder, is_handle, -3);
-            // set first in line
             let list = &mut to_reorder;
             let len = list.len() as i32;
             let (index, item) = match list.iter().enumerate().find(|&x| is_handle(&x.1)) {
@@ -220,9 +218,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             }
             list.insert(new_index as usize, item);
 
-            // set first in line
             manager.windows.append(&mut to_reorder);
-            // focus follows the window only if it was not on the master
+            // focus follows the window if it was not already on top of the stack
             if index > 0 {
                 let act = DisplayAction::MoveMouseOver(handle);
                 manager.actions.push_back(act);
