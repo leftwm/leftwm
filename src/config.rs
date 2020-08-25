@@ -183,6 +183,12 @@ impl Default for Config {
                 key: "Down".to_owned(),
             },
             Keybind {
+                command: Command::MoveWindowTop,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "Return".to_owned(),
+            },
+            Keybind {
                 command: Command::FocusWindowUp,
                 value: None,
                 modifier: vec!["modkey".to_owned()],

@@ -175,7 +175,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             manager.actions.push_back(act);
             true
         }
-
+        // Moves the selected window at index 0 of the window list.
+        // If the selected window is already at index 0, it is sent to index 1.
         Command::MoveWindowTop => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle.clone(),
