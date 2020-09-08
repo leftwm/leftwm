@@ -32,6 +32,7 @@ Mod + W => switch the desktops for each screen. Desktops [1][2] changes to [2][1
 Mod + Shift + W => move window to the other desktop
 Mod + (⬆️⬇️) => Focus the different windows in the current workspace
 Mod + Shift + (⬆️⬇️) => Move the different windows in the current workspace
+Mod + Enter => Move selected window to the top of the stack in the current workspace
 Mod + Ctrl + (⬆️⬇️) => Switch between different layouts
 Mod + Shift + (⬅➡) => Switch between different workspaces
 Mod + Shift + Enter => open a terminal

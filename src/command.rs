@@ -10,6 +10,7 @@ pub enum Command {
     GotoTag,
     MoveWindowUp,
     MoveWindowDown,
+    MoveWindowTop,
     FocusNextTag,
     FocusPreviousTag,
     FocusWindowUp,
