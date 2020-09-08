@@ -124,3 +124,16 @@ ln -s PATH_TO_THE_THEME_YOU_LIKE current
 LeftWM comes packaged with a couple default plain themes. There is also a [community repository for sharing themes](https://github.com/leftwm/leftwm-community-themes)
 
 For more information about themes checkout our theme guide [here](https://github.com/leftwm/leftwm/tree/master/themes).
+
+### Dependencies 
+While LeftWM has very few dependencies this isn't always the case for themes.
+Themes typically require the following to be installed. But this is up to the
+author of the theme and could be different. 
+List of common dependencies for Themes: 
+- feh 
+- compton or picom
+- (Some kind of bar, different for each theme)
+    - polybar 
+    - xmobar 
+    - lemonbar 
+    - conky 
