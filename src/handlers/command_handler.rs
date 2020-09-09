@@ -196,7 +196,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
             let is_handle = |x: &Window| -> bool { x.handle == handle };
             let list = &mut to_reorder;
-            let len = list.len() as i32;
+            let len = list.len();
             let (index, item) = match list.iter().enumerate().find(|&x| is_handle(&x.1)) {
                 Some(x) => (x.0, x.1.clone()),
                 None => {
@@ -204,20 +204,14 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 }
             };
             list.remove(index);
-            let mut new_index: i32;
-            match index {
-                0 => new_index = 1,
-                _ => {
-                    new_index = 0;
-                }
-            }
-            if new_index < 0 {
-                new_index += len
-            }
+            let mut new_index: usize = match index {
+                0 => 1,
+                _ => 0,
+            };
             if new_index >= len {
                 new_index -= len
             }
-            list.insert(new_index as usize, item);
+            list.insert(new_index, item);
 
             manager.windows.append(&mut to_reorder);
             // focus follows the window if it was not already on top of the stack
