@@ -137,3 +137,15 @@ List of common dependencies for Themes:
     - xmobar 
     - lemonbar 
     - conky 
+
+
+| Build Dependency | ubuntu20.4.1              |
+| ---------------- | ------------------------- |
+| feh              | sudo apt install feh      |
+| compton          | sudo apt install compton  |
+| picom            | manual                    |
+| polybar          | munual                    |
+| xmobar           | sudo apt install xmobar   |
+| lemonbar         | sudo apt install lemonbar |
+| conky            | sudo apt install conky    |
+|                  |                           |
