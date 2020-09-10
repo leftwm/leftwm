@@ -132,6 +132,7 @@ author of the theme and could be different.
 List of common dependencies for Themes: 
 - feh 
 - compton or picom
+- dmenu
 - (Some kind of bar, different for each theme)
     - polybar 
     - xmobar 
@@ -148,4 +149,4 @@ List of common dependencies for Themes:
 | xmobar           | sudo apt install xmobar   |
 | lemonbar         | sudo apt install lemonbar |
 | conky            | sudo apt install conky    |
-|                  |                           |
+| dmenu            | sudo apt install dmenu    |
