@@ -40,6 +40,7 @@ Mod + Ctrl + L => lock the screen
 Mod + Shift + X => Exit LeftWM
 Mod + Shift + Q => close the current window
 Mod + Shift + R => reload LeftWM and its config
+Mod + p => use dmenu to start application
 ```
 
 ### Workspaces
