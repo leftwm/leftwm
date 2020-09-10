@@ -40,6 +40,7 @@ Mod + Ctrl + L => lock the screen
 Mod + Shift + X => Exit LeftWM
 Mod + Shift + Q => close the current window
 Mod + Shift + R => reload LeftWM and its config
+Mod + p => use dmenu to start application
 ```
 
 ### Workspaces
@@ -132,6 +133,7 @@ author of the theme and could be different.
 List of common dependencies for Themes: 
 - feh 
 - compton or picom
+- dmenu
 - (Some kind of bar, different for each theme)
     - polybar 
     - xmobar 
@@ -148,4 +150,4 @@ List of common dependencies for Themes:
 | xmobar           | sudo apt install xmobar   |
 | lemonbar         | sudo apt install lemonbar |
 | conky            | sudo apt install conky    |
-|                  |                           |
+| dmenu            | sudo apt install dmenu    |
