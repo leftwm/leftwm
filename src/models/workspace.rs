@@ -4,6 +4,7 @@ use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
+use crate::models::Tag;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -12,7 +13,7 @@ pub struct Workspace {
     pub id: i32,
     /// Active layout
     pub layout: Layout,
-    pub tags: Vec<String>,
+    pub tags: Vec<Tag>,
     pub avoid: Vec<XYHW>,
     pub xyhw: XYHW,
     xyhw_avoided: XYHW,
@@ -64,7 +65,7 @@ impl Workspace {
         }
     }
 
-    pub fn show_tag(&mut self, tag: String) {
+    pub fn show_tag(&mut self, tag: Tag) {
         self.tags = vec![tag.clone()];
     }
 
