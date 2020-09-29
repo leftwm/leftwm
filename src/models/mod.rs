@@ -26,3 +26,5 @@ pub use workspace::Workspace;
 pub use xyhw::XYHWBuilder;
 pub use xyhw::XYHW;
 pub use xyhw_change::XYHWChange;
+
+pub type Tag = String;
