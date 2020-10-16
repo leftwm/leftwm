@@ -78,8 +78,10 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
 
         Command::CloseWindow => {
             if let Some(window) = manager.focused_window() {
-                let act = DisplayAction::KillWindow(window.handle.clone());
-                manager.actions.push_back(act);
+                if window.type_ != WindowType::Dock {
+                    let act = DisplayAction::KillWindow(window.handle.clone());
+                    manager.actions.push_back(act);
+                }
             }
             false
         }
