@@ -3,6 +3,7 @@ use super::WindowType;
 use crate::config::ThemeSetting;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
+use crate::models::Tag;
 use serde::{Deserialize, Serialize};
 use x11_dl::xlib;
 
@@ -25,7 +26,7 @@ pub struct Window {
     pub debugging: bool,
     pub name: Option<String>,
     pub type_: WindowType,
-    pub tags: Vec<String>,
+    pub tags: Vec<Tag>,
     pub border: i32,
     pub margin: i32,
     states: Vec<WindowState>,
@@ -219,7 +220,7 @@ impl Window {
         build.into()
     }
 
-    pub fn tag(&mut self, tag: String) {
+    pub fn tag(&mut self, tag: Tag) {
         if tag == "" {
             return;
         }
@@ -235,12 +236,12 @@ impl Window {
         self.tags = vec![];
     }
 
-    pub fn has_tag(&self, tag: String) -> bool {
+    pub fn has_tag(&self, tag: Tag) -> bool {
         self.tags.contains(&tag)
     }
 
-    pub fn untag(&mut self, tag: String) {
-        let mut new_tags: Vec<String> = Vec::new();
+    pub fn untag(&mut self, tag: Tag) {
+        let mut new_tags: Vec<Tag> = Vec::new();
         for t in &self.tags {
             if t != &tag {
                 new_tags.push(t.clone())
