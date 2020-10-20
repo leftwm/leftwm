@@ -70,6 +70,8 @@ Here is an example config changing the list of available tags. NOTE: tag navigat
 tags = ["Web", "Code", "Shell", "Music", "Connect"]
 ```
 
+[More information about configuration can be found in the Wiki](https://github.com/leftwm/leftwm/wiki/Config).
+
 
 ### LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant.
 
@@ -124,7 +126,7 @@ ln -s PATH_TO_THE_THEME_YOU_LIKE current
 ```
 LeftWM comes packaged with a couple default plain themes. There is also a [community repository for sharing themes](https://github.com/leftwm/leftwm-community-themes)
 
-For more information about themes checkout our theme guide [here](https://github.com/leftwm/leftwm/tree/master/themes).
+For more information about themes checkout our theme guide [Here](https://github.com/leftwm/leftwm/tree/master/themes) or the [Wiki Here](https://github.com/leftwm/leftwm/wiki/Themes).
 
 ### Dependencies 
 While LeftWM has very few dependencies this isn't always the case for themes.
