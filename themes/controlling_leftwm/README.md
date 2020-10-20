@@ -3,7 +3,7 @@
 LeftWM supports being controlled using EWMH calls and from an external pipe
 file.
 
-This folder has example of how to send command to LeftWM using its external pipe
+This folder has example of how to send commands to LeftWM using its external pipe
 file.
 
 A full list of supported commands can be found here:
