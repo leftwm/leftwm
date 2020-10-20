@@ -91,7 +91,7 @@ LeftWM is available in AUR as well as crates.io. Both are good options for simpl
 sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 ```
 
-LeftWM avaialbe in Fedora [Copr](https://copr.fedorainfracloud.org/coprs/atim/leftwm/): `sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm`
+LeftWM availalbe in Fedora [Copr](https://copr.fedorainfracloud.org/coprs/atim/leftwm/): `sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm`
 
 ## Manual Setup (no package manager)
 
@@ -148,7 +148,7 @@ List of common dependencies for Themes:
 | feh              | sudo apt install feh      |
 | compton          | sudo apt install compton  |
 | picom            | manual                    |
-| polybar          | munual                    |
+| polybar          | manual                    |
 | xmobar           | sudo apt install xmobar   |
 | lemonbar         | sudo apt install lemonbar |
 | conky            | sudo apt install conky    |
