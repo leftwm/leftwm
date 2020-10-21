@@ -7,7 +7,7 @@ The appearance of your desktop is different. It’s fun to try new looks and fee
 
 # We want your themes
 
-We are looking to expand the list of available themes for an upcoming release. If you enjoy making desktops look good please consider shairing (making a pull request).
+We are looking to expand the list of available themes for an upcoming release. If you enjoy making desktops look good please consider sharing (making a pull request).
 
 
 # Requirements for a theme
