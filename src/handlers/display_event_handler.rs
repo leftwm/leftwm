@@ -54,11 +54,23 @@ impl DisplayEventHandler {
                 }
             }
 
-            DisplayEvent::MoveWindow(handle, x, y) => {
-                window_move_handler::process(manager, &handle, x, y)
+            DisplayEvent::MoveWindow(handle, time, x, y) => {
+                //limit the frame rate to 60f/sec. otherwise you get lag
+                let mut refresh = false;
+                if (time - manager.frame_rate_limitor) > (1000 / 60) {
+                    refresh = window_move_handler::process(manager, &handle, x, y);
+                    manager.frame_rate_limitor = time;
+                }
+                refresh
             }
-            DisplayEvent::ResizeWindow(handle, x, y) => {
-                window_resize_handler::process(manager, &handle, x, y)
+            DisplayEvent::ResizeWindow(handle, time, x, y) => {
+                //limit the frame rate to 60f/sec. otherwise you get lag
+                let mut refresh = false;
+                if (time - manager.frame_rate_limitor) > (1000 / 60) {
+                    refresh = window_resize_handler::process(manager, &handle, x, y);
+                    manager.frame_rate_limitor = time;
+                }
+                refresh
             }
         };
 

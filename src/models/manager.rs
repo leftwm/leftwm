@@ -23,6 +23,9 @@ pub struct Manager {
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
     pub actions: VecDeque<DisplayAction>,
+
+    //this is used to limit framerate when resizing/moving windows
+    pub frame_rate_limitor: u64,
     #[serde(skip)]
     pub children: Children,
     #[serde(skip)]

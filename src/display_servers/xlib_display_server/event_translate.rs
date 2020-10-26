@@ -41,7 +41,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
                         if w.floating() {
                             if let Ok(geo) = xw.get_window_geometry(event.window) {
-                                log::debug!("geo: {geo:?}", geo=geo);
+                                log::debug!("geo: {geo:?}", geo = geo);
                                 geo.update_window_floating(&mut w);
                             }
                         }
@@ -145,11 +145,19 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                     Mode::NormalMode => {
                         Some(DisplayEvent::Movement(event_h, event.x_root, event.y_root))
                     }
-                    Mode::MovingWindow(h) => {
-                        Some(DisplayEvent::MoveWindow(h.clone(), offset_x, offset_y))
-                    }
+                    Mode::MovingWindow(h) => Some(DisplayEvent::MoveWindow(
+                        h.clone(),
+                        event.time,
+                        offset_x,
+                        offset_y,
+                    )),
                     Mode::ResizingWindow(h) => {
-                        Some(DisplayEvent::ResizeWindow(h.clone(), offset_x, offset_y))
+                        Some(DisplayEvent::ResizeWindow(
+                            h.clone(),
+                            event.time,
+                            offset_x,
+                            offset_y,
+                        ))
                         //h, w
                     }
                 }
