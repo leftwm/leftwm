@@ -4,64 +4,27 @@ use std::default::Default;
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct ThemeSettingLoadable {
-    border_width: Option<u32>,
-    margin: Option<u32>,
-    default_border_color: Option<String>,
-    floating_border_color: Option<String>,
-    focused_border_color: Option<String>,
-    on_new_window: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ThemeSetting {
     pub border_width: u32,
     pub margin: u32,
     pub default_border_color: String,
     pub floating_border_color: String,
     pub focused_border_color: String,
+    #[serde(rename = "on_new_window")]
     pub on_new_window_cmd: Option<String>,
-}
-
-/// Convert Theme Setting Loadable into Theme Settings
-/// This will only override fields that have been provided
-impl From<ThemeSettingLoadable> for ThemeSetting {
-    fn from(file: ThemeSettingLoadable) -> Self {
-        let mut theme = ThemeSetting::default();
-        if let Some(x) = file.border_width {
-            theme.border_width = x
-        }
-        if let Some(x) = file.margin {
-            theme.margin = x
-        }
-        if let Some(x) = file.default_border_color {
-            theme.default_border_color = x
-        }
-        if let Some(x) = file.floating_border_color {
-            theme.floating_border_color = x
-        }
-        if let Some(x) = file.focused_border_color {
-            theme.focused_border_color = x
-        }
-        theme.on_new_window_cmd = file.on_new_window;
-        theme
-    }
 }
 
 impl ThemeSetting {
     pub fn load(path: &PathBuf) -> ThemeSetting {
-        let mut theme = ThemeSetting::default();
-        if let Ok(file) = load_theme_file(path) {
-            theme = file.into();
-        }
-        theme
+        load_theme_file(path).unwrap_or_default()
     }
 }
 
-fn load_theme_file(path: &PathBuf) -> Result<ThemeSettingLoadable> {
+fn load_theme_file(path: &PathBuf) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
-    let from_file: ThemeSettingLoadable = toml::from_str(&contents)?;
+    let from_file: ThemeSetting = toml::from_str(&contents)?;
     Ok(from_file)
 }
 
@@ -75,5 +38,44 @@ impl Default for ThemeSetting {
             focused_border_color: "#FF0000".to_owned(),
             on_new_window_cmd: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_empty_theme_config() {
+        let config = "";
+        let config: ThemeSetting = toml::from_str(config).unwrap();
+        let default_config = ThemeSetting::default();
+
+        assert_eq!(config, default_config);
+    }
+
+    #[test]
+    fn deserialize_custom_theme_config() {
+        let config = r#"
+border_width = 0
+margin = 5
+default_border_color = '#222222'
+floating_border_color = '#005500'
+focused_border_color = '#FFB53A'
+on_new_window = 'echo Hello World'
+"#;
+        let config: ThemeSetting = toml::from_str(config).unwrap();
+
+        assert_eq!(
+            config,
+            ThemeSetting {
+                border_width: 0,
+                margin: 5,
+                default_border_color: "#222222".to_string(),
+                floating_border_color: "#005500".to_string(),
+                focused_border_color: "#FFB53A".to_string(),
+                on_new_window_cmd: Some("echo Hello World".to_string()),
+            }
+        );
     }
 }
