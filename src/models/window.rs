@@ -1,9 +1,9 @@
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
+use crate::models::Tag;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
-use crate::models::Tag;
 use serde::{Deserialize, Serialize};
 use x11_dl::xlib;
 
