@@ -91,7 +91,7 @@ LeftWM is available in AUR as well as crates.io. Both are good options for simpl
 sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 ```
 
-LeftWM is also availible in Fedora [Copr](https://copr.fedorainfracloud.org/coprs/atim/leftwm/): `sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm`
+LeftWM is also available in Fedora [Copr](https://copr.fedorainfracloud.org/coprs/atim/leftwm/): `sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm`
 
 ## Manual Setup (no package manager)
 
