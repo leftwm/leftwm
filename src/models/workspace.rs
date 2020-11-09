@@ -1,10 +1,10 @@
 use super::layouts::*;
 use crate::models::BBox;
+use crate::models::Tag;
 use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
-use crate::models::Tag;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
