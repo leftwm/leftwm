@@ -15,7 +15,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 window.clear_tags();
                 window.set_floating(false);
                 window.tag(tag.clone());
-                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.clone());
+                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag);
                 manager.actions.push_back(act);
                 return true;
             }

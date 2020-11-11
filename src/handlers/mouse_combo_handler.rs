@@ -2,7 +2,6 @@ use crate::display_action::DisplayAction;
 use crate::models::Manager;
 use crate::models::Mode;
 use crate::models::WindowHandle;
-use crate::models::XYHWBuilder;
 use crate::utils::xkeysym_lookup::Button;
 use crate::utils::xkeysym_lookup::ModMask;
 use x11_dl::xlib;
@@ -22,9 +21,7 @@ pub fn process(
             .iter_mut()
             .filter(|w| w.handle == handle)
             .for_each(|w| {
-                let offset = w
-                    .get_floating_offsets()
-                    .unwrap_or(XYHWBuilder::default().into());
+                let offset = w.get_floating_offsets().unwrap_or_default();
                 w.start_loc = Some(offset);
             });
 

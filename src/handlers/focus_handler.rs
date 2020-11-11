@@ -108,7 +108,7 @@ pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bo
                 break;
             }
         }
-        f.clone()
+        f
     };
     if let Some(w) = to_focus {
         return focus_workspace(manager, &w);

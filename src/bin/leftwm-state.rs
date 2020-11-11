@@ -53,8 +53,8 @@ fn main() -> Result<()> {
     let once = matches.occurrences_of("quit") == 1;
     let newline = matches.occurrences_of("newline") == 1;
 
-    if template_file.is_some() {
-        let template_str = fs::read_to_string(template_file.unwrap()).unwrap();
+    if let Some(template_file) = template_file {
+        let template_str = fs::read_to_string(template_file).unwrap();
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .unwrap()

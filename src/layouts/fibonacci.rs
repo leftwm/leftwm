@@ -25,8 +25,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
             continue;
         }
 
-        let half_width = (width as f32 / 2 as f32).floor() as i32;
-        let half_height = (height as f32 / 2 as f32).floor() as i32;
+        let half_width = (width as f32 / 2.0).floor() as i32;
+        let half_height = (height as f32 / 2.0).floor() as i32;
 
         match window_count - 1 - i {
             0 => {
@@ -54,8 +54,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
                     y,
                 );
 
-                x = x + half_width;
-                y = y + half_height;
+                x += half_width;
+                y += half_height;
                 width = half_width;
                 height = half_height;
             }

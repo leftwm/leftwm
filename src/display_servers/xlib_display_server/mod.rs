@@ -183,7 +183,7 @@ impl XlibDisplayServer {
 
         // tell manager about existing windows
         self.find_all_windows().into_iter().for_each(|w| {
-            let e = DisplayEvent::WindowCreate(w.clone());
+            let e = DisplayEvent::WindowCreate(w);
             events.push(e);
         });
 

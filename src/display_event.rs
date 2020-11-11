@@ -2,6 +2,7 @@ use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMas
 use crate::models::WindowChange;
 use crate::Command;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum DisplayEvent {
     Movement(WindowHandle, i32, i32),

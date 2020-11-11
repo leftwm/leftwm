@@ -68,11 +68,10 @@ fn event_loop(
         if needs_update {
             match &manager.mode {
                 Mode::NormalMode => {
-                    let windows: Vec<&Window> = (&manager.windows).iter().collect();
+                    let windows: Vec<&Window> = manager.windows.iter().collect();
                     let focused = manager.focused_window();
                     display_server.update_windows(windows, focused);
-                    let workspaces: Vec<&Workspace> =
-                        (&manager.workspaces).iter().map(|w| w).collect();
+                    let workspaces: Vec<&Workspace> = manager.workspaces.iter().collect();
                     let focused = manager.focused_workspace();
                     display_server.update_workspaces(workspaces, focused);
                 }

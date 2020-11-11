@@ -1026,7 +1026,7 @@ impl XWrap {
                 | xlib::FocusChangeMask
                 | xlib::PropertyChangeMask
                 | xlib::StructureNotifyMask;
-            self.subscribe_to_event(handle.clone(), mask);
+            self.subscribe_to_event(*handle, mask);
         }
     }
 
@@ -1238,8 +1238,7 @@ impl XWrap {
         }
 
         //EWMH stuff for desktops
-        let tags = config.get_list_of_tags();
-        self.tags = tags.clone();
+        self.tags = config.get_list_of_tags();
         self.init_desktops_hints();
 
         //cleanup grabs

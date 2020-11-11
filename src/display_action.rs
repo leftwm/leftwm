@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// These are responses from the Window manager.
 /// The display server should act on these actions.
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum DisplayAction {
     /// Nicely ask a window if it would please close at its convenience.

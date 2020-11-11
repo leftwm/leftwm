@@ -46,11 +46,12 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
                 return update_title(xw, event.window);
             }
 
-            if event.atom == xw.atoms.NetWMStrut || event.atom == xw.atoms.NetWMStrutPartial {
-                if xw.get_window_type(event.window) == WindowType::Dock {
-                    if let Some(change) = build_change_for_size_strut_partial(xw, event.window) {
-                        return Some(DisplayEvent::WindowChange(change));
-                    }
+            if event.atom == xw.atoms.NetWMStrut
+                || event.atom == xw.atoms.NetWMStrutPartial
+                    && xw.get_window_type(event.window) == WindowType::Dock
+            {
+                if let Some(change) = build_change_for_size_strut_partial(xw, event.window) {
+                    return Some(DisplayEvent::WindowChange(change));
                 }
             }
 

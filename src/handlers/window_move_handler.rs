@@ -13,10 +13,8 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
 
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
     window.set_floating(true);
-    let mut offset = window
-        .get_floating_offsets()
-        .unwrap_or(XYHWBuilder::default().into());
-    let start = window.start_loc.unwrap_or(XYHWBuilder::default().into());
+    let mut offset = window.get_floating_offsets().unwrap_or_default();
+    let start = window.start_loc.unwrap_or_default();
     offset.set_x(start.x() + offset_x);
     offset.set_y(start.y() + offset_y);
     window.set_floating_offsets(Some(offset));
@@ -41,10 +39,8 @@ fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
         if window.tags != workspace.tags {
             window.debugging = true;
             window.tags = workspace.tags.clone();
-            let mut offset = window
-                .get_floating_offsets()
-                .unwrap_or(XYHWBuilder::default().into());
-            let mut start_loc = window.start_loc.unwrap_or(XYHWBuilder::default().into());
+            let mut offset = window.get_floating_offsets().unwrap_or_default();
+            let mut start_loc = window.start_loc.unwrap_or_default();
             let x = offset.x() + window.normal.x();
             let y = offset.y() + window.normal.y();
             offset.set_x(x - workspace.xyhw.x());
