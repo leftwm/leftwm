@@ -1,6 +1,6 @@
 [package]
 name = "leftwm"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 description = "A window manager for Adventurers"
 edition = "2018"
