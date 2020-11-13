@@ -25,7 +25,11 @@ fn main() {
                 .expect("failed to start leftwm");
 
             // Wait until worker exits.
-            while let None = worker.try_wait().expect("failed to wait on worker") {
+            while worker
+                .try_wait()
+                .expect("failed to wait on worker")
+                .is_none()
+            {
                 // Not worker, then it might be autostart programs.
                 children.reap();
                 // Wait for SIGCHLD signal flag to be set.

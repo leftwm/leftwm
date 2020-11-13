@@ -66,15 +66,15 @@ impl Into<DisplayState> for ManagerState {
             .collect();
         DisplayState {
             workspaces,
-            window_title: self.window_title.unwrap_or("".to_owned()),
+            window_title: self.window_title.unwrap_or_default(),
         }
     }
 }
 
 fn viewport_into_display_workspace(
-    all_tags: &Vec<String>,
-    focused: &Vec<String>,
-    visible: &Vec<String>,
+    all_tags: &[String],
+    focused: &[String],
+    visible: &[String],
     viewport: &Viewport,
     ws_index: usize,
 ) -> DisplayWorkspace {

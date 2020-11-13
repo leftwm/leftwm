@@ -113,7 +113,7 @@ impl XYHWChange {
             window.strut = Some(XYHW::default());
             changed = true;
         }
-        let mut xyhw = window.strut.unwrap().clone();
+        let mut xyhw = window.strut.unwrap();
         changed = self.update(&mut xyhw) || changed;
         window.strut = Some(xyhw);
         changed

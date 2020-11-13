@@ -87,7 +87,7 @@ impl WindowChange {
         }
         if let Some(states) = self.states {
             //warn!("CHANGED: state");
-            changed = changed || true;
+            changed = true;
             window.set_states(states);
         }
         changed

@@ -114,7 +114,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let h = WindowHandle::XlibHandle(event.window);
                 let mouse_loc = xw.get_pointer_location();
 
-                mouse_loc.and_then(|loc| Some(DisplayEvent::FocusedWindow(h, loc.0, loc.1)))
+                mouse_loc.map(|loc| DisplayEvent::FocusedWindow(h, loc.0, loc.1))
             }
 
             xlib::PropertyNotify => {
@@ -184,7 +184,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                     xyhw.h = Some(event.height);
                     xyhw.x = Some(event.x);
                     xyhw.y = Some(event.y);
-                    change.floating = Some(xyhw.into());
+                    change.floating = Some(xyhw);
                     if window_type == WindowType::Dock {
                         if let Some(dock_area) = xw.get_window_strut_array(event.window) {
                             let dems = xw.screens_area_dimensions();

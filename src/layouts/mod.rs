@@ -26,7 +26,7 @@ impl Default for Layout {
     }
 }
 
-const LAYOUTS: &'static [&'static str] = &[
+const LAYOUTS: &[&str] = &[
     "MainAndVertStack",
     "GridHorizontal",
     "EvenHorizontal",

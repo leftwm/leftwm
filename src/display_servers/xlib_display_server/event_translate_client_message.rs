@@ -33,7 +33,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         } else {
             states.retain(|x| x != &xw.atoms.NetWMStateFullscreen);
         }
-        states.sort();
+        states.sort_unstable();
         states.dedup();
         //set the windows state
         xw.set_window_states_atoms(event.window, states);

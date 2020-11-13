@@ -66,7 +66,7 @@ impl Workspace {
     }
 
     pub fn show_tag(&mut self, tag: Tag) {
-        self.tags = vec![tag.clone()];
+        self.tags = vec![tag];
     }
 
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
@@ -166,7 +166,7 @@ mod tests {
         });
         let w = Window::new(WindowHandle::MockHandle(1), None);
         assert!(
-            subject.is_displaying(&w) == false,
+            !subject.is_displaying(&w),
             "workspace incorrectly owns window"
         );
     }
@@ -182,9 +182,6 @@ mod tests {
         subject.show_tag("test".to_owned());
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.tag("test".to_owned());
-        assert!(
-            subject.is_displaying(&w) == true,
-            "workspace should include window"
-        );
+        assert!(subject.is_displaying(&w), "workspace should include window");
     }
 }

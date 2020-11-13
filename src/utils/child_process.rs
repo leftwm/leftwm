@@ -1,5 +1,4 @@
 use crate::errors::Result;
-use dirs;
 use std::collections::HashMap;
 use std::fs;
 use std::io;
@@ -24,10 +23,10 @@ impl Nanny {
 
     pub fn autostart(&self) -> Children {
         dirs::home_dir()
-            .and_then(|mut path| {
+            .map(|mut path| {
                 path.push(".config");
                 path.push("autostart");
-                Some(path)
+                path
             })
             .and_then(|path| list_desktop_files(&path).ok())
             .map(|files| {
