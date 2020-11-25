@@ -11,12 +11,14 @@ pub struct Viewport {
     pub y: i32,
     pub layout: Layout,
 }
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManagerState {
     pub window_title: Option<String>,
     pub desktop_names: Vec<String>,
     pub viewports: Vec<Viewport>,
     pub active_desktop: Vec<String>,
+    pub working_tags: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -26,6 +28,7 @@ pub struct TagsForWorkspace {
     pub mine: bool,
     pub visible: bool,
     pub focused: bool,
+    pub busy: bool,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DisplayWorkspace {
@@ -59,6 +62,7 @@ impl Into<DisplayState> for ManagerState {
                     &self.desktop_names,
                     &self.active_desktop,
                     &visible,
+                    &self.working_tags,
                     &vp,
                     i,
                 )
@@ -75,6 +79,7 @@ fn viewport_into_display_workspace(
     all_tags: &[String],
     focused: &[String],
     visible: &[String],
+    working_tags: &[String],
     viewport: &Viewport,
     ws_index: usize,
 ) -> DisplayWorkspace {
@@ -87,6 +92,7 @@ fn viewport_into_display_workspace(
             mine: viewport.tags.contains(t),
             visible: visible.contains(t),
             focused: focused.contains(t),
+            busy: working_tags.contains(t),
         })
         .collect();
     DisplayWorkspace {
@@ -103,6 +109,12 @@ fn viewport_into_display_workspace(
 impl From<&Manager> for ManagerState {
     fn from(manager: &Manager) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
+        let working_tags = manager
+            .tags
+            .iter()
+            .filter(|tag| manager.windows.iter().any(|w| w.has_tag(tag.to_string())))
+            .map(|tag| tag.clone())
+            .collect();
         for ws in &manager.workspaces {
             viewports.push(Viewport {
                 tags: ws.tags.clone(),
@@ -126,6 +138,7 @@ impl From<&Manager> for ManagerState {
             desktop_names: manager.tags.clone(),
             viewports,
             active_desktop,
+            working_tags,
         }
     }
 }
