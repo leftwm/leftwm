@@ -112,8 +112,14 @@ impl From<&Manager> for ManagerState {
         let working_tags = manager
             .tags
             .iter()
-            .filter(|tag| manager.windows.iter().any(|w| w.has_tag(tag.to_string())))
-            .map(|tag| tag.clone())
+            .filter(|tag| {
+                manager
+                    .windows
+                    .iter()
+                    .filter(|w| !(w.is_fullscreen() || w.floating()))
+                    .any(|w| w.has_tag(tag.to_string()))
+            })
+            .cloned()
             .collect();
         for ws in &manager.workspaces {
             viewports.push(Viewport {
