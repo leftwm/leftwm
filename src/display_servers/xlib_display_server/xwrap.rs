@@ -1307,11 +1307,16 @@ impl XWrap {
         }
     }
 
-    pub fn get_next_event(&self) -> xlib::XEvent {
+    pub fn get_next_event(&self) -> Option<xlib::XEvent> {
+        let event_queue_length = unsafe { (self.xlib.XPending)(self.display) };
+        if event_queue_length == 0 {
+            return None;
+        }
+
         let mut event: xlib::XEvent = unsafe { std::mem::zeroed() };
         unsafe {
             (self.xlib.XNextEvent)(self.display, &mut event);
         };
-        event
+        Some(event)
     }
 }

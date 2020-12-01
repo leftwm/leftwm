@@ -1,195 +1,199 @@
 use crate::errors::Result;
 use crate::models::dto::*;
 use crate::models::Manager;
-use bytes::{BufMut, BytesMut};
-use futures::future::{self, Either};
-use futures::sync::mpsc;
-use futures::{Future, Stream};
-use std::collections::HashMap;
-use std::fs;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use tokio::io;
-use tokio::prelude::*;
-use tokio_uds::{UnixListener, UnixStream};
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::fs;
+use tokio::io::AsyncWriteExt;
+use tokio::net::{UnixListener, UnixStream};
+use tokio::sync::Mutex;
 
-use uuid::Uuid;
-use xdg::BaseDirectories;
+#[derive(Debug, Default)]
+struct State {
+    peers: Vec<Option<UnixStream>>,
+    last_state: String, //last_state: String
+}
 
-type Tx = mpsc::UnboundedSender<String>;
-type Rx = mpsc::UnboundedReceiver<String>;
-type Server = Result<Arc<Mutex<Shared>>>;
-
+#[derive(Debug, Default)]
 pub struct StateSocket {
-    server: Server,
-    last_state: Arc<Mutex<String>>, //last_state: String
+    state: Arc<Mutex<State>>,
+    listener: Option<tokio::task::JoinHandle<()>>,
+    socket_file: PathBuf,
 }
 
-struct Shared {
-    peers: HashMap<Uuid, Tx>,
-}
-impl Shared {
-    fn new() -> Self {
-        Shared {
-            peers: HashMap::new(),
+impl Drop for StateSocket {
+    fn drop(&mut self) {
+        if !std::thread::panicking() && self.listener.is_some() {
+            panic!("StateSocket has to be shutdown explicitly before drop");
         }
-    }
-}
-
-impl Default for StateSocket {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
 impl StateSocket {
-    pub fn new() -> StateSocket {
-        let last_state = Arc::new(Mutex::new("".to_owned()));
-        StateSocket {
-            server: StateSocket::build_listener(last_state.clone()),
-            last_state,
+    /// Bind to Unix socket and listen.
+    pub async fn listen(&mut self, socket_file: PathBuf) -> Result<()> {
+        self.socket_file = socket_file;
+        let listener = self.build_listener().await?;
+        self.listener = Some(listener);
+        Ok(())
+    }
+
+    /// Explicitly shutdown `StateSocket` to perform cleanup.
+    pub async fn shutdown(&mut self) {
+        if let Some(listener) = self.listener.take() {
+            listener.abort();
+            listener.await.ok();
+            fs::remove_file(self.socket_file.as_path()).await.ok();
         }
     }
 
-    fn build_listener(last_state: Arc<Mutex<String>>) -> Server {
-        let base = BaseDirectories::with_prefix("leftwm")?;
-        let socket_file = base.place_runtime_file("current_state.sock")?;
-        let state = Arc::new(Mutex::new(Shared::new()));
-        let return_state = state.clone();
-        thread::spawn(move || loop {
-            let thread_state = state.clone();
-            let thread_last_state = last_state.clone();
-            let listener = match UnixListener::bind(&socket_file) {
-                Ok(m) => m,
-                Err(_) => {
-                    fs::remove_file(&socket_file).unwrap();
-                    UnixListener::bind(&socket_file).unwrap()
+    pub async fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
+        if self.listener.is_some() {
+            let state: ManagerState = manager.into();
+            let mut json = serde_json::to_string(&state)?;
+            json.push('\n');
+            let mut state = self.state.lock().await;
+            if json != state.last_state {
+                state.peers.retain(|peer| peer.is_some());
+                for peer in state.peers.iter_mut() {
+                    if peer
+                        .as_mut()
+                        .unwrap()
+                        .write_all(json.as_bytes())
+                        .await
+                        .is_err()
+                    {
+                        peer.take();
+                    }
                 }
-            };
-            let server = listener
-                .incoming()
-                .map_err(|e| eprintln!("accept failed = {:?}", e))
-                .for_each(move |sock| {
-                    process(sock, thread_state.clone(), thread_last_state.clone());
-                    Ok(())
-                });
-            tokio::run(server);
-        });
-        Ok(return_state)
-    }
-
-    pub fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
-        let state: ManagerState = manager.into();
-        let mut json = serde_json::to_string(&state)?;
-        json.push('\n');
-        let mut lc = self.last_state.lock().unwrap();
-        if json != *lc {
-            if let Ok(server) = &self.server {
-                for (_, tx) in server.lock().unwrap().peers.iter() {
-                    tx.unbounded_send(json.clone()).unwrap();
-                }
+                state.last_state = json;
             }
-            *lc = json;
         }
         Ok(())
     }
-}
 
-struct Lines {
-    socket: UnixStream,
-    wr: BytesMut,
-}
-
-impl Lines {
-    fn new(socket: UnixStream) -> Self {
-        Lines {
-            socket,
-            wr: BytesMut::new(),
-        }
-    }
-
-    fn buffer(&mut self, line: &[u8]) {
-        self.wr.reserve(line.len());
-        self.wr.put(line);
-    }
-
-    fn poll_flush(&mut self) -> Poll<(), io::Error> {
-        while !self.wr.is_empty() {
-            let n = futures::try_ready!(self.socket.poll_write(&self.wr));
-            assert!(n > 0);
-            let _ = self.wr.split_to(n);
-        }
-        Ok(Async::Ready(()))
-    }
-}
-
-impl Stream for Lines {
-    type Item = ();
-    type Error = io::Error;
-
-    fn poll(&mut self) -> Poll<Option<()>, Self::Error> {
-        Ok(Async::Ready(Some(())))
-    }
-}
-
-fn process(socket: UnixStream, state: Arc<Mutex<Shared>>, last_state: Arc<Mutex<String>>) {
-    let lines = Lines::new(socket);
-
-    let connection = lines
-        .into_future()
-        .map_err(|(e, _)| e)
-        .and_then(|(name, lines)| {
-            match name {
-                Some(_) => {}
-                None => {
-                    return Either::A(future::ok(()));
+    async fn build_listener(&self) -> Result<tokio::task::JoinHandle<()>> {
+        let state = self.state.clone();
+        let listener = match UnixListener::bind(&self.socket_file) {
+            Ok(m) => m,
+            Err(_) => {
+                fs::remove_file(&self.socket_file).await?;
+                UnixListener::bind(&self.socket_file)?
+            }
+        };
+        Ok(tokio::spawn(async move {
+            loop {
+                match listener.accept().await {
+                    Ok((mut peer, _)) => {
+                        let mut state = state.lock().await;
+                        if peer.write_all(state.last_state.as_bytes()).await.is_ok() {
+                            state.peers.push(Some(peer));
+                        }
+                    }
+                    Err(e) => log::error!("accept failed = {:?}", e),
                 }
-            };
-            let peer = Peer::new(state, lines, last_state);
-            Either::B(peer)
-        })
-        .map_err(|_e| {});
-    tokio::spawn(connection);
-}
-
-struct Peer {
-    lines: Lines,
-    state: Arc<Mutex<Shared>>,
-    rx: Rx,
-    id: Uuid,
-}
-
-impl Peer {
-    fn new(state: Arc<Mutex<Shared>>, lines: Lines, last_state: Arc<Mutex<String>>) -> Peer {
-        let id = Uuid::new_v4();
-        let (tx, rx) = mpsc::unbounded();
-        let json = last_state.lock().unwrap().clone();
-        tx.unbounded_send(json).unwrap();
-        state.lock().unwrap().peers.insert(id, tx);
-        Peer {
-            lines,
-            state,
-            rx,
-            id,
-        }
+            }
+        }))
     }
 }
 
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.state.lock().unwrap().peers.remove(&self.id);
-    }
-}
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::utils::helpers::test::temp_path;
+    use tokio::io::{AsyncBufReadExt, BufReader};
 
-impl Future for Peer {
-    type Item = ();
-    type Error = io::Error;
-    fn poll(&mut self) -> Poll<(), io::Error> {
-        //while there are lines to read
-        while let Async::Ready(Some(s)) = self.rx.poll().unwrap() {
-            self.lines.buffer(&s.as_bytes());
-        }
-        let _ = self.lines.poll_flush();
-        Ok(Async::NotReady)
+    #[tokio::test]
+    async fn multiple_peers() {
+        let manager = Manager::default();
+
+        let socket_file = temp_path().await.unwrap();
+        let mut state_socket = StateSocket::default();
+        state_socket.listen(socket_file.clone()).await.unwrap();
+        state_socket.write_manager_state(&manager).await.unwrap();
+
+        assert_eq!(
+            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            BufReader::new(UnixStream::connect(socket_file.clone()).await.unwrap())
+                .lines()
+                .next_line()
+                .await
+                .expect("Read next line")
+                .unwrap()
+        );
+
+        assert_eq!(
+            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            BufReader::new(UnixStream::connect(socket_file.clone()).await.unwrap())
+                .lines()
+                .next_line()
+                .await
+                .expect("Read next line")
+                .unwrap()
+        );
+
+        assert_eq!(
+            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            BufReader::new(UnixStream::connect(socket_file).await.unwrap())
+                .lines()
+                .next_line()
+                .await
+                .expect("Read next line")
+                .unwrap()
+        );
+
+        state_socket.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn get_update() {
+        let manager = Manager::default();
+
+        let socket_file = temp_path().await.unwrap();
+        let mut state_socket = StateSocket::default();
+        state_socket.listen(socket_file.clone()).await.unwrap();
+        state_socket.write_manager_state(&manager).await.unwrap();
+
+        let mut lines = BufReader::new(UnixStream::connect(socket_file).await.unwrap()).lines();
+
+        assert_eq!(
+            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            lines.next_line().await.expect("Read next line").unwrap()
+        );
+
+        // Fake state update.
+        state_socket.state.lock().await.last_state = Default::default();
+        state_socket.write_manager_state(&manager).await.unwrap();
+
+        assert_eq!(
+            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            lines.next_line().await.expect("Read next line").unwrap()
+        );
+
+        state_socket.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn socket_cleanup() {
+        let socket_file = temp_path().await.unwrap();
+        let mut state_socket = StateSocket::default();
+        state_socket.listen(socket_file.clone()).await.unwrap();
+        state_socket.shutdown().await;
+        assert!(!socket_file.exists());
+    }
+
+    #[tokio::test]
+    async fn socket_already_bound() {
+        let socket_file = temp_path().await.unwrap();
+        let mut old_socket = StateSocket::default();
+        old_socket.listen(socket_file.clone()).await.unwrap();
+        assert!(socket_file.exists());
+
+        let mut state_socket = StateSocket::default();
+        state_socket.listen(socket_file.clone()).await.unwrap();
+        state_socket.shutdown().await;
+        assert!(!socket_file.exists());
+
+        old_socket.shutdown().await;
     }
 }
