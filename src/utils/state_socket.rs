@@ -81,7 +81,7 @@ impl StateSocket {
     pub fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
         let state: ManagerState = manager.into();
         let mut json = serde_json::to_string(&state)?;
-        json.push_str("\n");
+        json.push('\n');
         let mut lc = self.last_state.lock().unwrap();
         if json != *lc {
             if let Ok(server) = &self.server {
