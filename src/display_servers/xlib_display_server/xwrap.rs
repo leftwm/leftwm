@@ -606,6 +606,9 @@ impl XWrap {
                     let _ = self.move_cursor_to_window(handle);
                 }
             }
+            //make sure there is at least an empty list of _NET_WM_STATE
+            let states = self.get_window_states_atoms(handle);
+            self.set_window_states_atoms(handle, states);
         }
         None
     }
