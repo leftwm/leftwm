@@ -18,8 +18,10 @@ fn main() {
     let completed = panic::catch_unwind(|| {
         let config = config::load();
 
-        let mut manager = Manager::default();
-        manager.tags = config.get_list_of_tags();
+        let mut manager = Manager {
+            tags: config.get_list_of_tags(),
+            ..Default::default()
+        };
 
         child_process::register_child_hook(manager.reap_requested.clone());
 

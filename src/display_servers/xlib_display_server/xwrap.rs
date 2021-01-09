@@ -1,3 +1,5 @@
+#![allow(clippy::result_unit_err)]
+
 use super::utils;
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
@@ -372,7 +374,7 @@ impl XWrap {
         let data = vec![tag_length as u32];
         self.set_desktop_prop(&data, self.atoms.NetNumberOfDesktops);
         //set a current desktop
-        let data = vec![0 as u32, xlib::CurrentTime as u32];
+        let data = vec![0_u32, xlib::CurrentTime as u32];
         self.set_desktop_prop(&data, self.atoms.NetCurrentDesktop);
         //set desktop names
         let mut text: xlib::XTextProperty = unsafe { std::mem::zeroed() };
@@ -408,7 +410,7 @@ impl XWrap {
         );
 
         //set a viewport
-        let data = vec![0 as u32, 0 as u32];
+        let data = vec![0_u32, 0_u32];
         self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
     }
 
@@ -423,7 +425,7 @@ impl XWrap {
                 32,
                 xlib::PropModeReplace,
                 data.as_ptr() as *const u8,
-                1 as i32,
+                1_i32,
             );
             std::mem::forget(data);
         }
