@@ -16,6 +16,7 @@ pub struct Workspace {
     pub tags: Vec<Tag>,
     pub avoid: Vec<XYHW>,
     pub xyhw: XYHW,
+    pub main_width_percentage: u8,
     xyhw_avoided: XYHW,
 }
 
@@ -45,6 +46,7 @@ impl Workspace {
             layout: Layout::default(),
             tags: vec![],
             avoid: vec![],
+            main_width_percentage: 50,
 
             xyhw: XYHWBuilder {
                 h: bbox.height,
@@ -136,6 +138,23 @@ impl Workspace {
     }
     pub fn width(&self) -> i32 {
         self.xyhw_avoided.w()
+    }
+
+    pub fn increase_main_width(&mut self, delta: u8) {
+        self.main_width_percentage += delta;
+        if self.main_width_percentage > 100 {
+            self.main_width_percentage = 100
+        }
+    }
+    pub fn decrease_main_width(&mut self, delta: u8) {
+        if self.main_width_percentage > delta {
+            self.main_width_percentage -= delta;
+        } else {
+            self.main_width_percentage = 0;
+        }
+    }
+    pub fn main_width(&self) -> f32 {
+        self.main_width_percentage as f32
     }
 
     pub fn center_halfed(&self) -> XYHW {

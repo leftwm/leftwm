@@ -362,6 +362,29 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             manager.hard_reload();
             false
         }
+
+        Command::IncreaseMainWidth if val.is_none() => false,
+        Command::IncreaseMainWidth => {
+            let workspace = manager.focused_workspace_mut();
+            if workspace.is_none() {
+                return false;
+            }
+            let workspace = workspace.unwrap();
+            let delta: u8 = (&val.unwrap()).parse().unwrap();
+            workspace.increase_main_width(delta);
+            true
+        }
+        Command::DecreaseMainWidth if val.is_none() => false,
+        Command::DecreaseMainWidth => {
+            let workspace = manager.focused_workspace_mut();
+            if workspace.is_none() {
+                return false;
+            }
+            let workspace = workspace.unwrap();
+            let delta: u8 = (&val.unwrap()).parse().unwrap();
+            workspace.decrease_main_width(delta);
+            true
+        }
     }
 }
 
