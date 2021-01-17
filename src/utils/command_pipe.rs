@@ -43,7 +43,7 @@ impl CommandPipe {
             // from shutting down.
             std::fs::OpenOptions::new()
                 .write(true)
-                .custom_flags(libc::O_NONBLOCK)
+                .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
                 .open(self.pipe_file.clone())
                 .ok();
 

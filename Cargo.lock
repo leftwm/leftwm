@@ -445,7 +445,6 @@ dependencies = [
  "clap",
  "dirs-next",
  "futures",
- "libc",
  "liquid",
  "log",
  "nix",
