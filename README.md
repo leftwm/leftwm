@@ -41,6 +41,8 @@ Mod + Shift + X => Exit LeftWM
 Mod + Shift + Q => Close the current window
 Mod + Shift + R => Reload LeftWM and its config
 Mod + p => Use dmenu to start application
+Mod + = => Increase width of main window
+Mod + - => Decrease width of main window
 ```
 
 ### Workspaces

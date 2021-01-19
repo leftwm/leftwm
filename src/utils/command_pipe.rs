@@ -122,6 +122,10 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
         return Ok(ExternalCommand::PreviousLayout);
     } else if s.starts_with("CloseWindow") {
         return Ok(ExternalCommand::CloseWindow);
+    } else if s.starts_with("IncreaseMainWidth") {
+        return Ok(ExternalCommand::IncreaseMainWidth);
+    } else if s.starts_with("DecreaseMainWidth") {
+        return Ok(ExternalCommand::DecreaseMainWidth);
     }
 
     Err(())
@@ -206,4 +210,6 @@ pub enum ExternalCommand {
     CloseWindow,
     NextLayout,
     PreviousLayout,
+    IncreaseMainWidth,
+    DecreaseMainWidth,
 }

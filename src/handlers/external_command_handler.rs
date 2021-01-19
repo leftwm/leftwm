@@ -94,6 +94,12 @@ fn process_work(manager: &mut Manager, command: ExternalCommand) -> bool {
         ExternalCommand::CloseWindow => {
             return command_handler::process(manager, Command::CloseWindow, None);
         }
+        ExternalCommand::IncreaseMainWidth => {
+            return command_handler::process(manager, Command::IncreaseMainWidth, None);
+        }
+        ExternalCommand::DecreaseMainWidth => {
+            return command_handler::process(manager, Command::DecreaseMainWidth, None);
+        }
 
         _ => {}
     }

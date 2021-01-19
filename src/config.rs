@@ -223,6 +223,20 @@ impl Default for Config {
                 modifier: vec!["modkey".to_owned()],
                 key: "Left".to_owned(),
             },
+            // Mod + = => increase width of main window
+            Keybind {
+                command: Command::IncreaseMainWidth,
+                value: Some("5".to_owned()),
+                modifier: vec!["modkey".to_owned()],
+                key: "equal".to_owned(),
+            },
+            // Mod + - => decrease width of main window
+            Keybind {
+                command: Command::DecreaseMainWidth,
+                value: Some("5".to_owned()),
+                modifier: vec!["modkey".to_owned()],
+                key: "minus".to_owned(),
+            },
         ];
 
         const WORKSPACES_NUM: usize = 10;
