@@ -72,8 +72,9 @@ async fn event_loop(
         }
         let mut events = get_events(display_server);
         events.append(&mut events_remainder);
+
         if events.is_empty() {
-            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(20)).await;
         }
 
         let mut needs_update = false;
