@@ -1,5 +1,3 @@
-#![allow(clippy::result_unit_err)]
-
 use super::utils;
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
@@ -35,6 +33,12 @@ pub struct Colors {
     normal: c_ulong,
     floating: c_ulong,
     active: c_ulong,
+}
+
+#[derive(Debug, Clone)]
+pub enum XlibError {
+    FailedStatus,
+    InvalidXAtom,
 }
 
 pub struct XWrap {
@@ -228,11 +232,14 @@ impl XWrap {
         Ok(all)
     }
 
-    pub fn get_window_attrs(&self, window: xlib::Window) -> Result<xlib::XWindowAttributes, ()> {
+    pub fn get_window_attrs(
+        &self,
+        window: xlib::Window,
+    ) -> Result<xlib::XWindowAttributes, XlibError> {
         let mut attrs: xlib::XWindowAttributes = unsafe { std::mem::zeroed() };
         let status = unsafe { (self.xlib.XGetWindowAttributes)(self.display, window, &mut attrs) };
         if status == 0 {
-            return Err(());
+            return Err(XlibError::FailedStatus);
         }
         Ok(attrs)
     }
@@ -632,13 +639,13 @@ impl XWrap {
         }
     }
 
-    pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), ()> {
+    pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), XlibError> {
         let attrs = self.get_window_attrs(window)?;
         let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
         self.move_cursor_to_point(point)
     }
 
-    pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), ()> {
+    pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), XlibError> {
         let none: c_int = 0;
         unsafe {
             (self.xlib.XWarpPointer)(
@@ -888,7 +895,11 @@ impl XWrap {
     }
 
     ////get the WMName of a window
-    pub fn get_text_prop(&self, window: xlib::Window, atom: xlib::Atom) -> Result<String, ()> {
+    pub fn get_text_prop(
+        &self,
+        window: xlib::Window,
+        atom: xlib::Atom,
+    ) -> Result<String, XlibError> {
         unsafe {
             let mut ptr: *mut *mut c_char = std::mem::zeroed();
             let mut ptr_len: c_int = 0;
@@ -896,7 +907,7 @@ impl XWrap {
             let status: c_int =
                 (self.xlib.XGetTextProperty)(self.display, window, &mut text_prop, atom);
             if status == 0 {
-                return Err(());
+                return Err(XlibError::FailedStatus);
             }
             (self.xlib.XTextPropertyToStringList)(&mut text_prop, &mut ptr, &mut ptr_len);
             let _raw: &[*mut c_char] = slice::from_raw_parts(ptr, ptr_len as usize);
@@ -906,18 +917,18 @@ impl XWrap {
                 }
             }
         };
-        Err(())
+        Err(XlibError::FailedStatus)
     }
 
     ////get the XAtom name
-    pub fn get_xatom_name(&self, atom: xlib::Atom) -> Result<String, ()> {
+    pub fn get_xatom_name(&self, atom: xlib::Atom) -> Result<String, XlibError> {
         unsafe {
             let cstring = (self.xlib.XGetAtomName)(self.display, atom);
             if let Ok(s) = CString::from_raw(cstring).into_string() {
                 return Ok(s);
             }
         };
-        Err(())
+        Err(XlibError::InvalidXAtom)
     }
 
     pub fn move_to_top(&self, handle: WindowHandle) {
@@ -928,16 +939,7 @@ impl XWrap {
         }
     }
 
-    //fn is_window_under_cursor(&self, window: xlib::Window) -> bool {
-    //    if let Some(mouse) = self.get_pointer_location() {
-    //        if let Ok(xyhw) = self.get_window_geometry(window) {
-    //            return xyhw.contains_point(mouse.0, mouse.1);
-    //        }
-    //    }
-    //    false
-    //}
-
-    pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHWChange, ()> {
+    pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHWChange, XlibError> {
         let mut root_return: xlib::Window = 0;
         let mut x_return: c_int = 0;
         let mut y_return: c_int = 0;
@@ -958,7 +960,7 @@ impl XWrap {
                 &mut depth_return,
             );
             if status == 0 {
-                return Err(());
+                return Err(XlibError::FailedStatus);
             }
         }
         Ok(XYHWChange {

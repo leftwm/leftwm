@@ -242,7 +242,7 @@ mod test {
                 .open(pipe_file.clone())
                 .await
                 .unwrap();
-            pipe.write_all("Reload\n".as_bytes()).await.unwrap();
+            pipe.write_all(b"Reload\n").await.unwrap();
             pipe.flush().await.unwrap();
 
             let mut command = None;
@@ -271,7 +271,7 @@ mod test {
                 .open(pipe_file.clone())
                 .await
                 .unwrap();
-            pipe.write_all("UnloadTheme\n".as_bytes()).await.unwrap();
+            pipe.write_all(b"UnloadTheme\n").await.unwrap();
             pipe.flush().await.unwrap();
         }
 
