@@ -72,3 +72,15 @@ where
     }
     Some(&list[find_index as usize])
 }
+
+#[cfg(test)]
+pub(crate) mod test {
+    pub async fn temp_path() -> std::io::Result<std::path::PathBuf> {
+        tokio::task::spawn_blocking(|| tempfile::Builder::new().tempfile_in("target"))
+            .await
+            .expect("Blocking task joined")?
+            .into_temp_path()
+            .keep()
+            .map_err(Into::into)
+    }
+}

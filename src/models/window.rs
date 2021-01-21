@@ -212,16 +212,18 @@ impl Window {
     }
 
     pub fn calculated_xyhw(&self) -> XYHW {
-        let mut build = XYHWBuilder::default();
-        build.h = self.height();
-        build.w = self.width();
-        build.x = self.x();
-        build.y = self.y();
-        build.into()
+        XYHWBuilder {
+            h: self.height(),
+            w: self.width(),
+            x: self.x(),
+            y: self.y(),
+            ..Default::default()
+        }
+        .into()
     }
 
     pub fn tag(&mut self, tag: Tag) {
-        if tag == "" {
+        if tag.is_empty() {
             return;
         }
         for t in &self.tags {

@@ -2,6 +2,7 @@ use leftwm::child_process::{self, Nanny};
 
 use leftwm::*;
 use std::panic;
+use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
 fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
@@ -17,15 +18,21 @@ fn main() {
     let completed = panic::catch_unwind(|| {
         let config = config::load();
 
-        let mut manager = Manager::default();
-        manager.tags = config.get_list_of_tags();
+        let mut manager = Manager {
+            tags: config.get_list_of_tags(),
+            ..Default::default()
+        };
 
         child_process::register_child_hook(manager.reap_requested.clone());
 
         let mut display_server = XlibDisplayServer::new(&config);
         let handler = DisplayEventHandler { config };
 
-        event_loop(&mut manager, &mut display_server, &handler);
+        tokio::runtime::Runtime::new().unwrap().block_on(event_loop(
+            &mut manager,
+            &mut display_server,
+            &handler,
+        ));
     });
 
     match completed {
@@ -34,13 +41,25 @@ fn main() {
     }
 }
 
-fn event_loop(
+fn place_runtime_file<P>(path: P) -> std::io::Result<PathBuf>
+where
+    P: AsRef<Path>,
+{
+    xdg::BaseDirectories::with_prefix("leftwm")?.place_runtime_file(path)
+}
+
+async fn event_loop(
     manager: &mut Manager,
     display_server: &mut XlibDisplayServer,
     handler: &DisplayEventHandler,
 ) {
-    let mut state_socket = StateSocket::new();
-    let mut command_pipe = CommandPipe::new();
+    let socket_file = place_runtime_file("current_state.sock").unwrap();
+    let mut state_socket = StateSocket::default();
+    state_socket.listen(socket_file).await.unwrap();
+
+    let pipe_file = place_runtime_file("commands.pipe").unwrap();
+    let mut command_pipe = CommandPipe::default();
+    command_pipe.listen(pipe_file).await.unwrap();
 
     //start the current theme
     let after_first_loop: Once = Once::new();
@@ -49,17 +68,20 @@ fn event_loop(
     let mut events_remainder = vec![];
     loop {
         if manager.mode == Mode::NormalMode {
-            let _ = state_socket.write_manager_state(manager);
+            state_socket.write_manager_state(manager).await.ok();
         }
         let mut events = get_events(display_server);
         events.append(&mut events_remainder);
+        if events.is_empty() {
+            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+        }
 
         let mut needs_update = false;
         for event in events {
             needs_update = handler.process(manager, event) || needs_update;
         }
 
-        if let Some(cmd) = command_pipe.read_command() {
+        if let Some(cmd) = command_pipe.read_command().await {
             needs_update = external_command_handler::process(manager, cmd) || needs_update;
             display_server.update_theme_settings(manager.theme_setting.clone());
         }
@@ -113,6 +135,8 @@ fn event_loop(
         }
 
         if manager.reload_requested {
+            command_pipe.shutdown().await;
+            state_socket.shutdown().await;
             break;
         }
     }

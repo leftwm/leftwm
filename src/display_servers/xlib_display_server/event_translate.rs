@@ -179,11 +179,13 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 if window_type != WindowType::Normal {
                     let handle = WindowHandle::XlibHandle(event.window);
                     let mut change = WindowChange::new(handle);
-                    let mut xyhw = XYHWChange::default();
-                    xyhw.w = Some(event.width);
-                    xyhw.h = Some(event.height);
-                    xyhw.x = Some(event.x);
-                    xyhw.y = Some(event.y);
+                    let xyhw = XYHWChange {
+                        w: Some(event.width),
+                        h: Some(event.height),
+                        x: Some(event.x),
+                        y: Some(event.y),
+                        ..Default::default()
+                    };
                     change.floating = Some(xyhw);
                     if window_type == WindowType::Dock {
                         if let Some(dock_area) = xw.get_window_strut_array(event.window) {

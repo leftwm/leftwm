@@ -1,13 +1,14 @@
 use clap::{value_t, App, Arg};
 use leftwm::errors::Result;
 use leftwm::models::dto::*;
-use std::fs;
-use std::io::prelude::*;
-use std::os::unix::net::UnixStream;
 use std::str;
+use tokio::fs;
+use tokio::io::{AsyncBufReadExt, BufReader, Lines};
+use tokio::net::UnixStream;
 use xdg::BaseDirectories;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let matches = App::new("LeftWM State")
         .author("Lex Childs <lex.childs@gmail.com>")
         .version("0.2.6")
@@ -49,25 +50,25 @@ fn main() -> Result<()> {
         Err(_) => None,
     };
 
-    let mut stream_reader = StreamReader::new().unwrap();
+    let mut stream_reader = stream_reader().await?;
     let once = matches.occurrences_of("quit") == 1;
     let newline = matches.occurrences_of("newline") == 1;
 
     if let Some(template_file) = template_file {
-        let template_str = fs::read_to_string(template_file).unwrap();
+        let template_str = fs::read_to_string(template_file).await?;
         let template = liquid::ParserBuilder::with_liquid()
             .build()
             .unwrap()
             .parse(&template_str)
             .unwrap();
-        while let Ok(line) = stream_reader.read() {
+        while let Some(line) = stream_reader.next_line().await? {
             let _ = template_handler(&template, newline, ws_num, line);
             if once {
                 break;
             }
         }
     } else {
-        while let Ok(line) = stream_reader.read() {
+        while let Some(line) = stream_reader.next_line().await? {
             let _ = raw_handler(line);
             if once {
                 break;
@@ -136,27 +137,9 @@ fn get_localtime() -> String {
     now.format("%m/%d/%Y %l:%M %p").to_string()
 }
 
-struct StreamReader {
-    stream: UnixStream,
-    buffer: [u8; 4096],
-}
-
-impl StreamReader {
-    fn new() -> Result<StreamReader> {
-        let base = BaseDirectories::with_prefix("leftwm")?;
-        let socket_file = base.place_runtime_file("current_state.sock")?;
-        let stream = UnixStream::connect(socket_file)?;
-        let buffer = [0; 4096];
-        Ok(StreamReader { buffer, stream })
-    }
-
-    fn read(&mut self) -> Result<String> {
-        let size = self.stream.read(&mut self.buffer)?;
-        let raw = str::from_utf8(&self.buffer[0..size]).unwrap();
-        if let Some(raw) = raw.lines().last() {
-            Ok(raw.to_string())
-        } else {
-            Err(leftwm::errors::LeftErrorKind::StreamError().into())
-        }
-    }
+async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
+    let base = BaseDirectories::with_prefix("leftwm")?;
+    let socket_file = base.place_runtime_file("current_state.sock")?;
+    let stream = UnixStream::connect(socket_file).await?;
+    Ok(BufReader::new(stream).lines())
 }
