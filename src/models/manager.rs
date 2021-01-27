@@ -2,6 +2,7 @@ use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::Screen;
+use crate::models::Tag;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
@@ -18,7 +19,8 @@ pub struct Manager {
     pub workspaces: Vec<Workspace>,
     pub mode: Mode,
     pub theme_setting: ThemeSetting,
-    pub tags: Vec<String>, //list of all known tags
+    #[serde(skip)]
+    pub tags: Vec<Tag>, //list of all known tags
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
@@ -99,11 +101,11 @@ impl Manager {
             .tags
             .iter()
             .map(|t| {
-                if active.contains(t) {
+                if active.contains(&t.id) {
                     let wrap = wraps.pop().unwrap();
-                    format!("{}{}{}", wrap.0, t, wrap.1)
+                    format!("{}{}{}", wrap.0, &t.id, wrap.1)
                 } else {
-                    format!(" {} ", t)
+                    format!(" {} ", &t.id)
                 }
             })
             .collect();

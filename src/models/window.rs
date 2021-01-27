@@ -1,7 +1,7 @@
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
-use crate::models::Tag;
+use crate::models::TagId;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
 use serde::{Deserialize, Serialize};
@@ -26,7 +26,7 @@ pub struct Window {
     pub debugging: bool,
     pub name: Option<String>,
     pub type_: WindowType,
-    pub tags: Vec<Tag>,
+    pub tags: Vec<TagId>,
     pub border: i32,
     pub margin: i32,
     states: Vec<WindowState>,
@@ -222,30 +222,30 @@ impl Window {
         .into()
     }
 
-    pub fn tag(&mut self, tag: Tag) {
+    pub fn tag(&mut self, tag: &str) {
         if tag.is_empty() {
             return;
         }
         for t in &self.tags {
-            if t == &tag {
+            if t == tag {
                 return;
             }
         }
-        self.tags.push(tag);
+        self.tags.push(tag.to_string());
     }
 
     pub fn clear_tags(&mut self) {
         self.tags = vec![];
     }
 
-    pub fn has_tag(&self, tag: Tag) -> bool {
-        self.tags.contains(&tag)
+    pub fn has_tag(&self, tag: &TagId) -> bool {
+        self.tags.contains(tag)
     }
 
-    pub fn untag(&mut self, tag: Tag) {
-        let mut new_tags: Vec<Tag> = Vec::new();
+    pub fn untag(&mut self, tag: &str) {
+        let mut new_tags: Vec<TagId> = Vec::new();
         for t in &self.tags {
-            if t != &tag {
+            if t != tag {
                 new_tags.push(t.clone())
             }
         }

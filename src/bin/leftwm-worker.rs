@@ -1,5 +1,6 @@
 use leftwm::child_process::{self, Nanny};
 
+use crate::models::TagModel;
 use leftwm::*;
 use std::panic;
 use std::path::{Path, PathBuf};
@@ -19,7 +20,11 @@ fn main() {
         let config = config::load();
 
         let mut manager = Manager {
-            tags: config.get_list_of_tags(),
+            tags: config
+                .get_list_of_tags()
+                .iter()
+                .map(|s| TagModel::new(s))
+                .collect(),
             ..Default::default()
         };
 

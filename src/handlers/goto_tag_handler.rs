@@ -6,7 +6,7 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     }
 
     let tag = manager.tags[tag_num - 1].clone();
-    let new_tags = vec![tag.clone()];
+    let new_tags = vec![tag.id.clone()];
     //no focus safety check
     if manager.focused_workspace().is_none() {
         return false;
@@ -19,7 +19,7 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     }
     let active_workspace = manager.focused_workspace_mut().unwrap();
     active_workspace.tags = new_tags;
-    focus_handler::focus_tag(manager, &tag);
+    focus_handler::focus_tag(manager, &tag.id);
     true
 }
 

@@ -1,6 +1,7 @@
 use super::layouts::*;
 use crate::models::BBox;
 use crate::models::Tag;
+use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::XYHWBuilder;
@@ -13,10 +14,11 @@ pub struct Workspace {
     pub id: i32,
     /// Active layout
     pub layout: Layout,
-    pub tags: Vec<Tag>,
+    pub tags: Vec<TagId>,
+    #[serde(skip)]
+    all_tags: Vec<Tag>,
     pub avoid: Vec<XYHW>,
     pub xyhw: XYHW,
-    pub main_width_percentage: u8,
     xyhw_avoided: XYHW,
 }
 
@@ -40,14 +42,13 @@ impl PartialEq for Workspace {
 }
 
 impl Workspace {
-    pub fn new(bbox: BBox) -> Workspace {
+    pub fn new(bbox: BBox, all_tags: Vec<Tag>) -> Workspace {
         Workspace {
             id: -1,
             layout: Layout::default(),
             tags: vec![],
             avoid: vec![],
-            main_width_percentage: 50,
-
+            all_tags,
             xyhw: XYHWBuilder {
                 h: bbox.height,
                 w: bbox.width,
@@ -68,7 +69,7 @@ impl Workspace {
     }
 
     pub fn show_tag(&mut self, tag: Tag) {
-        self.tags = vec![tag];
+        self.tags = vec![tag.id.clone()];
     }
 
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
@@ -140,21 +141,32 @@ impl Workspace {
         self.xyhw_avoided.w()
     }
 
-    pub fn increase_main_width(&mut self, delta: u8) {
-        self.main_width_percentage += delta;
-        if self.main_width_percentage > 100 {
-            self.main_width_percentage = 100
+    pub fn current_tags(&self) -> Vec<Tag> {
+        let mut found = vec![];
+        for tag in &self.all_tags {
+            if self.tags.contains(&tag.id) {
+                found.push(tag.clone());
+            }
+        }
+        found
+    }
+
+    pub fn increase_main_width(&self, delta: u8) {
+        for tag in self.current_tags() {
+            tag.increase_main_width(delta);
         }
     }
-    pub fn decrease_main_width(&mut self, delta: u8) {
-        if self.main_width_percentage > delta {
-            self.main_width_percentage -= delta;
-        } else {
-            self.main_width_percentage = 0;
+    pub fn decrease_main_width(&self, delta: u8) {
+        for tag in self.current_tags() {
+            tag.decrease_main_width(delta);
         }
     }
+
     pub fn main_width(&self) -> f32 {
-        self.main_width_percentage as f32
+        if let Some(tag) = self.current_tags().get(0) {
+            return tag.main_width_percentage();
+        }
+        50.0 //default
     }
 
     pub fn center_halfed(&self) -> XYHW {
@@ -177,12 +189,15 @@ mod tests {
 
     #[test]
     fn empty_ws_should_not_contain_window() {
-        let subject = Workspace::new(BBox {
-            width: 600,
-            height: 800,
-            x: 0,
-            y: 0,
-        });
+        let subject = Workspace::new(
+            BBox {
+                width: 600,
+                height: 800,
+                x: 0,
+                y: 0,
+            },
+            vec![],
+        );
         let w = Window::new(WindowHandle::MockHandle(1), None);
         assert!(
             !subject.is_displaying(&w),
@@ -192,15 +207,19 @@ mod tests {
 
     #[test]
     fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
-        let mut subject = Workspace::new(BBox {
-            width: 600,
-            height: 800,
-            x: 0,
-            y: 0,
-        });
-        subject.show_tag("test".to_owned());
+        let mut subject = Workspace::new(
+            BBox {
+                width: 600,
+                height: 800,
+                x: 0,
+                y: 0,
+            },
+            vec![],
+        );
+        let tag = crate::models::TagModel::new("test");
+        subject.show_tag(tag);
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
-        w.tag("test".to_owned());
+        w.tag("test");
         assert!(subject.is_displaying(&w), "workspace should include window");
     }
 }

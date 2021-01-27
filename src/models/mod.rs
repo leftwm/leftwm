@@ -2,6 +2,7 @@ mod dock_area;
 mod manager;
 mod mode;
 mod screen;
+mod tag;
 mod window;
 mod window_change;
 mod window_state;
@@ -27,4 +28,7 @@ pub use xyhw::XYHWBuilder;
 pub use xyhw::XYHW;
 pub use xyhw_change::XYHWChange;
 
-pub type Tag = String;
+pub use tag::Tag;
+pub use tag::TagModel;
+
+pub type TagId = String;

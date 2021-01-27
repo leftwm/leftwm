@@ -1,19 +1,22 @@
 use super::*;
+use crate::models::TagModel;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns `true` if changes need to be rendered.
 pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     let tag_index = manager.workspaces.len();
-    let mut workspace = Workspace::new(screen.bbox);
+
+    let mut workspace = Workspace::new(screen.bbox, manager.tags.clone());
     workspace.id = tag_index as i32;
     //make sure are enough tags for this new screen
     if manager.tags.len() <= tag_index {
-        manager.tags.push((tag_index + 1).to_string());
+        let id = (tag_index + 1).to_string();
+        manager.tags.push(TagModel::new(&id));
     }
     let next_tag = manager.tags[tag_index].clone();
     focus_handler::focus_workspace(manager, &workspace);
-    focus_handler::focus_tag(manager, &next_tag);
-    workspace.show_tag(next_tag);
+    focus_handler::focus_tag(manager, &next_tag.id);
+    workspace.show_tag(next_tag.clone());
     manager.workspaces.push(workspace.clone());
     manager.screens.push(screen);
     focus_handler::focus_workspace(manager, &workspace);
