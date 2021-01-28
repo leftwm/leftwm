@@ -238,8 +238,9 @@ impl Window {
         self.tags = vec![];
     }
 
-    pub fn has_tag(&self, tag: &TagId) -> bool {
-        self.tags.contains(tag)
+    pub fn has_tag(&self, tag: &str) -> bool {
+        let t = tag.to_owned();
+        self.tags.contains(&t)
     }
 
     pub fn untag(&mut self, tag: &str) {
