@@ -48,6 +48,11 @@ pub fn focus_window_by_handle(
 }
 
 pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> bool {
+    //Docks don't want to get focus. If they do weird things happen. They don't get events...
+    if window.type_ == WindowType::Dock {
+        return false;
+    }
+
     let result = _focus_window_work(manager, window);
     if !result {
         return false;
