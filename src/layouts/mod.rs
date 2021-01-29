@@ -95,12 +95,15 @@ mod tests {
     #[test]
     fn should_fullscreen_a_single_window() {
         //size defaults to 600x800
-        let mut ws = Workspace::new(BBox {
-            width: 0,
-            height: 0,
-            x: 0,
-            y: 0,
-        });
+        let mut ws = Workspace::new(
+            BBox {
+                width: 0,
+                height: 0,
+                x: 0,
+                y: 0,
+            },
+            vec![],
+        );
         ws.xyhw.set_minh(600);
         ws.xyhw.set_minw(800);
         ws.update_avoided_areas();

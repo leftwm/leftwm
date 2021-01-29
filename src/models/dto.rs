@@ -117,9 +117,9 @@ impl From<&Manager> for ManagerState {
                     .windows
                     .iter()
                     .filter(|w| !(w.is_fullscreen() || w.floating()))
-                    .any(|w| w.has_tag(tag.to_string()))
+                    .any(|w| w.has_tag(&tag.id))
             })
-            .cloned()
+            .map(|t| t.id.clone())
             .collect();
         for ws in &manager.workspaces {
             viewports.push(Viewport {
@@ -141,7 +141,7 @@ impl From<&Manager> for ManagerState {
         };
         ManagerState {
             window_title,
-            desktop_names: manager.tags.clone(),
+            desktop_names: manager.tags.iter().map(|t| t.id.clone()).collect(),
             viewports,
             active_desktop,
             working_tags,

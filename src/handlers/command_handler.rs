@@ -14,8 +14,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             if let Some(window) = manager.focused_window_mut() {
                 window.clear_tags();
                 window.set_floating(false);
-                window.tag(tag.clone());
-                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag);
+                window.tag(&tag.id);
+                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.id.clone());
                 manager.actions.push_back(act);
                 return true;
             }
@@ -29,7 +29,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::FocusNextTag => {
             let current = manager.focused_tag();
             let current = current.unwrap();
-            let mut index = match manager.tags.iter().position(|x| x == &current) {
+            let mut index = match manager.tags.iter().position(|x| x.id == current) {
                 Some(x) => x + 1,
                 None => {
                     return false;
@@ -48,7 +48,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::FocusPreviousTag => {
             let current = manager.focused_tag();
             let current = current.unwrap();
-            let mut index = match manager.tags.iter().position(|x| x == &current) {
+            let mut index = match manager.tags.iter().position(|x| x.id == current) {
                 Some(x) => x + 1,
                 None => {
                     return false;

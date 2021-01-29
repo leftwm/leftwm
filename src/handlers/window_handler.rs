@@ -22,7 +22,7 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
             window.set_floating_exact(new_float_exact);
         }
     } else {
-        window.tags = vec![manager.tags[0].clone()]
+        window.tags = vec![manager.tags[0].id.clone()]
     }
 
     if let Some(trans) = &window.transient {
