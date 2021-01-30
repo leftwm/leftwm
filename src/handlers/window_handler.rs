@@ -1,5 +1,6 @@
 use super::*;
 use crate::display_action::DisplayAction;
+use std::str::FromStr;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
@@ -11,7 +12,11 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
         }
     }
 
-    if let Some(ws) = manager.focused_workspace() {
+    if let Some(term_win) = find_terminal(manager, window.pid) {
+        window.tags = term_win.tags.clone();
+        // TODO: Handle dialogs from terminals?
+    }
+    else if let Some(ws) = manager.focused_workspace() {
         window.tags = ws.tags.clone();
 
         //if dialog, center in workspace
@@ -140,4 +145,39 @@ pub fn update_workspace_avoid_list(manager: &mut Manager) {
         w.avoid = avoid.clone();
         w.update_avoided_areas();
     }
+}
+
+fn find_terminal<'a>(manager: &'a Manager, pid: Option<u32>) -> Option<&'a Window> {
+    // Try and find the terminal that launched this app, if such a thing exists.
+    let is_terminal = |pid: u32| {
+        std::fs::read(format!("/proc/{}/comm", pid))
+            .map(|comm| comm == b"alacritty\n")
+            .unwrap_or(false)
+    };
+
+    let get_parent = |pid: u32| -> Option<u32> {
+        let stat = std::fs::read(format!("/proc/{}/stat", pid)).ok()?;
+        let ppid_bytes = stat.split(|&c| c == b' ').nth(3)?;
+        let ppid_str = std::str::from_utf8(ppid_bytes).unwrap();
+        let ppid_u32 = u32::from_str(ppid_str).unwrap();
+        Some(ppid_u32)
+    };
+
+    // Note: Lifetimes annotated because rust isn't smart enough to infer this lifetime.
+    let find_window = |manager: &'a Manager, pid: u32| {
+        manager.windows.iter().find(|w| w.pid == Some(pid))
+    };
+
+    let mut pid = pid?;
+    while let Some(parent) = get_parent(pid) {
+        pid = parent;
+        if is_terminal(pid) {
+            return find_window(manager, pid);
+        }
+        if find_window(manager, pid).is_some() {
+            return None
+        }
+    }
+
+    None
 }
