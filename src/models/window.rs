@@ -33,10 +33,11 @@ pub struct Window {
     pub normal: XYHW,
     pub start_loc: Option<XYHW>,
     pub strut: Option<XYHW>,
+    pub pid: Option<u32>,
 }
 
 impl Window {
-    pub fn new(h: WindowHandle, name: Option<String>) -> Window {
+    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Window {
         Window {
             handle: h,
             transient: None,
@@ -54,6 +55,7 @@ impl Window {
             floating: None,
             start_loc: None,
             strut: None,
+            pid,
         }
     }
 
@@ -260,7 +262,7 @@ mod tests {
 
     #[test]
     fn should_be_able_to_tag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None);
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
         subject.tag("test".to_string());
         assert!(
             subject.has_tag("test".to_string()),
@@ -270,7 +272,7 @@ mod tests {
 
     #[test]
     fn should_be_able_to_untag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None);
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
         subject.tag("test".to_string());
         subject.untag("test".to_string());
         assert!(
