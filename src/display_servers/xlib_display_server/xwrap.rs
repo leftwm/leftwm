@@ -15,7 +15,7 @@ use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
+use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong, c_void};
 use std::ptr;
 use std::slice;
 use std::sync::Arc;
@@ -289,6 +289,41 @@ impl XWrap {
         Ok(attrs)
     }
 
+    pub fn get_cardinal_prop_value(
+        &self,
+        window: xlib::Window,
+        prop: xlib::Atom
+    ) -> Option<u32> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut bytes_after: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = ptr::null_mut();
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                prop,
+                0,
+                1,
+                xlib::False,
+                xlib::XA_CARDINAL,
+                // Can these be null?
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut bytes_after,
+                &mut prop_return,
+            );
+            if status == i32::from(xlib::Success) && !prop_return.is_null() {
+                let val = *(prop_return as *const u32);
+                (self.xlib.XFree)(prop_return as *mut c_void);
+                return Some(val);
+            }
+            None
+        }
+    }
+
     pub fn get_atom_prop_value(
         &self,
         window: xlib::Window,
@@ -316,6 +351,7 @@ impl XWrap {
             if status == i32::from(xlib::Success) && !prop_return.is_null() {
                 #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
                 let atom = *(prop_return as *const xlib::Atom);
+                (self.xlib.XFree)(prop_return as *mut c_void);
                 return Some(atom);
             }
             None
