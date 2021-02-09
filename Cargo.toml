@@ -27,7 +27,7 @@ log = "0.4.8"
 dirs = "3.0.1"
 tokio = { version = "1", features = ["full"] }
 clap = "2.33.0"
-liquid = "0.19.0"
+liquid = "0.21.5"
 chrono = "0.4.10"
 futures = "0.3"
 libc = "0.2"
