@@ -141,6 +141,6 @@ impl Extend<Child> for Children {
 /// Register the `SIGCHLD` signal handler. Once the signal is received,
 /// the flag will be set true. User needs to manually clear the flag.
 pub fn register_child_hook(flag: Arc<AtomicBool>) {
-    let _ = signal_hook::flag::register(signal_hook::SIGCHLD, flag)
+    let _ = signal_hook::flag::register(signal_hook::consts::signal::SIGCHLD, flag)
         .map_err(|err| log::error!("Cannot register SIGCHLD signal handler: {:?}", err));
 }
