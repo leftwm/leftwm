@@ -15,7 +15,7 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
         window.tags = ws.tags.clone();
 
         //if dialog, center in workspace
-        if window.type_ == WindowType::Dialog {
+        if window.type_ == WindowType::Dialog || window.type_ == WindowType::Splash {
             window.set_floating(true);
             let new_float_exact = ws.center_halfed();
             window.normal = ws.xyhw;
