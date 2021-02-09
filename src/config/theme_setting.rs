@@ -2,7 +2,7 @@ use crate::errors::Result;
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 #[serde(default)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -17,12 +17,12 @@ pub struct ThemeSetting {
 }
 
 impl ThemeSetting {
-    pub fn load(path: &PathBuf) -> ThemeSetting {
+    pub fn load(path: &Path) -> ThemeSetting {
         load_theme_file(path).unwrap_or_default()
     }
 }
 
-fn load_theme_file(path: &PathBuf) -> Result<ThemeSetting> {
+fn load_theme_file(path: &Path) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
     let from_file: ThemeSetting = toml::from_str(&contents)?;
     Ok(from_file)
