@@ -16,7 +16,7 @@ path = "src/lib.rs"
 
 [dependencies]
 signal-hook = "0.1.15"
-nix = "0.17.0"
+nix = "0.19.1"
 x11-dl = "2.18.4"
 xdg = "2.2.0"
 toml = "0.5.5"
