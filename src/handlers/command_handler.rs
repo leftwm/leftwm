@@ -87,6 +87,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         }
 
         Command::SwapTags => {
+            // If multi workspace, swap with other workspace
             if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
                 let mut a = manager.workspaces[manager.focused_workspace_history[0]].clone();
                 let mut b = manager.workspaces[manager.focused_workspace_history[1]].clone();
@@ -96,6 +97,17 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 manager.workspaces[manager.focused_workspace_history[0]] = a;
                 manager.workspaces[manager.focused_workspace_history[1]] = b;
                 return true;
+            }
+            // If single workspace, swap width previous tag
+            if manager.workspaces.len() == 1 {
+                let last = manager.focused_tag_history.get(1).map(|t| t.to_string());
+                if let Some(last) = last {
+                    let tag_index = match manager.tags.iter().position(|x| x.id == last) {
+                        Some(x) => x + 1,
+                        None => return false,
+                    };
+                    return goto_tag_handler::process(manager, tag_index);
+                }
             }
             false
         }

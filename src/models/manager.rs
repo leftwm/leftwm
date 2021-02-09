@@ -57,10 +57,7 @@ impl Manager {
 
     /// Return the currently focused tag.
     pub fn focused_tag(&self) -> Option<String> {
-        if self.focused_tag_history.is_empty() {
-            return None;
-        }
-        Some(self.focused_tag_history[0].clone())
+        self.focused_tag_history.get(0).map(|t| t.to_string())
     }
 
     /// Return the currently focused window.
