@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
 
     if let Some(template_file) = template_file {
         let template_str = fs::read_to_string(template_file).await?;
-        let template = liquid::ParserBuilder::with_liquid()
+        let template = liquid::ParserBuilder::with_stdlib()
             .build()
             .unwrap()
             .parse(&template_str)
@@ -99,24 +99,27 @@ fn template_handler(
     let globals = match ws_num {
         Some(ws_num) => {
             let json = serde_json::to_string(&display.workspaces[ws_num])?;
-            let workspace: liquid::value::Object = serde_json::from_str(&json)?;
-            let mut globals = liquid::value::Object::new();
+            let workspace: liquid::model::Object = serde_json::from_str(&json)?;
+            let mut globals = liquid::model::Object::new();
             globals.insert(
                 "window_title".into(),
-                liquid::value::Value::scalar(display.window_title),
+                liquid::model::value::Value::scalar(display.window_title),
             );
-            globals.insert("workspace".into(), liquid::value::Value::Object(workspace));
+            globals.insert(
+                "workspace".into(),
+                liquid::model::value::Value::Object(workspace),
+            );
             //liquid only does time in utc. BUG: https://github.com/cobalt-org/liquid-rust/issues/332
             //as a workaround we are setting a time locally
             globals.insert(
                 "localtime".into(),
-                liquid::value::Value::scalar(get_localtime()),
+                liquid::model::value::Value::scalar(get_localtime()),
             );
             globals
         }
         None => {
             let json = serde_json::to_string(&display)?;
-            let globals: liquid::value::Object = serde_json::from_str(&json)?;
+            let globals: liquid::model::Object = serde_json::from_str(&json)?;
             globals
         }
     };

@@ -71,7 +71,7 @@ impl CommandPipe {
     }
 }
 
-async fn read_from_pipe(queue: &Queue, pipe_file: &PathBuf) -> Option<()> {
+async fn read_from_pipe(queue: &Queue, pipe_file: &Path) -> Option<()> {
     let file = fs::File::open(pipe_file).await.ok()?;
     let mut lines = BufReader::new(file).lines();
 

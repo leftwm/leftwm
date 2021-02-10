@@ -22,7 +22,7 @@ impl Nanny {
     }
 
     pub fn autostart(&self) -> Children {
-        dirs::home_dir()
+        dirs_next::home_dir()
             .map(|mut path| {
                 path.push(".config");
                 path.push("autostart");
@@ -56,7 +56,7 @@ impl Nanny {
     }
 }
 
-fn boot_desktop_file(path: &PathBuf) -> std::io::Result<Child> {
+fn boot_desktop_file(path: &Path) -> std::io::Result<Child> {
     let args = format!( "`grep '^Exec' {:?} | tail -1 | sed 's/^Exec=//' | sed 's/%.//' | sed 's/^\"//g' | sed 's/\" *$//g'`", path );
     Command::new("sh").arg("-c").arg(args).spawn()
 }
@@ -141,6 +141,6 @@ impl Extend<Child> for Children {
 /// Register the `SIGCHLD` signal handler. Once the signal is received,
 /// the flag will be set true. User needs to manually clear the flag.
 pub fn register_child_hook(flag: Arc<AtomicBool>) {
-    let _ = signal_hook::flag::register(signal_hook::SIGCHLD, flag)
+    let _ = signal_hook::flag::register(signal_hook::consts::signal::SIGCHLD, flag)
         .map_err(|err| log::error!("Cannot register SIGCHLD signal handler: {:?}", err));
 }
