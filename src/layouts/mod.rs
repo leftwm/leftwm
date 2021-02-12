@@ -9,9 +9,11 @@ mod fibonacci;
 mod grid_horizontal;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
+mod monocle;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
+    Monocle,
     MainAndVertStack,
     MainAndHorizontalStack,
     GridHorizontal,
@@ -29,6 +31,7 @@ impl Default for Layout {
 }
 
 const LAYOUTS: &[&str] = &[
+    "Monocle",
     "MainAndVertStack",
     "MainAndHorizontalStack",
     "GridHorizontal",
@@ -41,6 +44,7 @@ const LAYOUTS: &[&str] = &[
 impl From<&str> for Layout {
     fn from(s: &str) -> Self {
         match s {
+            "Monocle" => Self::Monocle,
             "MainAndVertStack" => Self::MainAndVertStack,
             "MainAndHorizontalStack" => Self::MainAndHorizontalStack,
             "GridHorizontal" => Self::GridHorizontal,
@@ -48,7 +52,7 @@ impl From<&str> for Layout {
             "EvenVertical" => Self::EvenVertical,
             "Fibonacci" => Self::Fibonacci,
             "CenterMain" => Self::CenterMain,
-            _ => Self::MainAndVertStack,
+            _ => Self::Monocle,
         }
     }
 }
@@ -57,6 +61,7 @@ impl From<&str> for Layout {
 impl Layout {
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         match self {
+            Self::Monocle => monocle::update(workspace, windows),
             Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
             Self::MainAndHorizontalStack => main_and_horizontal_stack::update(workspace, windows),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
