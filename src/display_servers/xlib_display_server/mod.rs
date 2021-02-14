@@ -81,7 +81,9 @@ impl DisplayServer for XlibDisplayServer {
                 (&mut events).push(e);
             }
         });
-        while let Some(xlib_event) = self.xw.get_next_event() {
+
+        for _ in 0..self.xw.queue_len() {
+            let xlib_event = self.xw.get_next_event();
             let event = XEvent(&self.xw, xlib_event).into();
             if let Some(e) = event {
                 log::trace!("DisplayEvent: {:?}", e);
@@ -211,5 +213,13 @@ impl XlibDisplayServer {
             }
         }
         all
+    }
+
+    pub async fn wait_readable(&mut self) {
+        self.xw.wait_readable().await;
+    }
+
+    pub fn flush(&self) {
+        self.xw.flush()
     }
 }

@@ -18,6 +18,9 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
 use std::slice;
+use std::sync::Arc;
+use tokio::sync::{oneshot, Notify};
+use tokio::time::Duration;
 use x11_dl::xlib;
 
 //type WindowStateConst = u8;
@@ -42,8 +45,8 @@ pub enum XlibError {
 }
 
 pub struct XWrap {
-    pub xlib: xlib::Xlib,
-    pub display: *mut xlib::Display,
+    xlib: xlib::Xlib,
+    display: *mut xlib::Display,
     root: xlib::Window,
     pub atoms: XAtom,
     cursors: XCursor,
@@ -53,6 +56,8 @@ pub struct XWrap {
     pub mode: Mode,
     pub mod_key_mask: ModMask,
     pub mode_origin: (i32, i32),
+    _task_guard: oneshot::Receiver<()>,
+    task_notify: Arc<Notify>,
 }
 
 impl Default for XWrap {
@@ -60,11 +65,45 @@ impl Default for XWrap {
         Self::new()
     }
 }
+
 impl XWrap {
     pub fn new() -> XWrap {
         let xlib = xlib::Xlib::open().unwrap();
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
+
+        let fd = unsafe { (xlib.XConnectionNumber)(display) };
+
+        let (guard, _task_guard) = oneshot::channel();
+        let notify = Arc::new(Notify::new());
+        let task_notify = notify.clone();
+
+        let mut poll = mio::Poll::new().unwrap();
+        let mut events = mio::Events::with_capacity(1);
+        const SERVER: mio::Token = mio::Token(0);
+        poll.registry()
+            .register(
+                &mut mio::unix::SourceFd(&fd),
+                SERVER,
+                mio::Interest::READABLE,
+            )
+            .unwrap();
+        let timeout = Duration::from_millis(100);
+        tokio::task::spawn_blocking(move || loop {
+            if guard.is_closed() {
+                return;
+            }
+
+            if let Err(err) = poll.poll(&mut events, Some(timeout)) {
+                log::error!("Xlib socket poll failed with {:?}", err);
+                return;
+            }
+
+            events
+                .iter()
+                .filter(|event| SERVER == event.token())
+                .for_each(|_| notify.notify_one());
+        });
 
         let atoms = XAtom::new(&xlib, display);
         let cursors = XCursor::new(&xlib, display);
@@ -88,6 +127,8 @@ impl XWrap {
             mode: Mode::NormalMode,
             mod_key_mask: 0,
             mode_origin: (0, 0),
+            _task_guard,
+            task_notify,
         };
 
         //check that another WM is not running
@@ -1311,16 +1352,23 @@ impl XWrap {
         }
     }
 
-    pub fn get_next_event(&self) -> Option<xlib::XEvent> {
-        let event_queue_length = unsafe { (self.xlib.XPending)(self.display) };
-        if event_queue_length == 0 {
-            return None;
-        }
-
+    pub fn get_next_event(&self) -> xlib::XEvent {
         let mut event: xlib::XEvent = unsafe { std::mem::zeroed() };
         unsafe {
             (self.xlib.XNextEvent)(self.display, &mut event);
         };
-        Some(event)
+        event
+    }
+
+    pub async fn wait_readable(&mut self) {
+        self.task_notify.notified().await;
+    }
+
+    pub fn flush(&self) {
+        unsafe { (self.xlib.XFlush)(self.display) };
+    }
+
+    pub fn queue_len(&self) -> i32 {
+        unsafe { (self.xlib.XPending)(self.display) }
     }
 }

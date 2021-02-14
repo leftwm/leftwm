@@ -18,6 +18,9 @@ fn main() {
     log::info!("leftwm-worker booted!");
 
     let completed = panic::catch_unwind(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _rt_guard = rt.enter();
+
         let config = config::load();
 
         let mut manager = Manager {
@@ -34,11 +37,7 @@ fn main() {
         let mut display_server = XlibDisplayServer::new(&config);
         let handler = DisplayEventHandler { config };
 
-        tokio::runtime::Runtime::new().unwrap().block_on(event_loop(
-            &mut manager,
-            &mut display_server,
-            &handler,
-        ));
+        rt.block_on(event_loop(&mut manager, &mut display_server, &handler));
     });
 
     match completed {
