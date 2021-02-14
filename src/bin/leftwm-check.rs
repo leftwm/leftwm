@@ -9,7 +9,7 @@ use std::path::Path;
 async fn main() -> Result<()> {
     let matches = App::new("LeftWM Check")
         .author("Lex Childs <lex.childs@gmail.com>")
-        .version("0.2.7")
+        .version(env!("CARGO_PKG_VERSION"))
         .about("checks syntax of the configuration file")
         .arg(
             Arg::with_name("INPUT")
