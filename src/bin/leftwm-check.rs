@@ -1,9 +1,9 @@
-use clap::{App,Arg};
-use leftwm::errors::Result;
-use xdg::BaseDirectories;
+use clap::{App, Arg};
 use leftwm::config::Config;
+use leftwm::errors::Result;
 use std::fs;
 use std::path::Path;
+use xdg::BaseDirectories;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -29,27 +29,33 @@ async fn main() -> Result<()> {
     let verbose = matches.occurrences_of("verbose") >= 1;
 
     dbg!(config_file);
-//    use leftwm::config::*;
+    //    use leftwm::config::*;
 
-pub fn load_from_file() -> Result<Config> {
-    let path = BaseDirectories::with_prefix("leftwm")?;
-    let config_filename = path.place_config_file("config.toml")?;
-    if Path::new(&config_filename).exists() {
-        let contents = fs::read_to_string(config_filename)?;
-        Ok(toml::from_str(&contents)?)
-    } else {
-        Err(leftwm::errors::LeftError::from(std::io::Error::new(std::io::ErrorKind::Other, "Configuration not found in path")))    
-}
-}
-   
-    match load_from_file(){
-        Ok(config) => {println!("Configuration loaded successfully");
-            if verbose {
-              dbg!(config);
-            }             
+    pub fn load_from_file() -> Result<Config> {
+        let path = BaseDirectories::with_prefix("leftwm")?;
+        let config_filename = path.place_config_file("config.toml")?;
+        if Path::new(&config_filename).exists() {
+            let contents = fs::read_to_string(config_filename)?;
+            Ok(toml::from_str(&contents)?)
+        } else {
+            Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Configuration not found in path",
+            )))
         }
-        Err(e) => {println!("Configuration failed. Reason: {:?}", e);}
-    }    
+    }
+
+    match load_from_file() {
+        Ok(config) => {
+            println!("Configuration loaded successfully");
+            if verbose {
+                dbg!(config);
+            }
+        }
+        Err(e) => {
+            println!("Configuration failed. Reason: {:?}", e);
+        }
+    }
 
     Ok(())
 }
