@@ -1,83 +1,65 @@
-use std::collections::VecDeque;
 use std::io::Result;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::sync::Mutex;
+use tokio::sync::mpsc;
 
-type Queue = Arc<Mutex<VecDeque<ExternalCommand>>>;
-
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct CommandPipe {
-    queue: Queue,
-    listener: Option<tokio::task::JoinHandle<()>>,
     pipe_file: PathBuf,
+    rx: mpsc::UnboundedReceiver<ExternalCommand>,
 }
 
 impl Drop for CommandPipe {
     fn drop(&mut self) {
-        if !std::thread::panicking() && self.listener.is_some() {
-            panic!("CommandPipe has to be shutdown explicitly before drop");
-        }
+        self.rx.close();
+
+        // Open fifo for write to unblock pending open for read operation that prevents tokio runtime
+        // from shutting down.
+        use std::os::unix::fs::OpenOptionsExt;
+        std::fs::OpenOptions::new()
+            .write(true)
+            .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
+            .open(self.pipe_file.clone())
+            .ok();
     }
 }
 
 impl CommandPipe {
     /// Create and listen to the named pipe.
-    pub async fn listen(&mut self, pipe_file: PathBuf) -> Result<()> {
-        self.pipe_file = pipe_file;
-        let listener = self.build_listener().await?;
-        self.listener = Some(listener);
-        Ok(())
-    }
-
-    /// Explicitly shutdown `CommandPipe` to perform cleanup.
-    pub async fn shutdown(&mut self) {
-        use std::os::unix::fs::OpenOptionsExt;
-        if let Some(listener) = self.listener.take() {
-            listener.abort();
-            listener.await.ok();
-
-            // Open fifo for write to unblock pending open for read operation that prevents tokio runtime
-            // from shutting down.
-            std::fs::OpenOptions::new()
-                .write(true)
-                .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
-                .open(self.pipe_file.clone())
-                .ok();
-
-            fs::remove_file(self.pipe_file.as_path()).await.ok();
-        }
-    }
-
-    pub async fn read_command(&mut self) -> Option<ExternalCommand> {
-        self.queue.lock().await.pop_front()
-    }
-
-    async fn build_listener(&self) -> Result<tokio::task::JoinHandle<()>> {
-        let queue = self.queue.clone();
-        let pipe_file = self.pipe_file.clone();
-        fs::remove_file(pipe_file.clone()).await.ok();
+    pub async fn new(pipe_file: PathBuf) -> Result<Self> {
+        fs::remove_file(pipe_file.as_path()).await.ok();
         if let Err(e) = nix::unistd::mkfifo(&pipe_file, nix::sys::stat::Mode::S_IRWXU) {
             log::error!("Failed to create new fifo {:?}", e);
         }
 
-        Ok(tokio::spawn(async move {
-            loop {
-                read_from_pipe(&queue, &pipe_file).await;
+        let path = pipe_file.clone();
+        let (tx, rx) = mpsc::unbounded_channel();
+        tokio::spawn(async move {
+            while !tx.is_closed() {
+                read_from_pipe(&path, &tx).await;
             }
-        }))
+            fs::remove_file(path).await.ok();
+        });
+
+        Ok(Self { pipe_file, rx })
+    }
+
+    pub async fn read_command(&mut self) -> Option<ExternalCommand> {
+        self.rx.recv().await
     }
 }
 
-async fn read_from_pipe(queue: &Queue, pipe_file: &Path) -> Option<()> {
+async fn read_from_pipe(
+    pipe_file: &Path,
+    tx: &mpsc::UnboundedSender<ExternalCommand>,
+) -> Option<()> {
     let file = fs::File::open(pipe_file).await.ok()?;
     let mut lines = BufReader::new(file).lines();
 
     while let Some(line) = lines.next_line().await.ok()? {
         let cmd = parse_command(line).ok()?;
-        queue.lock().await.push_back(cmd);
+        tx.send(cmd).ok()?;
     }
 
     Some(())
@@ -218,8 +200,7 @@ mod test {
     #[tokio::test]
     async fn read_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::default();
-        command_pipe.listen(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
 
         // Open pipe for writing and write some garbage. Then close the pipe.
         {
@@ -245,27 +226,21 @@ mod test {
             pipe.write_all(b"Reload\n").await.unwrap();
             pipe.flush().await.unwrap();
 
-            let mut command = None;
-            while command.is_none() {
-                command = command_pipe.read_command().await;
-                time::sleep(time::Duration::from_millis(100)).await;
-            }
-
-            assert_eq!(ExternalCommand::Reload, command.unwrap());
+            assert_eq!(
+                ExternalCommand::Reload,
+                command_pipe.read_command().await.unwrap()
+            );
         }
-
-        command_pipe.shutdown().await;
     }
 
     #[tokio::test]
     async fn pipe_cleanup() {
         let pipe_file = temp_path().await.unwrap();
         fs::remove_file(pipe_file.as_path()).await.unwrap();
-        let mut command_pipe = CommandPipe::default();
-        command_pipe.listen(pipe_file.clone()).await.unwrap();
 
         // Write to pipe.
         {
+            let _command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
             let mut pipe = fs::OpenOptions::new()
                 .write(true)
                 .open(pipe_file.clone())
@@ -278,7 +253,6 @@ mod test {
         // Let the OS close the write end of the pipe before shutting down the listener.
         time::sleep(time::Duration::from_millis(100)).await;
 
-        command_pipe.shutdown().await;
         assert!(!pipe_file.exists());
     }
 }

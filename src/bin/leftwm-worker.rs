@@ -63,8 +63,7 @@ async fn event_loop(
     state_socket.listen(socket_file).await.unwrap();
 
     let pipe_file = place_runtime_file("commands.pipe").unwrap();
-    let mut command_pipe = CommandPipe::default();
-    command_pipe.listen(pipe_file).await.unwrap();
+    let mut command_pipe = CommandPipe::new(pipe_file).await.unwrap();
 
     //start the current theme
     let after_first_loop: Once = Once::new();
@@ -87,7 +86,12 @@ async fn event_loop(
             needs_update = handler.process(manager, event) || needs_update;
         }
 
-        if let Some(cmd) = command_pipe.read_command().await {
+        if let Ok(Some(cmd)) = tokio::time::timeout(
+            tokio::time::Duration::from_millis(20),
+            command_pipe.read_command(),
+        )
+        .await
+        {
             needs_update = external_command_handler::process(manager, cmd) || needs_update;
             display_server.update_theme_settings(manager.theme_setting.clone());
         }
@@ -141,7 +145,6 @@ async fn event_loop(
         }
 
         if manager.reload_requested {
-            command_pipe.shutdown().await;
             state_socket.shutdown().await;
             break;
         }
