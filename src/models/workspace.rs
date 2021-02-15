@@ -17,6 +17,7 @@ pub struct Workspace {
     pub tags: Vec<TagId>,
     #[serde(skip)]
     all_tags: Vec<Tag>,
+    layouts: Vec<Layout>,
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
@@ -42,13 +43,14 @@ impl PartialEq for Workspace {
 }
 
 impl Workspace {
-    pub fn new(bbox: BBox, all_tags: Vec<Tag>) -> Workspace {
+    pub fn new(bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Workspace {
         Workspace {
             id: -1,
-            layout: Layout::default(),
+            layout: Layout::new(&layouts),
             tags: vec![],
             avoid: vec![],
             all_tags,
+            layouts,
             xyhw: XyhwBuilder {
                 h: bbox.height,
                 w: bbox.width,
@@ -86,11 +88,11 @@ impl Workspace {
     }
 
     pub fn next_layout(&mut self) {
-        self.layout = self.layout.next_layout();
+        self.layout = self.layout.next_layout(&self.layouts);
     }
 
     pub fn prev_layout(&mut self) {
-        self.layout = self.layout.prev_layout();
+        self.layout = self.layout.prev_layout(&self.layouts);
     }
 
     /// Returns true if the workspace is displays a given window.
@@ -200,6 +202,7 @@ mod tests {
                 y: 0,
             },
             vec![],
+            vec![],
         );
         let w = Window::new(WindowHandle::MockHandle(1), None);
         assert!(
@@ -217,6 +220,7 @@ mod tests {
                 x: 0,
                 y: 0,
             },
+            vec![],
             vec![],
         );
         let tag = crate::models::TagModel::new("test");

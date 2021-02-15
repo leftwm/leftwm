@@ -3,7 +3,10 @@ mod theme_setting;
 mod workspace_config;
 
 use super::Command;
-use crate::errors::Result;
+use crate::{
+    errors::Result,
+    layouts::{Layout, LAYOUTS},
+};
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::env;
@@ -23,7 +26,7 @@ pub struct Config {
     pub modkey: String,
     pub workspaces: Option<Vec<WorkspaceConfig>>,
     pub tags: Option<Vec<String>>,
-    //pub layouts: Option<Vec<String>>,
+    pub layouts: Vec<Layout>,
     pub keybind: Vec<Keybind>,
 }
 
@@ -252,22 +255,10 @@ impl Default for Config {
             .map(|s| s.to_string())
             .collect();
 
-        //let layouts = vec![
-        //    "MainAndVertStack",
-        //    "GridHorizontal",
-        //    "EvenHorizontal",
-        //    "EvenVertical",
-        //    "Fibonacci",
-        //    "CenterMain",
-        //]
-        //.iter()
-        //.map(|s| s.to_string())
-        //.collect();
-
         Config {
             workspaces: Some(vec![]),
             tags: Some(tags),
-            //layouts: Some(layouts),
+            layouts: LAYOUTS.to_vec(),
             modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }

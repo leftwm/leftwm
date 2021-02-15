@@ -25,44 +25,26 @@ pub enum Layout {
     Monocle,
 }
 
-impl Default for Layout {
-    fn default() -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
-        layouts.first().unwrap().clone()
-    }
-}
-
-const LAYOUTS: &[&str] = &[
-    "MainAndVertStack",
-    "MainAndHorizontalStack",
-    "GridHorizontal",
-    "EvenHorizontal",
-    "EvenVertical",
-    "Fibonacci",
-    "CenterMain",
-    "CenterMainBalanced",
-    "Monocle",
+pub const LAYOUTS: [Layout; 9] = [
+    Layout::MainAndVertStack,
+    Layout::MainAndHorizontalStack,
+    Layout::GridHorizontal,
+    Layout::EvenHorizontal,
+    Layout::EvenVertical,
+    Layout::Fibonacci,
+    Layout::CenterMain,
+    Layout::CenterMainBalanced,
+    Layout::Monocle,
 ];
-
-impl From<&str> for Layout {
-    fn from(s: &str) -> Self {
-        match s {
-            "MainAndVertStack" => Self::MainAndVertStack,
-            "MainAndHorizontalStack" => Self::MainAndHorizontalStack,
-            "GridHorizontal" => Self::GridHorizontal,
-            "EvenHorizontal" => Self::EvenHorizontal,
-            "EvenVertical" => Self::EvenVertical,
-            "Fibonacci" => Self::Fibonacci,
-            "CenterMain" => Self::CenterMain,
-            "CenterMainBalanced" => Self::CenterMainBalanced,
-            "Monocle" => Self::Monocle,
-            _ => Self::MainAndVertStack,
-        }
-    }
-}
 
 // This is tedious, but simple and effective.
 impl Layout {
+    pub fn new(layouts: &[Layout]) -> Self {
+        if let Some(layout) = layouts.first() {
+            return layout.clone();
+        }
+        Layout::Fibonacci
+    }
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         match self {
             Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
@@ -77,11 +59,10 @@ impl Layout {
         }
     }
 
-    pub fn next_layout(&self) -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+    pub fn next_layout(&self, layouts: &[Layout]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,
-            None => return "Fibonacci".into(),
+            None => return Layout::Fibonacci,
         } + 1;
         if index >= layouts.len() as isize {
             index = 0;
@@ -89,11 +70,10 @@ impl Layout {
         layouts[index as usize].clone()
     }
 
-    pub fn prev_layout(&self) -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+    pub fn prev_layout(&self, layouts: &[Layout]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,
-            None => return "Fibonacci".into(),
+            None => return Layout::Fibonacci,
         } - 1;
         if index < 0 {
             index = layouts.len() as isize - 1;
@@ -117,6 +97,7 @@ mod tests {
                 x: 0,
                 y: 0,
             },
+            vec![],
             vec![],
         );
         ws.xyhw.set_minh(600);

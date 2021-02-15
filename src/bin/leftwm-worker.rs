@@ -29,6 +29,7 @@ fn main() {
                 .iter()
                 .map(|s| TagModel::new(s))
                 .collect(),
+            layouts: config.layouts.clone(),
             ..Default::default()
         };
 
