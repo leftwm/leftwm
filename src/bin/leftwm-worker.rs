@@ -69,31 +69,26 @@ async fn event_loop(
     let after_first_loop: Once = Once::new();
 
     //main event loop
-    let mut events_remainder = vec![];
+    let mut event_buffer = vec![];
     loop {
         if manager.mode == Mode::NormalMode {
             state_socket.write_manager_state(manager).await.ok();
         }
-        let mut events = get_events(display_server);
-        events.append(&mut events_remainder);
-
-        if events.is_empty() {
-            tokio::time::sleep(tokio::time::Duration::from_millis(20)).await;
-        }
+        display_server.flush();
 
         let mut needs_update = false;
-        for event in events {
-            needs_update = handler.process(manager, event) || needs_update;
-        }
-
-        if let Ok(Some(cmd)) = tokio::time::timeout(
-            tokio::time::Duration::from_millis(20),
-            command_pipe.read_command(),
-        )
-        .await
-        {
-            needs_update = external_command_handler::process(manager, cmd) || needs_update;
-            display_server.update_theme_settings(manager.theme_setting.clone());
+        tokio::select! {
+            _ = display_server.wait_readable(), if event_buffer.is_empty() => {
+                event_buffer.append(&mut get_events(display_server));
+                continue;
+            }
+            Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
+                needs_update = external_command_handler::process(manager, cmd) || needs_update;
+                display_server.update_theme_settings(manager.theme_setting.clone());
+            }
+            else => {
+                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, event) || needs_update)
+            }
         }
 
         //if we need to update the displayed state
@@ -123,7 +118,7 @@ async fn event_loop(
         while !manager.actions.is_empty() {
             if let Some(act) = manager.actions.pop_front() {
                 if let Some(event) = display_server.execute_action(act) {
-                    events_remainder.push(event);
+                    event_buffer.push(event);
                 }
             }
         }
