@@ -5,20 +5,20 @@ use serde::{Deserialize, Serialize};
 pub enum Margins {
     Int(u32),
     Vec(Vec<u32>),
-} // format: 0=> top 1=> bottom 2=> left 3=> right
+} // format: [top, right, bottom, left] as per HTML
 
 impl Margins {
    pub fn left(self) -> i32 {
-       self.into_vec()[1] as i32
+       self.into_vec()[3] as i32
    }
    pub fn right(self) -> i32 {
-       self.into_vec()[3] as i32
+       self.into_vec()[1] as i32
    }
    pub fn top(self) -> i32 {
        self.into_vec()[0] as i32
    }
    pub fn bottom(self) -> i32 {
-       self.into_vec()[0] as i32
+       self.into_vec()[2] as i32
    }
 
     pub fn into_vec(self) -> Vec<u32> {
