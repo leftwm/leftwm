@@ -13,7 +13,6 @@ mod monocle;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
-    Monocle,
     MainAndVertStack,
     MainAndHorizontalStack,
     GridHorizontal,
@@ -21,6 +20,7 @@ pub enum Layout {
     EvenVertical,
     Fibonacci,
     CenterMain,
+    Monocle,
 }
 
 impl Default for Layout {
@@ -31,7 +31,6 @@ impl Default for Layout {
 }
 
 const LAYOUTS: &[&str] = &[
-    "Monocle",
     "MainAndVertStack",
     "MainAndHorizontalStack",
     "GridHorizontal",
@@ -39,12 +38,12 @@ const LAYOUTS: &[&str] = &[
     "EvenVertical",
     "Fibonacci",
     "CenterMain",
+    "Monocle",
 ];
 
 impl From<&str> for Layout {
     fn from(s: &str) -> Self {
         match s {
-            "Monocle" => Self::Monocle,
             "MainAndVertStack" => Self::MainAndVertStack,
             "MainAndHorizontalStack" => Self::MainAndHorizontalStack,
             "GridHorizontal" => Self::GridHorizontal,
@@ -52,7 +51,8 @@ impl From<&str> for Layout {
             "EvenVertical" => Self::EvenVertical,
             "Fibonacci" => Self::Fibonacci,
             "CenterMain" => Self::CenterMain,
-            _ => Self::Monocle,
+            "Monocle" => Self::Monocle,
+            _ => Self::MainAndVertStack,
         }
     }
 }
@@ -61,7 +61,6 @@ impl From<&str> for Layout {
 impl Layout {
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         match self {
-            Self::Monocle => monocle::update(workspace, windows),
             Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
             Self::MainAndHorizontalStack => main_and_horizontal_stack::update(workspace, windows),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
@@ -69,6 +68,7 @@ impl Layout {
             Self::EvenVertical => even_vertical::update(workspace, windows),
             Self::Fibonacci => fibonacci::update(workspace, windows),
             Self::CenterMain => center_main::update(workspace, windows),
+            Self::Monocle => monocle::update(workspace, windows),
         }
     }
 
