@@ -95,7 +95,7 @@ impl Layout {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{BBox, WindowHandle};
+    use crate::models::{BBox, Margins, WindowHandle};
 
     #[test]
     fn should_fullscreen_a_single_window() {
@@ -114,7 +114,7 @@ mod tests {
         ws.update_avoided_areas();
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.border = 0;
-        w.margin = 0;
+        w.margin = Margins::Int(0);
         let mut windows = vec![&mut w];
         let mut windows_filters = windows.iter_mut().filter(|_f| true).collect();
         even_horizontal::update(&ws, &mut windows_filters);
