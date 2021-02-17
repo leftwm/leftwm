@@ -2,7 +2,7 @@ use super::Window;
 use super::WindowHandle;
 use super::WindowState;
 use super::WindowType;
-use crate::models::{Margins,XYHWChange};
+use crate::models::{Margins, XYHWChange};
 
 type MaybeWindowHandle = Option<WindowHandle>;
 type MaybeName = Option<String>;

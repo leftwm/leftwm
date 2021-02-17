@@ -8,18 +8,18 @@ pub enum Margins {
 } // format: [top, right, bottom, left] as per HTML
 
 impl Margins {
-   pub fn left(self) -> i32 {
-       self.into_vec()[3] as i32
-   }
-   pub fn right(self) -> i32 {
-       self.into_vec()[1] as i32
-   }
-   pub fn top(self) -> i32 {
-       self.into_vec()[0] as i32
-   }
-   pub fn bottom(self) -> i32 {
-       self.into_vec()[2] as i32
-   }
+    pub fn left(self) -> i32 {
+        self.into_vec()[3] as i32
+    }
+    pub fn right(self) -> i32 {
+        self.into_vec()[1] as i32
+    }
+    pub fn top(self) -> i32 {
+        self.into_vec()[0] as i32
+    }
+    pub fn bottom(self) -> i32 {
+        self.into_vec()[2] as i32
+    }
 
     pub fn into_vec(self) -> Vec<u32> {
         match self {

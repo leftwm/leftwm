@@ -1,10 +1,10 @@
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
+use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::XYHWBuilder;
 use crate::models::XYHW;
-use crate::models::Margins;
 use serde::{Deserialize, Serialize};
 use x11_dl::xlib;
 
@@ -148,9 +148,13 @@ impl Window {
             value = self.normal.w();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            value = relative.w() - (self.margin.clone().left() + self.margin.clone().right()) - (self.border * 2);
+            value = relative.w()
+                - (self.margin.clone().left() + self.margin.clone().right())
+                - (self.border * 2);
         } else {
-            value = self.normal.w() - (self.margin.clone().left() + self.margin.clone().right()) - (self.border * 2);
+            value = self.normal.w()
+                - (self.margin.clone().left() + self.margin.clone().right())
+                - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
             value = 100
@@ -163,9 +167,13 @@ impl Window {
             value = self.normal.h();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            value = relative.h() - (self.margin.clone().top() + self.margin.clone().bottom()) - (self.border * 2);
+            value = relative.h()
+                - (self.margin.clone().top() + self.margin.clone().bottom())
+                - (self.border * 2);
         } else {
-            value = self.normal.h() - (self.margin.clone().top() + self.margin.clone().bottom()) - (self.border * 2);
+            value = self.normal.h()
+                - (self.margin.clone().top() + self.margin.clone().bottom())
+                - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
             value = 100
