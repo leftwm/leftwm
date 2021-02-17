@@ -3,6 +3,7 @@ use super::models::Workspace;
 use serde::{Deserialize, Serialize};
 
 mod center_main;
+mod center_main_balanced;
 mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
@@ -19,6 +20,7 @@ pub enum Layout {
     EvenVertical,
     Fibonacci,
     CenterMain,
+    CenterMainBalanced,
 }
 
 impl Default for Layout {
@@ -36,6 +38,7 @@ const LAYOUTS: &[&str] = &[
     "EvenVertical",
     "Fibonacci",
     "CenterMain",
+    "CenterMainBalanced",
 ];
 
 impl From<&str> for Layout {
@@ -48,6 +51,7 @@ impl From<&str> for Layout {
             "EvenVertical" => Self::EvenVertical,
             "Fibonacci" => Self::Fibonacci,
             "CenterMain" => Self::CenterMain,
+            "CenterMainBalanced" => Self::CenterMainBalanced,
             _ => Self::MainAndVertStack,
         }
     }
@@ -64,6 +68,7 @@ impl Layout {
             Self::EvenVertical => even_vertical::update(workspace, windows),
             Self::Fibonacci => fibonacci::update(workspace, windows),
             Self::CenterMain => center_main::update(workspace, windows),
+            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
         }
     }
 
