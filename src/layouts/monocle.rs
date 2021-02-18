@@ -22,7 +22,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
             // monoclestate.push(WindowState::Above);
             // monoclestate.push(WindowState::MaximizedVert);
             // monoclestate.push(WindowState::MaximizedHorz);
-            monowin.margin = 0;
+            // monowin.margin = 0;
             monowin.set_height(workspace.height());
             monowin.set_width(workspace.width());
             monowin.set_x(workspace.x());
@@ -38,6 +38,10 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         if window_count > 1 {
             for w in iter {
                 w.set_visible(false); //window state Hide
+                w.set_height(workspace.height());
+                w.set_width(workspace.width());
+                w.set_x(workspace.x());
+                w.set_y(workspace.y());
             }
         }
     }
