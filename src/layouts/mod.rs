@@ -3,6 +3,7 @@ use super::models::Workspace;
 use serde::{Deserialize, Serialize};
 
 mod center_main;
+mod center_main_balanced;
 mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
@@ -20,6 +21,7 @@ pub enum Layout {
     EvenVertical,
     Fibonacci,
     CenterMain,
+    CenterMainBalanced,
     Monocle,
 }
 
@@ -38,6 +40,7 @@ const LAYOUTS: &[&str] = &[
     "EvenVertical",
     "Fibonacci",
     "CenterMain",
+    "CenterMainBalanced",
     "Monocle",
 ];
 
@@ -51,6 +54,7 @@ impl From<&str> for Layout {
             "EvenVertical" => Self::EvenVertical,
             "Fibonacci" => Self::Fibonacci,
             "CenterMain" => Self::CenterMain,
+            "CenterMainBalanced" => Self::CenterMainBalanced,
             "Monocle" => Self::Monocle,
             _ => Self::MainAndVertStack,
         }
@@ -68,6 +72,7 @@ impl Layout {
             Self::EvenVertical => even_vertical::update(workspace, windows),
             Self::Fibonacci => fibonacci::update(workspace, windows),
             Self::CenterMain => center_main::update(workspace, windows),
+            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
             Self::Monocle => monocle::update(workspace, windows),
         }
     }
@@ -100,7 +105,7 @@ impl Layout {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{BBox, WindowHandle};
+    use crate::models::{BBox, Margins, WindowHandle};
 
     #[test]
     fn should_fullscreen_a_single_window() {
@@ -119,7 +124,7 @@ mod tests {
         ws.update_avoided_areas();
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.border = 0;
-        w.margin = 0;
+        w.margin = Margins::Int(0);
         let mut windows = vec![&mut w];
         let mut windows_filters = windows.iter_mut().filter(|_f| true).collect();
         even_horizontal::update(&ws, &mut windows_filters);
