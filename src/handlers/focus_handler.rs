@@ -175,7 +175,7 @@ pub fn update_current_tags(manager: &mut Manager) {
     }
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -281,7 +281,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None);
-        window.tag("2".to_owned());
+        window.tag("2");
         focus_window(&mut manager, &window, 0, 0);
         let actual = manager.focused_tag().unwrap();
         assert_eq!("2", actual);
@@ -294,7 +294,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None);
-        window.tag("2".to_owned());
+        window.tag("2");
         focus_window(&mut manager, &window, 0, 0);
         let actual = manager.focused_workspace().unwrap().id.clone();
         let expected = manager.workspaces[1].id.clone();
