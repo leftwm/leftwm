@@ -263,27 +263,24 @@ impl Window {
     }
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn should_be_able_to_tag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None);
-        subject.tag("test".to_string());
-        assert!(
-            subject.has_tag("test".to_string()),
-            "was unable to tag the window"
-        );
+        subject.tag("test");
+        assert!(subject.has_tag("test"), "was unable to tag the window");
     }
 
     #[test]
     fn should_be_able_to_untag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None);
-        subject.tag("test".to_string());
-        subject.untag("test".to_string());
+        subject.tag("test");
+        subject.untag("test");
         assert!(
-            subject.has_tag("test".to_string()) == false,
+            subject.has_tag("test") == false,
             "was unable to untag the window"
         );
     }

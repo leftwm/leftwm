@@ -23,7 +23,7 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     true
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

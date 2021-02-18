@@ -23,7 +23,7 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     false
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -39,9 +39,9 @@ mod tests {
     #[test]
     fn should_be_able_to_add_screens_with_perexisting_tags() {
         let mut manager = Manager::default();
-        manager.tags.push("web".to_owned());
-        manager.tags.push("console".to_owned());
-        manager.tags.push("code".to_owned());
+        manager.tags.push(TagModel::new("web"));
+        manager.tags.push(TagModel::new("console"));
+        manager.tags.push(TagModel::new("code"));
         process(&mut manager, Screen::default());
         process(&mut manager, Screen::default());
         assert!(manager.workspaces[0].has_tag("web"));
