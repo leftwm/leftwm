@@ -95,8 +95,8 @@ impl XWrap {
             }
 
             if let Err(err) = poll.poll(&mut events, Some(timeout)) {
-                log::error!("Xlib socket poll failed with {:?}", err);
-                return;
+                log::warn!("Xlib socket poll failed with {:?}", err);
+                continue;
             }
 
             events
