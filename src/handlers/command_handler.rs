@@ -243,8 +243,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     return false;
                 }
             };
-            let tags = match manager.focused_workspace() {
-                Some(w) => w.tags.clone(),
+            let (tags, layout) = match manager.focused_workspace() {
+                Some(w) => (w.tags.clone(), Some(w.layout.clone())),
                 _ => {
                     return false;
                 }
@@ -252,14 +252,34 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            let mut window_group = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { x.handle == handle };
-            if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, -1) {
-                let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
-                manager.actions.push_back(act);
+
+            match layout {
+                Some(crate::layouts::Layout::Monocle) => {
+                    // For Monocle we want to also move windows up/down
+                    //                     // Not the best solution but results
+                    //                     in desired behaviour
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+                    manager.windows.append(&mut to_reorder);
+                    let act = DisplayAction::MoveMouseOver(handle);
+                    manager.actions.push_back(act);
+                    true
+                }
+                _ => {
+                    let mut window_group =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, -1)
+                    {
+                        let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                        manager.actions.push_back(act);
+                    }
+                    manager.windows.append(&mut window_group);
+                    true
+                }
             }
-            manager.windows.append(&mut window_group);
-            true
         }
 
         Command::FocusWindowDown => {
@@ -269,8 +289,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     return false;
                 }
             };
-            let tags = match manager.focused_workspace() {
-                Some(w) => w.tags.clone(),
+            let (tags, layout) = match manager.focused_workspace() {
+                Some(w) => (w.tags.clone(), Some(w.layout.clone())),
                 _ => {
                     return false;
                 }
@@ -278,14 +298,31 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            let mut window_group = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { x.handle == handle };
-            if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, 1) {
-                let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
-                manager.actions.push_back(act);
+            match layout {
+                Some(crate::layouts::Layout::Monocle) => {
+                    // For Monocle we want to also move windows up/down
+                    // Not the best solution but results in desired behaviour
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    helpers::reorder_vec(&mut to_reorder, is_handle, 1);
+                    manager.windows.append(&mut to_reorder);
+                    let act = DisplayAction::MoveMouseOver(handle);
+                    manager.actions.push_back(act);
+                    true
+                }
+                _ => {
+                    let mut window_group =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, 1) {
+                        let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                        manager.actions.push_back(act);
+                    }
+                    manager.windows.append(&mut window_group);
+                    true
+                }
             }
-            manager.windows.append(&mut window_group);
-            true
         }
 
         Command::FocusWorkspaceNext => {
