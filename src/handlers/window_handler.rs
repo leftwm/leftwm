@@ -86,7 +86,12 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
 
-    start_size != manager.windows.len()
+    //start_size != manager.windows.len()
+
+    //make sure focus is re-computed
+    let act = DisplayAction::FocusWindowUnderCursor;
+    manager.actions.push_back(act);
+    true
 }
 
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {

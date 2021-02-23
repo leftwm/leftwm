@@ -128,6 +128,10 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.window_take_focus(w);
                 None
             }
+            DisplayAction::FocusWindowUnderCursor => {
+                let cursor = self.xw.get_cursor_point().ok()?;
+                Some(DisplayEvent::FocusedAt(cursor.0, cursor.1))
+            }
             DisplayAction::MoveToTop(w) => {
                 self.xw.move_to_top(w);
                 None

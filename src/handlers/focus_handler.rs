@@ -35,14 +35,13 @@ pub fn focus_window_by_handle(
     x: i32,
     y: i32,
 ) -> bool {
-    let found: Vec<Window> = manager
+    let found: Option<Window> = manager
         .windows
         .iter()
-        .filter(|w| &w.handle == handle)
-        .cloned()
-        .collect();
-    if found.len() == 1 {
-        return focus_window(manager, &found[0], x, y);
+        .find(|w| &w.handle == handle)
+        .cloned();
+    if let Some(found) = found {
+        return focus_window(manager, &found, x, y);
     }
     false
 }
@@ -75,6 +74,18 @@ pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> b
         });
     }
     result
+}
+
+pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
+    let found: Option<Window> = manager
+        .windows
+        .iter()
+        .find(|w| w.contains_point(x, y))
+        .cloned();
+    if let Some(found) = found {
+        return focus_window(manager, &found, x, y);
+    }
+    false
 }
 
 fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {

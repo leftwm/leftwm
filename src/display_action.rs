@@ -30,6 +30,9 @@ pub enum DisplayAction {
     /// Tell a window that it is to become focused.
     WindowTakeFocus(Window),
 
+    /// To the window under the cursor to take the focus
+    FocusWindowUnderCursor,
+
     /// Tell the DM we are going to resize a window and only send that
     /// type of events.
     StartResizingWindow(WindowHandle),
