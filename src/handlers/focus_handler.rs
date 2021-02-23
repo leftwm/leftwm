@@ -139,7 +139,7 @@ pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
  */
 pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     //no new history for if no change
-    if let Some(t) = manager.focused_tag() {
+    if let Some(t) = manager.focused_tag(0) {
         if t == tag {
             return false;
         }
@@ -235,7 +235,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         let expected = "Bla".to_owned();
         focus_tag(&mut manager, &expected);
-        let accual = manager.focused_tag().unwrap();
+        let accual = manager.focused_tag(0).unwrap();
         assert_eq!(accual, expected);
     }
 
@@ -270,7 +270,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         let ws = manager.workspaces[1].clone();
         focus_workspace(&mut manager, &ws);
-        let actual = manager.focused_tag().unwrap();
+        let actual = manager.focused_tag(0).unwrap();
         assert_eq!("2", actual);
     }
 
@@ -283,7 +283,7 @@ mod tests {
         let mut window = Window::new(WindowHandle::MockHandle(1), None);
         window.tag("2");
         focus_window(&mut manager, &window, 0, 0);
-        let actual = manager.focused_tag().unwrap();
+        let actual = manager.focused_tag(0).unwrap();
         assert_eq!("2", actual);
     }
 
