@@ -1,8 +1,8 @@
 use crate::models::Window;
-use crate::models::XYHW;
+use crate::models::Xyhw;
 
 #[derive(Clone, Debug, PartialEq, Copy)]
-pub struct XYHWChange {
+pub struct XyhwChange {
     pub x: Option<i32>,
     pub y: Option<i32>,
     pub h: Option<i32>,
@@ -13,9 +13,9 @@ pub struct XYHWChange {
     pub maxh: Option<i32>,
 }
 
-impl Default for XYHWChange {
+impl Default for XyhwChange {
     fn default() -> Self {
-        XYHWChange {
+        XyhwChange {
             x: None,
             y: None,
             w: None,
@@ -28,9 +28,9 @@ impl Default for XYHWChange {
     }
 }
 
-impl From<XYHW> for XYHWChange {
-    fn from(xywh: XYHW) -> Self {
-        XYHWChange {
+impl From<Xyhw> for XyhwChange {
+    fn from(xywh: Xyhw) -> Self {
+        XyhwChange {
             x: Some(xywh.x()),
             y: Some(xywh.y()),
             w: Some(xywh.w()),
@@ -43,8 +43,8 @@ impl From<XYHW> for XYHWChange {
     }
 }
 
-impl XYHWChange {
-    pub fn update(&self, xyhw: &mut XYHW) -> bool {
+impl XyhwChange {
+    pub fn update(&self, xyhw: &mut Xyhw) -> bool {
         let mut changed = false;
         if let Some(x) = self.x {
             if xyhw.x() != x {
@@ -110,7 +110,7 @@ impl XYHWChange {
     pub fn update_window_strut(&self, window: &mut Window) -> bool {
         let mut changed = false;
         if window.strut.is_none() {
-            window.strut = Some(XYHW::default());
+            window.strut = Some(Xyhw::default());
             changed = true;
         }
         let mut xyhw = window.strut.unwrap();

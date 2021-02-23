@@ -2,7 +2,7 @@ use super::Window;
 use super::WindowHandle;
 use super::WindowState;
 use super::WindowType;
-use crate::models::{Margins, XYHWChange};
+use crate::models::{Margins, XyhwChange};
 
 type MaybeWindowHandle = Option<WindowHandle>;
 type MaybeName = Option<String>;
@@ -14,8 +14,8 @@ pub struct WindowChange {
     pub never_focus: Option<bool>,
     pub name: Option<MaybeName>,
     pub type_: Option<WindowType>,
-    pub floating: Option<XYHWChange>,
-    pub strut: Option<XYHWChange>,
+    pub floating: Option<XyhwChange>,
+    pub strut: Option<XyhwChange>,
     pub states: Option<Vec<WindowState>>,
 }
 

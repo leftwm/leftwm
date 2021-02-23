@@ -3,8 +3,8 @@ use super::WindowType;
 use crate::config::ThemeSetting;
 use crate::models::Margins;
 use crate::models::TagId;
-use crate::models::XYHWBuilder;
-use crate::models::XYHW;
+use crate::models::Xyhw;
+use crate::models::XyhwBuilder;
 use serde::{Deserialize, Serialize};
 use x11_dl::xlib;
 
@@ -22,7 +22,7 @@ pub struct Window {
     pub transient: Option<WindowHandle>,
     visible: bool,
     is_floating: bool,
-    floating: Option<XYHW>,
+    floating: Option<Xyhw>,
     pub never_focus: bool,
     pub debugging: bool,
     pub name: Option<String>,
@@ -31,9 +31,9 @@ pub struct Window {
     pub border: i32,
     pub margin: Margins,
     states: Vec<WindowState>,
-    pub normal: XYHW,
-    pub start_loc: Option<XYHW>,
-    pub strut: Option<XYHW>,
+    pub normal: Xyhw,
+    pub start_loc: Option<Xyhw>,
+    pub strut: Option<Xyhw>,
 }
 
 impl Window {
@@ -51,7 +51,7 @@ impl Window {
             border: 1,
             margin: Margins::Int(10),
             states: vec![],
-            normal: XYHWBuilder::default().into(),
+            normal: XyhwBuilder::default().into(),
             floating: None,
             start_loc: None,
             strut: None,
@@ -93,24 +93,24 @@ impl Window {
         self.is_floating || self.must_float()
     }
 
-    pub fn get_floating_offsets(&self) -> Option<XYHW> {
+    pub fn get_floating_offsets(&self) -> Option<Xyhw> {
         self.floating
     }
 
     pub fn reset_float_offset(&mut self) {
-        let mut new_value = XYHW::default();
+        let mut new_value = Xyhw::default();
         new_value.clear_minmax();
         self.floating = Some(new_value);
     }
 
-    pub fn set_floating_offsets(&mut self, value: Option<XYHW>) {
+    pub fn set_floating_offsets(&mut self, value: Option<Xyhw>) {
         self.floating = value;
         if let Some(value) = &mut self.floating {
             value.clear_minmax();
         }
     }
 
-    pub fn set_floating_exact(&mut self, value: XYHW) {
+    pub fn set_floating_exact(&mut self, value: Xyhw) {
         let mut new_value = value - self.normal;
         new_value.clear_minmax();
         self.floating = Some(new_value);
@@ -220,8 +220,8 @@ impl Window {
         }
     }
 
-    pub fn calculated_xyhw(&self) -> XYHW {
-        XYHWBuilder {
+    pub fn calculated_xyhw(&self) -> Xyhw {
+        XyhwBuilder {
             h: self.height(),
             w: self.width(),
             x: self.x(),
