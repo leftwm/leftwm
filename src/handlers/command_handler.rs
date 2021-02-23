@@ -541,7 +541,8 @@ mod tests {
                 TagModel::new("6D4"),
                 TagModel::new("E39"),
                 TagModel::new("F67"),
-            ]..Default::default(),
+            ],
+            ..Default::default()
         };
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
