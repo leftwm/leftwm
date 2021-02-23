@@ -18,6 +18,9 @@ fn main() {
     log::info!("leftwm-worker booted!");
 
     let completed = panic::catch_unwind(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _rt_guard = rt.enter();
+
         let config = config::load();
 
         let mut manager = Manager {
@@ -34,11 +37,7 @@ fn main() {
         let mut display_server = XlibDisplayServer::new(&config);
         let handler = DisplayEventHandler { config };
 
-        tokio::runtime::Runtime::new().unwrap().block_on(event_loop(
-            &mut manager,
-            &mut display_server,
-            &handler,
-        ));
+        rt.block_on(event_loop(&mut manager, &mut display_server, &handler));
     });
 
     match completed {
@@ -64,33 +63,32 @@ async fn event_loop(
     state_socket.listen(socket_file).await.unwrap();
 
     let pipe_file = place_runtime_file("commands.pipe").unwrap();
-    let mut command_pipe = CommandPipe::default();
-    command_pipe.listen(pipe_file).await.unwrap();
+    let mut command_pipe = CommandPipe::new(pipe_file).await.unwrap();
 
     //start the current theme
     let after_first_loop: Once = Once::new();
 
     //main event loop
-    let mut events_remainder = vec![];
+    let mut event_buffer = vec![];
     loop {
         if manager.mode == Mode::NormalMode {
             state_socket.write_manager_state(manager).await.ok();
         }
-        let mut events = get_events(display_server);
-        events.append(&mut events_remainder);
-
-        if events.is_empty() {
-            tokio::time::sleep(tokio::time::Duration::from_millis(20)).await;
-        }
+        display_server.flush();
 
         let mut needs_update = false;
-        for event in events {
-            needs_update = handler.process(manager, event) || needs_update;
-        }
-
-        if let Some(cmd) = command_pipe.read_command().await {
-            needs_update = external_command_handler::process(manager, cmd) || needs_update;
-            display_server.update_theme_settings(manager.theme_setting.clone());
+        tokio::select! {
+            _ = display_server.wait_readable(), if event_buffer.is_empty() => {
+                event_buffer.append(&mut get_events(display_server));
+                continue;
+            }
+            Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
+                needs_update = external_command_handler::process(manager, cmd) || needs_update;
+                display_server.update_theme_settings(manager.theme_setting.clone());
+            }
+            else => {
+                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, event) || needs_update)
+            }
         }
 
         //if we need to update the displayed state
@@ -120,7 +118,7 @@ async fn event_loop(
         while !manager.actions.is_empty() {
             if let Some(act) = manager.actions.pop_front() {
                 if let Some(event) = display_server.execute_action(act) {
-                    events_remainder.push(event);
+                    event_buffer.push(event);
                 }
             }
         }
@@ -142,7 +140,6 @@ async fn event_loop(
         }
 
         if manager.reload_requested {
-            command_pipe.shutdown().await;
             state_socket.shutdown().await;
             break;
         }

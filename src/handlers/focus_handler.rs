@@ -296,8 +296,8 @@ mod tests {
         let mut window = Window::new(WindowHandle::MockHandle(1), None);
         window.tag("2");
         focus_window(&mut manager, &window, 0, 0);
-        let actual = manager.focused_workspace().unwrap().id.clone();
-        let expected = manager.workspaces[1].id.clone();
+        let actual = manager.focused_workspace().unwrap().id;
+        let expected = manager.workspaces[1].id;
         assert_eq!(expected, actual);
     }
 }

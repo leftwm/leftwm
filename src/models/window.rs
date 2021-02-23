@@ -279,9 +279,6 @@ mod tests {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None);
         subject.tag("test");
         subject.untag("test");
-        assert!(
-            subject.has_tag("test") == false,
-            "was unable to untag the window"
-        );
+        assert!(!subject.has_tag("test"), "was unable to untag the window");
     }
 }
