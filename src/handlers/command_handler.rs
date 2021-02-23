@@ -25,9 +25,9 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::GotoTag if val.is_none() => false,
         Command::GotoTag if !is_num(&val) => false,
         Command::GotoTag => {
-            let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_else(String::new));
+            let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
             let previous_tag =
-                manager.tag_index(manager.focused_tag(1).unwrap_or_else(String::new));
+                manager.tag_index(manager.focused_tag(1).unwrap_or_default());
             let input_tag = to_num(&val);
 
             let destination_tag = match (current_tag, previous_tag, input_tag) {
@@ -552,14 +552,14 @@ mod tests {
             Command::GotoTag,
             Some("6".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_else(String::new));
+        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(5));
         assert!(process(
             &mut manager,
             Command::GotoTag,
             Some("2".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_else(String::new));
+        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(1));
 
         assert!(process(
@@ -567,7 +567,7 @@ mod tests {
             Command::GotoTag,
             Some("3".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_else(String::new));
+        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(2));
 
         assert!(process(
@@ -575,18 +575,18 @@ mod tests {
             Command::GotoTag,
             Some("4".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_else(String::new));
+        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(3));
         assert_eq!(
-            manager.tag_index(manager.focused_tag(1).unwrap_or_else(String::new)),
+            manager.tag_index(manager.focused_tag(1).unwrap_or_default()),
             Some(2)
         );
         assert_eq!(
-            manager.tag_index(manager.focused_tag(2).unwrap_or_else(String::new)),
+            manager.tag_index(manager.focused_tag(2).unwrap_or_default()),
             Some(1)
         );
         assert_eq!(
-            manager.tag_index(manager.focused_tag(3).unwrap_or_else(String::new)),
+            manager.tag_index(manager.focused_tag(3).unwrap_or_default()),
             Some(5)
         );
     }
