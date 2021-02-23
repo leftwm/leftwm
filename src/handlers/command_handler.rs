@@ -26,8 +26,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
         Command::GotoTag if !is_num(&val) => false,
         Command::GotoTag => {
             let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
-            let previous_tag =
-                manager.tag_index(manager.focused_tag(1).unwrap_or_default());
+            let previous_tag = manager.tag_index(manager.focused_tag(1).unwrap_or_default());
             let input_tag = to_num(&val);
 
             let destination_tag = match (current_tag, previous_tag, input_tag) {
