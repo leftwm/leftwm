@@ -56,6 +56,10 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
 
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
 
+    //make sure focus is re-computed
+    let act = DisplayAction::FocusWindowUnderCursor;
+    manager.actions.push_back(act);
+
     if let Some(cmd) = &manager.theme_setting.on_new_window_cmd {
         use std::process::{Command, Stdio};
         let _ = Command::new("sh")
@@ -79,8 +83,6 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
         .filter(|w| &w.handle != handle)
         .cloned()
         .collect();
-    //if we removed the focused window, focus the last window
-    focus_handler::focus_last_window_that_exists(manager);
 
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);

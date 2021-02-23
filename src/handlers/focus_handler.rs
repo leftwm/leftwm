@@ -23,6 +23,7 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     workspace.tags.iter().for_each(|t| {
         focus_tag(manager, t);
     });
+
     // create an action to inform the DM
     update_current_tags(manager);
     true
@@ -47,11 +48,6 @@ pub fn focus_window_by_handle(
 }
 
 pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> bool {
-    //Docks don't want to get focus. If they do weird things happen. They don't get events...
-    if window.type_ == WindowType::Dock {
-        return false;
-    }
-
     let result = _focus_window_work(manager, window);
     if !result {
         return false;
@@ -80,7 +76,7 @@ pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
     let found: Option<Window> = manager
         .windows
         .iter()
-        .find(|w| w.contains_point(x, y))
+        .find(|w| w.visible() && w.contains_point(x, y))
         .cloned();
     if let Some(found) = found {
         return focus_window(manager, &found, x, y);
@@ -89,6 +85,11 @@ pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
 }
 
 fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
+    //Docks don't want to get focus. If they do weird things happen. They don't get events...
+    if window.type_ == WindowType::Dock {
+        return false;
+    }
+
     //no new history for if no change
     if let Some(fw) = manager.focused_window() {
         if fw.handle == window.handle {
@@ -132,19 +133,6 @@ pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bo
     false
 }
 
-/// Loops over the history and focuses the last window that still exists.
-pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
-    let history = manager.focused_window_history.clone();
-    for handle in history {
-        for w in manager.windows.clone() {
-            if w.handle == handle {
-                return _focus_window_work(manager, &w);
-            }
-        }
-    }
-    false
-}
-
 /*
  * marks a tag as the focused tag
  */
@@ -171,6 +159,22 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     to_focus.iter().for_each(|w| {
         focus_workspace(manager, &w);
     });
+
+    //check the currently focused window.
+    //if it isn't under this tag, move focus to a window with this tag
+    if let Some(fw) = manager.focused_window() {
+        if !fw.has_tag(tag) {
+            let win = manager
+                .windows
+                .iter()
+                .find(|win| win.has_tag(tag))
+                .map(Window::clone);
+            if let Some(win) = win {
+                let _ = _focus_window_work(manager, &win);
+            }
+        }
+    }
+
     true
 }
 
