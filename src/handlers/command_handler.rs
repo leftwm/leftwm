@@ -533,17 +533,16 @@ mod tests {
 
     #[test]
     fn go_to_tag_should_go_to_tag_and_set_history() {
-        let mut manager = Manager{ 
+        let mut manager = Manager {
             tags: vec![
-            TagModel::new("A15"),
-            TagModel::new("B24"),
-            TagModel::new("C"),
-            TagModel::new("6D4"),
-            TagModel::new("E39"),
-            TagModel::new("F67"),
-        ]
-            .. Default::default()
-    };
+                TagModel::new("A15"),
+                TagModel::new("B24"),
+                TagModel::new("C"),
+                TagModel::new("6D4"),
+                TagModel::new("E39"),
+                TagModel::new("F67"),
+            ]..Default::default(),
+        };
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
 
