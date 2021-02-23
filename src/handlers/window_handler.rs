@@ -73,7 +73,6 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
 pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
-    let start_size = manager.windows.len();
     manager.windows = manager
         .windows
         .iter()
@@ -85,8 +84,6 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
 
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
-
-    //start_size != manager.windows.len()
 
     //make sure focus is re-computed
     let act = DisplayAction::FocusWindowUnderCursor;
