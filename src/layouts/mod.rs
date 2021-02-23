@@ -10,6 +10,7 @@ mod fibonacci;
 mod grid_horizontal;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
+mod monocle;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
@@ -21,6 +22,7 @@ pub enum Layout {
     Fibonacci,
     CenterMain,
     CenterMainBalanced,
+    Monocle,
 }
 
 impl Default for Layout {
@@ -39,6 +41,7 @@ const LAYOUTS: &[&str] = &[
     "Fibonacci",
     "CenterMain",
     "CenterMainBalanced",
+    "Monocle",
 ];
 
 impl From<&str> for Layout {
@@ -52,6 +55,7 @@ impl From<&str> for Layout {
             "Fibonacci" => Self::Fibonacci,
             "CenterMain" => Self::CenterMain,
             "CenterMainBalanced" => Self::CenterMainBalanced,
+            "Monocle" => Self::Monocle,
             _ => Self::MainAndVertStack,
         }
     }
@@ -69,6 +73,7 @@ impl Layout {
             Self::Fibonacci => fibonacci::update(workspace, windows),
             Self::CenterMain => center_main::update(workspace, windows),
             Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
+            Self::Monocle => monocle::update(workspace, windows),
         }
     }
 
