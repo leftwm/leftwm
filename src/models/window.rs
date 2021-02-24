@@ -54,6 +54,7 @@ impl Window {
             normal: XyhwBuilder::default().into(),
             floating: None,
             start_loc: None,
+            container_size: None,
             strut: None,
         }
     }
@@ -229,6 +230,10 @@ impl Window {
             ..Default::default()
         }
         .into()
+    }
+
+    pub fn contains_point(&self, x: i32, y: i32) -> bool {
+        self.calculated_xyhw().contains_point(x, y)
     }
 
     pub fn tag(&mut self, tag: &str) {

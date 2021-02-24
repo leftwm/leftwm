@@ -19,7 +19,11 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 manager.actions.push_back(act);
                 return true;
             }
-            false
+
+            //make sure focus is re-computed
+            let act = DisplayAction::FocusWindowUnderCursor;
+            manager.actions.push_back(act);
+            true
         }
 
         Command::GotoTag if val.is_none() => false,

@@ -12,6 +12,7 @@ pub enum DisplayEvent {
     WindowChange(WindowChange),
     WindowDestroy(WindowHandle),
     FocusedWindow(WindowHandle, i32, i32),
+    FocusedAt(i32, i32), //request to focus whatever is located at this point
     MoveWindow(WindowHandle, u64, i32, i32),
     ResizeWindow(WindowHandle, u64, i32, i32),
     ScreenCreate(Screen),

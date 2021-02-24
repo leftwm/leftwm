@@ -41,6 +41,7 @@ pub struct Colors {
 #[derive(Debug, Clone)]
 pub enum XlibError {
     FailedStatus,
+    RootWindowNotFound,
     InvalidXAtom,
 }
 
@@ -702,6 +703,36 @@ impl XWrap {
             );
         }
         Ok(())
+    }
+
+    pub fn get_cursor_point(&self) -> Result<(i32, i32), XlibError> {
+        let roots = self.get_roots(); //each screen
+        for w in roots {
+            let mut root_return: xlib::Window = 0;
+            let mut child_return: xlib::Window = 0;
+            let mut root_x_return: c_int = 0;
+            let mut root_y_return: c_int = 0;
+            let mut win_x_return: c_int = 0;
+            let mut win_y_return: c_int = 0;
+            let mut mask_return: c_uint = 0;
+            let success = unsafe {
+                (self.xlib.XQueryPointer)(
+                    self.display,
+                    w,
+                    &mut root_return,
+                    &mut child_return,
+                    &mut root_x_return,
+                    &mut root_y_return,
+                    &mut win_x_return,
+                    &mut win_y_return,
+                    &mut mask_return,
+                )
+            };
+            if success > 0 {
+                return Ok((win_x_return, win_y_return));
+            }
+        }
+        Err(XlibError::RootWindowNotFound)
     }
 
     pub fn screens_area_dimensions(&self) -> (i32, i32) {
