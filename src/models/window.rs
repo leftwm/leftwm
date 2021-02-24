@@ -33,6 +33,7 @@ pub struct Window {
     states: Vec<WindowState>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
+    pub container_size: Option<Xyhw>,
     pub strut: Option<Xyhw>,
 }
 
