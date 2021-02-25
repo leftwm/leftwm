@@ -4,7 +4,7 @@ use std::ops::Add;
 use std::ops::Sub;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
-pub struct XYHW {
+pub struct Xyhw {
     x: i32,
     y: i32,
     h: i32,
@@ -16,7 +16,7 @@ pub struct XYHW {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
-pub struct XYHWBuilder {
+pub struct XyhwBuilder {
     pub x: i32,
     pub y: i32,
     pub h: i32,
@@ -27,9 +27,9 @@ pub struct XYHWBuilder {
     pub maxh: i32,
 }
 
-impl Default for XYHWBuilder {
+impl Default for XyhwBuilder {
     fn default() -> Self {
-        XYHWBuilder {
+        XyhwBuilder {
             x: 0,
             y: 0,
             w: 0,
@@ -42,9 +42,9 @@ impl Default for XYHWBuilder {
     }
 }
 
-impl Default for XYHW {
+impl Default for Xyhw {
     fn default() -> Self {
-        XYHW {
+        Xyhw {
             x: 0,
             y: 0,
             w: 0,
@@ -57,7 +57,7 @@ impl Default for XYHW {
     }
 }
 
-impl Add for XYHW {
+impl Add for Xyhw {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         Self {
@@ -73,7 +73,7 @@ impl Add for XYHW {
     }
 }
 
-impl Sub for XYHW {
+impl Sub for Xyhw {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
         Self {
@@ -89,9 +89,9 @@ impl Sub for XYHW {
     }
 }
 
-impl From<XYHWBuilder> for XYHW {
-    fn from(xywh: XYHWBuilder) -> Self {
-        let mut b = XYHW {
+impl From<XyhwBuilder> for Xyhw {
+    fn from(xywh: XyhwBuilder) -> Self {
+        let mut b = Xyhw {
             x: xywh.x,
             y: xywh.y,
             w: xywh.w,
@@ -106,7 +106,7 @@ impl From<XYHWBuilder> for XYHW {
     }
 }
 
-impl XYHW {
+impl Xyhw {
     pub fn x(&self) -> i32 {
         self.x
     }
@@ -200,8 +200,8 @@ impl XYHW {
         self.h as u64 * self.w as u64
     }
 
-    /// Trim a XYHW out of another XYHW so that they don't overlap.
-    pub fn without(&self, other: &XYHW) -> XYHW {
+    /// Trim a Xyhw out of another Xyhw so that they don't overlap.
+    pub fn without(&self, other: &Xyhw) -> Xyhw {
         let mut without = *self;
         if other.w > other.h {
             //horizontal trim
@@ -239,8 +239,8 @@ impl XYHW {
         without
     }
 
-    pub fn center_halfed(&self) -> XYHW {
-        XYHWBuilder {
+    pub fn center_halfed(&self) -> Xyhw {
+        XyhwBuilder {
             x: self.x + (self.w / 2) - (self.w / 4),
             y: self.y + (self.h / 2) - (self.h / 4),
             h: (self.h / 2),
@@ -263,14 +263,14 @@ mod tests {
 
     #[test]
     fn center_halfed() {
-        let a = XYHW {
+        let a = Xyhw {
             x: 10,
             y: 10,
             w: 2000,
             h: 1000,
             ..Default::default()
         };
-        let correct = XYHW {
+        let correct = Xyhw {
             x: 510,
             y: 260,
             w: 1000,
@@ -283,13 +283,13 @@ mod tests {
 
     #[test]
     fn without_should_trim_from_the_top() {
-        let a = XYHW {
+        let a = Xyhw {
             y: 5,
             h: 1000,
             w: 1000,
             ..Default::default()
         };
-        let b = XYHW {
+        let b = Xyhw {
             h: 10,
             w: 100,
             ..Default::default()
@@ -297,7 +297,7 @@ mod tests {
         let result = a.without(&b);
         assert_eq!(
             result,
-            XYHW {
+            Xyhw {
                 x: 0,
                 y: 10,
                 h: 995,
@@ -309,14 +309,14 @@ mod tests {
 
     #[test]
     fn without_should_trim_from_the_left() {
-        let a = XYHW {
+        let a = Xyhw {
             x: 0,
             y: 0,
             h: 1000,
             w: 1000,
             ..Default::default()
         };
-        let b = XYHW {
+        let b = Xyhw {
             h: 100,
             w: 10,
             ..Default::default()
@@ -324,7 +324,7 @@ mod tests {
         let result = a.without(&b);
         assert_eq!(
             result,
-            XYHW {
+            Xyhw {
                 x: 10,
                 y: 0,
                 w: 990,
@@ -336,14 +336,14 @@ mod tests {
 
     #[test]
     fn without_should_trim_from_the_bottom() {
-        let a = XYHW {
+        let a = Xyhw {
             x: 0,
             y: 0,
             h: 1000,
             w: 1000,
             ..Default::default()
         };
-        let b = XYHW {
+        let b = Xyhw {
             y: 990,
             x: 0,
             h: 10,
@@ -353,7 +353,7 @@ mod tests {
         let result = a.without(&b);
         assert_eq!(
             result,
-            XYHW {
+            Xyhw {
                 x: 0,
                 y: 0,
                 h: 990,
@@ -365,14 +365,14 @@ mod tests {
 
     #[test]
     fn without_should_trim_from_the_right() {
-        let a = XYHW {
+        let a = Xyhw {
             x: 0,
             y: 0,
             h: 1000,
             w: 1000,
             ..Default::default()
         };
-        let b = XYHW {
+        let b = Xyhw {
             x: 990,
             y: 0,
             h: 100,
@@ -382,7 +382,7 @@ mod tests {
         let result = a.without(&b);
         assert_eq!(
             result,
-            XYHW {
+            Xyhw {
                 x: 0,
                 y: 0,
                 w: 990,

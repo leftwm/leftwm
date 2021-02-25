@@ -40,10 +40,10 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
             Some(_hints) => None,
             None => None,
         },
-        xlib::XA_WM_NAME => update_title(xw, event.window),
+        xlib::XA_WM_NAME => Some(update_title(xw, event.window)),
         _ => {
             if event.atom == xw.atoms.NetWMName {
-                return update_title(xw, event.window);
+                return Some(update_title(xw, event.window));
             }
 
             if event.atom == xw.atoms.NetWMStrut
@@ -83,10 +83,10 @@ fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<Windo
     Some(change)
 }
 
-fn update_title(xw: &XWrap, window: xlib::Window) -> Option<DisplayEvent> {
+fn update_title(xw: &XWrap, window: xlib::Window) -> DisplayEvent {
     let title = xw.get_window_name(window);
     let handle = WindowHandle::XlibHandle(window);
     let mut change = WindowChange::new(handle);
     change.name = Some(title);
-    Some(DisplayEvent::WindowChange(change))
+    DisplayEvent::WindowChange(change)
 }

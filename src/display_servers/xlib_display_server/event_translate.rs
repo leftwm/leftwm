@@ -7,7 +7,7 @@ use crate::models::Window;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::models::WindowType;
-use crate::models::XYHWChange;
+use crate::models::XyhwChange;
 use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
@@ -179,7 +179,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 if window_type != WindowType::Normal {
                     let handle = WindowHandle::XlibHandle(event.window);
                     let mut change = WindowChange::new(handle);
-                    let xyhw = XYHWChange {
+                    let xyhw = XyhwChange {
                         w: Some(event.width),
                         h: Some(event.height),
                         x: Some(event.x),
