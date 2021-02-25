@@ -89,10 +89,8 @@ impl DisplayServer for XlibDisplayServer {
         }
 
         for event in &events {
-            if let DisplayEvent::WindowDestroy(h) = event {
-                if let WindowHandle::XlibHandle(w) = h {
-                    self.xw.force_unmapped(*w);
-                }
+            if let DisplayEvent::WindowDestroy(WindowHandle::XlibHandle(w)) = event {
+                self.xw.force_unmapped(*w);
             }
         }
 

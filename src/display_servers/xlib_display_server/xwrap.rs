@@ -11,7 +11,7 @@ use crate::models::Mode;
 use crate::models::WindowChange;
 use crate::models::WindowState;
 use crate::models::WindowType;
-use crate::models::XYHWChange;
+use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
 use std::ffi::CString;
@@ -939,7 +939,7 @@ impl XWrap {
         }
     }
 
-    pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XYHWChange, XlibError> {
+    pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XyhwChange, XlibError> {
         let mut root_return: xlib::Window = 0;
         let mut x_return: c_int = 0;
         let mut y_return: c_int = 0;
@@ -963,7 +963,7 @@ impl XWrap {
                 return Err(XlibError::FailedStatus);
             }
         }
-        Ok(XYHWChange {
+        Ok(XyhwChange {
             x: Some(x_return),
             y: Some(y_return),
             w: Some(width_return as i32),
@@ -1086,10 +1086,10 @@ impl XWrap {
         }
     }
 
-    pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XYHWChange> {
+    pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XyhwChange> {
         let hint = self.get_hint_sizing(window);
         if let Some(size) = hint {
-            let mut xyhw = XYHWChange::default();
+            let mut xyhw = XyhwChange::default();
 
             if (size.flags & xlib::PBaseSize) != 0 {
                 xyhw.w = Some(size.base_width);

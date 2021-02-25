@@ -4,8 +4,8 @@ use crate::models::Tag;
 use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowType;
-use crate::models::XYHWBuilder;
-use crate::models::XYHW;
+use crate::models::Xyhw;
+use crate::models::XyhwBuilder;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -17,9 +17,9 @@ pub struct Workspace {
     pub tags: Vec<TagId>,
     #[serde(skip)]
     all_tags: Vec<Tag>,
-    pub avoid: Vec<XYHW>,
-    pub xyhw: XYHW,
-    xyhw_avoided: XYHW,
+    pub avoid: Vec<Xyhw>,
+    pub xyhw: Xyhw,
+    xyhw_avoided: Xyhw,
 }
 
 impl fmt::Debug for Workspace {
@@ -49,7 +49,7 @@ impl Workspace {
             tags: vec![],
             avoid: vec![],
             all_tags,
-            xyhw: XYHWBuilder {
+            xyhw: XyhwBuilder {
                 h: bbox.height,
                 w: bbox.width,
                 x: bbox.x,
@@ -57,7 +57,7 @@ impl Workspace {
                 ..Default::default()
             }
             .into(),
-            xyhw_avoided: XYHWBuilder {
+            xyhw_avoided: XyhwBuilder {
                 h: bbox.height,
                 w: bbox.width,
                 x: bbox.x,
@@ -169,7 +169,7 @@ impl Workspace {
         50.0 //default
     }
 
-    pub fn center_halfed(&self) -> XYHW {
+    pub fn center_halfed(&self) -> Xyhw {
         self.xyhw_avoided.center_halfed()
     }
 

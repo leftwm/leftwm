@@ -1,5 +1,5 @@
-use crate::models::XYHWBuilder;
-use crate::models::XYHW;
+use crate::models::Xyhw;
+use crate::models::XyhwBuilder;
 
 #[derive(Clone, Debug, Default)]
 pub struct DockArea {
@@ -40,7 +40,7 @@ impl From<&[i64]> for DockArea {
 }
 
 impl DockArea {
-    pub fn as_xyhw(&self, screen_height: i32, screen_width: i32) -> Option<XYHW> {
+    pub fn as_xyhw(&self, screen_height: i32, screen_width: i32) -> Option<Xyhw> {
         if self.top > 0 {
             return Some(self.xyhw_from_top());
         }
@@ -56,8 +56,8 @@ impl DockArea {
         None
     }
 
-    fn xyhw_from_top(&self) -> XYHW {
-        XYHWBuilder {
+    fn xyhw_from_top(&self) -> Xyhw {
+        XyhwBuilder {
             x: self.top_start_x,
             y: 0,
             h: self.top,
@@ -67,8 +67,8 @@ impl DockArea {
         .into()
     }
 
-    fn xyhw_from_bottom(&self, screen_height: i32) -> XYHW {
-        XYHWBuilder {
+    fn xyhw_from_bottom(&self, screen_height: i32) -> Xyhw {
+        XyhwBuilder {
             x: self.bottom_start_x,
             y: screen_height - self.bottom,
             h: self.bottom,
@@ -78,8 +78,8 @@ impl DockArea {
         .into()
     }
 
-    fn xyhw_from_left(&self) -> XYHW {
-        XYHWBuilder {
+    fn xyhw_from_left(&self) -> Xyhw {
+        XyhwBuilder {
             x: 0,
             y: self.left_start_y,
             h: self.left_end_y - self.left_start_y,
@@ -89,8 +89,8 @@ impl DockArea {
         .into()
     }
 
-    fn xyhw_from_right(&self, screen_width: i32) -> XYHW {
-        XYHWBuilder {
+    fn xyhw_from_right(&self, screen_width: i32) -> Xyhw {
+        XyhwBuilder {
             x: screen_width - self.right,
             y: self.right_start_y,
             h: self.right_end_y - self.right_start_y,
@@ -113,7 +113,7 @@ mod tests {
             top_end_x: 200,
             ..Default::default()
         };
-        let expected: XYHW = XYHWBuilder {
+        let expected: Xyhw = XyhwBuilder {
             h: 2,
             w: 190,
             x: 10,
@@ -132,7 +132,7 @@ mod tests {
             bottom_end_x: 200,
             ..Default::default()
         };
-        let expected: XYHW = XYHWBuilder {
+        let expected: Xyhw = XyhwBuilder {
             h: 2,
             w: 190,
             x: 10,
@@ -151,7 +151,7 @@ mod tests {
             left_end_y: 200,
             ..Default::default()
         };
-        let expected: XYHW = XYHWBuilder {
+        let expected: Xyhw = XyhwBuilder {
             h: 190,
             w: 2,
             x: 0,
@@ -170,7 +170,7 @@ mod tests {
             right_end_y: 200,
             ..Default::default()
         };
-        let expected: XYHW = XYHWBuilder {
+        let expected: Xyhw = XyhwBuilder {
             h: 190,
             w: 2,
             x: 1998,
