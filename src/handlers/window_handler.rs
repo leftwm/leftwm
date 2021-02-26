@@ -48,10 +48,10 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
         manager.actions.push_back(act);
     }
 
-    // tell the WM the new display order of the windows
     //new windows should be on the top of the stack
     if window.type_ != WindowType::Dock {
-        manager.move_to_top(&window.handle);
+        let act = DisplayAction::MoveToTop(window.handle.clone());
+        manager.actions.push_back(act);
     }
 
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);

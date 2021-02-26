@@ -35,7 +35,7 @@ pub fn process(
             });
 
         manager.actions.push_back(act);
-        manager.move_to_top(&handle);
+        manager.actions.push_back(DisplayAction::MoveToTop(handle));
     }
 
     false

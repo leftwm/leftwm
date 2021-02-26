@@ -60,7 +60,7 @@ impl DisplayServer for XlibDisplayServer {
             };
             self.xw.update_window(&window, is_focused);
             if window.is_fullscreen() {
-                self.xw.move_to_top(&window.handle);
+                self.xw.move_to_top(window.handle.clone());
             }
         }
     }
@@ -130,8 +130,8 @@ impl DisplayServer for XlibDisplayServer {
                 let cursor = self.xw.get_cursor_point().ok()?;
                 Some(DisplayEvent::FocusedAt(cursor.0, cursor.1))
             }
-            DisplayAction::SetWindowOrder(wins) => {
-                self.xw.restack(wins);
+            DisplayAction::MoveToTop(w) => {
+                self.xw.move_to_top(w);
                 None
             }
             DisplayAction::StartMovingWindow(w) => {

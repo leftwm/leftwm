@@ -78,26 +78,10 @@ pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
         .iter()
         .find(|w| w.visible() && w.contains_point(x, y))
         .cloned();
-
-    match found {
-        Some(found) => return focus_window(manager, &found, x, y),
-        None => {
-            //backup plan, move focus first window in workspace
-            if let Some(handle) = first_window_in_current_workspace(manager) {
-                return focus_window_by_handle(manager, &handle, x, y);
-            }
-        }
+    if let Some(found) = found {
+        return focus_window(manager, &found, x, y);
     }
     false
-}
-
-fn first_window_in_current_workspace(manager: &Manager) -> Option<WindowHandle> {
-    let tag = manager.focused_workspace()?.tags.get(0)?;
-    let window = manager
-        .windows
-        .iter()
-        .find(|w| w.visible() && w.has_tag(tag))?;
-    Some(window.handle.clone())
 }
 
 fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {

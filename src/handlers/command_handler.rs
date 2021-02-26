@@ -17,7 +17,7 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 window.tag(&tag.id);
                 let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.id.clone());
                 manager.actions.push_back(act);
-                manager.sort_windows();
+                return true;
             }
 
             //make sure focus is re-computed
