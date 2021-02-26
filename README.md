@@ -23,8 +23,8 @@
   - [Using a graphical login such as LightDM, GDM, LXDM, and others](#using-a-graphical-login-such-as-lightdm-gdm-lxdm-and-others)
   - [Starting with startx or a login such as slim](#starting-with-startx-or-a-login-such-as-slim)
 - [Themes](#themes)
-  - [With LeftWM-Theme](#with-leftwm-themehttpsgithubcomleftwmleftwm-theme)
-  - [Without LeftWM-Theme](#without-leftwm-themehttpsgithubcomleftwmleftwm-theme)
+  - [With LeftWM-Theme](#with-leftwm-theme)
+  - [Without LeftWM-Theme](#without-leftwm-theme)
 - [Dependencies](#dependencies)
 
 ## Why go left 
