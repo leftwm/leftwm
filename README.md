@@ -11,6 +11,21 @@
 </div>
 
 ![Screenshot of LeftWM in action](screenshots/4.jpg)
+# Table of contents
+
+- [Why go left](#why-go-left)
+- [Config](#config)
+  - [Default keys](#default-keys)
+  - [Workspaces](#workspaces)
+  - [Tags / Desktops](#tags--desktops)
+- [Setup (with package manager)](#setup-with-package-manager)
+- [Manual Setup (no package manager)](#manual-setup-no-package-manager)
+  - [Using a graphical login such as LightDM, GDM, LXDM, and others](#using-a-graphical-login-such-as-lightdm-gdm-lxdm-and-others)
+  - [Starting with startx or a login such as slim](#starting-with-startx-or-a-login-such-as-slim)
+- [Themes](#themes)
+  - [With LeftWM-Theme](#with-leftwm-themehttpsgithubcomleftwmleftwm-theme)
+  - [Without LeftWM-Theme](#without-leftwm-themehttpsgithubcomleftwmleftwm-theme)
+- [Dependencies](#dependencies)
 
 ## Why go left 
 
