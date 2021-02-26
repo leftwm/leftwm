@@ -1,22 +1,28 @@
-# LeftWM - A window manager for Adventurers
-![CI](https://github.com/leftwm/leftwm/workflows/CI/badge.svg)
+<div align="center">
+  <h1><strong>LeftWM</strong></h1>
+  <p>
+    <strong>A window manager for adventurers</strong>
+  </p>
+  <p>
+    <a href="https://github.com/leftwm/leftwm/actions?query=workflow%3ACI"><img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" /></a>
+    <a href="https://github.com/leftwm/leftwm/wiki"><img src="https://img.shields.io/badge/wiki-0.2.6-green.svg" alt="wiki" /></a>
+    <a href="https://docs.rs/leftwm/"><img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" /></a>
+  </p>
+</div>
 
 ![Screenshot of LeftWM in action](screenshots/4.jpg)
 
 ## Why go left 
 
-Left is a tiling window manager written in rust for stability and performance. The core of left is designed to do one thing and one thing well. Be a window manager. Because you probably want more than just a black screen, LeftWM is built around the concept of theming. With themes you can choose between different bars, compositors, backgrounds, colors, whatever makes you happy.   
+Left is a tiling window manager written in [Rust](https://github.com/rust-lang/rust) that aims to be stable and performant. Left is [designed to do one thing and to do that one thing well](https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well): _be a window manager_. Left therefore follows the following mantra:
 
-LeftWM has been built from the very beginning to support multiple screens and has been built around ultrawide monitors. You will see this with the default key bindings
+> Left is not a compositor.  
+> Left is not a lock screen.  
+> Left is not a bar. But, there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
 
-## Left is NOT
+Because you probably want more than just a black screen, LeftWM is built around the concept of themes. With themes, you can choose between different bars, compositors, backgrounds, colors, docks, and whatever else makes you happy.   
 
-Left is not a compositor.
-
-Left is not a lock screen.
-
-Left is not a bar. But, there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
-
+LeftWM was built from the very beginning to support multiple screens and ultrawide monitors. The default keybindings support ultrawide monitors and multiple screens.
 
 
 
@@ -32,7 +38,7 @@ Mod + (1-9) => Switch to a desktop/tag
 Mod + Shift + (1-9) => Move the focused window to desktop/tag
 Mod + W => Switch the desktops for each screen. Desktops [1][2] changes to [2][1]
 Mod + Shift + W => Move window to the other desktop
-Mod + (⬆️⬇️) => Focus the different windows in the current workspace
+Mod + (⬆️⬇️) => Focus on the different windows in the current workspace
 Mod + Shift + (⬆️⬇️) => Move the different windows in the current workspace
 Mod + Enter => Move selected window to the top of the stack in the current workspace
 Mod + Ctrl + (⬆️⬇️) => Switch between different layouts
@@ -72,7 +78,7 @@ Here is an example config changing the list of available tags. NOTE: tag navigat
 tags = ["Web", "Code", "Shell", "Music", "Connect"]
 ```
 
-[More information about configuration can be found in the Wiki](https://github.com/leftwm/leftwm/wiki/Config).
+[More detailed configuration information can be found in the Wiki](https://github.com/leftwm/leftwm/wiki/Config).
 
 
 ### LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant.
@@ -82,7 +88,7 @@ tags = ["Web", "Code", "Shell", "Music", "Connect"]
 
 ## One of the core concepts/features of LeftWM is theming 
 
-With left, there are two types of configs. First, there are config settings that are specific to you but don’t really change. These are settings like keybindings, workspace locations, and names of desktops/tags. These settings can be found in ~/.config/leftwm/config.toml
+With Left, there are two types of configs. First, there are config settings that are specific to you but don’t change. These are settings like keybindings, workspace locations, and names of desktops/tags. These settings can be found in ~/.config/leftwm/config.toml
 
 The appearance of your desktop is different. It’s fun to try new looks and feels. It’s fun to tweak and customize the appearance (also known as ricing). It’s fun to share so others can experience your cool awesome desktop. LeftWM is built around this concept. By pulling all these settings out into themes, you can now easily tweak, switch, and share your experiences. 
 
@@ -106,6 +112,7 @@ cd /usr/bin
 sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm
 sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-worker
 sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-state
+sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-check
 ```
 and
 ```bash
@@ -119,30 +126,29 @@ Make sure this is at the end of your .xinitrc file:
 exec dbus-launch leftwm
 ```
 
-### Themes
+## Themes
 If you want to see more than a black screen when you login, select a theme:
+### With [LeftWM-Theme](https://github.com/leftwm/leftwm-theme)
+```bash
+leftwm-theme update
+leftwm-theme install NAME_OF_THEME_YOU_LIKE
+leftwm-theme apply NAME_OF_THEME_YOU_LIKE
+```
+### Without [LeftWM-Theme](https://github.com/leftwm/leftwm-theme)
 ```bash 
 mkdir -p ~/.config/leftwm/themes
 cd ~/.config/leftwm/themes
 ln -s PATH_TO_THE_THEME_YOU_LIKE current
 ```
-LeftWM comes packaged with a couple default plain themes. There is also a [community repository for sharing themes](https://github.com/leftwm/leftwm-community-themes)
+LeftWM comes packaged with a couple of default themes. There is also a [community repository for sharing themes](https://github.com/leftwm/leftwm-community-themes)
 
-For more information about themes checkout our theme guide [here](https://github.com/leftwm/leftwm/tree/master/themes) or the wiki [here](https://github.com/leftwm/leftwm/wiki/Themes).
+For more information about themes check out our theme guide [here](https://github.com/leftwm/leftwm/tree/master/themes) or the wiki [here](https://github.com/leftwm/leftwm/wiki/Themes).
 
-### Dependencies 
+## Dependencies 
 While LeftWM has very few dependencies, this isn't always the case for themes.
 Themes typically require the following to be installed. However, this is up to the
 author of the theme, and could be different. 
-List of common dependencies for Themes: 
-- feh 
-- compton or picom
-- dmenu
-- (Some kind of bar, different for each theme)
-    - polybar 
-    - xmobar 
-    - lemonbar 
-    - conky 
+List of common dependencies for themes: 
 
 
 | Build Dependency | ubuntu20.4.1              |
