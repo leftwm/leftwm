@@ -11,7 +11,7 @@
 </div>
 
 ![Screenshot of LeftWM in action](screenshots/4.jpg)
-# Table of contents
+## Table of contents
 
 - [Why go left](#why-go-left)
 - [Config](#config)
