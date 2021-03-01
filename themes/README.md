@@ -1,13 +1,14 @@
 # Why have themes
 
-With left there are two types of configs. First there are config settings that are specific to you but don’t really change. These are settings like keybindings. Workspace locations, and names of desktops/tags. These settings can be found in ~/.config/leftwm/config.toml
+With LeftWM, there are two types of configs:
+* **LeftWM Configuration files:** LeftWM configurations are specific to you and don’t change for different themes. These are settings like keybindings, workspace locations, and names of desktops/tags. These settings can be found in `~/.config/leftwm/config.toml`.
 
-The appearance of your desktop is different. It’s fun to try new looks and feels. It’s fun to tweak and customize the appearance ( AKA: ricing ). It’s fun to share so others can experience your cool awesome desktop. Leftwm is built around this concept. By pulling all these settings out into themes, you can now easily tweak, switch, and share your experiences. 
+* **Theme Configuration files:** The appearance of your desktop is different. It’s fun to try new looks and feels. It’s fun to tweak and customize the appearance (AKA: [ricing](https://www.reddit.com/r/unixporn/comments/3iy3wd/stupid_question_what_is_ricing/)). It’s fun to share so others can experience your awesome desktop! LeftWM is built around this concept. By pulling all these settings out into themes, you can now easily tweak, switch, and share your experiences. This configuration is spread between `theme.toml` and related files contained within a theme's folder.
 
 
 # We want your themes
 
-We are looking to expand the list of available themes for an upcoming release. If you enjoy making desktops look good please consider sharing (making a pull request).
+We are looking to expand the list of available themes for an upcoming release. If you enjoy making desktops look good please consider sharing by making a pull request on [the community themes repository](https://github.com/leftwm/leftwm-community-themes).
 
 
 # Requirements for a theme
@@ -17,14 +18,31 @@ A theme has only two requirements. An “up” and a “down” executable/scrip
 
 # Setup / selection of theme
 
-To select a theme all that is required is that it’s located at: ~/.config/leftwm/themes/current
-It is strongly recommended that you do this with a symlink. For example up all your themes in the folder ~/.config/leftwm/themes and switch between them using a symlink
+There are two ways to setup a theme: you can use [leftwm-theme](https://github.com/leftwm/leftwm-theme/) or you can set a symlink yourself.
 
-A command such as this would set basic_polybar to the current theme.
+## Using LeftWM-theme
+Install LeftWM-theme, as per the directions on [its Github](https://github.com/leftwm/leftwm-theme).
 
+Update your list of themes:
+```bash
+leftwm-theme update
 ```
-mkdir -p ~/.config/leftwm/themes/
+Install the theme you like:
+```bash
+leftwm-theme install "THEME NAME GOES HERE"
+```
+Apply the theme you like as the current theme:
+```bash
+leftwm-theme apply "THEME NAME GOES HERE"
+```
+
+## Using symlinks
+
+To select a theme all that is required is that it’s located at: `~/.config/leftwm/themes/current`
+It is strongly recommended that you do this with a symlink rather than creating a folder. Using a symlink makes it easy to save all your themes in the folder `~/.config/leftwm/themes` and switch between them using a symlink easily.
+
+The following command would set the included basic_polybar to the current theme:
+
+```bash
 ln -s ~/.config/leftwm/themes/basic_polybar ~/.config/leftwm/themes/current
 ```
-
-

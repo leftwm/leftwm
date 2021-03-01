@@ -1,38 +1,167 @@
-# LeftWM - A window manager for Adventurers
-![CI](https://github.com/leftwm/leftwm/workflows/CI/badge.svg)
+<div align="center">
+  <h1><strong>LeftWM</strong></h1>
+  <p>
+    <strong>A window manager for adventurers</strong>
+  </p>
+  <p>
+    <a href="https://github.com/leftwm/leftwm/actions?query=workflow%3ACI"><img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" /></a>
+    <a href="https://github.com/leftwm/leftwm/wiki"><img src="https://img.shields.io/badge/wiki-0.2.6-green.svg" alt="wiki" /></a>
+    <a href="https://docs.rs/leftwm/"><img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" /></a>
+  </p>
+</div>
 
 ![Screenshot of LeftWM in action](screenshots/4.jpg)
 
-## Why go left 
+# Table of contents
 
-Left is a tiling window manager written in rust for stability and performance. The core of left is designed to do one thing and one thing well. Be a window manager. Because you probably want more than just a black screen, LeftWM is built around the concept of theming. With themes you can choose between different bars, compositors, backgrounds, colors, whatever makes you happy.   
+- [Why go left](#why-go-left)
+- [Dependencies](#dependencies)
+- [Installation (with package manager)](#installation-with-package-manager)
+- [Manual Installation (no package manager)](#manual-installation-no-package-manager)
+  - [Using a graphical login such as LightDM, GDM, LXDM, and others](#using-a-graphical-login-such-as-lightdm-gdm-lxdm-and-others)
+  - [Starting with startx or a login such as slim](#starting-with-startx-or-a-login-such-as-slim)
+- [Theming](#theming)
+  - [With LeftWM-Theme](#with-leftwm-theme)
+  - [Without LeftWM-Theme](#without-leftwm-theme)
+- [Configuring](#configuring)
+  - [Default keys](#default-keys)
+  - [Workspaces](#workspaces)
+  - [Tags / Desktops](#tags--desktops)
+- [Troubleshooting](#troubleshooting)
 
-LeftWM has been built from the very beginning to support multiple screens and has been built around ultrawide monitors. You will see this with the default key bindings
+# Why go left
 
-## Left is NOT
+Left is a tiling window manager written in [Rust](https://github.com/rust-lang/rust) that aims to be stable and performant. Left is [designed to do one thing and to do that one thing well](https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well): _be a window manager_. Left therefore follows the following mantra:
 
-Left is not a compositor.
+> Left is not a compositor.  
+> Left is not a lock screen.  
+> Left is not a bar. But, there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
 
-Left is not a lock screen.
+Because you probably want more than just a black screen, LeftWM is built around the concept of themes. With themes, you can choose between different bars, compositors, backgrounds, colors, docks, and whatever else makes you happy.
 
-Left is not a bar. But, there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
+LeftWM was built from the very beginning to support multiple screens and ultrawide monitors. The default keybindings support ultrawide monitors and multiple screens.
 
+## One of the core concepts/features of LeftWM is theming
 
+With LeftWM, there are two types of configuration files:
 
+- **LeftWM Configuration files:** LeftWM configurations are specific to you and don’t change for different themes. These are settings like keybindings, workspace locations, and names of desktops/tags. These settings can be found in `~/.config/leftwm/config.toml`.
 
-## Config
-The settings file to change key bindings and the default mod key can be found at
+- **Theme Configuration files:** The appearance of your desktop is different. It’s fun to try new looks and feels. It’s fun to tweak and customize the appearance (AKA: [ricing](https://www.reddit.com/r/unixporn/comments/3iy3wd/stupid_question_what_is_ricing/)). It’s fun to share so others can experience your awesome desktop! LeftWM is built around this concept. By pulling all these settings out into themes, you can now easily tweak, switch, and share your experiences. This configuration is spread between `theme.toml` and related files contained within a theme's folder.
+
+# Dependencies
+
+While LeftWM has very few dependencies, this isn't always the case for themes.
+Themes typically require the following to be installed. However, this is up to the
+author of the theme, and could be different.
+
+List of LeftWM dependencies:  
+
+- xorg (libxinerama, xrandr, xorg-server)  
+- bash
+- rust  
+
+List of common dependencies for themes:
+
+| Dependency<br>(git)| Ubuntu 20.4.1<br> _sudo apt install {}_  | Arch<br> _sudo pacman -S {}_  | Fedora 33<br> _sudo dnf install {}_  | PKGS  |
+|- |- |- |- |- |
+| [feh](https://github.com/derf/feh)  | feh  | feh  | feh  | [feh](https://pkgs.org/search/?q=feh&on=provides)  |
+| [compton](https://github.com/chjj/compton)  | compton  | yay -S picom*  | compton  | [compton](https://pkgs.org/download/compton)  |
+| [picom](https://github.com/yshui/picom)  | manual **  | picom  | picom  | [picom](https://pkgs.org/download/picom)  |
+| [polybar](https://github.com/polybar/polybar)  | manual **  | yay -S polybar*  | polybar  | [polybar](https://pkgs.org/download/polybar)  |
+| [xmobar](https://github.com/jaor/xmobar)  | xmobar  | xmobar  | xmobar  | [xmobar](https://pkgs.org/download/xmobar)  |
+| [lemonbar](https://github.com/LemonBoy/bar)  | lemonbar  | yay -S lemonbar*  | manual **  | [lemonbar](https://pkgs.org/download/lemonbar)  |
+| [conky](https://github.com/brndnmtthws/conky)  | conky  | conky  | conky  | [conky](https://pkgs.org/download/conky)  |
+| [dmenu](https://git.suckless.org/dmenu)  | dmenu  | dmenu  | dmenu  | [dmenu](https://pkgs.org/download/dmenu)  |
+
+> \* You can use whichever AUR wrapper you like  
+> \*\* See the git page (link in first column) for how to install these manually
+
+# Installation (with package manager)
+
+LeftWM is available in the AUR as well as crates.io. Both are good options for simple installation. If you install LeftWM with crates.io, you will need to link to the xsession desktop file if you want to be able to login to LeftWM from a graphical login screen:
+
+```bash
+sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 ```
+
+LeftWM is also available in Fedora [Copr](https://copr.fedorainfracloud.org/coprs/atim/leftwm/):
+
+```bash
+sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
+```
+
+# Manual Installation (no package manager)
+
+## Using a graphical login such as LightDM, GDM, LXDM, and others
+
+1) Copy leftwm.desktop to /usr/share/xsessions
+2) Create a symlink to the build of leftwm so that it is in your path:
+
+```bash
+cd /usr/bin
+sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm
+sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-worker
+sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-state
+sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-check
+```
+
+and
+
+```bash
+sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
+```
+
+You should now see LeftWM in your list of available window managers.
+
+## Starting with startx or a login such as slim
+
+Make sure this is at the end of your .xinitrc file:
+
+```bash .xinitrc
+exec dbus-launch leftwm
+```
+
+# Theming
+
+If you want to see more than a black screen when you login, select a theme:
+
+## With [LeftWM-Theme](https://github.com/leftwm/leftwm-theme)
+
+```bash
+leftwm-theme update
+leftwm-theme install NAME_OF_THEME_YOU_LIKE
+leftwm-theme apply NAME_OF_THEME_YOU_LIKE
+```
+
+## Without [LeftWM-Theme](https://github.com/leftwm/leftwm-theme)
+
+```bash
+mkdir -p ~/.config/leftwm/themes
+cd ~/.config/leftwm/themes
+ln -s PATH_TO_THE_THEME_YOU_LIKE current
+```
+
+LeftWM comes packaged with a couple of default themes. There is also a [community repository for sharing themes](https://github.com/leftwm/leftwm-community-themes)
+
+For more information about themes check out our theme guide [here](https://github.com/leftwm/leftwm/tree/master/themes) or the wiki [here](https://github.com/leftwm/leftwm/wiki/Themes).
+
+# Configuring
+
+The settings file to change key bindings and the default mod key can be found at
+
+```bash
 ~/.config/leftwm/config.toml
 ```
 
-### Default keys
-```
+## Default keys
+
+```bash
 Mod + (1-9) => Switch to a desktop/tag
 Mod + Shift + (1-9) => Move the focused window to desktop/tag
 Mod + W => Switch the desktops for each screen. Desktops [1][2] changes to [2][1]
 Mod + Shift + W => Move window to the other desktop
-Mod + (⬆️⬇️) => Focus the different windows in the current workspace
+Mod + (⬆️⬇️) => Focus on the different windows in the current workspace
 Mod + Shift + (⬆️⬇️) => Move the different windows in the current workspace
 Mod + Enter => Move selected window to the top of the stack in the current workspace
 Mod + Ctrl + (⬆️⬇️) => Switch between different layouts
@@ -45,11 +174,13 @@ Mod + Shift + R => Reload LeftWM and its config
 Mod + p => Use dmenu to start application
 ```
 
-### Workspaces
-By default, workspaces have a one-to-one relationship with screens, but this is configurable. There are many reasons you might want to change this, but the main reason is for ultrawide monitors. You might want to have two or even three workspaces on a single screen. 
+## Workspaces
+
+By default, workspaces have a one-to-one relationship with screens, but this is configurable. There are many reasons you might want to change this, but the main reason is for ultrawide monitors. You might want to have two or even three workspaces on a single screen.
 
 Here is an example config changing the way workspaces are defined (~/.config/leftwm/config.toml)
-```
+
+```toml
 [[workspaces]]
 y = 0
 x = 0
@@ -63,95 +194,28 @@ height = 1440
 width = 1720
 ```
 
-### Tags / Desktops
+## Tags / Desktops
+
 The default tags are 1-9. They can be renamed in the config file by setting the
 list of tags.
 
 Here is an example config changing the list of available tags. NOTE: tag navigation (Mod + #) doesn't change based on the name of the tag
-```
+
+```toml
 tags = ["Web", "Code", "Shell", "Music", "Connect"]
 ```
 
-[More information about configuration can be found in the Wiki](https://github.com/leftwm/leftwm/wiki/Config).
+[More detailed configuration information can be found in the Wiki](https://github.com/leftwm/leftwm/wiki/Config).
 
+## LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant
 
-### LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant.
+The default layouts are [all of the kinds](src/layouts/mod.rs#L16) described by the Layout enum.
 
+## Troubleshooting
 
-
-
-## One of the core concepts/features of LeftWM is theming 
-
-With left, there are two types of configs. First, there are config settings that are specific to you but don’t really change. These are settings like keybindings, workspace locations, and names of desktops/tags. These settings can be found in ~/.config/leftwm/config.toml
-
-The appearance of your desktop is different. It’s fun to try new looks and feels. It’s fun to tweak and customize the appearance (also known as ricing). It’s fun to share so others can experience your cool awesome desktop. LeftWM is built around this concept. By pulling all these settings out into themes, you can now easily tweak, switch, and share your experiences. 
-
-## Setup (with package manager)
-
-LeftWM is available in AUR as well as crates.io. Both are good options for simple installation. Please note, if installing with crates.io you will need to link to the xsession desktop file if you want to be able to login to LeftWM from a graphical login screen. 
-```bash
-sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
-```
-
-LeftWM is also available in Fedora [Copr](https://copr.fedorainfracloud.org/coprs/atim/leftwm/): `sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm`
-
-## Manual Setup (no package manager)
-
-### Using a graphical login such as LightDM, GDM, LXDM, and others
-
-1) Copy leftwm.desktop to /usr/share/xsessions
-2) Create a symlink to the build of leftwm so that it is in your path:
-```bash
-cd /usr/bin
-sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm
-sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-worker
-sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-state
-```
-and
-```bash
-sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
-```
-You should now see LeftWM in your list of available window managers.
-
-### Starting with startx or a login such as slim
-Make sure this is at the end of your .xinitrc file:
-```bash .xinitrc
-exec dbus-launch leftwm
-```
-
-### Themes
-If you want to see more than a black screen when you login, select a theme:
-```bash 
-mkdir -p ~/.config/leftwm/themes
-cd ~/.config/leftwm/themes
-ln -s PATH_TO_THE_THEME_YOU_LIKE current
-```
-LeftWM comes packaged with a couple default plain themes. There is also a [community repository for sharing themes](https://github.com/leftwm/leftwm-community-themes)
-
-For more information about themes checkout our theme guide [here](https://github.com/leftwm/leftwm/tree/master/themes) or the wiki [here](https://github.com/leftwm/leftwm/wiki/Themes).
-
-### Dependencies 
-While LeftWM has very few dependencies, this isn't always the case for themes.
-Themes typically require the following to be installed. However, this is up to the
-author of the theme, and could be different. 
-List of common dependencies for Themes: 
-- feh 
-- compton or picom
-- dmenu
-- (Some kind of bar, different for each theme)
-    - polybar 
-    - xmobar 
-    - lemonbar 
-    - conky 
-
-
-| Build Dependency | ubuntu20.4.1              |
-| ---------------- | ------------------------- |
-| feh              | sudo apt install feh      |
-| compton          | sudo apt install compton  |
-| picom            | manual                    |
-| polybar          | manual                    |
-| xmobar           | sudo apt install xmobar   |
-| lemonbar         | sudo apt install lemonbar |
-| conky            | sudo apt install conky    |
-| dmenu            | sudo apt install dmenu    |
+| Issue | Description | Solution |
+|-|-|:-:|
+| LeftWM not listed by login manager | It's likely you need to add the xsessions file to the right folder. | See [installation](#installation-with-package-manager) |
+| No config.toml file exists | LeftWM does not always ship with a `config.toml`. You will need to execute LeftWM at least once for one to be generated. | Try the following: ``` leftwm-worker ``` |
+| Config.toml is not being parsed | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR. | Try the following: ``` leftwm-check ``` |
+| Keybinding doesn't work | It's likely you need to specify a value or have a typo. | See Wiki |
