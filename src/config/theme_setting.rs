@@ -5,8 +5,8 @@ use std::default::Default;
 use std::fs;
 use std::path::Path;
 
-#[serde(default)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(default)]
 pub struct ThemeSetting {
     pub border_width: i32,
     pub margin: Margins,

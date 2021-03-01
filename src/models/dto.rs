@@ -46,23 +46,19 @@ pub struct DisplayState {
     pub workspaces: Vec<DisplayWorkspace>,
 }
 
-impl Into<DisplayState> for ManagerState {
-    fn into(self) -> DisplayState {
-        let visible: Vec<String> = self
-            .viewports
-            .iter()
-            .flat_map(|vp| vp.tags.clone())
-            .collect();
-        let workspaces = self
+impl From<ManagerState> for DisplayState {
+    fn from(m: ManagerState) -> DisplayState {
+        let visible: Vec<String> = m.viewports.iter().flat_map(|vp| vp.tags.clone()).collect();
+        let workspaces = m
             .viewports
             .iter()
             .enumerate()
             .map(|(i, vp)| {
                 viewport_into_display_workspace(
-                    &self.desktop_names,
-                    &self.active_desktop,
+                    &m.desktop_names,
+                    &m.active_desktop,
                     &visible,
-                    &self.working_tags,
+                    &m.working_tags,
                     &vp,
                     i,
                 )
@@ -70,7 +66,7 @@ impl Into<DisplayState> for ManagerState {
             .collect();
         DisplayState {
             workspaces,
-            window_title: self.window_title.unwrap_or_default(),
+            window_title: m.window_title.unwrap_or_default(),
         }
     }
 }

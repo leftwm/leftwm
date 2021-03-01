@@ -559,7 +559,6 @@ mod tests {
             ],
             ..Default::default()
         };
-
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
 
