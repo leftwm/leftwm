@@ -161,8 +161,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     return false;
                 }
             };
-            let tags = match manager.focused_workspace() {
-                Some(w) => w.tags.clone(),
+            let (tags, layout) = match manager.focused_workspace() {
+                Some(w) => (w.tags.clone(), Some(w.layout.clone())),
                 _ => {
                     return false;
                 }
@@ -170,13 +170,38 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { x.handle == handle };
-            helpers::reorder_vec(&mut to_reorder, is_handle, -1);
-            manager.windows.append(&mut to_reorder);
-            let act = DisplayAction::MoveMouseOver(handle);
-            manager.actions.push_back(act);
-            true
+
+            match layout {
+                Some(crate::layouts::Layout::Monocle) => {
+                    // For Monocle we want to also move windows up/down
+                    //                     // Not the best solution but results
+                    //                     in desired behaviour
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                        Some(h) => h.handle.clone(),
+                        _ => {
+                            return false;
+                        }
+                    };
+                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+                    manager.windows.append(&mut to_reorder);
+                    let act = DisplayAction::MoveMouseOver(new_handle);
+                    manager.actions.push_back(act);
+                    true
+                }
+                _ => {
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+                    manager.windows.append(&mut to_reorder);
+                    let act = DisplayAction::MoveMouseOver(handle);
+                    manager.actions.push_back(act);
+                    true
+                }
+            }
         }
 
         Command::MoveWindowDown => {
@@ -186,8 +211,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     return false;
                 }
             };
-            let tags = match manager.focused_workspace() {
-                Some(w) => w.tags.clone(),
+            let (tags, layout) = match manager.focused_workspace() {
+                Some(w) => (w.tags.clone(), Some(w.layout.clone())),
                 _ => {
                     return false;
                 }
@@ -195,13 +220,38 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { x.handle == handle };
-            helpers::reorder_vec(&mut to_reorder, is_handle, 1);
-            manager.windows.append(&mut to_reorder);
-            let act = DisplayAction::MoveMouseOver(handle);
-            manager.actions.push_back(act);
-            true
+
+            match layout {
+                Some(crate::layouts::Layout::Monocle) => {
+                    // For Monocle we want to also move windows up/down
+                    //                     // Not the best solution but results
+                    //                     in desired behaviour
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                        Some(h) => h.handle.clone(),
+                        _ => {
+                            return false;
+                        }
+                    };
+                    helpers::reorder_vec(&mut to_reorder, is_handle, 1);
+                    manager.windows.append(&mut to_reorder);
+                    let act = DisplayAction::MoveMouseOver(new_handle);
+                    manager.actions.push_back(act);
+                    true
+                }
+                _ => {
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    helpers::reorder_vec(&mut to_reorder, is_handle, 1);
+                    manager.windows.append(&mut to_reorder);
+                    let act = DisplayAction::MoveMouseOver(handle);
+                    manager.actions.push_back(act);
+                    true
+                }
+            }
         }
         // Moves the selected window at index 0 of the window list.
         // If the selected window is already at index 0, it is sent to index 1.
@@ -275,9 +325,15 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     let mut to_reorder =
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                        Some(h) => h.handle.clone(),
+                        _ => {
+                            return false;
+                        }
+                    };
                     helpers::reorder_vec(&mut to_reorder, is_handle, -1);
                     manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(handle);
+                    let act = DisplayAction::MoveMouseOver(new_handle);
                     manager.actions.push_back(act);
                     true
                 }
@@ -319,9 +375,15 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     let mut to_reorder =
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                        Some(h) => h.handle.clone(),
+                        _ => {
+                            return false;
+                        }
+                    };
                     helpers::reorder_vec(&mut to_reorder, is_handle, 1);
                     manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(handle);
+                    let act = DisplayAction::MoveMouseOver(new_handle);
                     manager.actions.push_back(act);
                     true
                 }
