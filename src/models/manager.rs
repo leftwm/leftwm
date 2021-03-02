@@ -1,4 +1,3 @@
-use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::Screen;
@@ -8,6 +7,8 @@ use crate::models::WindowHandle;
 use crate::models::Workspace;
 use crate::state;
 use crate::utils::child_process::Children;
+use crate::{config::ThemeSetting, layouts::Layout};
+
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::{atomic::AtomicBool, Arc};
@@ -21,6 +22,7 @@ pub struct Manager {
     pub theme_setting: ThemeSetting,
     #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
+    pub layouts: Vec<Layout>,
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
