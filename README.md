@@ -27,6 +27,7 @@
   - [Default keys](#default-keys)
   - [Workspaces](#workspaces)
   - [Tags / Desktops](#tags--desktops)
+  - [Layouts](#layouts)
 - [Troubleshooting](#troubleshooting)
 
 # Why go left
@@ -203,6 +204,15 @@ Here is an example config changing the list of available tags. NOTE: tag navigat
 
 ```toml
 tags = ["Web", "Code", "Shell", "Music", "Connect"]
+```
+
+## Layouts
+
+By default, all layouts are enabled. There are a lot of layouts so you might want to consider only enabling the ones you use. To do this add a layout section to your config.toml file. This enables only the layouts you specify 
+
+Example:
+```toml
+layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain"]
 ```
 
 [More detailed configuration information can be found in the Wiki](https://github.com/leftwm/leftwm/wiki/Config).
