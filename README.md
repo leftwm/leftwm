@@ -29,7 +29,6 @@
   - [Tags / Desktops](#tags--desktops)
 - [Troubleshooting](#troubleshooting)
 
-
 # Why go left
 
 Left is a tiling window manager written in [Rust](https://github.com/rust-lang/rust) that aims to be stable and performant. Left is [designed to do one thing and to do that one thing well](https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well): _be a window manager_. Left therefore follows the following mantra:
@@ -41,7 +40,6 @@ Left is a tiling window manager written in [Rust](https://github.com/rust-lang/r
 Because you probably want more than just a black screen, LeftWM is built around the concept of themes. With themes, you can choose between different bars, compositors, backgrounds, colors, docks, and whatever else makes you happy.
 
 LeftWM was built from the very beginning to support multiple screens and ultrawide monitors. The default keybindings support ultrawide monitors and multiple screens.
-
 
 ## One of the core concepts/features of LeftWM is theming
 
@@ -212,7 +210,6 @@ tags = ["Web", "Code", "Shell", "Music", "Connect"]
 ## LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant
 
 The default layouts are [all of the kinds](src/layouts/mod.rs#L16) described by the Layout enum.
-
 
 ## Troubleshooting
 
