@@ -192,7 +192,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     true
                 }
                 _ => {
-                    let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     helpers::reorder_vec(&mut to_reorder, is_handle, -1);
                     manager.windows.append(&mut to_reorder);
@@ -241,7 +242,8 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                     true
                 }
                 _ => {
-                    let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     helpers::reorder_vec(&mut to_reorder, is_handle, 1);
                     manager.windows.append(&mut to_reorder);
