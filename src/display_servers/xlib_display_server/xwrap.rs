@@ -1003,10 +1003,24 @@ impl XWrap {
         Err(XlibError::InvalidXAtom)
     }
 
-    pub fn move_to_top(&self, handle: WindowHandle) {
+    pub fn restack(&self, handles: Vec<WindowHandle>) {
+        let mut windows = vec![];
+        for handle in handles {
+            if let WindowHandle::XlibHandle(window) = handle {
+                windows.push(window);
+            }
+        }
+        let size = windows.len();
+        let ptr = windows.as_mut_ptr();
+        unsafe {
+            (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
+        }
+    }
+
+    pub fn move_to_top(&self, handle: &WindowHandle) {
         if let WindowHandle::XlibHandle(window) = handle {
             unsafe {
-                (self.xlib.XRaiseWindow)(self.display, window);
+                (self.xlib.XRaiseWindow)(self.display, *window);
             }
         }
     }
