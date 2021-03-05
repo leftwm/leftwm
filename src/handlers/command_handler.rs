@@ -2,6 +2,11 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::utils::helpers;
 
+/* Please also update src/bin/leftwm-check if any of the following apply after your update:
+ * - a command now requires a value
+ * - a command no longer requires a value
+ * - a new command is introduced that requires a value
+ *  */
 pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
     match command {
         Command::MoveToTag if val.is_none() => false,
