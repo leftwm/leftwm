@@ -28,7 +28,7 @@ log = "0.4.8"
 dirs-next = "2.0.0"
 tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 clap = "2.33.0"
-liquid = "0.21.5"
+liquid = "0.22"
 chrono = "0.4.19"
 futures = "0.3.12"
 slog = "2.5.2"
