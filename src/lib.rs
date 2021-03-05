@@ -13,7 +13,7 @@ mod handlers;
 mod layouts;
 pub mod models;
 pub mod state;
-mod utils;
+pub mod utils;
 
 use utils::xkeysym_lookup::Button;
 use utils::xkeysym_lookup::ModMask;
