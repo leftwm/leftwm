@@ -1,7 +1,6 @@
 use crate::models::Window;
 use crate::models::Workspace;
 
-
 /// Layout which splits the workspace into two columns.
 /// Gives first column 2/3 workspace width on the left side, 1/3 for second column on the right side.
 /// Divides second column height for other windows.

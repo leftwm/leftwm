@@ -8,11 +8,11 @@ mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
 mod grid_horizontal;
+mod left_wider_right_stack;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
 mod monocle;
 mod right_wider_left_stack;
-mod left_wider_right_stack;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
