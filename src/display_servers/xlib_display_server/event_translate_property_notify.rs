@@ -26,10 +26,9 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
 
             Some(DisplayEvent::WindowChange(change))
         }
-        xlib::XA_WM_NORMAL_HINTS => match build_change_for_size_hints(xw, event.window) {
-            Some(change) => Some(DisplayEvent::WindowChange(change)),
-            None => None,
-        },
+        xlib::XA_WM_NORMAL_HINTS => {
+            build_change_for_size_hints(xw, event.window).map(DisplayEvent::WindowChange)
+        }
         xlib::XA_WM_HINTS => match xw.get_wmhints(event.window) {
             Some(hints) if hints.flags & xlib::InputHint != 0 => {
                 let handle = WindowHandle::XlibHandle(event.window);

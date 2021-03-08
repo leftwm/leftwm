@@ -20,7 +20,7 @@ pub use keybind::Keybind;
 pub use theme_setting::ThemeSetting;
 pub use workspace_config::WorkspaceConfig;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
