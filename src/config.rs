@@ -27,6 +27,8 @@ pub struct Config {
     pub workspaces: Option<Vec<WorkspaceConfig>>,
     pub tags: Option<Vec<String>>,
     pub layouts: Vec<Layout>,
+    //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
+    pub disable_current_tag_swap: bool,
     pub keybind: Vec<Keybind>,
 }
 
@@ -259,6 +261,7 @@ impl Default for Config {
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
+            disable_current_tag_swap: false,
             modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
