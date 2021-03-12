@@ -40,8 +40,6 @@ impl TagModel {
 
         if val > 100 {
             *mwp = 100;
-        } else if val <= 0 {
-            *mwp = 0;
         } else {
             *mwp = val;
         }
