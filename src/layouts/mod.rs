@@ -8,11 +8,10 @@ mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
 mod grid_horizontal;
-mod left_wider_right_stack;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
 mod monocle;
-mod right_wider_left_stack;
+mod right_main_and_vert_stack;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
@@ -62,8 +61,16 @@ impl Layout {
             Self::CenterMain => center_main::update(workspace, windows),
             Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
             Self::Monocle => monocle::update(workspace, windows),
-            Self::RightWiderLeftStack => right_wider_left_stack::update(workspace, windows),
-            Self::LeftWiderRihtStack => left_wider_right_stack::update(workspace, windows),
+            Self::RightWiderLeftStack => right_main_and_vert_stack::update(workspace, windows),
+            Self::LeftWiderRihtStack => main_and_vert_stack::update(workspace, windows),
+        }
+    }
+
+    pub fn main_width(&self) -> u8 {
+        match self {
+            Self::RightWiderLeftStack => 75,
+            Self::LeftWiderRihtStack => 75,
+            _ => 50,
         }
     }
 

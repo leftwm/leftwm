@@ -34,6 +34,19 @@ impl TagModel {
         }
     }
 
+    pub fn set_main_width(&self, val: u8) {
+        let lock = self.main_width_percentage.clone();
+        let mut mwp = lock.lock().unwrap();
+
+        if val > 100 {
+            *mwp = 100;
+        } else if val <= 0 {
+            *mwp = 0;
+        } else {
+            *mwp = val;
+        }
+    }
+
     pub fn main_width_percentage(&self) -> f32 {
         let lock = self.main_width_percentage.clone();
         let mwp = lock.lock().unwrap();
