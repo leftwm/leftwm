@@ -1,4 +1,5 @@
 use super::*;
+use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::utils::helpers;
 
@@ -7,7 +8,13 @@ use crate::utils::helpers;
  * - a command no longer requires a value
  * - a new command is introduced that requires a value
  *  */
-pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> bool {
+
+pub fn process(
+    manager: &mut Manager,
+    config: &Config,
+    command: Command,
+    val: Option<String>,
+) -> bool {
     match command {
         Command::MoveToTag if val.is_none() => false,
         Command::MoveToTag if !is_num(&val) => false,
@@ -37,11 +44,14 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
             let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
             let previous_tag = manager.tag_index(manager.focused_tag(1).unwrap_or_default());
             let input_tag = to_num(&val);
+            let mut destination_tag = input_tag;
 
-            let destination_tag = match (current_tag, previous_tag, input_tag) {
-                (Some(ctag), Some(ptag), itag) if ctag + 1 == itag => ptag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
-                (_, _, _) => input_tag, // go to the input tag tag
-            };
+            if !config.disable_current_tag_swap {
+                destination_tag = match (current_tag, previous_tag, input_tag) {
+                    (Some(ctag), Some(ptag), itag) if ctag + 1 == itag => ptag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
+                    (_, _, _) => input_tag, // go to the input tag tag
+                };
+            }
             goto_tag_handler::process(manager, destination_tag)
         }
 
@@ -540,17 +550,33 @@ mod tests {
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::default();
+        let config = Config::default();
         // no screen creation here
         assert_eq!(
-            process(&mut manager, Command::GotoTag, Some("6".to_string())),
+            process(
+                &mut manager,
+                &config,
+                Command::GotoTag,
+                Some("6".to_string())
+            ),
             false
         );
         assert_eq!(
-            process(&mut manager, Command::GotoTag, Some("2".to_string())),
+            process(
+                &mut manager,
+                &config,
+                Command::GotoTag,
+                Some("2".to_string())
+            ),
             false
         );
         assert_eq!(
-            process(&mut manager, Command::GotoTag, Some("15".to_string())),
+            process(
+                &mut manager,
+                &config,
+                Command::GotoTag,
+                Some("15".to_string())
+            ),
             false
         );
     }
@@ -558,22 +584,30 @@ mod tests {
     #[test]
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
         let mut manager = Manager::default();
+        let config = Config::default();
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         // no tag creation here but one tag per screen is created
         assert!(process(
             &mut manager,
+            &config,
             Command::GotoTag,
             Some("2".to_string())
         ));
         assert!(process(
             &mut manager,
+            &config,
             Command::GotoTag,
             Some("1".to_string())
         ));
         // we only have one tag per screen created automatically
         assert_eq!(
-            process(&mut manager, Command::GotoTag, Some("3".to_string())),
+            process(
+                &mut manager,
+                &config,
+                Command::GotoTag,
+                Some("3".to_string())
+            ),
             false
         );
     }
@@ -581,6 +615,7 @@ mod tests {
     #[test]
     fn go_to_tag_should_return_false_on_invalid_input() {
         let mut manager = Manager::default();
+        let config = Config::default();
         screen_create_handler::process(&mut manager, Screen::default());
         manager.tags = vec![
             TagModel::new("A15"),
@@ -591,14 +626,27 @@ mod tests {
             TagModel::new("F67"),
         ];
         assert_eq!(
-            process(&mut manager, Command::GotoTag, Some("abc".to_string())),
+            process(
+                &mut manager,
+                &config,
+                Command::GotoTag,
+                Some("abc".to_string())
+            ),
             false
         );
         assert_eq!(
-            process(&mut manager, Command::GotoTag, Some("ab45c".to_string())),
+            process(
+                &mut manager,
+                &config,
+                Command::GotoTag,
+                Some("ab45c".to_string())
+            ),
             false
         );
-        assert_eq!(process(&mut manager, Command::GotoTag, None), false);
+        assert_eq!(
+            process(&mut manager, &config, Command::GotoTag, None),
+            false
+        );
     }
 
     #[test]
@@ -614,11 +662,13 @@ mod tests {
             ],
             ..Default::default()
         };
+        let config = Config::default();
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
 
         assert!(process(
             &mut manager,
+            &config,
             Command::GotoTag,
             Some("6".to_string())
         ));
@@ -626,6 +676,7 @@ mod tests {
         assert_eq!(current_tag, Some(5));
         assert!(process(
             &mut manager,
+            &config,
             Command::GotoTag,
             Some("2".to_string())
         ));
@@ -634,6 +685,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
+            &config,
             Command::GotoTag,
             Some("3".to_string())
         ));
@@ -642,6 +694,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
+            &config,
             Command::GotoTag,
             Some("4".to_string())
         ));
