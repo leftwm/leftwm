@@ -1,6 +1,7 @@
 use super::models::Window;
 use super::models::Workspace;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 mod center_main;
 mod center_main_balanced;
@@ -82,6 +83,25 @@ impl Layout {
     }
 }
 
+// TODO: Perhaps there is a more efficient way to impl FromStr using serde
+impl FromStr for Layout {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "MainAndVertStack" => Ok(Layout::MainAndVertStack),
+            "MainAndHorizontalStack" => Ok(Layout::MainAndHorizontalStack),
+            "GridHorizontal" => Ok(Layout::GridHorizontal),
+            "EvenHorizontal" => Ok(Layout::EvenHorizontal),
+            "EvenVertical" => Ok(Layout::EvenVertical),
+            "Fibonacci" => Ok(Layout::Fibonacci),
+            "CenterMain" => Ok(Layout::CenterMain),
+            "CenterMainBalanced" => Ok(Layout::CenterMainBalanced),
+            "Monocle" => Ok(Layout::Monocle),
+            _ => Err(()),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,5 +134,26 @@ mod tests {
             "window was not size to the correct height"
         );
         assert!(w.width() == 800, "window was not size to the correct width");
+    }
+
+    #[test]
+    fn test_from_str() {
+        let layout_strs: [&str; 9] = [
+            "MainAndVertStack",
+            "MainAndHorizontalStack",
+            "GridHorizontal",
+            "EvenHorizontal",
+            "EvenVertical",
+            "Fibonacci",
+            "CenterMain",
+            "CenterMainBalanced",
+            "Monocle",
+        ];
+
+        assert_eq!(layout_strs.len(), LAYOUTS.len());
+
+        for (i, layout) in LAYOUTS.iter().enumerate() {
+            assert_eq!(layout, &Layout::from_str(layout_strs[i]).unwrap());
+        }
     }
 }

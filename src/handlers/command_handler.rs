@@ -1,6 +1,8 @@
 use super::*;
 use crate::display_action::DisplayAction;
+use crate::layouts::Layout;
 use crate::utils::helpers;
+use std::str::FromStr;
 
 /* Please also update src/bin/leftwm-check if any of the following apply after your update:
  * - a command now requires a value
@@ -156,6 +158,17 @@ pub fn process(manager: &mut Manager, command: Command, val: Option<String>) -> 
                 workspace.prev_layout();
                 return true;
             }
+            false
+        }
+
+        Command::SetLayout if val.is_none() => false,
+        Command::SetLayout => {
+            if let Some(layout) = to_layout(&val) {
+                if let Some(workspace) = manager.focused_workspace_mut() {
+                    workspace.set_layout(layout);
+                    return true;
+                }
+            } // TODO: Print error message about invalid layout name
             false
         }
 
@@ -531,6 +544,10 @@ fn to_num(val: &Option<String>) -> usize {
     val.as_ref()
         .and_then(|num| num.parse::<usize>().ok())
         .unwrap_or_default()
+}
+
+fn to_layout(val: &Option<String>) -> Option<Layout> {
+    Layout::from_str(val.as_ref()?).ok()
 }
 
 #[cfg(test)]
