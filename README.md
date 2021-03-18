@@ -107,7 +107,7 @@ cd leftwm
 3. Build leftwm
 
 ```bash
-sudo cargo build --release
+cargo build --release
 ```
 
 4. Make a new share directory for leftwm
@@ -137,7 +137,7 @@ sudo ln -s /usr/share/leftwm/leftwm-check /usr/bin/leftwm-check
 sudo cp leftwm.desktop /usr/share/xsessions/
 ```
 
-You should now see LeftWM in your list of available window managers.
+You should now see LeftWM in your list of available window managers.  At this point, expect only a simple black screen on login.  For a more customized look, install a theme.
 
 ## Starting with startx or a login such as slim
 
