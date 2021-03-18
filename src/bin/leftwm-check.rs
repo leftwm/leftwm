@@ -88,6 +88,7 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
         Command::Execute,
         Command::IncreaseMainWidth,
         Command::DecreaseMainWidth,
+        Command::SetLayout,
     ];
     println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
     for keybind in keybinds {
