@@ -96,21 +96,45 @@ sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
 
 ## Using a graphical login such as LightDM, GDM, LXDM, and others
 
-1) Copy leftwm.desktop to /usr/share/xsessions
-2) Create a symlink to the build of leftwm so that it is in your path:
+1. Dependencies: Rust, Cargo
+2. Clone the repository and change directory into it.
 
 ```bash
-cd /usr/bin
-sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm
-sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-worker
-sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-state
-sudo ln -s PATH_TO_LEFTWM/target/debug/leftwm-check
+git clone https://github.com/leftwm/leftwm.git
+cd leftwm
 ```
 
-and
+3. Build leftwm
 
 ```bash
-sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
+sudo cargo build --release
+```
+
+4. Make a new share directory for leftwm
+
+```bash
+sudo mkdir -p /usr/share/leftwm
+```
+
+5. Copy build files to the new share directory
+
+```bash
+sudo cp -r ./target/release/* /usr/share/leftwm
+```
+
+6. Create the symlinks
+
+```bash
+sudo ln -s /usr/share/leftwm/leftwm /usr/bin/leftwm
+sudo ln -s /usr/share/leftwm/leftwm-worker /usr/bin/leftwm-worker
+sudo ln -s /usr/share/leftwm/leftwm-state /usr/bin/leftwm-state
+sudo ln -s /usr/share/leftwm/leftwm-check /usr/bin/leftwm-check
+```
+
+7. Copy leftwm.desktop to xsessions folder
+
+```bash
+sudo cp leftwm.desktop /usr/share/xsessions/
 ```
 
 You should now see LeftWM in your list of available window managers.
