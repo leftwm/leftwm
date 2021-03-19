@@ -97,7 +97,7 @@ sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
 ## Using a graphical login such as LightDM, GDM, LXDM, and others
 
 1. Dependencies: Rust, Cargo
-2. Clone the repository and change directory into it.
+2. Clone the repository and cd into the directory
 
 ```bash
 git clone https://github.com/leftwm/leftwm.git
@@ -110,34 +110,77 @@ cd leftwm
 cargo build --release
 ```
 
-4. Make a new share directory for leftwm
+4. Copy leftwm executables to the /usr/bin folder
 
 ```bash
-sudo mkdir -p /usr/share/leftwm
+sudo cp ./target/release/leftwm /usr/bin/leftwm
+sudo cp ./target/release/leftwm-worker /usr/bin/leftwm-worker
+sudo cp ./target/release/leftwm-state /usr/bin/leftwm-state
+sudo cp ./target/release/leftwm-check /usr/bin/leftwm-check
 ```
 
-5. Copy build files to the new share directory
-
-```bash
-sudo cp -r ./target/release/* /usr/share/leftwm
-```
-
-6. Create the symlinks
-
-```bash
-sudo ln -s /usr/share/leftwm/leftwm /usr/bin/leftwm
-sudo ln -s /usr/share/leftwm/leftwm-worker /usr/bin/leftwm-worker
-sudo ln -s /usr/share/leftwm/leftwm-state /usr/bin/leftwm-state
-sudo ln -s /usr/share/leftwm/leftwm-check /usr/bin/leftwm-check
-```
-
-7. Copy leftwm.desktop to xsessions folder
+5. Copy leftwm.desktop to xsessions folder
 
 ```bash
 sudo cp leftwm.desktop /usr/share/xsessions/
 ```
 
 You should now see LeftWM in your list of available window managers.  At this point, expect only a simple black screen on login.  For a more customized look, install a theme.
+
+## Optional Development Installation
+
+If your goal is to continously build leftwm and keep up to date with the latest releases, you may prefer to symlink the leftwm executables instead of copying them.  If you choose to install this way, make sure you do not move the build directory as it will break your installation.  Normal installation and development installation only differ on step 4.
+
+1. Dependencies: Rust, Cargo
+2. Clone the repository and cd into the directory
+
+```bash
+git clone https://github.com/leftwm/leftwm.git
+cd leftwm
+```
+
+3. Build leftwm
+
+```bash
+cargo build --release
+```
+
+4. Create the symlinks
+
+```bash
+sudo ln -s "$(pwd)"/target/release/leftwm /usr/bin/leftwm
+sudo ln -s "$(pwd)"/target/release/leftwm-worker /usr/bin/leftwm-worker
+sudo ln -s "$(pwd)"/target/release/leftwm-state /usr/bin/leftwm-state
+sudo ln -s "$(pwd)"/target/release/leftwm-check /usr/bin/leftwm-check
+```
+
+5. Copy leftwm.desktop to xsessions folder
+
+```bash
+sudo cp leftwm.desktop /usr/share/xsessions/
+```
+
+You should now see LeftWM in your list of available window managers.  At this point, expect only a simple black screen on login.  For a more customized look, install a theme.
+
+### Rebuilding the development installation
+
+1.  Now if you want to get the newest version of leftwm run this command from your build directory:  
+
+```bash
+git pull origin master
+```
+
+2. Build leftwm
+
+```bash
+cargo build --release
+```
+ 
+3. And press the following keybind to reload leftwm
+
+```bash
+Mod + Shift + R
+```
 
 ## Starting with startx or a login such as slim
 
