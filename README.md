@@ -175,9 +175,12 @@ git pull origin master
 ```bash
 cargo build --release
 ```
- 
-3. Sign out/in to use the new leftwm executables.  
 
+3. And press the following keybind to reload leftwm
+
+```bash
+Mod + Shift + R
+```
 
 ## Starting with startx or a login such as slim
 
