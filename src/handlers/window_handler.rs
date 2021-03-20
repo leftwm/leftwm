@@ -61,13 +61,15 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
         manager.actions.push_back(act);
     }
 
+    // tell the WM the new display order of the windows
     //new windows should be on the top of the stack
-    if window.type_ != WindowType::Dock {
-        let act = DisplayAction::MoveToTop(window.handle.clone());
-        manager.actions.push_back(act);
-    }
+    manager.sort_windows();
 
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
+
+    //make sure focus is re-computed
+    let act = DisplayAction::FocusWindowUnderCursor;
+    manager.actions.push_back(act);
 
     if let Some(cmd) = &manager.theme_setting.on_new_window_cmd {
         use std::process::{Command, Stdio};
@@ -86,20 +88,20 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
 pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
-    let start_size = manager.windows.len();
     manager.windows = manager
         .windows
         .iter()
         .filter(|w| &w.handle != handle)
         .cloned()
         .collect();
-    //if we removed the focused window, focus the last window
-    focus_handler::focus_last_window_that_exists(manager);
 
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
 
-    start_size != manager.windows.len()
+    //make sure focus is re-computed
+    let act = DisplayAction::FocusWindowUnderCursor;
+    manager.actions.push_back(act);
+    true
 }
 
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {

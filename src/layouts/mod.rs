@@ -3,12 +3,14 @@ use super::models::Workspace;
 use serde::{Deserialize, Serialize};
 
 mod center_main;
+mod center_main_balanced;
 mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
 mod grid_horizontal;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
+mod monocle;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
@@ -19,42 +21,30 @@ pub enum Layout {
     EvenVertical,
     Fibonacci,
     CenterMain,
+    CenterMainBalanced,
+    Monocle,
 }
 
-impl Default for Layout {
-    fn default() -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
-        layouts.first().unwrap().clone()
-    }
-}
-
-const LAYOUTS: &[&str] = &[
-    "MainAndVertStack",
-    "MainAndHorizontalStack",
-    "GridHorizontal",
-    "EvenHorizontal",
-    "EvenVertical",
-    "Fibonacci",
-    "CenterMain",
+pub const LAYOUTS: [Layout; 9] = [
+    Layout::MainAndVertStack,
+    Layout::MainAndHorizontalStack,
+    Layout::GridHorizontal,
+    Layout::EvenHorizontal,
+    Layout::EvenVertical,
+    Layout::Fibonacci,
+    Layout::CenterMain,
+    Layout::CenterMainBalanced,
+    Layout::Monocle,
 ];
-
-impl From<&str> for Layout {
-    fn from(s: &str) -> Self {
-        match s {
-            "MainAndVertStack" => Self::MainAndVertStack,
-            "MainAndHorizontalStack" => Self::MainAndHorizontalStack,
-            "GridHorizontal" => Self::GridHorizontal,
-            "EvenHorizontal" => Self::EvenHorizontal,
-            "EvenVertical" => Self::EvenVertical,
-            "Fibonacci" => Self::Fibonacci,
-            "CenterMain" => Self::CenterMain,
-            _ => Self::MainAndVertStack,
-        }
-    }
-}
 
 // This is tedious, but simple and effective.
 impl Layout {
+    pub fn new(layouts: &[Layout]) -> Self {
+        if let Some(layout) = layouts.first() {
+            return layout.clone();
+        }
+        Layout::Fibonacci
+    }
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         match self {
             Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
@@ -64,14 +54,15 @@ impl Layout {
             Self::EvenVertical => even_vertical::update(workspace, windows),
             Self::Fibonacci => fibonacci::update(workspace, windows),
             Self::CenterMain => center_main::update(workspace, windows),
+            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
+            Self::Monocle => monocle::update(workspace, windows),
         }
     }
 
-    pub fn next_layout(&self) -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+    pub fn next_layout(&self, layouts: &[Layout]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,
-            None => return "Fibonacci".into(),
+            None => return Layout::Fibonacci,
         } + 1;
         if index >= layouts.len() as isize {
             index = 0;
@@ -79,11 +70,10 @@ impl Layout {
         layouts[index as usize].clone()
     }
 
-    pub fn prev_layout(&self) -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+    pub fn prev_layout(&self, layouts: &[Layout]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,
-            None => return "Fibonacci".into(),
+            None => return Layout::Fibonacci,
         } - 1;
         if index < 0 {
             index = layouts.len() as isize - 1;
@@ -95,7 +85,7 @@ impl Layout {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{BBox, WindowHandle};
+    use crate::models::{BBox, Margins, WindowHandle};
 
     #[test]
     fn should_fullscreen_a_single_window() {
@@ -108,13 +98,14 @@ mod tests {
                 y: 0,
             },
             vec![],
+            vec![],
         );
         ws.xyhw.set_minh(600);
         ws.xyhw.set_minw(800);
         ws.update_avoided_areas();
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.border = 0;
-        w.margin = 0;
+        w.margin = Margins::Int(0);
         let mut windows = vec![&mut w];
         let mut windows_filters = windows.iter_mut().filter(|_f| true).collect();
         even_horizontal::update(&ws, &mut windows_filters);

@@ -371,7 +371,6 @@ dependencies = [
  "clap",
  "dirs-next",
  "futures",
- "libc",
  "liquid",
  "log",
  "mio",
@@ -400,6 +399,7 @@ version = "0.2.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba4aede83fc3617411dc6993bc8c70919750c1c257c6ca6a502aed6e0e2394ae"
 
+
 [[package]]
 name = "libsystemd-sys"
 version = "0.2.2"
@@ -412,9 +412,9 @@ dependencies = [
 
 [[package]]
 name = "liquid"
-version = "0.21.5"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ebeca3e471d40ca4816a8f77cb2e89590275d9ba74da4acb37b267f6250b358"
+checksum = "c09860255f7e7ab76fe682f8d46c1b8b0b4c4330d64136056f650d0e2d49c144"
 dependencies = [
  "doc-comment",
  "kstring",
@@ -426,9 +426,9 @@ dependencies = [
 
 [[package]]
 name = "liquid-core"
-version = "0.21.3"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "719573721a84bb8383be7e4f48337c78fcc2048778f780090d5ee5b6e0d6c66f"
+checksum = "be5a88630d73ac78b46277169f92ef135fb09ad50af039f76ccfc35264796cc5"
 dependencies = [
  "anymap",
  "chrono",
@@ -443,9 +443,9 @@ dependencies = [
 
 [[package]]
 name = "liquid-derive"
-version = "0.21.1"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5ed0397fd0b3bd70965471955f4ff83d69515c6d58e09f735efd10f2084e7f1"
+checksum = "88408698b7c2a426811369778ed472e219888aa4934f4de69568cc5bf05c8bc9"
 dependencies = [
  "proc-macro2",
  "proc-quote",
@@ -454,9 +454,9 @@ dependencies = [
 
 [[package]]
 name = "liquid-lib"
-version = "0.21.2"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4780544c8d62eb1881dffddfd82ffe23990a18cc952de27b570b910214543ac"
+checksum = "10c14f535f61c4263e57cd4f6ad9701b97459f026420347ed978c4ab0d2512cc"
 dependencies = [
  "chrono",
  "itertools",
@@ -466,15 +466,6 @@ dependencies = [
  "percent-encoding",
  "regex",
  "unicode-segmentation",
-]
-
-[[package]]
-name = "lock_api"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd96ffd135b2fd7b973ac026d28085defbe8983df057ced3eb4f2130b0831312"
-dependencies = [
- "scopeguard",
 ]
 
 [[package]]
@@ -839,12 +830,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
-name = "scopeguard"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
-
-[[package]]
 name = "serde"
 version = "1.0.124"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -992,12 +977,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "smallvec"
-version = "1.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
-
-[[package]]
 name = "socket2"
 version = "0.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1097,12 +1076,8 @@ dependencies = [
  "memchr",
  "mio",
  "num_cpus",
- "once_cell",
- "parking_lot",
  "pin-project-lite",
- "signal-hook-registry",
  "tokio-macros",
- "winapi",
 ]
 
 [[package]]

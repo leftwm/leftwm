@@ -20,8 +20,9 @@ pub enum DisplayAction {
     /// Makes sure the mouse is over a given point.
     MoveMouseOverPoint((i32, i32)),
 
-    /// Send a window to the top move location.
-    MoveToTop(WindowHandle),
+    /// Sets the "z-index" order of the windows
+    /// first in the array is top most
+    SetWindowOrder(Vec<WindowHandle>),
 
     /// Tell the DS we no longer care about the this window and other
     /// cleanup.
@@ -29,6 +30,9 @@ pub enum DisplayAction {
 
     /// Tell a window that it is to become focused.
     WindowTakeFocus(Window),
+
+    /// To the window under the cursor to take the focus
+    FocusWindowUnderCursor,
 
     /// Tell the DM we are going to resize a window and only send that
     /// type of events.

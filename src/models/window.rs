@@ -2,7 +2,7 @@ use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
 use crate::models::xyhw_change::XyhwChange;
-//use crate::models::Margins;
+use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
@@ -30,7 +30,7 @@ pub struct Window {
     pub type_: WindowType,
     pub tags: Vec<TagId>,
     pub border: i32,
-    pub margin: i32,
+    pub margin: Margins,
     states: Vec<WindowState>,
     pub requested: Option<XyhwChange>,
     pub normal: Xyhw,
@@ -52,7 +52,7 @@ impl Window {
             type_: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
-            margin: 10,
+            margin: Margins::Int(10),
             states: vec![],
             normal: XyhwBuilder::default().into(),
             requested: None,
@@ -65,10 +65,10 @@ impl Window {
 
     pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
         if self.type_ == WindowType::Normal {
-            self.margin = theme.margin as i32;
-            self.border = theme.border_width as i32;
+            self.margin = theme.margin.clone();
+            self.border = theme.border_width;
         } else {
-            self.margin = 0;
+            self.margin = Margins::Int(0);
             self.border = 0;
         }
     }
@@ -161,9 +161,13 @@ impl Window {
             value = self.normal.w();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            value = relative.w() - (self.margin * 2) - (self.border * 2);
+            value = relative.w()
+                - (self.margin.clone().left() + self.margin.clone().right())
+                - (self.border * 2);
         } else {
-            value = self.normal.w() - (self.margin * 2) - (self.border * 2);
+            value = self.normal.w()
+                - (self.margin.clone().left() + self.margin.clone().right())
+                - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
             value = 100
@@ -176,9 +180,13 @@ impl Window {
             value = self.normal.h();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            value = relative.h() - (self.margin * 2) - (self.border * 2);
+            value = relative.h()
+                - (self.margin.clone().top() + self.margin.clone().bottom())
+                - (self.border * 2);
         } else {
-            value = self.normal.h() - (self.margin * 2) - (self.border * 2);
+            value = self.normal.h()
+                - (self.margin.clone().top() + self.margin.clone().bottom())
+                - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
             value = 100
@@ -207,9 +215,9 @@ impl Window {
         }
         if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            relative.x() + self.margin
+            relative.x() + self.margin.clone().left()
         } else {
-            self.normal.x() + self.margin
+            self.normal.x() + self.margin.clone().left()
         }
     }
 
@@ -219,9 +227,9 @@ impl Window {
         }
         if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            relative.y() + self.margin
+            relative.y() + self.margin.clone().bottom()
         } else {
-            self.normal.y() + self.margin
+            self.normal.y() + self.margin.clone().bottom()
         }
     }
 
@@ -234,6 +242,10 @@ impl Window {
             ..Default::default()
         }
         .into()
+    }
+
+    pub fn contains_point(&self, x: i32, y: i32) -> bool {
+        self.calculated_xyhw().contains_point(x, y)
     }
 
     pub fn tag(&mut self, tag: &str) {
@@ -268,28 +280,22 @@ impl Window {
     }
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn should_be_able_to_tag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None);
-        subject.tag("test".to_string());
-        assert!(
-            subject.has_tag("test".to_string()),
-            "was unable to tag the window"
-        );
+        subject.tag("test");
+        assert!(subject.has_tag("test"), "was unable to tag the window");
     }
 
     #[test]
     fn should_be_able_to_untag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None);
-        subject.tag("test".to_string());
-        subject.untag("test".to_string());
-        assert!(
-            subject.has_tag("test".to_string()) == false,
-            "was unable to untag the window"
-        );
+        subject.tag("test");
+        subject.untag("test");
+        assert!(!subject.has_tag("test"), "was unable to untag the window");
     }
 }

@@ -14,24 +14,32 @@ impl DisplayEventHandler {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
             DisplayEvent::WindowCreate(w) => window_handler::created(manager, w),
             DisplayEvent::WindowChange(w) => window_handler::changed(manager, w),
+
             DisplayEvent::FocusedWindow(handle, x, y) => {
                 focus_handler::focus_window_by_handle(manager, &handle, x, y)
             }
-            DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
+
+            //request to focus whatever is at this point
+            DisplayEvent::FocusedAt(x, y) => focus_handler::move_focus_to_point(manager, x, y),
+
+            DisplayEvent::WindowDestroy(handle) => {
+                window_handler::destroyed(manager, &handle);
+                true
+            }
 
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
                 let build = CommandBuilder::new(&self.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some((cmd, val)) = command {
-                    command_handler::process(manager, cmd, val)
+                    command_handler::process(manager, &self.config, cmd, val)
                 } else {
                     false
                 }
             }
 
             DisplayEvent::SendCommand(command, value) => {
-                command_handler::process(manager, command, value)
+                command_handler::process(manager, &self.config, command, value)
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {

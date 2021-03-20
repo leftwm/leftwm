@@ -20,10 +20,11 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     let active_workspace = manager.focused_workspace_mut().unwrap();
     active_workspace.tags = new_tags;
     focus_handler::focus_tag(manager, &tag.id);
+
     true
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

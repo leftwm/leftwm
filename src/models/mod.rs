@@ -1,5 +1,6 @@
 mod dock_area;
 mod manager;
+mod margins;
 mod mode;
 mod screen;
 mod tag;
@@ -16,6 +17,7 @@ use crate::layouts;
 
 pub use dock_area::DockArea;
 pub use manager::Manager;
+pub use margins::Margins;
 pub use mode::Mode;
 pub use screen::{BBox, Screen};
 pub use window::Window;

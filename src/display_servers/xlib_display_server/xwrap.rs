@@ -18,6 +18,9 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
 use std::slice;
+use std::sync::Arc;
+use tokio::sync::{oneshot, Notify};
+use tokio::time::Duration;
 use x11_dl::xlib;
 
 //type WindowStateConst = u8;
@@ -38,12 +41,13 @@ pub struct Colors {
 #[derive(Debug, Clone)]
 pub enum XlibError {
     FailedStatus,
+    RootWindowNotFound,
     InvalidXAtom,
 }
 
 pub struct XWrap {
-    pub xlib: xlib::Xlib,
-    pub display: *mut xlib::Display,
+    xlib: xlib::Xlib,
+    display: *mut xlib::Display,
     root: xlib::Window,
     pub atoms: XAtom,
     cursors: XCursor,
@@ -53,6 +57,8 @@ pub struct XWrap {
     pub mode: Mode,
     pub mod_key_mask: ModMask,
     pub mode_origin: (i32, i32),
+    _task_guard: oneshot::Receiver<()>,
+    task_notify: Arc<Notify>,
 }
 
 impl Default for XWrap {
@@ -60,11 +66,45 @@ impl Default for XWrap {
         Self::new()
     }
 }
+
 impl XWrap {
     pub fn new() -> XWrap {
         let xlib = xlib::Xlib::open().unwrap();
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
+
+        let fd = unsafe { (xlib.XConnectionNumber)(display) };
+
+        let (guard, _task_guard) = oneshot::channel();
+        let notify = Arc::new(Notify::new());
+        let task_notify = notify.clone();
+
+        let mut poll = mio::Poll::new().unwrap();
+        let mut events = mio::Events::with_capacity(1);
+        const SERVER: mio::Token = mio::Token(0);
+        poll.registry()
+            .register(
+                &mut mio::unix::SourceFd(&fd),
+                SERVER,
+                mio::Interest::READABLE,
+            )
+            .unwrap();
+        let timeout = Duration::from_millis(100);
+        tokio::task::spawn_blocking(move || loop {
+            if guard.is_closed() {
+                return;
+            }
+
+            if let Err(err) = poll.poll(&mut events, Some(timeout)) {
+                log::warn!("Xlib socket poll failed with {:?}", err);
+                continue;
+            }
+
+            events
+                .iter()
+                .filter(|event| SERVER == event.token())
+                .for_each(|_| notify.notify_one());
+        });
 
         let atoms = XAtom::new(&xlib, display);
         let cursors = XCursor::new(&xlib, display);
@@ -88,6 +128,8 @@ impl XWrap {
             mode: Mode::NormalMode,
             mod_key_mask: 0,
             mode_origin: (0, 0),
+            _task_guard,
+            task_notify,
         };
 
         //check that another WM is not running
@@ -278,30 +320,16 @@ impl XWrap {
     }
 
     pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
-        if let Some(value) = self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
-            if value == self.atoms.NetWMWindowTypeDesktop {
-                return WindowType::Desktop;
-            }
-            if value == self.atoms.NetWMWindowTypeDock {
-                return WindowType::Dock;
-            }
-            if value == self.atoms.NetWMWindowTypeToolbar {
-                return WindowType::Toolbar;
-            }
-            if value == self.atoms.NetWMWindowTypeMenu {
-                return WindowType::Menu;
-            }
-            if value == self.atoms.NetWMWindowTypeUtility {
-                return WindowType::Utility;
-            }
-            if value == self.atoms.NetWMWindowTypeSplash {
-                return WindowType::Splash;
-            }
-            if value == self.atoms.NetWMWindowTypeDialog {
-                return WindowType::Dialog;
-            }
+        match self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
+            x if x == Some(self.atoms.NetWMWindowTypeDesktop) => WindowType::Desktop,
+            x if x == Some(self.atoms.NetWMWindowTypeDock) => WindowType::Dock,
+            x if x == Some(self.atoms.NetWMWindowTypeToolbar) => WindowType::Toolbar,
+            x if x == Some(self.atoms.NetWMWindowTypeMenu) => WindowType::Menu,
+            x if x == Some(self.atoms.NetWMWindowTypeUtility) => WindowType::Utility,
+            x if x == Some(self.atoms.NetWMWindowTypeSplash) => WindowType::Splash,
+            x if x == Some(self.atoms.NetWMWindowTypeDialog) => WindowType::Dialog,
+            _ => WindowType::Normal,
         }
-        WindowType::Normal
     }
 
     pub fn set_window_states_atoms(&self, window: xlib::Window, states: Vec<xlib::Atom>) {
@@ -663,6 +691,36 @@ impl XWrap {
         Ok(())
     }
 
+    pub fn get_cursor_point(&self) -> Result<(i32, i32), XlibError> {
+        let roots = self.get_roots(); //each screen
+        for w in roots {
+            let mut root_return: xlib::Window = 0;
+            let mut child_return: xlib::Window = 0;
+            let mut root_x_return: c_int = 0;
+            let mut root_y_return: c_int = 0;
+            let mut win_x_return: c_int = 0;
+            let mut win_y_return: c_int = 0;
+            let mut mask_return: c_uint = 0;
+            let success = unsafe {
+                (self.xlib.XQueryPointer)(
+                    self.display,
+                    w,
+                    &mut root_return,
+                    &mut child_return,
+                    &mut root_x_return,
+                    &mut root_y_return,
+                    &mut win_x_return,
+                    &mut win_y_return,
+                    &mut mask_return,
+                )
+            };
+            if success > 0 {
+                return Ok((win_x_return, win_y_return));
+            }
+        }
+        Err(XlibError::RootWindowNotFound)
+    }
+
     pub fn screens_area_dimensions(&self) -> (i32, i32) {
         let mut height = 0;
         let mut width = 0;
@@ -931,10 +989,24 @@ impl XWrap {
         Err(XlibError::InvalidXAtom)
     }
 
-    pub fn move_to_top(&self, handle: WindowHandle) {
+    pub fn restack(&self, handles: Vec<WindowHandle>) {
+        let mut windows = vec![];
+        for handle in handles {
+            if let WindowHandle::XlibHandle(window) = handle {
+                windows.push(window);
+            }
+        }
+        let size = windows.len();
+        let ptr = windows.as_mut_ptr();
+        unsafe {
+            (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
+        }
+    }
+
+    pub fn move_to_top(&self, handle: &WindowHandle) {
         if let WindowHandle::XlibHandle(window) = handle {
             unsafe {
-                (self.xlib.XRaiseWindow)(self.display, window);
+                (self.xlib.XRaiseWindow)(self.display, *window);
             }
         }
     }
@@ -1311,16 +1383,23 @@ impl XWrap {
         }
     }
 
-    pub fn get_next_event(&self) -> Option<xlib::XEvent> {
-        let event_queue_length = unsafe { (self.xlib.XPending)(self.display) };
-        if event_queue_length == 0 {
-            return None;
-        }
-
+    pub fn get_next_event(&self) -> xlib::XEvent {
         let mut event: xlib::XEvent = unsafe { std::mem::zeroed() };
         unsafe {
             (self.xlib.XNextEvent)(self.display, &mut event);
         };
-        Some(event)
+        event
+    }
+
+    pub async fn wait_readable(&mut self) {
+        self.task_notify.notified().await;
+    }
+
+    pub fn flush(&self) {
+        unsafe { (self.xlib.XFlush)(self.display) };
+    }
+
+    pub fn queue_len(&self) -> i32 {
+        unsafe { (self.xlib.XPending)(self.display) }
     }
 }

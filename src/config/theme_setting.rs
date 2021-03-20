@@ -1,4 +1,5 @@
 use crate::errors::Result;
+use crate::models::Margins;
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::fs;
@@ -7,8 +8,8 @@ use std::path::Path;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(default)]
 pub struct ThemeSetting {
-    pub border_width: u32,
-    pub margin: u32,
+    pub border_width: i32,
+    pub margin: Margins,
     pub default_border_color: String,
     pub floating_border_color: String,
     pub focused_border_color: String,
@@ -32,7 +33,7 @@ impl Default for ThemeSetting {
     fn default() -> Self {
         ThemeSetting {
             border_width: 1,
-            margin: 10,
+            margin: Margins::Int(10),
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
             focused_border_color: "#FF0000".to_owned(),
@@ -70,7 +71,7 @@ on_new_window = 'echo Hello World'
             config,
             ThemeSetting {
                 border_width: 0,
-                margin: 5,
+                margin: Margins::Int(5),
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),

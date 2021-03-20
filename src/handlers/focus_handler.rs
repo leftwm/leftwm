@@ -23,6 +23,7 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     workspace.tags.iter().for_each(|t| {
         focus_tag(manager, t);
     });
+
     // create an action to inform the DM
     update_current_tags(manager);
     true
@@ -35,24 +36,18 @@ pub fn focus_window_by_handle(
     x: i32,
     y: i32,
 ) -> bool {
-    let found: Vec<Window> = manager
+    let found: Option<Window> = manager
         .windows
         .iter()
-        .filter(|w| &w.handle == handle)
-        .cloned()
-        .collect();
-    if found.len() == 1 {
-        return focus_window(manager, &found[0], x, y);
+        .find(|w| &w.handle == handle)
+        .cloned();
+    if let Some(found) = found {
+        return focus_window(manager, &found, x, y);
     }
     false
 }
 
 pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> bool {
-    //Docks don't want to get focus. If they do weird things happen. They don't get events...
-    if window.type_ == WindowType::Dock {
-        return false;
-    }
-
     let result = _focus_window_work(manager, window);
     if !result {
         return false;
@@ -77,7 +72,40 @@ pub fn focus_window(manager: &mut Manager, window: &Window, x: i32, y: i32) -> b
     result
 }
 
+pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
+    let found: Option<Window> = manager
+        .windows
+        .iter()
+        .find(|w| w.visible() && w.contains_point(x, y))
+        .cloned();
+
+    match found {
+        Some(found) => return focus_window(manager, &found, x, y),
+        None => {
+            //backup plan, move focus first window in workspace
+            if let Some(handle) = first_window_in_current_workspace(manager) {
+                return focus_window_by_handle(manager, &handle, x, y);
+            }
+        }
+    }
+    false
+}
+
+fn first_window_in_current_workspace(manager: &Manager) -> Option<WindowHandle> {
+    let tag = manager.focused_workspace()?.tags.get(0)?;
+    let window = manager
+        .windows
+        .iter()
+        .find(|w| w.visible() && w.has_tag(tag))?;
+    Some(window.handle.clone())
+}
+
 fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
+    //Docks don't want to get focus. If they do weird things happen. They don't get events...
+    if window.type_ == WindowType::Dock {
+        return false;
+    }
+
     //no new history for if no change
     if let Some(fw) = manager.focused_window() {
         if fw.handle == window.handle {
@@ -121,25 +149,12 @@ pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bo
     false
 }
 
-/// Loops over the history and focuses the last window that still exists.
-pub fn focus_last_window_that_exists(manager: &mut Manager) -> bool {
-    let history = manager.focused_window_history.clone();
-    for handle in history {
-        for w in manager.windows.clone() {
-            if w.handle == handle {
-                return _focus_window_work(manager, &w);
-            }
-        }
-    }
-    false
-}
-
 /*
  * marks a tag as the focused tag
  */
 pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     //no new history for if no change
-    if let Some(t) = manager.focused_tag() {
+    if let Some(t) = manager.focused_tag(0) {
         if t == tag {
             return false;
         }
@@ -160,6 +175,22 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     to_focus.iter().for_each(|w| {
         focus_workspace(manager, &w);
     });
+
+    //check the currently focused window.
+    //if it isn't under this tag, move focus to a window with this tag
+    if let Some(fw) = manager.focused_window() {
+        if !fw.has_tag(tag) {
+            let win = manager
+                .windows
+                .iter()
+                .find(|win| win.has_tag(tag))
+                .map(Window::clone);
+            if let Some(win) = win {
+                let _ = _focus_window_work(manager, &win);
+            }
+        }
+    }
+
     true
 }
 
@@ -175,7 +206,7 @@ pub fn update_current_tags(manager: &mut Manager) {
     }
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -235,7 +266,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         let expected = "Bla".to_owned();
         focus_tag(&mut manager, &expected);
-        let accual = manager.focused_tag().unwrap();
+        let accual = manager.focused_tag(0).unwrap();
         assert_eq!(accual, expected);
     }
 
@@ -270,7 +301,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         let ws = manager.workspaces[1].clone();
         focus_workspace(&mut manager, &ws);
-        let actual = manager.focused_tag().unwrap();
+        let actual = manager.focused_tag(0).unwrap();
         assert_eq!("2", actual);
     }
 
@@ -281,9 +312,9 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None);
-        window.tag("2".to_owned());
+        window.tag("2");
         focus_window(&mut manager, &window, 0, 0);
-        let actual = manager.focused_tag().unwrap();
+        let actual = manager.focused_tag(0).unwrap();
         assert_eq!("2", actual);
     }
 
@@ -294,10 +325,10 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None);
-        window.tag("2".to_owned());
+        window.tag("2");
         focus_window(&mut manager, &window, 0, 0);
-        let actual = manager.focused_workspace().unwrap().id.clone();
-        let expected = manager.workspaces[1].id.clone();
+        let actual = manager.focused_workspace().unwrap().id;
+        let expected = manager.workspaces[1].id;
         assert_eq!(expected, actual);
     }
 }

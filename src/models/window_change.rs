@@ -2,7 +2,7 @@ use super::Window;
 use super::WindowHandle;
 use super::WindowState;
 use super::WindowType;
-use crate::models::XyhwChange;
+use crate::models::{Margins, XyhwChange};
 
 type MaybeWindowHandle = Option<WindowHandle>;
 type MaybeName = Option<String>;
@@ -82,7 +82,7 @@ impl WindowChange {
             window.type_ = type_.clone();
             if window.type_ == WindowType::Dock {
                 window.border = 0;
-                window.margin = 0;
+                window.margin = Margins::Int(0);
             }
         }
         if let Some(states) = self.states {

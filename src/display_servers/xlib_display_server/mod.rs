@@ -60,7 +60,7 @@ impl DisplayServer for XlibDisplayServer {
             };
             self.xw.update_window(&window, is_focused);
             if window.is_fullscreen() {
-                self.xw.move_to_top(window.handle.clone());
+                self.xw.move_to_top(&window.handle);
             }
         }
     }
@@ -81,9 +81,12 @@ impl DisplayServer for XlibDisplayServer {
                 (&mut events).push(e);
             }
         });
-        while let Some(xlib_event) = self.xw.get_next_event() {
+
+        for _ in 0..self.xw.queue_len() {
+            let xlib_event = self.xw.get_next_event();
             let event = XEvent(&self.xw, xlib_event).into();
             if let Some(e) = event {
+                log::trace!("DisplayEvent: {:?}", e);
                 events.push(e)
             }
         }
@@ -123,8 +126,12 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.window_take_focus(w);
                 None
             }
-            DisplayAction::MoveToTop(w) => {
-                self.xw.move_to_top(w);
+            DisplayAction::FocusWindowUnderCursor => {
+                let cursor = self.xw.get_cursor_point().ok()?;
+                Some(DisplayEvent::FocusedAt(cursor.0, cursor.1))
+            }
+            DisplayAction::SetWindowOrder(wins) => {
+                self.xw.restack(wins);
                 None
             }
             DisplayAction::StartMovingWindow(w) => {
@@ -208,5 +215,13 @@ impl XlibDisplayServer {
             }
         }
         all
+    }
+
+    pub async fn wait_readable(&mut self) {
+        self.xw.wait_readable().await;
+    }
+
+    pub fn flush(&self) {
+        self.xw.flush()
     }
 }

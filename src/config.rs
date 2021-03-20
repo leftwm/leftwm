@@ -3,7 +3,10 @@ mod theme_setting;
 mod workspace_config;
 
 use super::Command;
-use crate::errors::Result;
+use crate::{
+    errors::Result,
+    layouts::{Layout, LAYOUTS},
+};
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::env;
@@ -17,13 +20,15 @@ pub use keybind::Keybind;
 pub use theme_setting::ThemeSetting;
 pub use workspace_config::WorkspaceConfig;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
     pub workspaces: Option<Vec<WorkspaceConfig>>,
     pub tags: Option<Vec<String>>,
-    //pub layouts: Option<Vec<String>>,
+    pub layouts: Vec<Layout>,
+    //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
+    pub disable_current_tag_swap: bool,
     pub keybind: Vec<Keybind>,
 }
 
@@ -252,22 +257,11 @@ impl Default for Config {
             .map(|s| s.to_string())
             .collect();
 
-        //let layouts = vec![
-        //    "MainAndVertStack",
-        //    "GridHorizontal",
-        //    "EvenHorizontal",
-        //    "EvenVertical",
-        //    "Fibonacci",
-        //    "CenterMain",
-        //]
-        //.iter()
-        //.map(|s| s.to_string())
-        //.collect();
-
         Config {
             workspaces: Some(vec![]),
             tags: Some(tags),
-            //layouts: Some(layouts),
+            layouts: LAYOUTS.to_vec(),
+            disable_current_tag_swap: false,
             modkey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
