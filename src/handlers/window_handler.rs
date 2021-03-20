@@ -14,7 +14,7 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
     if let Some(ws) = manager.focused_workspace() {
         window.tags = ws.tags.clone();
         //if dialog, center in workspace
-        if window.type_ == WindowType::Dialog || window.type_ == WindowType::Splash {
+        if window.type_ == WindowType::Dialog {
             window.set_floating(true);
             let new_float_exact = ws.center_halfed();
             window.normal = ws.xyhw;
@@ -24,6 +24,9 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
             if let Some(requested) = window.requested {
                 window.normal = ws.xyhw;
                 requested.update_window_floating(&mut window);
+                let mut xhyw = window.get_floating_offsets().unwrap_or_default();
+                xhyw.center_relative(ws.xyhw, window.border, window.requested);
+                window.set_floating_offsets(Some(xhyw));
             } else {
                 window.set_floating(true);
                 let new_float_exact = ws.center_halfed();
