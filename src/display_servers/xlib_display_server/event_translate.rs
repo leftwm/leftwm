@@ -35,6 +35,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
                         if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
                             hint.update_window_floating(&mut w);
+                            w.set_requested(hint)
                         }
 
                         w.set_states(xw.get_window_states(event.window));
