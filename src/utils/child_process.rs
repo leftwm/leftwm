@@ -57,7 +57,7 @@ impl Nanny {
 }
 
 fn boot_desktop_file(path: &Path) -> std::io::Result<Child> {
-    let args = format!( "`grep '^Exec' {:?} | tail -1 | sed 's/^Exec=//' | sed 's/%.//' | sed 's/^\"//g' | sed 's/\" *$//g'`", path );
+    let args = format!( "`if [ \"$(grep '^X-GNOME-Autostart-enabled' {:?} | tail -1 | sed 's/^X-GNOME-Autostart-enabled=//' | tr '[A-Z]' '[a-z]')\" != 'false' ]; then grep '^Exec' {:?} | tail -1 | sed 's/^Exec=//' | sed 's/%.//' | sed 's/^\"//g' | sed 's/\" *$//g'; fi`", path );
     Command::new("sh").arg("-c").arg(args).spawn()
 }
 
