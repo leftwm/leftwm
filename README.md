@@ -19,12 +19,14 @@
 - [Installation (with package manager)](#installation-with-package-manager)
 - [Manual Installation (no package manager)](#manual-installation-no-package-manager)
   - [Using a graphical login such as LightDM, GDM, LXDM, and others](#using-a-graphical-login-such-as-lightdm-gdm-lxdm-and-others)
+  - [Optional Development Installation](#optional-development-installation)
   - [Starting with startx or a login such as slim](#starting-with-startx-or-a-login-such-as-slim)
 - [Theming](#theming)
   - [With LeftWM-Theme](#with-leftwm-theme)
   - [Without LeftWM-Theme](#without-leftwm-theme)
 - [Configuring](#configuring)
   - [Default keys](#default-keys)
+  - [Floating Windows](#floating-windows)
   - [Workspaces](#workspaces)
   - [Tags / Desktops](#tags--desktops)
   - [Layouts](#layouts)
@@ -113,10 +115,7 @@ cargo build --release
 4. Copy leftwm executables to the /usr/bin folder
 
 ```bash
-sudo cp ./target/release/leftwm /usr/bin/leftwm
-sudo cp ./target/release/leftwm-worker /usr/bin/leftwm-worker
-sudo cp ./target/release/leftwm-state /usr/bin/leftwm-state
-sudo cp ./target/release/leftwm-check /usr/bin/leftwm-check
+sudo install -s -Dm755 ./target/release/leftwm ./target/release/leftwm-worker ./target/release/leftwm-state ./target/release/leftwm-check -t /usr/bin
 ```
 
 5. Copy leftwm.desktop to xsessions folder
@@ -129,7 +128,7 @@ You should now see LeftWM in your list of available window managers.  At this po
 
 ## Optional Development Installation
 
-If your goal is to continously build leftwm and keep up to date with the latest releases, you may prefer to symlink the leftwm executables instead of copying them.  If you choose to install this way, make sure you do not move the build directory as it will break your installation.  Normal installation and development installation only differ on step 4.
+If your goal is to continously build leftwm and keep up to date with the latest releases, you may prefer to symlink the leftwm executables instead of copying them.  If you choose to install this way, make sure you do not move the build directory as it will break your installation.  
 
 1. Dependencies: Rust, Cargo
 2. Clone the repository and cd into the directory
@@ -142,7 +141,11 @@ cd leftwm
 3. Build leftwm
 
 ```bash
+# Without systemd logging
 cargo build --release
+
+# OR with systemd logging
+cargo build --release --features=journald
 ```
 
 4. Create the symlinks
@@ -173,7 +176,11 @@ git pull origin master
 2. Build leftwm
 
 ```bash
+# Without systemd logging
 cargo build --release
+
+# With systemd logging
+cargo build --release --features=journald
 ```
 
 3. And press the following keybind to reload leftwm
@@ -258,6 +265,12 @@ You can optionally switch between tiling or floating mode for any window.
 By default, workspaces have a one-to-one relationship with screens, but this is configurable. There are many reasons you might want to change this, but the main reason is for ultrawide monitors. You might want to have two or even three workspaces on a single screen.
 
 Here is an example config changing the way workspaces are defined (~/.config/leftwm/config.toml)
+
+---
+**NOTE**
+The line `workspaces = []` needs to be removed, or commented out if a configuration like the following example is used.
+
+---
 
 ```toml
 [[workspaces]]
