@@ -1,5 +1,6 @@
 use std::io::Result;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
@@ -76,6 +77,8 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
         return build_send_workspace_to_tag(s);
     } else if s.starts_with("SendWindowToTag ") {
         return build_send_window_to_tag(s);
+    } else if s.starts_with("SetLayout ") {
+        return build_set_layout(s);
     } else if s.starts_with("SwapScreens") {
         return Ok(ExternalCommand::SwapScreens);
     } else if s.starts_with("MoveWindowToLastWorkspace") {
@@ -155,6 +158,16 @@ fn build_send_workspace_to_tag(mut raw: String) -> std::result::Result<ExternalC
     Ok(ExternalCommand::SendWorkspaceToTag(ws_index, tag_index))
 }
 
+fn build_set_layout(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
+    crop_head(&mut raw, "SetLayout ");
+    let parts: Vec<&str> = raw.split(' ').collect();
+    if parts.len() != 1 {
+        return Err(());
+    }
+    let layout = String::from_str(parts[0]).map_err(|_| ())?;
+    Ok(ExternalCommand::SetLayout(layout))
+}
+
 fn crop_head(s: &mut String, head: &str) {
     let pos = head.len();
     match s.char_indices().nth(pos) {
@@ -188,6 +201,7 @@ pub enum ExternalCommand {
     CloseWindow,
     NextLayout,
     PreviousLayout,
+    SetLayout(String),
 }
 
 #[cfg(test)]
