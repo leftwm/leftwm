@@ -54,6 +54,10 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
             }
         }
 
+        ExternalCommand::SetLayout(layout) => {
+            command_handler::process(manager, config, Command::SetLayout, Some(layout));
+        }
+
         ExternalCommand::SwapScreens => {
             return command_handler::process(manager, config, Command::SwapTags, None);
         }
@@ -94,7 +98,6 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
                 None,
             );
         }
-
         ExternalCommand::NextLayout => {
             return command_handler::process(manager, config, Command::NextLayout, None);
         }
