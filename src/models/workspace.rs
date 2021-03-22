@@ -72,6 +72,7 @@ impl Workspace {
 
     pub fn show_tag(&mut self, tag: Tag) {
         self.tags = vec![tag.id.clone()];
+        self.set_main_width(self.layout.main_width());
     }
 
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
@@ -89,10 +90,12 @@ impl Workspace {
 
     pub fn next_layout(&mut self) {
         self.layout = self.layout.next_layout(&self.layouts);
+        self.set_main_width(self.layout.main_width());
     }
 
     pub fn prev_layout(&mut self) {
         self.layout = self.layout.prev_layout(&self.layouts);
+        self.set_main_width(self.layout.main_width());
     }
 
     /// Returns true if the workspace is displays a given window.
@@ -167,11 +170,17 @@ impl Workspace {
         }
     }
 
+    pub fn set_main_width(&self, val: u8) {
+        if let Some(tag) = self.current_tags().get(0) {
+            tag.set_main_width(val);
+        }
+    }
+
     pub fn main_width(&self) -> f32 {
         if let Some(tag) = self.current_tags().get(0) {
             return tag.main_width_percentage();
         }
-        50.0 //default
+        self.layout.main_width() as f32
     }
 
     pub fn center_halfed(&self) -> Xyhw {

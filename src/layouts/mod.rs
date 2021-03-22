@@ -11,6 +11,7 @@ mod grid_horizontal;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
 mod monocle;
+mod right_main_and_vert_stack;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
@@ -23,9 +24,11 @@ pub enum Layout {
     CenterMain,
     CenterMainBalanced,
     Monocle,
+    RightWiderLeftStack,
+    LeftWiderRihtStack,
 }
 
-pub const LAYOUTS: [Layout; 9] = [
+pub const LAYOUTS: [Layout; 11] = [
     Layout::MainAndVertStack,
     Layout::MainAndHorizontalStack,
     Layout::GridHorizontal,
@@ -35,6 +38,8 @@ pub const LAYOUTS: [Layout; 9] = [
     Layout::CenterMain,
     Layout::CenterMainBalanced,
     Layout::Monocle,
+    Layout::RightWiderLeftStack,
+    Layout::LeftWiderRihtStack,
 ];
 
 // This is tedious, but simple and effective.
@@ -56,6 +61,16 @@ impl Layout {
             Self::CenterMain => center_main::update(workspace, windows),
             Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
             Self::Monocle => monocle::update(workspace, windows),
+            Self::RightWiderLeftStack => right_main_and_vert_stack::update(workspace, windows),
+            Self::LeftWiderRihtStack => main_and_vert_stack::update(workspace, windows),
+        }
+    }
+
+    pub fn main_width(&self) -> u8 {
+        match self {
+            Self::RightWiderLeftStack => 75,
+            Self::LeftWiderRihtStack => 75,
+            _ => 50,
         }
     }
 
