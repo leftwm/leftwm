@@ -112,6 +112,8 @@ impl FromStr for Layout {
             "CenterMain" => Ok(Layout::CenterMain),
             "CenterMainBalanced" => Ok(Layout::CenterMainBalanced),
             "Monocle" => Ok(Layout::Monocle),
+            "RightWiderLeftStack" => Ok(Layout::RightWiderLeftStack),
+            "LeftWiderRihtStack" => Ok(Layout::LeftWiderRihtStack),
             _ => Err(()),
         }
     }
@@ -153,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let layout_strs: [&str; 9] = [
+        let layout_strs: [&str; 11] = [
             "MainAndVertStack",
             "MainAndHorizontalStack",
             "GridHorizontal",
@@ -163,6 +165,8 @@ mod tests {
             "CenterMain",
             "CenterMainBalanced",
             "Monocle",
+            "RightWiderLeftStack",
+            "LeftWiderRihtStack",
         ];
 
         assert_eq!(layout_strs.len(), LAYOUTS.len());
