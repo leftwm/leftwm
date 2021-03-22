@@ -1,6 +1,7 @@
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
+use crate::models::xyhw_change::XyhwChange;
 use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
@@ -31,6 +32,7 @@ pub struct Window {
     pub border: i32,
     pub margin: Margins,
     states: Vec<WindowState>,
+    pub requested: Option<XyhwChange>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
     pub container_size: Option<Xyhw>,
@@ -53,6 +55,7 @@ impl Window {
             margin: Margins::Int(10),
             states: vec![],
             normal: XyhwBuilder::default().into(),
+            requested: None,
             floating: None,
             start_loc: None,
             container_size: None,
@@ -142,6 +145,14 @@ impl Window {
     }
     pub fn set_states(&mut self, states: Vec<WindowState>) {
         self.states = states;
+    }
+
+    pub fn set_requested(&mut self, change: XyhwChange) {
+        self.requested = Some(change)
+    }
+
+    pub fn get_requested(&mut self) -> Option<XyhwChange> {
+        self.requested
     }
 
     pub fn width(&self) -> i32 {

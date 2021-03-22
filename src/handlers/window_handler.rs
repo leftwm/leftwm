@@ -1,6 +1,6 @@
 use super::*;
 use crate::display_action::DisplayAction;
-
+use crate::models::WindowHandle;
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
 pub fn created(manager: &mut Manager, mut window: Window) -> bool {
@@ -13,13 +13,26 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
 
     if let Some(ws) = manager.focused_workspace() {
         window.tags = ws.tags.clone();
-
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
             window.set_floating(true);
             let new_float_exact = ws.center_halfed();
             window.normal = ws.xyhw;
             window.set_floating_exact(new_float_exact);
+        }
+        if window.type_ == WindowType::Splash {
+            if let Some(requested) = window.requested {
+                window.normal = ws.xyhw;
+                requested.update_window_floating(&mut window);
+                let mut xhyw = window.get_floating_offsets().unwrap_or_default();
+                xhyw.center_relative(ws.xyhw, window.border, window.requested);
+                window.set_floating_offsets(Some(xhyw));
+            } else {
+                window.set_floating(true);
+                let new_float_exact = ws.center_halfed();
+                window.normal = ws.xyhw;
+                window.set_floating_exact(new_float_exact);
+            }
         }
     } else {
         window.tags = vec![manager.tags[0].id.clone()]
