@@ -98,6 +98,10 @@ impl Workspace {
         self.set_main_width(self.layout.main_width());
     }
 
+    pub fn set_layout(&mut self, layout: Layout) {
+        self.layout = layout
+    }
+
     /// Returns true if the workspace is displays a given window.
     pub fn is_displaying(&self, window: &Window) -> bool {
         for wd_t in &window.tags {
