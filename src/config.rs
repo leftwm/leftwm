@@ -263,7 +263,7 @@ impl Default for Config {
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
             disable_current_tag_swap: false,
-            modkey: "Mod4".to_owned(), //win key
+            modkey: "Mod4".to_owned(),   //win key
             mousekey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
