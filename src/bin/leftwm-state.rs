@@ -103,17 +103,14 @@ fn template_handler(
             let mut globals = liquid::model::Object::new();
             globals.insert(
                 "window_title".into(),
-                liquid::model::value::Value::scalar(display.window_title),
+                liquid::model::Value::scalar(display.window_title),
             );
-            globals.insert(
-                "workspace".into(),
-                liquid::model::value::Value::Object(workspace),
-            );
+            globals.insert("workspace".into(), liquid::model::Value::Object(workspace));
             //liquid only does time in utc. BUG: https://github.com/cobalt-org/liquid-rust/issues/332
             //as a workaround we are setting a time locally
             globals.insert(
                 "localtime".into(),
-                liquid::model::value::Value::scalar(get_localtime()),
+                liquid::model::Value::scalar(get_localtime()),
             );
             globals
         }

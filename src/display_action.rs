@@ -20,8 +20,9 @@ pub enum DisplayAction {
     /// Makes sure the mouse is over a given point.
     MoveMouseOverPoint((i32, i32)),
 
-    /// Send a window to the top move location.
-    MoveToTop(WindowHandle),
+    /// Sets the "z-index" order of the windows
+    /// first in the array is top most
+    SetWindowOrder(Vec<WindowHandle>),
 
     /// Tell the DS we no longer care about the this window and other
     /// cleanup.

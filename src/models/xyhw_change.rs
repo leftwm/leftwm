@@ -1,7 +1,8 @@
 use crate::models::Window;
 use crate::models::Xyhw;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Copy)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct XyhwChange {
     pub x: Option<i32>,
     pub y: Option<i32>,

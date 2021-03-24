@@ -1,4 +1,3 @@
-use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::Screen;
@@ -8,6 +7,8 @@ use crate::models::WindowHandle;
 use crate::models::Workspace;
 use crate::state;
 use crate::utils::child_process::Children;
+use crate::{config::ThemeSetting, layouts::Layout};
+
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::{atomic::AtomicBool, Arc};
@@ -21,6 +22,7 @@ pub struct Manager {
     pub theme_setting: ThemeSetting,
     #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
+    pub layouts: Vec<Layout>,
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,
@@ -92,6 +94,52 @@ impl Manager {
             }
         }
         None
+    }
+
+    //sorts the windows and puts them in order of importance
+    //keeps the order for each importance level
+    pub fn sort_windows(&mut self) {
+        use crate::models::WindowType;
+        //first dialogs and modals
+        let (level1, other): (Vec<&Window>, Vec<&Window>) = self.windows.iter().partition(|w| {
+            w.type_ == WindowType::Dialog
+                || w.type_ == WindowType::Splash
+                || w.type_ == WindowType::Utility
+                || w.type_ == WindowType::Menu
+        });
+
+        //next floating
+        let (level2, other): (Vec<&Window>, Vec<&Window>) = other
+            .iter()
+            .partition(|w| w.type_ == WindowType::Normal && w.floating());
+
+        //then normal windows
+        let (level3, other): (Vec<&Window>, Vec<&Window>) =
+            other.iter().partition(|w| w.type_ == WindowType::Normal);
+
+        //last docks
+        //other is all the reset
+
+        //build the updated window list
+        let windows: Vec<Window> = level1
+            .iter()
+            .chain(level2.iter())
+            .chain(level3.iter())
+            .chain(other.iter())
+            .map(|&w| w.clone())
+            .collect();
+        self.windows = windows;
+        let order: Vec<_> = self.windows.iter().map(|w| w.handle.clone()).collect();
+        let act = DisplayAction::SetWindowOrder(order);
+        self.actions.push_back(act);
+    }
+
+    pub fn move_to_top(&mut self, handle: &WindowHandle) -> Option<()> {
+        let index = self.windows.iter().position(|w| &w.handle == handle)?;
+        let window = self.windows.remove(index);
+        self.windows.insert(0, window);
+        self.sort_windows();
+        Some(())
     }
 
     pub fn tags_display(&self) -> String {

@@ -320,30 +320,16 @@ impl XWrap {
     }
 
     pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
-        if let Some(value) = self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
-            if value == self.atoms.NetWMWindowTypeDesktop {
-                return WindowType::Desktop;
-            }
-            if value == self.atoms.NetWMWindowTypeDock {
-                return WindowType::Dock;
-            }
-            if value == self.atoms.NetWMWindowTypeToolbar {
-                return WindowType::Toolbar;
-            }
-            if value == self.atoms.NetWMWindowTypeMenu {
-                return WindowType::Menu;
-            }
-            if value == self.atoms.NetWMWindowTypeUtility {
-                return WindowType::Utility;
-            }
-            if value == self.atoms.NetWMWindowTypeSplash {
-                return WindowType::Splash;
-            }
-            if value == self.atoms.NetWMWindowTypeDialog {
-                return WindowType::Dialog;
-            }
+        match self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
+            x if x == Some(self.atoms.NetWMWindowTypeDesktop) => WindowType::Desktop,
+            x if x == Some(self.atoms.NetWMWindowTypeDock) => WindowType::Dock,
+            x if x == Some(self.atoms.NetWMWindowTypeToolbar) => WindowType::Toolbar,
+            x if x == Some(self.atoms.NetWMWindowTypeMenu) => WindowType::Menu,
+            x if x == Some(self.atoms.NetWMWindowTypeUtility) => WindowType::Utility,
+            x if x == Some(self.atoms.NetWMWindowTypeSplash) => WindowType::Splash,
+            x if x == Some(self.atoms.NetWMWindowTypeDialog) => WindowType::Dialog,
+            _ => WindowType::Normal,
         }
-        WindowType::Normal
     }
 
     pub fn set_window_states_atoms(&self, window: xlib::Window, states: Vec<xlib::Atom>) {
@@ -1003,10 +989,24 @@ impl XWrap {
         Err(XlibError::InvalidXAtom)
     }
 
-    pub fn move_to_top(&self, handle: WindowHandle) {
+    pub fn restack(&self, handles: Vec<WindowHandle>) {
+        let mut windows = vec![];
+        for handle in handles {
+            if let WindowHandle::XlibHandle(window) = handle {
+                windows.push(window);
+            }
+        }
+        let size = windows.len();
+        let ptr = windows.as_mut_ptr();
+        unsafe {
+            (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
+        }
+    }
+
+    pub fn move_to_top(&self, handle: &WindowHandle) {
         if let WindowHandle::XlibHandle(window) = handle {
             unsafe {
-                (self.xlib.XRaiseWindow)(self.display, window);
+                (self.xlib.XRaiseWindow)(self.display, *window);
             }
         }
     }

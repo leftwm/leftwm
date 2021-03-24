@@ -1,6 +1,7 @@
 use super::models::Window;
 use super::models::Workspace;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 mod center_main;
 mod center_main_balanced;
@@ -11,6 +12,7 @@ mod grid_horizontal;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
 mod monocle;
+mod right_main_and_vert_stack;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Layout {
@@ -23,46 +25,32 @@ pub enum Layout {
     CenterMain,
     CenterMainBalanced,
     Monocle,
+    RightWiderLeftStack,
+    LeftWiderRihtStack,
 }
 
-impl Default for Layout {
-    fn default() -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
-        layouts.first().unwrap().clone()
-    }
-}
-
-const LAYOUTS: &[&str] = &[
-    "MainAndVertStack",
-    "MainAndHorizontalStack",
-    "GridHorizontal",
-    "EvenHorizontal",
-    "EvenVertical",
-    "Fibonacci",
-    "CenterMain",
-    "CenterMainBalanced",
-    "Monocle",
+pub const LAYOUTS: [Layout; 11] = [
+    Layout::MainAndVertStack,
+    Layout::MainAndHorizontalStack,
+    Layout::GridHorizontal,
+    Layout::EvenHorizontal,
+    Layout::EvenVertical,
+    Layout::Fibonacci,
+    Layout::CenterMain,
+    Layout::CenterMainBalanced,
+    Layout::Monocle,
+    Layout::RightWiderLeftStack,
+    Layout::LeftWiderRihtStack,
 ];
-
-impl From<&str> for Layout {
-    fn from(s: &str) -> Self {
-        match s {
-            "MainAndVertStack" => Self::MainAndVertStack,
-            "MainAndHorizontalStack" => Self::MainAndHorizontalStack,
-            "GridHorizontal" => Self::GridHorizontal,
-            "EvenHorizontal" => Self::EvenHorizontal,
-            "EvenVertical" => Self::EvenVertical,
-            "Fibonacci" => Self::Fibonacci,
-            "CenterMain" => Self::CenterMain,
-            "CenterMainBalanced" => Self::CenterMainBalanced,
-            "Monocle" => Self::Monocle,
-            _ => Self::MainAndVertStack,
-        }
-    }
-}
 
 // This is tedious, but simple and effective.
 impl Layout {
+    pub fn new(layouts: &[Layout]) -> Self {
+        if let Some(layout) = layouts.first() {
+            return layout.clone();
+        }
+        Layout::Fibonacci
+    }
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         match self {
             Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
@@ -74,14 +62,23 @@ impl Layout {
             Self::CenterMain => center_main::update(workspace, windows),
             Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
             Self::Monocle => monocle::update(workspace, windows),
+            Self::RightWiderLeftStack => right_main_and_vert_stack::update(workspace, windows),
+            Self::LeftWiderRihtStack => main_and_vert_stack::update(workspace, windows),
         }
     }
 
-    pub fn next_layout(&self) -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+    pub fn main_width(&self) -> u8 {
+        match self {
+            Self::RightWiderLeftStack => 75,
+            Self::LeftWiderRihtStack => 75,
+            _ => 50,
+        }
+    }
+
+    pub fn next_layout(&self, layouts: &[Layout]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,
-            None => return "Fibonacci".into(),
+            None => return Layout::Fibonacci,
         } + 1;
         if index >= layouts.len() as isize {
             index = 0;
@@ -89,16 +86,36 @@ impl Layout {
         layouts[index as usize].clone()
     }
 
-    pub fn prev_layout(&self) -> Self {
-        let layouts: Vec<Layout> = LAYOUTS.iter().map(|&x| x.into()).collect();
+    pub fn prev_layout(&self, layouts: &[Layout]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,
-            None => return "Fibonacci".into(),
+            None => return Layout::Fibonacci,
         } - 1;
         if index < 0 {
             index = layouts.len() as isize - 1;
         }
         layouts[index as usize].clone()
+    }
+}
+
+// TODO: Perhaps there is a more efficient way to impl FromStr using serde
+impl FromStr for Layout {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "MainAndVertStack" => Ok(Layout::MainAndVertStack),
+            "MainAndHorizontalStack" => Ok(Layout::MainAndHorizontalStack),
+            "GridHorizontal" => Ok(Layout::GridHorizontal),
+            "EvenHorizontal" => Ok(Layout::EvenHorizontal),
+            "EvenVertical" => Ok(Layout::EvenVertical),
+            "Fibonacci" => Ok(Layout::Fibonacci),
+            "CenterMain" => Ok(Layout::CenterMain),
+            "CenterMainBalanced" => Ok(Layout::CenterMainBalanced),
+            "Monocle" => Ok(Layout::Monocle),
+            "RightWiderLeftStack" => Ok(Layout::RightWiderLeftStack),
+            "LeftWiderRihtStack" => Ok(Layout::LeftWiderRihtStack),
+            _ => Err(()),
+        }
     }
 }
 
@@ -118,6 +135,7 @@ mod tests {
                 y: 0,
             },
             vec![],
+            vec![],
         );
         ws.xyhw.set_minh(600);
         ws.xyhw.set_minw(800);
@@ -133,5 +151,28 @@ mod tests {
             "window was not size to the correct height"
         );
         assert!(w.width() == 800, "window was not size to the correct width");
+    }
+
+    #[test]
+    fn test_from_str() {
+        let layout_strs: [&str; 11] = [
+            "MainAndVertStack",
+            "MainAndHorizontalStack",
+            "GridHorizontal",
+            "EvenHorizontal",
+            "EvenVertical",
+            "Fibonacci",
+            "CenterMain",
+            "CenterMainBalanced",
+            "Monocle",
+            "RightWiderLeftStack",
+            "LeftWiderRihtStack",
+        ];
+
+        assert_eq!(layout_strs.len(), LAYOUTS.len());
+
+        for (i, layout) in LAYOUTS.iter().enumerate() {
+            assert_eq!(layout, &Layout::from_str(layout_strs[i]).unwrap());
+        }
     }
 }

@@ -29,15 +29,23 @@ fn main() {
                 .iter()
                 .map(|s| TagModel::new(s))
                 .collect(),
+            layouts: config.layouts.clone(),
             ..Default::default()
         };
 
         child_process::register_child_hook(manager.reap_requested.clone());
 
         let mut display_server = XlibDisplayServer::new(&config);
-        let handler = DisplayEventHandler { config };
+        let handler = DisplayEventHandler {
+            config: config.clone(),
+        };
 
-        rt.block_on(event_loop(&mut manager, &mut display_server, &handler));
+        rt.block_on(event_loop(
+            &mut manager,
+            &mut display_server,
+            &handler,
+            config,
+        ));
     });
 
     match completed {
@@ -57,6 +65,7 @@ async fn event_loop(
     manager: &mut Manager,
     display_server: &mut XlibDisplayServer,
     handler: &DisplayEventHandler,
+    config: crate::config::Config,
 ) {
     let socket_file = place_runtime_file("current_state.sock").unwrap();
     let mut state_socket = StateSocket::default();
@@ -83,7 +92,7 @@ async fn event_loop(
                 continue;
             }
             Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
-                needs_update = external_command_handler::process(manager, cmd) || needs_update;
+                needs_update = external_command_handler::process(manager, &config, cmd) || needs_update;
                 display_server.update_theme_settings(manager.theme_setting.clone());
             }
             else => {

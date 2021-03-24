@@ -1,3 +1,4 @@
+use crate::models::XyhwChange;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::ops::Add;
@@ -248,6 +249,22 @@ impl Xyhw {
             ..Default::default()
         }
         .into()
+    }
+
+    pub fn center_relative(&mut self, outer: Self, border: i32, change: Option<XyhwChange>) {
+        // If this is a Splash screen, for some reason w/h are sometimes not sized properly. We
+        // therefore want to use the minimum or maximum sizing instead in order to center the
+        // windows properly.
+        match change {
+            Some(change) => {
+                self.x = outer.w() / 2 - (change.minw.unwrap_or(self.w).abs() / 2) - border * 2;
+                self.y = outer.h() / 2 - (change.minh.unwrap_or(self.h).abs() / 2) - border * 2;
+            }
+            None => {
+                self.x = outer.w() / 2 - (self.w.abs() / 2) - border * 2;
+                self.y = outer.h() / 2 - (self.h.abs() / 2) - border * 2;
+            }
+        }
     }
 
     pub fn center(&self) -> (i32, i32) {
