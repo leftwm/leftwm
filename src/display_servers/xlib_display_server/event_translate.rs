@@ -52,7 +52,8 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         }
                         w.type_ = xw.get_window_type(event.window);
 
-                        Some(DisplayEvent::WindowCreate(w))
+                        let cursor = xw.get_cursor_point().ok()?;
+                        Some(DisplayEvent::WindowCreate(w, cursor.0, cursor.1))
                     }
                     Err(_) => None,
                 }
@@ -105,7 +106,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                     Mode::NormalMode => {}
                 };
                 let event = xlib::XEnterWindowEvent::from(raw_event);
-                //println!("EnterNotify {:?}", event);
+                //log::trace!("EnterNotify {:?}", event);
                 let crossing = xlib::XCrossingEvent::from(raw_event);
                 if (crossing.mode != xlib::NotifyNormal || crossing.detail == xlib::NotifyInferior)
                     && crossing.window != xw.get_default_root()
@@ -113,9 +114,9 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                     return None;
                 }
                 let h = WindowHandle::XlibHandle(event.window);
-                let mouse_loc = xw.get_pointer_location();
-
-                mouse_loc.map(|loc| DisplayEvent::FocusedWindow(h, loc.0, loc.1))
+                //let mouse_loc = xw.get_pointer_location();
+                //mouse_loc.map(|loc| )
+                Some(DisplayEvent::MouseEnteredWindow(h))
             }
 
             xlib::PropertyNotify => {
@@ -138,7 +139,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
 
             xlib::MotionNotify => {
                 let event = xlib::XMotionEvent::from(raw_event);
-                //println!("MotionNotify {:?}", event);
+                //log::trace!("XMotionEvent {:?}", event);
                 let event_h = WindowHandle::XlibHandle(event.window);
                 let offset_x = event.x_root - xw.mode_origin.0;
                 let offset_y = event.y_root - xw.mode_origin.1;

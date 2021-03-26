@@ -1111,33 +1111,6 @@ impl XWrap {
         }
     }
 
-    pub fn get_pointer_location(&self) -> Option<(i32, i32)> {
-        let mut root: xlib::Window = 0;
-        let mut window: xlib::Window = 0;
-        let mut root_x: c_int = 0;
-        let mut root_y: c_int = 0;
-        let mut win_x: c_int = 0;
-        let mut win_y: c_int = 0;
-        let mut state: c_uint = 0;
-        unsafe {
-            let success = (self.xlib.XQueryPointer)(
-                self.display,
-                self.root,
-                &mut root,
-                &mut window,
-                &mut root_x,
-                &mut root_y,
-                &mut win_x,
-                &mut win_y,
-                &mut state,
-            );
-            if success > 0 {
-                return Some((root_x, root_y));
-            }
-        }
-        None
-    }
-
     pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
         unsafe {
             let hints_ptr: *const xlib::XWMHints = (self.xlib.XGetWMHints)(self.display, window);
@@ -1353,8 +1326,8 @@ impl XWrap {
         if self.mode == Mode::NormalMode && mode != Mode::NormalMode {
             self.mode = mode.clone();
             //safe this point as the start of the move/resize
-            if let Some(loc) = self.get_pointer_location() {
-                self.mode_origin = loc;
+            if let Ok(loc) = self.get_cursor_point() {
+                self.mode_origin = loc
             }
             unsafe {
                 let cursor = match mode {
