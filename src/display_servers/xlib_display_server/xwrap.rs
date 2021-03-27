@@ -56,6 +56,7 @@ pub struct XWrap {
     pub tags: Vec<String>,
     pub mode: Mode,
     pub mod_key_mask: ModMask,
+    pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
     task_notify: Arc<Notify>,
@@ -127,6 +128,7 @@ impl XWrap {
             tags: vec![],
             mode: Mode::NormalMode,
             mod_key_mask: 0,
+            mouse_key_mask: 0,
             mode_origin: (0, 0),
             _task_guard,
             task_notify,
@@ -660,10 +662,10 @@ impl XWrap {
                 handle,
             ); //cleanup
                //just watchout for these mouse combos so we can act on them
-            self.grab_buttons(handle, xlib::Button1, self.mod_key_mask);
-            self.grab_buttons(handle, xlib::Button1, self.mod_key_mask | xlib::ShiftMask);
-            self.grab_buttons(handle, xlib::Button3, self.mod_key_mask);
-            self.grab_buttons(handle, xlib::Button3, self.mod_key_mask | xlib::ShiftMask);
+            self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
+            self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
+            self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
+            self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
         }
     }
 

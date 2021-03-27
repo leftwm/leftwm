@@ -24,6 +24,7 @@ pub use workspace_config::WorkspaceConfig;
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
+    pub mousekey: String,
     pub workspaces: Option<Vec<WorkspaceConfig>>,
     pub tags: Option<Vec<String>>,
     pub layouts: Vec<Layout>,
@@ -262,7 +263,8 @@ impl Default for Config {
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
             disable_current_tag_swap: false,
-            modkey: "Mod4".to_owned(), //win key
+            modkey: "Mod4".to_owned(),   //win key
+            mousekey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
     }
