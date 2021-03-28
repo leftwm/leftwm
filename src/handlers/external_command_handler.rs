@@ -66,6 +66,10 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
             return command_handler::process(manager, config, Command::MoveToLastWorkspace, None);
         }
 
+        ExternalCommand::SnapWindowTile => {
+            return command_handler::process(manager, config, Command::SnapWindowTile, None);
+        }
+
         ExternalCommand::MoveWindowUp => {
             return command_handler::process(manager, config, Command::MoveWindowUp, None);
         }
