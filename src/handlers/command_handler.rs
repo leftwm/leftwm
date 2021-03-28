@@ -193,7 +193,10 @@ pub fn process(
                 if !window.floating() {
                     return false;
                 }
-                return window_handler::snap_to_workspace(window, workspace);
+                window_handler::snap_to_workspace(window, workspace);
+                let act = DisplayAction::MoveMouseOver(window.handle.clone());
+                manager.actions.push_back(act);
+                return true;
             }
             false
         }
