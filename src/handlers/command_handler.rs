@@ -182,7 +182,7 @@ pub fn process(
             false
         }
 
-        Command::SnapWindowTile => {
+        Command::FloatingToTile => {
             let workspace = manager.focused_workspace().unwrap().clone();
             if let Some(window) = manager.focused_window_mut() {
                 if window.must_float() {
