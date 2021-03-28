@@ -156,3 +156,28 @@ pub fn update_workspace_avoid_list(manager: &mut Manager) {
         w.update_avoided_areas();
     }
 }
+
+pub fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
+    window.debugging = true;
+    window.set_floating(false);
+
+    //we are reparenting
+    if window.tags != workspace.tags {
+        window.debugging = true;
+        window.tags = workspace.tags.clone();
+        let mut offset = window.get_floating_offsets().unwrap_or_default();
+        let mut start_loc = window.start_loc.unwrap_or_default();
+        let x = offset.x() + window.normal.x();
+        let y = offset.y() + window.normal.y();
+        offset.set_x(x - workspace.xyhw.x());
+        offset.set_y(y - workspace.xyhw.y());
+        window.set_floating_offsets(Some(offset));
+
+        let x = start_loc.x() + window.normal.x();
+        let y = start_loc.y() + window.normal.y();
+        start_loc.set_x(x - workspace.xyhw.x());
+        start_loc.set_y(y - workspace.xyhw.y());
+        window.start_loc = Some(start_loc);
+    }
+    true
+}
