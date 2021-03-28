@@ -185,10 +185,14 @@ pub fn process(
         Command::SnapWindowTile => {
             let workspace = manager.focused_workspace().unwrap().clone();
             if let Some(window) = manager.focused_window_mut() {
-                if window.must_float() { false; }
+                if window.must_float() { 
+                    return false; 
+                }
                 //Not ideal as is_floating and must_float are connected so have to check
                 //them separately
-                if !window.floating() { false; }
+                if !window.floating() { 
+                    return false; 
+                }
                 return window_handler::snap_to_workspace(window, workspace);    
             }
             false
