@@ -182,6 +182,25 @@ pub fn process(
             false
         }
 
+        Command::FloatingToTile => {
+            let workspace = manager.focused_workspace().unwrap().clone();
+            if let Some(window) = manager.focused_window_mut() {
+                if window.must_float() {
+                    return false;
+                }
+                //Not ideal as is_floating and must_float are connected so have to check
+                //them separately
+                if !window.floating() {
+                    return false;
+                }
+                window_handler::snap_to_workspace(window, workspace);
+                let act = DisplayAction::MoveMouseOver(window.handle.clone());
+                manager.actions.push_back(act);
+                return true;
+            }
+            false
+        }
+
         Command::MoveWindowUp => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle.clone(),

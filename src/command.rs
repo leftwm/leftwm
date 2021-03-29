@@ -8,6 +8,7 @@ pub enum Command {
     SoftReload,
     HardReload,
     GotoTag,
+    FloatingToTile,
     MoveWindowUp,
     MoveWindowDown,
     MoveWindowTop,

@@ -83,6 +83,8 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
         return Ok(ExternalCommand::SwapScreens);
     } else if s.starts_with("MoveWindowToLastWorkspace") {
         return Ok(ExternalCommand::MoveWindowToLastWorkspace);
+    } else if s.starts_with("FloatingToTile") {
+        return Ok(ExternalCommand::FloatingToTile);
     } else if s.starts_with("MoveWindowUp") {
         return Ok(ExternalCommand::MoveWindowUp);
     } else if s.starts_with("MoveWindowDown") {
@@ -189,6 +191,7 @@ pub enum ExternalCommand {
     SendWindowToTag(usize),
     SwapScreens,
     MoveWindowToLastWorkspace,
+    FloatingToTile,
     MoveWindowUp,
     MoveWindowDown,
     MoveWindowTop,
