@@ -553,8 +553,8 @@ pub fn process(
             let mut to_apply_margin_multiplier =
                 helpers::vec_extract(&mut manager.windows, for_active_workspace);
             for window in &mut to_apply_margin_multiplier {
-                window.set_margin_multiplier(margin_multiplier.clone().abs());
-            };
+                window.set_margin_multiplier(margin_multiplier.clone());
+            }
             manager.windows.append(&mut to_apply_margin_multiplier);
 
             true

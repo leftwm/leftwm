@@ -157,8 +157,8 @@ impl Window {
         self.requested
     }
 
-    pub fn set_margin_multiplier (&mut self, value: f32) {
-        self.margin_multiplier = value
+    pub fn set_margin_multiplier(&mut self, value: f32) {
+        self.margin_multiplier = value.abs()
     }
 
     pub fn width(&self) -> i32 {
@@ -167,11 +167,11 @@ impl Window {
             value = self.normal.w();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            value = relative.w()
-                - (self.border * 2);
+            value = relative.w() - (self.border * 2);
         } else {
             value = self.normal.w()
-                - (((self.margin.clone().left() + self.margin.clone().right()) as f32) * self.margin_multiplier) as i32
+                - (((self.margin.clone().left() + self.margin.clone().right()) as f32)
+                    * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
@@ -185,11 +185,11 @@ impl Window {
             value = self.normal.h();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            value = relative.h()
-                - (self.border * 2);
+            value = relative.h() - (self.border * 2);
         } else {
             value = self.normal.h()
-                - (((self.margin.clone().top() + self.margin.clone().bottom()) as f32) * self.margin_multiplier) as i32
+                - (((self.margin.clone().top() + self.margin.clone().bottom()) as f32)
+                    * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {

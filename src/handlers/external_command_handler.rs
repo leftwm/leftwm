@@ -57,9 +57,13 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
         ExternalCommand::SetLayout(layout) => {
             command_handler::process(manager, config, Command::SetLayout, Some(layout));
         }
-        
         ExternalCommand::SetMarginMultiplier(margin_multiplier) => {
-            command_handler::process(manager, config, Command::SetMarginMultiplier, Some(margin_multiplier));
+            command_handler::process(
+                manager,
+                config,
+                Command::SetMarginMultiplier,
+                Some(margin_multiplier),
+            );
         }
 
         ExternalCommand::SwapScreens => {
@@ -113,7 +117,8 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
             return command_handler::process(manager, config, Command::CloseWindow, None);
         }
 
-        _ => {}
+        ExternalCommand::Reload => {}
+        ExternalCommand::MoveWindowTop => {}
     }
 
     false
