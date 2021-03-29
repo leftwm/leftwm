@@ -31,6 +31,7 @@ pub struct Window {
     pub tags: Vec<TagId>,
     pub border: i32,
     pub margin: Margins,
+    pub margin_multiplier: f32,
     states: Vec<WindowState>,
     pub requested: Option<XyhwChange>,
     pub normal: Xyhw,
@@ -53,6 +54,7 @@ impl Window {
             tags: Vec::new(),
             border: 1,
             margin: Margins::Int(10),
+            margin_multiplier: 1.0,
             states: vec![],
             normal: XyhwBuilder::default().into(),
             requested: None,
@@ -155,6 +157,10 @@ impl Window {
         self.requested
     }
 
+    pub fn set_margin_multiplier (&mut self, value: f32) {
+        self.margin_multiplier = value
+    }
+
     pub fn width(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -162,11 +168,10 @@ impl Window {
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
             value = relative.w()
-                - (self.margin.clone().left() + self.margin.clone().right())
                 - (self.border * 2);
         } else {
             value = self.normal.w()
-                - (self.margin.clone().left() + self.margin.clone().right())
+                - (((self.margin.clone().left() + self.margin.clone().right()) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
@@ -181,11 +186,10 @@ impl Window {
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
             value = relative.h()
-                - (self.margin.clone().top() + self.margin.clone().bottom())
                 - (self.border * 2);
         } else {
             value = self.normal.h()
-                - (self.margin.clone().top() + self.margin.clone().bottom())
+                - (((self.margin.clone().top() + self.margin.clone().bottom()) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
@@ -215,9 +219,9 @@ impl Window {
         }
         if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            relative.x() + self.margin.clone().left()
+            relative.x()
         } else {
-            self.normal.x() + self.margin.clone().left()
+            self.normal.x() + (self.margin.clone().left() as f32 * self.margin_multiplier) as i32
         }
     }
 
@@ -227,9 +231,9 @@ impl Window {
         }
         if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            relative.y() + self.margin.clone().bottom()
+            relative.y()
         } else {
-            self.normal.y() + self.margin.clone().bottom()
+            self.normal.y() + (self.margin.clone().top() as f32 * self.margin_multiplier) as i32
         }
     }
 

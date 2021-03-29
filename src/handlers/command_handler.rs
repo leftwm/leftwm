@@ -538,6 +538,27 @@ pub fn process(
             workspace.decrease_main_width(delta);
             true
         }
+        Command::SetMarginMultiplier if val.is_none() => false,
+        Command::SetMarginMultiplier => {
+            let margin_multiplier: f32 = (&val.unwrap()).parse().unwrap();
+            let tags = match manager.focused_workspace() {
+                Some(w) => w.tags.clone(),
+                _ => {
+                    return false;
+                }
+            };
+            let for_active_workspace = |x: &Window| -> bool {
+                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
+            };
+            let mut to_apply_margin_multiplier =
+                helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            for window in &mut to_apply_margin_multiplier {
+                window.set_margin_multiplier(margin_multiplier.clone());
+            };
+            manager.windows.append(&mut to_apply_margin_multiplier);
+
+            true
+        }
     }
 }
 

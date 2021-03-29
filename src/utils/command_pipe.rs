@@ -79,6 +79,8 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
         return build_send_window_to_tag(s);
     } else if s.starts_with("SetLayout ") {
         return build_set_layout(s);
+    } else if s.starts_with("SetMarginMultiplier") {
+        return build_set_margin_multiplier(s);
     } else if s.starts_with("SwapScreens") {
         return Ok(ExternalCommand::SwapScreens);
     } else if s.starts_with("MoveWindowToLastWorkspace") {
@@ -168,6 +170,16 @@ fn build_set_layout(mut raw: String) -> std::result::Result<ExternalCommand, ()>
     Ok(ExternalCommand::SetLayout(layout))
 }
 
+fn build_set_margin_multiplier(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
+    crop_head(&mut raw, "SetMarginMultiplier");
+    let parts: Vec<&str> = raw.split(' ').collect();
+    if parts.len() != 1 {
+        return Err(());
+    }
+    let margin_multiplier = String::from_str(parts[0]).map_err(|_| ())?;
+    Ok(ExternalCommand::SetMarginMultiplier(margin_multiplier))
+}
+
 fn crop_head(s: &mut String, head: &str) {
     let pos = head.len();
     match s.char_indices().nth(pos) {
@@ -202,6 +214,7 @@ pub enum ExternalCommand {
     NextLayout,
     PreviousLayout,
     SetLayout(String),
+    SetMarginMultiplier(String),
 }
 
 #[cfg(test)]
