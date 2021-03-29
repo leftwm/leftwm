@@ -26,7 +26,7 @@ pub enum Layout {
     CenterMainBalanced,
     Monocle,
     RightWiderLeftStack,
-    LeftWiderRihtStack,
+    LeftWiderRightStack,
 }
 
 pub const LAYOUTS: [Layout; 11] = [
@@ -40,7 +40,7 @@ pub const LAYOUTS: [Layout; 11] = [
     Layout::CenterMainBalanced,
     Layout::Monocle,
     Layout::RightWiderLeftStack,
-    Layout::LeftWiderRihtStack,
+    Layout::LeftWiderRightStack,
 ];
 
 // This is tedious, but simple and effective.
@@ -63,14 +63,14 @@ impl Layout {
             Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => right_main_and_vert_stack::update(workspace, windows),
-            Self::LeftWiderRihtStack => main_and_vert_stack::update(workspace, windows),
+            Self::LeftWiderRightStack => main_and_vert_stack::update(workspace, windows),
         }
     }
 
     pub fn main_width(&self) -> u8 {
         match self {
             Self::RightWiderLeftStack => 75,
-            Self::LeftWiderRihtStack => 75,
+            Self::LeftWiderRightStack => 75,
             _ => 50,
         }
     }
@@ -113,7 +113,7 @@ impl FromStr for Layout {
             "CenterMainBalanced" => Ok(Layout::CenterMainBalanced),
             "Monocle" => Ok(Layout::Monocle),
             "RightWiderLeftStack" => Ok(Layout::RightWiderLeftStack),
-            "LeftWiderRihtStack" => Ok(Layout::LeftWiderRihtStack),
+            "LeftWiderRightStack" => Ok(Layout::LeftWiderRightStack),
             _ => Err(()),
         }
     }
@@ -166,7 +166,7 @@ mod tests {
             "CenterMainBalanced",
             "Monocle",
             "RightWiderLeftStack",
-            "LeftWiderRihtStack",
+            "LeftWiderRightStack",
         ];
 
         assert_eq!(layout_strs.len(), LAYOUTS.len());

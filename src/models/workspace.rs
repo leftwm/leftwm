@@ -99,7 +99,8 @@ impl Workspace {
     }
 
     pub fn set_layout(&mut self, layout: Layout) {
-        self.layout = layout
+        self.layout = layout;
+        self.set_main_width(self.layout.main_width());
     }
 
     /// Returns true if the workspace is displays a given window.
