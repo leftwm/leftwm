@@ -560,9 +560,11 @@ pub fn process(
         Command::SetMarginMultiplier if val.is_none() => false,
         Command::SetMarginMultiplier => {
             let margin_multiplier: f32 = (&val.unwrap()).parse().unwrap();
-            let mut all_windows = manager.windows.clone();    
+            let mut all_windows = manager.windows.clone();
             let current = manager.focused_workspace().unwrap().clone();
-            manager.workspaces.iter_mut()
+            manager
+                .workspaces
+                .iter_mut()
                 .filter(|ws| ws.id == current.id)
                 .for_each(|ws| {
                     ws.set_margin_multiplier(margin_multiplier);
@@ -570,8 +572,9 @@ pub fn process(
                     windows
                         .iter_mut()
                         .filter(|w| -> bool {
-                            helpers::intersect(&w.tags, &ws.tags.clone()) && w.type_ == WindowType::Normal
-                        }) 
+                            helpers::intersect(&w.tags, &ws.tags.clone())
+                                && w.type_ == WindowType::Normal
+                        })
                         .for_each(|w| {
                             let mut to_apply_margin_multiplier: Vec<&mut Window> = Vec::new();
                             // ws.clone().set_margin_multiplier(margin_multiplier);
@@ -580,7 +583,7 @@ pub fn process(
                             to_apply_margin_multiplier.push(&mut push_w);
                             ws.update_windows(&mut to_apply_margin_multiplier);
                         });
-                }); 
+                });
             true
         }
     }

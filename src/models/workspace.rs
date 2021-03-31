@@ -133,12 +133,10 @@ impl Workspace {
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
         self.layout.update_windows(self, &mut managed_nonfloat);
-        managed_nonfloat
-            .iter_mut()
-            .for_each(|w| {
-                w.container_size = Some(self.xyhw);
-                w.apply_margin_multiplier(self.margin_multiplier().clone());
-            });
+        managed_nonfloat.iter_mut().for_each(|w| {
+            w.container_size = Some(self.xyhw);
+            w.apply_margin_multiplier(*self.margin_multiplier());
+        });
         //update the location of all floating windows
         windows
             .iter_mut()
@@ -204,7 +202,6 @@ impl Workspace {
         }
         self.xyhw_avoided = xyhw;
     }
-
 
     /// Set the tag model's margin multiplier.
     pub fn set_margin_multiplier(&mut self, margin_multiplier: f32) {
