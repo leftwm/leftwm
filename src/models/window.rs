@@ -157,7 +157,7 @@ impl Window {
         self.requested
     }
 
-    pub fn set_margin_multiplier(&mut self, value: f32) {
+    pub fn apply_margin_multiplier(&mut self, value: f32) {
         self.margin_multiplier = value.abs()
     }
 

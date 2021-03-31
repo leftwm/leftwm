@@ -63,7 +63,7 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
         {
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
-            window.set_margin_multiplier(old.margin_multiplier);
+            window.apply_margin_multiplier(old.margin_multiplier);
             window.normal = old.normal;
             window.tags = old.tags.clone();
         }

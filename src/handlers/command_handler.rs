@@ -560,22 +560,27 @@ pub fn process(
         Command::SetMarginMultiplier if val.is_none() => false,
         Command::SetMarginMultiplier => {
             let margin_multiplier: f32 = (&val.unwrap()).parse().unwrap();
-            let tags = match manager.focused_workspace() {
-                Some(w) => w.tags.clone(),
-                _ => {
-                    return false;
-                }
-            };
-            let for_active_workspace = |x: &Window| -> bool {
-                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
-            };
-            let mut to_apply_margin_multiplier =
-                helpers::vec_extract(&mut manager.windows, for_active_workspace);
-            for window in &mut to_apply_margin_multiplier {
-                window.set_margin_multiplier(margin_multiplier);
-            }
-            manager.windows.append(&mut to_apply_margin_multiplier);
-
+            let mut all_windows = manager.windows.clone();    
+            let current = manager.focused_workspace().unwrap().clone();
+            manager.workspaces.iter_mut()
+                .filter(|ws| ws.id == current.id)
+                .for_each(|ws| {
+                    ws.set_margin_multiplier(margin_multiplier);
+                    let mut windows: Vec<&mut Window> = all_windows.iter_mut().collect();
+                    windows
+                        .iter_mut()
+                        .filter(|w| -> bool {
+                            helpers::intersect(&w.tags, &ws.tags.clone()) && w.type_ == WindowType::Normal
+                        }) 
+                        .for_each(|w| {
+                            let mut to_apply_margin_multiplier: Vec<&mut Window> = Vec::new();
+                            // ws.clone().set_margin_multiplier(margin_multiplier);
+                            // w.apply_margin_multiplier(ws.margin_multiplier().clone())
+                            let mut push_w = w.clone();
+                            to_apply_margin_multiplier.push(&mut push_w);
+                            ws.update_windows(&mut to_apply_margin_multiplier);
+                        });
+                }); 
             true
         }
     }
