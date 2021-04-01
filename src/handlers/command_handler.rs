@@ -131,7 +131,10 @@ pub fn process(
             }
             // If single workspace, swap width previous tag
             if manager.workspaces.len() == 1 {
-                let last = manager.focused_tag_history.get(1).map(|t| t.to_string());
+                let last = manager
+                    .focused_tag_history
+                    .get(1)
+                    .map(std::string::ToString::to_string);
                 if let Some(last) = last {
                     let tag_index = match manager.tags.iter().position(|x| x.id == last) {
                         Some(x) => x + 1,
@@ -582,7 +585,7 @@ fn to_layout(val: &Option<String>) -> Option<Layout> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use crate::models::TagModel;
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::default();

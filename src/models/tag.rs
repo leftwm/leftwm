@@ -48,7 +48,7 @@ impl TagModel {
     pub fn main_width_percentage(&self) -> f32 {
         let lock = self.main_width_percentage.clone();
         let mwp = lock.lock().unwrap();
-        *mwp as f32
+        f32::from(*mwp)
     }
 }
 
