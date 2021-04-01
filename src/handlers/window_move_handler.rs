@@ -1,4 +1,4 @@
-use super::{Manager, Window, WindowHandle, Workspace, window_handler};
+use super::{window_handler, Manager, Window, WindowHandle, Workspace};
 
 pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offset_y: i32) -> bool {
     for w in &mut manager.windows {

@@ -1,4 +1,6 @@
-use super::{Command, Manager, Window, WindowType, focus_handler, goto_tag_handler, window_handler};
+use super::{
+    focus_handler, goto_tag_handler, window_handler, Command, Manager, Window, WindowType,
+};
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
@@ -131,7 +133,10 @@ pub fn process(
             }
             // If single workspace, swap width previous tag
             if manager.workspaces.len() == 1 {
-                let last = manager.focused_tag_history.get(1).map(std::string::ToString::to_string);
+                let last = manager
+                    .focused_tag_history
+                    .get(1)
+                    .map(std::string::ToString::to_string);
                 if let Some(last) = last {
                     let tag_index = match manager.tags.iter().position(|x| x.id == last) {
                         Some(x) => x + 1,

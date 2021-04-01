@@ -60,7 +60,9 @@ impl Manager {
     /// Return the currently focused tag if the offset is 0.
     /// Offset is used to reach further down the history.
     pub fn focused_tag(&self, offset: usize) -> Option<String> {
-        self.focused_tag_history.get(offset).map(std::string::ToString::to_string)
+        self.focused_tag_history
+            .get(offset)
+            .map(std::string::ToString::to_string)
     }
 
     /// Return the index of a given tag.

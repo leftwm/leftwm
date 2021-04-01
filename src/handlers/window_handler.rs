@@ -1,4 +1,4 @@
-use super::{Manager, Window, WindowChange, WindowType, Workspace, focus_handler};
+use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
 use crate::display_action::DisplayAction;
 use crate::models::WindowHandle;
 /// Process a collection of events, and apply them changes to a manager.
