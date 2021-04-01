@@ -1,4 +1,4 @@
-use super::{focus_handler, screen_create_handler, Manager, Screen};
+use super::*;
 
 pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     if tag_num > manager.tags.len() || tag_num < 1 {
