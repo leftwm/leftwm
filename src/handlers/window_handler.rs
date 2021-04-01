@@ -1,4 +1,4 @@
-use super::*;
+use super::{Manager, Window, WindowChange, WindowType, Workspace, focus_handler};
 use crate::display_action::DisplayAction;
 use crate::models::WindowHandle;
 /// Process a collection of events, and apply them changes to a manager.
@@ -105,7 +105,7 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
 }
 
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
-    for w in manager.windows.iter_mut() {
+    for w in &mut manager.windows {
         if w.handle == change.handle {
             log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
             //let old_type = w.type_.clone();

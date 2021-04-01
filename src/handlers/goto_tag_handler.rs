@@ -1,4 +1,4 @@
-use super::*;
+use super::{Manager, focus_handler};
 
 pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     if tag_num > manager.tags.len() || tag_num < 1 {

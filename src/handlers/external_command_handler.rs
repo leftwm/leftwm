@@ -1,4 +1,4 @@
-use super::*;
+use super::{Manager, command_handler, focus_handler, goto_tag_handler};
 use crate::command::Command;
 use crate::config::Config;
 use crate::config::ThemeSetting;

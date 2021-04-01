@@ -1,4 +1,4 @@
-use super::*;
+use super::{Manager, Window, WindowHandle, WindowType, Workspace};
 use crate::display_action::DisplayAction;
 
 /// Marks a workspace as the focused workspace.

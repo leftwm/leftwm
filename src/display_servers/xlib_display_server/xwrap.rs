@@ -344,7 +344,7 @@ impl XWrap {
                 xlib::XA_ATOM,
                 32,
                 xlib::PropModeReplace,
-                data.as_ptr() as *const u8,
+                data.as_ptr().cast::<u8>(),
                 data.len() as i32,
             );
             std::mem::forget(data);
@@ -461,7 +461,7 @@ impl XWrap {
                 type_,
                 32,
                 xlib::PropModeReplace,
-                data.as_ptr() as *const u8,
+                data.as_ptr().cast::<u8>(),
                 1_i32,
             );
             std::mem::forget(data);
@@ -478,7 +478,7 @@ impl XWrap {
                     xlib::XA_CARDINAL,
                     8,
                     xlib::PropModeReplace,
-                    cstring.as_ptr() as *const u8,
+                    cstring.as_ptr().cast::<u8>(),
                     value.len() as i32,
                 );
                 std::mem::forget(cstring);
@@ -496,7 +496,7 @@ impl XWrap {
                 xlib::XA_CARDINAL,
                 32,
                 xlib::PropModeReplace,
-                xdata.as_ptr() as *const u8,
+                xdata.as_ptr().cast::<u8>(),
                 data.len() as i32,
             );
             std::mem::forget(xdata);
@@ -537,7 +537,7 @@ impl XWrap {
                 xlib::XA_CARDINAL,
                 32,
                 xlib::PropModeReplace,
-                indexes.as_ptr() as *const u8,
+                indexes.as_ptr().cast::<u8>(),
                 indexes.len() as i32,
             );
             std::mem::forget(indexes);
@@ -619,7 +619,7 @@ impl XWrap {
                     xlib::XA_WINDOW,
                     32,
                     xlib::PropModeAppend,
-                    list.as_ptr() as *const u8,
+                    list.as_ptr().cast::<u8>(),
                     1,
                 );
                 std::mem::forget(list);
@@ -864,7 +864,7 @@ impl XWrap {
                     xlib::XA_WINDOW,
                     32,
                     xlib::PropModeAppend,
-                    list.as_ptr() as *const u8,
+                    list.as_ptr().cast::<u8>(),
                     1,
                 );
                 std::mem::forget(list);
@@ -1067,7 +1067,7 @@ impl XWrap {
                         xlib::XA_WINDOW,
                         32,
                         xlib::PropModeReplace,
-                        list.as_ptr() as *const c_uchar,
+                        list.as_ptr().cast::<u8>(),
                         1,
                     );
                     std::mem::forget(list);
@@ -1310,7 +1310,7 @@ impl XWrap {
                 xlib::XA_ATOM,
                 32,
                 xlib::PropModeReplace,
-                supported_ptr as *const u8,
+                supported_ptr.cast::<u8>(),
                 size,
             );
             std::mem::forget(supported);

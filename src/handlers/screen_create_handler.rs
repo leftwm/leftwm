@@ -1,4 +1,4 @@
-use super::*;
+use super::{Manager, Screen, Workspace, focus_handler};
 use crate::models::TagModel;
 
 /// Process a collection of events, and apply them changes to a manager.
