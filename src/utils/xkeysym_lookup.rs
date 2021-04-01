@@ -26,13 +26,11 @@ pub fn into_mod(key: &str) -> ModMask {
         "None" => xlib::AnyModifier,
         "Shift" => xlib::ShiftMask,
         "Control" => xlib::ControlMask,
-        "Mod1" => xlib::Mod1Mask,
-        "Alt" => xlib::Mod1Mask,
+        "Mod1" | "Alt" => xlib::Mod1Mask,
         //"Mod2" => xlib::Mod2Mask,     // NOTE: we are ignoring the state of Numlock
         //"NumLock" => xlib::Mod2Mask,  // this is left here as a reminder
         "Mod3" => xlib::Mod3Mask,
-        "Mod4" => xlib::Mod4Mask,
-        "Super" => xlib::Mod4Mask,
+        "Mod4" | "Super" => xlib::Mod4Mask,
         "Mod5" => xlib::Mod5Mask,
         _ => 0,
     }

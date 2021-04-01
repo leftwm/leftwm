@@ -47,7 +47,7 @@ pub struct DisplayState {
 }
 
 impl From<ManagerState> for DisplayState {
-    fn from(m: ManagerState) -> DisplayState {
+    fn from(m: ManagerState) -> Self {
         let visible: Vec<String> = m.viewports.iter().flat_map(|vp| vp.tags.clone()).collect();
         let workspaces = m
             .viewports
@@ -59,12 +59,12 @@ impl From<ManagerState> for DisplayState {
                     &m.active_desktop,
                     &visible,
                     &m.working_tags,
-                    &vp,
+                    vp,
                     i,
                 )
             })
             .collect();
-        DisplayState {
+        Self {
             workspaces,
             window_title: m.window_title.unwrap_or_default(),
         }
@@ -135,7 +135,7 @@ impl From<&Manager> for ManagerState {
             Some(win) => win.name.clone(),
             None => None,
         };
-        ManagerState {
+        Self {
             window_title,
             desktop_names: manager.tags.iter().map(|t| t.id.clone()).collect(),
             viewports,

@@ -57,7 +57,7 @@ fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
 fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
     let mut ordered = vec![];
 
-    for old in &old_manager.windows {
+    old_manager.windows.iter().for_each(|old| {
         if let Some((index, window)) = manager
             .windows
             .iter_mut()
@@ -71,7 +71,7 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             ordered.push(window.clone());
             manager.windows.remove(index);
         }
-    }
+    });
     // manager.windows.clear();
     manager.windows.append(&mut ordered);
 }

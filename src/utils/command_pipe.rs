@@ -1,3 +1,4 @@
+//! Creates a pipe to listen for external commands.
 use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;

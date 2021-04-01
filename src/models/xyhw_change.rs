@@ -109,11 +109,12 @@ impl XyhwChange {
     }
 
     pub fn update_window_strut(&self, window: &mut Window) -> bool {
-        let mut changed = false;
-        if window.strut.is_none() {
+        let mut changed = if window.strut.is_none() {
             window.strut = Some(Xyhw::default());
-            changed = true;
-        }
+            true
+        } else {
+            false
+        };
         let mut xyhw = window.strut.unwrap();
         changed = self.update(&mut xyhw) || changed;
         window.strut = Some(xyhw);
