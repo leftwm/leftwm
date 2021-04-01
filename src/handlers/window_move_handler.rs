@@ -22,12 +22,9 @@ fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
 
 //if the windows is really close to a workspace, snap to it
 fn snap_to_workspaces(window: &mut Window, workspaces: &[Workspace]) -> bool {
-    for workspace in workspaces {
-        if should_snap(window, workspace.clone()) {
-            return true;
-        }
-    }
-    false
+    workspaces
+        .iter()
+        .any(|workspace| should_snap(window, workspace.clone()))
 }
 
 //to be snapable, the window must be inside the workspace AND the a side must be close to
