@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::{atomic::AtomicBool, Arc};
 
+/// Maintains current program state.
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Manager {
     pub screens: Vec<Screen>,

@@ -6,6 +6,7 @@ use super::{
 use crate::display_action::DisplayAction;
 use crate::utils::window_updater::update_windows;
 
+/// Configuration container for processing DisplayEvents.
 pub struct DisplayEventHandler {
     pub config: Config,
 }
