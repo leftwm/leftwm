@@ -1,3 +1,4 @@
+//! Objects (such as windows) used to develop LeftWM.
 mod dock_area;
 mod manager;
 mod margins;

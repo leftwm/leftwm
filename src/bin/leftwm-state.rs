@@ -1,6 +1,6 @@
 use clap::{value_t, App, Arg};
 use leftwm::errors::Result;
-use leftwm::models::dto::*;
+use leftwm::models::dto::{DisplayState, ManagerState};
 use std::str;
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader, Lines};
@@ -62,14 +62,14 @@ async fn main() -> Result<()> {
             .parse(&template_str)
             .unwrap();
         while let Some(line) = stream_reader.next_line().await? {
-            let _ = template_handler(&template, newline, ws_num, line);
+            let _droppable = template_handler(&template, newline, ws_num, &line);
             if once {
                 break;
             }
         }
     } else {
         while let Some(line) = stream_reader.next_line().await? {
-            let _ = raw_handler(line);
+            let _droppable2 = raw_handler(&line);
             if once {
                 break;
             }
@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn raw_handler(line: String) -> Result<()> {
+fn raw_handler(line: &str) -> Result<()> {
     let s: ManagerState = serde_json::from_str(&line)?;
     let display: DisplayState = s.into();
     let json = serde_json::to_string(&display)?;
@@ -91,13 +91,12 @@ fn template_handler(
     template: &liquid::Template,
     newline: bool,
     ws_num: Option<usize>,
-    line: String,
+    line: &str,
 ) -> Result<()> {
     let s: ManagerState = serde_json::from_str(&line)?;
     let display: DisplayState = s.into();
 
-    let globals = match ws_num {
-        Some(ws_num) => {
+    let globals = if let Some(ws_num) = ws_num {
             let json = serde_json::to_string(&display.workspaces[ws_num])?;
             let workspace: liquid::model::Object = serde_json::from_str(&json)?;
             let mut globals = liquid::model::Object::new();
@@ -113,22 +112,18 @@ fn template_handler(
                 liquid::model::Value::scalar(get_localtime()),
             );
             globals
-        }
-        None => {
+        } else {
             let json = serde_json::to_string(&display)?;
             let globals: liquid::model::Object = serde_json::from_str(&json)?;
             globals
-        }
-    };
-
+        };
+    
     let mut output = template.render(&globals).unwrap();
     output = str::replace(&output, "\r", "");
     if !newline {
         output = str::replace(&output, "\n", "");
-        println!("{}", output);
-    } else {
-        print!("{}", output);
     }
+    print!("{}", output);
     Ok(())
 }
 
