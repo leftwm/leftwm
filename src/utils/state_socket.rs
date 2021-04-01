@@ -54,8 +54,8 @@ impl StateSocket {
             json.push('\n');
             let mut state = self.state.lock().await;
             if json != state.last_state {
-                state.peers.retain(|peer| peer.is_some());
-                for peer in state.peers.iter_mut() {
+                state.peers.retain(std::option::Option::is_some);
+                for peer in &mut state.peers {
                     if peer
                         .as_mut()
                         .unwrap()

@@ -1,6 +1,6 @@
 use super::*;
 use crate::config::Config;
-use crate::models::TagModel;
+
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::utils::helpers;
