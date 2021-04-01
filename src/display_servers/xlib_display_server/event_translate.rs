@@ -62,11 +62,12 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::UnmapNotify => {
                 let event = xlib::XUnmapEvent::from(raw_event);
                 //println!("UnmapNotify {:?}", event);
-                if event.send_event != xlib::False {
+                if event.send_event == xlib::False {
+                    None
+                }
+                else{
                     let h = WindowHandle::XlibHandle(event.window);
                     Some(DisplayEvent::WindowDestroy(h))
-                } else {
-                    None
                 }
             }
 
@@ -177,7 +178,9 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let event = xlib::XConfigureRequestEvent::from(raw_event);
                 let window_type = xw.get_window_type(event.window);
 
-                if window_type != WindowType::Normal {
+                if window_type == WindowType::Normal {
+                    None}
+                else {
                     let handle = WindowHandle::XlibHandle(event.window);
                     let mut change = WindowChange::new(handle);
                     let xyhw = XyhwChange {
@@ -197,10 +200,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         }
                     }
                     Some(DisplayEvent::WindowChange(change))
-                } else {
-                    None
                 }
-
                 /*
                  ConfigureRequest XConfigureRequestEvent { type_: 23, serial: 1157, send_event: 0,
                  display: 0x5604f8d70a00, parent: 414, window: 62914566, x: 0, y: 0,

@@ -192,9 +192,9 @@ impl Xyhw {
     }
 
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
-        let maxx = self.x + self.w;
-        let maxy = self.y + self.h;
-        (self.x <= x && x <= maxx) && (self.y <= y && y <= maxy)
+        let max_x = self.x + self.w;
+        let max_y = self.y + self.h;
+        (self.x <= x && x <= max_x) && (self.y <= y && y <= max_y)
     }
 
     pub fn volume(&self) -> u64 {
@@ -255,17 +255,15 @@ impl Xyhw {
         // If this is a Splash screen, for some reason w/h are sometimes not sized properly. We
         // therefore want to use the minimum or maximum sizing instead in order to center the
         // windows properly.
-        match change {
-            Some(change) => {
+            if let Some(change) = change {
                 self.x = outer.w() / 2 - (change.minw.unwrap_or(self.w).abs() / 2) - border * 2;
                 self.y = outer.h() / 2 - (change.minh.unwrap_or(self.h).abs() / 2) - border * 2;
             }
-            None => {
+            else {
                 self.x = outer.w() / 2 - (self.w.abs() / 2) - border * 2;
                 self.y = outer.h() / 2 - (self.h.abs() / 2) - border * 2;
             }
-        }
-    }
+            }
 
     pub fn center(&self) -> (i32, i32) {
         let x = self.x + (self.w / 2);
