@@ -67,6 +67,8 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
 
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
 
+    window.apply_margin_multiplier(*manager.focused_workspace().unwrap().margin_multiplier());
+
     //make sure focus is re-computed
     let act = DisplayAction::FocusWindowUnderCursor;
     manager.actions.push_back(act);

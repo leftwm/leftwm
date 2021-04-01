@@ -135,7 +135,6 @@ impl Workspace {
         self.layout.update_windows(self, &mut managed_nonfloat);
         managed_nonfloat.iter_mut().for_each(|w| {
             w.container_size = Some(self.xyhw);
-            w.apply_margin_multiplier(*self.margin_multiplier());
         });
         //update the location of all floating windows
         windows

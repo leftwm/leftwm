@@ -6,6 +6,7 @@ pub struct TagModel {
     pub id: String,
     #[serde(skip)]
     main_width_percentage: Arc<Mutex<u8>>,
+    // margin_multiplier: f32,
 }
 
 impl TagModel {
@@ -13,6 +14,7 @@ impl TagModel {
         Arc::new(TagModel {
             id: id.to_owned(),
             main_width_percentage: Arc::new(Mutex::new(50)),
+            // margin_multiplier: 1.0,
         })
     }
 
@@ -50,6 +52,16 @@ impl TagModel {
         let mwp = lock.lock().unwrap();
         *mwp as f32
     }
+
+    // /// Set the tag model's margin multiplier.
+    // pub fn set_margin_multiplier(&mut self, margin_multiplier: f32) {
+    //     self.margin_multiplier = margin_multiplier;
+    // }
+
+    // /// Get a reference to the tag model's margin multiplier.
+    // pub fn margin_multiplier(&self) -> &f32 {
+    //     &self.margin_multiplier
+    // }
 }
 
 pub type Tag = Arc<TagModel>;
