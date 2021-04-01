@@ -1,14 +1,14 @@
 use super::*;
 
 pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offset_y: i32) -> bool {
-    for w in &mut manager.windows {
-        if &w.handle == handle {
+    match manager.windows.iter_mut().find(|w| w.handle == handle.clone()) {
+        Some(w) => {
             process_window(w, offset_x, offset_y);
             snap_to_workspaces(w, &manager.workspaces);
-            return true;
+            true
         }
+        None => false,
     }
-    false
 }
 
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
@@ -22,12 +22,9 @@ fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
 
 //if the windows is really close to a workspace, snap to it
 fn snap_to_workspaces(window: &mut Window, workspaces: &[Workspace]) -> bool {
-    for workspace in workspaces {
-        if should_snap(window, workspace.clone()) {
-            return true;
-        }
-    }
-    false
+    workspaces
+        .iter()
+        .any(|workspace| should_snap(window, workspace.clone()))
 }
 
 //to be snapable, the window must be inside the workspace AND the a side must be close to
