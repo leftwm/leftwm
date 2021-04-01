@@ -1,6 +1,5 @@
 use super::*;
 use crate::config::Config;
-use crate::models::TagModel;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::utils::helpers;
@@ -586,7 +585,7 @@ fn to_layout(val: &Option<String>) -> Option<Layout> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use crate::models::TagModel;
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::default();
