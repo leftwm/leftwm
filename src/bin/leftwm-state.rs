@@ -97,27 +97,27 @@ fn template_handler(
     let display: DisplayState = s.into();
 
     let globals = if let Some(ws_num) = ws_num {
-            let json = serde_json::to_string(&display.workspaces[ws_num])?;
-            let workspace: liquid::model::Object = serde_json::from_str(&json)?;
-            let mut globals = liquid::model::Object::new();
-            globals.insert(
-                "window_title".into(),
-                liquid::model::Value::scalar(display.window_title),
-            );
-            globals.insert("workspace".into(), liquid::model::Value::Object(workspace));
-            //liquid only does time in utc. BUG: https://github.com/cobalt-org/liquid-rust/issues/332
-            //as a workaround we are setting a time locally
-            globals.insert(
-                "localtime".into(),
-                liquid::model::Value::scalar(get_localtime()),
-            );
-            globals
-        } else {
-            let json = serde_json::to_string(&display)?;
-            let globals: liquid::model::Object = serde_json::from_str(&json)?;
-            globals
-        };
-    
+        let json = serde_json::to_string(&display.workspaces[ws_num])?;
+        let workspace: liquid::model::Object = serde_json::from_str(&json)?;
+        let mut globals = liquid::model::Object::new();
+        globals.insert(
+            "window_title".into(),
+            liquid::model::Value::scalar(display.window_title),
+        );
+        globals.insert("workspace".into(), liquid::model::Value::Object(workspace));
+        //liquid only does time in utc. BUG: https://github.com/cobalt-org/liquid-rust/issues/332
+        //as a workaround we are setting a time locally
+        globals.insert(
+            "localtime".into(),
+            liquid::model::Value::scalar(get_localtime()),
+        );
+        globals
+    } else {
+        let json = serde_json::to_string(&display)?;
+        let globals: liquid::model::Object = serde_json::from_str(&json)?;
+        globals
+    };
+
     let mut output = template.render(&globals).unwrap();
     output = str::replace(&output, "\r", "");
     if !newline {

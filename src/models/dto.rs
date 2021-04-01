@@ -91,7 +91,7 @@ fn viewport_into_display_workspace(
             busy: working_tags.contains(t),
         })
         .collect();
-   DisplayWorkspace  {
+    DisplayWorkspace {
         tags,
         h: viewport.h,
         w: viewport.w,
