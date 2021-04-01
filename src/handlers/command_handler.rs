@@ -1,9 +1,9 @@
-use super::{
-    focus_handler, goto_tag_handler, window_handler, Command, Manager, Window, WindowType,
-};
+use super::{Command, Manager, Screen, Window, WindowType};
 use crate::config::Config;
 use crate::display_action::DisplayAction;
+use crate::handlers::{focus_handler, goto_tag_handler, screen_create_handler, window_handler};
 use crate::layouts::Layout;
+use crate::models::TagModel;
 use crate::utils::helpers;
 use std::str::FromStr;
 
