@@ -64,8 +64,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 //println!("UnmapNotify {:?}", event);
                 if event.send_event == xlib::False {
                     None
-                }
-                else{
+                } else {
                     let h = WindowHandle::XlibHandle(event.window);
                     Some(DisplayEvent::WindowDestroy(h))
                 }
@@ -179,8 +178,8 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let window_type = xw.get_window_type(event.window);
 
                 if window_type == WindowType::Normal {
-                    None}
-                else {
+                    None
+                } else {
                     let handle = WindowHandle::XlibHandle(event.window);
                     let mut change = WindowChange::new(handle);
                     let xyhw = XyhwChange {

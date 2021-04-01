@@ -255,15 +255,14 @@ impl Xyhw {
         // If this is a Splash screen, for some reason w/h are sometimes not sized properly. We
         // therefore want to use the minimum or maximum sizing instead in order to center the
         // windows properly.
-            if let Some(change) = change {
-                self.x = outer.w() / 2 - (change.minw.unwrap_or(self.w).abs() / 2) - border * 2;
-                self.y = outer.h() / 2 - (change.minh.unwrap_or(self.h).abs() / 2) - border * 2;
-            }
-            else {
-                self.x = outer.w() / 2 - (self.w.abs() / 2) - border * 2;
-                self.y = outer.h() / 2 - (self.h.abs() / 2) - border * 2;
-            }
-            }
+        if let Some(change) = change {
+            self.x = outer.w() / 2 - (change.minw.unwrap_or(self.w).abs() / 2) - border * 2;
+            self.y = outer.h() / 2 - (change.minh.unwrap_or(self.h).abs() / 2) - border * 2;
+        } else {
+            self.x = outer.w() / 2 - (self.w.abs() / 2) - border * 2;
+            self.y = outer.h() / 2 - (self.h.abs() / 2) - border * 2;
+        }
+    }
 
     pub fn center(&self) -> (i32, i32) {
         let x = self.x + (self.w / 2);
