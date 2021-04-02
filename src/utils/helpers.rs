@@ -41,15 +41,36 @@ where
             return;
         }
     };
-    list.remove(index);
     let mut new_index = index as i32 + shift;
+    //Manually handle edge cases to allow more consistent behaviour
     if new_index < 0 {
-        new_index += len
+        new_index += len;
+        let mut i = index as i32 - 1;
+        while i != new_index - 1 {
+            let i_plus = i + 1;
+            if i < 0 {
+                i += len;
+            }
+            list[i_plus as usize] = list[i as usize].clone();
+            i -= 1;
+        }
+        list[new_index as usize] = item;
+    } else if new_index >= len {
+        new_index -= len;
+        let mut i = index as i32 + 1;
+        while i != new_index + 1 {
+            let i_minus = i - 1;
+            if i >= len {
+                i -= len;
+            }
+            list[i_minus as usize] = list[i as usize].clone();
+            i += 1;
+        }
+        list[new_index as usize] = item;
+    } else {
+        list.remove(index);
+        list.insert(new_index as usize, item);
     }
-    if new_index >= len {
-        new_index -= len
-    }
-    list.insert(new_index as usize, item);
 }
 
 pub fn relative_find<T, F>(list: &[T], test: F, shift: i32) -> Option<&T>
