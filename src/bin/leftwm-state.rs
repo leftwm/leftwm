@@ -120,10 +120,15 @@ fn template_handler(
 
     let mut output = template.render(&globals).unwrap();
     output = str::replace(&output, "\r", "");
-    if !newline {
+    // We use newline rather than !newline to avoid negative logic,
+    // but note the difference between print! and println!. Trying to skip println!
+    // will result in theme degradation, as in #263.
+    if newline {
+        print!("{}", output);
+    } else {
         output = str::replace(&output, "\n", "");
+        println!("{}", output);
     }
-    print!("{}", output);
     Ok(())
 }
 

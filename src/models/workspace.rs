@@ -9,6 +9,7 @@ use crate::models::XyhwBuilder;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: i32,
