@@ -45,6 +45,7 @@ pub enum XlibError {
     InvalidXAtom,
 }
 
+/// Contains Xserver information and origins.
 pub struct XWrap {
     xlib: xlib::Xlib,
     display: *mut xlib::Display,
