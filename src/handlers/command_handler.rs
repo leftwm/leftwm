@@ -229,13 +229,13 @@ pub fn process(
                     let mut to_reorder =
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, -1) {
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
                         Some(h) => h.handle.clone(),
                         _ => {
                             return false;
                         }
                     };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+                    helpers::cycle_vec(&mut to_reorder, -1);
                     manager.windows.append(&mut to_reorder);
                     let act = DisplayAction::MoveMouseOver(new_handle);
                     manager.actions.push_back(act);
@@ -279,13 +279,13 @@ pub fn process(
                     let mut to_reorder =
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, -1) {
                         Some(h) => h.handle.clone(),
                         _ => {
                             return false;
                         }
                     };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, 1);
+                    helpers::cycle_vec(&mut to_reorder, 1);
                     manager.windows.append(&mut to_reorder);
                     let act = DisplayAction::MoveMouseOver(new_handle);
                     manager.actions.push_back(act);
@@ -375,13 +375,13 @@ pub fn process(
                     let mut to_reorder =
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, -1) {
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
                         Some(h) => h.handle.clone(),
                         _ => {
                             return false;
                         }
                     };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+                    helpers::cycle_vec(&mut to_reorder, -1);
                     manager.windows.append(&mut to_reorder);
                     let act = DisplayAction::MoveMouseOver(new_handle);
                     manager.actions.push_back(act);
@@ -425,13 +425,13 @@ pub fn process(
                     let mut to_reorder =
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, -1) {
                         Some(h) => h.handle.clone(),
                         _ => {
                             return false;
                         }
                     };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, 1);
+                    helpers::cycle_vec(&mut to_reorder, 1);
                     manager.windows.append(&mut to_reorder);
                     let act = DisplayAction::MoveMouseOver(new_handle);
                     manager.actions.push_back(act);

@@ -28,6 +28,24 @@ where
     removed
 }
 
+pub fn cycle_vec<T>(list: &mut Vec<T>, shift: i32)
+where
+    T: Clone,
+{
+    let temp_list = list.clone();
+    let len = list.len() as i32;
+    for (index, item) in temp_list.iter().enumerate() {
+        let mut new_index = index as i32 + shift;
+        if new_index < 0 {
+            new_index += len;
+        }
+        if new_index >= len {
+            new_index -= len;
+        }
+        list[new_index as usize] = item.clone();
+    }
+}
+
 //shifts a object left or right in an Vec by a given amount
 pub fn reorder_vec<T, F>(list: &mut Vec<T>, test: F, shift: i32)
 where
