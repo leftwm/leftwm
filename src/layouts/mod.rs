@@ -109,6 +109,7 @@ impl FromStr for Layout {
         match s {
             "MainAndVertStack" => Ok(Layout::MainAndVertStack),
             "MainAndHorizontalStack" => Ok(Layout::MainAndHorizontalStack),
+            "MainAndDeck" => Ok(Layout::MainAndDeck),
             "GridHorizontal" => Ok(Layout::GridHorizontal),
             "EvenHorizontal" => Ok(Layout::EvenHorizontal),
             "EvenVertical" => Ok(Layout::EvenVertical),
@@ -159,9 +160,10 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let layout_strs: [&str; 11] = [
+        let layout_strs: [&str; 12] = [
             "MainAndVertStack",
             "MainAndHorizontalStack",
+            "MainAndDeck",
             "GridHorizontal",
             "EvenHorizontal",
             "EvenVertical",
