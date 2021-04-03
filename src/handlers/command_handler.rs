@@ -25,10 +25,22 @@ pub fn process(
         Command::MoveToTag => {
             let tag_num = to_num(&val);
             let tag = manager.tags[tag_num - 1].clone();
+
+            // In order to apply the correct margin multiplier we want to copy this value
+            // from any window already present on the target tag
+            let margin_multiplier = manager
+                .windows
+                .iter()
+                .filter(|w| w.has_tag(&tag.id))
+                .last()
+                .unwrap()
+                .margin_multiplier();
+
             if let Some(window) = manager.focused_window_mut() {
                 window.clear_tags();
                 window.set_floating(false);
                 window.tag(&tag.id);
+                window.apply_margin_multiplier(margin_multiplier);
                 let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.id.clone());
                 manager.actions.push_back(act);
                 manager.sort_windows();
@@ -150,6 +162,7 @@ pub fn process(
                     .clone();
                 if let Some(window) = manager.focused_window_mut() {
                     window.tags = vec![wp_tags[0].clone()];
+
                     return true;
                 }
             }
@@ -561,8 +574,7 @@ pub fn process(
         Command::SetMarginMultiplier => {
             let margin_multiplier: f32 = (&val.unwrap()).parse().unwrap();
             match manager.focused_workspace_mut() {
-                Some(ws) =>
-                ws.set_margin_multiplier(margin_multiplier),
+                Some(ws) => ws.set_margin_multiplier(margin_multiplier),
                 _ => {
                     return false;
                 }

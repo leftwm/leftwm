@@ -161,7 +161,7 @@ impl Window {
         self.margin_multiplier = value.abs();
         log::info!("LeftWM: Multiplier {:?} was applied to margin", value)
     }
-    
+
     pub fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
     }

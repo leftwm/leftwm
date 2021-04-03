@@ -40,7 +40,7 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
     if window.type_ == WindowType::Normal {
         let margin_multiplier = match manager.focused_window() {
             Some(w) => w.margin_multiplier(),
-            _ => 1.0
+            _ => 1.0,
         };
         window.apply_margin_multiplier(margin_multiplier);
         log::info!("Margin Multiplier applied on window creation.");
@@ -186,14 +186,6 @@ pub fn snap_to_workspace(window: &mut Window, workspace: Workspace) -> bool {
         start_loc.set_x(x - workspace.xyhw.x());
         start_loc.set_y(y - workspace.xyhw.y());
         window.start_loc = Some(start_loc);
-        // if window.type_ == WindowType::Normal {
-            // let margin_multiplier = match manager::Manager.focused_window() {
-                // Some(w) => w.margin_multiplier(),
-                // _ => 1.0
-            // };
-            // window.apply_margin_multiplier(margin_multiplier);
-            // log::info!("Margin Multiplier applied on window snap to workspace.");
-        // }
     }
     true
 }
