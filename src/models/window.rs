@@ -20,6 +20,9 @@ pub enum WindowHandle {
 }
 
 /// Store Window information.
+// We allow this as we're not managing state directly. This could be refactored in the future.
+// TODO: Refactor floating
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Window {
     pub handle: WindowHandle,
