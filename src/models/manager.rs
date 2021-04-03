@@ -145,6 +145,10 @@ impl Manager {
         Some(())
     }
 
+    /// # Panics
+    ///
+    /// Panics if wraps.pop() is empty
+    // TODO: Remove .unwrap() or add statement above indicating that it cannot be hit.
     pub fn tags_display(&self) -> String {
         let mut active: Vec<String> = vec![];
         for w in &self.workspaces {

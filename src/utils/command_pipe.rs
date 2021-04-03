@@ -30,6 +30,10 @@ impl Drop for CommandPipe {
 
 impl CommandPipe {
     /// Create and listen to the named pipe.
+    /// # Errors
+    ///
+    /// Will error if unable to `mkfifo`, likely a filesystem issue
+    /// such as inadequate permissions.
     pub async fn new(pipe_file: PathBuf) -> Result<Self> {
         fs::remove_file(pipe_file.as_path()).await.ok();
         if let Err(e) = nix::unistd::mkfifo(&pipe_file, nix::sys::stat::Mode::S_IRWXU) {

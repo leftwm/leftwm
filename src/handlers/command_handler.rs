@@ -231,7 +231,7 @@ pub fn process(
                 // in desired behaviour
                 let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
                     Some(h) => h.handle,
-                    _ => {
+                    None => {
                         return false;
                     }
                 };

@@ -155,6 +155,10 @@ impl Window {
         self.requested
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn width(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -174,6 +178,11 @@ impl Window {
         }
         value
     }
+
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn height(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -209,6 +218,10 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.x();
@@ -221,6 +234,10 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.y();

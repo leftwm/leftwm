@@ -39,6 +39,10 @@ impl Nanny {
             .unwrap_or_default()
     }
 
+    /// # Errors
+    ///
+    /// Will error if unable to open current theme directory.
+    /// Could be caused by inadequate permissions.
     pub fn boot_current_theme(&self) -> Result<Option<Child>> {
         let mut path = BaseDirectories::with_prefix("leftwm")?.create_config_directory("")?;
         path.push("themes");

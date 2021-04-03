@@ -31,34 +31,6 @@ async fn main() -> Result<()> {
     let config_file = matches.value_of("INPUT");
     let verbose = matches.occurrences_of("verbose") >= 1;
 
-    /// Load from specified file if provided
-    /// If no file provided, use the default provided in LeftWM.
-    pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
-        let config_filename = match fspath {
-            Some(fspath) => {
-                println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
-                PathBuf::from(fspath)
-            }
-
-            None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
-        };
-        if verbose {
-            dbg!(&config_filename);
-        }
-        if Path::new(&config_filename).exists() {
-            let contents = fs::read_to_string(config_filename)?;
-            if verbose {
-                dbg!(&contents);
-            }
-            Ok(toml::from_str(&contents)?)
-        } else {
-            Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Configuration not found in path",
-            )))
-        }
-    }
-
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
         Ok(config) => {
@@ -77,6 +49,38 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Loads configuration from either specified file (preferred) or default.
+/// # Errors
+///
+/// Errors if file cannot be read. Indicates filesystem error
+/// (inadequate permissions, disk full, etc.)
+/// If a path is specified and does not exist, returns `LeftError`.
+pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
+    let config_filename = match fspath {
+        Some(fspath) => {
+            println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
+            PathBuf::from(fspath)
+        }
+
+        None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
+    };
+    if verbose {
+        dbg!(&config_filename);
+    }
+    if Path::new(&config_filename).exists() {
+        let contents = fs::read_to_string(config_filename)?;
+        if verbose {
+            dbg!(&contents);
+        }
+        Ok(toml::from_str(&contents)?)
+    } else {
+        Err(leftwm::errors::LeftError::from(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Configuration not found in path",
+        )))
+    }
 }
 
 /// Check all keybinds to ensure that required values are provided

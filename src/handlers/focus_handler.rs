@@ -37,7 +37,7 @@ fn focus_workspace_work(manager: &mut Manager, workspace_id: i32) -> Option<()> 
     Some(())
 }
 
-/// Create a DisplayAction to cause this window to become focused  
+/// Create a `DisplayAction` to cause this window to become focused  
 pub fn focus_window(manager: &mut Manager, handle: &WindowHandle) -> bool {
     let window = match focus_window_by_handle_work(manager, handle) {
         Some(w) => w,
