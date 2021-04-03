@@ -28,12 +28,12 @@ fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
 fn snap_to_workspaces(window: &mut Window, workspaces: &[Workspace]) -> bool {
     workspaces
         .iter()
-        .any(|workspace| should_snap(window, workspace.clone()))
+        .any(|workspace| should_snap(window, workspace))
 }
 
 //to be snapable, the window must be inside the workspace AND the a side must be close to
 //the workspaces edge
-fn should_snap(window: &mut Window, workspace: Workspace) -> bool {
+fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
     if window.must_float() {
         return false;
     }
@@ -57,16 +57,16 @@ fn should_snap(window: &mut Window, workspace: Workspace) -> bool {
     let ws_top = workspace.y();
     let ws_bottom = workspace.y() + workspace.height();
     if (win_top - ws_top).abs() < dist {
-        return window_handler::snap_to_workspace(window, workspace);
+        return window_handler::snap_to_workspace(window, &workspace);
     }
     if (win_bottom - ws_bottom).abs() < dist {
-        return window_handler::snap_to_workspace(window, workspace);
+        return window_handler::snap_to_workspace(window, &workspace);
     }
     if (win_left - ws_left).abs() < dist {
-        return window_handler::snap_to_workspace(window, workspace);
+        return window_handler::snap_to_workspace(window, &workspace);
     }
     if (win_right - ws_right).abs() < dist {
-        return window_handler::snap_to_workspace(window, workspace);
+        return window_handler::snap_to_workspace(window, &workspace);
     }
     false
 }

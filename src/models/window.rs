@@ -13,7 +13,7 @@ use x11_dl::xlib;
 
 type MockHandle = i32;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
@@ -286,14 +286,14 @@ mod tests {
 
     #[test]
     fn should_be_able_to_tag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None, Some(4));
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None);
         subject.tag("test");
         assert!(subject.has_tag("test"), "was unable to tag the window");
     }
 
     #[test]
     fn should_be_able_to_untag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None, Some(4));
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None);
         subject.tag("test");
         subject.untag("test");
         assert!(!subject.has_tag("test"), "was unable to untag the window");

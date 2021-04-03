@@ -195,7 +195,7 @@ impl XWrap {
                 .iter()
                 .map(|i| {
                     let mut s = Screen::from(i);
-                    s.root = root.clone();
+                    s.root = root;
                     s
                 })
                 .collect()
@@ -343,7 +343,7 @@ impl XWrap {
         }
     }
 
-    pub fn set_window_states_atoms(&self, window: xlib::Window, states: Vec<xlib::Atom>) {
+    pub fn set_window_states_atoms(&self, window: xlib::Window, states: &[xlib::Atom]) {
         let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
         unsafe {
             (self.xlib.XChangeProperty)(
@@ -659,7 +659,7 @@ impl XWrap {
             }
             //make sure there is at least an empty list of _NET_WM_STATE
             let states = self.get_window_states_atoms(handle);
-            self.set_window_states_atoms(handle, states);
+            self.set_window_states_atoms(handle, &states);
         }
         None
     }
@@ -830,13 +830,13 @@ impl XWrap {
     }
 
     //this code is ran once when a window is destoryed
-    pub fn teardown_managed_window(&mut self, h: WindowHandle) {
+    pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             unsafe {
                 (self.xlib.XGrabServer)(self.display);
 
                 //remove this window from the list of managed windows
-                self.managed_windows.retain(|x| *x != handle);
+                self.managed_windows.retain(|x| *x != *handle);
                 self.update_client_list();
 
                 //ungrab all buttons for this window
@@ -844,7 +844,7 @@ impl XWrap {
                     self.display,
                     xlib::AnyButton as u32,
                     xlib::AnyModifier,
-                    handle,
+                    *handle,
                 );
                 (self.xlib.XSync)(self.display, 0);
                 (self.xlib.XUngrabServer)(self.display);
@@ -1058,7 +1058,7 @@ impl XWrap {
         })
     }
 
-    pub fn window_take_focus(&self, window: Window) {
+    pub fn window_take_focus(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             self.grab_mouse_clicks(handle);
 
@@ -1091,15 +1091,15 @@ impl XWrap {
         }
     }
 
-    pub fn kill_window(&self, h: WindowHandle) {
+    pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             //nicely ask the window to close
-            if !self.send_xevent_atom(handle, self.atoms.WMDelete) {
+            if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
                 //force kill the app
                 unsafe {
                     (self.xlib.XGrabServer)(self.display);
                     (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
-                    (self.xlib.XKillClient)(self.display, handle);
+                    (self.xlib.XKillClient)(self.display, *handle);
                     (self.xlib.XSync)(self.display, xlib::False);
                     (self.xlib.XUngrabServer)(self.display);
                 }

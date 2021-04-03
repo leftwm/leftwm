@@ -37,14 +37,14 @@ impl DisplayEventHandler {
                 let build = CommandBuilder::new(&self.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some((cmd, val)) = command {
-                    command_handler::process(manager, &self.config, cmd, val)
+                    command_handler::process(manager, &self.config, &cmd, val)
                 } else {
                     false
                 }
             }
 
             DisplayEvent::SendCommand(command, value) => {
-                command_handler::process(manager, &self.config, command, value)
+                command_handler::process(manager, &self.config, &command, value)
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {

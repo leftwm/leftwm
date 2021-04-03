@@ -157,7 +157,7 @@ pub fn update_workspace_avoid_list(manager: &mut Manager) {
     }
 }
 
-pub fn snap_to_workspace(window: &mut Window, workspace: Workspace) -> bool {
+pub fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
     window.debugging = true;
     window.set_floating(false);
 

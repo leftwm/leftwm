@@ -1,3 +1,4 @@
+#![allow(clippy::wildcard_imports)]
 use super::*;
 use crate::config::Config;
 use crate::display_action::DisplayAction;
@@ -14,7 +15,7 @@ use std::str::FromStr;
 pub fn process(
     manager: &mut Manager,
     config: &Config,
-    command: Command,
+    command: &Command,
     val: Option<String>,
 ) -> bool {
     match command {
@@ -29,7 +30,7 @@ pub fn process(
                 window.clear_tags();
                 window.set_floating(false);
                 window.tag(&tag.id);
-                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.id.clone());
+                let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
                 manager.actions.push_back(act);
                 manager.sort_windows();
             }
@@ -43,8 +44,8 @@ pub fn process(
         Command::GotoTag if val.is_none() => false,
         Command::GotoTag if !is_num(&val) => false,
         Command::GotoTag => {
-            let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
-            let previous_tag = manager.tag_index(manager.focused_tag(1).unwrap_or_default());
+            let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
+            let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
             let input_tag = to_num(&val);
             let mut destination_tag = input_tag;
 
@@ -112,7 +113,7 @@ pub fn process(
         Command::CloseWindow => {
             if let Some(window) = manager.focused_window() {
                 if window.type_ != WindowType::Dock {
-                    let act = DisplayAction::KillWindow(window.handle.clone());
+                    let act = DisplayAction::KillWindow(window.handle);
                     manager.actions.push_back(act);
                 }
             }
@@ -198,8 +199,8 @@ pub fn process(
                 if !window.floating() {
                     return false;
                 }
-                window_handler::snap_to_workspace(window, workspace);
-                let act = DisplayAction::MoveMouseOver(window.handle.clone());
+                window_handler::snap_to_workspace(window, &workspace);
+                let act = DisplayAction::MoveMouseOver(window.handle);
                 manager.actions.push_back(act);
                 return true;
             }

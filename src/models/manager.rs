@@ -67,7 +67,7 @@ impl Manager {
     }
 
     /// Return the index of a given tag.
-    pub fn tag_index(&self, tag: String) -> Option<usize> {
+    pub fn tag_index(&self, tag: &str) -> Option<usize> {
         Some(self.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
     }
 

@@ -1,3 +1,4 @@
+#![allow(clippy::wildcard_imports)]
 use std::os::raw::c_uint;
 use x11_dl::keysym::*;
 use x11_dl::xlib;

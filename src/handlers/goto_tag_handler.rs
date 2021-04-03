@@ -1,3 +1,4 @@
+#![allow(clippy::wildcard_imports)]
 use super::*;
 
 pub fn process(manager: &mut Manager, tag_num: usize) -> bool {

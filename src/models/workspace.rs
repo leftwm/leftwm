@@ -71,7 +71,7 @@ impl Workspace {
         }
     }
 
-    pub fn show_tag(&mut self, tag: Tag) {
+    pub fn show_tag(&mut self, tag: &Tag) {
         self.tags = vec![tag.id.clone()];
         self.set_main_width(self.layout.main_width());
     }
