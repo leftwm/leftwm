@@ -37,6 +37,14 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
     } else {
         window.tags = vec![manager.tags[0].id.clone()]
     }
+    if window.type_ == WindowType::Normal {
+        let margin_multiplier = match manager.focused_window() {
+            Some(w) => w.margin_multiplier(),
+            _ => 1.0
+        };
+        window.apply_margin_multiplier(margin_multiplier);
+        log::info!("Margin Multiplier applied on window creation.");
+    }
 
     if let Some(trans) = &window.transient {
         if let Some(parent) = find_parent_window(manager, &trans) {
@@ -66,8 +74,6 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
     manager.sort_windows();
 
     focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
-
-    window.apply_margin_multiplier(*manager.focused_workspace().unwrap().margin_multiplier());
 
     //make sure focus is re-computed
     let act = DisplayAction::FocusWindowUnderCursor;
@@ -180,6 +186,14 @@ pub fn snap_to_workspace(window: &mut Window, workspace: Workspace) -> bool {
         start_loc.set_x(x - workspace.xyhw.x());
         start_loc.set_y(y - workspace.xyhw.y());
         window.start_loc = Some(start_loc);
+        // if window.type_ == WindowType::Normal {
+            // let margin_multiplier = match manager::Manager.focused_window() {
+                // Some(w) => w.margin_multiplier(),
+                // _ => 1.0
+            // };
+            // window.apply_margin_multiplier(margin_multiplier);
+            // log::info!("Margin Multiplier applied on window snap to workspace.");
+        // }
     }
     true
 }

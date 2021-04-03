@@ -208,8 +208,8 @@ impl Workspace {
     }
 
     /// Get a reference to the tag model's margin multiplier.
-    pub fn margin_multiplier(&self) -> &f32 {
-        &self.margin_multiplier
+    pub fn margin_multiplier(&self) -> f32 {
+        self.margin_multiplier
     }
 }
 

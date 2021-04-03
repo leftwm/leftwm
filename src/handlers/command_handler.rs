@@ -561,7 +561,8 @@ pub fn process(
         Command::SetMarginMultiplier => {
             let margin_multiplier: f32 = (&val.unwrap()).parse().unwrap();
             match manager.focused_workspace_mut() {
-                Some(ws) => ws.set_margin_multiplier(margin_multiplier),
+                Some(ws) =>
+                ws.set_margin_multiplier(margin_multiplier),
                 _ => {
                     return false;
                 }
@@ -578,7 +579,7 @@ pub fn process(
             let mut to_apply_margin_multiplier =
                 helpers::vec_extract(&mut manager.windows, for_active_workspace);
             to_apply_margin_multiplier.iter_mut().for_each(|w| {
-                w.apply_margin_multiplier(*manager.focused_workspace().unwrap().margin_multiplier())
+                w.apply_margin_multiplier(manager.focused_workspace().unwrap().margin_multiplier())
             });
             manager.windows.append(&mut to_apply_margin_multiplier);
             let act =
