@@ -598,7 +598,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("6".to_string())
             ),
             false
@@ -607,7 +607,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("2".to_string())
             ),
             false
@@ -616,7 +616,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("15".to_string())
             ),
             false
@@ -633,13 +633,13 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("2".to_string())
         ));
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("1".to_string())
         ));
         // we only have one tag per screen created automatically
@@ -647,7 +647,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("3".to_string())
             ),
             false
@@ -671,7 +671,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("abc".to_string())
             ),
             false
@@ -680,13 +680,13 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("ab45c".to_string())
             ),
             false
         );
         assert_eq!(
-            process(&mut manager, &config, Command::GotoTag, None),
+            process(&mut manager, &config, &Command::GotoTag, None),
             false
         );
     }
@@ -711,47 +711,47 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("6".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(5));
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("2".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(1));
 
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("3".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(2));
 
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("4".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(3));
         assert_eq!(
-            manager.tag_index(manager.focused_tag(1).unwrap_or_default()),
+            manager.tag_index(&manager.focused_tag(1).unwrap_or_default()),
             Some(2)
         );
         assert_eq!(
-            manager.tag_index(manager.focused_tag(2).unwrap_or_default()),
+            manager.tag_index(&manager.focused_tag(2).unwrap_or_default()),
             Some(1)
         );
         assert_eq!(
-            manager.tag_index(manager.focused_tag(3).unwrap_or_default()),
+            manager.tag_index(&manager.focused_tag(3).unwrap_or_default()),
             Some(5)
         );
     }

@@ -239,7 +239,7 @@ mod tests {
             vec![],
         );
         let tag = crate::models::TagModel::new("test");
-        subject.show_tag(tag);
+        subject.show_tag(&tag);
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.tag("test");
         assert!(subject.is_displaying(&w), "workspace should include window");
