@@ -113,28 +113,36 @@ impl From<XyhwBuilder> for Xyhw {
 }
 
 impl Xyhw {
+    #[must_use]
     pub fn x(&self) -> i32 {
         self.x
     }
+    #[must_use]
     pub fn y(&self) -> i32 {
         self.y
     }
+    #[must_use]
     pub fn h(&self) -> i32 {
         self.h
     }
+    #[must_use]
     pub fn w(&self) -> i32 {
         self.w
     }
 
+    #[must_use]
     pub fn minw(&self) -> i32 {
         self.minw
     }
+    #[must_use]
     pub fn maxw(&self) -> i32 {
         self.maxw
     }
+    #[must_use]
     pub fn minh(&self) -> i32 {
         self.minh
     }
+    #[must_use]
     pub fn maxh(&self) -> i32 {
         self.maxh
     }
@@ -196,17 +204,20 @@ impl Xyhw {
         }
     }
 
+    #[must_use]
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
         let max_x = self.x + self.w;
         let max_y = self.y + self.h;
         (self.x <= x && x <= max_x) && (self.y <= y && y <= max_y)
     }
 
+    #[must_use]
     pub fn volume(&self) -> u64 {
         self.h as u64 * self.w as u64
     }
 
     /// Trim a Xyhw out of another Xyhw so that they don't overlap.
+    #[must_use]
     pub fn without(&self, other: &Xyhw) -> Xyhw {
         let mut without = *self;
         if other.w > other.h {
@@ -245,6 +256,7 @@ impl Xyhw {
         without
     }
 
+    #[must_use]
     pub fn center_halfed(&self) -> Xyhw {
         XyhwBuilder {
             x: self.x + (self.w / 2) - (self.w / 4),
@@ -269,6 +281,7 @@ impl Xyhw {
         }
     }
 
+    #[must_use]
     pub fn center(&self) -> (i32, i32) {
         let x = self.x + (self.w / 2);
         let y = self.y + (self.h / 2);

@@ -20,6 +20,7 @@ pub struct WindowChange {
 }
 
 impl WindowChange {
+    #[must_use]
     pub fn new(h: WindowHandle) -> WindowChange {
         WindowChange {
             handle: h,

@@ -7,6 +7,7 @@ pub type XKeysym = c_uint;
 pub type ModMask = c_uint;
 pub type Button = c_uint;
 
+#[must_use]
 pub fn into_modmask(keys: &[String]) -> ModMask {
     let mut mask = 0;
     for s in keys {
@@ -22,6 +23,7 @@ pub fn into_modmask(keys: &[String]) -> ModMask {
         | xlib::Mod5Mask)
 }
 
+#[must_use]
 pub fn into_mod(key: &str) -> ModMask {
     match key {
         "None" => xlib::AnyModifier,
@@ -39,6 +41,7 @@ pub fn into_mod(key: &str) -> ModMask {
 
 // We allow this because this function is simply a mapping wrapper.
 #[allow(clippy::too_many_lines)]
+#[must_use]
 pub fn into_keysym(key: &str) -> Option<XKeysym> {
     match key {
         "BackSpace" => Some(XK_BackSpace),
