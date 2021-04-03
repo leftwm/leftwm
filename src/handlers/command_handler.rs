@@ -28,13 +28,15 @@ pub fn process(
 
             // In order to apply the correct margin multiplier we want to copy this value
             // from any window already present on the target tag
-            let margin_multiplier = manager
+            let margin_multiplier = match manager
                 .windows
                 .iter()
                 .filter(|w| w.has_tag(&tag.id))
                 .last()
-                .unwrap()
-                .margin_multiplier();
+                {
+                    Some(w) => w.margin_multiplier(),
+                    _ => 1.0,              
+                };
 
             if let Some(window) = manager.focused_window_mut() {
                 window.clear_tags();
