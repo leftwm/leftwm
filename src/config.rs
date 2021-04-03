@@ -118,6 +118,7 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
+        const WORKSPACES_NUM: usize = 10;
         let mut commands = vec![
             // Mod + p => Open dmenu
             Keybind {
@@ -231,8 +232,6 @@ impl Default for Config {
             },
         ];
 
-        const WORKSPACES_NUM: usize = 10;
-
         // add "goto workspace"
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
@@ -255,7 +254,7 @@ impl Default for Config {
 
         let tags = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"]
             .iter()
-            .map(|s| s.to_string())
+            .map(|s| (*s).to_string())
             .collect();
 
         Config {

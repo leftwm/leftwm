@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::{atomic::AtomicBool, Arc};
 
+/// Maintains current program state.
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Manager {
     pub screens: Vec<Screen>,
@@ -60,7 +61,9 @@ impl Manager {
     /// Return the currently focused tag if the offset is 0.
     /// Offset is used to reach further down the history.
     pub fn focused_tag(&self, offset: usize) -> Option<String> {
-        self.focused_tag_history.get(offset).map(|t| t.to_string())
+        self.focused_tag_history
+            .get(offset)
+            .map(std::string::ToString::to_string)
     }
 
     /// Return the index of a given tag.

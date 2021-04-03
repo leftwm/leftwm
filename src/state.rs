@@ -56,17 +56,24 @@ fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
 
 /// Copy windows state.
 fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
-    for window in &mut manager.windows {
-        if let Some(old) = old_manager
+    let mut ordered = vec![];
+
+    old_manager.windows.iter().for_each(|old| {
+        if let Some((index, window)) = manager
             .windows
-            .iter()
-            .find(|w| w.handle == window.handle)
+            .iter_mut()
+            .enumerate()
+            .find(|w| w.1.handle == old.handle)
         {
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
             window.apply_margin_multiplier(old.margin_multiplier);
             window.normal = old.normal;
             window.tags = old.tags.clone();
+            ordered.push(window.clone());
+            manager.windows.remove(index);
         }
-    }
+    });
+    // manager.windows.clear();
+    manager.windows.append(&mut ordered);
 }

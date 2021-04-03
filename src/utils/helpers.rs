@@ -1,3 +1,4 @@
+//! Generic intersection, finding, reordering, and Vec extraction
 pub fn intersect<T>(v1: &[T], v2: &[T]) -> bool
 where
     T: PartialEq,
@@ -19,11 +20,11 @@ where
 {
     let mut removed = vec![];
     for x in list.iter() {
-        if test(&x) {
+        if test(x) {
             removed.push(x.clone())
         }
     }
-    list.retain(|x| !test(&x));
+    list.retain(|x| !test(x));
     removed
 }
 
@@ -34,7 +35,7 @@ where
     T: Clone,
 {
     let len = list.len() as i32;
-    let (index, item) = match list.iter().enumerate().find(|&x| test(&x.1)) {
+    let (index, item) = match list.iter().enumerate().find(|&x| test(x.1)) {
         Some(x) => (x.0, x.1.clone()),
         None => {
             return;
@@ -57,7 +58,7 @@ where
     T: Clone,
 {
     let len = list.len() as i32;
-    let index = match list.iter().enumerate().find(|&x| test(&x.1)) {
+    let index = match list.iter().enumerate().find(|&x| test(x.1)) {
         Some(x) => x.0,
         None => {
             return None;

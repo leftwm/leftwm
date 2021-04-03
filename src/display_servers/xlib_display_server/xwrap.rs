@@ -45,6 +45,7 @@ pub enum XlibError {
     InvalidXAtom,
 }
 
+/// Contains Xserver information and origins.
 pub struct XWrap {
     xlib: xlib::Xlib,
     display: *mut xlib::Display,
@@ -344,7 +345,7 @@ impl XWrap {
                 xlib::XA_ATOM,
                 32,
                 xlib::PropModeReplace,
-                data.as_ptr() as *const u8,
+                data.as_ptr().cast::<u8>(),
                 data.len() as i32,
             );
             std::mem::forget(data);
@@ -461,7 +462,7 @@ impl XWrap {
                 type_,
                 32,
                 xlib::PropModeReplace,
-                data.as_ptr() as *const u8,
+                data.as_ptr().cast::<u8>(),
                 1_i32,
             );
             std::mem::forget(data);
@@ -478,7 +479,7 @@ impl XWrap {
                     xlib::XA_CARDINAL,
                     8,
                     xlib::PropModeReplace,
-                    cstring.as_ptr() as *const u8,
+                    cstring.as_ptr().cast::<u8>(),
                     value.len() as i32,
                 );
                 std::mem::forget(cstring);
@@ -496,7 +497,7 @@ impl XWrap {
                 xlib::XA_CARDINAL,
                 32,
                 xlib::PropModeReplace,
-                xdata.as_ptr() as *const u8,
+                xdata.as_ptr().cast::<u8>(),
                 data.len() as i32,
             );
             std::mem::forget(xdata);
@@ -537,7 +538,7 @@ impl XWrap {
                 xlib::XA_CARDINAL,
                 32,
                 xlib::PropModeReplace,
-                indexes.as_ptr() as *const u8,
+                indexes.as_ptr().cast::<u8>(),
                 indexes.len() as i32,
             );
             std::mem::forget(indexes);
@@ -619,7 +620,7 @@ impl XWrap {
                     xlib::XA_WINDOW,
                     32,
                     xlib::PropModeAppend,
-                    list.as_ptr() as *const u8,
+                    list.as_ptr().cast::<u8>(),
                     1,
                 );
                 std::mem::forget(list);
@@ -864,7 +865,7 @@ impl XWrap {
                     xlib::XA_WINDOW,
                     32,
                     xlib::PropModeAppend,
-                    list.as_ptr() as *const u8,
+                    list.as_ptr().cast::<u8>(),
                     1,
                 );
                 std::mem::forget(list);
@@ -1067,7 +1068,7 @@ impl XWrap {
                         xlib::XA_WINDOW,
                         32,
                         xlib::PropModeReplace,
-                        list.as_ptr() as *const c_uchar,
+                        list.as_ptr().cast::<u8>(),
                         1,
                     );
                     std::mem::forget(list);
@@ -1109,33 +1110,6 @@ impl XWrap {
                 | xlib::StructureNotifyMask;
             self.subscribe_to_event(*handle, mask);
         }
-    }
-
-    pub fn get_pointer_location(&self) -> Option<(i32, i32)> {
-        let mut root: xlib::Window = 0;
-        let mut window: xlib::Window = 0;
-        let mut root_x: c_int = 0;
-        let mut root_y: c_int = 0;
-        let mut win_x: c_int = 0;
-        let mut win_y: c_int = 0;
-        let mut state: c_uint = 0;
-        unsafe {
-            let success = (self.xlib.XQueryPointer)(
-                self.display,
-                self.root,
-                &mut root,
-                &mut window,
-                &mut root_x,
-                &mut root_y,
-                &mut win_x,
-                &mut win_y,
-                &mut state,
-            );
-            if success > 0 {
-                return Some((root_x, root_y));
-            }
-        }
-        None
     }
 
     pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
@@ -1310,7 +1284,7 @@ impl XWrap {
                 xlib::XA_ATOM,
                 32,
                 xlib::PropModeReplace,
-                supported_ptr as *const u8,
+                supported_ptr.cast::<u8>(),
                 size,
             );
             std::mem::forget(supported);
@@ -1353,8 +1327,8 @@ impl XWrap {
         if self.mode == Mode::NormalMode && mode != Mode::NormalMode {
             self.mode = mode.clone();
             //safe this point as the start of the move/resize
-            if let Some(loc) = self.get_pointer_location() {
-                self.mode_origin = loc;
+            if let Ok(loc) = self.get_cursor_point() {
+                self.mode_origin = loc
             }
             unsafe {
                 let cursor = match mode {

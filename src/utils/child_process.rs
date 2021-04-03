@@ -1,3 +1,4 @@
+//! Starts programs in autostart, boots theme. Provides function to boot other desktop files also.
 use crate::errors::Result;
 use std::collections::HashMap;
 use std::fs;
@@ -17,8 +18,8 @@ impl Default for Nanny {
 }
 
 impl Nanny {
-    pub fn new() -> Nanny {
-        Nanny {}
+    pub const fn new() -> Self {
+        Self {}
     }
 
     pub fn autostart(&self) -> Children {
@@ -32,7 +33,7 @@ impl Nanny {
             .map(|files| {
                 files
                     .iter()
-                    .filter_map(|file| boot_desktop_file(&file).ok())
+                    .filter_map(|file| boot_desktop_file(file).ok())
                     .collect::<Children>()
             })
             .unwrap_or_default()
@@ -91,8 +92,8 @@ pub struct Children {
 }
 
 impl Children {
-    pub fn new() -> Children {
-        Default::default()
+    pub fn new() -> Self {
+        Children::default()
     }
     pub fn len(&self) -> usize {
         self.inner.len()
@@ -108,7 +109,7 @@ impl Children {
         self.inner.insert(child.id(), child).is_none()
     }
     /// Merge another `Children` into this `Children`.
-    pub fn merge(&mut self, reaper: Children) {
+    pub fn merge(&mut self, reaper: Self) {
         self.inner.extend(reaper.inner.into_iter())
     }
     /// Try reaping all the children processes managed by this struct.

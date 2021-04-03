@@ -1,4 +1,4 @@
-use super::layouts::*;
+use super::layouts::Layout;
 use crate::models::BBox;
 use crate::models::Tag;
 use crate::models::TagId;
@@ -9,6 +9,7 @@ use crate::models::XyhwBuilder;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: i32,
@@ -187,7 +188,7 @@ impl Workspace {
         if let Some(tag) = self.current_tags().get(0) {
             return tag.main_width_percentage();
         }
-        self.layout.main_width() as f32
+        f32::from(self.layout.main_width())
     }
 
     pub fn center_halfed(&self) -> Xyhw {

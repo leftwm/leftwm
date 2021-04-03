@@ -1,3 +1,4 @@
+//! Window Information
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
@@ -17,6 +18,7 @@ pub enum WindowHandle {
     XlibHandle(xlib::Window),
 }
 
+/// Store Window information.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Window {
     pub handle: WindowHandle,

@@ -31,9 +31,8 @@ async fn main() -> Result<()> {
     let config_file = matches.value_of("INPUT");
     let verbose = matches.occurrences_of("verbose") >= 1;
 
-    //    dbg!(config_file);
-    //    use leftwm::config::*;
-
+    /// Load from specified file if provided
+    /// If no file provided, use the default provided in LeftWM.
     pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         let config_filename = match fspath {
             Some(fspath) => {
@@ -80,6 +79,10 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+/// Check all keybinds to ensure that required values are provided
+/// Checks to see if value is provided (if required)
+/// Checks to see if keys are valid against Xkeysym
+/// Ideally, we will pass this to the command handler with a dummy config
 fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
     let mut returns = Vec::new();
     let value_required_commands = vec![
