@@ -17,6 +17,9 @@ impl TagModel {
         })
     }
 
+    /// # Panics
+    ///
+    /// Panics if main_width_percentage cannot be unwrapped.
     pub fn increase_main_width(&self, delta: u8) {
         let lock = self.main_width_percentage.clone();
         let mut mwp = lock.lock().unwrap();

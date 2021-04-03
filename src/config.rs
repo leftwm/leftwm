@@ -39,6 +39,18 @@ pub fn load() -> Config {
         .unwrap_or_default()
 }
 
+/// # Panics
+///
+/// Function can only panic if toml cannot be serialized. This should not occur as it is defined
+/// globally.
+///
+/// # Errors
+///
+/// Function will throw an error if `BaseDirectories` doesn't exist, if user doesn't have
+/// permissions to place config.toml, if config.toml cannot be read (access writes, malformed file,
+/// etc.).
+/// Function can also error from inability to save config.toml (if it is the first time running
+/// LeftWM).
 fn load_from_file() -> Result<Config> {
     let path = BaseDirectories::with_prefix("leftwm")?;
     let config_filename = path.place_config_file("config.toml")?;
@@ -108,6 +120,10 @@ impl Config {
             .collect()
     }
 
+    /// # Panics
+    ///
+    /// Will panic if the default tags cannot be unwrapped. Not likely to occur, as this is defined
+    /// behaviour.
     pub fn get_list_of_tags(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();

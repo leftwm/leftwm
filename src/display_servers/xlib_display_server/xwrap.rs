@@ -72,6 +72,9 @@ impl Default for XWrap {
 }
 
 impl XWrap {
+    /// # Panics
+    ///
+    /// Can panic if unable to contact xorg.  
     pub fn new() -> XWrap {
         const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().unwrap();
@@ -171,6 +174,10 @@ impl XWrap {
     }
 
     //returns all the screens the display
+    /// # Panics
+    ///
+    /// Panics if xorg cannot be contacted (xlib missing, not started, etc.)
+    /// Also panics if window attrs cannot be obtained.
     pub fn get_screens(&self) -> Vec<Screen> {
         use x11_dl::xinerama::XineramaScreenInfo;
         use x11_dl::xinerama::Xlib;
@@ -438,6 +445,9 @@ impl XWrap {
     }
 
     /// EWMH support used for bars such as polybar.
+    ///  # Panics
+    ///
+    ///  Panics if a new Cstring cannot be formed
     pub fn init_desktops_hints(&self) {
         let tags = &self.tags;
         let tag_length = tags.len();
