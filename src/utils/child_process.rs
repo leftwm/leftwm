@@ -23,6 +23,8 @@ impl Nanny {
         Self {}
     }
 
+    // We allow this because Nanny is empty.
+    #[allow(clippy::unused_self)]
     pub fn autostart(&self) -> Children {
         dirs_next::home_dir()
             .map(|mut path| {
@@ -44,6 +46,8 @@ impl Nanny {
     ///
     /// Will error if unable to open current theme directory.
     /// Could be caused by inadequate permissions.
+    // We allow this because Nanny is empty.
+    #[allow(clippy::unused_self)]
     pub fn boot_current_theme(&self) -> Result<Option<Child>> {
         let mut path = BaseDirectories::with_prefix("leftwm")?.create_config_directory("")?;
         path.push("themes");
