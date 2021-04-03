@@ -63,32 +63,34 @@ where
     //Manually handle edge cases to allow more consistent behaviour
     if new_index < 0 {
         new_index += len;
-        let mut i = index as i32 - 1;
-        while i != new_index - 1 {
-            let i_plus = i + 1;
-            if i < 0 {
-                i += len;
-            }
-            list[i_plus as usize] = list[i as usize].clone();
-            i -= 1;
-        }
-        list[new_index as usize] = item;
+        manual_reorder(list, len, index as i32, item, new_index, -1);
     } else if new_index >= len {
         new_index -= len;
-        let mut i = index as i32 + 1;
-        while i != new_index + 1 {
-            let i_minus = i - 1;
-            if i >= len {
-                i -= len;
-            }
-            list[i_minus as usize] = list[i as usize].clone();
-            i += 1;
-        }
-        list[new_index as usize] = item;
+        manual_reorder(list, len, index as i32, item, new_index, 1);
     } else {
         list.remove(index);
         list.insert(new_index as usize, item);
     }
+}
+
+fn manual_reorder<T>(list: &mut Vec<T>, len: i32, index: i32, item: T, new_index: i32, val: i32)
+where
+    T: Clone,
+{
+    let mut i = index + val;
+    let mut i_alt = index;
+    while i != new_index + val {
+        if i < 0 {
+            i += len;
+        }
+        if i >= len {
+            i -= len;
+        }
+        list[i_alt as usize] = list[i as usize].clone();
+        i_alt = i;
+        i += val;
+    }
+    list[new_index as usize] = item;
 }
 
 pub fn relative_find<T, F>(list: &[T], test: F, shift: i32) -> Option<&T>
