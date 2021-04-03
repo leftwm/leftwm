@@ -53,7 +53,9 @@ impl Layout {
     }
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         match self {
-            Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
+            Self::MainAndVertStack | Self::LeftWiderRightStack => {
+                main_and_vert_stack::update(workspace, windows)
+            }
             Self::MainAndHorizontalStack => main_and_horizontal_stack::update(workspace, windows),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
@@ -63,14 +65,12 @@ impl Layout {
             Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => right_main_and_vert_stack::update(workspace, windows),
-            Self::LeftWiderRightStack => main_and_vert_stack::update(workspace, windows),
         }
     }
 
     pub fn main_width(&self) -> u8 {
         match self {
-            Self::RightWiderLeftStack => 75,
-            Self::LeftWiderRightStack => 75,
+            Self::RightWiderLeftStack | Self::LeftWiderRightStack => 75,
             _ => 50,
         }
     }

@@ -257,8 +257,7 @@ impl XWrap {
             let windows: &[xlib::Window] = slice::from_raw_parts(array, length as usize);
             match status {
                 0 /* XcmsFailure */ => { Err("Could not load list of windows".to_string() ) }
-                1 /* XcmsSuccess */ => { Ok(windows) }
-                2 /* XcmsSuccessWithCompression */ => { Ok(windows) }
+                1 /* XcmsSuccess */ | 2 /* XcmsSuccessWithCompression */ => { Ok(windows) }
                 _ => { Err("Unknown return status".to_string() ) }
             }
         }
