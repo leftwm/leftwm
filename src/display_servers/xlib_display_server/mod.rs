@@ -83,7 +83,9 @@ impl DisplayServer for XlibDisplayServer {
             }
         });
 
-        for _ in 0..self.xw.queue_len() {
+        let event_in_queue = self.xw.queue_len();
+
+        for _ in 0..event_in_queue {
             let xlib_event = self.xw.get_next_event();
             let event = XEvent(&self.xw, xlib_event).into();
             if let Some(e) = event {
@@ -127,13 +129,26 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.window_take_focus(&w);
                 None
             }
-            DisplayAction::FocusWindowUnderCursor => {
-                let cursor = self.xw.get_cursor_point().ok()?;
-                Some(DisplayEvent::FocusedAt(cursor.0, cursor.1))
-            }
             DisplayAction::SetWindowOrder(wins) => {
-                self.xw.restack(wins);
+                // get all the windows are aren't managing.
+                // They should be in front of our windows.
+                let unmanged: Vec<WindowHandle> = self
+                    .xw
+                    .get_all_windows()
+                    .unwrap_or_default()
+                    .iter()
+                    .filter(|&x| *x != self.root)
+                    .map(|x| WindowHandle::XlibHandle(*x))
+                    .filter(|h| !wins.contains(&h))
+                    .collect();
+                let all: Vec<WindowHandle> = unmanged.iter().chain(wins.iter()).cloned().collect();
+                self.xw.restack(all);
                 None
+            }
+            DisplayAction::FocusWindowUnderCursor => {
+                let point = self.xw.get_cursor_point().ok()?;
+                let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
+                Some(evt)
             }
             DisplayAction::StartMovingWindow(w) => {
                 self.xw.set_mode(Mode::MovingWindow(w));
@@ -188,11 +203,21 @@ impl XlibDisplayServer {
 
         // tell manager about existing windows
         self.find_all_windows().into_iter().for_each(|w| {
-            let e = DisplayEvent::WindowCreate(w);
+            let cursor = self.xw.get_cursor_point().ok().unwrap_or_default();
+            let e = DisplayEvent::WindowCreate(w, cursor.0, cursor.1);
             events.push(e);
         });
 
         events
+    }
+
+    pub fn verify_focused_window(&mut self) -> Vec<DisplayEvent> {
+        self.verify_focused_window_work().unwrap_or_default()
+    }
+
+    fn verify_focused_window_work(&mut self) -> Option<Vec<DisplayEvent>> {
+        let point = self.xw.get_cursor_point().ok()?;
+        Some(vec![DisplayEvent::VerifyFocusedAt(point.0, point.1)])
     }
 
     fn find_all_windows(&self) -> Vec<Window> {

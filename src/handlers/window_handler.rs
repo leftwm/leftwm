@@ -1,9 +1,10 @@
 use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
 use crate::display_action::DisplayAction;
 use crate::models::WindowHandle;
+
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn created(manager: &mut Manager, mut window: Window) -> bool {
+pub fn created(manager: &mut Manager, mut window: Window, x: i32, y: i32) -> bool {
     //don't add the window if the manager already knows about it
     for w in &manager.windows {
         if w.handle == window.handle {
@@ -11,7 +12,16 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
         }
     }
 
-    if let Some(ws) = manager.focused_workspace() {
+    //When adding a window we add to the workspace under the cursor, This isn't necessarily the
+    //focused workspace. If the workspace is empty, it might not have received focus. This is so
+    //the workspace that has windows on its is still active not the empty workspace.
+    let ws: Option<&Workspace> = manager
+        .workspaces
+        .iter()
+        .find(|ws| ws.xyhw.contains_point(x, y))
+        .or_else(|| manager.focused_workspace()); //backup plan
+
+    if let Some(ws) = ws {
         window.tags = ws.tags.clone();
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
@@ -65,11 +75,7 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
     //new windows should be on the top of the stack
     manager.sort_windows();
 
-    focus_handler::focus_window(manager, &window, window.x() + 1, window.y() + 1);
-
-    //make sure focus is re-computed
-    let act = DisplayAction::FocusWindowUnderCursor;
-    manager.actions.push_back(act);
+    focus_handler::focus_window(manager, &window.handle);
 
     if let Some(cmd) = &manager.theme_setting.on_new_window_cmd {
         use std::process::{Command, Stdio};
@@ -98,9 +104,10 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
 
-    //make sure focus is re-computed
+    //make sure focus is recalculated
     let act = DisplayAction::FocusWindowUnderCursor;
     manager.actions.push_back(act);
+
     true
 }
 

@@ -34,10 +34,6 @@ pub fn process(
                 manager.actions.push_back(act);
                 manager.sort_windows();
             }
-
-            //make sure focus is re-computed
-            let act = DisplayAction::FocusWindowUnderCursor;
-            manager.actions.push_back(act);
             true
         }
 
@@ -210,13 +206,13 @@ pub fn process(
         Command::MoveWindowUp => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle,
-                _ => {
+                None => {
                     return false;
                 }
             };
             let (tags, layout) = match manager.focused_workspace() {
                 Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -234,7 +230,7 @@ pub fn process(
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
                         Some(h) => h.handle,
-                        _ => {
+                        None => {
                             return false;
                         }
                     };
@@ -260,13 +256,13 @@ pub fn process(
         Command::MoveWindowDown => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle,
-                _ => {
+                None => {
                     return false;
                 }
             };
             let (tags, layout) = match manager.focused_workspace() {
                 Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -284,7 +280,7 @@ pub fn process(
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
                         Some(h) => h.handle,
-                        _ => {
+                        None => {
                             return false;
                         }
                     };
@@ -311,13 +307,13 @@ pub fn process(
         Command::MoveWindowTop => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle,
-                _ => {
+                None => {
                     return false;
                 }
             };
             let tags = match manager.focused_workspace() {
                 Some(w) => w.tags.clone(),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -356,13 +352,13 @@ pub fn process(
         Command::FocusWindowUp => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle,
-                _ => {
+                None => {
                     return false;
                 }
             };
             let (tags, layout) = match manager.focused_workspace() {
                 Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -380,7 +376,7 @@ pub fn process(
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
                         Some(h) => h.handle,
-                        _ => {
+                        None => {
                             return false;
                         }
                     };
@@ -408,13 +404,13 @@ pub fn process(
         Command::FocusWindowDown => {
             let handle = match manager.focused_window() {
                 Some(h) => h.handle,
-                _ => {
+                None => {
                     return false;
                 }
             };
             let (tags, layout) = match manager.focused_workspace() {
                 Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -430,7 +426,7 @@ pub fn process(
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
                         Some(h) => h.handle,
-                        _ => {
+                        None => {
                             return false;
                         }
                     };
@@ -485,7 +481,7 @@ pub fn process(
                 .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
             {
                 let window = window.clone();
-                focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
+                focus_handler::move_cursor_over(manager, &window);
                 let act = DisplayAction::MoveMouseOver(window.handle);
                 manager.actions.push_back(act);
             }
@@ -523,7 +519,7 @@ pub fn process(
                 .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
             {
                 let window = window.clone();
-                focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
+                focus_handler::move_cursor_over(manager, &window);
                 let act = DisplayAction::MoveMouseOver(window.handle);
                 manager.actions.push_back(act);
             }
