@@ -9,6 +9,7 @@ mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
 mod grid_horizontal;
+mod main_and_deck;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
 mod monocle;
@@ -18,6 +19,7 @@ mod right_main_and_vert_stack;
 pub enum Layout {
     MainAndVertStack,
     MainAndHorizontalStack,
+    MainAndDeck,
     GridHorizontal,
     EvenHorizontal,
     EvenVertical,
@@ -29,9 +31,10 @@ pub enum Layout {
     LeftWiderRightStack,
 }
 
-pub const LAYOUTS: [Layout; 11] = [
+pub const LAYOUTS: [Layout; 12] = [
     Layout::MainAndVertStack,
     Layout::MainAndHorizontalStack,
+    Layout::MainAndDeck,
     Layout::GridHorizontal,
     Layout::EvenHorizontal,
     Layout::EvenVertical,
@@ -55,6 +58,7 @@ impl Layout {
         match self {
             Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
             Self::MainAndHorizontalStack => main_and_horizontal_stack::update(workspace, windows),
+            Self::MainAndDeck => main_and_deck::update(workspace, windows),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),

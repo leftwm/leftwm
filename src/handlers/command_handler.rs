@@ -237,6 +237,26 @@ pub fn process(
                     manager.actions.push_back(act);
                     true
                 }
+                Some(crate::layouts::Layout::MainAndDeck) => {
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    //Don't cycle main window
+                    let main = to_reorder.remove(0);
+
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                        Some(h) => h.handle.clone(),
+                        _ => {
+                            return false;
+                        }
+                    };
+                    helpers::cycle_vec(&mut to_reorder, -1);
+                    to_reorder.insert(0, main);
+                    manager.windows.append(&mut to_reorder);
+                    let act = DisplayAction::MoveMouseOver(new_handle);
+                    manager.actions.push_back(act);
+                    true
+                }
                 _ => {
                     let mut to_reorder =
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
@@ -282,6 +302,26 @@ pub fn process(
                         }
                     };
                     helpers::cycle_vec(&mut to_reorder, 1);
+                    manager.windows.append(&mut to_reorder);
+                    let act = DisplayAction::MoveMouseOver(new_handle);
+                    manager.actions.push_back(act);
+                    true
+                }
+                Some(crate::layouts::Layout::MainAndDeck) => {
+                    let mut to_reorder =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    //Don't cycle main window
+                    let main = to_reorder.remove(0);
+
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, -1) {
+                        Some(h) => h.handle.clone(),
+                        _ => {
+                            return false;
+                        }
+                    };
+                    helpers::cycle_vec(&mut to_reorder, 1);
+                    to_reorder.insert(0, main);
                     manager.windows.append(&mut to_reorder);
                     let act = DisplayAction::MoveMouseOver(new_handle);
                     manager.actions.push_back(act);
@@ -383,6 +423,20 @@ pub fn process(
                     manager.actions.push_back(act);
                     true
                 }
+                Some(crate::layouts::Layout::MainAndDeck) => {
+                    let mut windows =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    //Only change focus on first 2 windows
+                    let window_group = &windows[..2];
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, -1)
+                    {
+                        let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                        manager.actions.push_back(act);
+                    }
+                    manager.windows.append(&mut windows);
+                    true
+                }
                 _ => {
                     let mut window_group =
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
@@ -431,6 +485,20 @@ pub fn process(
                     manager.windows.append(&mut to_reorder);
                     let act = DisplayAction::MoveMouseOver(new_handle);
                     manager.actions.push_back(act);
+                    true
+                }
+                //Kinda redundant as we are only changing over 2 windows
+                Some(crate::layouts::Layout::MainAndDeck) => {
+                    let mut windows =
+                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
+                    //Only change focus on first 2 windows
+                    let window_group = &windows[..2];
+                    let is_handle = |x: &Window| -> bool { x.handle == handle };
+                    if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, 1) {
+                        let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                        manager.actions.push_back(act);
+                    }
+                    manager.windows.append(&mut windows);
                     true
                 }
                 _ => {
