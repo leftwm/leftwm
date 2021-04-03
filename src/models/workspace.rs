@@ -57,7 +57,7 @@ impl Workspace {
                 w: bbox.width,
                 x: bbox.x,
                 y: bbox.y,
-                ..Default::default()
+                ..XyhwBuilder::default()
             }
             .into(),
             xyhw_avoided: XyhwBuilder {
@@ -65,7 +65,7 @@ impl Workspace {
                 w: bbox.width,
                 x: bbox.x,
                 y: bbox.y,
-                ..Default::default()
+                ..XyhwBuilder::default()
             }
             .into(),
         }

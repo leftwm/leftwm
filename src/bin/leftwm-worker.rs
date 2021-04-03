@@ -33,7 +33,7 @@ fn main() {
                 .map(|s| TagModel::new(s))
                 .collect(),
             layouts: config.layouts.clone(),
-            ..Default::default()
+            ..Manager::default()
         };
 
         child_process::register_child_hook(manager.reap_requested.clone());

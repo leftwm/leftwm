@@ -188,7 +188,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         h: Some(event.height),
                         x: Some(event.x),
                         y: Some(event.y),
-                        ..Default::default()
+                        ..XyhwChange::default()
                     };
                     change.floating = Some(xyhw);
                     if window_type == WindowType::Dock {

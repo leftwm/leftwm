@@ -251,7 +251,7 @@ impl Xyhw {
             y: self.y + (self.h / 2) - (self.h / 4),
             h: (self.h / 2),
             w: (self.w / 2),
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }
@@ -287,14 +287,14 @@ mod tests {
             y: 10,
             w: 2000,
             h: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let correct = Xyhw {
             x: 510,
             y: 260,
             w: 1000,
             h: 500,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.center_halfed();
         assert_eq!(result, correct);
@@ -306,12 +306,12 @@ mod tests {
             y: 5,
             h: 1000,
             w: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let b = Xyhw {
             h: 10,
             w: 100,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.without(&b);
         assert_eq!(
@@ -321,7 +321,7 @@ mod tests {
                 y: 10,
                 h: 995,
                 w: 1000,
-                ..Default::default()
+                ..Xyhw::default()
             }
         );
     }
@@ -333,12 +333,12 @@ mod tests {
             y: 0,
             h: 1000,
             w: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let b = Xyhw {
             h: 100,
             w: 10,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.without(&b);
         assert_eq!(
@@ -348,7 +348,7 @@ mod tests {
                 y: 0,
                 w: 990,
                 h: 1000,
-                ..Default::default()
+                ..Xyhw::default()
             }
         );
     }
@@ -360,14 +360,14 @@ mod tests {
             y: 0,
             h: 1000,
             w: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let b = Xyhw {
             y: 990,
             x: 0,
             h: 10,
             w: 100,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.without(&b);
         assert_eq!(
@@ -377,7 +377,7 @@ mod tests {
                 y: 0,
                 h: 990,
                 w: 1000,
-                ..Default::default()
+                ..Xyhw::default()
             }
         );
     }
@@ -389,14 +389,14 @@ mod tests {
             y: 0,
             h: 1000,
             w: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let b = Xyhw {
             x: 990,
             y: 0,
             h: 100,
             w: 10,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.without(&b);
         assert_eq!(
@@ -406,7 +406,7 @@ mod tests {
                 y: 0,
                 w: 990,
                 h: 1000,
-                ..Default::default()
+                ..Xyhw::default()
             }
         );
     }

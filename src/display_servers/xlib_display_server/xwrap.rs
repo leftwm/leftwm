@@ -1077,7 +1077,7 @@ impl XWrap {
             y: Some(y_return),
             w: Some(width_return as i32),
             h: Some(height_return as i32),
-            ..Default::default()
+            ..XyhwChange::default()
         })
     }
 
