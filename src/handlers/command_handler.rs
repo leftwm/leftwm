@@ -25,10 +25,20 @@ pub fn process(
         Command::MoveToTag => {
             let tag_num = to_num(&val);
             let tag = manager.tags[tag_num - 1].clone();
+
+            // In order to apply the correct margin multiplier we want to copy this value
+            // from any window already present on the target tag
+            let margin_multiplier =
+                match manager.windows.iter().filter(|w| w.has_tag(&tag.id)).last() {
+                    Some(w) => w.margin_multiplier(),
+                    _ => 1.0,
+                };
+
             if let Some(window) = manager.focused_window_mut() {
                 window.clear_tags();
                 window.set_floating(false);
                 window.tag(&tag.id);
+                window.apply_margin_multiplier(margin_multiplier);
                 let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.id.clone());
                 manager.actions.push_back(act);
                 manager.sort_windows();
@@ -150,6 +160,7 @@ pub fn process(
                     .clone();
                 if let Some(window) = manager.focused_window_mut() {
                     window.tags = vec![wp_tags[0].clone()];
+
                     return true;
                 }
             }
@@ -561,21 +572,23 @@ pub fn process(
         Command::SetMarginMultiplier => {
             let margin_multiplier: f32 = (&val.unwrap()).parse().unwrap();
             let tags = match manager.focused_workspace() {
-                Some(w) => w.tags.clone(),
+                Some(ws) => ws.tags.clone(),
                 _ => {
                     return false;
                 }
             };
             let for_active_workspace = |x: &Window| -> bool {
-                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
+                helpers::intersect(&tags, &x.tags) && x.type_ == WindowType::Normal
             };
             let mut to_apply_margin_multiplier =
                 helpers::vec_extract(&mut manager.windows, for_active_workspace);
-            for window in &mut to_apply_margin_multiplier {
-                window.set_margin_multiplier(margin_multiplier);
-            }
+            to_apply_margin_multiplier
+                .iter_mut()
+                .for_each(|w| w.apply_margin_multiplier(margin_multiplier));
             manager.windows.append(&mut to_apply_margin_multiplier);
-
+            let act =
+                DisplayAction::MoveMouseOver(manager.focused_window().unwrap().handle.clone());
+            manager.actions.push_back(act);
             true
         }
     }

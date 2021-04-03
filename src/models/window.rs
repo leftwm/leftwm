@@ -157,8 +157,19 @@ impl Window {
         self.requested
     }
 
-    pub fn set_margin_multiplier(&mut self, value: f32) {
-        self.margin_multiplier = value.abs()
+    pub fn apply_margin_multiplier(&mut self, value: f32) {
+        self.margin_multiplier = value.abs();
+        if value < 0 as f32 {
+            log::warn!(
+                "Negative margin multiplier detected. Will be applied as absolute: {:?}",
+                self.margin_multiplier()
+            )
+        };
+        log::info!("Multiplier {:?} was applied to margin", value)
+    }
+
+    pub fn margin_multiplier(&self) -> f32 {
+        self.margin_multiplier
     }
 
     pub fn width(&self) -> i32 {
