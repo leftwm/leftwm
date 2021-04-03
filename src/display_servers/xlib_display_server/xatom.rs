@@ -186,7 +186,7 @@ impl XAtom {
             return "_NET_WM_STRUT";
         }
         if atom == self.NetWMPid {
-            return "_NET_WM_PID"
+            return "_NET_WM_PID";
         }
         "(UNKNOWN)"
     }

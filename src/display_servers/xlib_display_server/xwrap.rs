@@ -1,3 +1,5 @@
+#![allow(clippy::items_after_statements)]
+#![allow(clippy::similar_names)]
 use super::utils;
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
@@ -71,6 +73,7 @@ impl Default for XWrap {
 
 impl XWrap {
     pub fn new() -> XWrap {
+        const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().unwrap();
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
@@ -83,7 +86,6 @@ impl XWrap {
 
         let mut poll = mio::Poll::new().unwrap();
         let mut events = mio::Events::with_capacity(1);
-        const SERVER: mio::Token = mio::Token(0);
         poll.registry()
             .register(
                 &mut mio::unix::SourceFd(&fd),
@@ -127,7 +129,7 @@ impl XWrap {
             colors,
             managed_windows: vec![],
             tags: vec![],
-            mode: Mode::NormalMode,
+            mode: Mode::Normal,
             mod_key_mask: 0,
             mouse_key_mask: 0,
             mode_origin: (0, 0),
@@ -289,11 +291,7 @@ impl XWrap {
         Ok(attrs)
     }
 
-    pub fn get_cardinal_prop_value(
-        &self,
-        window: xlib::Window,
-        prop: xlib::Atom
-    ) -> Option<u32> {
+    pub fn get_cardinal_prop_value(&self, window: xlib::Window, prop: xlib::Atom) -> Option<u32> {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
         let mut bytes_after: c_ulong = 0;
@@ -524,7 +522,7 @@ impl XWrap {
     }
 
     fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
-        let xdata = data.to_owned();
+        let x_data = data.to_owned();
         unsafe {
             (self.xlib.XChangeProperty)(
                 self.display,
@@ -533,10 +531,10 @@ impl XWrap {
                 xlib::XA_CARDINAL,
                 32,
                 xlib::PropModeReplace,
-                xdata.as_ptr().cast::<u8>(),
+                x_data.as_ptr().cast::<u8>(),
                 data.len() as i32,
             );
-            std::mem::forget(xdata);
+            std::mem::forget(x_data);
         }
     }
 
@@ -1387,7 +1385,7 @@ impl XWrap {
             }
             _ => {}
         }
-        if self.mode == Mode::NormalMode && mode != Mode::NormalMode {
+        if self.mode == Mode::Normal && mode != Mode::Normal {
             self.mode = mode.clone();
             //safe this point as the start of the move/resize
             if let Some(loc) = self.get_pointer_location() {
@@ -1397,7 +1395,7 @@ impl XWrap {
                 let cursor = match mode {
                     Mode::ResizingWindow(_) => self.cursors.resize,
                     Mode::MovingWindow(_) => self.cursors.move_,
-                    Mode::NormalMode => self.cursors.normal,
+                    Mode::Normal => self.cursors.normal,
                 };
                 //grab the mouse
                 (self.xlib.XGrabPointer)(
@@ -1413,7 +1411,7 @@ impl XWrap {
                 );
             }
         }
-        if mode == Mode::NormalMode {
+        if mode == Mode::Normal {
             //release the mouse grab
             unsafe {
                 (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);

@@ -6,6 +6,7 @@ use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
 
+/// Holds pipe file location and a receiver.
 #[derive(Debug)]
 pub struct CommandPipe {
     pipe_file: PathBuf,
@@ -14,11 +15,11 @@ pub struct CommandPipe {
 
 impl Drop for CommandPipe {
     fn drop(&mut self) {
+        use std::os::unix::fs::OpenOptionsExt;
         self.rx.close();
 
         // Open fifo for write to unblock pending open for read operation that prevents tokio runtime
         // from shutting down.
-        use std::os::unix::fs::OpenOptionsExt;
         std::fs::OpenOptions::new()
             .write(true)
             .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())

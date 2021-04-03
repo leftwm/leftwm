@@ -83,7 +83,7 @@ async fn event_loop(
     //main event loop
     let mut event_buffer = vec![];
     loop {
-        if manager.mode == Mode::NormalMode {
+        if manager.mode == Mode::Normal {
             state_socket.write_manager_state(manager).await.ok();
         }
         display_server.flush();
@@ -106,7 +106,7 @@ async fn event_loop(
         //if we need to update the displayed state
         if needs_update {
             match &manager.mode {
-                Mode::NormalMode => {
+                Mode::Normal => {
                     let windows: Vec<&Window> = manager.windows.iter().collect();
                     let focused = manager.focused_window();
                     display_server.update_windows(windows, focused);

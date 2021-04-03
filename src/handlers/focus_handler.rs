@@ -238,8 +238,14 @@ mod tests {
     fn focusing_a_window_should_make_it_active() {
         let mut manager = Manager::default();
         screen_create_handler::process(&mut manager, Screen::default());
-        window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(1), None, None));
-        window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(2), None, None));
+        window_handler::created(
+            &mut manager,
+            Window::new(WindowHandle::MockHandle(1), None, None),
+        );
+        window_handler::created(
+            &mut manager,
+            Window::new(WindowHandle::MockHandle(2), None, None),
+        );
         let expected = manager.windows[0].clone();
         focus_window(&mut manager, &expected, 0, 0);
         let actual = manager.focused_window().unwrap().handle.clone();

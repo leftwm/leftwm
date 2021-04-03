@@ -144,7 +144,7 @@ impl DisplayServer for XlibDisplayServer {
                 None
             }
             DisplayAction::NormalMode => {
-                self.xw.set_mode(Mode::NormalMode);
+                self.xw.set_mode(Mode::Normal);
                 None
             }
             DisplayAction::SetCurrentTags(tags) => {
@@ -207,7 +207,9 @@ impl XlibDisplayServer {
                 };
                 if managed {
                     let name = self.xw.get_window_name(handle);
-                    let pid = self.xw.get_cardinal_prop_value(handle, self.xw.atoms.NetWMPid);
+                    let pid = self
+                        .xw
+                        .get_cardinal_prop_value(handle, self.xw.atoms.NetWMPid);
                     let w = Window::new(WindowHandle::XlibHandle(handle), name, pid);
                     all.push(w);
                 }

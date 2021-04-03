@@ -50,7 +50,9 @@ pub fn process(
 
             if !config.disable_current_tag_swap {
                 destination_tag = match (current_tag, previous_tag, input_tag) {
-                    (Some(ctag), Some(ptag), itag) if ctag + 1 == itag => ptag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
+                    (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => {
+                        prev_tag + 1
+                    } // if current tag is the same as the destination tag, go to the previous tag instead
                     (_, _, _) => input_tag, // go to the input tag tag
                 };
             }

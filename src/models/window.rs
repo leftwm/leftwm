@@ -1,4 +1,5 @@
 //! Window Information
+#![allow(clippy::module_name_repetitions)]
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
@@ -24,7 +25,6 @@ pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
     visible: bool,
-    is_floating: bool,
     floating: Option<Xyhw>,
     pub never_focus: bool,
     pub debugging: bool,
@@ -48,7 +48,6 @@ impl Window {
             handle: h,
             transient: None,
             visible: false,
-            is_floating: false,
             debugging: false,
             never_focus: false,
             name,
@@ -91,15 +90,14 @@ impl Window {
     }
 
     pub fn set_floating(&mut self, value: bool) {
-        if !self.is_floating && value && self.floating.is_none() {
+        if !self.floating() && value && self.floating.is_none() {
             //NOTE: We float relative to the normal position.
             self.reset_float_offset();
         }
-        self.is_floating = value;
     }
 
     pub fn floating(&self) -> bool {
-        self.is_floating || self.must_float()
+        self.floating.is_some() || self.must_float()
     }
 
     pub fn get_floating_offsets(&self) -> Option<Xyhw> {

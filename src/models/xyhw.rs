@@ -1,9 +1,12 @@
+//! Various window and workspace sizing structs.
+#![allow(clippy::module_name_repetitions)]
 use crate::models::XyhwChange;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::ops::Add;
 use std::ops::Sub;
 
+/// Struct containing min/max width and height and window placement. x,y from top left.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct Xyhw {
     x: i32,
@@ -16,6 +19,8 @@ pub struct Xyhw {
     maxh: i32,
 }
 
+/// Modifiable struct that can be used to generate an Xyhw struct. Contains min/max width and
+/// height and window placement. x,y from top left.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct XyhwBuilder {
     pub x: i32,

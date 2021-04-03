@@ -21,16 +21,16 @@ pub fn process(
             .iter_mut()
             .filter(|w| w.handle == handle)
             .for_each(|w| {
-                if !w.floating() {
+                if w.floating() {
+                    let offset = w.get_floating_offsets().unwrap_or_default();
+                    w.start_loc = Some(offset);
+                } else {
                     let container = w.container_size.unwrap_or_default();
                     let normal = w.normal;
                     let floating = normal - container;
                     w.set_floating_offsets(Some(floating));
                     w.start_loc = Some(floating);
                     w.set_floating(true);
-                } else {
-                    let offset = w.get_floating_offsets().unwrap_or_default();
-                    w.start_loc = Some(offset);
                 }
             });
 
