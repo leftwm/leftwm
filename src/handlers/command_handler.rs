@@ -3,7 +3,7 @@ use super::*;
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
-use crate::utils::helpers;
+use crate::utils::{child_process::exec_shell, helpers};
 use std::str::FromStr;
 
 /* Please also update src/bin/leftwm-check if any of the following apply after your update:
@@ -13,7 +13,7 @@ use std::str::FromStr;
  *  */
 
 pub fn process(
-    manager: &mut Manager,
+    mut manager: &mut Manager,
     config: &Config,
     command: &Command,
     val: Option<String>,
@@ -95,14 +95,7 @@ pub fn process(
 
         Command::Execute if val.is_none() => false,
         Command::Execute => {
-            use std::process::{Command, Stdio};
-            let _ = Command::new("sh")
-                .arg("-c")
-                .arg(&val.unwrap())
-                .stdin(Stdio::null())
-                .stdout(Stdio::null())
-                .spawn()
-                .map(|child| manager.children.insert(child));
+            exec_shell(&val.unwrap(), &mut manager);
             false
         }
 

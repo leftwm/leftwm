@@ -161,8 +161,8 @@ fn focus_closest_window(manager: &mut Manager, x: i32, y: i32) -> bool {
 fn distance(window: &Window, x: i32, y: i32) -> i32 {
     // √((x_2-x_1)²+(y_2-y_1)²)
     let (wx, wy) = window.calculated_xyhw().center();
-    let xs = ((wx - x) * (wx - x)) as f64;
-    let ys = ((wy - y) * (wy - y)) as f64;
+    let xs = f64::from((wx - x) * (wx - x));
+    let ys = f64::from((wy - y) * (wy - y));
     (xs + ys).sqrt().abs().floor() as i32
 }
 

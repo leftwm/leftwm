@@ -179,7 +179,7 @@ fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
     use std::fs::OpenOptions;
     let date = Local::now();
     let path = "/tmp/leftwm";
-    let _ = fs::create_dir_all(path);
+    let _droppable = fs::create_dir_all(path);
     let log_path = format!("{}/leftwm-{}.log", path, date.format("%Y%m%d%H%M"));
     let file = OpenOptions::new()
         .create(true)
