@@ -220,37 +220,25 @@ pub fn process(
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
 
-            match layout {
-                Some(crate::layouts::Layout::Monocle) => {
-                    // For Monocle we want to also move windows up/down
-                    //                     // Not the best solution but results
-                    //                     in desired behaviour
-                    let mut to_reorder =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle,
-                        None => {
-                            return false;
-                        }
-                    };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
-                    manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(new_handle);
-                    manager.actions.push_back(act);
-                    true
-                }
-                _ => {
-                    let mut to_reorder =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
-                    manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(handle);
-                    manager.actions.push_back(act);
-                    true
-                }
+            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+            manager.windows.append(&mut to_reorder);
+            let mut act = DisplayAction::MoveMouseOver(handle);
+            if let Some(crate::layouts::Layout::Monocle) = layout {
+                // For Monocle we want to also move windows up/down
+                // Not the best solution but results
+                // in desired behaviour
+                let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                    Some(h) => h.handle,
+                    _ => {
+                        return false;
+                    }
+                };
+                act = DisplayAction::MoveMouseOver(new_handle);
             }
+            manager.actions.push_back(act);
+            true
         }
 
         Command::MoveWindowDown => {

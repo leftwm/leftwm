@@ -228,7 +228,7 @@ impl XlibDisplayServer {
 
                 let managed = match self.xw.get_transient_for(handle) {
                     Some(_) => attrs.map_state == 2,
-                    _ => attrs.override_redirect <= 0 && attrs.map_state == 2,
+                    None => attrs.override_redirect <= 0 && attrs.map_state == 2,
                 };
                 if managed {
                     let name = self.xw.get_window_name(handle);

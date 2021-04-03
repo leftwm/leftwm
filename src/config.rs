@@ -50,7 +50,7 @@ pub fn load() -> Config {
 /// permissions to place config.toml, if config.toml cannot be read (access writes, malformed file,
 /// etc.).
 /// Function can also error from inability to save config.toml (if it is the first time running
-/// LeftWM).
+/// `LeftWM`).
 fn load_from_file() -> Result<Config> {
     let path = BaseDirectories::with_prefix("leftwm")?;
     let config_filename = path.place_config_file("config.toml")?;
@@ -133,6 +133,10 @@ impl Config {
 }
 
 impl Default for Config {
+    // We allow this because this function would be difficult to reduce. If someone would like to
+    // move the commands builder out, perhaps make a macro, this function could be reduced in size
+    // considerably.
+    #[allow(clippy::too_many_lines)]
     fn default() -> Self {
         const WORKSPACES_NUM: usize = 10;
         let mut commands = vec![

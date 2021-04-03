@@ -61,6 +61,8 @@ pub struct XWrap {
     pub mod_key_mask: ModMask,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
+    //We allow this _ because if we don't we'll receive an error that it isn't read.
+    #[allow(clippy::used_underscore_binding)]
     _task_guard: oneshot::Receiver<()>,
     task_notify: Arc<Notify>,
 }
@@ -884,7 +886,7 @@ impl XWrap {
         }
     }
 
-    /// Used to send and XConfigureEvent for a changed window to the xserver .
+    /// Used to send and `XConfigureEvent` for a changed window to the xserver .
     pub fn send_config(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let config = xlib::XConfigureEvent {
