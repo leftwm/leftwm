@@ -33,10 +33,6 @@ pub fn process(
                 manager.actions.push_back(act);
                 manager.sort_windows();
             }
-
-            //make sure focus is re-computed
-            let act = DisplayAction::FocusWindowUnderCursor;
-            manager.actions.push_back(act);
             true
         }
 
@@ -482,7 +478,7 @@ pub fn process(
                 .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
             {
                 let window = window.clone();
-                focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
+                focus_handler::move_cursor_over(manager, &window);
                 let act = DisplayAction::MoveMouseOver(window.handle);
                 manager.actions.push_back(act);
             }
@@ -520,7 +516,7 @@ pub fn process(
                 .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
             {
                 let window = window.clone();
-                focus_handler::focus_window(manager, &window, &window.x() + 1, &window.y() + 1);
+                focus_handler::move_cursor_over(manager, &window);
                 let act = DisplayAction::MoveMouseOver(window.handle);
                 manager.actions.push_back(act);
             }
