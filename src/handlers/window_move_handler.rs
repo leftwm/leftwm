@@ -10,18 +10,6 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
         Some(w) => w.margin_multiplier(),
         _ => 1.0,
     };
-    // for w in &mut manager.windows {
-        // if &w.handle == handle {
-            // process_window(w, offset_x, offset_y);
-            // snap_to_workspaces(w, &manager.workspaces);
-            // if w.type_ == WindowType::Normal {
-                // w.apply_margin_multiplier(margin_multiplier);
-                // log::info!("Margin multiplier applied through window snap.")
-            // };
-            // return true;
-        // }
-    // }
-    // false
     match manager
         .windows
         .iter_mut()
@@ -32,7 +20,7 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
             w.apply_margin_multiplier(margin_multiplier);
             snap_to_workspaces(w, &manager.workspaces);
             true
-        },
+        }
         None => false,
     }
 }
