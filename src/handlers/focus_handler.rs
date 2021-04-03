@@ -241,7 +241,7 @@ mod tests {
         window_handler::created(&mut manager, Window::new(WindowHandle::MockHandle(2), None));
         let expected = manager.windows[0].clone();
         focus_window(&mut manager, &expected, 0, 0);
-        let actual = manager.focused_window().unwrap().handle.clone();
+        let actual = manager.focused_window().unwrap().handle;
         assert_eq!(expected.handle, actual);
     }
 
