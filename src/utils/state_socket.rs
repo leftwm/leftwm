@@ -173,7 +173,7 @@ mod test {
         );
 
         // Fake state update.
-        state_socket.state.lock().await.last_state = Default::default();
+        state_socket.state.lock().await.last_state = String::default();
         state_socket.write_manager_state(&manager).await.unwrap();
 
         assert_eq!(

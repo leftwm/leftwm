@@ -643,7 +643,7 @@ mod tests {
                 TagModel::new("E39"),
                 TagModel::new("F67"),
             ],
-            ..Default::default()
+            ..Manager::default()
         };
         let config = Config::default();
         screen_create_handler::process(&mut manager, Screen::default());
