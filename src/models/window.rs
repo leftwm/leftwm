@@ -167,7 +167,6 @@ impl Window {
                 self.margin_multiplier()
             )
         };
-        log::info!("Multiplier {:?} was applied to margin", value)
     }
 
     pub fn margin_multiplier(&self) -> f32 {

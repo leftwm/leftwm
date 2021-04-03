@@ -53,7 +53,6 @@ pub fn created(manager: &mut Manager, mut window: Window, x: i32, y: i32) -> boo
             _ => 1.0,
         };
         window.apply_margin_multiplier(margin_multiplier);
-        log::info!("Margin Multiplier applied on window creation.");
     }
 
     if let Some(trans) = &window.transient {
