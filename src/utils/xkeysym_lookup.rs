@@ -37,6 +37,8 @@ pub fn into_mod(key: &str) -> ModMask {
     }
 }
 
+// We allow this because this function is simply a mapping wrapper.
+#[allow(clippy::too_many_lines)]
 pub fn into_keysym(key: &str) -> Option<XKeysym> {
     match key {
         "BackSpace" => Some(XK_BackSpace),

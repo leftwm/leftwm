@@ -1,4 +1,9 @@
+//We allow this _ because if we don't we'll receive an error that it isn't read on _task_guard.
+#![allow(clippy::used_underscore_binding)]
+//We allow this so that extern "C" functions are not flagged as confusing. The current placement
+//allows for easy reading.
 #![allow(clippy::items_after_statements)]
+//We allow this because _y_ and _x_ are intentionally similar. Changing it makes the code noisy.
 #![allow(clippy::similar_names)]
 use super::utils;
 use super::xatom::XAtom;
@@ -243,6 +248,9 @@ impl XWrap {
         sym as u32
     }
 
+    /// # Errors
+    ///
+    /// Will error if unknown window status is returned.
     //returns all the windows under a root windows
     pub fn get_windows_for_root<'w>(
         &self,
@@ -270,6 +278,10 @@ impl XWrap {
         }
     }
 
+    /// # Errors
+    ///
+    /// Will error if root has no windows or there is an error
+    /// obtaining the root windows. See `get_windows_for_root`.
     pub fn get_all_windows(&self) -> Result<Vec<xlib::Window>, String> {
         let mut all = Vec::new();
         for root in self.get_roots() {
@@ -285,6 +297,9 @@ impl XWrap {
         Ok(all)
     }
 
+    /// # Errors
+    ///
+    /// Will error if window status is 0 (no attributes).
     pub fn get_window_attrs(
         &self,
         window: xlib::Window,
@@ -681,12 +696,20 @@ impl XWrap {
         }
     }
 
+    /// # Errors
+    ///
+    /// Will error if unale to obtain window attributes. See `get_window_attrs`.
     pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), XlibError> {
         let attrs = self.get_window_attrs(window)?;
         let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
         self.move_cursor_to_point(point)
     }
 
+    /// # Errors
+    ///
+    /// Error indicates `XlibError`.
+    // TODO: Verify that Error is unreachable or specify conditions that may result
+    // in an error.
     pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), XlibError> {
         let none: c_int = 0;
         unsafe {
@@ -705,6 +728,9 @@ impl XWrap {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will error if root window cannot be found.
     pub fn get_cursor_point(&self) -> Result<(i32, i32), XlibError> {
         let roots = self.get_roots(); //each screen
         for w in roots {
@@ -884,7 +910,7 @@ impl XWrap {
         }
     }
 
-    /// Used to send and XConfigureEvent for a changed window to the xserver .
+    /// Used to send and `XConfigureEvent` for a changed window to the xserver .
     pub fn send_config(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let config = xlib::XConfigureEvent {
@@ -965,8 +991,10 @@ impl XWrap {
         }
         None
     }
-
-    ////get the WMName of a window
+    /// Get the `WMName` of a window
+    /// # Errors
+    ///
+    /// Errors if window status = 0.
     pub fn get_text_prop(
         &self,
         window: xlib::Window,
@@ -992,7 +1020,10 @@ impl XWrap {
         Err(XlibError::FailedStatus)
     }
 
-    ////get the XAtom name
+    /// Get the `XAtom` name
+    /// # Errors
+    ///
+    /// Errors if `XAtom` is not valid.
     pub fn get_xatom_name(&self, atom: xlib::Atom) -> Result<String, XlibError> {
         unsafe {
             let cstring = (self.xlib.XGetAtomName)(self.display, atom);
@@ -1025,6 +1056,10 @@ impl XWrap {
         }
     }
 
+    /// Obtains window geometry in an `XyhwChange`struct from `Xlib`.
+    /// # Errors
+    ///
+    /// Errors if Xlib returns a status of 0.
     pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XyhwChange, XlibError> {
         let mut root_return: xlib::Window = 0;
         let mut x_return: c_int = 0;

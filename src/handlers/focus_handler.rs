@@ -37,7 +37,7 @@ fn focus_workspace_work(manager: &mut Manager, workspace_id: i32) -> Option<()> 
     Some(())
 }
 
-/// Create a DisplayAction to cause this window to become focused  
+/// Create a `DisplayAction` to cause this window to become focused  
 pub fn focus_window(manager: &mut Manager, handle: &WindowHandle) -> bool {
     let window = match focus_window_by_handle_work(manager, handle) {
         Some(w) => w,
@@ -161,8 +161,8 @@ fn focus_closest_window(manager: &mut Manager, x: i32, y: i32) -> bool {
 fn distance(window: &Window, x: i32, y: i32) -> i32 {
     // √((x_2-x_1)²+(y_2-y_1)²)
     let (wx, wy) = window.calculated_xyhw().center();
-    let xs = ((wx - x) * (wx - x)) as f64;
-    let ys = ((wy - y) * (wy - y)) as f64;
+    let xs = f64::from((wx - x) * (wx - x));
+    let ys = f64::from((wy - y) * (wy - y));
     (xs + ys).sqrt().abs().floor() as i32
 }
 

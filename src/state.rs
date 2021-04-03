@@ -11,6 +11,12 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 
 /// Write current state to a file.
 /// It will be used to restore the state after soft reload.
+/// # Errors
+///
+/// Will return error if unable to create `state_file` or
+/// if unable to serialize the text.
+/// May be caused by inadequate permissions, not enough
+/// space on drive, or other typical filesystem issues.
 pub fn save(manager: &Manager) -> Result<()> {
     let state_file = File::create(STATE_FILE)?;
     serde_json::to_writer(state_file, &manager)?;

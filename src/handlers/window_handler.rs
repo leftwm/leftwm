@@ -1,10 +1,11 @@
 use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
+use crate::child_process::exec_shell;
 use crate::display_action::DisplayAction;
 use crate::models::WindowHandle;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn created(manager: &mut Manager, mut window: Window, x: i32, y: i32) -> bool {
+pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) -> bool {
     //don't add the window if the manager already knows about it
     for w in &manager.windows {
         if w.handle == window.handle {
@@ -77,15 +78,8 @@ pub fn created(manager: &mut Manager, mut window: Window, x: i32, y: i32) -> boo
 
     focus_handler::focus_window(manager, &window.handle);
 
-    if let Some(cmd) = &manager.theme_setting.on_new_window_cmd {
-        use std::process::{Command, Stdio};
-        let _ = Command::new("sh")
-            .arg("-c")
-            .arg(&cmd)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .spawn()
-            .map(|child| manager.children.insert(child));
+    if let Some(cmd) = &manager.theme_setting.on_new_window_cmd.clone() {
+        exec_shell(&cmd, &mut manager);
     }
 
     true

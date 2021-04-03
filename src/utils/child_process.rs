@@ -1,5 +1,6 @@
 //! Starts programs in autostart, boots theme. Provides function to boot other desktop files also.
 use crate::errors::Result;
+use crate::models::Manager;
 use std::collections::HashMap;
 use std::fs;
 use std::io;
@@ -22,6 +23,8 @@ impl Nanny {
         Self {}
     }
 
+    // We allow this because Nanny is empty.
+    #[allow(clippy::unused_self)]
     pub fn autostart(&self) -> Children {
         dirs_next::home_dir()
             .map(|mut path| {
@@ -39,6 +42,12 @@ impl Nanny {
             .unwrap_or_default()
     }
 
+    /// # Errors
+    ///
+    /// Will error if unable to open current theme directory.
+    /// Could be caused by inadequate permissions.
+    // We allow this because Nanny is empty.
+    #[allow(clippy::unused_self)]
     pub fn boot_current_theme(&self) -> Result<Option<Child>> {
         let mut path = BaseDirectories::with_prefix("leftwm")?.create_config_directory("")?;
         path.push("themes");
@@ -144,4 +153,17 @@ impl Extend<Child> for Children {
 pub fn register_child_hook(flag: Arc<AtomicBool>) {
     let _ = signal_hook::flag::register(signal_hook::consts::signal::SIGCHLD, flag)
         .map_err(|err| log::error!("Cannot register SIGCHLD signal handler: {:?}", err));
+}
+
+/// Sends command to shell for execution
+/// Assumes STDIN/STDOUT unwanted.
+
+pub fn exec_shell(command: &str, manager: &mut Manager) {
+    let _droppable = Command::new("sh")
+        .arg("-c")
+        .arg(&command)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .spawn()
+        .map(|child| manager.children.insert(child));
 }

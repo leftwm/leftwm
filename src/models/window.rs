@@ -20,11 +20,15 @@ pub enum WindowHandle {
 }
 
 /// Store Window information.
+// We allow this as we're not managing state directly. This could be refactored in the future.
+// TODO: Refactor floating
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
     visible: bool,
+    is_floating: bool,
     floating: Option<Xyhw>,
     pub never_focus: bool,
     pub debugging: bool,
@@ -47,6 +51,7 @@ impl Window {
             handle: h,
             transient: None,
             visible: false,
+            is_floating: false,
             debugging: false,
             never_focus: false,
             name,
@@ -88,14 +93,15 @@ impl Window {
     }
 
     pub fn set_floating(&mut self, value: bool) {
-        if !self.floating() && value && self.floating.is_none() {
+        if !self.is_floating && value && self.floating.is_none() {
             //NOTE: We float relative to the normal position.
             self.reset_float_offset();
         }
+        self.is_floating = value;
     }
 
     pub fn floating(&self) -> bool {
-        self.floating.is_some() || self.must_float()
+        self.is_floating || self.must_float()
     }
 
     pub fn get_floating_offsets(&self) -> Option<Xyhw> {
@@ -155,6 +161,10 @@ impl Window {
         self.requested
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn width(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -174,6 +184,11 @@ impl Window {
         }
         value
     }
+
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn height(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -209,6 +224,10 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.x();
@@ -221,6 +240,10 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.y();
