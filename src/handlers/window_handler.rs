@@ -52,12 +52,12 @@ pub fn created(manager: &mut Manager, mut window: Window) -> bool {
     manager.windows.push(window.clone());
 
     //let the DS know we are managing this window
-    let act = DisplayAction::AddedWindow(window.handle.clone());
+    let act = DisplayAction::AddedWindow(window.handle);
     manager.actions.push_back(act);
 
     //let the DS know the correct desktop to find this window
     if !window.tags.is_empty() {
-        let act = DisplayAction::SetWindowTags(window.handle.clone(), window.tags[0].clone());
+        let act = DisplayAction::SetWindowTags(window.handle, window.tags[0].clone());
         manager.actions.push_back(act);
     }
 

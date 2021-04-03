@@ -209,7 +209,7 @@ pub fn process(
 
         Command::MoveWindowUp => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
+                Some(h) => h.handle,
                 _ => {
                     return false;
                 }
@@ -233,7 +233,7 @@ pub fn process(
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle.clone(),
+                        Some(h) => h.handle,
                         _ => {
                             return false;
                         }
@@ -259,7 +259,7 @@ pub fn process(
 
         Command::MoveWindowDown => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
+                Some(h) => h.handle,
                 _ => {
                     return false;
                 }
@@ -283,7 +283,7 @@ pub fn process(
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle.clone(),
+                        Some(h) => h.handle,
                         _ => {
                             return false;
                         }
@@ -310,7 +310,7 @@ pub fn process(
         // If the selected window is already at index 0, it is sent to index 1.
         Command::MoveWindowTop => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
+                Some(h) => h.handle,
                 _ => {
                     return false;
                 }
@@ -355,7 +355,7 @@ pub fn process(
 
         Command::FocusWindowUp => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
+                Some(h) => h.handle,
                 _ => {
                     return false;
                 }
@@ -379,7 +379,7 @@ pub fn process(
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle.clone(),
+                        Some(h) => h.handle,
                         _ => {
                             return false;
                         }
@@ -396,7 +396,7 @@ pub fn process(
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, -1)
                     {
-                        let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                        let act = DisplayAction::MoveMouseOver(new_focused.handle);
                         manager.actions.push_back(act);
                     }
                     manager.windows.append(&mut window_group);
@@ -407,7 +407,7 @@ pub fn process(
 
         Command::FocusWindowDown => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
+                Some(h) => h.handle,
                 _ => {
                     return false;
                 }
@@ -429,7 +429,7 @@ pub fn process(
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle.clone(),
+                        Some(h) => h.handle,
                         _ => {
                             return false;
                         }
@@ -445,7 +445,7 @@ pub fn process(
                         helpers::vec_extract(&mut manager.windows, for_active_workspace);
                     let is_handle = |x: &Window| -> bool { x.handle == handle };
                     if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, 1) {
-                        let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                        let act = DisplayAction::MoveMouseOver(new_focused.handle);
                         manager.actions.push_back(act);
                     }
                     manager.windows.append(&mut window_group);

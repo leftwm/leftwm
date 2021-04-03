@@ -76,7 +76,7 @@ impl Manager {
         if self.focused_window_history.is_empty() {
             return None;
         }
-        let handle = self.focused_window_history[0].clone();
+        let handle = self.focused_window_history[0];
         for w in &self.windows {
             if handle == w.handle {
                 return Some(w);
@@ -90,7 +90,7 @@ impl Manager {
         if self.focused_window_history.is_empty() {
             return None;
         }
-        let handle = self.focused_window_history[0].clone();
+        let handle = self.focused_window_history[0];
         for w in &mut self.windows {
             if handle == w.handle {
                 return Some(w);
@@ -132,7 +132,7 @@ impl Manager {
             .map(|&w| w.clone())
             .collect();
         self.windows = windows;
-        let order: Vec<_> = self.windows.iter().map(|w| w.handle.clone()).collect();
+        let order: Vec<_> = self.windows.iter().map(|w| w.handle).collect();
         let act = DisplayAction::SetWindowOrder(order);
         self.actions.push_back(act);
     }

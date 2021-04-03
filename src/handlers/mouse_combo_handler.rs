@@ -13,7 +13,7 @@ pub fn process(
     handle: WindowHandle,
 ) -> bool {
     //look through the config and build a command if its defined in the config
-    let act = build_action(manager, modmask, button, handle.clone());
+    let act = build_action(manager, modmask, button, handle);
     if let Some(act) = act {
         //save off the info about position of the window when we started to move/resize
         manager
@@ -51,7 +51,7 @@ fn build_action(
         xlib::Button1 => {
             for w in &manager.windows {
                 if w.handle == window && w.can_move() {
-                    manager.mode = Mode::MovingWindow(window.clone());
+                    manager.mode = Mode::MovingWindow(window);
                     return Some(DisplayAction::StartMovingWindow(window));
                 }
             }
@@ -60,7 +60,7 @@ fn build_action(
         xlib::Button3 => {
             for w in &manager.windows {
                 if w.handle == window && w.can_resize() {
-                    manager.mode = Mode::ResizingWindow(window.clone());
+                    manager.mode = Mode::ResizingWindow(window);
                     return Some(DisplayAction::StartResizingWindow(window));
                 }
             }

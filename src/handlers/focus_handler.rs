@@ -98,7 +98,7 @@ fn first_window_in_current_workspace(manager: &Manager) -> Option<WindowHandle> 
         .windows
         .iter()
         .find(|w| w.visible() && w.has_tag(tag))?;
-    Some(window.handle.clone())
+    Some(window.handle)
 }
 
 fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
@@ -118,9 +118,7 @@ fn _focus_window_work(manager: &mut Manager, window: &Window) -> bool {
         manager.focused_window_history.pop_back();
     }
     //add this focus to the history
-    manager
-        .focused_window_history
-        .push_front(window.handle.clone());
+    manager.focused_window_history.push_front(window.handle);
     // inform the window it will be taking focus
     let act = DisplayAction::WindowTakeFocus(window.clone());
     manager.actions.push_back(act);

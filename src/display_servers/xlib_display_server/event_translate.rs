@@ -146,18 +146,12 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                     Mode::Normal => {
                         Some(DisplayEvent::Movement(event_h, event.x_root, event.y_root))
                     }
-                    Mode::MovingWindow(h) => Some(DisplayEvent::MoveWindow(
-                        *h,
-                        event.time,
-                        offset_x,
-                        offset_y,
-                    )),
+                    Mode::MovingWindow(h) => {
+                        Some(DisplayEvent::MoveWindow(*h, event.time, offset_x, offset_y))
+                    }
                     Mode::ResizingWindow(h) => {
                         Some(DisplayEvent::ResizeWindow(
-                            *h,
-                            event.time,
-                            offset_x,
-                            offset_y,
+                            *h, event.time, offset_x, offset_y,
                         ))
                         //h, w
                     }
