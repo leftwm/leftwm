@@ -8,11 +8,12 @@ pub enum DisplayEvent {
     Movement(WindowHandle, i32, i32),
     KeyCombo(ModMask, XKeysym),
     MouseCombo(ModMask, Button, WindowHandle),
-    WindowCreate(Window),
+    WindowCreate(Window, i32, i32),
     WindowChange(WindowChange),
     WindowDestroy(WindowHandle),
-    FocusedWindow(WindowHandle, i32, i32),
-    FocusedAt(i32, i32), //request to focus whatever is located at this point
+    MouseEnteredWindow(WindowHandle),
+    VerifyFocusedAt(i32, i32), //Request focus validation at this point
+    MoveFocusTo(i32, i32),     //Focus the nearest window to this point
     MoveWindow(WindowHandle, u64, i32, i32),
     ResizeWindow(WindowHandle, u64, i32, i32),
     ScreenCreate(Screen),
