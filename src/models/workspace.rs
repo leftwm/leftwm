@@ -219,7 +219,7 @@ mod tests {
             vec![],
             vec![],
         );
-        let w = Window::new(WindowHandle::MockHandle(1), None, None);
+        let w = Window::new(WindowHandle::MockHandle(1), None);
         assert!(
             !subject.is_displaying(&w),
             "workspace incorrectly owns window"
@@ -240,7 +240,7 @@ mod tests {
         );
         let tag = crate::models::TagModel::new("test");
         subject.show_tag(tag);
-        let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.tag("test");
         assert!(subject.is_displaying(&w), "workspace should include window");
     }

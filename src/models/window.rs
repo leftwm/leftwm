@@ -39,11 +39,10 @@ pub struct Window {
     pub start_loc: Option<Xyhw>,
     pub container_size: Option<Xyhw>,
     pub strut: Option<Xyhw>,
-    pub pid: Option<u32>,
 }
 
 impl Window {
-    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Window {
+    pub fn new(h: WindowHandle, name: Option<String>) -> Window {
         Window {
             handle: h,
             transient: None,
@@ -62,7 +61,6 @@ impl Window {
             start_loc: None,
             container_size: None,
             strut: None,
-            pid,
         }
     }
 

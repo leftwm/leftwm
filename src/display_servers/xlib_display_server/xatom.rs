@@ -48,8 +48,6 @@ pub struct XAtom {
     pub NetWMDesktop: xlib::Atom,
     pub NetWMStrutPartial: xlib::Atom, //net version - Reserve Screen Space
     pub NetWMStrut: xlib::Atom,        //old version
-
-    pub NetWMPid: xlib::Atom,
 }
 
 impl XAtom {
@@ -88,7 +86,6 @@ impl XAtom {
             self.NetWMDesktop,
             self.NetWMStrutPartial,
             self.NetWMStrut,
-            self.NetWMPid,
         ]
     }
 
@@ -185,9 +182,6 @@ impl XAtom {
         if atom == self.NetWMStrut {
             return "_NET_WM_STRUT";
         }
-        if atom == self.NetWMPid {
-            return "_NET_WM_PID";
-        }
         "(UNKNOWN)"
     }
 
@@ -233,8 +227,6 @@ impl XAtom {
             NetWMDesktop: from(xlib, dpy, "_NET_WM_DESKTOP"),
             NetWMStrutPartial: from(xlib, dpy, "_NET_WM_STRUT_PARTIAL"),
             NetWMStrut: from(xlib, dpy, "_NET_WM_STRUT"),
-
-            NetWMPid: from(xlib, dpy, "_NET_WM_PID"),
         }
     }
 }

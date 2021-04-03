@@ -30,8 +30,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                     Ok(attr) if attr.override_redirect > 0 => None,
                     Ok(_attr) => {
                         let name = xw.get_window_name(event.window);
-                        let pid = xw.get_cardinal_prop_value(event.window, xw.atoms.NetWMPid);
-                        let mut w = Window::new(handle, name, pid);
+                        let mut w = Window::new(handle, name);
                         let trans = xw.get_transient_for(event.window);
 
                         if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
