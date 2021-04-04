@@ -13,9 +13,9 @@ use x11_dl::xlib;
 pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
 
 impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
-    fn from(xevent: XEvent) -> Self {
-        let xw = xevent.0;
-        let raw_event = xevent.1;
+    fn from(x_event: XEvent) -> Self {
+        let xw = x_event.0;
+        let raw_event = x_event.1;
 
         match raw_event.get_type() {
             // new window is created
@@ -82,7 +82,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ClientMessage => {
                 match &xw.mode {
                     Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
-                    Mode::NormalMode => {}
+                    Mode::Normal => {}
                 };
                 let event = xlib::XClientMessageEvent::from(raw_event);
                 //println!("ClientMessage {:?}", event);
@@ -103,7 +103,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::EnterNotify => {
                 match &xw.mode {
                     Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
-                    Mode::NormalMode => {}
+                    Mode::Normal => {}
                 };
                 let event = xlib::XEnterWindowEvent::from(raw_event);
                 //log::trace!("EnterNotify {:?}", event);
@@ -122,7 +122,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::PropertyNotify => {
                 match &xw.mode {
                     Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
-                    Mode::NormalMode => {}
+                    Mode::Normal => {}
                 };
 
                 let event = xlib::XPropertyEvent::from(raw_event);
@@ -144,21 +144,15 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let offset_x = event.x_root - xw.mode_origin.0;
                 let offset_y = event.y_root - xw.mode_origin.1;
                 match &xw.mode {
-                    Mode::NormalMode => {
+                    Mode::Normal => {
                         Some(DisplayEvent::Movement(event_h, event.x_root, event.y_root))
                     }
-                    Mode::MovingWindow(h) => Some(DisplayEvent::MoveWindow(
-                        h.clone(),
-                        event.time,
-                        offset_x,
-                        offset_y,
-                    )),
+                    Mode::MovingWindow(h) => {
+                        Some(DisplayEvent::MoveWindow(*h, event.time, offset_x, offset_y))
+                    }
                     Mode::ResizingWindow(h) => {
                         Some(DisplayEvent::ResizeWindow(
-                            h.clone(),
-                            event.time,
-                            offset_x,
-                            offset_y,
+                            *h, event.time, offset_x, offset_y,
                         ))
                         //h, w
                     }
@@ -173,7 +167,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ConfigureRequest => {
                 match &xw.mode {
                     Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
-                    Mode::NormalMode => {}
+                    Mode::Normal => {}
                 };
                 let event = xlib::XConfigureRequestEvent::from(raw_event);
                 let window_type = xw.get_window_type(event.window);
@@ -188,7 +182,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         h: Some(event.height),
                         x: Some(event.x),
                         y: Some(event.y),
-                        ..Default::default()
+                        ..XyhwChange::default()
                     };
                     change.floating = Some(xyhw);
                     if window_type == WindowType::Dock {

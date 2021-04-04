@@ -21,6 +21,7 @@ pub struct ManagerState {
     pub working_tags: Vec<String>,
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TagsForWorkspace {
     pub name: String,

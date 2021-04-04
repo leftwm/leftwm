@@ -1,4 +1,5 @@
 //! Window Information
+#![allow(clippy::module_name_repetitions)]
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
@@ -12,13 +13,16 @@ use x11_dl::xlib;
 
 type MockHandle = i32;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
 }
 
 /// Store Window information.
+// We allow this as we're not managing state directly. This could be refactored in the future.
+// TODO: Refactor floating
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Window {
     pub handle: WindowHandle,
@@ -42,6 +46,7 @@ pub struct Window {
 }
 
 impl Window {
+    #[must_use]
     pub fn new(h: WindowHandle, name: Option<String>) -> Window {
         Window {
             handle: h,
@@ -79,6 +84,7 @@ impl Window {
         self.visible = value;
     }
 
+    #[must_use]
     pub fn visible(&self) -> bool {
         self.visible
             || self.type_ == WindowType::Dock
@@ -96,10 +102,12 @@ impl Window {
         self.is_floating = value;
     }
 
+    #[must_use]
     pub fn floating(&self) -> bool {
         self.is_floating || self.must_float()
     }
 
+    #[must_use]
     pub fn get_floating_offsets(&self) -> Option<Xyhw> {
         self.floating
     }
@@ -123,18 +131,22 @@ impl Window {
         self.floating = Some(new_value);
     }
 
+    #[must_use]
     pub fn is_fullscreen(&self) -> bool {
         self.states.contains(&WindowState::Fullscreen)
     }
+    #[must_use]
     pub fn must_float(&self) -> bool {
         self.transient.is_some()
             || self.type_ == WindowType::Dock
             || self.type_ == WindowType::Splash
             || self.is_fullscreen()
     }
+    #[must_use]
     pub fn can_move(&self) -> bool {
         self.type_ != WindowType::Dock
     }
+    #[must_use]
     pub fn can_resize(&self) -> bool {
         self.type_ != WindowType::Dock
     }
@@ -157,6 +169,11 @@ impl Window {
         self.requested
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
+    #[must_use]
     pub fn width(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -176,6 +193,12 @@ impl Window {
         }
         value
     }
+
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
+    #[must_use]
     pub fn height(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -203,6 +226,7 @@ impl Window {
         self.normal.set_y(y)
     }
 
+    #[must_use]
     pub fn border(&self) -> i32 {
         if self.is_fullscreen() {
             0
@@ -211,6 +235,11 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
+    #[must_use]
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.x();
@@ -223,6 +252,11 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
+    #[must_use]
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.y();
@@ -235,17 +269,19 @@ impl Window {
         }
     }
 
+    #[must_use]
     pub fn calculated_xyhw(&self) -> Xyhw {
         XyhwBuilder {
             h: self.height(),
             w: self.width(),
             x: self.x(),
             y: self.y(),
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }
 
+    #[must_use]
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
         self.calculated_xyhw().contains_point(x, y)
     }
@@ -266,6 +302,7 @@ impl Window {
         self.tags = vec![];
     }
 
+    #[must_use]
     pub fn has_tag(&self, tag: &str) -> bool {
         let t = tag.to_owned();
         self.tags.contains(&t)

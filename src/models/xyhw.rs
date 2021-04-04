@@ -1,9 +1,12 @@
+//! Various window and workspace sizing structs.
+#![allow(clippy::module_name_repetitions)]
 use crate::models::XyhwChange;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::ops::Add;
 use std::ops::Sub;
 
+/// Struct containing min/max width and height and window placement. x,y from top left.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct Xyhw {
     x: i32,
@@ -16,6 +19,8 @@ pub struct Xyhw {
     maxh: i32,
 }
 
+/// Modifiable struct that can be used to generate an Xyhw struct. Contains min/max width and
+/// height and window placement. x,y from top left.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct XyhwBuilder {
     pub x: i32,
@@ -108,28 +113,36 @@ impl From<XyhwBuilder> for Xyhw {
 }
 
 impl Xyhw {
+    #[must_use]
     pub fn x(&self) -> i32 {
         self.x
     }
+    #[must_use]
     pub fn y(&self) -> i32 {
         self.y
     }
+    #[must_use]
     pub fn h(&self) -> i32 {
         self.h
     }
+    #[must_use]
     pub fn w(&self) -> i32 {
         self.w
     }
 
+    #[must_use]
     pub fn minw(&self) -> i32 {
         self.minw
     }
+    #[must_use]
     pub fn maxw(&self) -> i32 {
         self.maxw
     }
+    #[must_use]
     pub fn minh(&self) -> i32 {
         self.minh
     }
+    #[must_use]
     pub fn maxh(&self) -> i32 {
         self.maxh
     }
@@ -191,17 +204,20 @@ impl Xyhw {
         }
     }
 
+    #[must_use]
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
         let max_x = self.x + self.w;
         let max_y = self.y + self.h;
         (self.x <= x && x <= max_x) && (self.y <= y && y <= max_y)
     }
 
+    #[must_use]
     pub fn volume(&self) -> u64 {
         self.h as u64 * self.w as u64
     }
 
     /// Trim a Xyhw out of another Xyhw so that they don't overlap.
+    #[must_use]
     pub fn without(&self, other: &Xyhw) -> Xyhw {
         let mut without = *self;
         if other.w > other.h {
@@ -240,13 +256,14 @@ impl Xyhw {
         without
     }
 
+    #[must_use]
     pub fn center_halfed(&self) -> Xyhw {
         XyhwBuilder {
             x: self.x + (self.w / 2) - (self.w / 4),
             y: self.y + (self.h / 2) - (self.h / 4),
             h: (self.h / 2),
             w: (self.w / 2),
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }
@@ -264,6 +281,7 @@ impl Xyhw {
         }
     }
 
+    #[must_use]
     pub fn center(&self) -> (i32, i32) {
         let x = self.x + (self.w / 2);
         let y = self.y + (self.h / 2);
@@ -282,14 +300,14 @@ mod tests {
             y: 10,
             w: 2000,
             h: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let correct = Xyhw {
             x: 510,
             y: 260,
             w: 1000,
             h: 500,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.center_halfed();
         assert_eq!(result, correct);
@@ -301,12 +319,12 @@ mod tests {
             y: 5,
             h: 1000,
             w: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let b = Xyhw {
             h: 10,
             w: 100,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.without(&b);
         assert_eq!(
@@ -316,7 +334,7 @@ mod tests {
                 y: 10,
                 h: 995,
                 w: 1000,
-                ..Default::default()
+                ..Xyhw::default()
             }
         );
     }
@@ -328,12 +346,12 @@ mod tests {
             y: 0,
             h: 1000,
             w: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let b = Xyhw {
             h: 100,
             w: 10,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.without(&b);
         assert_eq!(
@@ -343,7 +361,7 @@ mod tests {
                 y: 0,
                 w: 990,
                 h: 1000,
-                ..Default::default()
+                ..Xyhw::default()
             }
         );
     }
@@ -355,14 +373,14 @@ mod tests {
             y: 0,
             h: 1000,
             w: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let b = Xyhw {
             y: 990,
             x: 0,
             h: 10,
             w: 100,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.without(&b);
         assert_eq!(
@@ -372,7 +390,7 @@ mod tests {
                 y: 0,
                 h: 990,
                 w: 1000,
-                ..Default::default()
+                ..Xyhw::default()
             }
         );
     }
@@ -384,14 +402,14 @@ mod tests {
             y: 0,
             h: 1000,
             w: 1000,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let b = Xyhw {
             x: 990,
             y: 0,
             h: 100,
             w: 10,
-            ..Default::default()
+            ..Xyhw::default()
         };
         let result = a.without(&b);
         assert_eq!(
@@ -401,7 +419,7 @@ mod tests {
                 y: 0,
                 w: 990,
                 h: 1000,
-                ..Default::default()
+                ..Xyhw::default()
             }
         );
     }

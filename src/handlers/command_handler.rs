@@ -1,8 +1,9 @@
+#![allow(clippy::wildcard_imports)]
 use super::*;
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
-use crate::utils::helpers;
+use crate::utils::{child_process::exec_shell, helpers};
 use std::str::FromStr;
 
 /* Please also update src/bin/leftwm-check if any of the following apply after your update:
@@ -12,9 +13,9 @@ use std::str::FromStr;
  *  */
 
 pub fn process(
-    manager: &mut Manager,
+    mut manager: &mut Manager,
     config: &Config,
-    command: Command,
+    command: &Command,
     val: Option<String>,
 ) -> bool {
     match command {
@@ -29,7 +30,7 @@ pub fn process(
                 window.clear_tags();
                 window.set_floating(false);
                 window.tag(&tag.id);
-                let act = DisplayAction::SetWindowTags(window.handle.clone(), tag.id.clone());
+                let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
                 manager.actions.push_back(act);
                 manager.sort_windows();
             }
@@ -39,14 +40,16 @@ pub fn process(
         Command::GotoTag if val.is_none() => false,
         Command::GotoTag if !is_num(&val) => false,
         Command::GotoTag => {
-            let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
-            let previous_tag = manager.tag_index(manager.focused_tag(1).unwrap_or_default());
+            let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
+            let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
             let input_tag = to_num(&val);
             let mut destination_tag = input_tag;
 
             if !config.disable_current_tag_swap {
                 destination_tag = match (current_tag, previous_tag, input_tag) {
-                    (Some(ctag), Some(ptag), itag) if ctag + 1 == itag => ptag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
+                    (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => {
+                        prev_tag + 1
+                    } // if current tag is the same as the destination tag, go to the previous tag instead
                     (_, _, _) => input_tag, // go to the input tag tag
                 };
             }
@@ -92,21 +95,14 @@ pub fn process(
 
         Command::Execute if val.is_none() => false,
         Command::Execute => {
-            use std::process::{Command, Stdio};
-            let _ = Command::new("sh")
-                .arg("-c")
-                .arg(&val.unwrap())
-                .stdin(Stdio::null())
-                .stdout(Stdio::null())
-                .spawn()
-                .map(|child| manager.children.insert(child));
+            exec_shell(&val.unwrap(), &mut manager);
             false
         }
 
         Command::CloseWindow => {
             if let Some(window) = manager.focused_window() {
                 if window.type_ != WindowType::Dock {
-                    let act = DisplayAction::KillWindow(window.handle.clone());
+                    let act = DisplayAction::KillWindow(window.handle);
                     manager.actions.push_back(act);
                 }
             }
@@ -192,8 +188,8 @@ pub fn process(
                 if !window.floating() {
                     return false;
                 }
-                window_handler::snap_to_workspace(window, workspace);
-                let act = DisplayAction::MoveMouseOver(window.handle.clone());
+                window_handler::snap_to_workspace(window, &workspace);
+                let act = DisplayAction::MoveMouseOver(window.handle);
                 manager.actions.push_back(act);
                 return true;
             }
@@ -202,14 +198,14 @@ pub fn process(
 
         Command::MoveWindowUp => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
-                _ => {
+                Some(h) => h.handle,
+                None => {
                     return false;
                 }
             };
             let (tags, layout) = match manager.focused_workspace() {
                 Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -217,49 +213,37 @@ pub fn process(
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
 
-            match layout {
-                Some(crate::layouts::Layout::Monocle) => {
-                    // For Monocle we want to also move windows up/down
-                    //                     // Not the best solution but results
-                    //                     in desired behaviour
-                    let mut to_reorder =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle.clone(),
-                        _ => {
-                            return false;
-                        }
-                    };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
-                    manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(new_handle);
-                    manager.actions.push_back(act);
-                    true
-                }
-                _ => {
-                    let mut to_reorder =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
-                    manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(handle);
-                    manager.actions.push_back(act);
-                    true
-                }
+            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+            manager.windows.append(&mut to_reorder);
+            let mut act = DisplayAction::MoveMouseOver(handle);
+            if let Some(crate::layouts::Layout::Monocle) = layout {
+                // For Monocle we want to also move windows up/down
+                // Not the best solution but results
+                // in desired behaviour
+                let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                    Some(h) => h.handle,
+                    None => {
+                        return false;
+                    }
+                };
+                act = DisplayAction::MoveMouseOver(new_handle);
             }
+            manager.actions.push_back(act);
+            true
         }
 
         Command::MoveWindowDown => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
-                _ => {
+                Some(h) => h.handle,
+                None => {
                     return false;
                 }
             };
             let (tags, layout) = match manager.focused_workspace() {
                 Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -267,50 +251,39 @@ pub fn process(
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
 
-            match layout {
-                Some(crate::layouts::Layout::Monocle) => {
-                    // For Monocle we want to also move windows up/down
-                    //                     // Not the best solution but results
-                    //                     in desired behaviour
-                    let mut to_reorder =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle.clone(),
-                        _ => {
-                            return false;
-                        }
-                    };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, 1);
-                    manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(new_handle);
-                    manager.actions.push_back(act);
-                    true
-                }
-                _ => {
-                    let mut to_reorder =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, 1);
-                    manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(handle);
-                    manager.actions.push_back(act);
-                    true
-                }
+            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            let mut act = DisplayAction::MoveMouseOver(handle);
+            helpers::reorder_vec(&mut to_reorder, is_handle, 1);
+            manager.windows.append(&mut to_reorder);
+            if let Some(crate::layouts::Layout::Monocle) = layout {
+                // For Monocle we want to also move windows up/down
+                // Not the best solution but results
+                // in desired behaviour
+                let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                    Some(h) => h.handle,
+                    None => {
+                        return false;
+                    }
+                };
+                act = DisplayAction::MoveMouseOver(new_handle);
             }
+
+            manager.actions.push_back(act);
+            true
         }
         // Moves the selected window at index 0 of the window list.
         // If the selected window is already at index 0, it is sent to index 1.
         Command::MoveWindowTop => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
-                _ => {
+                Some(h) => h.handle,
+                None => {
                     return false;
                 }
             };
             let tags = match manager.focused_workspace() {
                 Some(w) => w.tags.clone(),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -348,14 +321,14 @@ pub fn process(
 
         Command::FocusWindowUp => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
-                _ => {
+                Some(h) => h.handle,
+                None => {
                     return false;
                 }
             };
             let (tags, layout) = match manager.focused_workspace() {
                 Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-                _ => {
+                None => {
                     return false;
                 }
             };
@@ -363,88 +336,63 @@ pub fn process(
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
 
-            match layout {
-                Some(crate::layouts::Layout::Monocle) => {
-                    // For Monocle we want to also move windows up/down
-                    //                     // Not the best solution but results
-                    //                     in desired behaviour
-                    let mut to_reorder =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle.clone(),
-                        _ => {
-                            return false;
-                        }
-                    };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, -1);
-                    manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(new_handle);
-                    manager.actions.push_back(act);
-                    true
-                }
-                _ => {
-                    let mut window_group =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, -1)
-                    {
-                        let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
-                        manager.actions.push_back(act);
+            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            if let Some(crate::layouts::Layout::Monocle) = layout {
+                let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                    Some(h) => h.handle,
+                    None => {
+                        return false;
                     }
-                    manager.windows.append(&mut window_group);
-                    true
-                }
+                };
+                helpers::reorder_vec(&mut to_reorder, is_handle, -1);
+                let act = DisplayAction::MoveMouseOver(new_handle);
+                manager.actions.push_back(act);
+            } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, -1) {
+                let act = DisplayAction::MoveMouseOver(new_focused.handle);
+                manager.actions.push_back(act);
             }
+            manager.windows.append(&mut to_reorder);
+            true
         }
 
         Command::FocusWindowDown => {
             let handle = match manager.focused_window() {
-                Some(h) => h.handle.clone(),
-                _ => {
+                Some(h) => h.handle,
+                None => {
                     return false;
                 }
             };
             let (tags, layout) = match manager.focused_workspace() {
                 Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-                _ => {
+                None => {
                     return false;
                 }
             };
             let for_active_workspace = |x: &Window| -> bool {
                 helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
             };
-            match layout {
-                Some(crate::layouts::Layout::Monocle) => {
-                    // For Monocle we want to also move windows up/down
-                    // Not the best solution but results in desired behaviour
-                    let mut to_reorder =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                        Some(h) => h.handle.clone(),
-                        _ => {
-                            return false;
-                        }
-                    };
-                    helpers::reorder_vec(&mut to_reorder, is_handle, 1);
-                    manager.windows.append(&mut to_reorder);
-                    let act = DisplayAction::MoveMouseOver(new_handle);
-                    manager.actions.push_back(act);
-                    true
-                }
-                _ => {
-                    let mut window_group =
-                        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-                    let is_handle = |x: &Window| -> bool { x.handle == handle };
-                    if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, 1) {
-                        let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
-                        manager.actions.push_back(act);
+
+            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            if let Some(crate::layouts::Layout::Monocle) = layout {
+                // For Monocle we want to also move windows up/down
+                // Not the best solution but results in desired behaviour
+                let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                    Some(h) => h.handle,
+                    None => {
+                        return false;
                     }
-                    manager.windows.append(&mut window_group);
-                    true
-                }
+                };
+                helpers::reorder_vec(&mut to_reorder, is_handle, 1);
+                let act = DisplayAction::MoveMouseOver(new_handle);
+                manager.actions.push_back(act);
+            } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, -1) {
+                let act = DisplayAction::MoveMouseOver(new_focused.handle);
+                manager.actions.push_back(act);
             }
+            manager.windows.append(&mut to_reorder);
+            true
         }
 
         Command::FocusWorkspaceNext => {
@@ -591,7 +539,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("6".to_string())
             ),
             false
@@ -600,7 +548,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("2".to_string())
             ),
             false
@@ -609,7 +557,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("15".to_string())
             ),
             false
@@ -626,13 +574,13 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("2".to_string())
         ));
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("1".to_string())
         ));
         // we only have one tag per screen created automatically
@@ -640,7 +588,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("3".to_string())
             ),
             false
@@ -664,7 +612,7 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("abc".to_string())
             ),
             false
@@ -673,13 +621,13 @@ mod tests {
             process(
                 &mut manager,
                 &config,
-                Command::GotoTag,
+                &Command::GotoTag,
                 Some("ab45c".to_string())
             ),
             false
         );
         assert_eq!(
-            process(&mut manager, &config, Command::GotoTag, None),
+            process(&mut manager, &config, &Command::GotoTag, None),
             false
         );
     }
@@ -695,7 +643,7 @@ mod tests {
                 TagModel::new("E39"),
                 TagModel::new("F67"),
             ],
-            ..Default::default()
+            ..Manager::default()
         };
         let config = Config::default();
         screen_create_handler::process(&mut manager, Screen::default());
@@ -704,47 +652,47 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("6".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(5));
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("2".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(1));
 
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("3".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(2));
 
         assert!(process(
             &mut manager,
             &config,
-            Command::GotoTag,
+            &Command::GotoTag,
             Some("4".to_string())
         ));
-        let current_tag = manager.tag_index(manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(3));
         assert_eq!(
-            manager.tag_index(manager.focused_tag(1).unwrap_or_default()),
+            manager.tag_index(&manager.focused_tag(1).unwrap_or_default()),
             Some(2)
         );
         assert_eq!(
-            manager.tag_index(manager.focused_tag(2).unwrap_or_default()),
+            manager.tag_index(&manager.focused_tag(2).unwrap_or_default()),
             Some(1)
         );
         assert_eq!(
-            manager.tag_index(manager.focused_tag(3).unwrap_or_default()),
+            manager.tag_index(&manager.focused_tag(3).unwrap_or_default()),
             Some(5)
         );
     }

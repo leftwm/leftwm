@@ -20,6 +20,7 @@ pub struct WindowChange {
 }
 
 impl WindowChange {
+    #[must_use]
     pub fn new(h: WindowHandle) -> WindowChange {
         WindowChange {
             handle: h,
@@ -41,7 +42,7 @@ impl WindowChange {
             //    warn!("CHANGED: trans");
             //}
             changed = changed || changed_trans;
-            window.transient = trans.clone();
+            window.transient = *trans;
         }
         if let Some(name) = &self.name {
             let changed_name = window.name.is_none() || &window.name != name;

@@ -48,69 +48,69 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
                 return command_handler::process(
                     manager,
                     config,
-                    Command::MoveToTag,
+                    &Command::MoveToTag,
                     Some(tag_num),
                 );
             }
         }
 
         ExternalCommand::SetLayout(layout) => {
-            command_handler::process(manager, config, Command::SetLayout, Some(layout));
+            command_handler::process(manager, config, &Command::SetLayout, Some(layout));
         }
 
         ExternalCommand::SwapScreens => {
-            return command_handler::process(manager, config, Command::SwapTags, None);
+            return command_handler::process(manager, config, &Command::SwapTags, None);
         }
 
         ExternalCommand::MoveWindowToLastWorkspace => {
-            return command_handler::process(manager, config, Command::MoveToLastWorkspace, None);
+            return command_handler::process(manager, config, &Command::MoveToLastWorkspace, None);
         }
 
         ExternalCommand::FloatingToTile => {
-            return command_handler::process(manager, config, Command::FloatingToTile, None);
+            return command_handler::process(manager, config, &Command::FloatingToTile, None);
         }
 
         ExternalCommand::MoveWindowUp => {
-            return command_handler::process(manager, config, Command::MoveWindowUp, None);
+            return command_handler::process(manager, config, &Command::MoveWindowUp, None);
         }
         ExternalCommand::MoveWindowDown => {
-            return command_handler::process(manager, config, Command::MoveWindowDown, None);
+            return command_handler::process(manager, config, &Command::MoveWindowDown, None);
         }
 
         ExternalCommand::FocusWindowUp => {
-            return command_handler::process(manager, config, Command::FocusWindowUp, None);
+            return command_handler::process(manager, config, &Command::FocusWindowUp, None);
         }
         ExternalCommand::FocusWindowDown => {
-            return command_handler::process(manager, config, Command::FocusWindowDown, None);
+            return command_handler::process(manager, config, &Command::FocusWindowDown, None);
         }
 
         ExternalCommand::FocusNextTag => {
-            return command_handler::process(manager, config, Command::FocusNextTag, None);
+            return command_handler::process(manager, config, &Command::FocusNextTag, None);
         }
         ExternalCommand::FocusPreviousTag => {
-            return command_handler::process(manager, config, Command::FocusPreviousTag, None);
+            return command_handler::process(manager, config, &Command::FocusPreviousTag, None);
         }
 
         ExternalCommand::FocusWorkspaceNext => {
-            return command_handler::process(manager, config, Command::FocusWorkspaceNext, None);
+            return command_handler::process(manager, config, &Command::FocusWorkspaceNext, None);
         }
         ExternalCommand::FocusWorkspacePrevious => {
             return command_handler::process(
                 manager,
                 config,
-                Command::FocusWorkspacePrevious,
+                &Command::FocusWorkspacePrevious,
                 None,
             );
         }
         ExternalCommand::NextLayout => {
-            return command_handler::process(manager, config, Command::NextLayout, None);
+            return command_handler::process(manager, config, &Command::NextLayout, None);
         }
         ExternalCommand::PreviousLayout => {
-            return command_handler::process(manager, config, Command::PreviousLayout, None);
+            return command_handler::process(manager, config, &Command::PreviousLayout, None);
         }
 
         ExternalCommand::CloseWindow => {
-            return command_handler::process(manager, config, Command::CloseWindow, None);
+            return command_handler::process(manager, config, &Command::CloseWindow, None);
         }
 
         _ => {}

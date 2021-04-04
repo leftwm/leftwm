@@ -13,7 +13,7 @@ pub fn process(
     handle: WindowHandle,
 ) -> bool {
     //look through the config and build a command if its defined in the config
-    let act = build_action(manager, modmask, button, handle.clone());
+    let act = build_action(manager, modmask, button, handle);
     if let Some(act) = act {
         //save off the info about position of the window when we started to move/resize
         manager
@@ -21,16 +21,16 @@ pub fn process(
             .iter_mut()
             .filter(|w| w.handle == handle)
             .for_each(|w| {
-                if !w.floating() {
+                if w.floating() {
+                    let offset = w.get_floating_offsets().unwrap_or_default();
+                    w.start_loc = Some(offset);
+                } else {
                     let container = w.container_size.unwrap_or_default();
                     let normal = w.normal;
                     let floating = normal - container;
                     w.set_floating_offsets(Some(floating));
                     w.start_loc = Some(floating);
                     w.set_floating(true);
-                } else {
-                    let offset = w.get_floating_offsets().unwrap_or_default();
-                    w.start_loc = Some(offset);
                 }
             });
 
@@ -51,7 +51,7 @@ fn build_action(
         xlib::Button1 => {
             for w in &manager.windows {
                 if w.handle == window && w.can_move() {
-                    manager.mode = Mode::MovingWindow(window.clone());
+                    manager.mode = Mode::MovingWindow(window);
                     return Some(DisplayAction::StartMovingWindow(window));
                 }
             }
@@ -60,7 +60,7 @@ fn build_action(
         xlib::Button3 => {
             for w in &manager.windows {
                 if w.handle == window && w.can_resize() {
-                    manager.mode = Mode::ResizingWindow(window.clone());
+                    manager.mode = Mode::ResizingWindow(window);
                     return Some(DisplayAction::StartResizingWindow(window));
                 }
             }

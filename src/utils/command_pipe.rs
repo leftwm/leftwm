@@ -6,6 +6,7 @@ use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
 
+/// Holds pipe file location and a receiver.
 #[derive(Debug)]
 pub struct CommandPipe {
     pipe_file: PathBuf,
@@ -14,11 +15,11 @@ pub struct CommandPipe {
 
 impl Drop for CommandPipe {
     fn drop(&mut self) {
+        use std::os::unix::fs::OpenOptionsExt;
         self.rx.close();
 
         // Open fifo for write to unblock pending open for read operation that prevents tokio runtime
         // from shutting down.
-        use std::os::unix::fs::OpenOptionsExt;
         std::fs::OpenOptions::new()
             .write(true)
             .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
@@ -29,6 +30,10 @@ impl Drop for CommandPipe {
 
 impl CommandPipe {
     /// Create and listen to the named pipe.
+    /// # Errors
+    ///
+    /// Will error if unable to `mkfifo`, likely a filesystem issue
+    /// such as inadequate permissions.
     pub async fn new(pipe_file: PathBuf) -> Result<Self> {
         fs::remove_file(pipe_file.as_path()).await.ok();
         if let Err(e) = nix::unistd::mkfifo(&pipe_file, nix::sys::stat::Mode::S_IRWXU) {
