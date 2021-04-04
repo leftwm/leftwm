@@ -67,7 +67,7 @@ impl Manager {
     }
 
     /// Return the index of a given tag.
-    pub fn tag_index(&self, tag: String) -> Option<usize> {
+    pub fn tag_index(&self, tag: &str) -> Option<usize> {
         Some(self.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
     }
 
@@ -76,7 +76,7 @@ impl Manager {
         if self.focused_window_history.is_empty() {
             return None;
         }
-        let handle = self.focused_window_history[0].clone();
+        let handle = self.focused_window_history[0];
         for w in &self.windows {
             if handle == w.handle {
                 return Some(w);
@@ -90,7 +90,7 @@ impl Manager {
         if self.focused_window_history.is_empty() {
             return None;
         }
-        let handle = self.focused_window_history[0].clone();
+        let handle = self.focused_window_history[0];
         for w in &mut self.windows {
             if handle == w.handle {
                 return Some(w);
@@ -132,7 +132,7 @@ impl Manager {
             .map(|&w| w.clone())
             .collect();
         self.windows = windows;
-        let order: Vec<_> = self.windows.iter().map(|w| w.handle.clone()).collect();
+        let order: Vec<_> = self.windows.iter().map(|w| w.handle).collect();
         let act = DisplayAction::SetWindowOrder(order);
         self.actions.push_back(act);
     }
@@ -145,6 +145,10 @@ impl Manager {
         Some(())
     }
 
+    /// # Panics
+    ///
+    /// Panics if wraps.pop() is empty
+    // TODO: Remove .unwrap() or add statement above indicating that it cannot be hit.
     pub fn tags_display(&self) -> String {
         let mut active: Vec<String> = vec![];
         for w in &self.workspaces {

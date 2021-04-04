@@ -1,3 +1,4 @@
+#![allow(clippy::wildcard_imports)]
 use super::*;
 use crate::display_action::DisplayAction;
 
@@ -36,7 +37,7 @@ fn focus_workspace_work(manager: &mut Manager, workspace_id: i32) -> Option<()> 
     Some(())
 }
 
-/// Create a DisplayAction to cause this window to become focused  
+/// Create a `DisplayAction` to cause this window to become focused  
 pub fn focus_window(manager: &mut Manager, handle: &WindowHandle) -> bool {
     let window = match focus_window_by_handle_work(manager, handle) {
         Some(w) => w,
@@ -91,13 +92,13 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
         manager.focused_window_history.pop_back();
     }
     //add this focus to the history
-    manager.focused_window_history.push_front(handle.clone());
+    manager.focused_window_history.push_front(*handle);
 
     Some(found.clone())
 }
 
 pub fn move_cursor_over(manager: &mut Manager, window: &Window) {
-    let act = DisplayAction::MoveMouseOver(window.handle.clone());
+    let act = DisplayAction::MoveMouseOver(window.handle);
     manager.actions.push_back(act);
 }
 
@@ -151,7 +152,7 @@ fn focus_closest_window(manager: &mut Manager, x: i32, y: i32) -> bool {
         .collect();
     dists.sort_by(|a, b| (a.0).cmp(&b.0));
     if let Some(first) = dists.get(0) {
-        let handle = first.1.handle.clone();
+        let handle = first.1.handle;
         return focus_window(manager, &handle);
     }
     false
@@ -160,8 +161,8 @@ fn focus_closest_window(manager: &mut Manager, x: i32, y: i32) -> bool {
 fn distance(window: &Window, x: i32, y: i32) -> i32 {
     // √((x_2-x_1)²+(y_2-y_1)²)
     let (wx, wy) = window.calculated_xyhw().center();
-    let xs = ((wx - x) * (wx - x)) as f64;
-    let ys = ((wy - y) * (wy - y)) as f64;
+    let xs = f64::from((wx - x) * (wx - x));
+    let ys = f64::from((wy - y) * (wy - y));
     (xs + ys).sqrt().abs().floor() as i32
 }
 
@@ -287,7 +288,7 @@ mod tests {
         );
         let expected = manager.windows[0].clone();
         focus_window(&mut manager, &expected.handle);
-        let actual = manager.focused_window().unwrap().handle.clone();
+        let actual = manager.focused_window().unwrap().handle;
         assert_eq!(expected.handle, actual);
     }
 

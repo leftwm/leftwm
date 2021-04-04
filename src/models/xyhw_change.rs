@@ -108,6 +108,10 @@ impl XyhwChange {
         changed
     }
 
+    /// # Panics
+    ///
+    /// Souldn't panic; `window.strut` is modified to be a `Some` by
+    /// the time of `unwrap()`
     pub fn update_window_strut(&self, window: &mut Window) -> bool {
         let mut changed = if window.strut.is_none() {
             window.strut = Some(Xyhw::default());

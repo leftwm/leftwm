@@ -57,7 +57,7 @@ impl Workspace {
                 w: bbox.width,
                 x: bbox.x,
                 y: bbox.y,
-                ..Default::default()
+                ..XyhwBuilder::default()
             }
             .into(),
             xyhw_avoided: XyhwBuilder {
@@ -65,13 +65,13 @@ impl Workspace {
                 w: bbox.width,
                 x: bbox.x,
                 y: bbox.y,
-                ..Default::default()
+                ..XyhwBuilder::default()
             }
             .into(),
         }
     }
 
-    pub fn show_tag(&mut self, tag: Tag) {
+    pub fn show_tag(&mut self, tag: &Tag) {
         self.tags = vec![tag.id.clone()];
         self.set_main_width(self.layout.main_width());
     }
@@ -239,7 +239,7 @@ mod tests {
             vec![],
         );
         let tag = crate::models::TagModel::new("test");
-        subject.show_tag(tag);
+        subject.show_tag(&tag);
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.tag("test");
         assert!(subject.is_displaying(&w), "workspace should include window");

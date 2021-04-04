@@ -1,4 +1,5 @@
 //! Window Information
+#![allow(clippy::module_name_repetitions)]
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
@@ -12,13 +13,16 @@ use x11_dl::xlib;
 
 type MockHandle = i32;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
 }
 
 /// Store Window information.
+// We allow this as we're not managing state directly. This could be refactored in the future.
+// TODO: Refactor floating
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Window {
     pub handle: WindowHandle,
@@ -157,6 +161,10 @@ impl Window {
         self.requested
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn width(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -176,6 +184,11 @@ impl Window {
         }
         value
     }
+
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn height(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
@@ -211,6 +224,10 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.x();
@@ -223,6 +240,10 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.y();
@@ -241,7 +262,7 @@ impl Window {
             w: self.width(),
             x: self.x(),
             y: self.y(),
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }

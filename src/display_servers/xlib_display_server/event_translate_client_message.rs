@@ -36,7 +36,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         states.sort_unstable();
         states.dedup();
         //set the windows state
-        xw.set_window_states_atoms(event.window, states);
+        xw.set_window_states_atoms(event.window, &states);
     }
 
     //update the window states

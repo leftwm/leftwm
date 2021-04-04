@@ -33,7 +33,7 @@ fn main() {
                 .map(|s| TagModel::new(s))
                 .collect(),
             layouts: config.layouts.clone(),
-            ..Default::default()
+            ..Manager::default()
         };
 
         child_process::register_child_hook(manager.reap_requested.clone());
@@ -88,7 +88,7 @@ async fn event_loop(
     //main event loop
     let mut event_buffer = vec![];
     loop {
-        if manager.mode == Mode::NormalMode {
+        if manager.mode == Mode::Normal {
             state_socket.write_manager_state(manager).await.ok();
         }
         display_server.flush();
@@ -118,7 +118,7 @@ async fn event_loop(
         //if we need to update the displayed state
         if needs_update {
             match &manager.mode {
-                Mode::NormalMode => {
+                Mode::Normal => {
                     let windows: Vec<&Window> = manager.windows.iter().collect();
                     let focused = manager.focused_window();
                     display_server.update_windows(windows, focused);
@@ -179,7 +179,7 @@ fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
     use std::fs::OpenOptions;
     let date = Local::now();
     let path = "/tmp/leftwm";
-    let _ = fs::create_dir_all(path);
+    let _droppable = fs::create_dir_all(path);
     let log_path = format!("{}/leftwm-{}.log", path, date.format("%Y%m%d%H%M"));
     let file = OpenOptions::new()
         .create(true)
