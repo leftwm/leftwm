@@ -231,6 +231,10 @@ pub fn process(
             } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
                 //Don't cycle main window
                 let main = to_reorder.remove(0);
+                //Prevent lockup when trying to move main window
+                if main.handle == handle {
+                    return false;
+                }
                 let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
                     Some(h) => h.handle,
                     None => {
@@ -283,6 +287,10 @@ pub fn process(
             } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
                 //Don't cycle main window
                 let main = to_reorder.remove(0);
+                //Prevent lockup when trying to move main window
+                if main.handle == handle {
+                    return false;
+                }
                 let new_handle = match helpers::relative_find(&to_reorder, is_handle, -1) {
                     Some(h) => h.handle,
                     None => {
@@ -379,11 +387,11 @@ pub fn process(
                 //Only change focus on first 2 windows
                 let window_group = &to_reorder[..2];
                 if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, -1) {
-                    let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                    let act = DisplayAction::MoveMouseOver(new_focused.handle);
                     manager.actions.push_back(act);
                 }
             } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, -1) {
-                let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                let act = DisplayAction::MoveMouseOver(new_focused.handle);
                 manager.actions.push_back(act);
             }
             manager.windows.append(&mut to_reorder);
@@ -423,11 +431,11 @@ pub fn process(
                 //Only change focus on first 2 windows
                 let window_group = &to_reorder[..2];
                 if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, 1) {
-                    let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                    let act = DisplayAction::MoveMouseOver(new_focused.handle);
                     manager.actions.push_back(act);
                 }
             } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, 1) {
-                let act = DisplayAction::MoveMouseOver(new_focused.handle.clone());
+                let act = DisplayAction::MoveMouseOver(new_focused.handle);
                 manager.actions.push_back(act);
             }
             manager.windows.append(&mut to_reorder);
