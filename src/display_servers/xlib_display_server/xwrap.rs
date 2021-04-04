@@ -80,6 +80,7 @@ impl XWrap {
     /// # Panics
     ///
     /// Can panic if unable to contact xorg.  
+    #[must_use]
     pub fn new() -> XWrap {
         const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().unwrap();
@@ -183,6 +184,7 @@ impl XWrap {
     ///
     /// Panics if xorg cannot be contacted (xlib missing, not started, etc.)
     /// Also panics if window attrs cannot be obtained.
+    #[must_use]
     pub fn get_screens(&self) -> Vec<Screen> {
         use x11_dl::xinerama::XineramaScreenInfo;
         use x11_dl::xinerama::Xlib;
@@ -216,6 +218,7 @@ impl XWrap {
     }
 
     //returns all the screens the display
+    #[must_use]
     pub fn get_xscreens(&self) -> Vec<xlib::Screen> {
         let mut screens = Vec::new();
         let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
@@ -227,15 +230,18 @@ impl XWrap {
     }
 
     //returns all the screens the display
+    #[must_use]
     pub fn get_default_root_handle(&self) -> WindowHandle {
         WindowHandle::XlibHandle(self.get_default_root())
     }
 
+    #[must_use]
     pub fn get_default_root(&self) -> xlib::Window {
         self.root
     }
 
     //returns all the roots the display
+    #[must_use]
     pub fn get_roots(&self) -> Vec<xlib::Window> {
         self.get_xscreens()
             .into_iter()
@@ -243,6 +249,7 @@ impl XWrap {
             .collect()
     }
 
+    #[must_use]
     pub fn keycode_to_keysym(&self, keycode: u32) -> utils::xkeysym_lookup::XKeysym {
         let sym = unsafe { (self.xlib.XKeycodeToKeysym)(self.display, keycode as u8, 0) };
         sym as u32
@@ -312,6 +319,7 @@ impl XWrap {
         Ok(attrs)
     }
 
+    #[must_use]
     pub fn get_atom_prop_value(
         &self,
         window: xlib::Window,
@@ -345,6 +353,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
         match self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
             x if x == Some(self.atoms.NetWMWindowTypeDesktop) => WindowType::Desktop,
@@ -375,6 +384,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_window_states_atoms(&self, window: xlib::Window) -> Vec<xlib::Atom> {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
@@ -407,6 +417,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_window_states(&self, window: xlib::Window) -> Vec<WindowState> {
         self.get_window_states_atoms(window)
             .iter()
@@ -761,6 +772,7 @@ impl XWrap {
         Err(XlibError::RootWindowNotFound)
     }
 
+    #[must_use]
     pub fn screens_area_dimensions(&self) -> (i32, i32) {
         let mut height = 0;
         let mut width = 0;
@@ -771,6 +783,7 @@ impl XWrap {
         (height, width)
     }
 
+    #[must_use]
     pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
         if let Some(d) = self.get_window_strut_array_strut_partial(window) {
             log::debug!("STRUT:[{:?}] {:?}", window, d);
@@ -969,6 +982,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_transient_for(&self, window: xlib::Window) -> Option<xlib::Window> {
         unsafe {
             let mut transient: xlib::Window = std::mem::zeroed();
@@ -982,6 +996,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_window_name(&self, window: xlib::Window) -> Option<String> {
         if let Ok(text) = self.get_text_prop(window, self.atoms.NetWMName) {
             return Some(text);
@@ -1158,6 +1173,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
         unsafe {
             let hints_ptr: *const xlib::XWMHints = (self.xlib.XGetWMHints)(self.display, window);
@@ -1169,6 +1185,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_hint_sizing(&self, window: xlib::Window) -> Option<xlib::XSizeHints> {
         let mut xsize: xlib::XSizeHints = unsafe { std::mem::zeroed() };
         let mut msize: c_long = xlib::PSize;
@@ -1180,6 +1197,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XyhwChange> {
         let hint = self.get_hint_sizing(window);
         if let Some(size) = hint {
@@ -1405,6 +1423,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_next_event(&self) -> xlib::XEvent {
         let mut event: xlib::XEvent = unsafe { std::mem::zeroed() };
         unsafe {
@@ -1421,6 +1440,7 @@ impl XWrap {
         unsafe { (self.xlib.XFlush)(self.display) };
     }
 
+    #[must_use]
     pub fn queue_len(&self) -> i32 {
         unsafe { (self.xlib.XPending)(self.display) }
     }

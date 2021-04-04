@@ -21,6 +21,7 @@ pub struct BBox {
 }
 
 impl Screen {
+    #[must_use]
     pub fn new(bbox: BBox) -> Screen {
         Screen {
             root: WindowHandle::MockHandle(0),

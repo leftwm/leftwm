@@ -33,6 +33,7 @@ pub struct Config {
     pub keybind: Vec<Keybind>,
 }
 
+#[must_use]
 pub fn load() -> Config {
     load_from_file()
         .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))
@@ -104,6 +105,7 @@ fn default_terminal<'s>() -> &'s str {
 
 impl Config {
     /// Returns a collection of bindings with the mod key mapped.
+    #[must_use]
     pub fn mapped_bindings(&self) -> Vec<Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
@@ -124,6 +126,7 @@ impl Config {
     ///
     /// Will panic if the default tags cannot be unwrapped. Not likely to occur, as this is defined
     /// behaviour.
+    #[must_use]
     pub fn get_list_of_tags(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();

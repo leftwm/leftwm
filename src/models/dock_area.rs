@@ -40,6 +40,7 @@ impl From<&[i64]> for DockArea {
 }
 
 impl DockArea {
+    #[must_use]
     pub fn as_xyhw(&self, screen_height: i32, screen_width: i32) -> Option<Xyhw> {
         if self.top > 0 {
             return Some(self.xyhw_from_top());

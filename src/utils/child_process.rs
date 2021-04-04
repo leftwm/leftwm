@@ -19,12 +19,14 @@ impl Default for Nanny {
 }
 
 impl Nanny {
+    #[must_use]
     pub const fn new() -> Self {
         Self {}
     }
 
     // We allow this because Nanny is empty.
     #[allow(clippy::unused_self)]
+    #[must_use]
     pub fn autostart(&self) -> Children {
         dirs_next::home_dir()
             .map(|mut path| {
@@ -101,12 +103,15 @@ pub struct Children {
 }
 
 impl Children {
+    #[must_use]
     pub fn new() -> Self {
         Children::default()
     }
+    #[must_use]
     pub fn len(&self) -> usize {
         self.inner.len()
     }
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.inner.len() == 0
     }

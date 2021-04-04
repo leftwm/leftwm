@@ -12,6 +12,7 @@ pub struct TagModel {
 }
 
 impl TagModel {
+    #[must_use]
     pub fn new(id: &str) -> Tag {
         Arc::new(TagModel {
             id: id.to_owned(),
@@ -63,6 +64,7 @@ impl TagModel {
     ///
     /// Panics if `main_width_percentage` cannot be unwrapped.
     // TODO: Verify that `unwrap` panic cannot be hit and add note above.
+    #[must_use]
     pub fn main_width_percentage(&self) -> f32 {
         let lock = self.main_width_percentage.clone();
         let mwp = lock.lock().unwrap();

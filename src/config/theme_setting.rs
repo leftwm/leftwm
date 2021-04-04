@@ -18,6 +18,7 @@ pub struct ThemeSetting {
 }
 
 impl ThemeSetting {
+    #[must_use]
     pub fn load(path: &Path) -> ThemeSetting {
         load_theme_file(path).unwrap_or_default()
     }

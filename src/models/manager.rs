@@ -41,6 +41,7 @@ pub struct Manager {
 
 impl Manager {
     /// Return the currently focused workspace.
+    #[must_use]
     pub fn focused_workspace(&self) -> Option<&Workspace> {
         if self.focused_workspace_history.is_empty() {
             return None;
@@ -67,11 +68,13 @@ impl Manager {
     }
 
     /// Return the index of a given tag.
+    #[must_use]
     pub fn tag_index(&self, tag: &str) -> Option<usize> {
         Some(self.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
     }
 
     /// Return the currently focused window.
+    #[must_use]
     pub fn focused_window(&self) -> Option<&Window> {
         if self.focused_window_history.is_empty() {
             return None;
@@ -149,6 +152,7 @@ impl Manager {
     ///
     /// Panics if wraps.pop() is empty
     // TODO: Remove .unwrap() or add statement above indicating that it cannot be hit.
+    #[must_use]
     pub fn tags_display(&self) -> String {
         let mut active: Vec<String> = vec![];
         for w in &self.workspaces {
@@ -170,6 +174,7 @@ impl Manager {
         parts.join(" | ")
     }
 
+    #[must_use]
     pub fn workspaces_display(&self) -> String {
         let mut focused_id = -1;
         if let Some(f) = self.focused_workspace() {
@@ -190,6 +195,7 @@ impl Manager {
         list.join(" ")
     }
 
+    #[must_use]
     pub fn windows_display(&self) -> String {
         let list: Vec<String> = self
             .windows
