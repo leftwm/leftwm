@@ -1,6 +1,7 @@
 use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
 use crate::child_process::exec_shell;
 use crate::display_action::DisplayAction;
+use crate::layouts::Layout;
 use crate::models::WindowHandle;
 
 /// Process a collection of events, and apply them changes to a manager.
@@ -24,6 +25,14 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
 
     if let Some(ws) = ws {
         window.tags = ws.tags.clone();
+        window.set_visible(true);
+        let layout = ws.layout.clone();
+        if window.type_ == WindowType::Normal {
+            match layout {
+                Layout::Monocle | Layout::MainAndDeck => window.set_visible(false),
+                _ => (),
+            }
+        }
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
             window.set_floating(true);
@@ -63,7 +72,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     manager.windows.push(window.clone());
 
     //let the DS know we are managing this window
-    let act = DisplayAction::AddedWindow(window.handle);
+    let act = DisplayAction::AddedWindow(window.clone());
     manager.actions.push_back(act);
 
     //let the DS know the correct desktop to find this window

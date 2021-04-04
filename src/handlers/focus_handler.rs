@@ -72,7 +72,7 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
     //Docks don't want to get focus. If they do weird things happen. They don't get events...
     //Do the focus, Add the action to the list of action
     let found: &Window = manager.windows.iter().find(|w| &w.handle == handle)?;
-    if found.type_ == WindowType::Dock {
+    if found.type_ == WindowType::Dock || !found.visible() {
         return None;
     }
     //NOTE: we are intentionally creating the focus event even if we thing this window

@@ -637,7 +637,8 @@ impl XWrap {
     }
 
     //this code is ran one time when a window is added to the managers list of windows
-    pub fn setup_managed_window(&mut self, h: WindowHandle) -> Option<DisplayEvent> {
+    pub fn setup_managed_window(&mut self, w: Window) -> Option<DisplayEvent> {
+        let h = w.handle;
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             self.managed_windows.push(handle);
@@ -680,7 +681,9 @@ impl XWrap {
                     }
                 }
                 _ => {
-                    let _ = self.move_cursor_to_window(handle);
+                    if w.visible() {
+                        let _ = self.move_cursor_to_window(handle);
+                    }
                 }
             }
             //make sure there is at least an empty list of _NET_WM_STATE
