@@ -229,6 +229,8 @@ The settings file to change key bindings and the default mod key can be found at
 ~/.config/leftwm/config.toml
 ```
 
+the file is automatically generated when leftwm or leftwm-check is run for the first time. 
+
 ## Default keys
 
 | Keybinding          | Description                                                            |
@@ -248,6 +250,19 @@ The settings file to change key bindings and the default mod key can be found at
 | Mod + Shift + Q     | Close the current window                                               |
 | Mod + Shift + R     | Reload LeftWM and its config                                           |
 | Mod + p             | Use dmenu to start application                                         |
+
+**Note:** Although we encourage you to use [Alacritty](https://github.com/alacritty/alacritty), LeftWM will set your default terminal to the first terminal it finds in this list (in the order presented):
+1. Alacritty
+2. Termite
+3. URXVT
+4. RXVT
+5. ST
+6. ROXTerm
+7. Eterm
+8. Terminator
+9. Terminology
+10. Gnome Terminal
+ 
 
 ## Floating Windows
 

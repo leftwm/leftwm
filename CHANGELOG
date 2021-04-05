@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `leftwm-check` binary that allows for configuration files (config.toml, theme.toml) to be checked.
 - Autostart applications can now be disabled by setting X-Gnome-Autostart to false in the appropriate .desktop file
 - SetLayout command added to set specific layouts externally
+- Lots of notes have been added to the library documentation
 
 ## [0.2.6] - 2021-1-29
 ### Fixed
