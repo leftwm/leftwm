@@ -34,11 +34,11 @@
 
 # Why go left
 
-Left is a tiling window manager written in [Rust](https://github.com/rust-lang/rust) that aims to be stable and performant. Left is [designed to do one thing and to do that one thing well](https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well): _be a window manager_. Left therefore follows the following mantra:
+LeftWM is a tiling window manager written in [Rust](https://github.com/rust-lang/rust) that aims to be stable and performant. LeftWM is [designed to do one thing and to do that one thing well](https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well): _be a window manager_. LeftWM therefore follows the following mantra:
 
-> Left is not a compositor.  
-> Left is not a lock screen.  
-> Left is not a bar. But, there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
+> LeftWM is not a compositor.  
+> LeftWM is not a lock screen.  
+> LeftWM is not a bar. But, there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
 
 Because you probably want more than just a black screen, LeftWM is built around the concept of themes. With themes, you can choose between different bars, compositors, backgrounds, colors, docks, and whatever else makes you happy.
 
