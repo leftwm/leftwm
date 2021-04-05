@@ -443,10 +443,14 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> bool {
             return false;
         }
     };
-    match manager.windows.iter().find(|w| w.type_ == WindowType::Normal) {
+    match manager
+        .windows
+        .iter()
+        .find(|w| w.type_ == WindowType::Normal)
+    {
         None => {
             return false;
-        },
+        }
         _ => (),
     };
     let for_active_workspace = |x: &Window| -> bool {
