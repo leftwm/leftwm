@@ -192,126 +192,21 @@ pub fn process(
             false
         }
 
-        Command::MoveWindowUp => window_change(manager, -1),
+        Command::MoveWindowUp => move_focus_common_vars(window_move_change, manager, -1),
 
-        Command::MoveWindowDown => window_change(manager, 1),
+        Command::MoveWindowDown => move_focus_common_vars(window_move_change, manager, 1),
 
         // Moves the selected window at index 0 of the window list.
         // If the selected window is already at index 0, it is sent to index 1.
-        Command::MoveWindowTop => {
-            let handle = match manager.focused_window() {
-                Some(h) => h.handle,
-                None => return false,
-            };
-            let tags = match manager.focused_workspace() {
-                Some(w) => w.tags.clone(),
-                None => return false,
-            };
-            let for_active_workspace = |x: &Window| -> bool {
-                helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock
-            };
-            let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { x.handle == handle };
-            let list = &mut to_reorder;
-            let len = list.len();
-            let (index, item) = match list.iter().enumerate().find(|&x| is_handle(&x.1)) {
-                Some(x) => (x.0, x.1.clone()),
-                None => return false,
-            };
-            list.remove(index);
-            let mut new_index: usize = match index {
-                0 => 1,
-                _ => 0,
-            };
-            if new_index >= len {
-                new_index -= len
-            }
-            list.insert(new_index, item);
+        Command::MoveWindowTop => move_focus_common_vars(window_move_top, manager, 0),
 
-            manager.windows.append(&mut to_reorder);
-            // focus follows the window if it was not already on top of the stack
-            if index > 0 {
-                let act = DisplayAction::MoveMouseOver(handle);
-                manager.actions.push_back(act);
-            }
-            true
-        }
+        Command::FocusWindowUp => move_focus_common_vars(window_focus_change, manager, -1),
 
-        Command::FocusWindowUp => focus_change(manager, -1),
+        Command::FocusWindowDown => move_focus_common_vars(window_focus_change, manager, 1),
 
-        Command::FocusWindowDown => focus_change(manager, 1),
+        Command::FocusWorkspaceNext => workspace_focus_change(manager, 1),
 
-        Command::FocusWorkspaceNext => {
-            let current = manager.focused_workspace();
-            if current.is_none() {
-                return false;
-            }
-            let current = current.unwrap();
-            let mut index = match manager
-                .workspaces
-                .iter()
-                .enumerate()
-                .find(|&x| x.1 == current)
-            {
-                Some(x) => x.0,
-                None => return false,
-            };
-            index += 1;
-            if index >= manager.workspaces.len() {
-                index = 0;
-            }
-            let workspace = manager.workspaces[index].clone();
-            focus_handler::focus_workspace(manager, &workspace);
-            let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
-            manager.actions.push_back(act);
-            if let Some(window) = manager
-                .windows
-                .iter()
-                .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
-            {
-                let window = window.clone();
-                focus_handler::move_cursor_over(manager, &window);
-                let act = DisplayAction::MoveMouseOver(window.handle);
-                manager.actions.push_back(act);
-            }
-            true
-        }
-
-        Command::FocusWorkspacePrevious => {
-            let current = manager.focused_workspace();
-            if current.is_none() {
-                return false;
-            }
-            let current = current.unwrap();
-            let mut index = match manager
-                .workspaces
-                .iter()
-                .enumerate()
-                .find(|&x| x.1 == current)
-            {
-                Some(x) => x.0 as i32,
-                None => return false,
-            };
-            index -= 1;
-            if index < 0 {
-                index = (manager.workspaces.len() as i32) - 1;
-            }
-            let workspace = manager.workspaces[index as usize].clone();
-            focus_handler::focus_workspace(manager, &workspace);
-            let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
-            manager.actions.push_back(act);
-            if let Some(window) = manager
-                .windows
-                .iter()
-                .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
-            {
-                let window = window.clone();
-                focus_handler::move_cursor_over(manager, &window);
-                let act = DisplayAction::MoveMouseOver(window.handle);
-                manager.actions.push_back(act);
-            }
-            true
-        }
+        Command::FocusWorkspacePrevious => workspace_focus_change(manager, -1),
 
         Command::MouseMoveWindow => false,
 
@@ -368,7 +263,10 @@ fn to_layout(val: &Option<String>) -> Option<Layout> {
     Layout::from_str(val.as_ref()?).ok()
 }
 
-fn focus_change(manager: &mut Manager, val: i32) -> bool {
+fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> bool 
+where
+    F: Fn(&mut Manager, i32, WindowHandle, Option<Layout>, Vec<Window>) -> bool,
+{
     let handle = match manager.focused_window() {
         Some(h) => h.handle,
         None => return false,
@@ -380,7 +278,11 @@ fn focus_change(manager: &mut Manager, val: i32) -> bool {
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
 
-    let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+    let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+    return func(manager, val, handle, layout, to_reorder);
+}
+
+fn window_focus_change(manager: &mut Manager, val: i32, handle: WindowHandle, layout: Option<Layout>, mut to_reorder: Vec<Window>) -> bool {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     if let Some(crate::layouts::Layout::Monocle) = layout {
         let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
@@ -405,19 +307,7 @@ fn focus_change(manager: &mut Manager, val: i32) -> bool {
     true
 }
 
-fn window_change(manager: &mut Manager, val: i32) -> bool {
-    let handle = match manager.focused_window() {
-        Some(h) => h.handle,
-        None => return false,
-    };
-    let (tags, layout) = match manager.focused_workspace() {
-        Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-        None => return false,
-    };
-    let for_active_workspace =
-        |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
-
-    let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+fn window_move_change(manager: &mut Manager, val: i32, handle: WindowHandle, layout: Option<Layout>, mut to_reorder: Vec<Window>) -> bool {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     let mut act = DisplayAction::MoveMouseOver(handle);
     if let Some(crate::layouts::Layout::Monocle) = layout {
@@ -448,6 +338,73 @@ fn window_change(manager: &mut Manager, val: i32) -> bool {
     }
     manager.windows.append(&mut to_reorder);
     manager.actions.push_back(act);
+    true
+}
+//val and layout aren't used which is a bit awkward
+fn window_move_top(manager: &mut Manager, _val: i32, handle: WindowHandle, _layout: Option<Layout>, mut to_reorder: Vec<Window>) -> bool {
+    let is_handle = |x: &Window| -> bool { x.handle == handle };
+    let list = &mut to_reorder;
+    let len = list.len();
+    let (index, item) = match list.iter().enumerate().find(|&x| is_handle(&x.1)) {
+        Some(x) => (x.0, x.1.clone()),
+        None => return false,
+    };
+    list.remove(index);
+    let mut new_index: usize = match index {
+        0 => 1,
+        _ => 0,
+    };
+    if new_index >= len {
+        new_index -= len
+    }
+    list.insert(new_index, item);
+
+    manager.windows.append(&mut to_reorder);
+    // focus follows the window if it was not already on top of the stack
+    if index > 0 {
+        let act = DisplayAction::MoveMouseOver(handle);
+        manager.actions.push_back(act);
+    }
+    true
+}
+
+fn workspace_focus_change(manager: &mut Manager, val: i32) -> bool {
+    let current = manager.focused_workspace();
+    if current.is_none() {
+        return false;
+    }
+    let current = current.unwrap();
+    let mut index = match manager
+        .workspaces
+        .iter()
+        .enumerate()
+        .find(|&x| x.1 == current)
+    {
+        Some(x) => x.0 as i32,
+        None => return false,
+    };
+    let len = manager.workspaces.len() as i32;
+    index += val;
+    if index < 0 {
+        index = len - 1;
+    }
+    if index >= len {
+        index = 0;
+    }
+    let workspace = manager.workspaces[index as usize].clone();
+    focus_handler::focus_workspace(manager, &workspace);
+    let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
+    manager.actions.push_back(act);
+    if let Some(window) = manager
+        .windows
+        .iter()
+        .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
+    {
+        let window = window.clone();
+        focus_handler::move_cursor_over(manager, &window);
+        let act = DisplayAction::MoveMouseOver(window.handle);
+        manager.actions.push_back(act);
+    }
     true
 }
 
