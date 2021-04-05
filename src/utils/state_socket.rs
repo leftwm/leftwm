@@ -31,6 +31,11 @@ impl Drop for StateSocket {
 
 impl StateSocket {
     /// Bind to Unix socket and listen.
+    /// # Errors
+    ///
+    /// Will error if `build_listener()` cannot be unwrapped or awaited.
+    /// As in `build_listener()`, this is likely a filesystem issue,
+    /// such as incorrect permissions or a non-existant file.
     pub async fn listen(&mut self, socket_file: PathBuf) -> Result<()> {
         self.socket_file = socket_file;
         let listener = self.build_listener().await?;
@@ -47,9 +52,13 @@ impl StateSocket {
         }
     }
 
+    /// # Panics
+    ///
+    /// Will panic if peer cannot be unwrapped as mutable.
     /// # Errors
     ///
     /// Will return error if state cannot be stringified
+    // TODO: Verify `unwrap` is unreachable
     pub async fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
         if self.listener.is_some() {
             let state: ManagerState = manager.into();
@@ -164,7 +173,7 @@ mod test {
         );
 
         // Fake state update.
-        state_socket.state.lock().await.last_state = Default::default();
+        state_socket.state.lock().await.last_state = String::default();
         state_socket.write_manager_state(&manager).await.unwrap();
 
         assert_eq!(

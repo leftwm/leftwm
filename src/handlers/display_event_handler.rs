@@ -6,7 +6,7 @@ use super::{
 use crate::display_action::DisplayAction;
 use crate::utils::window_updater::update_windows;
 
-/// Configuration container for processing DisplayEvents.
+/// Configuration container for processing `DisplayEvents`.
 pub struct DisplayEventHandler {
     pub config: Config,
 }
@@ -41,14 +41,14 @@ impl DisplayEventHandler {
                 let build = CommandBuilder::new(&self.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some((cmd, val)) = command {
-                    command_handler::process(manager, &self.config, cmd, val)
+                    command_handler::process(manager, &self.config, &cmd, val)
                 } else {
                     false
                 }
             }
 
             DisplayEvent::SendCommand(command, value) => {
-                command_handler::process(manager, &self.config, command, value)
+                command_handler::process(manager, &self.config, &command, value)
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
@@ -56,7 +56,7 @@ impl DisplayEventHandler {
             }
 
             DisplayEvent::ChangeToNormalMode => {
-                manager.mode = Mode::NormalMode;
+                manager.mode = Mode::Normal;
                 //look through the config and build a command if its defined in the config
                 let act = DisplayAction::NormalMode;
                 manager.actions.push_back(act);

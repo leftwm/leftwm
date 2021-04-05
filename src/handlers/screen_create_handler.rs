@@ -16,7 +16,7 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     let next_tag = manager.tags[tag_index].clone();
     focus_handler::focus_workspace(manager, &workspace);
     focus_handler::focus_tag(manager, &next_tag.id);
-    workspace.show_tag(next_tag);
+    workspace.show_tag(&next_tag);
     manager.workspaces.push(workspace.clone());
     manager.screens.push(screen);
     focus_handler::focus_workspace(manager, &workspace);

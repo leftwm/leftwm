@@ -8,19 +8,24 @@ pub enum Margins {
 } // format: [top, right, bottom, left] as per HTML
 
 impl Margins {
+    #[must_use]
     pub fn left(self) -> i32 {
         self.into_vec()[3] as i32
     }
+    #[must_use]
     pub fn right(self) -> i32 {
         self.into_vec()[1] as i32
     }
+    #[must_use]
     pub fn top(self) -> i32 {
         self.into_vec()[0] as i32
     }
+    #[must_use]
     pub fn bottom(self) -> i32 {
         self.into_vec()[2] as i32
     }
 
+    #[must_use]
     pub fn into_vec(self) -> Vec<u32> {
         match self {
             Self::Vec(v) => match v.len() {

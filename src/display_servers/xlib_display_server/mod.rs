@@ -107,7 +107,7 @@ impl DisplayServer for XlibDisplayServer {
         log::trace!("DisplayAction: {:?}", act);
         let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(w) => {
-                self.xw.kill_window(w);
+                self.xw.kill_window(&w);
                 None
             }
             DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w),
@@ -122,11 +122,11 @@ impl DisplayServer for XlibDisplayServer {
                 None
             }
             DisplayAction::DestroyedWindow(w) => {
-                self.xw.teardown_managed_window(w);
+                self.xw.teardown_managed_window(&w);
                 None
             }
             DisplayAction::WindowTakeFocus(w) => {
-                self.xw.window_take_focus(w);
+                self.xw.window_take_focus(&w);
                 None
             }
             DisplayAction::SetWindowOrder(wins) => {
@@ -159,7 +159,7 @@ impl DisplayServer for XlibDisplayServer {
                 None
             }
             DisplayAction::NormalMode => {
-                self.xw.set_mode(Mode::NormalMode);
+                self.xw.set_mode(Mode::Normal);
                 None
             }
             DisplayAction::SetCurrentTags(tags) => {
@@ -228,7 +228,7 @@ impl XlibDisplayServer {
 
                 let managed = match self.xw.get_transient_for(handle) {
                     Some(_) => attrs.map_state == 2,
-                    _ => attrs.override_redirect <= 0 && attrs.map_state == 2,
+                    None => attrs.override_redirect <= 0 && attrs.map_state == 2,
                 };
                 if managed {
                     let name = self.xw.get_window_name(handle);

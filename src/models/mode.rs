@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 pub enum Mode {
     ResizingWindow(WindowHandle),
     MovingWindow(WindowHandle),
-    NormalMode,
+    Normal,
 }
 
 impl Default for Mode {
     fn default() -> Self {
-        Self::NormalMode
+        Self::Normal
     }
 }

@@ -45,6 +45,7 @@ impl PartialEq for Workspace {
 }
 
 impl Workspace {
+    #[must_use]
     pub fn new(bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Workspace {
         Workspace {
             id: -1,
@@ -59,7 +60,7 @@ impl Workspace {
                 w: bbox.width,
                 x: bbox.x,
                 y: bbox.y,
-                ..Default::default()
+                ..XyhwBuilder::default()
             }
             .into(),
             xyhw_avoided: XyhwBuilder {
@@ -67,21 +68,23 @@ impl Workspace {
                 w: bbox.width,
                 x: bbox.x,
                 y: bbox.y,
-                ..Default::default()
+                ..XyhwBuilder::default()
             }
             .into(),
         }
     }
 
-    pub fn show_tag(&mut self, tag: Tag) {
+    pub fn show_tag(&mut self, tag: &Tag) {
         self.tags = vec![tag.id.clone()];
         self.set_main_width(self.layout.main_width());
     }
 
+    #[must_use]
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
         self.xyhw.contains_point(x, y)
     }
 
+    #[must_use]
     pub fn has_tag(&self, tag: &str) -> bool {
         for t in &self.tags {
             if tag == t {
@@ -107,6 +110,7 @@ impl Workspace {
     }
 
     /// Returns true if the workspace is displays a given window.
+    #[must_use]
     pub fn is_displaying(&self, window: &Window) -> bool {
         for wd_t in &window.tags {
             if self.has_tag(wd_t) {
@@ -117,6 +121,7 @@ impl Workspace {
     }
 
     /// Returns true if the workspace is to update the locations info of this window.
+    #[must_use]
     pub fn is_managed(&self, window: &Window) -> bool {
         self.is_displaying(window) && window.type_ != WindowType::Dock
     }
@@ -144,19 +149,24 @@ impl Workspace {
             .for_each(|w| w.normal = self.xyhw);
     }
 
+    #[must_use]
     pub fn x(&self) -> i32 {
         self.xyhw_avoided.x()
     }
+    #[must_use]
     pub fn y(&self) -> i32 {
         self.xyhw_avoided.y()
     }
+    #[must_use]
     pub fn height(&self) -> i32 {
         self.xyhw_avoided.h()
     }
+    #[must_use]
     pub fn width(&self) -> i32 {
         self.xyhw_avoided.w()
     }
 
+    #[must_use]
     pub fn current_tags(&self) -> Vec<Tag> {
         let mut found = vec![];
         for tag in &self.all_tags {
@@ -184,6 +194,7 @@ impl Workspace {
         }
     }
 
+    #[must_use]
     pub fn main_width(&self) -> f32 {
         if let Some(tag) = self.current_tags().get(0) {
             return tag.main_width_percentage();
@@ -191,6 +202,7 @@ impl Workspace {
         f32::from(self.layout.main_width())
     }
 
+    #[must_use]
     pub fn center_halfed(&self) -> Xyhw {
         self.xyhw_avoided.center_halfed()
     }
@@ -251,7 +263,7 @@ mod tests {
             vec![],
         );
         let tag = crate::models::TagModel::new("test");
-        subject.show_tag(tag);
+        subject.show_tag(&tag);
         let mut w = Window::new(WindowHandle::MockHandle(1), None);
         w.tag("test");
         assert!(subject.is_displaying(&w), "workspace should include window");

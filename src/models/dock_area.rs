@@ -40,6 +40,7 @@ impl From<&[i64]> for DockArea {
 }
 
 impl DockArea {
+    #[must_use]
     pub fn as_xyhw(&self, screen_height: i32, screen_width: i32) -> Option<Xyhw> {
         if self.top > 0 {
             return Some(self.xyhw_from_top());
@@ -62,7 +63,7 @@ impl DockArea {
             y: 0,
             h: self.top,
             w: self.top_end_x - self.top_start_x,
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }
@@ -73,7 +74,7 @@ impl DockArea {
             y: screen_height - self.bottom,
             h: self.bottom,
             w: self.bottom_end_x - self.bottom_start_x,
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }
@@ -84,7 +85,7 @@ impl DockArea {
             y: self.left_start_y,
             h: self.left_end_y - self.left_start_y,
             w: self.left,
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }
@@ -95,7 +96,7 @@ impl DockArea {
             y: self.right_start_y,
             h: self.right_end_y - self.right_start_y,
             w: self.right,
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }
@@ -111,14 +112,14 @@ mod tests {
             top: 2,
             top_start_x: 10,
             top_end_x: 200,
-            ..Default::default()
+            ..DockArea::default()
         };
         let expected: Xyhw = XyhwBuilder {
             h: 2,
             w: 190,
             x: 10,
             y: 0,
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into();
         assert_eq!(area.xyhw_from_top(), expected);
@@ -130,14 +131,14 @@ mod tests {
             bottom: 2,
             bottom_start_x: 10,
             bottom_end_x: 200,
-            ..Default::default()
+            ..DockArea::default()
         };
         let expected: Xyhw = XyhwBuilder {
             h: 2,
             w: 190,
             x: 10,
             y: 998,
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into();
         assert_eq!(area.xyhw_from_bottom(1000), expected);
@@ -149,14 +150,14 @@ mod tests {
             left: 2,
             left_start_y: 10,
             left_end_y: 200,
-            ..Default::default()
+            ..DockArea::default()
         };
         let expected: Xyhw = XyhwBuilder {
             h: 190,
             w: 2,
             x: 0,
             y: 10,
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into();
         assert_eq!(area.xyhw_from_left(), expected);
@@ -168,14 +169,14 @@ mod tests {
             right: 2,
             right_start_y: 10,
             right_end_y: 200,
-            ..Default::default()
+            ..DockArea::default()
         };
         let expected: Xyhw = XyhwBuilder {
             h: 190,
             w: 2,
             x: 1998,
             y: 10,
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into();
         assert_eq!(area.xyhw_from_right(2000), expected);

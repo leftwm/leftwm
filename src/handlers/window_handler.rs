@@ -1,10 +1,13 @@
 use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
+use crate::child_process::exec_shell;
 use crate::display_action::DisplayAction;
+use crate::layouts::Layout;
 use crate::models::WindowHandle;
+use crate::utils::helpers;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn created(manager: &mut Manager, mut window: Window, x: i32, y: i32) -> bool {
+pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) -> bool {
     //don't add the window if the manager already knows about it
     for w in &manager.windows {
         if w.handle == window.handle {
@@ -21,8 +24,11 @@ pub fn created(manager: &mut Manager, mut window: Window, x: i32, y: i32) -> boo
         .find(|ws| ws.xyhw.contains_point(x, y))
         .or_else(|| manager.focused_workspace()); //backup plan
 
+    //Random value
+    let mut layout: Layout = Layout::MainAndVertStack;
     if let Some(ws) = ws {
         window.tags = ws.tags.clone();
+        layout = ws.layout.clone();
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
             window.set_floating(true);
@@ -66,15 +72,32 @@ pub fn created(manager: &mut Manager, mut window: Window, x: i32, y: i32) -> boo
 
     window.update_for_theme(&manager.theme_setting);
 
-    manager.windows.push(window.clone());
+    //Dirty
+    if (Layout::Monocle == layout || Layout::MainAndDeck == layout)
+        && window.type_ == WindowType::Normal
+    {
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&window.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
+
+        let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+        if Layout::Monocle == layout {
+            to_reorder.insert(0, window.clone());
+        } else {
+            to_reorder.insert(1, window.clone());
+        }
+        manager.windows.append(&mut to_reorder);
+    } else {
+        manager.windows.push(window.clone());
+    }
 
     //let the DS know we are managing this window
-    let act = DisplayAction::AddedWindow(window.handle.clone());
+    let act = DisplayAction::AddedWindow(window.handle);
     manager.actions.push_back(act);
 
     //let the DS know the correct desktop to find this window
     if !window.tags.is_empty() {
-        let act = DisplayAction::SetWindowTags(window.handle.clone(), window.tags[0].clone());
+        let act = DisplayAction::SetWindowTags(window.handle, window.tags[0].clone());
         manager.actions.push_back(act);
     }
 
@@ -84,15 +107,8 @@ pub fn created(manager: &mut Manager, mut window: Window, x: i32, y: i32) -> boo
 
     focus_handler::focus_window(manager, &window.handle);
 
-    if let Some(cmd) = &manager.theme_setting.on_new_window_cmd {
-        use std::process::{Command, Stdio};
-        let _ = Command::new("sh")
-            .arg("-c")
-            .arg(&cmd)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .spawn()
-            .map(|child| manager.children.insert(child));
+    if let Some(cmd) = &manager.theme_setting.on_new_window_cmd.clone() {
+        exec_shell(&cmd, &mut manager);
     }
 
     true
@@ -171,7 +187,7 @@ pub fn update_workspace_avoid_list(manager: &mut Manager) {
     }
 }
 
-pub fn snap_to_workspace(window: &mut Window, workspace: Workspace) -> bool {
+pub fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
     window.debugging = true;
     window.set_floating(false);
 

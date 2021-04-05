@@ -9,6 +9,7 @@ mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
 mod grid_horizontal;
+mod main_and_deck;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
 mod monocle;
@@ -18,6 +19,7 @@ mod right_main_and_vert_stack;
 pub enum Layout {
     MainAndVertStack,
     MainAndHorizontalStack,
+    MainAndDeck,
     GridHorizontal,
     EvenHorizontal,
     EvenVertical,
@@ -29,9 +31,10 @@ pub enum Layout {
     LeftWiderRightStack,
 }
 
-pub const LAYOUTS: [Layout; 11] = [
+pub const LAYOUTS: [Layout; 12] = [
     Layout::MainAndVertStack,
     Layout::MainAndHorizontalStack,
+    Layout::MainAndDeck,
     Layout::GridHorizontal,
     Layout::EvenHorizontal,
     Layout::EvenVertical,
@@ -53,8 +56,11 @@ impl Layout {
     }
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
         match self {
-            Self::MainAndVertStack => main_and_vert_stack::update(workspace, windows),
+            Self::MainAndVertStack | Self::LeftWiderRightStack => {
+                main_and_vert_stack::update(workspace, windows)
+            }
             Self::MainAndHorizontalStack => main_and_horizontal_stack::update(workspace, windows),
+            Self::MainAndDeck => main_and_deck::update(workspace, windows),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),
@@ -63,14 +69,12 @@ impl Layout {
             Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => right_main_and_vert_stack::update(workspace, windows),
-            Self::LeftWiderRightStack => main_and_vert_stack::update(workspace, windows),
         }
     }
 
     pub fn main_width(&self) -> u8 {
         match self {
-            Self::RightWiderLeftStack => 75,
-            Self::LeftWiderRightStack => 75,
+            Self::RightWiderLeftStack | Self::LeftWiderRightStack => 75,
             _ => 50,
         }
     }
@@ -105,6 +109,7 @@ impl FromStr for Layout {
         match s {
             "MainAndVertStack" => Ok(Layout::MainAndVertStack),
             "MainAndHorizontalStack" => Ok(Layout::MainAndHorizontalStack),
+            "MainAndDeck" => Ok(Layout::MainAndDeck),
             "GridHorizontal" => Ok(Layout::GridHorizontal),
             "EvenHorizontal" => Ok(Layout::EvenHorizontal),
             "EvenVertical" => Ok(Layout::EvenVertical),
@@ -155,9 +160,10 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let layout_strs: [&str; 11] = [
+        let layout_strs: [&str; 12] = [
             "MainAndVertStack",
             "MainAndHorizontalStack",
+            "MainAndDeck",
             "GridHorizontal",
             "EvenHorizontal",
             "EvenVertical",
