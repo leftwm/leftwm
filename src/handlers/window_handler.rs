@@ -23,7 +23,8 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
         .iter()
         .find(|ws| ws.xyhw.contains_point(x, y))
         .or_else(|| manager.focused_workspace()); //backup plan
-    //Random value 
+
+    //Random value
     let mut layout: Layout = Layout::MainAndVertStack;
     if let Some(ws) = ws {
         window.tags = ws.tags.clone();
@@ -63,9 +64,11 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     }
 
     window.update_for_theme(&manager.theme_setting);
-    
+
     //Dirty
-    if (Layout::Monocle == layout || Layout::MainAndDeck == layout) && window.type_ == WindowType::Normal {
+    if (Layout::Monocle == layout || Layout::MainAndDeck == layout)
+        && window.type_ == WindowType::Normal
+    {
         let for_active_workspace = |x: &Window| -> bool {
             helpers::intersect(&window.tags, &x.tags) && x.type_ != WindowType::Dock
         };
