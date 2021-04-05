@@ -3,6 +3,7 @@ use crate::child_process::exec_shell;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::WindowHandle;
+use crate::utils::helpers;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
@@ -22,17 +23,11 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
         .iter()
         .find(|ws| ws.xyhw.contains_point(x, y))
         .or_else(|| manager.focused_workspace()); //backup plan
-
+    //Random value 
+    let mut layout: Layout = Layout::MainAndVertStack;
     if let Some(ws) = ws {
         window.tags = ws.tags.clone();
-        window.set_visible(true);
-        let layout = ws.layout.clone();
-        if window.type_ == WindowType::Normal {
-            match layout {
-                Layout::Monocle | Layout::MainAndDeck => window.set_visible(false),
-                _ => (),
-            }
-        }
+        layout = ws.layout.clone();
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
             window.set_floating(true);
@@ -68,11 +63,26 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     }
 
     window.update_for_theme(&manager.theme_setting);
+    
+    //Dirty
+    if (Layout::Monocle == layout || Layout::MainAndDeck == layout) && window.type_ == WindowType::Normal {
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&window.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
 
-    manager.windows.push(window.clone());
+        let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+        if Layout::Monocle == layout {
+            to_reorder.insert(0, window.clone());
+        } else {
+            to_reorder.insert(1, window.clone());
+        }
+        manager.windows.append(&mut to_reorder);
+    } else {
+        manager.windows.push(window.clone());
+    }
 
     //let the DS know we are managing this window
-    let act = DisplayAction::AddedWindow(window.clone());
+    let act = DisplayAction::AddedWindow(window.handle);
     manager.actions.push_back(act);
 
     //let the DS know the correct desktop to find this window

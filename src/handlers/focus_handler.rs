@@ -75,10 +75,6 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
     if found.type_ == WindowType::Dock {
         return None;
     }
-    //If window isn't visible return without focus
-    if !found.visible() {
-        return Some(found.clone());
-    }
     //NOTE: we are intentionally creating the focus event even if we thing this window
     //is already in focus. This is to force the DM to update its knowledge of the focused window
     let act = DisplayAction::WindowTakeFocus(found.clone());
