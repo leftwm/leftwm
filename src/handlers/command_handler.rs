@@ -229,21 +229,18 @@ pub fn process(
                 helpers::cycle_vec(&mut to_reorder, -1);
                 act = DisplayAction::MoveMouseOver(new_handle);
             } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
-                //Don't cycle main window
-                let main = to_reorder.remove(0);
-                //Prevent lockup when trying to move main window
-                if main.handle == handle {
-                    return false;
+                //Only do something if we are not the top window
+                if to_reorder[0].handle != handle {
+                    //Don't cycle main window
+                    let main = to_reorder.remove(0);
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
+                        Some(h) => h.handle,
+                        None => return false,
+                    };
+                    helpers::cycle_vec(&mut to_reorder, -1);
+                    to_reorder.insert(0, main);
+                    act = DisplayAction::MoveMouseOver(new_handle);
                 }
-                let new_handle = match helpers::relative_find(&to_reorder, is_handle, 1) {
-                    Some(h) => h.handle,
-                    None => {
-                        return false;
-                    }
-                };
-                helpers::cycle_vec(&mut to_reorder, -1);
-                to_reorder.insert(0, main);
-                act = DisplayAction::MoveMouseOver(new_handle);
             } else {
                 helpers::reorder_vec(&mut to_reorder, is_handle, -1);
             }
@@ -285,21 +282,18 @@ pub fn process(
                 helpers::cycle_vec(&mut to_reorder, 1);
                 act = DisplayAction::MoveMouseOver(new_handle);
             } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
-                //Don't cycle main window
-                let main = to_reorder.remove(0);
-                //Prevent lockup when trying to move main window
-                if main.handle == handle {
-                    return false;
+                //Only do something if we are not the top window
+                if to_reorder[0].handle != handle {
+                    //Don't cycle main window
+                    let main = to_reorder.remove(0);
+                    let new_handle = match helpers::relative_find(&to_reorder, is_handle, -1) {
+                        Some(h) => h.handle,
+                        None => return false,
+                    };
+                    helpers::cycle_vec(&mut to_reorder, 1);
+                    to_reorder.insert(0, main);
+                    act = DisplayAction::MoveMouseOver(new_handle);
                 }
-                let new_handle = match helpers::relative_find(&to_reorder, is_handle, -1) {
-                    Some(h) => h.handle,
-                    None => {
-                        return false;
-                    }
-                };
-                helpers::cycle_vec(&mut to_reorder, 1);
-                to_reorder.insert(0, main);
-                act = DisplayAction::MoveMouseOver(new_handle);
             } else {
                 helpers::reorder_vec(&mut to_reorder, is_handle, 1);
             }
