@@ -230,7 +230,7 @@ fn floating_to_tile(manager: &mut Manager) -> bool {
     false
 }
 
-fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> bool 
+fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> bool
 where
     F: Fn(&mut Manager, i32, WindowHandle, Option<Layout>, Vec<Window>) -> bool,
 {
@@ -246,10 +246,16 @@ where
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
 
     let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-    return func(manager, val, handle, layout, to_reorder);
+    func(manager, val, handle, layout, to_reorder)
 }
 
-fn move_window_change(manager: &mut Manager, val: i32, handle: WindowHandle, layout: Option<Layout>, mut to_reorder: Vec<Window>) -> bool {
+fn move_window_change(
+    manager: &mut Manager,
+    val: i32,
+    handle: WindowHandle,
+    layout: Option<Layout>,
+    mut to_reorder: Vec<Window>,
+) -> bool {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     let mut act = DisplayAction::MoveMouseOver(handle);
     if let Some(crate::layouts::Layout::Monocle) = layout {
@@ -284,7 +290,13 @@ fn move_window_change(manager: &mut Manager, val: i32, handle: WindowHandle, lay
 }
 
 //val and layout aren't used which is a bit awkward
-fn move_window_top(manager: &mut Manager, _val: i32, handle: WindowHandle, _layout: Option<Layout>, mut to_reorder: Vec<Window>) -> bool {
+fn move_window_top(
+    manager: &mut Manager,
+    _val: i32,
+    handle: WindowHandle,
+    _layout: Option<Layout>,
+    mut to_reorder: Vec<Window>,
+) -> bool {
     // Moves the selected window at index 0 of the window list.
     // If the selected window is already at index 0, it is sent to index 1.
     let is_handle = |x: &Window| -> bool { x.handle == handle };
@@ -313,7 +325,13 @@ fn move_window_top(manager: &mut Manager, _val: i32, handle: WindowHandle, _layo
     true
 }
 
-fn focus_window_change(manager: &mut Manager, val: i32, handle: WindowHandle, layout: Option<Layout>, mut to_reorder: Vec<Window>) -> bool {
+fn focus_window_change(
+    manager: &mut Manager,
+    val: i32,
+    handle: WindowHandle,
+    layout: Option<Layout>,
+    mut to_reorder: Vec<Window>,
+) -> bool {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     if let Some(crate::layouts::Layout::Monocle) = layout {
         let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
