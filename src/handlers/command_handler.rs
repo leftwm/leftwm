@@ -443,25 +443,21 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> bool {
             return false;
         }
     };
-    match manager
+    if manager
         .windows
         .iter()
-        .find(|w| w.type_ == WindowType::Normal)
+        .any(|w| w.type_ == WindowType::Normal)
     {
-        None => {
-            return false;
-        }
-        _ => (),
-    };
-    let for_active_workspace = |x: &Window| -> bool {
-        helpers::intersect(&tags, &x.tags) && x.type_ == WindowType::Normal
-    };
-    let mut to_apply_margin_multiplier =
-        helpers::vec_extract(&mut manager.windows, for_active_workspace);
-    to_apply_margin_multiplier.iter_mut().for_each(|w| {
-        w.apply_margin_multiplier(manager.focused_workspace().unwrap().margin_multiplier())
-    });
-    manager.windows.append(&mut to_apply_margin_multiplier);
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&tags, &x.tags) && x.type_ == WindowType::Normal
+        };
+        let mut to_apply_margin_multiplier =
+            helpers::vec_extract(&mut manager.windows, for_active_workspace);
+        to_apply_margin_multiplier.iter_mut().for_each(|w| {
+            w.apply_margin_multiplier(manager.focused_workspace().unwrap().margin_multiplier())
+        });
+        manager.windows.append(&mut to_apply_margin_multiplier);
+    }
     true
 }
 /// Is the string passed in a valid number
