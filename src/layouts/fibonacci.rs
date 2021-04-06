@@ -13,7 +13,7 @@ use crate::models::Workspace;
 /// |           |     | 5|-.|
 /// +-----------+-----+-----+
 /// ```
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let mut x = workspace.x();
     let mut y = workspace.y();
     let mut height = workspace.height() as i32;

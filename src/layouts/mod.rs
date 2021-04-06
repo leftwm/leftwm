@@ -54,7 +54,7 @@ impl Layout {
         }
         Layout::Fibonacci
     }
-    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
                 main_and_vert_stack::update(workspace, windows)
@@ -149,8 +149,8 @@ mod tests {
         w.border = 0;
         w.margin = Margins::Int(0);
         let mut windows = vec![&mut w];
-        let mut windows_filters = windows.iter_mut().filter(|_f| true).collect();
-        even_horizontal::update(&ws, &mut windows_filters);
+        // let mut windows_filters: Vec<&mut Window> = windows.iter_mut().filter(|_f| true).collect();
+        even_horizontal::update(&ws, &mut windows);
         assert!(
             w.height() == 600,
             "window was not size to the correct height"

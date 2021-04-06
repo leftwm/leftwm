@@ -10,10 +10,10 @@ pub fn update_windows(manager: &mut Manager) {
         .windows
         .iter_mut()
         .for_each(|w| w.set_visible(w.tags.is_empty() || w.is_fullscreen()));
-    let all_windows = &mut manager.windows;
+    let mut all_windows = &mut manager.windows;
     manager.workspaces.iter_mut().for_each(|ws| {
+        ws.update_windows(&mut all_windows);
         let mut windows: Vec<&mut Window> = all_windows.iter_mut().collect();
-        ws.update_windows(&mut windows);
 
         windows
             .iter_mut()

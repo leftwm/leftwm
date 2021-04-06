@@ -124,15 +124,15 @@ impl Workspace {
         self.is_displaying(window) && window.type_ != WindowType::Dock
     }
 
-    pub fn update_windows(&self, windows: &mut Vec<&mut Window>) {
+    pub fn update_windows(&self, windows: &mut Vec<Window>) {
         //mark all windows for this workspace as visible
-        let mut all_mine: Vec<&mut &mut Window> = windows
+        let mut all_mine: Vec<&mut Window> = windows
             .iter_mut()
             .filter(|w| self.is_displaying(w))
             .collect();
         all_mine.iter_mut().for_each(|w| w.set_visible(true));
         //update the location of all non-floating windows
-        let mut managed_nonfloat: Vec<&mut &mut Window> = windows
+        let mut managed_nonfloat: Vec<&mut Window> = windows
             .iter_mut()
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
