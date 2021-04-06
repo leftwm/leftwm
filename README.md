@@ -34,11 +34,11 @@
 
 # Why go left
 
-Left is a tiling window manager written in [Rust](https://github.com/rust-lang/rust) that aims to be stable and performant. Left is [designed to do one thing and to do that one thing well](https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well): _be a window manager_. Left therefore follows the following mantra:
+LeftWM is a tiling window manager written in [Rust](https://github.com/rust-lang/rust) that aims to be stable and performant. LeftWM is [designed to do one thing and to do that one thing well](https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well): _be a window manager_. LeftWM therefore follows the following mantra:
 
-> Left is not a compositor.  
-> Left is not a lock screen.  
-> Left is not a bar. But, there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
+> LeftWM is not a compositor.  
+> LeftWM is not a lock screen.  
+> LeftWM is not a bar. But, there are lots of good bars out there. With themes, picking one is as simple as setting a symlink.
 
 Because you probably want more than just a black screen, LeftWM is built around the concept of themes. With themes, you can choose between different bars, compositors, backgrounds, colors, docks, and whatever else makes you happy.
 
@@ -229,6 +229,8 @@ The settings file to change key bindings and the default mod key can be found at
 ~/.config/leftwm/config.toml
 ```
 
+the file is automatically generated when leftwm or leftwm-check is run for the first time. 
+
 ## Default keys
 
 | Keybinding          | Description                                                            |
@@ -248,6 +250,19 @@ The settings file to change key bindings and the default mod key can be found at
 | Mod + Shift + Q     | Close the current window                                               |
 | Mod + Shift + R     | Reload LeftWM and its config                                           |
 | Mod + p             | Use dmenu to start application                                         |
+
+**Note:** Although we encourage you to use [Alacritty](https://github.com/alacritty/alacritty), LeftWM will set your default terminal to the first terminal it finds in this list (in the order presented):
+1. Alacritty
+2. Termite
+3. URXVT
+4. RXVT
+5. ST
+6. ROXTerm
+7. Eterm
+8. Terminator
+9. Terminology
+10. Gnome Terminal
+ 
 
 ## Floating Windows
 

@@ -232,7 +232,7 @@ fn floating_to_tile(manager: &mut Manager) -> bool {
 
 fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> bool
 where
-    F: Fn(&mut Manager, i32, WindowHandle, Option<Layout>, Vec<Window>) -> bool,
+    F: Fn(&mut Manager, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> bool,
 {
     let handle = match manager.focused_window() {
         Some(h) => h.handle,
@@ -246,14 +246,14 @@ where
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
 
     let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-    func(manager, val, handle, layout, to_reorder)
+    func(manager, val, handle, &layout, to_reorder)
 }
 
 fn move_window_change(
     manager: &mut Manager,
     val: i32,
     handle: WindowHandle,
-    layout: Option<Layout>,
+    layout: &Option<Layout>,
     mut to_reorder: Vec<Window>,
 ) -> bool {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
@@ -294,7 +294,7 @@ fn move_window_top(
     manager: &mut Manager,
     _val: i32,
     handle: WindowHandle,
-    _layout: Option<Layout>,
+    _layout: &Option<Layout>,
     mut to_reorder: Vec<Window>,
 ) -> bool {
     // Moves the selected window at index 0 of the window list.
@@ -329,7 +329,7 @@ fn focus_window_change(
     manager: &mut Manager,
     val: i32,
     handle: WindowHandle,
-    layout: Option<Layout>,
+    layout: &Option<Layout>,
     mut to_reorder: Vec<Window>,
 ) -> bool {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
