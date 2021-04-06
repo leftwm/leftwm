@@ -56,7 +56,7 @@ use crate::models::Workspace;
 /// |     |           |  5  |
 /// +-----+-----------+-----+
 /// ```
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len();
 
     if window_count == 0 {

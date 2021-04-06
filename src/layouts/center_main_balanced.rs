@@ -150,7 +150,7 @@ use crate::models::Workspace;
 /// |      |  8|10|             |      |  9   |
 /// +------+---+--+-------------+------+------+
 /// ```
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len();
 
     if window_count == 0 {
@@ -224,7 +224,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
 }
 
 fn update_fibonacci(
-    mut windows: Vec<&mut &mut &mut Window>,
+    mut windows: Vec<&mut &mut Window>,
     workspace_x: i32,
     workspace_y: i32,
     workspace_height: i32,
