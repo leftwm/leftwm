@@ -4,9 +4,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased 0.2.6]
+## [Unreleased 0.2.8]
 ### Fixed
 ### Added
+
+## [0.2.7] - 2021-4-6
+### Fixed
+- `SwapTags` now works properly for multi-workspace users
+- Xlib events now read asynchronously
+- Weird focus issues
+- Some floating windows are now sized properly
+- Floating windows are now always on top
+- Basic-polybar theme now reports seconds correctly
+- Startup banners no longer take up the whole screen
+- Bug Fixes in tests
+- Window order is now restored on reload
+- Several code refactors
+### Added
+#### Layouts
+- MainAndHorizontalStack layout
+- CenterMainBalanced layout
+- Monocle layout
+- RightWiderLeftStack layout
+- LeftWiderRightStack layout
+- MainAndDeck layout
+#### Configuration
+- Active layouts may now be set in config.toml with `layouts`
+- GotoTag sends screen to previously viewed tag 
+	- Added `disable_current_tag_swap` to config.toml to maintain old behaviour
+- Mousekey for floating drag/resize can now be set with `mousekey` in config.toml
+- FloatingToTile command that allows a window to be set to float in config.toml
+- Theme Margins [top/bottom side] or [top right bottom left] added for theme.toml
+#### Miscellaneous
+- Added `leftwm-check` binary that allows for configuration files (config.toml, theme.toml) to be checked.
+- Autostart applications can now be disabled by setting X-Gnome-Autostart to false in the appropriate .desktop file
+- SetLayout command added to set specific layouts externally
+- Lots of notes have been added to the library documentation
 
 ## [0.2.6] - 2021-1-29
 ### Fixed
