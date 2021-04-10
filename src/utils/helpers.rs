@@ -21,6 +21,7 @@ where
     let len = list.len();
     let mut removed = vec![];
     let mut del = 0;
+    {
         let v = &mut **list;
 
         for i in 0..len {
@@ -37,6 +38,7 @@ where
                 // }
             }
         }
+    }
     list.truncate(len - del);
     removed
 }
