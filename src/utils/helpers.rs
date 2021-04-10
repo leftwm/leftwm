@@ -18,13 +18,26 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
+    let len = list.len();
     let mut removed = vec![];
-    for x in list.iter() {
-        if test(x) {
-            removed.push(x.clone())
+    let mut del = 0;
+        let v = &mut **list;
+
+        for i in 0..len {
+            if test(&v[i]) {
+                removed.push(v[i].clone());
+                del += 1;
+            } else if del > 0 {
+                v.swap(i - del, i);
+                //This is faster but crashes
+                // let src: *const T = &v[i];
+                // let dst: *mut T = &mut v[i - del];
+                // unsafe {
+                //     ptr::copy_nonoverlapping(src, dst, 1);
+                // }
+            }
         }
-    }
-    list.retain(|x| !test(x));
+    list.truncate(len - del);
     removed
 }
 
