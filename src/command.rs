@@ -26,4 +26,5 @@ pub enum Command {
     SetLayout,
     IncreaseMainWidth,
     DecreaseMainWidth,
+    SetMarginMultiplier,
 }

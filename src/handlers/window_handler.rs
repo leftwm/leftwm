@@ -53,6 +53,15 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     } else {
         window.tags = vec![manager.tags[0].id.clone()]
     }
+    // if there is a window with an applied margin multiplier present use this multiplier
+    // in any other case use default margins (multiplier '1.0')
+    if window.type_ == WindowType::Normal {
+        let margin_multiplier = match manager.focused_window() {
+            Some(w) => w.margin_multiplier(),
+            _ => 1.0,
+        };
+        window.apply_margin_multiplier(margin_multiplier);
+    }
 
     if let Some(trans) = &window.transient {
         if let Some(parent) = find_parent_window(manager, &trans) {

@@ -55,6 +55,7 @@ fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
     for workspace in &mut manager.workspaces {
         if let Some(old_workspace) = old_manager.workspaces.iter().find(|w| w.id == workspace.id) {
             workspace.layout = old_workspace.layout.clone();
+            workspace.margin_multiplier = old_workspace.margin_multiplier;
         }
     }
 }
@@ -72,6 +73,7 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
         {
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
+            window.apply_margin_multiplier(old.margin_multiplier);
             window.normal = old.normal;
             window.tags = old.tags.clone();
             ordered.push(window.clone());

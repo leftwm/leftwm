@@ -16,6 +16,7 @@ pub struct Workspace {
     /// Active layout
     pub layout: Layout,
     pub tags: Vec<TagId>,
+    pub margin_multiplier: f32,
     #[serde(skip)]
     all_tags: Vec<Tag>,
     layouts: Vec<Layout>,
@@ -50,6 +51,7 @@ impl Workspace {
             id: -1,
             layout: Layout::new(&layouts),
             tags: vec![],
+            margin_multiplier: 1.0,
             avoid: vec![],
             all_tags,
             layouts,
@@ -137,9 +139,9 @@ impl Workspace {
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
         self.layout.update_windows(self, &mut managed_nonfloat);
-        managed_nonfloat
-            .iter_mut()
-            .for_each(|w| w.container_size = Some(self.xyhw));
+        managed_nonfloat.iter_mut().for_each(|w| {
+            w.container_size = Some(self.xyhw);
+        });
         //update the location of all floating windows
         windows
             .iter_mut()
@@ -211,6 +213,16 @@ impl Workspace {
             xyhw = xyhw.without(a);
         }
         self.xyhw_avoided = xyhw;
+    }
+
+    /// Set the tag model's margin multiplier.
+    pub fn set_margin_multiplier(&mut self, margin_multiplier: f32) {
+        self.margin_multiplier = margin_multiplier;
+    }
+
+    /// Get a reference to the tag model's margin multiplier.
+    pub fn margin_multiplier(&self) -> f32 {
+        self.margin_multiplier
     }
 }
 

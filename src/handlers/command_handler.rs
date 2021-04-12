@@ -72,16 +72,27 @@ pub fn process(
         Command::IncreaseMainWidth => increase_main_width(manager, &val),
         Command::DecreaseMainWidth if val.is_none() => false,
         Command::DecreaseMainWidth => decrease_main_width(manager, &val),
+        Command::SetMarginMultiplier if val.is_none() => false,
+        Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
     }
 }
 
 fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> bool {
     let tag_num = to_num(val);
     let tag = manager.tags[tag_num - 1].clone();
+
+    // In order to apply the correct margin multiplier we want to copy this value
+    // from any window already present on the target tag
+    let margin_multiplier = match manager.windows.iter().filter(|w| w.has_tag(&tag.id)).last() {
+        Some(w) => w.margin_multiplier(),
+        _ => 1.0,
+    };
+
     if let Some(window) = manager.focused_window_mut() {
         window.clear_tags();
         window.set_floating(false);
         window.tag(&tag.id);
+        window.apply_margin_multiplier(margin_multiplier);
         let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
         manager.actions.push_back(act);
         manager.sort_windows();
@@ -418,6 +429,37 @@ fn decrease_main_width(manager: &mut Manager, val: &Option<String>) -> bool {
     true
 }
 
+fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> bool {
+    let margin_multiplier: f32 = (val.as_ref().as_ref().unwrap()).parse().unwrap();
+    match manager.focused_workspace_mut() {
+        Some(ws) => ws.set_margin_multiplier(margin_multiplier),
+        _ => {
+            return false;
+        }
+    };
+    let tags = match manager.focused_workspace() {
+        Some(ws) => ws.tags.clone(),
+        _ => {
+            return false;
+        }
+    };
+    if manager
+        .windows
+        .iter()
+        .any(|w| w.type_ == WindowType::Normal)
+    {
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&tags, &x.tags) && x.type_ == WindowType::Normal
+        };
+        let mut to_apply_margin_multiplier =
+            helpers::vec_extract(&mut manager.windows, for_active_workspace);
+        to_apply_margin_multiplier.iter_mut().for_each(|w| {
+            w.apply_margin_multiplier(manager.focused_workspace().unwrap().margin_multiplier())
+        });
+        manager.windows.append(&mut to_apply_margin_multiplier);
+    }
+    true
+}
 /// Is the string passed in a valid number
 fn is_num(val: &Option<String>) -> bool {
     match val {
