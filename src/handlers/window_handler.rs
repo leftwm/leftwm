@@ -58,7 +58,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     if window.type_ == WindowType::Normal {
         let margin_multiplier = match manager.focused_window() {
             Some(w) => w.margin_multiplier(),
-            _ => 1.0,
+            None => 1.0,
         };
         window.apply_margin_multiplier(margin_multiplier);
     }

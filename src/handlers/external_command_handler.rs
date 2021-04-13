@@ -121,8 +121,7 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
             return command_handler::process(manager, config, &Command::CloseWindow, None);
         }
 
-        ExternalCommand::Reload => {}
-        ExternalCommand::MoveWindowTop => {}
+        ExternalCommand::Reload | ExternalCommand::MoveWindowTop => {}
     }
 
     false
