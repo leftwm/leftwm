@@ -280,17 +280,17 @@ fn move_window_change(
         helpers::cycle_vec(&mut to_reorder, val);
         act = DisplayAction::MoveMouseOver(new_handle);
     } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
-        //Only do something if we are not the top window
-        if to_reorder[0].handle != handle {
-            //Don't cycle main window
+        if to_reorder.len() > 1 {
             let main = to_reorder.remove(0);
-            let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
-                Some(h) => h.handle,
-                None => return false,
-            };
+            if main.handle != handle {
+                let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
+                    Some(h) => h.handle,
+                    None => return false,
+                };
+                act = DisplayAction::MoveMouseOver(new_handle);
+            }
             helpers::cycle_vec(&mut to_reorder, val);
             to_reorder.insert(0, main);
-            act = DisplayAction::MoveMouseOver(new_handle);
         }
     } else {
         helpers::reorder_vec(&mut to_reorder, is_handle, val);
