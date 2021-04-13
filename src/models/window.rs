@@ -181,6 +181,7 @@ impl Window {
         };
     }
 
+    #[must_use]
     pub fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
     }

@@ -1,6 +1,16 @@
-#[cfg_attr(
-    feature = "clippy",
-    allow(clippy::cast_ptr_alignment, clippy::cast_lossless)
+//! Various leftwm features.
+// We deny clippy pedantic lints, primarily to keep code as correct as possible
+// Remember, the goal of LeftWM is to do one thing and to do that one thing
+// well: Be a window manager.
+#![warn(clippy::pedantic)]
+// Each of these lints are globally allowed because they otherwise make a lot
+// of noise. However, work to ensure that each use of one of these is correct
+// would be very much appreciated.
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss
 )]
 mod command;
 mod command_builder;
