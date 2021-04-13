@@ -1,4 +1,6 @@
 //! Generic intersection, finding, reordering, and Vec extraction
+use std::cmp::Ordering;
+
 pub fn intersect<T>(v1: &[T], v2: &[T]) -> bool
 where
     T: PartialEq,
