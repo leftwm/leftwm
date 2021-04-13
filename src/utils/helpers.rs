@@ -33,7 +33,7 @@ where
     T: Clone,
 {
     if shift == 0 {
-        return
+        return;
     }
     let v = &mut **list;
     let change = shift.abs() as usize;
