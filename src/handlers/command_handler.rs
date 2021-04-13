@@ -85,7 +85,7 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> bool {
     // from any window already present on the target tag
     let margin_multiplier = match manager.windows.iter().filter(|w| w.has_tag(&tag.id)).last() {
         Some(w) => w.margin_multiplier(),
-        _ => 1.0,
+        None => 1.0,
     };
 
     if let Some(window) = manager.focused_window_mut() {
@@ -433,13 +433,13 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> bool {
     let margin_multiplier: f32 = (val.as_ref().as_ref().unwrap()).parse().unwrap();
     match manager.focused_workspace_mut() {
         Some(ws) => ws.set_margin_multiplier(margin_multiplier),
-        _ => {
+        None => {
             return false;
         }
     };
     let tags = match manager.focused_workspace() {
         Some(ws) => ws.tags.clone(),
-        _ => {
+        None => {
             return false;
         }
     };
