@@ -32,17 +32,15 @@ pub fn cycle_vec<T>(list: &mut Vec<T>, shift: i32)
 where
     T: Clone,
 {
-    let temp_list = list.clone();
-    let len = list.len() as i32;
-    for (index, item) in temp_list.iter().enumerate() {
-        let mut new_index = index as i32 + shift;
-        if new_index < 0 {
-            new_index += len;
-        }
-        if new_index >= len {
-            new_index -= len;
-        }
-        list[new_index as usize] = item.clone();
+    if shift == 0 {
+        return
+    }
+    let v = &mut **list;
+    let change = shift.abs() as usize;
+    if shift > 0 {
+        v.rotate_right(change);
+    } else if shift < 0 {
+        v.rotate_left(change);
     }
 }
 
