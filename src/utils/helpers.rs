@@ -32,15 +32,12 @@ pub fn cycle_vec<T>(list: &mut Vec<T>, shift: i32)
 where
     T: Clone,
 {
-    if shift == 0 {
-        return;
-    }
     let v = &mut **list;
     let change = shift.abs() as usize;
-    if shift > 0 {
-        v.rotate_right(change);
-    } else if shift < 0 {
-        v.rotate_left(change);
+    match shift.cmp(&0) {
+        Ordering::Less => v.rotate_left(change),
+        Ordering::Greater => v.rotate_right(change),
+        Ordering::Equal => return,
     }
 }
 
