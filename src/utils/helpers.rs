@@ -39,7 +39,7 @@ where
     match shift.cmp(&0) {
         Ordering::Less => v.rotate_left(change),
         Ordering::Greater => v.rotate_right(change),
-        Ordering::Equal => return,
+        Ordering::Equal => {},
     }
 }
 
