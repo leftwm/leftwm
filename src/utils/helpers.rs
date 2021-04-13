@@ -60,37 +60,17 @@ where
         }
     };
     let mut new_index = index as i32 + shift;
-    //Manually handle edge cases to allow more consistent behaviour
+    list.remove(index);
+    let v = &mut **list;
+
     if new_index < 0 {
         new_index += len;
-        manual_reorder(list, len, index as i32, item, new_index, -1);
+        v.rotate_right(1);
     } else if new_index >= len {
         new_index -= len;
-        manual_reorder(list, len, index as i32, item, new_index, 1);
-    } else {
-        list.remove(index);
-        list.insert(new_index as usize, item);
+        v.rotate_left(1);
     }
-}
-
-fn manual_reorder<T>(list: &mut Vec<T>, len: i32, index: i32, item: T, new_index: i32, val: i32)
-where
-    T: Clone,
-{
-    let mut i = index + val;
-    let mut i_alt = index;
-    while i != new_index + val {
-        if i < 0 {
-            i += len;
-        }
-        if i >= len {
-            i -= len;
-        }
-        list[i_alt as usize] = list[i as usize].clone();
-        i_alt = i;
-        i += val;
-    }
-    list[new_index as usize] = item;
+    list.insert(new_index as usize, item);
 }
 
 pub fn relative_find<T, F>(list: &[T], test: F, shift: i32) -> Option<&T>
