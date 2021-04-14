@@ -89,6 +89,9 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
             to_reorder.insert(1, window.clone());
         }
         manager.windows.append(&mut to_reorder);
+    } else if window.type_ == WindowType::Dialog || window.type_ == WindowType::Splash {
+        //Slow
+        manager.windows.insert(0, window.clone());
     } else {
         manager.windows.push(window.clone());
     }
