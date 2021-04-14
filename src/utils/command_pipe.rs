@@ -73,7 +73,7 @@ async fn read_from_pipe(
 }
 
 fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
-    match s.split(" ").collect::<Vec<&str>>()[0] {
+    match *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"") {
         "UnloadTheme" => Ok(ExternalCommand::UnloadTheme),
         "Reload" => Ok(ExternalCommand::Reload),
         "SwapScreens" => Ok(ExternalCommand::SwapScreens),
