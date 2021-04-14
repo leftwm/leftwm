@@ -8,7 +8,7 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
         .last()
     {
         Some(w) => w.margin_multiplier(),
-        _ => 1.0,
+        None => 1.0,
     };
     match manager.windows.iter_mut().find(|w| w.handle == *handle) {
         Some(w) => {
