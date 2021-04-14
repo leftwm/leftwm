@@ -1,3 +1,4 @@
+//! Creates a pipe to listen for external commands.
 use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -5,6 +6,7 @@ use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
 
+/// Holds pipe file location and a receiver.
 #[derive(Debug)]
 pub struct CommandPipe {
     pipe_file: PathBuf,
@@ -13,11 +15,11 @@ pub struct CommandPipe {
 
 impl Drop for CommandPipe {
     fn drop(&mut self) {
+        use std::os::unix::fs::OpenOptionsExt;
         self.rx.close();
 
         // Open fifo for write to unblock pending open for read operation that prevents tokio runtime
         // from shutting down.
-        use std::os::unix::fs::OpenOptionsExt;
         std::fs::OpenOptions::new()
             .write(true)
             .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
@@ -28,6 +30,10 @@ impl Drop for CommandPipe {
 
 impl CommandPipe {
     /// Create and listen to the named pipe.
+    /// # Errors
+    ///
+    /// Will error if unable to `mkfifo`, likely a filesystem issue
+    /// such as inadequate permissions.
     pub async fn new(pipe_file: PathBuf) -> Result<Self> {
         fs::remove_file(pipe_file.as_path()).await.ok();
         if let Err(e) = nix::unistd::mkfifo(&pipe_file, nix::sys::stat::Mode::S_IRWXU) {
@@ -79,10 +85,14 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
         return build_send_window_to_tag(s);
     } else if s.starts_with("SetLayout ") {
         return build_set_layout(s);
+    } else if s.starts_with("SetMarginMultiplier ") {
+        return build_set_margin_multiplier(s);
     } else if s.starts_with("SwapScreens") {
         return Ok(ExternalCommand::SwapScreens);
     } else if s.starts_with("MoveWindowToLastWorkspace") {
         return Ok(ExternalCommand::MoveWindowToLastWorkspace);
+    } else if s.starts_with("FloatingToTile") {
+        return Ok(ExternalCommand::FloatingToTile);
     } else if s.starts_with("MoveWindowUp") {
         return Ok(ExternalCommand::MoveWindowUp);
     } else if s.starts_with("MoveWindowDown") {
@@ -168,6 +178,16 @@ fn build_set_layout(mut raw: String) -> std::result::Result<ExternalCommand, ()>
     Ok(ExternalCommand::SetLayout(layout))
 }
 
+fn build_set_margin_multiplier(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
+    crop_head(&mut raw, "SetMarginMultiplier ");
+    let parts: Vec<&str> = raw.split(' ').collect();
+    if parts.len() != 1 {
+        return Err(());
+    }
+    let margin_multiplier = String::from_str(parts[0]).map_err(|_| ())?;
+    Ok(ExternalCommand::SetMarginMultiplier(margin_multiplier))
+}
+
 fn crop_head(s: &mut String, head: &str) {
     let pos = head.len();
     match s.char_indices().nth(pos) {
@@ -189,6 +209,7 @@ pub enum ExternalCommand {
     SendWindowToTag(usize),
     SwapScreens,
     MoveWindowToLastWorkspace,
+    FloatingToTile,
     MoveWindowUp,
     MoveWindowDown,
     MoveWindowTop,
@@ -202,6 +223,7 @@ pub enum ExternalCommand {
     NextLayout,
     PreviousLayout,
     SetLayout(String),
+    SetMarginMultiplier(String),
 }
 
 #[cfg(test)]

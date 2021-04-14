@@ -1,5 +1,5 @@
 use crate::errors::Result;
-use crate::models::dto::*;
+use crate::models::dto::ManagerState;
 use crate::models::Manager;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -31,6 +31,11 @@ impl Drop for StateSocket {
 
 impl StateSocket {
     /// Bind to Unix socket and listen.
+    /// # Errors
+    ///
+    /// Will error if `build_listener()` cannot be unwrapped or awaited.
+    /// As in `build_listener()`, this is likely a filesystem issue,
+    /// such as incorrect permissions or a non-existant file.
     pub async fn listen(&mut self, socket_file: PathBuf) -> Result<()> {
         self.socket_file = socket_file;
         let listener = self.build_listener().await?;
@@ -47,6 +52,13 @@ impl StateSocket {
         }
     }
 
+    /// # Panics
+    ///
+    /// Will panic if peer cannot be unwrapped as mutable.
+    /// # Errors
+    ///
+    /// Will return error if state cannot be stringified
+    // TODO: Verify `unwrap` is unreachable
     pub async fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
         if self.listener.is_some() {
             let state: ManagerState = manager.into();
@@ -54,8 +66,8 @@ impl StateSocket {
             json.push('\n');
             let mut state = self.state.lock().await;
             if json != state.last_state {
-                state.peers.retain(|peer| peer.is_some());
-                for peer in state.peers.iter_mut() {
+                state.peers.retain(std::option::Option::is_some);
+                for peer in &mut state.peers {
                     if peer
                         .as_mut()
                         .unwrap()
@@ -74,12 +86,11 @@ impl StateSocket {
 
     async fn build_listener(&self) -> Result<tokio::task::JoinHandle<()>> {
         let state = self.state.clone();
-        let listener = match UnixListener::bind(&self.socket_file) {
-            Ok(m) => m,
-            Err(_) => {
-                fs::remove_file(&self.socket_file).await?;
-                UnixListener::bind(&self.socket_file)?
-            }
+        let listener = if let Ok(m) = UnixListener::bind(&self.socket_file) {
+            m
+        } else {
+            fs::remove_file(&self.socket_file).await?;
+            UnixListener::bind(&self.socket_file)?
         };
         Ok(tokio::spawn(async move {
             loop {
@@ -162,7 +173,7 @@ mod test {
         );
 
         // Fake state update.
-        state_socket.state.lock().await.last_state = Default::default();
+        state_socket.state.lock().await.last_state = String::default();
         state_socket.write_manager_state(&manager).await.unwrap();
 
         assert_eq!(

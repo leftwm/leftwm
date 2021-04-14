@@ -33,12 +33,25 @@ pub struct Config {
     pub keybind: Vec<Keybind>,
 }
 
+#[must_use]
 pub fn load() -> Config {
     load_from_file()
         .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))
         .unwrap_or_default()
 }
 
+/// # Panics
+///
+/// Function can only panic if toml cannot be serialized. This should not occur as it is defined
+/// globally.
+///
+/// # Errors
+///
+/// Function will throw an error if `BaseDirectories` doesn't exist, if user doesn't have
+/// permissions to place config.toml, if config.toml cannot be read (access writes, malformed file,
+/// etc.).
+/// Function can also error from inability to save config.toml (if it is the first time running
+/// `LeftWM`).
 fn load_from_file() -> Result<Config> {
     let path = BaseDirectories::with_prefix("leftwm")?;
     let config_filename = path.place_config_file("config.toml")?;
@@ -92,6 +105,7 @@ fn default_terminal<'s>() -> &'s str {
 
 impl Config {
     /// Returns a collection of bindings with the mod key mapped.
+    #[must_use]
     pub fn mapped_bindings(&self) -> Vec<Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
@@ -108,6 +122,11 @@ impl Config {
             .collect()
     }
 
+    /// # Panics
+    ///
+    /// Will panic if the default tags cannot be unwrapped. Not likely to occur, as this is defined
+    /// behaviour.
+    #[must_use]
     pub fn get_list_of_tags(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();
@@ -117,7 +136,12 @@ impl Config {
 }
 
 impl Default for Config {
+    // We allow this because this function would be difficult to reduce. If someone would like to
+    // move the commands builder out, perhaps make a macro, this function could be reduced in size
+    // considerably.
+    #[allow(clippy::too_many_lines)]
     fn default() -> Self {
+        const WORKSPACES_NUM: usize = 10;
         let mut commands = vec![
             // Mod + p => Open dmenu
             Keybind {
@@ -231,8 +255,6 @@ impl Default for Config {
             },
         ];
 
-        const WORKSPACES_NUM: usize = 10;
-
         // add "goto workspace"
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
@@ -255,7 +277,7 @@ impl Default for Config {
 
         let tags = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"]
             .iter()
-            .map(|s| s.to_string())
+            .map(|s| (*s).to_string())
             .collect();
 
         Config {

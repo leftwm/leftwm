@@ -31,35 +31,6 @@ async fn main() -> Result<()> {
     let config_file = matches.value_of("INPUT");
     let verbose = matches.occurrences_of("verbose") >= 1;
 
-    //    dbg!(config_file);
-    //    use leftwm::config::*;
-
-    pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
-        let config_filename = match fspath {
-            Some(fspath) => {
-                println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
-                PathBuf::from(fspath)
-            }
-
-            None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
-        };
-        if verbose {
-            dbg!(&config_filename);
-        }
-        if Path::new(&config_filename).exists() {
-            let contents = fs::read_to_string(config_filename)?;
-            if verbose {
-                dbg!(&contents);
-            }
-            Ok(toml::from_str(&contents)?)
-        } else {
-            Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Configuration not found in path",
-            )))
-        }
-    }
-
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
         Ok(config) => {
@@ -80,6 +51,42 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+/// Loads configuration from either specified file (preferred) or default.
+/// # Errors
+///
+/// Errors if file cannot be read. Indicates filesystem error
+/// (inadequate permissions, disk full, etc.)
+/// If a path is specified and does not exist, returns `LeftError`.
+pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
+    let config_filename = match fspath {
+        Some(fspath) => {
+            println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
+            PathBuf::from(fspath)
+        }
+
+        None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
+    };
+    if verbose {
+        dbg!(&config_filename);
+    }
+    if Path::new(&config_filename).exists() {
+        let contents = fs::read_to_string(config_filename)?;
+        if verbose {
+            dbg!(&contents);
+        }
+        Ok(toml::from_str(&contents)?)
+    } else {
+        Err(leftwm::errors::LeftError::from(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Configuration not found in path",
+        )))
+    }
+}
+
+/// Check all keybinds to ensure that required values are provided
+/// Checks to see if value is provided (if required)
+/// Checks to see if keys are valid against Xkeysym
+/// Ideally, we will pass this to the command handler with a dummy config
 fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
     let mut returns = Vec::new();
     let value_required_commands = vec![
@@ -89,6 +96,7 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
         Command::IncreaseMainWidth,
         Command::DecreaseMainWidth,
         Command::SetLayout,
+        Command::SetMarginMultiplier,
     ];
     println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
     for keybind in keybinds {

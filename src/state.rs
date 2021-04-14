@@ -11,6 +11,12 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 
 /// Write current state to a file.
 /// It will be used to restore the state after soft reload.
+/// # Errors
+///
+/// Will return error if unable to create `state_file` or
+/// if unable to serialize the text.
+/// May be caused by inadequate permissions, not enough
+/// space on drive, or other typical filesystem issues.
 pub fn save(manager: &Manager) -> Result<()> {
     let state_file = File::create(STATE_FILE)?;
     serde_json::to_writer(state_file, &manager)?;
@@ -49,22 +55,31 @@ fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
     for workspace in &mut manager.workspaces {
         if let Some(old_workspace) = old_manager.workspaces.iter().find(|w| w.id == workspace.id) {
             workspace.layout = old_workspace.layout.clone();
+            workspace.margin_multiplier = old_workspace.margin_multiplier;
         }
     }
 }
 
 /// Copy windows state.
 fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
-    for window in &mut manager.windows {
-        if let Some(old) = old_manager
+    let mut ordered = vec![];
+
+    old_manager.windows.iter().for_each(|old| {
+        if let Some((index, window)) = manager
             .windows
-            .iter()
-            .find(|w| w.handle == window.handle)
+            .iter_mut()
+            .enumerate()
+            .find(|w| w.1.handle == old.handle)
         {
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
+            window.apply_margin_multiplier(old.margin_multiplier);
             window.normal = old.normal;
             window.tags = old.tags.clone();
+            ordered.push(window.clone());
+            manager.windows.remove(index);
         }
-    }
+    });
+    // manager.windows.clear();
+    manager.windows.append(&mut ordered);
 }

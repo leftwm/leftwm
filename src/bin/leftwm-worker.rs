@@ -1,7 +1,10 @@
 use leftwm::child_process::{self, Nanny};
 
 use crate::models::TagModel;
-use leftwm::*;
+use leftwm::{
+    config, external_command_handler, models, CommandPipe, DisplayEvent, DisplayEventHandler,
+    DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
+};
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
@@ -30,7 +33,7 @@ fn main() {
                 .map(|s| TagModel::new(s))
                 .collect(),
             layouts: config.layouts.clone(),
-            ..Default::default()
+            ..Manager::default()
         };
 
         child_process::register_child_hook(manager.reap_requested.clone());
@@ -61,6 +64,11 @@ where
     xdg::BaseDirectories::with_prefix("leftwm")?.place_runtime_file(path)
 }
 
+async fn timeout(mills: u64) {
+    use tokio::time::{sleep, Duration};
+    sleep(Duration::from_millis(mills)).await;
+}
+
 async fn event_loop(
     manager: &mut Manager,
     display_server: &mut XlibDisplayServer,
@@ -80,7 +88,7 @@ async fn event_loop(
     //main event loop
     let mut event_buffer = vec![];
     loop {
-        if manager.mode == Mode::NormalMode {
+        if manager.mode == Mode::Normal {
             state_socket.write_manager_state(manager).await.ok();
         }
         display_server.flush();
@@ -89,6 +97,13 @@ async fn event_loop(
         tokio::select! {
             _ = display_server.wait_readable(), if event_buffer.is_empty() => {
                 event_buffer.append(&mut get_events(display_server));
+                continue;
+            }
+            //Once in a blue moon we miss the focus event,
+            //This is to double check that we know which window is currently focused
+            _ = timeout(100), if event_buffer.is_empty() => {
+                let mut focus_event = display_server.verify_focused_window();
+                event_buffer.append(&mut focus_event);
                 continue;
             }
             Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
@@ -103,7 +118,7 @@ async fn event_loop(
         //if we need to update the displayed state
         if needs_update {
             match &manager.mode {
-                Mode::NormalMode => {
+                Mode::Normal => {
                     let windows: Vec<&Window> = manager.windows.iter().collect();
                     let focused = manager.focused_window();
                     display_server.update_windows(windows, focused);
@@ -157,35 +172,37 @@ async fn event_loop(
 
 // Very basic logging used when developing.
 // outputs to /tmp/leftwm/leftwm-XXXXXXXXXXXX.log
-//fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
-//    use chrono::Local;
-//    use std::fs;
-//    use std::fs::OpenOptions;
-//    let date = Local::now();
-//    let path = "/tmp/leftwm";
-//    let _ = fs::create_dir_all(path);
-//    let log_path = format!("{}/leftwm-{}.log", path, date.format("%Y%m%d%H%M"));
-//    let file = OpenOptions::new()
-//        .create(true)
-//        .write(true)
-//        .truncate(true)
-//        .open(log_path)
-//        .unwrap();
-//    let decorator = slog_term::PlainDecorator::new(file);
-//    let drain = slog_term::FullFormat::new(decorator).build().fuse();
-//    let drain = slog_async::Async::new(drain).build().fuse();
-//    let envlogger = slog_envlogger::LogBuilder::new(drain)
-//        .parse(&std::env::var("RUST_LOG").unwrap_or_else(|_| "trace".into()))
-//        .build()
-//        .ignore_res();
-//    let logger = slog::Logger::root(slog_async::Async::default(envlogger).ignore_res(), o!());
-//    slog_stdlog::init().unwrap_or_else(|err| {
-//        eprintln!("failed to setup logging: {}", err);
-//    });
-//    slog_scope::set_global_logger(logger)
-//}
+#[allow(dead_code)]
+fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
+    use chrono::Local;
+    use std::fs;
+    use std::fs::OpenOptions;
+    let date = Local::now();
+    let path = "/tmp/leftwm";
+    let _droppable = fs::create_dir_all(path);
+    let log_path = format!("{}/leftwm-{}.log", path, date.format("%Y%m%d%H%M"));
+    let file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(log_path)
+        .unwrap();
+    let decorator = slog_term::PlainDecorator::new(file);
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
+    let envlogger = slog_envlogger::LogBuilder::new(drain)
+        .parse(&std::env::var("RUST_LOG").unwrap_or_else(|_| "trace".into()))
+        .build()
+        .ignore_res();
+    let logger = slog::Logger::root(slog_async::Async::default(envlogger).ignore_res(), o!());
+    slog_stdlog::init().unwrap_or_else(|err| {
+        eprintln!("failed to setup logging: {}", err);
+    });
+    slog_scope::set_global_logger(logger)
+}
 
 /// Log to both stdout and journald.
+#[allow(dead_code)]
 fn setup_logging() -> slog_scope::GlobalLoggerGuard {
     #[cfg(feature = "slog-journald")]
     let journald = slog_journald::JournaldDrain.ignore_res();

@@ -1,3 +1,4 @@
+#![allow(clippy::wildcard_imports)]
 use std::os::raw::c_uint;
 use x11_dl::keysym::*;
 use x11_dl::xlib;
@@ -6,6 +7,7 @@ pub type XKeysym = c_uint;
 pub type ModMask = c_uint;
 pub type Button = c_uint;
 
+#[must_use]
 pub fn into_modmask(keys: &[String]) -> ModMask {
     let mut mask = 0;
     for s in keys {
@@ -21,23 +23,25 @@ pub fn into_modmask(keys: &[String]) -> ModMask {
         | xlib::Mod5Mask)
 }
 
+#[must_use]
 pub fn into_mod(key: &str) -> ModMask {
     match key {
         "None" => xlib::AnyModifier,
         "Shift" => xlib::ShiftMask,
         "Control" => xlib::ControlMask,
-        "Mod1" => xlib::Mod1Mask,
-        "Alt" => xlib::Mod1Mask,
+        "Mod1" | "Alt" => xlib::Mod1Mask,
         //"Mod2" => xlib::Mod2Mask,     // NOTE: we are ignoring the state of Numlock
         //"NumLock" => xlib::Mod2Mask,  // this is left here as a reminder
         "Mod3" => xlib::Mod3Mask,
-        "Mod4" => xlib::Mod4Mask,
-        "Super" => xlib::Mod4Mask,
+        "Mod4" | "Super" => xlib::Mod4Mask,
         "Mod5" => xlib::Mod5Mask,
         _ => 0,
     }
 }
 
+// We allow this because this function is simply a mapping wrapper.
+#[allow(clippy::too_many_lines)]
+#[must_use]
 pub fn into_keysym(key: &str) -> Option<XKeysym> {
     match key {
         "BackSpace" => Some(XK_BackSpace),

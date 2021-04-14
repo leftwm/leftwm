@@ -2,12 +2,16 @@
 {% assign mine_close = '%{B-}%{F-}' %}
 {% assign visible_open = '%{F#000000}%{B#999999}' %}
 {% assign visible_close = '%{B-}%{F-}' %}
+{% assign busy_open = '%{F#999999}%{B#333333}' %}
+{% assign busy_close = '%{B-}%{F-}' %}
 
 {% for tag in workspace.tags %}
 {% if tag.mine %}
 {{mine_open}}  {{ tag.name }}  {{mine_close}}
 {% elsif tag.visible  %}
 {{visible_open}}  {{ tag.name }}  {{visible_close}}
+{% elsif tag.busy  %}
+{{busy_open}}  {{ tag.name }}  {{busy_close}}
 {% else tag.visible  %}
   {{ tag.name }}  
 {% endif %}

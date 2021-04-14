@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::{atomic::AtomicBool, Arc};
 
+/// Maintains current program state.
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Manager {
     pub screens: Vec<Screen>,
@@ -40,6 +41,7 @@ pub struct Manager {
 
 impl Manager {
     /// Return the currently focused workspace.
+    #[must_use]
     pub fn focused_workspace(&self) -> Option<&Workspace> {
         if self.focused_workspace_history.is_empty() {
             return None;
@@ -60,20 +62,24 @@ impl Manager {
     /// Return the currently focused tag if the offset is 0.
     /// Offset is used to reach further down the history.
     pub fn focused_tag(&self, offset: usize) -> Option<String> {
-        self.focused_tag_history.get(offset).map(|t| t.to_string())
+        self.focused_tag_history
+            .get(offset)
+            .map(std::string::ToString::to_string)
     }
 
     /// Return the index of a given tag.
-    pub fn tag_index(&self, tag: String) -> Option<usize> {
+    #[must_use]
+    pub fn tag_index(&self, tag: &str) -> Option<usize> {
         Some(self.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
     }
 
     /// Return the currently focused window.
+    #[must_use]
     pub fn focused_window(&self) -> Option<&Window> {
         if self.focused_window_history.is_empty() {
             return None;
         }
-        let handle = self.focused_window_history[0].clone();
+        let handle = self.focused_window_history[0];
         for w in &self.windows {
             if handle == w.handle {
                 return Some(w);
@@ -87,7 +93,7 @@ impl Manager {
         if self.focused_window_history.is_empty() {
             return None;
         }
-        let handle = self.focused_window_history[0].clone();
+        let handle = self.focused_window_history[0];
         for w in &mut self.windows {
             if handle == w.handle {
                 return Some(w);
@@ -129,7 +135,7 @@ impl Manager {
             .map(|&w| w.clone())
             .collect();
         self.windows = windows;
-        let order: Vec<_> = self.windows.iter().map(|w| w.handle.clone()).collect();
+        let order: Vec<_> = self.windows.iter().map(|w| w.handle).collect();
         let act = DisplayAction::SetWindowOrder(order);
         self.actions.push_back(act);
     }
@@ -142,6 +148,11 @@ impl Manager {
         Some(())
     }
 
+    /// # Panics
+    ///
+    /// Panics if wraps.pop() is empty
+    // TODO: Remove .unwrap() or add statement above indicating that it cannot be hit.
+    #[must_use]
     pub fn tags_display(&self) -> String {
         let mut active: Vec<String> = vec![];
         for w in &self.workspaces {
@@ -163,6 +174,7 @@ impl Manager {
         parts.join(" | ")
     }
 
+    #[must_use]
     pub fn workspaces_display(&self) -> String {
         let mut focused_id = -1;
         if let Some(f) = self.focused_workspace() {
@@ -183,6 +195,7 @@ impl Manager {
         list.join(" ")
     }
 
+    #[must_use]
     pub fn windows_display(&self) -> String {
         let list: Vec<String> = self
             .windows

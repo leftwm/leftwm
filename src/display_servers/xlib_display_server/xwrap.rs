@@ -1,3 +1,10 @@
+//We allow this _ because if we don't we'll receive an error that it isn't read on _task_guard.
+#![allow(clippy::used_underscore_binding)]
+//We allow this so that extern "C" functions are not flagged as confusing. The current placement
+//allows for easy reading.
+#![allow(clippy::items_after_statements)]
+//We allow this because _y_ and _x_ are intentionally similar. Changing it makes the code noisy.
+#![allow(clippy::similar_names)]
 use super::utils;
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
@@ -45,6 +52,7 @@ pub enum XlibError {
     InvalidXAtom,
 }
 
+/// Contains Xserver information and origins.
 pub struct XWrap {
     xlib: xlib::Xlib,
     display: *mut xlib::Display,
@@ -69,7 +77,12 @@ impl Default for XWrap {
 }
 
 impl XWrap {
+    /// # Panics
+    ///
+    /// Can panic if unable to contact xorg.  
+    #[must_use]
     pub fn new() -> XWrap {
+        const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().unwrap();
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
@@ -82,7 +95,6 @@ impl XWrap {
 
         let mut poll = mio::Poll::new().unwrap();
         let mut events = mio::Events::with_capacity(1);
-        const SERVER: mio::Token = mio::Token(0);
         poll.registry()
             .register(
                 &mut mio::unix::SourceFd(&fd),
@@ -126,7 +138,7 @@ impl XWrap {
             colors,
             managed_windows: vec![],
             tags: vec![],
-            mode: Mode::NormalMode,
+            mode: Mode::Normal,
             mod_key_mask: 0,
             mouse_key_mask: 0,
             mode_origin: (0, 0),
@@ -168,6 +180,11 @@ impl XWrap {
     }
 
     //returns all the screens the display
+    /// # Panics
+    ///
+    /// Panics if xorg cannot be contacted (xlib missing, not started, etc.)
+    /// Also panics if window attrs cannot be obtained.
+    #[must_use]
     pub fn get_screens(&self) -> Vec<Screen> {
         use x11_dl::xinerama::XineramaScreenInfo;
         use x11_dl::xinerama::Xlib;
@@ -185,7 +202,7 @@ impl XWrap {
                 .iter()
                 .map(|i| {
                     let mut s = Screen::from(i);
-                    s.root = root.clone();
+                    s.root = root;
                     s
                 })
                 .collect()
@@ -201,6 +218,7 @@ impl XWrap {
     }
 
     //returns all the screens the display
+    #[must_use]
     pub fn get_xscreens(&self) -> Vec<xlib::Screen> {
         let mut screens = Vec::new();
         let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
@@ -212,15 +230,18 @@ impl XWrap {
     }
 
     //returns all the screens the display
+    #[must_use]
     pub fn get_default_root_handle(&self) -> WindowHandle {
         WindowHandle::XlibHandle(self.get_default_root())
     }
 
+    #[must_use]
     pub fn get_default_root(&self) -> xlib::Window {
         self.root
     }
 
     //returns all the roots the display
+    #[must_use]
     pub fn get_roots(&self) -> Vec<xlib::Window> {
         self.get_xscreens()
             .into_iter()
@@ -228,11 +249,15 @@ impl XWrap {
             .collect()
     }
 
+    #[must_use]
     pub fn keycode_to_keysym(&self, keycode: u32) -> utils::xkeysym_lookup::XKeysym {
         let sym = unsafe { (self.xlib.XKeycodeToKeysym)(self.display, keycode as u8, 0) };
         sym as u32
     }
 
+    /// # Errors
+    ///
+    /// Will error if unknown window status is returned.
     //returns all the windows under a root windows
     pub fn get_windows_for_root<'w>(
         &self,
@@ -254,13 +279,16 @@ impl XWrap {
             let windows: &[xlib::Window] = slice::from_raw_parts(array, length as usize);
             match status {
                 0 /* XcmsFailure */ => { Err("Could not load list of windows".to_string() ) }
-                1 /* XcmsSuccess */ => { Ok(windows) }
-                2 /* XcmsSuccessWithCompression */ => { Ok(windows) }
+                1 /* XcmsSuccess */ | 2 /* XcmsSuccessWithCompression */ => { Ok(windows) }
                 _ => { Err("Unknown return status".to_string() ) }
             }
         }
     }
 
+    /// # Errors
+    ///
+    /// Will error if root has no windows or there is an error
+    /// obtaining the root windows. See `get_windows_for_root`.
     pub fn get_all_windows(&self) -> Result<Vec<xlib::Window>, String> {
         let mut all = Vec::new();
         for root in self.get_roots() {
@@ -276,6 +304,9 @@ impl XWrap {
         Ok(all)
     }
 
+    /// # Errors
+    ///
+    /// Will error if window status is 0 (no attributes).
     pub fn get_window_attrs(
         &self,
         window: xlib::Window,
@@ -288,6 +319,7 @@ impl XWrap {
         Ok(attrs)
     }
 
+    #[must_use]
     pub fn get_atom_prop_value(
         &self,
         window: xlib::Window,
@@ -321,6 +353,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
         match self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
             x if x == Some(self.atoms.NetWMWindowTypeDesktop) => WindowType::Desktop,
@@ -334,7 +367,7 @@ impl XWrap {
         }
     }
 
-    pub fn set_window_states_atoms(&self, window: xlib::Window, states: Vec<xlib::Atom>) {
+    pub fn set_window_states_atoms(&self, window: xlib::Window, states: &[xlib::Atom]) {
         let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
         unsafe {
             (self.xlib.XChangeProperty)(
@@ -344,13 +377,14 @@ impl XWrap {
                 xlib::XA_ATOM,
                 32,
                 xlib::PropModeReplace,
-                data.as_ptr() as *const u8,
+                data.as_ptr().cast::<u8>(),
                 data.len() as i32,
             );
             std::mem::forget(data);
         }
     }
 
+    #[must_use]
     pub fn get_window_states_atoms(&self, window: xlib::Window) -> Vec<xlib::Atom> {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
@@ -383,6 +417,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_window_states(&self, window: xlib::Window) -> Vec<WindowState> {
         self.get_window_states_atoms(window)
             .iter()
@@ -404,6 +439,9 @@ impl XWrap {
     }
 
     /// EWMH support used for bars such as polybar.
+    ///  # Panics
+    ///
+    ///  Panics if a new Cstring cannot be formed
     pub fn init_desktops_hints(&self) {
         let tags = &self.tags;
         let tag_length = tags.len();
@@ -461,7 +499,7 @@ impl XWrap {
                 type_,
                 32,
                 xlib::PropModeReplace,
-                data.as_ptr() as *const u8,
+                data.as_ptr().cast::<u8>(),
                 1_i32,
             );
             std::mem::forget(data);
@@ -478,7 +516,7 @@ impl XWrap {
                     xlib::XA_CARDINAL,
                     8,
                     xlib::PropModeReplace,
-                    cstring.as_ptr() as *const u8,
+                    cstring.as_ptr().cast::<u8>(),
                     value.len() as i32,
                 );
                 std::mem::forget(cstring);
@@ -487,7 +525,7 @@ impl XWrap {
     }
 
     fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
-        let xdata = data.to_owned();
+        let x_data = data.to_owned();
         unsafe {
             (self.xlib.XChangeProperty)(
                 self.display,
@@ -496,10 +534,10 @@ impl XWrap {
                 xlib::XA_CARDINAL,
                 32,
                 xlib::PropModeReplace,
-                xdata.as_ptr() as *const u8,
+                x_data.as_ptr().cast::<u8>(),
                 data.len() as i32,
             );
-            std::mem::forget(xdata);
+            std::mem::forget(x_data);
         }
     }
 
@@ -537,7 +575,7 @@ impl XWrap {
                 xlib::XA_CARDINAL,
                 32,
                 xlib::PropModeReplace,
-                indexes.as_ptr() as *const u8,
+                indexes.as_ptr().cast::<u8>(),
                 indexes.len() as i32,
             );
             std::mem::forget(indexes);
@@ -619,7 +657,7 @@ impl XWrap {
                     xlib::XA_WINDOW,
                     32,
                     xlib::PropModeAppend,
-                    list.as_ptr() as *const u8,
+                    list.as_ptr().cast::<u8>(),
                     1,
                 );
                 std::mem::forget(list);
@@ -647,7 +685,7 @@ impl XWrap {
             }
             //make sure there is at least an empty list of _NET_WM_STATE
             let states = self.get_window_states_atoms(handle);
-            self.set_window_states_atoms(handle, states);
+            self.set_window_states_atoms(handle, &states);
         }
         None
     }
@@ -669,12 +707,20 @@ impl XWrap {
         }
     }
 
+    /// # Errors
+    ///
+    /// Will error if unale to obtain window attributes. See `get_window_attrs`.
     pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), XlibError> {
         let attrs = self.get_window_attrs(window)?;
         let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
         self.move_cursor_to_point(point)
     }
 
+    /// # Errors
+    ///
+    /// Error indicates `XlibError`.
+    // TODO: Verify that Error is unreachable or specify conditions that may result
+    // in an error.
     pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), XlibError> {
         let none: c_int = 0;
         unsafe {
@@ -693,6 +739,9 @@ impl XWrap {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will error if root window cannot be found.
     pub fn get_cursor_point(&self) -> Result<(i32, i32), XlibError> {
         let roots = self.get_roots(); //each screen
         for w in roots {
@@ -723,6 +772,7 @@ impl XWrap {
         Err(XlibError::RootWindowNotFound)
     }
 
+    #[must_use]
     pub fn screens_area_dimensions(&self) -> (i32, i32) {
         let mut height = 0;
         let mut width = 0;
@@ -733,6 +783,7 @@ impl XWrap {
         (height, width)
     }
 
+    #[must_use]
     pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
         if let Some(d) = self.get_window_strut_array_strut_partial(window) {
             log::debug!("STRUT:[{:?}] {:?}", window, d);
@@ -818,13 +869,13 @@ impl XWrap {
     }
 
     //this code is ran once when a window is destoryed
-    pub fn teardown_managed_window(&mut self, h: WindowHandle) {
+    pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             unsafe {
                 (self.xlib.XGrabServer)(self.display);
 
                 //remove this window from the list of managed windows
-                self.managed_windows.retain(|x| *x != handle);
+                self.managed_windows.retain(|x| *x != *handle);
                 self.update_client_list();
 
                 //ungrab all buttons for this window
@@ -832,7 +883,7 @@ impl XWrap {
                     self.display,
                     xlib::AnyButton as u32,
                     xlib::AnyModifier,
-                    handle,
+                    *handle,
                 );
                 (self.xlib.XSync)(self.display, 0);
                 (self.xlib.XUngrabServer)(self.display);
@@ -864,7 +915,7 @@ impl XWrap {
                     xlib::XA_WINDOW,
                     32,
                     xlib::PropModeAppend,
-                    list.as_ptr() as *const u8,
+                    list.as_ptr().cast::<u8>(),
                     1,
                 );
                 std::mem::forget(list);
@@ -872,7 +923,7 @@ impl XWrap {
         }
     }
 
-    /// Used to send and XConfigureEvent for a changed window to the xserver .
+    /// Used to send and `XConfigureEvent` for a changed window to the xserver .
     pub fn send_config(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let config = xlib::XConfigureEvent {
@@ -931,6 +982,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_transient_for(&self, window: xlib::Window) -> Option<xlib::Window> {
         unsafe {
             let mut transient: xlib::Window = std::mem::zeroed();
@@ -944,6 +996,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_window_name(&self, window: xlib::Window) -> Option<String> {
         if let Ok(text) = self.get_text_prop(window, self.atoms.NetWMName) {
             return Some(text);
@@ -953,8 +1006,10 @@ impl XWrap {
         }
         None
     }
-
-    ////get the WMName of a window
+    /// Get the `WMName` of a window
+    /// # Errors
+    ///
+    /// Errors if window status = 0.
     pub fn get_text_prop(
         &self,
         window: xlib::Window,
@@ -980,7 +1035,10 @@ impl XWrap {
         Err(XlibError::FailedStatus)
     }
 
-    ////get the XAtom name
+    /// Get the `XAtom` name
+    /// # Errors
+    ///
+    /// Errors if `XAtom` is not valid.
     pub fn get_xatom_name(&self, atom: xlib::Atom) -> Result<String, XlibError> {
         unsafe {
             let cstring = (self.xlib.XGetAtomName)(self.display, atom);
@@ -1013,6 +1071,10 @@ impl XWrap {
         }
     }
 
+    /// Obtains window geometry in an `XyhwChange`struct from `Xlib`.
+    /// # Errors
+    ///
+    /// Errors if Xlib returns a status of 0.
     pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XyhwChange, XlibError> {
         let mut root_return: xlib::Window = 0;
         let mut x_return: c_int = 0;
@@ -1042,11 +1104,11 @@ impl XWrap {
             y: Some(y_return),
             w: Some(width_return as i32),
             h: Some(height_return as i32),
-            ..Default::default()
+            ..XyhwChange::default()
         })
     }
 
-    pub fn window_take_focus(&self, window: Window) {
+    pub fn window_take_focus(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             self.grab_mouse_clicks(handle);
 
@@ -1067,7 +1129,7 @@ impl XWrap {
                         xlib::XA_WINDOW,
                         32,
                         xlib::PropModeReplace,
-                        list.as_ptr() as *const c_uchar,
+                        list.as_ptr().cast::<u8>(),
                         1,
                     );
                     std::mem::forget(list);
@@ -1079,15 +1141,15 @@ impl XWrap {
         }
     }
 
-    pub fn kill_window(&self, h: WindowHandle) {
+    pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             //nicely ask the window to close
-            if !self.send_xevent_atom(handle, self.atoms.WMDelete) {
+            if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
                 //force kill the app
                 unsafe {
                     (self.xlib.XGrabServer)(self.display);
                     (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
-                    (self.xlib.XKillClient)(self.display, handle);
+                    (self.xlib.XKillClient)(self.display, *handle);
                     (self.xlib.XSync)(self.display, xlib::False);
                     (self.xlib.XUngrabServer)(self.display);
                 }
@@ -1111,33 +1173,7 @@ impl XWrap {
         }
     }
 
-    pub fn get_pointer_location(&self) -> Option<(i32, i32)> {
-        let mut root: xlib::Window = 0;
-        let mut window: xlib::Window = 0;
-        let mut root_x: c_int = 0;
-        let mut root_y: c_int = 0;
-        let mut win_x: c_int = 0;
-        let mut win_y: c_int = 0;
-        let mut state: c_uint = 0;
-        unsafe {
-            let success = (self.xlib.XQueryPointer)(
-                self.display,
-                self.root,
-                &mut root,
-                &mut window,
-                &mut root_x,
-                &mut root_y,
-                &mut win_x,
-                &mut win_y,
-                &mut state,
-            );
-            if success > 0 {
-                return Some((root_x, root_y));
-            }
-        }
-        None
-    }
-
+    #[must_use]
     pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
         unsafe {
             let hints_ptr: *const xlib::XWMHints = (self.xlib.XGetWMHints)(self.display, window);
@@ -1149,6 +1185,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_hint_sizing(&self, window: xlib::Window) -> Option<xlib::XSizeHints> {
         let mut xsize: xlib::XSizeHints = unsafe { std::mem::zeroed() };
         let mut msize: c_long = xlib::PSize;
@@ -1160,6 +1197,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XyhwChange> {
         let hint = self.get_hint_sizing(window);
         if let Some(size) = hint {
@@ -1310,7 +1348,7 @@ impl XWrap {
                 xlib::XA_ATOM,
                 32,
                 xlib::PropModeReplace,
-                supported_ptr as *const u8,
+                supported_ptr.cast::<u8>(),
                 size,
             );
             std::mem::forget(supported);
@@ -1350,17 +1388,17 @@ impl XWrap {
             }
             _ => {}
         }
-        if self.mode == Mode::NormalMode && mode != Mode::NormalMode {
+        if self.mode == Mode::Normal && mode != Mode::Normal {
             self.mode = mode.clone();
             //safe this point as the start of the move/resize
-            if let Some(loc) = self.get_pointer_location() {
-                self.mode_origin = loc;
+            if let Ok(loc) = self.get_cursor_point() {
+                self.mode_origin = loc
             }
             unsafe {
                 let cursor = match mode {
                     Mode::ResizingWindow(_) => self.cursors.resize,
                     Mode::MovingWindow(_) => self.cursors.move_,
-                    Mode::NormalMode => self.cursors.normal,
+                    Mode::Normal => self.cursors.normal,
                 };
                 //grab the mouse
                 (self.xlib.XGrabPointer)(
@@ -1376,7 +1414,7 @@ impl XWrap {
                 );
             }
         }
-        if mode == Mode::NormalMode {
+        if mode == Mode::Normal {
             //release the mouse grab
             unsafe {
                 (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
@@ -1385,6 +1423,7 @@ impl XWrap {
         }
     }
 
+    #[must_use]
     pub fn get_next_event(&self) -> xlib::XEvent {
         let mut event: xlib::XEvent = unsafe { std::mem::zeroed() };
         unsafe {
@@ -1401,6 +1440,7 @@ impl XWrap {
         unsafe { (self.xlib.XFlush)(self.display) };
     }
 
+    #[must_use]
     pub fn queue_len(&self) -> i32 {
         unsafe { (self.xlib.XPending)(self.display) }
     }

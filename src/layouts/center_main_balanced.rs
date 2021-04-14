@@ -150,7 +150,7 @@ use crate::models::Workspace;
 /// |      |  8|10|             |      |  9   |
 /// +------+---+--+-------------+------+------+
 /// ```
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len();
 
     if window_count == 0 {
@@ -164,7 +164,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
     };
 
     let primary_x = match window_count {
-        1 => 0i32,
+        1 => 0_i32,
         2 => (workspace.width() as f32 / 2.0).floor() as i32,
         _ => (workspace.width() as f32 / 3.0).floor() as i32,
     };
@@ -223,8 +223,10 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut &mut Window>) {
     );
 }
 
+//TODO: remove mut_mut eventually
+#[allow(clippy::mut_mut)]
 fn update_fibonacci(
-    mut windows: Vec<&mut &mut &mut Window>,
+    mut windows: Vec<&mut &mut Window>,
     workspace_x: i32,
     workspace_y: i32,
     workspace_height: i32,

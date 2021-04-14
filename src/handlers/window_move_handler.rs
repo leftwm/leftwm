@@ -1,14 +1,24 @@
-use super::*;
+use super::{window_handler, Manager, Window, WindowHandle, Workspace};
 
 pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offset_y: i32) -> bool {
-    for w in &mut manager.windows {
-        if &w.handle == handle {
+    let margin_multiplier = match manager
+        .windows
+        .iter()
+        .filter(|other| other.has_tag(&manager.focused_tag(0).unwrap_or_default()))
+        .last()
+    {
+        Some(w) => w.margin_multiplier(),
+        None => 1.0,
+    };
+    match manager.windows.iter_mut().find(|w| w.handle == *handle) {
+        Some(w) => {
             process_window(w, offset_x, offset_y);
+            w.apply_margin_multiplier(margin_multiplier);
             snap_to_workspaces(w, &manager.workspaces);
-            return true;
+            true
         }
+        None => false,
     }
-    false
 }
 
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
@@ -22,45 +32,14 @@ fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
 
 //if the windows is really close to a workspace, snap to it
 fn snap_to_workspaces(window: &mut Window, workspaces: &[Workspace]) -> bool {
-    for workspace in workspaces {
-        if snap_to_workspace(window, &workspace) {
-            return true;
-        }
-    }
-    false
-}
-
-fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
-    if should_snap(window, workspace) {
-        window.debugging = true;
-        window.set_floating(false);
-
-        //we are reparenting
-        if window.tags != workspace.tags {
-            window.debugging = true;
-            window.tags = workspace.tags.clone();
-            let mut offset = window.get_floating_offsets().unwrap_or_default();
-            let mut start_loc = window.start_loc.unwrap_or_default();
-            let x = offset.x() + window.normal.x();
-            let y = offset.y() + window.normal.y();
-            offset.set_x(x - workspace.xyhw.x());
-            offset.set_y(y - workspace.xyhw.y());
-            window.set_floating_offsets(Some(offset));
-
-            let x = start_loc.x() + window.normal.x();
-            let y = start_loc.y() + window.normal.y();
-            start_loc.set_x(x - workspace.xyhw.x());
-            start_loc.set_y(y - workspace.xyhw.y());
-            window.start_loc = Some(start_loc);
-        }
-        return true;
-    }
-    false
+    workspaces
+        .iter()
+        .any(|workspace| should_snap(window, workspace))
 }
 
 //to be snapable, the window must be inside the workspace AND the a side must be close to
 //the workspaces edge
-fn should_snap(window: &Window, workspace: &Workspace) -> bool {
+fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
     if window.must_float() {
         return false;
     }
@@ -84,16 +63,16 @@ fn should_snap(window: &Window, workspace: &Workspace) -> bool {
     let ws_top = workspace.y();
     let ws_bottom = workspace.y() + workspace.height();
     if (win_top - ws_top).abs() < dist {
-        return true;
+        return window_handler::snap_to_workspace(window, &workspace);
     }
     if (win_bottom - ws_bottom).abs() < dist {
-        return true;
+        return window_handler::snap_to_workspace(window, &workspace);
     }
     if (win_left - ws_left).abs() < dist {
-        return true;
+        return window_handler::snap_to_workspace(window, &workspace);
     }
     if (win_right - ws_right).abs() < dist {
-        return true;
+        return window_handler::snap_to_workspace(window, &workspace);
     }
     false
 }

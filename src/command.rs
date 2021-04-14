@@ -8,6 +8,7 @@ pub enum Command {
     SoftReload,
     HardReload,
     GotoTag,
+    FloatingToTile,
     MoveWindowUp,
     MoveWindowDown,
     MoveWindowTop,
@@ -25,4 +26,5 @@ pub enum Command {
     SetLayout,
     IncreaseMainWidth,
     DecreaseMainWidth,
+    SetMarginMultiplier,
 }

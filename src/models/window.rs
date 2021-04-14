@@ -1,3 +1,5 @@
+//! Window Information
+#![allow(clippy::module_name_repetitions)]
 use super::WindowState;
 use super::WindowType;
 use crate::config::ThemeSetting;
@@ -11,12 +13,16 @@ use x11_dl::xlib;
 
 type MockHandle = i32;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
 }
 
+/// Store Window information.
+// We allow this as we're not managing state directly. This could be refactored in the future.
+// TODO: Refactor floating
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Window {
     pub handle: WindowHandle,
@@ -31,6 +37,7 @@ pub struct Window {
     pub tags: Vec<TagId>,
     pub border: i32,
     pub margin: Margins,
+    pub margin_multiplier: f32,
     states: Vec<WindowState>,
     pub requested: Option<XyhwChange>,
     pub normal: Xyhw,
@@ -40,6 +47,7 @@ pub struct Window {
 }
 
 impl Window {
+    #[must_use]
     pub fn new(h: WindowHandle, name: Option<String>) -> Window {
         Window {
             handle: h,
@@ -53,6 +61,7 @@ impl Window {
             tags: Vec::new(),
             border: 1,
             margin: Margins::Int(10),
+            margin_multiplier: 1.0,
             states: vec![],
             normal: XyhwBuilder::default().into(),
             requested: None,
@@ -77,6 +86,7 @@ impl Window {
         self.visible = value;
     }
 
+    #[must_use]
     pub fn visible(&self) -> bool {
         self.visible
             || self.type_ == WindowType::Dock
@@ -94,10 +104,12 @@ impl Window {
         self.is_floating = value;
     }
 
+    #[must_use]
     pub fn floating(&self) -> bool {
         self.is_floating || self.must_float()
     }
 
+    #[must_use]
     pub fn get_floating_offsets(&self) -> Option<Xyhw> {
         self.floating
     }
@@ -121,18 +133,22 @@ impl Window {
         self.floating = Some(new_value);
     }
 
+    #[must_use]
     pub fn is_fullscreen(&self) -> bool {
         self.states.contains(&WindowState::Fullscreen)
     }
+    #[must_use]
     pub fn must_float(&self) -> bool {
         self.transient.is_some()
             || self.type_ == WindowType::Dock
             || self.type_ == WindowType::Splash
             || self.is_fullscreen()
     }
+    #[must_use]
     pub fn can_move(&self) -> bool {
         self.type_ != WindowType::Dock
     }
+    #[must_use]
     pub fn can_resize(&self) -> bool {
         self.type_ != WindowType::Dock
     }
@@ -155,18 +171,37 @@ impl Window {
         self.requested
     }
 
+    pub fn apply_margin_multiplier(&mut self, value: f32) {
+        self.margin_multiplier = value.abs();
+        if value < 0 as f32 {
+            log::warn!(
+                "Negative margin multiplier detected. Will be applied as absolute: {:?}",
+                self.margin_multiplier()
+            )
+        };
+    }
+
+    #[must_use]
+    pub fn margin_multiplier(&self) -> f32 {
+        self.margin_multiplier
+    }
+
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
+    #[must_use]
     pub fn width(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
             value = self.normal.w();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            value = relative.w()
-                - (self.margin.clone().left() + self.margin.clone().right())
-                - (self.border * 2);
+            value = relative.w() - (self.border * 2);
         } else {
             value = self.normal.w()
-                - (self.margin.clone().left() + self.margin.clone().right())
+                - (((self.margin.clone().left() + self.margin.clone().right()) as f32)
+                    * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
@@ -174,18 +209,23 @@ impl Window {
         }
         value
     }
+
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
+    #[must_use]
     pub fn height(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
             value = self.normal.h();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            value = relative.h()
-                - (self.margin.clone().top() + self.margin.clone().bottom())
-                - (self.border * 2);
+            value = relative.h() - (self.border * 2);
         } else {
             value = self.normal.h()
-                - (self.margin.clone().top() + self.margin.clone().bottom())
+                - (((self.margin.clone().top() + self.margin.clone().bottom()) as f32)
+                    * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
         if value < 100 && self.type_ != WindowType::Dock {
@@ -201,6 +241,7 @@ impl Window {
         self.normal.set_y(y)
     }
 
+    #[must_use]
     pub fn border(&self) -> i32 {
         if self.is_fullscreen() {
             0
@@ -209,41 +250,53 @@ impl Window {
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
+    #[must_use]
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.x();
         }
         if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            relative.x() + self.margin.clone().left()
+            relative.x()
         } else {
-            self.normal.x() + self.margin.clone().left()
+            self.normal.x() + (self.margin.clone().left() as f32 * self.margin_multiplier) as i32
         }
     }
 
+    /// # Panics
+    ///
+    /// Shouldn't panic. We know that `self.floating` is `Some`
+    /// by the time we arrive at `unwrap()`.
+    #[must_use]
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.y();
         }
         if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap();
-            relative.y() + self.margin.clone().bottom()
+            relative.y()
         } else {
-            self.normal.y() + self.margin.clone().bottom()
+            self.normal.y() + (self.margin.clone().top() as f32 * self.margin_multiplier) as i32
         }
     }
 
+    #[must_use]
     pub fn calculated_xyhw(&self) -> Xyhw {
         XyhwBuilder {
             h: self.height(),
             w: self.width(),
             x: self.x(),
             y: self.y(),
-            ..Default::default()
+            ..XyhwBuilder::default()
         }
         .into()
     }
 
+    #[must_use]
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
         self.calculated_xyhw().contains_point(x, y)
     }
@@ -264,6 +317,7 @@ impl Window {
         self.tags = vec![];
     }
 
+    #[must_use]
     pub fn has_tag(&self, tag: &str) -> bool {
         let t = tag.to_owned();
         self.tags.contains(&t)
