@@ -223,6 +223,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     );
 }
 
+//TODO: remove mut_mut eventually
+#[allow(clippy::mut_mut)]
 fn update_fibonacci(
     mut windows: Vec<&mut &mut Window>,
     workspace_x: i32,
