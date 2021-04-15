@@ -202,6 +202,34 @@ impl Workspace {
         f32::from(self.layout.main_width())
     }
 
+    pub fn flip_horizontal(&self) {
+        if let Some(tag) = self.current_tags().get(0) {
+            tag.flip_horizontal();
+        }
+    }
+
+    pub fn flip_vert(&self) {
+        if let Some(tag) = self.current_tags().get(0) {
+            tag.flip_vert();
+        }
+    }
+
+    #[must_use]
+    pub fn flipped_horizontal(&self) -> bool {
+        if let Some(tag) = self.current_tags().get(0) {
+            return tag.flipped_horizontal();
+        }
+        false
+    }
+
+    #[must_use]
+    pub fn flipped_vert(&self) -> bool {
+        if let Some(tag) = self.current_tags().get(0) {
+            return tag.flipped_vert();
+        }
+        false
+    }
+
     #[must_use]
     pub fn center_halfed(&self) -> Xyhw {
         self.xyhw_avoided.center_halfed()

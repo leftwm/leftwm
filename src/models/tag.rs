@@ -2,6 +2,7 @@
 // this is `TagModel` and not `WindowModel` or anything else.
 #![allow(clippy::module_name_repetitions)]
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
@@ -9,6 +10,10 @@ pub struct TagModel {
     pub id: String,
     #[serde(skip)]
     main_width_percentage: Arc<Mutex<u8>>,
+    #[serde(skip)]
+    flipped_horizontal: Arc<AtomicBool>,
+    #[serde(skip)]
+    flipped_vert: Arc<AtomicBool>,
 }
 
 impl TagModel {
@@ -17,6 +22,8 @@ impl TagModel {
         Arc::new(TagModel {
             id: id.to_owned(),
             main_width_percentage: Arc::new(Mutex::new(50)),
+            flipped_horizontal: Arc::new(AtomicBool::new(false)),
+            flipped_vert: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -69,6 +76,34 @@ impl TagModel {
         let lock = self.main_width_percentage.clone();
         let mwp = lock.lock().unwrap();
         f32::from(*mwp)
+    }
+
+    pub fn flip_horizontal(&self) {
+        let cur = self.flipped_horizontal();
+        let clone = self.flipped_horizontal.clone();
+        Arc::try_unwrap(clone)
+            .unwrap_err()
+            .store(!cur, Ordering::SeqCst);
+    }
+
+    pub fn flip_vert(&self) {
+        let cur = self.flipped_vert();
+        let clone = self.flipped_vert.clone();
+        Arc::try_unwrap(clone)
+            .unwrap_err()
+            .store(!cur, Ordering::SeqCst);
+    }
+
+    #[must_use]
+    pub fn flipped_horizontal(&self) -> bool {
+        let clone = self.flipped_horizontal.clone();
+        Arc::try_unwrap(clone).unwrap_err().load(Ordering::SeqCst)
+    }
+
+    #[must_use]
+    pub fn flipped_vert(&self) -> bool {
+        let clone = self.flipped_vert.clone();
+        Arc::try_unwrap(clone).unwrap_err().load(Ordering::SeqCst)
     }
 }
 

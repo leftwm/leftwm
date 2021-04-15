@@ -24,6 +24,8 @@ pub enum Command {
     NextLayout,
     PreviousLayout,
     SetLayout,
+    FlipTagHorizontal,
+    FlipTagVert,
     IncreaseMainWidth,
     DecreaseMainWidth,
     SetMarginMultiplier,
