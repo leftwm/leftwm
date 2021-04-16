@@ -98,8 +98,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
                 stx = workspace.x() + primary_width + secondary_width;
             }
             (px, sx, stx)
-
-        }    
+        }
     };
 
     let mut iter = windows.iter_mut();
