@@ -68,18 +68,38 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         _ => (workspace.width() as f32 / 2.0).floor() as i32,
     };
 
-    let primary_x = match window_count {
-        1 => 0_i32,
-        2 => {
-            let x;
-            if workspace.flipped_horizontal() {
-                x = workspace.x();
-            } else {
-                x = (workspace.width() as f32 / 2.0).floor() as i32;
-            }
-            x
-        }
+    let secondary_width = match window_count {
+        1 => 0,
+        2 => (workspace.width() as f32 / 2.0).floor() as i32,
         _ => (workspace.width() as f32 / 4.0).floor() as i32,
+    };
+
+    let (primary_x, secondary_x, stack_x) = match window_count {
+        1 => (0, 0, 0),
+        2 => {
+            let (px, sx);
+            if workspace.flipped_horizontal() {
+                px = workspace.x();
+                sx = workspace.x() + primary_width;
+            } else {
+                px = (workspace.width() as f32 / 2.0).floor() as i32;
+                sx = workspace.x();
+            }
+            (px, sx, 0)
+        }
+        _ => {
+            let px = (workspace.width() as f32 / 4.0).floor() as i32;
+            let (sx, stx);
+            if workspace.flipped_horizontal() {
+                sx = workspace.x() + primary_width + secondary_width;
+                stx = workspace.x();
+            } else {
+                sx = workspace.x();
+                stx = workspace.x() + primary_width + secondary_width;
+            }
+            (px, sx, stx)
+
+        }    
     };
 
     let mut iter = windows.iter_mut();
@@ -94,34 +114,6 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         }
     }
 
-    let secondary_width = match window_count {
-        1 => 0,
-        2 => (workspace.width() as f32 / 2.0).floor() as i32,
-        _ => (workspace.width() as f32 / 4.0).floor() as i32,
-    };
-
-    let secondary_x = match window_count {
-        1 => 0,
-        2 => {
-            let x;
-            if workspace.flipped_horizontal() {
-                x = workspace.x() + primary_width;
-            } else {
-                x = workspace.x();
-            }
-            x
-        }
-        _ => {
-            let x;
-            if workspace.flipped_horizontal() {
-                x = workspace.x() + primary_width + secondary_width;
-            } else {
-                x = workspace.x();
-            }
-            x
-        }
-    };
-
     // build the second window
     {
         if let Some(second) = iter.next() {
@@ -131,19 +123,6 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
             second.set_y(workspace.y());
         }
     }
-
-    let stack_x = match window_count {
-        1 | 2 => 0,
-        _ => {
-            let x;
-            if workspace.flipped_horizontal() {
-                x = workspace.x();
-            } else {
-                x = workspace.x() + primary_width + secondary_width;
-            }
-            x
-        }
-    };
 
     // stack all the others
     if window_count > 2 {
