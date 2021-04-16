@@ -35,21 +35,26 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
             main_x = x;
             alt_x = x + half_width;
         }
-
+        let (new_y, alt_y);
+        if workspace.flipped_vert() {
+            new_y = y;
+            alt_y = y + half_height;
+        } else {
+            new_y = y + half_height;
+            alt_y = y;
+        }
         match window_count - i {
-            1 => {
-                setter(&mut windows[i], height, width, x, y);
-            }
+            1 => setter(&mut windows[i], height, width, x, y),
             2 => {
                 setter(&mut windows[i], height, half_width, main_x, y);
                 setter(&mut windows[i + 1], height, half_width, alt_x, y);
             }
             _ => {
                 setter(&mut windows[i], height, half_width, main_x, y);
-                setter(&mut windows[i + 1], half_height, half_width, alt_x, y);
+                setter(&mut windows[i + 1], half_height, half_width, alt_x, alt_y);
 
                 x = alt_x;
-                y += half_height;
+                y = new_y;
                 width = half_width;
                 height = half_height;
             }
