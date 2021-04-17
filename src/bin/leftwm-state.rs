@@ -58,9 +58,9 @@ async fn main() -> Result<()> {
         let template_str = fs::read_to_string(template_file).await?;
         let template = liquid::ParserBuilder::with_stdlib()
             .build()
-            .unwrap()
+            .expect("Unable to build template")
             .parse(&template_str)
-            .unwrap();
+            .expect("Unable to parse template");
         while let Some(line) = stream_reader.next_line().await? {
             let _droppable = template_handler(&template, newline, ws_num, &line);
             if once {

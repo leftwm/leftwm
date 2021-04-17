@@ -63,13 +63,11 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
         window.apply_margin_multiplier(margin_multiplier);
     }
 
-    if let Some(trans) = &window.transient {
-        if let Some(parent) = find_parent_window(manager, &trans) {
-            window.set_floating(true);
-            let new_float_exact = parent.calculated_xyhw().center_halfed();
-            window.normal = parent.normal;
-            window.set_floating_exact(new_float_exact);
-        }
+    if let Some(parent) = find_transient_parent(manager, &window) {
+        window.set_floating(true);
+        let new_float_exact = parent.calculated_xyhw().center_halfed();
+        window.normal = parent.normal;
+        window.set_floating_exact(new_float_exact);
     }
 
     window.update_for_theme(&manager.theme_setting);
@@ -167,13 +165,13 @@ fn find_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option<&'w Wi
     None
 }
 
-fn find_parent_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option<&'w Window> {
-    let mut w = find_window(manager, handle);
-    while w.is_some() && w.unwrap().transient.is_some() {
-        let tran = w.unwrap().transient.clone().unwrap();
-        w = find_window(manager, &tran);
+fn find_transient_parent<'w>(manager: &'w Manager, window: &Window) -> Option<&'w Window> {
+    let handle = &window.transient?;
+    let mut w: &Window = find_window(manager, handle)?;
+    while let Some(tran) = w.transient {
+        w = find_window(manager, &tran)?;
     }
-    w
+    Some(w)
 }
 
 pub fn update_workspace_avoid_list(manager: &mut Manager) {

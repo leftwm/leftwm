@@ -1,4 +1,4 @@
-use crate::errors::Result;
+use crate::errors::{stream_error, Result};
 use crate::models::dto::ManagerState;
 use crate::models::Manager;
 use std::path::PathBuf;
@@ -52,13 +52,9 @@ impl StateSocket {
         }
     }
 
-    /// # Panics
-    ///
-    /// Will panic if peer cannot be unwrapped as mutable.
     /// # Errors
-    ///
-    /// Will return error if state cannot be stringified
-    // TODO: Verify `unwrap` is unreachable
+    /// Will return Err if a mut ref to the peer is unavailable.
+    /// Will return error if state cannot be serialized
     pub async fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
         if self.listener.is_some() {
             let state: ManagerState = manager.into();
@@ -70,7 +66,7 @@ impl StateSocket {
                 for peer in &mut state.peers {
                     if peer
                         .as_mut()
-                        .unwrap()
+                        .ok_or_else(stream_error)?
                         .write_all(json.as_bytes())
                         .await
                         .is_err()

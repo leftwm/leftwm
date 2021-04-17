@@ -232,5 +232,11 @@ impl XAtom {
 }
 
 fn from(xlib: &xlib::Xlib, dpy: *mut xlib::Display, s: &str) -> xlib::Atom {
-    unsafe { (xlib.XInternAtom)(dpy, CString::new(s).unwrap().into_raw(), xlib::False) }
+    unsafe {
+        (xlib.XInternAtom)(
+            dpy,
+            CString::new(s).unwrap_or_default().into_raw(),
+            xlib::False,
+        )
+    }
 }
