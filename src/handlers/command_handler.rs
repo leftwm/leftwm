@@ -68,8 +68,8 @@ pub fn process(
             false
         }
 
-        Command::FlipTagHorz => flip_tag_horizontal(manager),
-        Command::FlipTagVert => flip_tag_vert(manager),
+        Command::FlipTagHorizontal => flip_tag_horizontal(manager),
+        Command::FlipTagVertical => flip_tag_vert(manager),
 
         Command::IncreaseMainWidth if val.is_none() => false,
         Command::IncreaseMainWidth => increase_main_width(manager, &val),
