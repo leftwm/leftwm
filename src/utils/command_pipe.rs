@@ -73,53 +73,32 @@ async fn read_from_pipe(
 }
 
 fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
-    if s.starts_with("UnloadTheme") {
-        return Ok(ExternalCommand::UnloadTheme);
-    } else if s.starts_with("Reload") {
-        return Ok(ExternalCommand::Reload);
-    } else if s.starts_with("LoadTheme ") {
-        return build_load_theme(s);
-    } else if s.starts_with("SendWorkspaceToTag ") {
-        return build_send_workspace_to_tag(s);
-    } else if s.starts_with("SendWindowToTag ") {
-        return build_send_window_to_tag(s);
-    } else if s.starts_with("SetLayout ") {
-        return build_set_layout(s);
-    } else if s.starts_with("SetMarginMultiplier ") {
-        return build_set_margin_multiplier(s);
-    } else if s.starts_with("SwapScreens") {
-        return Ok(ExternalCommand::SwapScreens);
-    } else if s.starts_with("MoveWindowToLastWorkspace") {
-        return Ok(ExternalCommand::MoveWindowToLastWorkspace);
-    } else if s.starts_with("FloatingToTile") {
-        return Ok(ExternalCommand::FloatingToTile);
-    } else if s.starts_with("MoveWindowUp") {
-        return Ok(ExternalCommand::MoveWindowUp);
-    } else if s.starts_with("MoveWindowDown") {
-        return Ok(ExternalCommand::MoveWindowDown);
-    } else if s.starts_with("FocusWindowUp") {
-        return Ok(ExternalCommand::FocusWindowUp);
-    } else if s.starts_with("MoveWindowTop") {
-        return Ok(ExternalCommand::MoveWindowTop);
-    } else if s.starts_with("FocusWindowDown") {
-        return Ok(ExternalCommand::FocusWindowDown);
-    } else if s.starts_with("FocusNextTag") {
-        return Ok(ExternalCommand::FocusNextTag);
-    } else if s.starts_with("FocusPreviousTag") {
-        return Ok(ExternalCommand::FocusPreviousTag);
-    } else if s.starts_with("FocusWorkspaceNext") {
-        return Ok(ExternalCommand::FocusWorkspaceNext);
-    } else if s.starts_with("FocusWorkspacePrevious") {
-        return Ok(ExternalCommand::FocusWorkspacePrevious);
-    } else if s.starts_with("NextLayout") {
-        return Ok(ExternalCommand::NextLayout);
-    } else if s.starts_with("PreviousLayout") {
-        return Ok(ExternalCommand::PreviousLayout);
-    } else if s.starts_with("CloseWindow") {
-        return Ok(ExternalCommand::CloseWindow);
+    match *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"") {
+        "UnloadTheme" => Ok(ExternalCommand::UnloadTheme),
+        "Reload" => Ok(ExternalCommand::Reload),
+        "SwapScreens" => Ok(ExternalCommand::SwapScreens),
+        "MoveWindowToLastWorkspace" => Ok(ExternalCommand::MoveWindowToLastWorkspace),
+        "FloatingToTile" => Ok(ExternalCommand::FloatingToTile),
+        "MoveWindowUp" => Ok(ExternalCommand::MoveWindowUp),
+        "MoveWindowDown" => Ok(ExternalCommand::MoveWindowDown),
+        "FocusWindowUp" => Ok(ExternalCommand::FocusWindowUp),
+        "MoveWindowTop" => Ok(ExternalCommand::MoveWindowTop),
+        "FocusWindowDown" => Ok(ExternalCommand::FocusWindowDown),
+        "FocusNextTag" => Ok(ExternalCommand::FocusNextTag),
+        "FocusPreviousTag" => Ok(ExternalCommand::FocusPreviousTag),
+        "FocusWorkspaceNext" => Ok(ExternalCommand::FocusWorkspaceNext),
+        "FocusWorkspacePrevious" => Ok(ExternalCommand::FocusWorkspacePrevious),
+        "NextLayout" => Ok(ExternalCommand::NextLayout),
+        "PreviousLayout" => Ok(ExternalCommand::PreviousLayout),
+        "CloseWindow" => Ok(ExternalCommand::CloseWindow),
+        // These require arguments and might be more finicky
+        "LoadTheme" => build_load_theme(s),
+        "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
+        "SendWindowToTag" => build_send_window_to_tag(s),
+        "SetLayout" => build_set_layout(s),
+        "SetMarginMultiplier" => build_set_margin_multiplier(s),
+        _ => Err(()),
     }
-
-    Err(())
 }
 
 fn build_load_theme(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
