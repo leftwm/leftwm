@@ -352,7 +352,7 @@ fn focus_window_change(
         manager.actions.push_back(act);
     } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
         //Only change focus on first 2 windows
-        if to_reorder.len() == 1 as usize {
+        if to_reorder.len() == 1_usize {
             return false;
         }
         let window_group = &to_reorder[..2];
