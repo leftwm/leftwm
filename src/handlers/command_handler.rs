@@ -257,9 +257,6 @@ where
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
 
     let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-    if to_reorder.len() < 2 {
-        return false;
-    }
     func(manager, val, handle, &layout, to_reorder)
 }
 

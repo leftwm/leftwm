@@ -51,6 +51,10 @@ where
 {
     let v = &mut **list;
     let change = shift.abs() as usize;
+    if change > v.len() {
+        return;
+    }
+    log::info!("change: ?{}, list.len() ?{}", change, v.len());
     match shift.cmp(&0) {
         Ordering::Less => v.rotate_left(change),
         Ordering::Greater => v.rotate_right(change),
@@ -65,6 +69,9 @@ where
     T: Clone,
 {
     let len = list.len() as i32;
+    if len < 2 {
+        return;
+    }
     let (index, item) = match list.iter().enumerate().find(|&x| test(x.1)) {
         Some(x) => (x.0, x.1.clone()),
         None => {
@@ -91,6 +98,9 @@ where
     T: Clone,
 {
     let len = list.len() as i32;
+    if len < shift {
+        return None;
+    }
     let index = match list.iter().enumerate().find(|&x| test(x.1)) {
         Some(x) => x.0,
         None => {
