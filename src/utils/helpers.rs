@@ -51,7 +51,7 @@ where
 {
     let v = &mut **list;
     let change = shift.abs() as usize;
-    if change > v.len() {
+    if v.len() < change {
         return;
     }
     log::info!("change: ?{}, list.len() ?{}", change, v.len());
