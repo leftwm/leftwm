@@ -257,6 +257,9 @@ where
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
 
     let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+    if to_reorder.len() < 2 {
+        return false
+    }
     func(manager, val, handle, &layout, to_reorder)
 }
 
@@ -269,7 +272,6 @@ fn move_window_change(
 ) -> bool {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     let mut act = DisplayAction::MoveMouseOver(handle);
-    if to_reorder.len() > 1 {
         if let Some(crate::layouts::Layout::Monocle) = layout {
             // For Monocle we want to also move windows up/down
             // Not the best solution but results
@@ -294,7 +296,6 @@ fn move_window_change(
         } else {
             helpers::reorder_vec(&mut to_reorder, is_handle, val);
         }
-    }
     manager.windows.append(&mut to_reorder);
     manager.actions.push_back(act);
     true
