@@ -103,7 +103,28 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> bool {
 fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> bool {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
-    let input_tag = to_num(val);
+
+    enum IntOrStr {
+      Int(usize),
+      Str(String),
+    }
+    
+    let val: IntOrStr = match val {
+        Some(v) => {
+            IntOrStr::Int(to_num(v)); 
+            IntOrStr::Str(v.clone())
+        },
+        None => None,
+    };
+
+    let input_tag = match val {
+      // None => {
+        // return false
+      // },
+        IntOrStr::Int(index) => index, 
+        IntOrStr::Str(name) => manager.tag_index(&name).unwrap(),
+    };
+
     let mut destination_tag = input_tag;
     if !config.disable_current_tag_swap {
         destination_tag = match (current_tag, previous_tag, input_tag) {
