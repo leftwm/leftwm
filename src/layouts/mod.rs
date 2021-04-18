@@ -69,7 +69,6 @@ impl Layout {
             Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => right_main_and_vert_stack::update(workspace, windows),
-            Self::LeftWiderRightStack => main_and_vert_stack::update(workspace, windows),
         }
     }
 
