@@ -79,6 +79,16 @@ impl Layout {
         }
     }
 
+    pub fn rotations(&self) -> Vec<(bool, bool)> {
+        match self {
+            Self::Fibonacci => {
+                [(false, false), (true, false), (true, true), (false, true)].to_vec()
+            }
+            Self::MainAndHorizontalStack => [(false, false), (false, true)].to_vec(),
+            _ => [(false, false), (true, false)].to_vec(),
+        }
+    }
+
     pub fn next_layout(&self, layouts: &[Layout]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,

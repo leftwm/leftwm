@@ -16,7 +16,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
 
     let mut main_y = workspace.y();
     let mut stack_y = workspace.y() + height;
-    if workspace.flipped_vert() {
+    if workspace.flipped_vertical() {
         main_y = match window_count {
             1 => main_y,
             _ => main_y + height,

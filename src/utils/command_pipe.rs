@@ -90,8 +90,7 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
         "FocusWorkspacePrevious" => Ok(ExternalCommand::FocusWorkspacePrevious),
         "NextLayout" => Ok(ExternalCommand::NextLayout),
         "PreviousLayout" => Ok(ExternalCommand::PreviousLayout),
-        "FlipTagHorizontal" => Ok(ExternalCommand::FlipTagHorizontal),
-        "FlipTagVertical" => Ok(ExternalCommand::FlipTagVertical),
+        "RotateTag" => Ok(ExternalCommand::RotateTag),
         "CloseWindow" => Ok(ExternalCommand::CloseWindow),
         // These require arguments and might be more finicky
         "LoadTheme" => build_load_theme(s),
@@ -203,8 +202,7 @@ pub enum ExternalCommand {
     CloseWindow,
     NextLayout,
     PreviousLayout,
-    FlipTagHorizontal,
-    FlipTagVertical,
+    RotateTag,
     SetLayout(String),
     SetMarginMultiplier(String),
 }

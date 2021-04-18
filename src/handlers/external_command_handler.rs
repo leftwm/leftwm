@@ -108,11 +108,8 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
         ExternalCommand::PreviousLayout => {
             return command_handler::process(manager, config, &Command::PreviousLayout, None);
         }
-        ExternalCommand::FlipTagHorizontal => {
-            return command_handler::process(manager, config, &Command::FlipTagHorizontal, None);
-        }
-        ExternalCommand::FlipTagVertical => {
-            return command_handler::process(manager, config, &Command::FlipTagVertical, None);
+        ExternalCommand::RotateTag => {
+            return command_handler::process(manager, config, &Command::RotateTag, None);
         }
         ExternalCommand::CloseWindow => {
             return command_handler::process(manager, config, &Command::CloseWindow, None);

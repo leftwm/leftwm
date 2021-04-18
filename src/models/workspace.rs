@@ -15,6 +15,7 @@ pub struct Workspace {
     pub id: i32,
     /// Active layout
     pub layout: Layout,
+    layout_rotation: usize,
     pub tags: Vec<TagId>,
     pub margin_multiplier: f32,
     #[serde(skip)]
@@ -50,6 +51,7 @@ impl Workspace {
         Workspace {
             id: -1,
             layout: Layout::new(&layouts),
+            layout_rotation: 0,
             tags: vec![],
             margin_multiplier: 1.0,
             avoid: vec![],
@@ -97,16 +99,19 @@ impl Workspace {
     pub fn next_layout(&mut self) {
         self.layout = self.layout.next_layout(&self.layouts);
         self.set_main_width(self.layout.main_width());
+        self.layout_rotation = 0;
     }
 
     pub fn prev_layout(&mut self) {
         self.layout = self.layout.prev_layout(&self.layouts);
         self.set_main_width(self.layout.main_width());
+        self.layout_rotation = 0;
     }
 
     pub fn set_layout(&mut self, layout: Layout) {
         self.layout = layout;
         self.set_main_width(self.layout.main_width());
+        self.layout_rotation = 0;
     }
 
     /// Returns true if the workspace is displays a given window.
@@ -202,16 +207,18 @@ impl Workspace {
         f32::from(self.layout.main_width())
     }
 
-    pub fn flip_horizontal(&self) {
-        if let Some(tag) = self.current_tags().get(0) {
-            tag.flip_horizontal();
+    pub fn rotate_layout(&mut self) -> Option<()> {
+        let rotations = self.layout.rotations();
+        self.layout_rotation += 1;
+        if self.layout_rotation >= rotations.len() {
+            self.layout_rotation = 0;
         }
-    }
-
-    pub fn flip_vert(&self) {
-        if let Some(tag) = self.current_tags().get(0) {
-            tag.flip_vert();
-        }
+        let (horz, vert) = rotations.get(self.layout_rotation)?;
+        let tags = &self.current_tags();
+        let tag = tags.get(0)?;
+        tag.flip_horizontal(*horz);
+        tag.flip_vertical(*vert);
+        Some(())
     }
 
     #[must_use]
@@ -223,9 +230,9 @@ impl Workspace {
     }
 
     #[must_use]
-    pub fn flipped_vert(&self) -> bool {
+    pub fn flipped_vertical(&self) -> bool {
         if let Some(tag) = self.current_tags().get(0) {
-            return tag.flipped_vert();
+            return tag.flipped_vertical();
         }
         false
     }

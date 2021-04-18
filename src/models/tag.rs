@@ -13,7 +13,7 @@ pub struct TagModel {
     #[serde(skip)]
     flipped_horizontal: Arc<AtomicBool>,
     #[serde(skip)]
-    flipped_vert: Arc<AtomicBool>,
+    flipped_vertical: Arc<AtomicBool>,
 }
 
 impl TagModel {
@@ -23,7 +23,7 @@ impl TagModel {
             id: id.to_owned(),
             main_width_percentage: Arc::new(Mutex::new(50)),
             flipped_horizontal: Arc::new(AtomicBool::new(false)),
-            flipped_vert: Arc::new(AtomicBool::new(false)),
+            flipped_vertical: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -78,20 +78,18 @@ impl TagModel {
         f32::from(*mwp)
     }
 
-    pub fn flip_horizontal(&self) {
-        let cur = self.flipped_horizontal();
+    pub fn flip_horizontal(&self, val: bool) {
         let clone = self.flipped_horizontal.clone();
         Arc::try_unwrap(clone)
             .unwrap_err()
-            .store(!cur, Ordering::SeqCst);
+            .store(val, Ordering::SeqCst);
     }
 
-    pub fn flip_vert(&self) {
-        let cur = self.flipped_vert();
-        let clone = self.flipped_vert.clone();
+    pub fn flip_vertical(&self, val: bool) {
+        let clone = self.flipped_vertical.clone();
         Arc::try_unwrap(clone)
             .unwrap_err()
-            .store(!cur, Ordering::SeqCst);
+            .store(val, Ordering::SeqCst);
     }
 
     #[must_use]
@@ -101,8 +99,8 @@ impl TagModel {
     }
 
     #[must_use]
-    pub fn flipped_vert(&self) -> bool {
-        let clone = self.flipped_vert.clone();
+    pub fn flipped_vertical(&self) -> bool {
+        let clone = self.flipped_vertical.clone();
         Arc::try_unwrap(clone).unwrap_err().load(Ordering::SeqCst)
     }
 }

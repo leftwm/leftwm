@@ -36,7 +36,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
             alt_x = x + half_width;
         }
         let (new_y, alt_y);
-        if workspace.flipped_vert() {
+        if workspace.flipped_vertical() {
             new_y = y;
             alt_y = y + half_height;
         } else {

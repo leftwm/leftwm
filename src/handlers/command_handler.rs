@@ -68,8 +68,7 @@ pub fn process(
             false
         }
 
-        Command::FlipTagHorizontal => flip_tag_horizontal(manager),
-        Command::FlipTagVertical => flip_tag_vert(manager),
+        Command::RotateTag => rotate_tag(manager),
 
         Command::IncreaseMainWidth if val.is_none() => false,
         Command::IncreaseMainWidth => increase_main_width(manager, &val),
@@ -410,23 +409,13 @@ fn focus_workspace_change(manager: &mut Manager, val: i32) -> bool {
     true
 }
 
-fn flip_tag_horizontal(manager: &mut Manager) -> bool {
+fn rotate_tag(manager: &mut Manager) -> bool {
     let workspace = manager.focused_workspace_mut();
     if workspace.is_none() {
         return false;
     }
     let workspace = workspace.unwrap();
-    workspace.flip_horizontal();
-    true
-}
-
-fn flip_tag_vert(manager: &mut Manager) -> bool {
-    let workspace = manager.focused_workspace_mut();
-    if workspace.is_none() {
-        return false;
-    }
-    let workspace = workspace.unwrap();
-    workspace.flip_vert();
+    let _ = workspace.rotate_layout();
     true
 }
 
