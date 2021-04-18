@@ -97,7 +97,7 @@ where
     T: Clone,
 {
     let len = list.len() as i32;
-    if len < shift {
+    if len == 1 {
         return None;
     }
     let index = match list.iter().enumerate().find(|&x| test(x.1)) {
