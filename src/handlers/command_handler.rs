@@ -341,11 +341,17 @@ fn focus_window_change(
             next_index = if next_index % 2 == 0 || len < 3 { 0 } else { 2 };
         } else if change < 0 {
             match index {
-                0 => next_index = if len > 2 && len % 2 == 0 { len - 2 } else { len - 1 },
+                0 => {
+                    next_index = if len > 2 && len % 2 == 0 {
+                        len - 2
+                    } else {
+                        len - 1
+                    }
+                }
                 1 => next_index = 0,
                 2 => next_index = if len % 2 == 0 { len - 1 } else { len - 2 },
                 _ => (),
-            }   
+            }
         }
         let act = DisplayAction::MoveMouseOver(to_reorder[next_index as usize].handle);
         manager.actions.push_back(act);
