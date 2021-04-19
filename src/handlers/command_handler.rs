@@ -250,18 +250,16 @@ fn move_window_change(
         helpers::cycle_vec(&mut to_reorder, val);
         act = DisplayAction::MoveMouseOver(new_handle);
     } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
-        if to_reorder.len() > 1 {
-            let main = to_reorder.remove(0);
-            if main.handle != handle {
-                let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
-                    Some(h) => h.handle,
-                    None => return false,
-                };
-                act = DisplayAction::MoveMouseOver(new_handle);
-            }
-            helpers::cycle_vec(&mut to_reorder, val);
-            to_reorder.insert(0, main);
+        let main = to_reorder.remove(0);
+        if main.handle != handle {
+            let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
+                Some(h) => h.handle,
+                None => return false,
+            };
+            act = DisplayAction::MoveMouseOver(new_handle);
         }
+        helpers::cycle_vec(&mut to_reorder, val);
+        to_reorder.insert(0, main);
     } else {
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
@@ -324,6 +322,9 @@ fn focus_window_change(
         manager.actions.push_back(act);
     } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
         //Only change focus on first 2 windows
+        if to_reorder.len() == 1_usize {
+            return false;
+        }
         let window_group = &to_reorder[..2];
         if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, val) {
             let act = DisplayAction::MoveMouseOver(new_focused.handle);

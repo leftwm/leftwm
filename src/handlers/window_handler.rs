@@ -81,7 +81,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
         };
 
         let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-        if Layout::Monocle == layout {
+        if Layout::Monocle == layout || to_reorder.is_empty() {
             to_reorder.insert(0, window.clone());
         } else {
             to_reorder.insert(1, window.clone());

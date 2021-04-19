@@ -45,6 +45,9 @@ where
 {
     let v = &mut **list;
     let change = shift.abs() as usize;
+    if v.len() < change {
+        return;
+    }
     match shift.cmp(&0) {
         Ordering::Less => v.rotate_left(change),
         Ordering::Greater => v.rotate_right(change),
@@ -58,8 +61,9 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
-    let len = list.len() as i32;
-
+    if list.len() < 2 {
+        return;
+    }
     let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
     let item = list.get(index)?.clone();
 
@@ -83,8 +87,11 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
-    let len = list.len() as i32;
+    if list.len() == 1 {
+        return None;
+    }
     let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
+
     let mut find_index = index as i32 + shift;
     if find_index < 0 {
         find_index += len
