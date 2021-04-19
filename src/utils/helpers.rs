@@ -61,6 +61,7 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
+<<<<<<< HEAD
     let len = list.len() as i32;
     if len < 2 {
 <<<<<<< HEAD
@@ -79,6 +80,14 @@ where
     let item = list.get(index)?.clone();
 
 >>>>>>> upstream
+=======
+    if list.len() < 2 {
+        return;
+    }
+    let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
+    let item = list.get(index)?.clone();
+
+>>>>>>> refs/remotes/origin/master
     let mut new_index = index as i32 + shift;
     list.remove(index);
     let v = &mut **list;
@@ -99,6 +108,7 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
+<<<<<<< HEAD
     let len = list.len() as i32;
     if len == 1 {
         return None;
@@ -114,6 +124,13 @@ where
     let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
 
 >>>>>>> upstream
+=======
+    if list.len() == 1 {
+        return None;
+    }
+    let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
+
+>>>>>>> refs/remotes/origin/master
     let mut find_index = index as i32 + shift;
     if find_index < 0 {
         find_index += len
