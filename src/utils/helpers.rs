@@ -61,8 +61,9 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
-    if list.len() < 2 {
-        return;
+    let len = list.len() as i32;
+    if len < 2 {
+        return None;
     }
     let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
     let item = list.get(index)?.clone();
@@ -87,7 +88,8 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
-    if list.len() == 1 {
+    let len = list.len() as i32;
+    if len == 1 {
         return None;
     }
     let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
