@@ -76,7 +76,6 @@ pub fn process_internal(
 
         Command::RotateTag => rotate_tag(manager),
 
-        Command::IncreaseMainWidth if val.is_none() => false,
         Command::IncreaseMainWidth => increase_main_width(manager, &val),
         Command::DecreaseMainWidth => decrease_main_width(manager, &val),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
