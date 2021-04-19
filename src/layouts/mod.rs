@@ -178,7 +178,10 @@ mod tests {
         assert_eq!(layout_strs.len(), LAYOUTS.len());
 
         for (i, layout) in LAYOUTS.iter().enumerate() {
-            assert_eq!(layout, &Layout::from_str(layout_strs[i]).unwrap());
+            assert_eq!(
+                layout,
+                &Layout::from_str(layout_strs[i]).expect("Layout String")
+            );
         }
     }
 }

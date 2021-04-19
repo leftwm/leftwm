@@ -21,7 +21,7 @@ fn main() {
     log::info!("leftwm-worker booted!");
 
     let completed = panic::catch_unwind(|| {
-        let rt = tokio::runtime::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
         let config = config::load();
@@ -75,12 +75,19 @@ async fn event_loop(
     handler: &DisplayEventHandler,
     config: crate::config::Config,
 ) {
-    let socket_file = place_runtime_file("current_state.sock").unwrap();
+    let socket_file = place_runtime_file("current_state.sock")
+        .expect("ERROR: couldn't create current_state.sock");
     let mut state_socket = StateSocket::default();
-    state_socket.listen(socket_file).await.unwrap();
+    state_socket
+        .listen(socket_file)
+        .await
+        .expect("ERROR: couldn't connect to current_state.sock");
 
-    let pipe_file = place_runtime_file("commands.pipe").unwrap();
-    let mut command_pipe = CommandPipe::new(pipe_file).await.unwrap();
+    let pipe_file =
+        place_runtime_file("commands.pipe").expect("ERROR: couldn't create commands.pipe");
+    let mut command_pipe = CommandPipe::new(pipe_file)
+        .await
+        .expect("ERROR: couldn't connect to commands.pipe");
 
     //start the current theme
     let after_first_loop: Once = Once::new();
@@ -186,7 +193,7 @@ fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
         .write(true)
         .truncate(true)
         .open(log_path)
-        .unwrap();
+        .expect("ERROR: couldn't open log file");
     let decorator = slog_term::PlainDecorator::new(file);
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
     let drain = slog_async::Async::new(drain).build().fuse();

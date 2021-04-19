@@ -65,66 +65,46 @@ async fn read_from_pipe(
     let mut lines = BufReader::new(file).lines();
 
     while let Some(line) = lines.next_line().await.ok()? {
-        let cmd = parse_command(line).ok()?;
+        let cmd = parse_command(&line).ok()?;
         tx.send(cmd).ok()?;
     }
 
     Some(())
 }
 
-fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
-    if s.starts_with("UnloadTheme") {
-        return Ok(ExternalCommand::UnloadTheme);
-    } else if s.starts_with("Reload") {
-        return Ok(ExternalCommand::Reload);
-    } else if s.starts_with("LoadTheme ") {
-        return build_load_theme(s);
-    } else if s.starts_with("SendWorkspaceToTag ") {
-        return build_send_workspace_to_tag(s);
-    } else if s.starts_with("SendWindowToTag ") {
-        return build_send_window_to_tag(s);
-    } else if s.starts_with("SetLayout ") {
-        return build_set_layout(s);
-    } else if s.starts_with("SetMarginMultiplier ") {
-        return build_set_margin_multiplier(s);
-    } else if s.starts_with("SwapScreens") {
-        return Ok(ExternalCommand::SwapScreens);
-    } else if s.starts_with("MoveWindowToLastWorkspace") {
-        return Ok(ExternalCommand::MoveWindowToLastWorkspace);
-    } else if s.starts_with("FloatingToTile") {
-        return Ok(ExternalCommand::FloatingToTile);
-    } else if s.starts_with("MoveWindowUp") {
-        return Ok(ExternalCommand::MoveWindowUp);
-    } else if s.starts_with("MoveWindowDown") {
-        return Ok(ExternalCommand::MoveWindowDown);
-    } else if s.starts_with("FocusWindowUp") {
-        return Ok(ExternalCommand::FocusWindowUp);
-    } else if s.starts_with("MoveWindowTop") {
-        return Ok(ExternalCommand::MoveWindowTop);
-    } else if s.starts_with("FocusWindowDown") {
-        return Ok(ExternalCommand::FocusWindowDown);
-    } else if s.starts_with("FocusNextTag") {
-        return Ok(ExternalCommand::FocusNextTag);
-    } else if s.starts_with("FocusPreviousTag") {
-        return Ok(ExternalCommand::FocusPreviousTag);
-    } else if s.starts_with("FocusWorkspaceNext") {
-        return Ok(ExternalCommand::FocusWorkspaceNext);
-    } else if s.starts_with("FocusWorkspacePrevious") {
-        return Ok(ExternalCommand::FocusWorkspacePrevious);
-    } else if s.starts_with("NextLayout") {
-        return Ok(ExternalCommand::NextLayout);
-    } else if s.starts_with("PreviousLayout") {
-        return Ok(ExternalCommand::PreviousLayout);
-    } else if s.starts_with("CloseWindow") {
-        return Ok(ExternalCommand::CloseWindow);
+fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
+    let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
+    match head {
+        "UnloadTheme" => Ok(ExternalCommand::UnloadTheme),
+        "Reload" => Ok(ExternalCommand::Reload),
+        "SwapScreens" => Ok(ExternalCommand::SwapScreens),
+        "MoveWindowToLastWorkspace" => Ok(ExternalCommand::MoveWindowToLastWorkspace),
+        "FloatingToTile" => Ok(ExternalCommand::FloatingToTile),
+        "MoveWindowUp" => Ok(ExternalCommand::MoveWindowUp),
+        "MoveWindowDown" => Ok(ExternalCommand::MoveWindowDown),
+        "FocusWindowUp" => Ok(ExternalCommand::FocusWindowUp),
+        "MoveWindowTop" => Ok(ExternalCommand::MoveWindowTop),
+        "FocusWindowDown" => Ok(ExternalCommand::FocusWindowDown),
+        "FocusNextTag" => Ok(ExternalCommand::FocusNextTag),
+        "FocusPreviousTag" => Ok(ExternalCommand::FocusPreviousTag),
+        "FocusWorkspaceNext" => Ok(ExternalCommand::FocusWorkspaceNext),
+        "FocusWorkspacePrevious" => Ok(ExternalCommand::FocusWorkspacePrevious),
+        "NextLayout" => Ok(ExternalCommand::NextLayout),
+        "PreviousLayout" => Ok(ExternalCommand::PreviousLayout),
+        "CloseWindow" => Ok(ExternalCommand::CloseWindow),
+        // These require arguments and might be more finicky
+        "LoadTheme" => build_load_theme(s),
+        "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
+        "SendWindowToTag" => build_send_window_to_tag(s),
+        "SetLayout" => build_set_layout(s),
+        "SetMarginMultiplier" => build_set_margin_multiplier(s),
+        _ => Err(()),
     }
-
-    Err(())
 }
 
-fn build_load_theme(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "LoadTheme ");
-    let path = Path::new(&raw);
+fn build_load_theme(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "LoadTheme ");
+    let path = Path::new(headless);
     if path.is_file() {
         Ok(ExternalCommand::LoadTheme(path.into()))
     } else {
@@ -132,55 +112,32 @@ fn build_load_theme(mut raw: String) -> std::result::Result<ExternalCommand, ()>
     }
 }
 
-fn build_send_window_to_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "SendWindowToTag ");
-    let parts: Vec<&str> = raw.split(' ').collect();
-    if parts.len() != 1 {
-        return Err(());
-    }
-    let tag_index = match parts[0].parse::<usize>() {
-        Ok(x) => x,
-        Err(_) => {
-            return Err(());
-        }
-    };
+fn build_send_window_to_tag(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "SendWindowToTag ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let tag_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
     Ok(ExternalCommand::SendWindowToTag(tag_index))
 }
 
-fn build_send_workspace_to_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "SendWorkspaceToTag ");
-    let parts: Vec<&str> = raw.split(' ').collect();
-    if parts.len() != 2 {
-        return Err(());
-    }
-    let ws_index = match parts[0].parse::<usize>() {
-        Ok(x) => x,
-        Err(_) => {
-            return Err(());
-        }
-    };
-    let tag_index = match parts[1].parse::<usize>() {
-        Ok(x) => x,
-        Err(_) => {
-            return Err(());
-        }
-    };
+fn build_send_workspace_to_tag(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "SendWorkspaceToTag ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let ws_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
+    let tag_index: usize = parts.get(1).ok_or(())?.parse().map_err(|_| ())?;
     Ok(ExternalCommand::SendWorkspaceToTag(ws_index, tag_index))
 }
 
-fn build_set_layout(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "SetLayout ");
-    let parts: Vec<&str> = raw.split(' ').collect();
-    if parts.len() != 1 {
-        return Err(());
-    }
-    let layout = String::from_str(parts[0]).map_err(|_| ())?;
+fn build_set_layout(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "SetLayout ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let layout_name = *parts.get(0).ok_or(())?;
+    let layout = String::from_str(layout_name).map_err(|_| ())?;
     Ok(ExternalCommand::SetLayout(layout))
 }
 
-fn build_set_margin_multiplier(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "SetMarginMultiplier ");
-    let parts: Vec<&str> = raw.split(' ').collect();
+fn build_set_margin_multiplier(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "SetMarginMultiplier ");
+    let parts: Vec<&str> = headless.split(' ').collect();
     if parts.len() != 1 {
         return Err(());
     }
@@ -188,16 +145,11 @@ fn build_set_margin_multiplier(mut raw: String) -> std::result::Result<ExternalC
     Ok(ExternalCommand::SetMarginMultiplier(margin_multiplier))
 }
 
-fn crop_head(s: &mut String, head: &str) {
-    let pos = head.len();
-    match s.char_indices().nth(pos) {
-        Some((pos, _)) => {
-            s.drain(..pos);
-        }
-        None => {
-            s.clear();
-        }
+fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
+    if !s.starts_with(head) {
+        return s;
     }
+    &s[head.len()..]
 }
 
 #[derive(Debug, Clone, PartialEq)]

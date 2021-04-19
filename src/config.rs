@@ -1,3 +1,4 @@
+//! `LeftWM` general configuration
 mod keybind;
 mod theme_setting;
 mod workspace_config;
@@ -20,6 +21,7 @@ pub use keybind::Keybind;
 pub use theme_setting::ThemeSetting;
 pub use workspace_config::WorkspaceConfig;
 
+/// General configuration
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(default)]
 pub struct Config {
@@ -79,12 +81,14 @@ fn is_program_in_path(program: &str) -> bool {
     false
 }
 
+/// Returns a terminal to set for the default mod+shift+enter keybind.
 fn default_terminal<'s>() -> &'s str {
-    // order on least common to most common.
-    // the thinking is if a person has a uncommon terminal install it is intentional
+    // order from least common to most common.
+    // the thinking is if a machine has a uncommon terminal install it is intentional
     let terms = vec![
         "alacritty",
         "termite",
+        "kitty",
         "urxvt",
         "rxvt",
         "st",
@@ -94,13 +98,31 @@ fn default_terminal<'s>() -> &'s str {
         "terminator",
         "terminology",
         "gnome-terminal",
+        "xfce4-terminal",
+        "konsole",
+        "uxterm",
+        "guake", // at the bottom because of odd behaviour. guake wants F12 and should really be
+                 // started using autostart instead of LeftWM keybind.
     ];
     for t in terms {
         if is_program_in_path(t) {
             return t;
         }
     }
-    "termite" //no terninal found in path, default to a good one
+    "termite" //no terminal found in path, default to a good one
+}
+
+/// Returns default keybind value for exiting `LeftWM`.
+// On systems that have elogind and/or systemd, the recommended way to
+// kill LeftWM is to use loginctl. As we have no consistent way of knowing
+// whether it is implemented on non-systemd machines,so we instead look
+// to see if loginctl is in the path. If it isn't then we default to
+// `pkill leftwm`, which may leave zombie processes on a machine.
+fn exit_strategy<'s>() -> &'s str {
+    if is_program_in_path("loginctl") {
+        return "loginctl kill-session $XDG_SESSION_ID";
+    }
+    "pkill leftwm"
 }
 
 impl Config {
@@ -174,7 +196,7 @@ impl Default for Config {
             // Mod + Shift + x => exit leftwm
             Keybind {
                 command: Command::Execute,
-                value: Some("pkill leftwm".to_owned()),
+                value: Some(exit_strategy().to_owned()),
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "x".to_owned(),
             },

@@ -32,12 +32,6 @@ where
                 del += 1;
             } else if del > 0 {
                 v.swap(i - del, i);
-                //This is faster but crashes
-                // let src: *const T = &v[i];
-                // let dst: *mut T = &mut v[i - del];
-                // unsafe {
-                //     ptr::copy_nonoverlapping(src, dst, 1);
-                // }
             }
         }
     }
@@ -62,13 +56,14 @@ where
 }
 
 //shifts a object left or right in an Vec by a given amount
-pub fn reorder_vec<T, F>(list: &mut Vec<T>, test: F, shift: i32)
+pub fn reorder_vec<T, F>(list: &mut Vec<T>, test: F, shift: i32) -> Option<()>
 where
     F: Fn(&T) -> bool,
     T: Clone,
 {
     let len = list.len() as i32;
     if len < 2 {
+<<<<<<< HEAD
         return;
     }
     let (index, item) = match list.iter().enumerate().find(|&x| test(x.1)) {
@@ -77,6 +72,13 @@ where
             return;
         }
     };
+=======
+        return None;
+    }
+    let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
+    let item = list.get(index)?.clone();
+
+>>>>>>> upstream
     let mut new_index = index as i32 + shift;
     list.remove(index);
     let v = &mut **list;
@@ -89,6 +91,7 @@ where
         v.rotate_left(1);
     }
     list.insert(new_index as usize, item);
+    Some(())
 }
 
 pub fn relative_find<T, F>(list: &[T], test: F, shift: i32) -> Option<&T>
@@ -100,12 +103,17 @@ where
     if len == 1 {
         return None;
     }
+<<<<<<< HEAD
     let index = match list.iter().enumerate().find(|&x| test(x.1)) {
         Some(x) => x.0,
         None => {
             return None;
         }
     };
+=======
+    let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
+
+>>>>>>> upstream
     let mut find_index = index as i32 + shift;
     if find_index < 0 {
         find_index += len

@@ -148,32 +148,6 @@ impl Manager {
         Some(())
     }
 
-    /// # Panics
-    ///
-    /// Panics if wraps.pop() is empty
-    // TODO: Remove .unwrap() or add statement above indicating that it cannot be hit.
-    #[must_use]
-    pub fn tags_display(&self) -> String {
-        let mut active: Vec<String> = vec![];
-        for w in &self.workspaces {
-            active.extend(w.tags.clone())
-        }
-        let mut wraps = vec![('<', '>'), ('(', ')'), ('{', '}'), ('[', ']')];
-        let parts: Vec<String> = self
-            .tags
-            .iter()
-            .map(|t| {
-                if active.contains(&t.id) {
-                    let wrap = wraps.pop().unwrap();
-                    format!("{}{}{}", wrap.0, &t.id, wrap.1)
-                } else {
-                    format!(" {} ", &t.id)
-                }
-            })
-            .collect();
-        parts.join(" | ")
-    }
-
     #[must_use]
     pub fn workspaces_display(&self) -> String {
         let mut focused_id = -1;

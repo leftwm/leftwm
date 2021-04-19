@@ -83,7 +83,7 @@ impl XWrap {
     #[must_use]
     pub fn new() -> XWrap {
         const SERVER: mio::Token = mio::Token(0);
-        let xlib = xlib::Xlib::open().unwrap();
+        let xlib = xlib::Xlib::open().expect("Couldn't not connect to Xorg Server");
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
         assert!(!display.is_null(), "Null pointer in display");
 
@@ -93,7 +93,7 @@ impl XWrap {
         let notify = Arc::new(Notify::new());
         let task_notify = notify.clone();
 
-        let mut poll = mio::Poll::new().unwrap();
+        let mut poll = mio::Poll::new().expect("Unable to boot Mio");
         let mut events = mio::Events::with_capacity(1);
         poll.registry()
             .register(
@@ -101,7 +101,7 @@ impl XWrap {
                 SERVER,
                 mio::Interest::READABLE,
             )
-            .unwrap();
+            .expect("Unable to boot Mio");
         let timeout = Duration::from_millis(100);
         tokio::task::spawn_blocking(move || loop {
             if guard.is_closed() {
@@ -188,7 +188,7 @@ impl XWrap {
     pub fn get_screens(&self) -> Vec<Screen> {
         use x11_dl::xinerama::XineramaScreenInfo;
         use x11_dl::xinerama::Xlib;
-        let xlib = Xlib::open().unwrap();
+        let xlib = Xlib::open().expect("Couldn't not connect to Xorg Server");
         let xinerama = unsafe { (xlib.XineramaIsActive)(self.display) } > 0;
         if xinerama {
             let root = self.get_default_root_handle();
@@ -208,11 +208,12 @@ impl XWrap {
                 .collect()
         } else {
             //NON-XINERAMA
-            let roots: Vec<xlib::XWindowAttributes> = self
+            let roots: Result<Vec<xlib::XWindowAttributes>, _> = self
                 .get_roots()
                 .iter()
-                .map(|w| self.get_window_attrs(*w).unwrap())
+                .map(|w| self.get_window_attrs(*w))
                 .collect();
+            let roots = roots.expect("Error: No screen were detected");
             roots.iter().map(Screen::from).collect()
         }
     }
@@ -456,7 +457,7 @@ impl XWrap {
         unsafe {
             let mut clist_tags: Vec<*mut c_char> = tags
                 .iter()
-                .map(|x| CString::new(x.clone()).unwrap().into_raw())
+                .map(|x| CString::new(x.clone()).unwrap_or_default().into_raw())
                 .collect();
             let ptr = clist_tags.as_mut_ptr();
             (self.xlib.Xutf8TextListToTextProperty)(
@@ -1299,7 +1300,7 @@ impl XWrap {
     fn get_color(&self, color: &str) -> c_ulong {
         let screen = unsafe { (self.xlib.XDefaultScreen)(self.display) };
         let cmap: xlib::Colormap = unsafe { (self.xlib.XDefaultColormap)(self.display, screen) };
-        let color_cstr = CString::new(color).unwrap().into_raw();
+        let color_cstr = CString::new(color).unwrap_or_default().into_raw();
         let mut color: xlib::XColor = unsafe { std::mem::zeroed() };
         unsafe {
             (self.xlib.XAllocNamedColor)(self.display, cmap, color_cstr, &mut color, &mut color);

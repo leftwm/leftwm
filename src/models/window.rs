@@ -186,17 +186,13 @@ impl Window {
         self.margin_multiplier
     }
 
-    /// # Panics
-    ///
-    /// Shouldn't panic. We know that `self.floating` is `Some`
-    /// by the time we arrive at `unwrap()`.
     #[must_use]
     pub fn width(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
             value = self.normal.w();
         } else if self.floating() && self.floating.is_some() {
-            let relative = self.normal + self.floating.unwrap();
+            let relative = self.normal + self.floating.unwrap_or_default();
             value = relative.w() - (self.border * 2);
         } else {
             value = self.normal.w()
@@ -210,17 +206,13 @@ impl Window {
         value
     }
 
-    /// # Panics
-    ///
-    /// Shouldn't panic. We know that `self.floating` is `Some`
-    /// by the time we arrive at `unwrap()`.
     #[must_use]
     pub fn height(&self) -> i32 {
         let mut value;
         if self.is_fullscreen() {
             value = self.normal.h();
         } else if self.floating() && self.floating.is_some() {
-            let relative = self.normal + self.floating.unwrap();
+            let relative = self.normal + self.floating.unwrap_or_default();
             value = relative.h() - (self.border * 2);
         } else {
             value = self.normal.h()
@@ -250,34 +242,26 @@ impl Window {
         }
     }
 
-    /// # Panics
-    ///
-    /// Shouldn't panic. We know that `self.floating` is `Some`
-    /// by the time we arrive at `unwrap()`.
     #[must_use]
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.x();
         }
         if self.floating() && self.floating.is_some() {
-            let relative = self.normal + self.floating.unwrap();
+            let relative = self.normal + self.floating.unwrap_or_default();
             relative.x()
         } else {
             self.normal.x() + (self.margin.clone().left() as f32 * self.margin_multiplier) as i32
         }
     }
 
-    /// # Panics
-    ///
-    /// Shouldn't panic. We know that `self.floating` is `Some`
-    /// by the time we arrive at `unwrap()`.
     #[must_use]
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
             return self.normal.y();
         }
         if self.floating() && self.floating.is_some() {
-            let relative = self.normal + self.floating.unwrap();
+            let relative = self.normal + self.floating.unwrap_or_default();
             relative.y()
         } else {
             self.normal.y() + (self.margin.clone().top() as f32 * self.margin_multiplier) as i32
