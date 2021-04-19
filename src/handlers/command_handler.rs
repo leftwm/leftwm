@@ -324,7 +324,14 @@ fn focus_window_change(
         manager.actions.push_back(act);
     } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
         //Only change focus on first 2 windows
-        let window_group = &to_reorder[..2];
+        let index = match to_reorder
+            .iter()
+            .position(|x: &Window| -> bool { !x.floating() })
+        {
+            Some(i) => i + 1,
+            None => return false,
+        };
+        let window_group = &to_reorder[..=index];
         if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, val) {
             let act = DisplayAction::MoveMouseOver(new_focused.handle);
             manager.actions.push_back(act);
