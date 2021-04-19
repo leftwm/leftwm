@@ -15,6 +15,12 @@ pub enum LeftErrorKind {
     StreamError(),
 }
 
+pub(crate) fn stream_error() -> LeftError {
+    LeftError {
+        inner: LeftErrorKind::StreamError(),
+    }
+}
+
 impl fmt::Display for LeftError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.inner)

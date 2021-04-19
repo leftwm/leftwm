@@ -10,7 +10,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
         return None;
     }
 
-    let event_name = xw.get_xatom_name(event.atom).unwrap();
+    let event_name = xw.get_xatom_name(event.atom).ok()?;
     log::trace!("PropertyNotify: {} : {:?}", event_name, &event);
 
     match event.atom {
