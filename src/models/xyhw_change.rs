@@ -119,7 +119,10 @@ impl XyhwChange {
         } else {
             false
         };
-        let mut xyhw = window.strut.unwrap();
+        let mut xyhw = match window.strut {
+            Some(x) => x,
+            None => return false,
+        };
         changed = self.update(&mut xyhw) || changed;
         window.strut = Some(xyhw);
         changed

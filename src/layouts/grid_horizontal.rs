@@ -28,7 +28,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
 
     let mut iter = windows.iter_mut().enumerate().peekable();
     for col in 0..num_cols {
-        let remaining_windows = window_count - iter.peek().unwrap().0 as i32;
+        let iter_peek = iter.peek().map(|x| x.0).unwrap_or_default() as i32;
+        let remaining_windows = window_count - iter_peek;
         let remaining_columns = num_cols - col;
         let num_rows_in_this_col = remaining_windows / remaining_columns;
 
@@ -36,7 +37,10 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         let win_width = workspace.width() / num_cols;
 
         for row in 0..num_rows_in_this_col {
-            let (_idx, win) = iter.next().unwrap();
+            let (_idx, win) = match iter.next() {
+                Some(x) => x,
+                None => return,
+            };
             win.set_height(win_height);
             win.set_width(win_width);
             win.set_x(workspace.x() + win_width * col);
