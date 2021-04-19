@@ -329,6 +329,26 @@ fn focus_window_change(
             let act = DisplayAction::MoveMouseOver(new_focused.handle);
             manager.actions.push_back(act);
         }
+    } else if let Some(crate::layouts::Layout::CenterMainBalanced) = layout {
+        let index = match to_reorder.iter().position(is_handle) {
+            Some(i) => i,
+            None => return false,
+        };
+        let change = if index == 0 { 1 } else { 2 } * val;
+        let len = to_reorder.len() as i32;
+        let mut next_index = index as i32 + change;
+        if next_index >= len {
+            next_index = if next_index % 2 == 0 || len < 3 { 0 } else { 2 };
+        } else if change < 0 {
+            match index {
+                0 => next_index = if len > 2 && len % 2 == 0 { len - 2 } else { len - 1 },
+                1 => next_index = 0,
+                2 => next_index = if len % 2 == 0 { len - 1 } else { len - 2 },
+                _ => (),
+            }   
+        }
+        let act = DisplayAction::MoveMouseOver(to_reorder[next_index as usize].handle);
+        manager.actions.push_back(act);
     } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val) {
         let act = DisplayAction::MoveMouseOver(new_focused.handle);
         manager.actions.push_back(act);
