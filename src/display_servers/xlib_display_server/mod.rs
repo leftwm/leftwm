@@ -224,8 +224,10 @@ impl XlibDisplayServer {
         let mut all: Vec<Window> = Vec::new();
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
-                let attrs = self.xw.get_window_attrs(handle).unwrap();
-
+                let attrs = match self.xw.get_window_attrs(handle) {
+                    Ok(x) => x,
+                    Err(_) => return,
+                };
                 let managed = match self.xw.get_transient_for(handle) {
                     Some(_) => attrs.map_state == 2,
                     None => attrs.override_redirect <= 0 && attrs.map_state == 2,

@@ -65,15 +65,16 @@ async fn read_from_pipe(
     let mut lines = BufReader::new(file).lines();
 
     while let Some(line) = lines.next_line().await.ok()? {
-        let cmd = parse_command(line).ok()?;
+        let cmd = parse_command(&line).ok()?;
         tx.send(cmd).ok()?;
     }
 
     Some(())
 }
 
-fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
-    match *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"") {
+fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
+    let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
+    match head {
         "UnloadTheme" => Ok(ExternalCommand::UnloadTheme),
         "Reload" => Ok(ExternalCommand::Reload),
         "SwapScreens" => Ok(ExternalCommand::SwapScreens),
@@ -102,9 +103,9 @@ fn parse_command(s: String) -> std::result::Result<ExternalCommand, ()> {
     }
 }
 
-fn build_load_theme(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "LoadTheme ");
-    let path = Path::new(&raw);
+fn build_load_theme(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "LoadTheme ");
+    let path = Path::new(headless);
     if path.is_file() {
         Ok(ExternalCommand::LoadTheme(path.into()))
     } else {
@@ -112,55 +113,32 @@ fn build_load_theme(mut raw: String) -> std::result::Result<ExternalCommand, ()>
     }
 }
 
-fn build_send_window_to_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "SendWindowToTag ");
-    let parts: Vec<&str> = raw.split(' ').collect();
-    if parts.len() != 1 {
-        return Err(());
-    }
-    let tag_index = match parts[0].parse::<usize>() {
-        Ok(x) => x,
-        Err(_) => {
-            return Err(());
-        }
-    };
+fn build_send_window_to_tag(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "SendWindowToTag ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let tag_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
     Ok(ExternalCommand::SendWindowToTag(tag_index))
 }
 
-fn build_send_workspace_to_tag(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "SendWorkspaceToTag ");
-    let parts: Vec<&str> = raw.split(' ').collect();
-    if parts.len() != 2 {
-        return Err(());
-    }
-    let ws_index = match parts[0].parse::<usize>() {
-        Ok(x) => x,
-        Err(_) => {
-            return Err(());
-        }
-    };
-    let tag_index = match parts[1].parse::<usize>() {
-        Ok(x) => x,
-        Err(_) => {
-            return Err(());
-        }
-    };
+fn build_send_workspace_to_tag(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "SendWorkspaceToTag ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let ws_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
+    let tag_index: usize = parts.get(1).ok_or(())?.parse().map_err(|_| ())?;
     Ok(ExternalCommand::SendWorkspaceToTag(ws_index, tag_index))
 }
 
-fn build_set_layout(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "SetLayout ");
-    let parts: Vec<&str> = raw.split(' ').collect();
-    if parts.len() != 1 {
-        return Err(());
-    }
-    let layout = String::from_str(parts[0]).map_err(|_| ())?;
+fn build_set_layout(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "SetLayout ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let layout_name = *parts.get(0).ok_or(())?;
+    let layout = String::from_str(layout_name).map_err(|_| ())?;
     Ok(ExternalCommand::SetLayout(layout))
 }
 
-fn build_set_margin_multiplier(mut raw: String) -> std::result::Result<ExternalCommand, ()> {
-    crop_head(&mut raw, "SetMarginMultiplier ");
-    let parts: Vec<&str> = raw.split(' ').collect();
+fn build_set_margin_multiplier(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "SetMarginMultiplier ");
+    let parts: Vec<&str> = headless.split(' ').collect();
     if parts.len() != 1 {
         return Err(());
     }
@@ -168,16 +146,11 @@ fn build_set_margin_multiplier(mut raw: String) -> std::result::Result<ExternalC
     Ok(ExternalCommand::SetMarginMultiplier(margin_multiplier))
 }
 
-fn crop_head(s: &mut String, head: &str) {
-    let pos = head.len();
-    match s.char_indices().nth(pos) {
-        Some((pos, _)) => {
-            s.drain(..pos);
-        }
-        None => {
-            s.clear();
-        }
+fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
+    if !s.starts_with(head) {
+        return s;
     }
+    &s[head.len()..]
 }
 
 #[derive(Debug, Clone, PartialEq)]

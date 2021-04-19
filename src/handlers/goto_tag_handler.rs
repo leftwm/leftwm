@@ -12,13 +12,20 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     if manager.focused_workspace().is_none() {
         return false;
     }
-    let old_tags = manager.focused_workspace().unwrap().tags.clone();
+    let old_tags = manager
+        .focused_workspace()
+        .map(|ws| ws.tags.clone())
+        .unwrap_or_default();
     for wp in &mut manager.workspaces {
         if wp.tags == new_tags {
             wp.tags = old_tags.clone();
         }
     }
-    let active_workspace = manager.focused_workspace_mut().unwrap();
+    let active_workspace = match manager.focused_workspace_mut() {
+        Some(x) => x,
+        None => return false,
+    };
+
     active_workspace.tags = new_tags;
     focus_handler::focus_tag(manager, &tag.id);
 

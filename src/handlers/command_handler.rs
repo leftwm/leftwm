@@ -1,4 +1,10 @@
 #![allow(clippy::wildcard_imports)]
+#![allow(clippy::shadow_unrelated)]
+
+// NOTE: there apears to be a clippy bug with shadow_unrelated and the (?) Operator
+// allow shadow should be removed once it is resolved
+// https://github.com/rust-lang/rust-clippy/issues/6563
+
 use super::*;
 use crate::config::Config;
 use crate::display_action::DisplayAction;
@@ -11,32 +17,33 @@ use std::str::FromStr;
  * - a command no longer requires a value
  * - a new command is introduced that requires a value
  *  */
-
 pub fn process(
+    manager: &mut Manager,
+    config: &Config,
+    command: &Command,
+    val: &Option<String>,
+) -> bool {
+    process_internal(manager, config, command, val).unwrap_or(false)
+}
+
+pub fn process_internal(
     mut manager: &mut Manager,
     config: &Config,
     command: &Command,
-    val: Option<String>,
-) -> bool {
+    val: &Option<String>,
+) -> Option<bool> {
     match command {
-        Command::Execute if val.is_none() => false,
         Command::Execute => {
-            exec_shell(&val.unwrap(), &mut manager);
-            false
+            exec_shell(val.as_ref()?, &mut manager);
+            None
         }
 
-        Command::MoveToTag if val.is_none() => false,
-        Command::MoveToTag if !is_num(&val) => false,
-        Command::MoveToTag if to_num(&val) > manager.tags.len() => false,
-        Command::MoveToTag if to_num(&val) < 1 => false,
         Command::MoveToTag => move_to_tag(&val, manager),
 
         Command::MoveWindowUp => move_focus_common_vars(move_window_change, manager, -1),
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag if val.is_none() => false,
-        Command::GotoTag if !is_num(&val) => false,
         Command::GotoTag => goto_tag(manager, &val, config),
 
         Command::CloseWindow => close_window(manager),
@@ -45,7 +52,6 @@ pub fn process(
         Command::NextLayout => next_layout(manager),
         Command::PreviousLayout => previous_layout(manager),
 
-        Command::SetLayout if val.is_none() => false,
         Command::SetLayout => set_layout(&val, manager),
 
         Command::FloatingToTile => floating_to_tile(manager),
@@ -57,55 +63,53 @@ pub fn process(
         Command::FocusWorkspaceNext => focus_workspace_change(manager, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(manager, -1),
 
-        Command::MouseMoveWindow => false,
+        Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
             manager.soft_reload();
-            false
+            None
         }
         Command::HardReload => {
             manager.hard_reload();
-            false
+            None
         }
 
         Command::RotateTag => rotate_tag(manager),
 
         Command::IncreaseMainWidth if val.is_none() => false,
         Command::IncreaseMainWidth => increase_main_width(manager, &val),
-        Command::DecreaseMainWidth if val.is_none() => false,
         Command::DecreaseMainWidth => decrease_main_width(manager, &val),
-        Command::SetMarginMultiplier if val.is_none() => false,
         Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
     }
 }
 
-fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> bool {
-    let tag_num = to_num(val);
-    let tag = manager.tags[tag_num - 1].clone();
+fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
+    let tag_num: usize = val.as_ref()?.parse().ok()?;
+    let tag = manager.tags.get(tag_num - 1)?.clone();
 
     // In order to apply the correct margin multiplier we want to copy this value
     // from any window already present on the target tag
-    let margin_multiplier = match manager.windows.iter().filter(|w| w.has_tag(&tag.id)).last() {
+    let margin_multiplier = match manager.windows.iter().find(|w| w.has_tag(&tag.id)) {
         Some(w) => w.margin_multiplier(),
         None => 1.0,
     };
 
-    if let Some(window) = manager.focused_window_mut() {
-        window.clear_tags();
-        window.set_floating(false);
-        window.tag(&tag.id);
-        window.apply_margin_multiplier(margin_multiplier);
-        let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
-        manager.actions.push_back(act);
-        manager.sort_windows();
-    }
-    true
+    let window = manager.focused_window_mut()?;
+    window.clear_tags();
+    window.set_floating(false);
+    window.tag(&tag.id);
+    window.apply_margin_multiplier(margin_multiplier);
+    let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
+    manager.actions.push_back(act);
+    manager.sort_windows();
+    Some(true)
 }
 
-fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> bool {
+fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
-    let input_tag = to_num(val);
+
+    let input_tag = val.as_ref()?.parse().ok()?;
     let mut destination_tag = input_tag;
     if !config.disable_current_tag_swap {
         destination_tag = match (current_tag, previous_tag, input_tag) {
@@ -113,153 +117,120 @@ fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> boo
             (_, _, _) => input_tag, // go to the input tag tag
         };
     }
-    goto_tag_handler::process(manager, destination_tag)
+    Some(goto_tag_handler::process(manager, destination_tag))
 }
 
-fn focus_next_tag(manager: &mut Manager) -> bool {
-    let current = manager.focused_tag(0);
-    let current = current.unwrap();
-    let mut index = match manager.tags.iter().position(|x| x.id == current) {
-        Some(x) => x + 1,
-        None => {
-            return false;
-        }
-    };
+fn focus_next_tag(manager: &mut Manager) -> Option<bool> {
+    let current = manager.focused_tag(0)?;
+    let mut index = manager.tags.iter().position(|x| x.id == current)? + 1;
     index += 1;
     if index > manager.tags.len() {
         index = 1;
     }
-    goto_tag_handler::process(manager, index)
+    Some(goto_tag_handler::process(manager, index))
 }
 
-fn focus_previous_tag(manager: &mut Manager) -> bool {
-    let current = manager.focused_tag(0);
-    let current = current.unwrap();
-    let mut index = match manager.tags.iter().position(|x| x.id == current) {
-        Some(x) => x + 1,
-        None => {
-            return false;
-        }
-    };
+fn focus_previous_tag(manager: &mut Manager) -> Option<bool> {
+    let current = manager.focused_tag(0)?;
+    let mut index = manager.tags.iter().position(|x| x.id == current)? + 1;
     index -= 1;
     if index < 1 {
         index = manager.tags.len();
     }
-    goto_tag_handler::process(manager, index)
+    Some(goto_tag_handler::process(manager, index))
 }
 
-fn swap_tags(manager: &mut Manager) -> bool {
+fn swap_tags(manager: &mut Manager) -> Option<bool> {
     if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
-        let mut a = manager.workspaces[manager.focused_workspace_history[0]].clone();
-        let mut b = manager.workspaces[manager.focused_workspace_history[1]].clone();
-        let swap = a.tags.clone();
-        a.tags = b.tags.clone();
-        b.tags = swap;
-        manager.workspaces[manager.focused_workspace_history[0]] = a;
-        manager.workspaces[manager.focused_workspace_history[1]] = b;
-        return true;
+        let hist_a = *manager.focused_workspace_history.get(0)?;
+        let hist_b = *manager.focused_workspace_history.get(1)?;
+        let mut temp = vec![];
+        std::mem::swap(&mut manager.workspaces.get_mut(hist_a)?.tags, &mut temp);
+        std::mem::swap(&mut manager.workspaces.get_mut(hist_b)?.tags, &mut temp);
+        std::mem::swap(&mut manager.workspaces.get_mut(hist_a)?.tags, &mut temp);
+        return Some(true);
     }
     if manager.workspaces.len() == 1 {
         let last = manager
             .focused_tag_history
             .get(1)
-            .map(std::string::ToString::to_string);
-        if let Some(last) = last {
-            let tag_index = match manager.tags.iter().position(|x| x.id == last) {
-                Some(x) => x + 1,
-                None => return false,
-            };
-            return goto_tag_handler::process(manager, tag_index);
-        }
+            .map(std::string::ToString::to_string)?;
+
+        let tag_index = manager.tags.iter().position(|x| x.id == last)? + 1;
+        return Some(goto_tag_handler::process(manager, tag_index));
     }
-    false
+    None
 }
 
-fn close_window(manager: &mut Manager) -> bool {
-    if let Some(window) = manager.focused_window() {
-        if window.type_ != WindowType::Dock {
-            let act = DisplayAction::KillWindow(window.handle);
-            manager.actions.push_back(act);
-        }
-    }
-    false
-}
-
-fn move_to_last_workspace(manager: &mut Manager) -> bool {
-    if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
-        let wp_tags = &manager.workspaces[manager.focused_workspace_history[1]]
-            .tags
-            .clone();
-        if let Some(window) = manager.focused_window_mut() {
-            window.tags = vec![wp_tags[0].clone()];
-            return true;
-        }
-    }
-    false
-}
-
-fn next_layout(manager: &mut Manager) -> bool {
-    if let Some(workspace) = manager.focused_workspace_mut() {
-        workspace.next_layout();
-        return true;
-    }
-    false
-}
-
-fn previous_layout(manager: &mut Manager) -> bool {
-    if let Some(workspace) = manager.focused_workspace_mut() {
-        workspace.prev_layout();
-        return true;
-    }
-    false
-}
-
-fn set_layout(val: &Option<String>, manager: &mut Manager) -> bool {
-    if let Some(layout) = to_layout(val) {
-        if let Some(workspace) = manager.focused_workspace_mut() {
-            workspace.set_layout(layout);
-            return true;
-        }
-    }
-    false
-}
-
-fn floating_to_tile(manager: &mut Manager) -> bool {
-    let workspace = manager.focused_workspace().unwrap().clone();
-    if let Some(window) = manager.focused_window_mut() {
-        if window.must_float() {
-            return false;
-        }
-        //Not ideal as is_floating and must_float are connected so have to check
-        //them separately
-        if !window.floating() {
-            return false;
-        }
-        window_handler::snap_to_workspace(window, &workspace);
-        let act = DisplayAction::MoveMouseOver(window.handle);
+fn close_window(manager: &mut Manager) -> Option<bool> {
+    let window = manager.focused_window()?;
+    if window.type_ != WindowType::Dock {
+        let act = DisplayAction::KillWindow(window.handle);
         manager.actions.push_back(act);
-        return true;
     }
-    false
+    None
 }
 
-fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> bool
+fn move_to_last_workspace(manager: &mut Manager) -> Option<bool> {
+    if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
+        let index = *manager.focused_workspace_history.get(1)?;
+        let wp_tags = &manager.workspaces.get(index)?.tags.clone();
+        let window = manager.focused_window_mut()?;
+        window.tags = vec![wp_tags.get(0)?.clone()];
+        return Some(true);
+    }
+    None
+}
+
+fn next_layout(manager: &mut Manager) -> Option<bool> {
+    let workspace = manager.focused_workspace_mut()?;
+    workspace.next_layout();
+    Some(true)
+}
+
+fn previous_layout(manager: &mut Manager) -> Option<bool> {
+    let workspace = manager.focused_workspace_mut()?;
+    workspace.prev_layout();
+    Some(true)
+}
+
+fn set_layout(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
+    let layout = Layout::from_str(val.as_ref()?).ok()?;
+    let workspace = manager.focused_workspace_mut()?;
+    workspace.set_layout(layout);
+    Some(true)
+}
+
+fn floating_to_tile(manager: &mut Manager) -> Option<bool> {
+    let workspace = manager.focused_workspace()?.clone();
+    let window = manager.focused_window_mut()?;
+    if window.must_float() {
+        return None;
+    }
+    //Not ideal as is_floating and must_float are connected so have to check
+    //them separately
+    if !window.floating() {
+        return None;
+    }
+    window_handler::snap_to_workspace(window, &workspace);
+    let act = DisplayAction::MoveMouseOver(window.handle);
+    manager.actions.push_back(act);
+    Some(true)
+}
+
+fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> Option<bool>
 where
     F: Fn(&mut Manager, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> bool,
 {
-    let handle = match manager.focused_window() {
-        Some(h) => h.handle,
-        None => return false,
-    };
-    let (tags, layout) = match manager.focused_workspace() {
-        Some(w) => (w.tags.clone(), Some(w.layout.clone())),
-        None => return false,
-    };
+    let handle = manager.focused_window()?.handle;
+    let w = manager.focused_workspace()?;
+    let (tags, layout) = (w.tags.clone(), Some(w.layout.clone()));
+
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
 
     let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-    func(manager, val, handle, &layout, to_reorder)
+    Some(func(manager, val, handle, &layout, to_reorder))
 }
 
 fn move_window_change(
@@ -295,7 +266,7 @@ fn move_window_change(
             to_reorder.insert(0, main);
         }
     } else {
-        helpers::reorder_vec(&mut to_reorder, is_handle, val);
+        let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
     manager.windows.append(&mut to_reorder);
     manager.actions.push_back(act);
@@ -369,21 +340,14 @@ fn focus_window_change(
     true
 }
 
-fn focus_workspace_change(manager: &mut Manager, val: i32) -> bool {
-    let current = manager.focused_workspace();
-    if current.is_none() {
-        return false;
-    }
-    let current = current.unwrap();
-    let mut index = match manager
+fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
+    let current = manager.focused_workspace()?;
+    let mut index = manager
         .workspaces
         .iter()
         .enumerate()
-        .find(|&x| x.1 == current)
-    {
-        Some(x) => x.0 as i32,
-        None => return false,
-    };
+        .find(|&x| x.1 == current)?
+        .0 as i32;
     let len = manager.workspaces.len() as i32;
     index += val;
     if index < 0 {
@@ -392,69 +356,46 @@ fn focus_workspace_change(manager: &mut Manager, val: i32) -> bool {
     if index >= len {
         index = 0;
     }
-    let workspace = manager.workspaces[index as usize].clone();
+    let workspace = manager.workspaces.get(index as usize)?.clone();
     focus_handler::focus_workspace(manager, &workspace);
     let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
     manager.actions.push_back(act);
-    if let Some(window) = manager
+    let window = manager
         .windows
         .iter()
-        .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)
-    {
-        let window = window.clone();
-        focus_handler::move_cursor_over(manager, &window);
-        let act = DisplayAction::MoveMouseOver(window.handle);
-        manager.actions.push_back(act);
-    }
-    true
+        .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)?
+        .clone();
+    focus_handler::move_cursor_over(manager, &window);
+    let act = DisplayAction::MoveMouseOver(window.handle);
+    manager.actions.push_back(act);
+    Some(true)
 }
 
-fn rotate_tag(manager: &mut Manager) -> bool {
-    let workspace = manager.focused_workspace_mut();
-    if workspace.is_none() {
-        return false;
-    }
-    let workspace = workspace.unwrap();
+fn rotate_tag(manager: &mut Manager) -> Option<bool> {
+    let workspace = manager.focused_workspace_mut()?;
     let _ = workspace.rotate_layout();
-    true
+    Some(true)
 }
 
-fn increase_main_width(manager: &mut Manager, val: &Option<String>) -> bool {
-    let workspace = manager.focused_workspace_mut();
-    if workspace.is_none() {
-        return false;
-    }
-    let workspace = workspace.unwrap();
-    let delta: u8 = (val.as_ref().unwrap()).parse().unwrap();
+fn increase_main_width(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+    let workspace = manager.focused_workspace_mut()?;
+    let delta: u8 = val.as_ref()?.parse().ok()?;
     workspace.increase_main_width(delta);
-    true
+    Some(true)
 }
 
-fn decrease_main_width(manager: &mut Manager, val: &Option<String>) -> bool {
-    let workspace = manager.focused_workspace_mut();
-    if workspace.is_none() {
-        return false;
-    }
-    let workspace = workspace.unwrap();
-    let delta: u8 = (val.as_ref().unwrap()).parse().unwrap();
+fn decrease_main_width(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+    let workspace = manager.focused_workspace_mut()?;
+    let delta: u8 = val.as_ref()?.parse().ok()?;
     workspace.decrease_main_width(delta);
-    true
+    Some(true)
 }
 
-fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> bool {
-    let margin_multiplier: f32 = (val.as_ref().as_ref().unwrap()).parse().unwrap();
-    match manager.focused_workspace_mut() {
-        Some(ws) => ws.set_margin_multiplier(margin_multiplier),
-        None => {
-            return false;
-        }
-    };
-    let tags = match manager.focused_workspace() {
-        Some(ws) => ws.tags.clone(),
-        None => {
-            return false;
-        }
-    };
+fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+    let margin_multiplier: f32 = val.as_ref()?.parse().ok()?;
+    let ws = manager.focused_workspace_mut()?;
+    ws.set_margin_multiplier(margin_multiplier);
+    let tags = ws.tags.clone();
     if manager
         .windows
         .iter()
@@ -466,29 +407,13 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> bool {
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut manager.windows, for_active_workspace);
         to_apply_margin_multiplier.iter_mut().for_each(|w| {
-            w.apply_margin_multiplier(manager.focused_workspace().unwrap().margin_multiplier())
+            if let Some(ws) = manager.focused_workspace() {
+                w.apply_margin_multiplier(ws.margin_multiplier())
+            }
         });
         manager.windows.append(&mut to_apply_margin_multiplier);
     }
-    true
-}
-/// Is the string passed in a valid number
-fn is_num(val: &Option<String>) -> bool {
-    match val {
-        Some(num) => num.parse::<usize>().is_ok(),
-        None => false,
-    }
-}
-
-/// Convert the option string to a number
-fn to_num(val: &Option<String>) -> usize {
-    val.as_ref()
-        .and_then(|num| num.parse::<usize>().ok())
-        .unwrap_or_default()
-}
-
-fn to_layout(val: &Option<String>) -> Option<Layout> {
-    Layout::from_str(val.as_ref()?).ok()
+    Some(true)
 }
 
 #[cfg(test)]
@@ -505,7 +430,7 @@ mod tests {
                 &mut manager,
                 &config,
                 &Command::GotoTag,
-                Some("6".to_string())
+                &Some("6".to_string())
             ),
             false
         );
@@ -514,7 +439,7 @@ mod tests {
                 &mut manager,
                 &config,
                 &Command::GotoTag,
-                Some("2".to_string())
+                &Some("2".to_string())
             ),
             false
         );
@@ -523,7 +448,7 @@ mod tests {
                 &mut manager,
                 &config,
                 &Command::GotoTag,
-                Some("15".to_string())
+                &Some("15".to_string())
             ),
             false
         );
@@ -540,13 +465,13 @@ mod tests {
             &mut manager,
             &config,
             &Command::GotoTag,
-            Some("2".to_string())
+            &Some("2".to_string())
         ));
         assert!(process(
             &mut manager,
             &config,
             &Command::GotoTag,
-            Some("1".to_string())
+            &Some("1".to_string())
         ));
         // we only have one tag per screen created automatically
         assert_eq!(
@@ -554,7 +479,7 @@ mod tests {
                 &mut manager,
                 &config,
                 &Command::GotoTag,
-                Some("3".to_string())
+                &Some("3".to_string())
             ),
             false
         );
@@ -578,7 +503,7 @@ mod tests {
                 &mut manager,
                 &config,
                 &Command::GotoTag,
-                Some("abc".to_string())
+                &Some("abc".to_string())
             ),
             false
         );
@@ -587,12 +512,12 @@ mod tests {
                 &mut manager,
                 &config,
                 &Command::GotoTag,
-                Some("ab45c".to_string())
+                &Some("ab45c".to_string())
             ),
             false
         );
         assert_eq!(
-            process(&mut manager, &config, &Command::GotoTag, None),
+            process(&mut manager, &config, &Command::GotoTag, &None),
             false
         );
     }
@@ -618,7 +543,7 @@ mod tests {
             &mut manager,
             &config,
             &Command::GotoTag,
-            Some("6".to_string())
+            &Some("6".to_string())
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(5));
@@ -626,7 +551,7 @@ mod tests {
             &mut manager,
             &config,
             &Command::GotoTag,
-            Some("2".to_string())
+            &Some("2".to_string())
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(1));
@@ -635,7 +560,7 @@ mod tests {
             &mut manager,
             &config,
             &Command::GotoTag,
-            Some("3".to_string())
+            &Some("3".to_string())
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(2));
@@ -644,7 +569,7 @@ mod tests {
             &mut manager,
             &config,
             &Command::GotoTag,
-            Some("4".to_string())
+            &Some("4".to_string())
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(3));
