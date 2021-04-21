@@ -74,6 +74,8 @@ pub fn process_internal(
             None
         }
 
+        Command::RotateTag => rotate_tag(manager),
+
         Command::IncreaseMainWidth => increase_main_width(manager, &val),
         Command::DecreaseMainWidth => decrease_main_width(manager, &val),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
@@ -366,6 +368,12 @@ fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
     focus_handler::move_cursor_over(manager, &window);
     let act = DisplayAction::MoveMouseOver(window.handle);
     manager.actions.push_back(act);
+    Some(true)
+}
+
+fn rotate_tag(manager: &mut Manager) -> Option<bool> {
+    let workspace = manager.focused_workspace_mut()?;
+    let _ = workspace.rotate_layout();
     Some(true)
 }
 
