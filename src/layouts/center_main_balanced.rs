@@ -201,6 +201,12 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
 
     for (i, window) in iter.enumerate() {
         if i % 2 == 0 {
+            if workspace.flipped_horizontal() {
+                right_windows.push(window);
+            } else {
+                left_windows.push(window);
+            }
+        } else if workspace.flipped_horizontal() {
             left_windows.push(window);
         } else {
             right_windows.push(window);

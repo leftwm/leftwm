@@ -79,6 +79,20 @@ impl Layout {
         }
     }
 
+    //The possible permutations that a layout can be flipped => (flipable_horz, flipable_vert)
+    pub fn rotations(&self) -> Vec<(bool, bool)> {
+        match self {
+            //Layouts that can be flipped both ways
+            Self::Fibonacci => {
+                [(false, false), (true, false), (true, true), (false, true)].to_vec()
+            }
+            //Layouts that can be flipped vertically
+            Self::MainAndHorizontalStack => [(false, false), (false, true)].to_vec(),
+            //Layouts that can be flipped horizontally
+            _ => [(false, false), (true, false)].to_vec(),
+        }
+    }
+
     pub fn next_layout(&self, layouts: &[Layout]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,

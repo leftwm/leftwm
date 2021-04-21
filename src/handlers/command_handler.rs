@@ -74,6 +74,8 @@ pub fn process_internal(
             None
         }
 
+        Command::RotateTag => rotate_tag(manager),
+
         Command::IncreaseMainWidth => increase_main_width(manager, &val),
         Command::DecreaseMainWidth => decrease_main_width(manager, &val),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
@@ -250,18 +252,16 @@ fn move_window_change(
         helpers::cycle_vec(&mut to_reorder, val);
         act = DisplayAction::MoveMouseOver(new_handle);
     } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
-        if to_reorder.len() > 1 {
-            let main = to_reorder.remove(0);
-            if main.handle != handle {
-                let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
-                    Some(h) => h.handle,
-                    None => return false,
-                };
-                act = DisplayAction::MoveMouseOver(new_handle);
-            }
-            helpers::cycle_vec(&mut to_reorder, val);
-            to_reorder.insert(0, main);
+        let main = to_reorder.remove(0);
+        if main.handle != handle {
+            let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
+                Some(h) => h.handle,
+                None => return false,
+            };
+            act = DisplayAction::MoveMouseOver(new_handle);
         }
+        helpers::cycle_vec(&mut to_reorder, val);
+        to_reorder.insert(0, main);
     } else {
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
@@ -323,7 +323,9 @@ fn focus_window_change(
         let act = DisplayAction::MoveMouseOver(new_handle);
         manager.actions.push_back(act);
     } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
-        //Only change focus on first 2 windows
+        if to_reorder.len() == 1_usize {
+            return false;
+        }
         let index = match to_reorder
             .iter()
             .position(|x: &Window| -> bool { !x.floating() })
@@ -372,6 +374,12 @@ fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
     focus_handler::move_cursor_over(manager, &window);
     let act = DisplayAction::MoveMouseOver(window.handle);
     manager.actions.push_back(act);
+    Some(true)
+}
+
+fn rotate_tag(manager: &mut Manager) -> Option<bool> {
+    let workspace = manager.focused_workspace_mut()?;
+    let _ = workspace.rotate_layout();
     Some(true)
 }
 

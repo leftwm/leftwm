@@ -66,10 +66,14 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
 
     let thrid_part = workspace.width() - primary_width;
 
-    let primary_x = match window_count {
-        1 => 0_i32,
-        _ => thrid_part,
+    let (mut main_x, mut stack_x) = match window_count {
+        1 => (workspace.x(), 0),
+        _ => (thrid_part, workspace.x()),
     };
+    if workspace.flipped_horizontal() {
+        main_x = workspace.x();
+        stack_x = workspace.x() + primary_width;
+    }
 
     let mut iter = windows.iter_mut();
 
@@ -78,7 +82,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         if let Some(first) = iter.next() {
             first.set_height(workspace.height());
             first.set_width(primary_width);
-            first.set_x(workspace.x() + primary_x);
+            first.set_x(workspace.x() + main_x);
             first.set_y(workspace.y());
         }
     }
@@ -91,7 +95,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     for w in iter {
         w.set_height(height);
         w.set_width(thrid_part);
-        w.set_x(workspace.x());
+        w.set_x(stack_x);
         w.set_y(workspace.y() + y);
         y += height;
     }

@@ -68,10 +68,37 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         _ => (workspace.width() as f32 / 2.0).floor() as i32,
     };
 
-    let primary_x = match window_count {
-        1 => 0_i32,
+    let secondary_width = match window_count {
+        1 => 0,
         2 => (workspace.width() as f32 / 2.0).floor() as i32,
         _ => (workspace.width() as f32 / 4.0).floor() as i32,
+    };
+
+    let (primary_x, secondary_x, stack_x) = match window_count {
+        1 => (0, 0, 0),
+        2 => {
+            let (px, sx);
+            if workspace.flipped_horizontal() {
+                px = workspace.x();
+                sx = workspace.x() + primary_width;
+            } else {
+                px = (workspace.width() as f32 / 2.0).floor() as i32;
+                sx = workspace.x();
+            }
+            (px, sx, 0)
+        }
+        _ => {
+            let px = (workspace.width() as f32 / 4.0).floor() as i32;
+            let (sx, stx);
+            if workspace.flipped_horizontal() {
+                sx = workspace.x() + primary_width + secondary_width;
+                stx = workspace.x();
+            } else {
+                sx = workspace.x();
+                stx = workspace.x() + primary_width + secondary_width;
+            }
+            (px, sx, stx)
+        }
     };
 
     let mut iter = windows.iter_mut();
@@ -86,18 +113,12 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         }
     }
 
-    let secondary_width = match window_count {
-        1 => 0,
-        2 => (workspace.width() as f32 / 2.0).floor() as i32,
-        _ => (workspace.width() as f32 / 4.0).floor() as i32,
-    };
-
     // build the second window
     {
         if let Some(second) = iter.next() {
             second.set_height(workspace.height());
             second.set_width(secondary_width);
-            second.set_x(workspace.x());
+            second.set_x(secondary_x);
             second.set_y(workspace.y());
         }
     }
@@ -111,7 +132,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         for w in iter {
             w.set_height(height);
             w.set_width(secondary_width);
-            w.set_x(workspace.x() + primary_width + secondary_width);
+            w.set_x(stack_x);
             w.set_y(workspace.y() + y);
             y += height;
         }
