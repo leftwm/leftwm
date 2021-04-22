@@ -137,7 +137,10 @@ impl Workspace {
             .iter_mut()
             .filter(|w| self.is_displaying(w))
             .collect();
-        all_mine.iter_mut().for_each(|w| w.set_visible(true));
+        match all_mine.iter_mut().find(|w| w.is_fullscreen()) {
+            Some(w) => w.set_visible(true),
+            None => all_mine.iter_mut().for_each(|w| w.set_visible(true)),
+        }
         //update the location of all non-floating windows
         let mut managed_nonfloat: Vec<&mut Window> = windows
             .iter_mut()
