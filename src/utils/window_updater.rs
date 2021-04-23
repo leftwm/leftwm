@@ -9,7 +9,7 @@ pub fn update_windows(manager: &mut Manager) {
     manager
         .windows
         .iter_mut()
-        .for_each(|w| w.set_visible(w.tags.is_empty() || w.is_fullscreen()));
+        .for_each(|w| w.set_visible(w.tags.is_empty()));
     let mut all_windows = &mut manager.windows;
     manager.workspaces.iter_mut().for_each(|ws| {
         ws.update_windows(&mut all_windows);

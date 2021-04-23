@@ -7,6 +7,7 @@ pub enum Command {
     SwapTags,
     SoftReload,
     HardReload,
+    ToggleFullScreen,
     GotoTag,
     FloatingToTile,
     MoveWindowUp,

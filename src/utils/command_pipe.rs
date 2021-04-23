@@ -77,6 +77,7 @@ fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
     match head {
         "UnloadTheme" => Ok(ExternalCommand::UnloadTheme),
         "Reload" => Ok(ExternalCommand::Reload),
+        "ToggleFullScreen" => Ok(ExternalCommand::ToggleFullScreen),
         "SwapScreens" => Ok(ExternalCommand::SwapScreens),
         "MoveWindowToLastWorkspace" => Ok(ExternalCommand::MoveWindowToLastWorkspace),
         "FloatingToTile" => Ok(ExternalCommand::FloatingToTile),
@@ -158,6 +159,7 @@ pub enum ExternalCommand {
     LoadTheme(PathBuf),
     UnloadTheme,
     Reload,
+    ToggleFullScreen,
     SendWorkspaceToTag(usize, usize),
     SendWindowToTag(usize),
     SwapScreens,

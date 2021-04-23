@@ -24,6 +24,10 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
             return load_theme(manager, theme);
         }
 
+        ExternalCommand::ToggleFullScreen => {
+            return command_handler::process(manager, config, &Command::ToggleFullScreen, &None);
+        }
+
         ExternalCommand::SendWorkspaceToTag(ws_index, tag_index) => {
             if ws_index < manager.workspaces.len() && tag_index < manager.tags.len() {
                 let workspace = &manager.workspaces[ws_index].clone();

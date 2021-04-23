@@ -9,7 +9,9 @@ use super::*;
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
+use crate::models::WindowState;
 use crate::utils::{child_process::exec_shell, helpers};
+use std::collections::VecDeque;
 use std::str::FromStr;
 
 /* Please also update src/bin/leftwm-check if any of the following apply after your update:
@@ -37,6 +39,8 @@ pub fn process_internal(
             exec_shell(val.as_ref()?, &mut manager);
             None
         }
+
+        Command::ToggleFullScreen => toggle_fullscreen(manager),
 
         Command::MoveToTag => move_to_tag(&val, manager),
 
@@ -80,6 +84,24 @@ pub fn process_internal(
         Command::DecreaseMainWidth => decrease_main_width(manager, &val),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
     }
+}
+
+fn toggle_fullscreen(manager: &mut Manager) -> Option<bool> {
+    let window = manager.focused_window_mut()?;
+    let fullscreen = window.is_fullscreen();
+    let mut states = window.states();
+    if !fullscreen {
+        states.push(WindowState::Fullscreen);
+    } else if fullscreen {
+        let index = states.iter().position(|s| *s == WindowState::Fullscreen)?;
+        states.remove(index);
+    }
+    window.set_states(states);
+    let mut acts = VecDeque::new();
+    acts.push_back(DisplayAction::SetFullScreen(window.clone(), !fullscreen));
+    acts.push_back(DisplayAction::MoveMouseOver(window.handle));
+    manager.actions.append(&mut acts);
+    Some(true)
 }
 
 fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {

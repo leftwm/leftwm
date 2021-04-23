@@ -596,6 +596,26 @@ impl XWrap {
         self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
     }
 
+    pub fn set_fullscreen(&self, window: &Window, fullscreen: bool) {
+        if let WindowHandle::XlibHandle(h) = window.handle {
+            let atom = self.atoms.NetWMStateFullscreen;
+            let mut states = self.get_window_states_atoms(h);
+            if fullscreen {
+                if states.contains(&atom) {
+                    return;
+                }
+                states.push(atom);
+            } else if !fullscreen {
+                let index = match states.iter().position(|s| s == &atom) {
+                    Some(i) => i,
+                    None => return,
+                };
+                states.remove(index);
+            }
+            self.set_window_states_atoms(h, &states);
+        }
+    }
+
     pub fn update_window(&self, window: &Window, is_focused: bool) {
         if let WindowHandle::XlibHandle(h) = window.handle {
             if window.visible() {
