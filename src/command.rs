@@ -24,6 +24,7 @@ pub enum Command {
     NextLayout,
     PreviousLayout,
     SetLayout,
+    RotateTag,
     IncreaseMainWidth,
     DecreaseMainWidth,
     SetMarginMultiplier,

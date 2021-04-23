@@ -16,20 +16,12 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
     match command {
         ExternalCommand::UnloadTheme => {
             let theme = ThemeSetting::default();
-            for win in &mut manager.windows {
-                win.update_for_theme(&theme);
-            }
-            manager.theme_setting = theme;
-            return true;
+            return load_theme(manager, theme);
         }
 
         ExternalCommand::LoadTheme(path) => {
             let theme = ThemeSetting::load(&path);
-            for win in &mut manager.windows {
-                win.update_for_theme(&theme);
-            }
-            manager.theme_setting = theme;
-            return true;
+            return load_theme(manager, theme);
         }
 
         ExternalCommand::SendWorkspaceToTag(ws_index, tag_index) => {
@@ -116,7 +108,9 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
         ExternalCommand::PreviousLayout => {
             return command_handler::process(manager, config, &Command::PreviousLayout, &None);
         }
-
+        ExternalCommand::RotateTag => {
+            return command_handler::process(manager, config, &Command::RotateTag, &None);
+        }
         ExternalCommand::CloseWindow => {
             return command_handler::process(manager, config, &Command::CloseWindow, &None);
         }
@@ -125,4 +119,12 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
     }
 
     false
+}
+
+fn load_theme(manager: &mut Manager, theme: ThemeSetting) -> bool {
+    for win in &mut manager.windows {
+        win.update_for_theme(&theme);
+    }
+    manager.theme_setting = theme;
+    true
 }

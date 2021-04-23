@@ -14,6 +14,19 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         _ => (workspace.height() as f32 / 100.0 * workspace.main_width()).floor() as i32,
     };
 
+    let mut main_y = workspace.y();
+    let mut stack_y = workspace.y() + height;
+    if workspace.flipped_vertical() {
+        main_y = match window_count {
+            1 => main_y,
+            _ => main_y + height,
+        };
+        stack_y = match window_count {
+            1 => 0,
+            _ => stack_y - height,
+        };
+    }
+
     //build build the main window.
     let mut iter = windows.iter_mut();
     {
@@ -21,7 +34,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
             first.set_width(workspace.width());
             first.set_height(height);
             first.set_x(workspace.x());
-            first.set_y(workspace.y());
+            first.set_y(main_y);
         }
     }
 
@@ -33,7 +46,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         w.set_height(workspace.height() - height);
         w.set_width(width);
         w.set_x(workspace.x() + x);
-        w.set_y(workspace.y() + height);
+        w.set_y(stack_y);
         x += width;
     }
 }
