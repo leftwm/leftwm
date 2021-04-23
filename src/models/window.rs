@@ -163,6 +163,11 @@ impl Window {
         self.states = states;
     }
 
+    #[must_use]
+    pub fn states(&self) -> Vec<WindowState> {
+        self.states.clone()
+    }
+
     pub fn set_requested(&mut self, change: XyhwChange) {
         self.requested = Some(change)
     }
