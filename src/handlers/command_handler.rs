@@ -11,6 +11,7 @@ use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::WindowState;
 use crate::utils::{child_process::exec_shell, helpers};
+use std::collections::VecDeque;
 use std::str::FromStr;
 
 /* Please also update src/bin/leftwm-check if any of the following apply after your update:
@@ -96,8 +97,10 @@ fn toggle_fullscreen(manager: &mut Manager) -> Option<bool> {
         states.remove(index);
     }
     window.set_states(states);
-    let act = DisplayAction::SetFullScreen(window.clone(), !fullscreen);
-    manager.actions.push_back(act);
+    let mut acts = VecDeque::new();
+    acts.push_back(DisplayAction::SetFullScreen(window.clone(), !fullscreen));
+    acts.push_back(DisplayAction::MoveMouseOver(window.handle));
+    manager.actions.append(&mut acts);
     Some(true)
 }
 
