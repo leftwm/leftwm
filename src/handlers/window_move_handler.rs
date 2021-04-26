@@ -4,8 +4,7 @@ pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offs
     let margin_multiplier = match manager
         .windows
         .iter()
-        .filter(|other| other.has_tag(&manager.focused_tag(0).unwrap_or_default()))
-        .last()
+        .find(|other| other.has_tag(&manager.focused_tag(0).unwrap_or_default()))
     {
         Some(w) => w.margin_multiplier(),
         None => 1.0,
