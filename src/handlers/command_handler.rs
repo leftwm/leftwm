@@ -263,9 +263,6 @@ fn move_window_change(
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     if let Some(Layout::Monocle) = layout {
-        // For Monocle we want to also move windows up/down
-        // Not the best solution but results
-        // in desired behaviour
         handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
@@ -327,6 +324,9 @@ fn focus_window_change(
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     if let Some(Layout::Monocle) = layout {
+        // For Monocle we want to also move windows up/down
+        // Not the best solution but results
+        // in desired behaviour
         handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
