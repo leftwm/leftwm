@@ -68,7 +68,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
 
     let (mut main_x, mut stack_x) = match window_count {
         1 => (workspace.x(), 0),
-        _ => (thrid_part, workspace.x()),
+        _ => (workspace.x() + thrid_part, workspace.x()),
     };
     if workspace.flipped_horizontal() {
         main_x = workspace.x();
@@ -82,7 +82,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         if let Some(first) = iter.next() {
             first.set_height(workspace.height());
             first.set_width(primary_width);
-            first.set_x(workspace.x() + main_x);
+            first.set_x(main_x);
             first.set_y(workspace.y());
         }
     }
