@@ -51,10 +51,10 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
         }
 
         ExternalCommand::SetLayout(layout) => {
-            command_handler::process(manager, config, &Command::SetLayout, &Some(layout));
+            return command_handler::process(manager, config, &Command::SetLayout, &Some(layout));
         }
         ExternalCommand::SetMarginMultiplier(margin_multiplier) => {
-            command_handler::process(
+            return command_handler::process(
                 manager,
                 config,
                 &Command::SetMarginMultiplier,
