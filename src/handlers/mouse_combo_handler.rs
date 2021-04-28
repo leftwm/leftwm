@@ -49,22 +49,20 @@ fn build_action(
 ) -> Option<DisplayAction> {
     match button {
         xlib::Button1 => {
-            for w in &manager.windows {
-                if w.handle == window && w.can_move() {
-                    manager.mode = Mode::MovingWindow(window);
-                    return Some(DisplayAction::StartMovingWindow(window));
-                }
-            }
-            None
+            let _ = manager
+                .windows
+                .iter()
+                .find(|w| w.handle == window && w.can_move())?;
+            manager.mode = Mode::MovingWindow(window);
+            Some(DisplayAction::StartMovingWindow(window))
         }
         xlib::Button3 => {
-            for w in &manager.windows {
-                if w.handle == window && w.can_resize() {
-                    manager.mode = Mode::ResizingWindow(window);
-                    return Some(DisplayAction::StartResizingWindow(window));
-                }
-            }
-            None
+            let _ = manager
+                .windows
+                .iter()
+                .find(|w| w.handle == window && w.can_resize())?;
+            manager.mode = Mode::ResizingWindow(window);
+            Some(DisplayAction::StartResizingWindow(window))
         }
         _ => None,
     }

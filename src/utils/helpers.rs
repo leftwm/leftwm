@@ -39,20 +39,21 @@ where
     removed
 }
 
-pub fn cycle_vec<T>(list: &mut Vec<T>, shift: i32)
+pub fn cycle_vec<T>(list: &mut Vec<T>, shift: i32) -> Option<()>
 where
     T: Clone,
 {
     let v = &mut **list;
     let change = shift.abs() as usize;
     if v.len() < change {
-        return;
+        return None;
     }
     match shift.cmp(&0) {
         Ordering::Less => v.rotate_left(change),
         Ordering::Greater => v.rotate_right(change),
         Ordering::Equal => {}
     }
+    Some(())
 }
 
 //shifts a object left or right in an Vec by a given amount
@@ -65,7 +66,7 @@ where
     if len < 2 {
         return None;
     }
-    let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
+    let index = list.iter().position(|x| test(x))?;
     let item = list.get(index)?.clone();
 
     let mut new_index = index as i32 + shift;
@@ -92,7 +93,7 @@ where
     if len == 1 {
         return None;
     }
-    let index = list.iter().enumerate().find(|&x| test(x.1))?.0;
+    let index = list.iter().position(|x| test(x))?;
 
     let mut find_index = index as i32 + shift;
     if find_index < 0 {
@@ -101,7 +102,7 @@ where
     if find_index >= len {
         find_index -= len
     }
-    Some(&list[find_index as usize])
+    list.get(find_index as usize)
 }
 
 #[cfg(test)]

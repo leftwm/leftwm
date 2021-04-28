@@ -1,11 +1,9 @@
 use super::{Manager, Window, WindowHandle};
 
 pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_w: i32, offset_h: i32) -> bool {
-    for w in &mut manager.windows {
-        if &w.handle == handle {
-            process_window(w, offset_w, offset_h);
-            return true;
-        }
+    if let Some(w) = manager.windows.iter_mut().find(|w| &w.handle == handle) {
+        process_window(w, offset_w, offset_h);
+        return true;
     }
     false
 }

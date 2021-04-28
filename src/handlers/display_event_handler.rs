@@ -22,7 +22,7 @@ impl DisplayEventHandler {
 
             //The window has been focused, do we want to do anything about it?
             DisplayEvent::MouseEnteredWindow(handle) => {
-                return focus_handler::focus_window(manager, &handle)
+                focus_handler::focus_window(manager, &handle)
             }
 
             DisplayEvent::MoveFocusTo(x, y) => focus_handler::move_focus_to_point(manager, x, y),
@@ -31,10 +31,7 @@ impl DisplayEventHandler {
             //thing under this point.
             DisplayEvent::VerifyFocusedAt(x, y) => focus_handler::validate_focus_at(manager, x, y),
 
-            DisplayEvent::WindowDestroy(handle) => {
-                window_handler::destroyed(manager, &handle);
-                true
-            }
+            DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
 
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
@@ -64,11 +61,8 @@ impl DisplayEventHandler {
             }
 
             DisplayEvent::Movement(handle, x, y) => {
-                if manager.screens.iter().any(|s| s.root == handle) {
-                    focus_handler::focus_workspace_under_cursor(manager, x, y)
-                } else {
-                    false
-                }
+                manager.screens.iter().any(|s| s.root == handle)
+                    && focus_handler::focus_workspace_under_cursor(manager, x, y)
             }
 
             DisplayEvent::MoveWindow(handle, time, x, y) => {

@@ -185,15 +185,10 @@ impl Workspace {
         found
     }
 
-    pub fn increase_main_width(&self, delta: u8) {
-        for tag in self.current_tags() {
-            tag.increase_main_width(delta);
-        }
-    }
-    pub fn decrease_main_width(&self, delta: u8) {
-        for tag in self.current_tags() {
-            tag.decrease_main_width(delta);
-        }
+    pub fn change_main_width(&self, delta: i8) {
+        self.current_tags()
+            .iter()
+            .for_each(|t| t.change_main_width(delta));
     }
 
     pub fn set_main_width(&self, val: u8) {

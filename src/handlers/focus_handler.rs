@@ -25,15 +25,13 @@ fn focus_workspace_work(manager: &mut Manager, workspace_id: i32) -> Option<()> 
         }
     }
     //clean old ones
-    while manager.focused_workspace_history.len() > 10 {
-        manager.focused_workspace_history.pop_back();
-    }
+    manager.focused_workspace_history.truncate(10);
     //add this focus to the history
-    for (index, ws) in manager.workspaces.iter().enumerate() {
-        if ws.id == workspace_id {
-            manager.focused_workspace_history.push_front(index);
-        }
-    }
+    let index = manager
+        .workspaces
+        .iter()
+        .position(|x| x.id == workspace_id)?;
+    manager.focused_workspace_history.push_front(index);
     Some(())
 }
 
@@ -44,26 +42,22 @@ pub fn focus_window(manager: &mut Manager, handle: &WindowHandle) -> bool {
         None => return false,
     };
 
-    let mut tags = vec![];
-    let mut workspace_id: Option<i32> = None;
     //make sure the focused window's workspace is focused
-    for ws in &manager.workspaces {
-        if ws.is_displaying(&window) {
-            tags = ws.tags.clone();
-            workspace_id = Some(ws.id);
-            break;
-        }
-    }
+    let (tags, workspace_id) = match manager
+        .workspaces
+        .iter()
+        .find(|ws| ws.is_displaying(&window))
+    {
+        Some(ws) => (ws.tags.clone(), Some(ws.id)),
+        None => (vec![], None),
+    };
     if let Some(workspace_id) = workspace_id {
         let _ = focus_workspace_work(manager, workspace_id);
     }
 
     //make sure the focused window's tag is focused
-    for tag in &tags {
-        if window.has_tag(tag) {
-            let _ = focus_tag_work(manager, tag);
-            break;
-        }
+    if let Some(tag) = tags.iter().find(|t| window.has_tag(&t)) {
+        let _ = focus_tag_work(manager, tag);
     }
     true
 }
@@ -88,9 +82,7 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
         }
     }
     //clean old ones
-    while manager.focused_window_history.len() > 10 {
-        manager.focused_window_history.pop_back();
-    }
+    manager.focused_window_history.truncate(10);
     //add this focus to the history
     manager.focused_window_history.push_front(*handle);
 
@@ -111,7 +103,7 @@ pub fn validate_focus_at(manager: &mut Manager, x: i32, y: i32) -> bool {
     let found: Option<Window> = manager
         .windows
         .iter()
-        .filter(|x| !x.never_focus && x.type_ != WindowType::Dock && x.visible())
+        .filter(|x| x.can_focus())
         .find(|w| w.contains_point(x, y))
         .cloned();
     match found {
@@ -131,15 +123,13 @@ pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
     let found: Option<Window> = manager
         .windows
         .iter()
-        .filter(|x| !x.never_focus && x.type_ != WindowType::Dock && x.visible())
+        .filter(|x| x.can_focus())
         .find(|w| w.contains_point(x, y))
         .cloned();
     match found {
         Some(found) => focus_window(manager, &found.handle),
-        None => {
-            //backup plan, move focus first window in workspace
-            focus_closest_window(manager, x, y)
-        }
+        //backup plan, move focus first window in workspace
+        None => focus_closest_window(manager, x, y),
     }
 }
 
@@ -147,7 +137,7 @@ fn focus_closest_window(manager: &mut Manager, x: i32, y: i32) -> bool {
     let mut dists: Vec<(i32, &Window)> = manager
         .windows
         .iter()
-        .filter(|x| !x.never_focus && x.type_ != WindowType::Dock && x.visible())
+        .filter(|x| x.can_focus())
         .map(|w| (distance(w, x, y), w))
         .collect();
     dists.sort_by(|a, b| (a.0).cmp(&b.0));
@@ -167,23 +157,16 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
 }
 
 pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bool {
-    let mut focused_id = -1;
-    if let Some(f) = manager.focused_workspace() {
-        focused_id = f.id;
-    }
-    let to_focus: Option<Workspace> = {
-        let mut f: Option<Workspace> = None;
-        for w in &manager.workspaces {
-            if w.contains_point(x, y) {
-                if w.id != focused_id {
-                    f = Some(w.clone());
-                }
-                break;
-            }
-        }
-        f
+    let focused_id = match manager.focused_workspace() {
+        Some(fws) => fws.id,
+        None => -1,
     };
-    if let Some(w) = to_focus {
+    if let Some(w) = manager
+        .workspaces
+        .iter()
+        .find(|ws| ws.contains_point(x, y) && ws.id != focused_id)
+        .cloned()
+    {
         return focus_workspace(manager, &w);
     }
     false
@@ -218,12 +201,8 @@ fn focus_tag_work(manager: &mut Manager, tag: &str) -> Option<()> {
             return None;
         }
     }
-
     //clean old ones
-    while manager.focused_tag_history.len() > 10 {
-        manager.focused_tag_history.pop_back();
-    }
-
+    manager.focused_workspace_history.truncate(10);
     //add this focus to the history
     manager.focused_tag_history.push_front(tag.to_string());
 
