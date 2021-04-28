@@ -128,16 +128,20 @@ pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
         .cloned();
     match found {
         Some(found) => focus_window(manager, &found.handle),
-        //backup plan, move focus first window in workspace
+        //backup plan, move focus closest window in workspace
         None => focus_closest_window(manager, x, y),
     }
 }
 
 fn focus_closest_window(manager: &mut Manager, x: i32, y: i32) -> bool {
+    let ws = match manager.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
+        Some(ws) => ws,
+        None => return false,
+    };
     let mut dists: Vec<(i32, &Window)> = manager
         .windows
         .iter()
-        .filter(|x| x.can_focus())
+        .filter(|x| ws.is_managed(&x) && x.can_focus())
         .map(|w| (distance(w, x, y), w))
         .collect();
     dists.sort_by(|a, b| (a.0).cmp(&b.0));
