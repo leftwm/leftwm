@@ -1045,8 +1045,11 @@ impl XWrap {
             if status == 0 {
                 return Err(XlibError::FailedStatus);
             }
-            (self.xlib.XTextPropertyToStringList)(&mut text_prop, &mut ptr, &mut ptr_len);
-            let _raw: &[*mut c_char] = slice::from_raw_parts(ptr, ptr_len as usize);
+            if text_prop.encoding == xlib::XA_STRING {
+                (self.xlib.XTextPropertyToStringList)(&mut text_prop, &mut ptr, &mut ptr_len);
+            } else {
+                (self.xlib.XmbTextPropertyToTextList)(self.display, &mut text_prop, &mut ptr, &mut ptr_len);
+            }
             for _i in 0..ptr_len {
                 if let Ok(s) = CString::from_raw(*ptr).into_string() {
                     return Ok(s);
