@@ -185,9 +185,9 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
         .filter(|w| w.has_tag(tag))
         .cloned()
         .collect();
-    to_focus.iter().for_each(|w| {
+    for w in &to_focus {
         focus_workspace_work(manager, w.id);
-    });
+    }
     //make sure the focused window is on this workspace
     let act = DisplayAction::FocusWindowUnderCursor;
     manager.actions.push_back(act);

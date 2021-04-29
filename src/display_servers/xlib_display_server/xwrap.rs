@@ -1407,7 +1407,7 @@ impl XWrap {
                     return;
                 }
             }
-            _ => {}
+            Mode::Normal => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
             self.mode = mode.clone();
