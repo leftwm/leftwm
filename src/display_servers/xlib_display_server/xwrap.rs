@@ -1048,7 +1048,12 @@ impl XWrap {
             if text_prop.encoding == xlib::XA_STRING {
                 (self.xlib.XTextPropertyToStringList)(&mut text_prop, &mut ptr, &mut ptr_len);
             } else {
-                (self.xlib.XmbTextPropertyToTextList)(self.display, &mut text_prop, &mut ptr, &mut ptr_len);
+                (self.xlib.XmbTextPropertyToTextList)(
+                    self.display,
+                    &mut text_prop,
+                    &mut ptr,
+                    &mut ptr_len,
+                );
             }
             for _i in 0..ptr_len {
                 if let Ok(s) = CString::from_raw(*ptr).into_string() {
