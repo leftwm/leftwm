@@ -20,11 +20,11 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     if workspace.flipped_horizontal() {
         main_x = match window_count {
             1 => main_x,
-            _ => main_x + width,
+            _ => main_x + workspace.width() - width,
         };
         stack_x = match window_count {
             1 => 0,
-            _ => stack_x - width,
+            _ => workspace.x(),
         };
     }
 
