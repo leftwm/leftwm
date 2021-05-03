@@ -132,29 +132,34 @@ impl Workspace {
     }
 
     pub fn update_windows(&self, windows: &mut Vec<Window>) {
-        //mark all windows for this workspace as visible
-        let mut all_mine: Vec<&mut Window> = windows
+        if let Some(w) = windows
             .iter_mut()
-            .filter(|w| self.is_displaying(w))
-            .collect();
-        match all_mine.iter_mut().find(|w| w.is_fullscreen()) {
-            Some(w) => w.set_visible(true),
-            None => all_mine.iter_mut().for_each(|w| w.set_visible(true)),
+            .find(|w| self.is_displaying(w) && w.is_fullscreen())
+        {
+            w.set_visible(true);
+        } else {
+            //Don't bother updating the other windows
+            //mark all windows for this workspace as visible
+            let mut all_mine: Vec<&mut Window> = windows
+                .iter_mut()
+                .filter(|w| self.is_displaying(w))
+                .collect();
+            all_mine.iter_mut().for_each(|w| w.set_visible(true));
+            //update the location of all non-floating windows
+            let mut managed_nonfloat: Vec<&mut Window> = windows
+                .iter_mut()
+                .filter(|w| self.is_managed(w) && !w.floating())
+                .collect();
+            self.layout.update_windows(self, &mut managed_nonfloat);
+            for w in &mut managed_nonfloat {
+                w.container_size = Some(self.xyhw);
+            }
+            //update the location of all floating windows
+            windows
+                .iter_mut()
+                .filter(|w| self.is_managed(w) && w.floating())
+                .for_each(|w| w.normal = self.xyhw);
         }
-        //update the location of all non-floating windows
-        let mut managed_nonfloat: Vec<&mut Window> = windows
-            .iter_mut()
-            .filter(|w| self.is_managed(w) && !w.floating())
-            .collect();
-        self.layout.update_windows(self, &mut managed_nonfloat);
-        for w in &mut managed_nonfloat {
-            w.container_size = Some(self.xyhw);
-        }
-        //update the location of all floating windows
-        windows
-            .iter_mut()
-            .filter(|w| self.is_managed(w) && w.floating())
-            .for_each(|w| w.normal = self.xyhw);
     }
 
     #[must_use]
