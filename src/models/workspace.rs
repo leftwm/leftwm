@@ -147,9 +147,9 @@ impl Workspace {
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
         self.layout.update_windows(self, &mut managed_nonfloat);
-        managed_nonfloat.iter_mut().for_each(|w| {
+        for w in &mut managed_nonfloat {
             w.container_size = Some(self.xyhw);
-        });
+        }
         //update the location of all floating windows
         windows
             .iter_mut()
@@ -185,15 +185,10 @@ impl Workspace {
         found
     }
 
-    pub fn increase_main_width(&self, delta: u8) {
-        for tag in self.current_tags() {
-            tag.increase_main_width(delta);
-        }
-    }
-    pub fn decrease_main_width(&self, delta: u8) {
-        for tag in self.current_tags() {
-            tag.decrease_main_width(delta);
-        }
+    pub fn change_main_width(&self, delta: i8) {
+        self.current_tags()
+            .iter()
+            .for_each(|t| t.change_main_width(delta));
     }
 
     pub fn set_main_width(&self, val: u8) {

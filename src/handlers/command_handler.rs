@@ -80,8 +80,8 @@ pub fn process_internal(
 
         Command::RotateTag => rotate_tag(manager),
 
-        Command::IncreaseMainWidth => increase_main_width(manager, &val),
-        Command::DecreaseMainWidth => decrease_main_width(manager, &val),
+        Command::IncreaseMainWidth => change_main_width(manager, &val, 1),
+        Command::DecreaseMainWidth => change_main_width(manager, &val, -1),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
     }
 }
@@ -241,7 +241,7 @@ fn floating_to_tile(manager: &mut Manager) -> Option<bool> {
 
 fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> Option<bool>
 where
-    F: Fn(&mut Manager, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> bool,
+    F: Fn(&mut Manager, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> Option<bool>,
 {
     let handle = manager.focused_window()?.handle;
     let w = manager.focused_workspace()?;
@@ -251,45 +251,34 @@ where
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
 
     let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-    Some(func(manager, val, handle, &layout, to_reorder))
+    func(manager, val, handle, &layout, to_reorder)
 }
 
 fn move_window_change(
     manager: &mut Manager,
     val: i32,
-    handle: WindowHandle,
+    mut handle: WindowHandle,
     layout: &Option<Layout>,
     mut to_reorder: Vec<Window>,
-) -> bool {
+) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    let mut act = DisplayAction::MoveMouseOver(handle);
-    if let Some(crate::layouts::Layout::Monocle) = layout {
-        // For Monocle we want to also move windows up/down
-        // Not the best solution but results
-        // in desired behaviour
-        let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
-            Some(h) => h.handle,
-            None => return false,
-        };
-        helpers::cycle_vec(&mut to_reorder, val);
-        act = DisplayAction::MoveMouseOver(new_handle);
-    } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
+    if let Some(Layout::Monocle) = layout {
+        handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+        let _ = helpers::cycle_vec(&mut to_reorder, val);
+    } else if let Some(Layout::MainAndDeck) = layout {
         let main = to_reorder.remove(0);
         if main.handle != handle {
-            let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
-                Some(h) => h.handle,
-                None => return false,
-            };
-            act = DisplayAction::MoveMouseOver(new_handle);
+            handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
         }
-        helpers::cycle_vec(&mut to_reorder, val);
+        let _ = helpers::cycle_vec(&mut to_reorder, val);
         to_reorder.insert(0, main);
     } else {
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
     manager.windows.append(&mut to_reorder);
+    let act = DisplayAction::MoveMouseOver(handle);
     manager.actions.push_back(act);
-    true
+    Some(true)
 }
 
 //val and layout aren't used which is a bit awkward
@@ -299,16 +288,14 @@ fn move_window_top(
     handle: WindowHandle,
     _layout: &Option<Layout>,
     mut to_reorder: Vec<Window>,
-) -> bool {
+) -> Option<bool> {
     // Moves the selected window at index 0 of the window list.
     // If the selected window is already at index 0, it is sent to index 1.
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     let list = &mut to_reorder;
     let len = list.len();
-    let (index, item) = match list.iter().enumerate().find(|&x| is_handle(&x.1)) {
-        Some(x) => (x.0, x.1.clone()),
-        None => return false,
-    };
+    let index = list.iter().position(|x| is_handle(x))?;
+    let item = list.get(index)?.clone();
     list.remove(index);
     let mut new_index: usize = match index {
         0 => 1,
@@ -325,66 +312,42 @@ fn move_window_top(
         let act = DisplayAction::MoveMouseOver(handle);
         manager.actions.push_back(act);
     }
-    true
+    Some(true)
 }
 
 fn focus_window_change(
     manager: &mut Manager,
     val: i32,
-    handle: WindowHandle,
+    mut handle: WindowHandle,
     layout: &Option<Layout>,
     mut to_reorder: Vec<Window>,
-) -> bool {
+) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    if let Some(crate::layouts::Layout::Monocle) = layout {
-        let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
-            Some(h) => h.handle,
-            None => return false,
-        };
-        helpers::cycle_vec(&mut to_reorder, val);
-        let act = DisplayAction::MoveMouseOver(new_handle);
-        manager.actions.push_back(act);
-    } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
+    if let Some(Layout::Monocle) = layout {
+        // For Monocle we want to also move windows up/down
+        // Not the best solution but results
+        // in desired behaviour
+        handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+        let _ = helpers::cycle_vec(&mut to_reorder, val);
+    } else if let Some(Layout::MainAndDeck) = layout {
         if to_reorder.len() == 1_usize {
-            return false;
+            return None;
         }
-        let index = match to_reorder
-            .iter()
-            .position(|x: &Window| -> bool { !x.floating() })
-        {
-            Some(i) => i + 1,
-            None => return false,
-        };
+        let index = to_reorder.iter().position(|x: &Window| !x.floating())? + 1;
         let window_group = &to_reorder[..=index];
-        if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, val) {
-            let act = DisplayAction::MoveMouseOver(new_focused.handle);
-            manager.actions.push_back(act);
-        }
+        handle = helpers::relative_find(&window_group, is_handle, -val)?.handle;
     } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val) {
-        let act = DisplayAction::MoveMouseOver(new_focused.handle);
-        manager.actions.push_back(act);
+        handle = new_focused.handle;
     }
     manager.windows.append(&mut to_reorder);
-    true
+    let act = DisplayAction::MoveMouseOver(handle);
+    manager.actions.push_back(act);
+    Some(true)
 }
 
 fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
     let current = manager.focused_workspace()?;
-    let mut index = manager
-        .workspaces
-        .iter()
-        .enumerate()
-        .find(|&x| x.1 == current)?
-        .0 as i32;
-    let len = manager.workspaces.len() as i32;
-    index += val;
-    if index < 0 {
-        index = len - 1;
-    }
-    if index >= len {
-        index = 0;
-    }
-    let workspace = manager.workspaces.get(index as usize)?.clone();
+    let workspace = helpers::relative_find(&manager.workspaces, |w| w == current, val)?.clone();
     focus_handler::focus_workspace(manager, &workspace);
     let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
     manager.actions.push_back(act);
@@ -405,17 +368,10 @@ fn rotate_tag(manager: &mut Manager) -> Option<bool> {
     Some(true)
 }
 
-fn increase_main_width(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+fn change_main_width(manager: &mut Manager, val: &Option<String>, factor: i8) -> Option<bool> {
     let workspace = manager.focused_workspace_mut()?;
-    let delta: u8 = val.as_ref()?.parse().ok()?;
-    workspace.increase_main_width(delta);
-    Some(true)
-}
-
-fn decrease_main_width(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
-    let workspace = manager.focused_workspace_mut()?;
-    let delta: u8 = val.as_ref()?.parse().ok()?;
-    workspace.decrease_main_width(delta);
+    let delta: i8 = val.as_ref()?.parse().ok()?;
+    workspace.change_main_width(delta * factor);
     Some(true)
 }
 
@@ -434,11 +390,11 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> Option<
         };
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut manager.windows, for_active_workspace);
-        to_apply_margin_multiplier.iter_mut().for_each(|w| {
+        for w in &mut to_apply_margin_multiplier {
             if let Some(ws) = manager.focused_workspace() {
                 w.apply_margin_multiplier(ws.margin_multiplier())
             }
-        });
+        }
         manager.windows.append(&mut to_apply_margin_multiplier);
     }
     Some(true)
@@ -453,33 +409,24 @@ mod tests {
         let mut manager = Manager::default();
         let config = Config::default();
         // no screen creation here
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("6".to_string())
-            ),
-            false
-        );
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("2".to_string())
-            ),
-            false
-        );
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("15".to_string())
-            ),
-            false
-        );
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("6".to_string())
+        ));
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("2".to_string())
+        ));
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("15".to_string())
+        ),);
     }
 
     #[test]
@@ -502,15 +449,12 @@ mod tests {
             &Some("1".to_string())
         ));
         // we only have one tag per screen created automatically
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("3".to_string())
-            ),
-            false
-        );
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("3".to_string())
+        ),);
     }
 
     #[test]
@@ -526,28 +470,19 @@ mod tests {
             TagModel::new("E39"),
             TagModel::new("F67"),
         ];
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("abc".to_string())
-            ),
-            false
-        );
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("ab45c".to_string())
-            ),
-            false
-        );
-        assert_eq!(
-            process(&mut manager, &config, &Command::GotoTag, &None),
-            false
-        );
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("abc".to_string())
+        ),);
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("ab45c".to_string())
+        ));
+        assert!(!process(&mut manager, &config, &Command::GotoTag, &None));
     }
 
     #[test]

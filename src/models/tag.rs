@@ -33,28 +33,25 @@ impl TagModel {
     /// # Panics
     ///
     /// Panics if `main_width_percentage` cannot be unwrapped.
-    // TODO: Verify that `unwrap` panic cannot be hit and add note above
-    pub fn increase_main_width(&self, delta: u8) {
+    // TODO: Verify that `unwrap` panic cannot be hit and add note above.
+    pub fn change_main_width(&self, delta: i8) {
         let lock = self.main_width_percentage.clone();
         let mut mwp = lock.lock().expect("FATAL ERROR: Mutex is corrupt");
-        *mwp += delta;
+        //Check we are not gonna go negative
+        if (*mwp as i8) < -delta {
+            *mwp = 0;
+            return;
+        }
+        if delta.is_negative() {
+            *mwp -= delta.unsigned_abs();
+            return;
+        }
+        *mwp += delta as u8;
         if *mwp > 100 {
             *mwp = 100
         }
     }
-    /// # Panics
-    ///
-    /// Panics if `main_width_percentage` cannot be unwrapped.
-    // TODO: Verify that `unwrap` panic cannot be hit and add note above.
-    pub fn decrease_main_width(&self, delta: u8) {
-        let lock = self.main_width_percentage.clone();
-        let mut mwp = lock.lock().expect("FATAL ERROR: Mutex is corrupt");
-        if *mwp > delta {
-            *mwp -= delta;
-        } else {
-            *mwp = 0;
-        }
-    }
+
     /// # Panics
     ///
     /// Panics if `main_width_percentage` cannot be unwrapped.

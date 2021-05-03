@@ -153,6 +153,11 @@ impl Window {
         self.type_ != WindowType::Dock
     }
 
+    #[must_use]
+    pub fn can_focus(&self) -> bool {
+        !self.never_focus && self.type_ != WindowType::Dock && self.visible()
+    }
+
     pub fn set_width(&mut self, width: i32) {
         self.normal.set_w(width)
     }

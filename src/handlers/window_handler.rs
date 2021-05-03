@@ -138,31 +138,25 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
 }
 
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
-    for w in &mut manager.windows {
-        if w.handle == change.handle {
-            log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
-            //let old_type = w.type_.clone();
-            let changed = change.update(w);
-            if w.type_ == WindowType::Dock {
-                update_workspace_avoid_list(manager);
-                //don't left changes from docks re-render the worker. This will result in an
-                //infinite loop. Just be patient a rerender will occur.
-                //return true;
-            }
-            return changed;
+    if let Some(w) = manager
+        .windows
+        .iter_mut()
+        .find(|w| w.handle == change.handle)
+    {
+        log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
+        let changed = change.update(w);
+        if w.type_ == WindowType::Dock {
+            update_workspace_avoid_list(manager);
+            //don't left changes from docks re-render the worker. This will result in an
+            //infinite loop. Just be patient a rerender will occur.
         }
+        return changed;
     }
     false
 }
 
 fn find_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option<&'w Window> {
-    for win in &manager.windows {
-        if &win.handle == handle {
-            let r: &Window = win;
-            return Some(r);
-        }
-    }
-    None
+    manager.windows.iter().find(|w| &w.handle == handle)
 }
 
 fn find_transient_parent<'w>(manager: &'w Manager, window: &Window) -> Option<&'w Window> {
@@ -176,13 +170,15 @@ fn find_transient_parent<'w>(manager: &'w Manager, window: &Window) -> Option<&'
 
 pub fn update_workspace_avoid_list(manager: &mut Manager) {
     let mut avoid = vec![];
-    for w in &manager.windows {
-        if w.type_ == WindowType::Dock && w.strut.is_some() {
-            if let Some(to_avoid) = w.strut {
-                log::debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
-                avoid.push(to_avoid);
-            }
-        }
+    if let Some(w) = manager
+        .windows
+        .iter()
+        .find(|w| w.type_ == WindowType::Dock && w.strut.is_some())
+    {
+        //unwrap() is safe as we know w.strut is_some
+        let to_avoid = w.strut.unwrap();
+        log::debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
+        avoid.push(to_avoid);
     }
     for w in &mut manager.workspaces {
         w.avoid = avoid.clone();

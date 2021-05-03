@@ -9,26 +9,19 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
     let tag = manager.tags[tag_num - 1].clone();
     let new_tags = vec![tag.id.clone()];
     //no focus safety check
-    if manager.focused_workspace().is_none() {
-        return false;
-    }
-    let old_tags = manager
-        .focused_workspace()
-        .map(|ws| ws.tags.clone())
-        .unwrap_or_default();
-    for wp in &mut manager.workspaces {
-        if wp.tags == new_tags {
-            wp.tags = old_tags.clone();
-        }
-    }
-    let active_workspace = match manager.focused_workspace_mut() {
-        Some(x) => x,
+    let old_tags = match manager.focused_workspace() {
+        Some(ws) => ws.tags.clone(),
         None => return false,
     };
+    if let Some(ws) = manager.workspaces.iter_mut().find(|ws| ws.tags == new_tags) {
+        ws.tags = old_tags;
+    }
 
-    active_workspace.tags = new_tags;
+    match manager.focused_workspace_mut() {
+        Some(aws) => aws.tags = new_tags,
+        None => return false,
+    }
     focus_handler::focus_tag(manager, &tag.id);
-
     true
 }
 
