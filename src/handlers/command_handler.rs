@@ -390,11 +390,11 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> Option<
         };
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut manager.windows, for_active_workspace);
-        to_apply_margin_multiplier.iter_mut().for_each(|w| {
+        for w in &mut to_apply_margin_multiplier {
             if let Some(ws) = manager.focused_workspace() {
                 w.apply_margin_multiplier(ws.margin_multiplier())
             }
-        });
+        }
         manager.windows.append(&mut to_apply_margin_multiplier);
     }
     Some(true)
@@ -409,33 +409,24 @@ mod tests {
         let mut manager = Manager::default();
         let config = Config::default();
         // no screen creation here
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("6".to_string())
-            ),
-            false
-        );
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("2".to_string())
-            ),
-            false
-        );
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("15".to_string())
-            ),
-            false
-        );
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("6".to_string())
+        ));
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("2".to_string())
+        ));
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("15".to_string())
+        ),);
     }
 
     #[test]
@@ -458,15 +449,12 @@ mod tests {
             &Some("1".to_string())
         ));
         // we only have one tag per screen created automatically
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("3".to_string())
-            ),
-            false
-        );
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("3".to_string())
+        ),);
     }
 
     #[test]
@@ -482,28 +470,19 @@ mod tests {
             TagModel::new("E39"),
             TagModel::new("F67"),
         ];
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("abc".to_string())
-            ),
-            false
-        );
-        assert_eq!(
-            process(
-                &mut manager,
-                &config,
-                &Command::GotoTag,
-                &Some("ab45c".to_string())
-            ),
-            false
-        );
-        assert_eq!(
-            process(&mut manager, &config, &Command::GotoTag, &None),
-            false
-        );
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("abc".to_string())
+        ),);
+        assert!(!process(
+            &mut manager,
+            &config,
+            &Command::GotoTag,
+            &Some("ab45c".to_string())
+        ));
+        assert!(!process(&mut manager, &config, &Command::GotoTag, &None));
     }
 
     #[test]

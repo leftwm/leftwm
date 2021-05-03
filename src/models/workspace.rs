@@ -147,9 +147,9 @@ impl Workspace {
             .filter(|w| self.is_managed(w) && !w.floating())
             .collect();
         self.layout.update_windows(self, &mut managed_nonfloat);
-        managed_nonfloat.iter_mut().for_each(|w| {
+        for w in &mut managed_nonfloat {
             w.container_size = Some(self.xyhw);
-        });
+        }
         //update the location of all floating windows
         windows
             .iter_mut()

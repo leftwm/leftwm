@@ -145,7 +145,7 @@ impl DisplayServer for XlibDisplayServer {
                     .map(|x| WindowHandle::XlibHandle(*x))
                     .filter(|h| !wins.contains(&h))
                     .collect();
-                let all: Vec<WindowHandle> = unmanged.iter().chain(wins.iter()).cloned().collect();
+                let all: Vec<WindowHandle> = unmanged.iter().chain(wins.iter()).copied().collect();
                 self.xw.restack(all);
                 None
             }
@@ -196,12 +196,12 @@ impl XlibDisplayServer {
                     events.push(e);
                 });
             } else {
-                workspaces.iter().for_each(|wsc| {
+                for wsc in workspaces.iter() {
                     let mut screen = Screen::from(wsc);
                     screen.root = WindowHandle::XlibHandle(self.root);
                     let e = DisplayEvent::ScreenCreate(screen);
                     events.push(e);
-                });
+                }
             }
         }
 
