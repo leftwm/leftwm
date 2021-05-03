@@ -115,7 +115,7 @@ cargo build --release
 4. Copy leftwm executables to the /usr/bin folder
 
 ```bash
-sudo install -s -Dm755 ./target/release/leftwm ./target/release/leftwm-worker ./target/release/leftwm-state ./target/release/leftwm-check -t /usr/bin
+sudo install -s -Dm755 ./target/release/leftwm ./target/release/leftwm-worker ./target/release/leftwm-state ./target/release/leftwm-check ./target/release/leftwm-command -t /usr/bin
 ```
 
 5. Copy leftwm.desktop to xsessions folder
@@ -155,6 +155,7 @@ sudo ln -s "$(pwd)"/target/release/leftwm /usr/bin/leftwm
 sudo ln -s "$(pwd)"/target/release/leftwm-worker /usr/bin/leftwm-worker
 sudo ln -s "$(pwd)"/target/release/leftwm-state /usr/bin/leftwm-state
 sudo ln -s "$(pwd)"/target/release/leftwm-check /usr/bin/leftwm-check
+sudo ln -s "$(pwd)"/target/release/leftwm-command /usr/bin/leftwm-command
 ```
 
 5. Copy leftwm.desktop to xsessions folder
