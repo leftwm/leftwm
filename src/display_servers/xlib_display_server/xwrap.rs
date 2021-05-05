@@ -79,7 +79,7 @@ impl Default for XWrap {
 impl XWrap {
     /// # Panics
     ///
-    /// Can panic if unable to contact xorg.  
+    /// Can panic if unable to contact xorg.
     #[must_use]
     pub fn new() -> XWrap {
         const SERVER: mio::Token = mio::Token(0);

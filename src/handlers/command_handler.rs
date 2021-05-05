@@ -29,16 +29,15 @@ pub fn process(
 }
 
 pub fn process_internal(
-    mut manager: &mut Manager,
+    manager: &mut Manager,
     config: &Config,
     command: &Command,
     val: &Option<String>,
 ) -> Option<bool> {
     match command {
-        Command::Execute => {
-            exec_shell(val.as_ref()?, &mut manager);
-            None
-        }
+        Command::Execute => execute(manager, &val),
+
+        Command::ToggleScratchPad => toggle_scratchpad(manager, &val),
 
         Command::ToggleFullScreen => toggle_fullscreen(manager),
 
@@ -83,6 +82,39 @@ pub fn process_internal(
         Command::IncreaseMainWidth => change_main_width(manager, &val, 1),
         Command::DecreaseMainWidth => change_main_width(manager, &val, -1),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
+    }
+}
+
+fn execute(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+    exec_shell(val.as_ref()?, manager);
+    None
+}
+
+fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+    let name = val.clone()?;
+    let tag = &manager.focused_tag(0)?;
+    if let Some(w) = manager
+        .windows
+        .iter_mut()
+        .find(|w| w.name == Some(name.clone()))
+    {
+        w.clear_tags();
+        if w.has_tag(tag) {
+            w.tag("NSP");
+        } else {
+            w.tag(tag);
+        }
+        let act = DisplayAction::SetWindowTags(w.handle, w.tags.get(0)?.to_string());
+        manager.actions.push_back(act);
+        manager.sort_windows();
+        Some(true)
+    } else {
+        let scratchpad = manager
+            .scratchpads
+            .iter()
+            .find(|s| s.name == name.clone())?
+            .clone();
+        execute(manager, &Some(scratchpad.value))
     }
 }
 

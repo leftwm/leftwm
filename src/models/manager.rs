@@ -1,3 +1,4 @@
+use crate::config::ScratchPad;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::Screen;
@@ -24,6 +25,7 @@ pub struct Manager {
     #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
     pub layouts: Vec<Layout>,
+    pub scratchpads: Vec<ScratchPad>,
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,

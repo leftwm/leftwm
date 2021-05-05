@@ -1,4 +1,7 @@
-use leftwm::child_process::{self, Nanny};
+use leftwm::{
+    child_process::{self, Nanny},
+    models::Tag,
+};
 
 use crate::models::TagModel;
 use leftwm::{
@@ -26,12 +29,15 @@ fn main() {
 
         let config = config::load();
 
+        let mut tags: Vec<Tag> = config
+            .get_list_of_tags()
+            .iter()
+            .map(|s| TagModel::new(s))
+            .collect();
+        tags.push(TagModel::new("NSP"));
         let mut manager = Manager {
-            tags: config
-                .get_list_of_tags()
-                .iter()
-                .map(|s| TagModel::new(s))
-                .collect(),
+            tags,
+            scratchpads: config.get_list_of_scratchpads(),
             layouts: config.layouts.clone(),
             ..Manager::default()
         };

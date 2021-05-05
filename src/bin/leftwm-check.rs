@@ -90,6 +90,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
 fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
     let mut returns = Vec::new();
     let value_required_commands = vec![
+        Command::ToggleScratchPad,
         Command::MoveToTag,
         Command::GotoTag,
         Command::Execute,
