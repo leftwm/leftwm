@@ -93,29 +93,28 @@ fn execute(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
 fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
     let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
-    if let Some(w) = manager
-        .windows
-        .iter_mut()
-        .find(|w| w.name == Some(name.clone()))
-    {
-        w.clear_tags();
-        if w.has_tag(tag) {
-            w.tag("NSP");
-        } else {
-            w.tag(tag);
+    let (s, h) = manager
+        .scratchpads
+        .iter()
+        .find(|(s, _)| name == s.name.clone())
+        .map(|(s, h)| (s.clone(), h))?;
+
+    if let Some(h) = h {
+        if let Some(w) = manager.windows.iter_mut().find(|w| w.handle == *h) {
+            let is_tagged = w.has_tag(tag);
+            w.clear_tags();
+            if is_tagged {
+                w.tag("NSP");
+            } else {
+                w.tag(tag);
+            }
+            let act = DisplayAction::SetWindowTags(w.handle, w.tags.get(0)?.to_string());
+            manager.actions.push_back(act);
+            manager.sort_windows();
+            return Some(true);
         }
-        let act = DisplayAction::SetWindowTags(w.handle, w.tags.get(0)?.to_string());
-        manager.actions.push_back(act);
-        manager.sort_windows();
-        Some(true)
-    } else {
-        let scratchpad = manager
-            .scratchpads
-            .iter()
-            .find(|s| s.name == name.clone())?
-            .clone();
-        execute(manager, &Some(scratchpad.value))
     }
+    execute(manager, &Some(s.value))
 }
 
 fn toggle_fullscreen(manager: &mut Manager) -> Option<bool> {

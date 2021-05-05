@@ -11,7 +11,7 @@ use crate::utils::child_process::Children;
 use crate::{config::ThemeSetting, layouts::Layout};
 
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
@@ -25,7 +25,8 @@ pub struct Manager {
     #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
     pub layouts: Vec<Layout>,
-    pub scratchpads: Vec<ScratchPad>,
+    #[serde(skip)]
+    pub scratchpads: HashMap<ScratchPad, Option<WindowHandle>>,
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,

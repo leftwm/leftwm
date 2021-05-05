@@ -12,6 +12,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     if manager.windows.iter().any(|w| w.handle == window.handle) {
         return false;
     }
+    let is_scratchpad = is_scratchpad(manager, &window);
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
     //the workspace that has windows on its is still active not the empty workspace.
@@ -20,11 +21,6 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
         .iter()
         .find(|ws| ws.xyhw.contains_point(x, y))
         .or_else(|| manager.focused_workspace()); //backup plan
-
-    let is_scratchpad = manager
-        .scratchpads
-        .iter()
-        .any(|s| window.name == Some(s.name.clone()));
 
     //Random value
     let mut layout: Layout = Layout::MainAndVertStack;
@@ -127,6 +123,21 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     }
 
     true
+}
+
+fn is_scratchpad(manager: &mut Manager, window: &Window) -> bool {
+    if let Some((_, h)) = manager
+        .scratchpads
+        .iter_mut()
+        .find(|(s, _)| window.name == Some(s.name.clone()))
+    {
+        if let Some(h) = h {
+            return !manager.windows.iter().any(|w| w.handle == *h);
+        }
+        *h = Some(window.handle);
+        return true;
+    }
+    false
 }
 
 /// Process a collection of events, and apply them changes to a manager.

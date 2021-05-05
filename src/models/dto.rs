@@ -106,8 +106,8 @@ fn viewport_into_display_workspace(
 impl From<&Manager> for ManagerState {
     fn from(manager: &Manager) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
-        let working_tags = manager
-            .tags
+        let tags_len = manager.tags.len();
+        let working_tags = manager.tags[0..tags_len - 1]
             .iter()
             .filter(|tag| {
                 manager
@@ -138,7 +138,10 @@ impl From<&Manager> for ManagerState {
         };
         Self {
             window_title,
-            desktop_names: manager.tags.iter().map(|t| t.id.clone()).collect(),
+            desktop_names: manager.tags[0..tags_len - 1]
+                .iter()
+                .map(|t| t.id.clone())
+                .collect(),
             viewports,
             active_desktop,
             working_tags,
