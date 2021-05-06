@@ -86,21 +86,21 @@ pub fn process_internal(
 }
 
 fn execute(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
-    exec_shell(val.as_ref()?, manager);
+    let _ = exec_shell(val.as_ref()?, manager);
     None
 }
 
 fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
     let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
-    let (s, h) = manager
+    let (s, id) = manager
         .scratchpads
         .iter()
         .find(|(s, _)| name == s.name.clone())
-        .map(|(s, h)| (s.clone(), h))?;
+        .map(|(s, id)| (s.clone(), id))?;
 
-    if let Some(h) = h {
-        if let Some(w) = manager.windows.iter_mut().find(|w| w.handle == *h) {
+    if id.is_some() {
+        if let Some(w) = manager.windows.iter_mut().find(|w| w.pid == *id) {
             let is_tagged = w.has_tag(tag);
             w.clear_tags();
             if is_tagged {
@@ -114,7 +114,14 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
             return Some(true);
         }
     }
-    execute(manager, &Some(s.value))
+    let pid = exec_shell(&s.value, manager);
+    let id = manager
+        .scratchpads
+        .iter_mut()
+        .find(|(s, _)| name == s.name.clone())
+        .map(|(_, id)| id)?;
+    *id = pid;
+    None
 }
 
 fn toggle_fullscreen(manager: &mut Manager) -> Option<bool> {

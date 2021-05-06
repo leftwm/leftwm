@@ -33,6 +33,7 @@ pub struct Window {
     pub never_focus: bool,
     pub debugging: bool,
     pub name: Option<String>,
+    pub pid: Option<u32>,
     pub type_: WindowType,
     pub tags: Vec<TagId>,
     pub border: i32,
@@ -48,7 +49,7 @@ pub struct Window {
 
 impl Window {
     #[must_use]
-    pub fn new(h: WindowHandle, name: Option<String>) -> Window {
+    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Window {
         Window {
             handle: h,
             transient: None,
@@ -57,6 +58,7 @@ impl Window {
             debugging: false,
             never_focus: false,
             name,
+            pid,
             type_: WindowType::Normal,
             tags: Vec::new(),
             border: 1,

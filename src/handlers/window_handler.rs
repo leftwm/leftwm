@@ -126,18 +126,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
 }
 
 fn is_scratchpad(manager: &mut Manager, window: &Window) -> bool {
-    if let Some((_, h)) = manager
-        .scratchpads
-        .iter_mut()
-        .find(|(s, _)| window.name == Some(s.name.clone()))
-    {
-        if let Some(h) = h {
-            return !manager.windows.iter().any(|w| w.handle == *h);
-        }
-        *h = Some(window.handle);
-        return true;
-    }
-    false
+    manager.scratchpads.iter().any(|(_, &id)| window.pid == id)
 }
 
 /// Process a collection of events, and apply them changes to a manager.

@@ -238,7 +238,8 @@ impl XlibDisplayServer {
                 };
                 if managed {
                     let name = self.xw.get_window_name(handle);
-                    let w = Window::new(WindowHandle::XlibHandle(handle), name);
+                    let pid = self.xw.get_window_pid(handle);
+                    let w = Window::new(WindowHandle::XlibHandle(handle), name, pid);
                     all.push(w);
                 }
             }),

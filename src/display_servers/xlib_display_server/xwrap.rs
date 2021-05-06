@@ -1018,6 +1018,51 @@ impl XWrap {
     }
 
     #[must_use]
+    pub fn get_window_pid(&self, window: xlib::Window) -> Option<u32> {
+        if let Ok(id) = self.get_cardinal_prop(window, self.atoms.NetWMPid) {
+            return Some(id);
+        }
+        None
+    }
+
+    /// Get the `WMPid` of a window
+    /// # Errors
+    ///
+    /// Errors if window status = 0.
+    pub fn get_cardinal_prop(
+        &self,
+        window: xlib::Window,
+        atom: xlib::Atom,
+    ) -> Result<u32, XlibError> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::zeroed() };
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                atom,
+                0,
+                MAX_PROPERTY_VALUE_LEN / 4,
+                xlib::False,
+                xlib::XA_CARDINAL,
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut nitems_return,
+                &mut prop_return,
+            );
+            if status == i32::from(xlib::Success) && !prop_return.is_null() {
+                #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
+                let pid = *(prop_return as *const u32);
+                return Ok(pid);
+            }
+        };
+        Err(XlibError::FailedStatus)
+    }
+
+    #[must_use]
     pub fn get_window_name(&self, window: xlib::Window) -> Option<String> {
         if let Ok(text) = self.get_text_prop(window, self.atoms.NetWMName) {
             return Some(text);

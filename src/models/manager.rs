@@ -26,7 +26,7 @@ pub struct Manager {
     pub tags: Vec<Tag>, //list of all known tags
     pub layouts: Vec<Layout>,
     #[serde(skip)]
-    pub scratchpads: HashMap<ScratchPad, Option<WindowHandle>>,
+    pub scratchpads: HashMap<ScratchPad, Option<u32>>,
     pub focused_workspace_history: VecDeque<usize>,
     pub focused_window_history: VecDeque<WindowHandle>,
     pub focused_tag_history: VecDeque<String>,

@@ -163,12 +163,16 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 /// Sends command to shell for execution
 /// Assumes STDIN/STDOUT unwanted.
 
-pub fn exec_shell(command: &str, manager: &mut Manager) {
-    let _droppable = Command::new("sh")
+pub fn exec_shell(command: &str, manager: &mut Manager) -> Option<u32> {
+    let child = Command::new("sh")
         .arg("-c")
         .arg(&command)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .spawn()
-        .map(|child| manager.children.insert(child));
+        .ok()?;
+    let pid = child.id();
+    log::info!("exec: {:?}", pid);
+    manager.children.insert(child);
+    Some(pid)
 }
