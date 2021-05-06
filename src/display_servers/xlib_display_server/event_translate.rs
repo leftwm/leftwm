@@ -85,7 +85,6 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
     //build the new window, and fill in info about it from xlib
     let name = xw.get_window_name(event.window);
     let pid = xw.get_window_pid(event.window);
-    log::info!("PID: {:?} {:?}", pid, name);
     let mut w = Window::new(handle, name, pid);
     let trans = xw.get_transient_for(event.window);
     if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {

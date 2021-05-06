@@ -172,7 +172,6 @@ pub fn exec_shell(command: &str, manager: &mut Manager) -> Option<u32> {
         .spawn()
         .ok()?;
     let pid = child.id();
-    log::info!("exec: {:?}", pid);
     manager.children.insert(child);
     Some(pid)
 }
