@@ -1,3 +1,4 @@
+//! A wrapper around many WM features
 //We allow this _ because if we don't we'll receive an error that it isn't read on _task_guard.
 #![allow(clippy::used_underscore_binding)]
 //We allow this so that extern "C" functions are not flagged as confusing. The current placement
@@ -657,8 +658,12 @@ impl XWrap {
         }
     }
 
-    //this code is ran one time when a window is added to the managers list of windows
-    pub fn setup_managed_window(&mut self, h: WindowHandle) -> Option<DisplayEvent> {
+    //this code is run once when a window is added to the managers list of windows
+    pub fn setup_managed_window(
+        &mut self,
+        h: WindowHandle,
+        config: &Config,
+    ) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             self.managed_windows.push(handle);
@@ -701,7 +706,9 @@ impl XWrap {
                     }
                 }
                 _ => {
-                    let _ = self.move_cursor_to_window(handle);
+                    if config.focus_new_windows {
+                        let _ = self.move_cursor_to_window(handle);
+                    }
                 }
             }
             //make sure there is at least an empty list of _NET_WM_STATE
@@ -730,7 +737,7 @@ impl XWrap {
 
     /// # Errors
     ///
-    /// Will error if unale to obtain window attributes. See `get_window_attrs`.
+    /// Will error if unable to obtain window attributes. See `get_window_attrs`.
     pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), XlibError> {
         let attrs = self.get_window_attrs(window)?;
         let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
@@ -889,7 +896,7 @@ impl XWrap {
         }
     }
 
-    //this code is ran once when a window is destoryed
+    //this code is run once when a window is destroyed
     pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             unsafe {
@@ -1270,7 +1277,7 @@ impl XWrap {
     }
 
     pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
-        //grab the keys with and without numlock (Mod2)
+        //grab the buttons with and without numlock (Mod2)
         let mods: Vec<u32> = vec![
             modifiers,
             modifiers | xlib::Mod2Mask,
@@ -1285,8 +1292,8 @@ impl XWrap {
                     window,
                     0,
                     BUTTONMASK as u32,
-                    xlib::GrabModeAsync,
                     xlib::GrabModeSync,
+                    xlib::GrabModeAsync,
                     0,
                     0,
                 );

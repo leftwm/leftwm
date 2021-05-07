@@ -316,28 +316,44 @@ fn move_window_top(
 }
 
 fn focus_window_change(
-    manager: &mut Manager,
+    mut manager: &mut Manager,
     val: i32,
     mut handle: WindowHandle,
     layout: &Option<Layout>,
     mut to_reorder: Vec<Window>,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    if let Some(Layout::Monocle) = layout {
-        // For Monocle we want to also move windows up/down
-        // Not the best solution but results
-        // in desired behaviour
-        handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
-        let _ = helpers::cycle_vec(&mut to_reorder, val);
-    } else if let Some(Layout::MainAndDeck) = layout {
-        if to_reorder.len() == 1_usize {
-            return None;
+    // For Monocle we want to also move windows up/down
+    // Not the best solution but results
+    // in desired behaviour
+    if let Some(crate::layouts::Layout::Monocle) = layout {
+        let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
+            Some(h) => h.handle,
+            None => return Some(false),
+        };
+        helpers::cycle_vec(&mut to_reorder, val);
+        let act = DisplayAction::MoveMouseOver(new_handle);
+        manager.actions.push_back(act);
+    } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
+        //Only change focus on first 2 windows
+        let window_group = &to_reorder[..2];
+        if let Some(new_focused) = helpers::relative_find(&window_group, is_handle, val) {
+            let act = DisplayAction::MoveMouseOver(new_focused.handle);
+            manager.actions.push_back(act);
+            let new_window_handle = new_focused.handle;
+            manager.windows.append(&mut to_reorder);
+            return Some(focus_handler::focus_window(manager, &new_window_handle));
         }
         let index = to_reorder.iter().position(|x: &Window| !x.floating())? + 1;
         let window_group = &to_reorder[..=index];
         handle = helpers::relative_find(&window_group, is_handle, -val)?.handle;
     } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val) {
-        handle = new_focused.handle;
+        focus_handler::focus_window(&mut manager, &handle);
+        let act = DisplayAction::MoveMouseOver(new_focused.handle);
+        manager.actions.push_back(act);
+        let new_window_handle = new_focused.handle;
+        manager.windows.append(&mut to_reorder);
+        return Some(focus_handler::focus_window(manager, &new_window_handle));
     }
     manager.windows.append(&mut to_reorder);
     let act = DisplayAction::MoveMouseOver(handle);

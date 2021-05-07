@@ -69,7 +69,7 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
     if found.type_ == WindowType::Dock {
         return None;
     }
-    //NOTE: we are intentionally creating the focus event even if we thing this window
+    //NOTE: we are intentionally creating the focus event even if we think this window
     //is already in focus. This is to force the DM to update its knowledge of the focused window
     let act = DisplayAction::WindowTakeFocus(found.clone());
     manager.actions.push_back(act);
@@ -262,12 +262,14 @@ mod tests {
             Window::new(WindowHandle::MockHandle(1), None),
             -1,
             -1,
+            &Config::default(),
         );
         window_handler::created(
             &mut manager,
             Window::new(WindowHandle::MockHandle(2), None),
             -1,
             -1,
+            &Config::default(),
         );
         let expected = manager.windows[0].clone();
         focus_window(&mut manager, &expected.handle);
@@ -280,10 +282,10 @@ mod tests {
         let mut manager = Manager::default();
         screen_create_handler::process(&mut manager, Screen::default());
         let window = Window::new(WindowHandle::MockHandle(1), None);
-        window_handler::created(&mut manager, window.clone(), -1, -1);
+        window_handler::created(&mut manager, window.clone(), -1, -1, &Config::default());
         focus_window(&mut manager, &window.handle);
         let start_length = manager.focused_workspace_history.len();
-        window_handler::created(&mut manager, window.clone(), -1, -1);
+        window_handler::created(&mut manager, window.clone(), -1, -1, &Config::default());
         focus_window(&mut manager, &window.handle);
         let end_length = manager.focused_workspace_history.len();
         assert_eq!(start_length, end_length, "expected no new history event");

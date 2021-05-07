@@ -110,7 +110,7 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.kill_window(&w);
                 None
             }
-            DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w),
+            DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w, &self.config),
             DisplayAction::MoveMouseOver(handle) => {
                 if let WindowHandle::XlibHandle(win) = handle {
                     let _ = self.xw.move_cursor_to_window(win);

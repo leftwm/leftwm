@@ -32,6 +32,8 @@ pub struct Config {
     pub layouts: Vec<Layout>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
+    pub focus_tracks_mouse: bool,
+    pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
 }
 
@@ -307,7 +309,9 @@ impl Default for Config {
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
             disable_current_tag_swap: false,
-            modkey: "Mod4".to_owned(),   //win key
+            focus_tracks_mouse: true, // default behaviour: mouse move auto-focuses window
+            focus_new_windows: true,  // default behaviour: focuses windows on creation
+            modkey: "Mod4".to_owned(), //win key
             mousekey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
