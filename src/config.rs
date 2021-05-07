@@ -69,7 +69,8 @@ fn load_from_file() -> Result<Config> {
     }
 }
 
-fn is_program_in_path(program: &str) -> bool {
+#[must_use]
+pub fn is_program_in_path(program: &str) -> bool {
     if let Ok(path) = env::var("PATH") {
         for p in path.split(':') {
             let p_str = format!("{}/{}", p, program);

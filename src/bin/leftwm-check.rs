@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
         Ok(config) => {
             println!("\x1b[0;92m    -> Configuration loaded OK \x1b[0;92m");
             if config == Config::default() {
-                println!("\x1b[1;32mWARNING: The file loaded was the default. Your configuration is likely invalid \x1b[0m");
+                println!("\x1b[1;32mWARN: The file loaded was the default. Your configuration is likely invalid \x1b[0m");
             }
             if verbose {
                 dbg!(&config);
@@ -47,6 +47,8 @@ async fn main() -> Result<()> {
             println!("Configuration failed. Reason: {:?}", e);
         }
     }
+    println!("\x1b[0;94m::\x1b[0m Checking environment . . .");
+    check_elogind(verbose)?;
 
     Ok(())
 }
@@ -131,5 +133,51 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
             );
         }
         false
+    }
+}
+
+fn check_elogind(verbose: bool) -> Result<()> {
+    // We assume that if it is in the path it's all good
+    // We also cross-reference the ENV variable
+    match (
+        std::env::var("XDG_RUNTIME_DIR"),
+        leftwm::config::is_program_in_path("loginctl"),
+    ) {
+        (Ok(val), true) => {
+            if verbose {
+                println!(":: XDG_RUNTIME_DIR: {}, LOGINCTL OKAY", val);
+            }
+
+            println!("\x1b[0;92m    -> Environment OK \x1b[0;92m");
+
+            Ok(())
+        }
+        (Ok(val), false) => {
+            if verbose {
+                println!(":: XDG_RUNTIME_DIR: {}, LOGINCTL BAD", val);
+            }
+            println!("\x1b[1;91mERROR: XDG_RUNTIME_DIR found, but elogind not installed.\x1b[0m",);
+            Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Elogind not installed/operating.",
+            )))
+        }
+        (Err(e), false) => {
+            if verbose {
+                println!(":: XDG_RUNTIME_DIR_ERROR: {:?}, LOGINCTL BAD", e);
+            }
+            println!("\x1b[1;91mERROR: Elogind not installed. Install elogind.\x1b[0m",);
+            Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Elogind not installed/operating.",
+            )))
+        }
+        (Err(e), true) => {
+            if verbose {
+                println!(":: XDG_RUNTIME_DIR: {:?}, LOGINCTL OKAY", e);
+            }
+            println!("\x1b[1;33mWARN: Elogind installed but not running.\x1b[0m",);
+            Ok(())
+        }
     }
 }
