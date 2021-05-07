@@ -31,6 +31,14 @@ async fn main() -> Result<()> {
     let config_file = matches.value_of("INPUT");
     let verbose = matches.occurrences_of("verbose") >= 1;
 
+    println!(
+        "\x1b[0;94m::\x1b[0m LeftWM version: {}",
+        env!("CARGO_PKG_VERSION")
+    );
+    println!(
+        "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
+        git_version::git_version!()
+    );
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
         Ok(config) => {

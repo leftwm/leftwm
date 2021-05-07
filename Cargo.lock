@@ -314,6 +314,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "git-version"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94918e83f1e01dedc2e361d00ce9487b14c58c7f40bab148026fa39d42cb41e2"
+dependencies = [
+ "git-version-macro",
+ "proc-macro-hack",
+]
+
+[[package]]
+name = "git-version-macro"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34a97a52fdee1870a34fa6e4b77570cba531b27d1838874fef4429a791a3d657"
+dependencies = [
+ "proc-macro-hack",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -360,6 +382,7 @@ dependencies = [
  "clap",
  "dirs-next",
  "futures",
+ "git-version",
  "libc",
  "liquid",
  "log",
