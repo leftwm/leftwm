@@ -129,6 +129,9 @@ fn load_theme(manager: &mut Manager, theme: ThemeSetting) -> bool {
     for win in &mut manager.windows {
         win.update_for_theme(&theme);
     }
+    for ws in &mut manager.workspaces {
+        ws.update_for_theme(&theme);
+    }
     manager.theme_setting = theme;
     true
 }

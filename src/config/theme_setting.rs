@@ -9,7 +9,8 @@ use std::path::Path;
 #[serde(default)]
 pub struct ThemeSetting {
     pub border_width: i32,
-    pub margin: Margins,
+    pub window_margin: Margins,
+    pub workspace_margin: Margins,
     pub default_border_color: String,
     pub floating_border_color: String,
     pub focused_border_color: String,
@@ -34,7 +35,8 @@ impl Default for ThemeSetting {
     fn default() -> Self {
         ThemeSetting {
             border_width: 1,
-            margin: Margins::Int(10),
+            window_margin: Margins::Int(10),
+            workspace_margin: Margins::Int(10),
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
             focused_border_color: "#FF0000".to_owned(),
@@ -60,7 +62,8 @@ mod tests {
     fn deserialize_custom_theme_config() {
         let config = r#"
 border_width = 0
-margin = 5
+window_margin = 5
+workspace_margin = 5
 default_border_color = '#222222'
 floating_border_color = '#005500'
 focused_border_color = '#FFB53A'
@@ -72,7 +75,8 @@ on_new_window = 'echo Hello World'
             config,
             ThemeSetting {
                 border_width: 0,
-                margin: Margins::Int(5),
+                window_margin: Margins::Int(5),
+                workspace_margin: Margins::Int(5),
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),

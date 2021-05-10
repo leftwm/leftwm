@@ -156,6 +156,7 @@ mod tests {
             vec![],
             vec![],
         );
+        ws.margin = Margins::Int(0);
         ws.xyhw.set_minh(600);
         ws.xyhw.set_minw(800);
         ws.update_avoided_areas();
