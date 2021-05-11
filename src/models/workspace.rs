@@ -19,6 +19,7 @@ pub struct Workspace {
     pub tags: Vec<TagId>,
     pub margin: Margins,
     pub margin_multiplier: f32,
+    pub gutter: i32,
     #[serde(skip)]
     all_tags: Vec<Tag>,
     layouts: Vec<Layout>,
@@ -56,6 +57,7 @@ impl Workspace {
             tags: vec![],
             margin: Margins::Int(10),
             margin_multiplier: 1.0,
+            gutter: 0,
             avoid: vec![],
             all_tags,
             layouts,
@@ -80,6 +82,7 @@ impl Workspace {
 
     pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
         self.margin = theme.workspace_margin.clone();
+        self.gutter = theme.gutter;
     }
 
     pub fn show_tag(&mut self, tag: &Tag) {
@@ -176,13 +179,13 @@ impl Workspace {
     #[must_use]
     pub fn y(&self) -> i32 {
         let top = self.margin.clone().top() as f32;
-        self.xyhw_avoided.y() + (self.margin_multiplier * top) as i32
+        self.xyhw_avoided.y() + (self.margin_multiplier * top) as i32 + self.gutter
     }
     #[must_use]
     pub fn height(&self) -> i32 {
         let top = self.margin.clone().top() as f32;
         let bottom = self.margin.clone().bottom() as f32;
-        self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32
+        self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - self.gutter
     }
     #[must_use]
     pub fn width(&self) -> i32 {

@@ -11,6 +11,7 @@ pub struct ThemeSetting {
     pub border_width: i32,
     pub window_margin: Margins,
     pub workspace_margin: Margins,
+    pub gutter: i32,
     pub default_border_color: String,
     pub floating_border_color: String,
     pub focused_border_color: String,
@@ -37,6 +38,7 @@ impl Default for ThemeSetting {
             border_width: 1,
             window_margin: Margins::Int(10),
             workspace_margin: Margins::Int(10),
+            gutter: 0,
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
             focused_border_color: "#FF0000".to_owned(),
@@ -64,6 +66,7 @@ mod tests {
 border_width = 0
 window_margin = 5
 workspace_margin = 5
+gutter = 0
 default_border_color = '#222222'
 floating_border_color = '#005500'
 focused_border_color = '#FFB53A'
@@ -77,6 +80,7 @@ on_new_window = 'echo Hello World'
                 border_width: 0,
                 window_margin: Margins::Int(5),
                 workspace_margin: Margins::Int(5),
+                gutter: 0,
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),
