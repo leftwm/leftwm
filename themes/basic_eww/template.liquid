@@ -8,13 +8,13 @@
 {{'<box>'}}
 {% for tag in workspace.tags %}
 {% if tag.mine %}
-{{mine_open}}{{tag.name}}{{middle}} {{ tag.name }} {{close}}
+{{mine_open}}{{tag.index}}{{middle}} {{ tag.name }} {{close}}
 {% elsif tag.visible  %}
-{{visible_open}}{{tag.name}}{{middle}} {{ tag.name }} {{close}}
+{{visible_open}}{{tag.index}}{{middle}} {{ tag.name }} {{close}}
 {% elsif tag.busy  %}
-{{busy_open}}{{tag.name}}{{middle}} {{ tag.name }} {{close}}
+{{busy_open}}{{tag.index}}{{middle}} {{ tag.name }} {{close}}
 {% else tag.visible  %}
-{{unoccupied}}{{tag.name}}{{middle}} {{ tag.name }} {{close}}
+{{unoccupied}}{{tag.index}}{{middle}} {{ tag.name }} {{close}}
 {% endif %}
 {% endfor %}
 {{"</box>"}}
