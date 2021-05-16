@@ -342,7 +342,8 @@ fn focus_window_change(
     manager.windows.append(&mut to_reorder);
     let act = DisplayAction::MoveMouseOver(handle);
     manager.actions.push_back(act);
-    Some(true)
+    // This is required for those with focus_tracks_mouse = false
+    Some(focus_handler::focus_window(manager, &handle))
 }
 
 fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {

@@ -37,7 +37,7 @@ mod tests {
     }
 
     #[test]
-    fn should_be_able_to_add_screens_with_perexisting_tags() {
+    fn should_be_able_to_add_screens_with_preexisting_tags() {
         let mut manager = Manager::default();
         manager.tags.push(TagModel::new("web"));
         manager.tags.push(TagModel::new("console"));
