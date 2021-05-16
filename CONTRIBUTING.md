@@ -54,40 +54,5 @@ cargo clippy --release
 ```
 Again these are checked with CI, but it is always easier to check them before creating a pull request.
 
-### Setting up your Envriroment
-
-This section has some tips and tricks provided by contributors to help you get on your way in contributing.
-
-Tip 1. To make your life easier once your done coding, adding this function
-```
-checkleft() {
-        if cargo fmt ; then
-          if cargo test; then
-            if cargo clippy --all-targets --all-features ; then
-                if git add -A $1 ; then
-                    if git status ; then
-                        git commit -S -m "$2"
-                    else
-                        echo "Status failed"
-                     fi
-                 else
-                     echo "Add failed"
-                fi
-            else
-                echo "Clippy failed"
-            fi
-          else
-            echo "Test failed"
-          fi
-         else
-                echo "FMT failed"
-          fi
-}
-```
-to your ```~/.bashrc``` and running it will automatically run all the cargo checks and commit the specified files to git. It assumes you have a gpg-key, remove ```-S ``` flag from git commit if not.
-Example usage:
-```
-# Example, adds all of src/, Cargo.toml, and Cargo.lock to be committed.
-# You can pass anything that would go to git add -A 
-checkleft 'src/ Cargo.toml Cargo.lock' 'Commit message'
-```
+### Tips and Tricks
+There is also a [tips and tricks](https://github.com/leftwm/leftwm/wiki/Contributing-to-Leftwm---Tips-and-Tricks) section in the wiki full of info from different contributors on the LeftWM team.
