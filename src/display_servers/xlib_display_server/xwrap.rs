@@ -79,7 +79,7 @@ impl Default for XWrap {
 impl XWrap {
     /// # Panics
     ///
-    /// Can panic if unable to contact xorg.  
+    /// Can panic if unable to contact xorg.
     #[must_use]
     pub fn new() -> XWrap {
         const SERVER: mio::Token = mio::Token(0);
@@ -637,13 +637,17 @@ impl XWrap {
                     let rh: u32 = window.height() as u32;
                     (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
 
-                    let color: c_ulong = if is_focused {
+                    let mut color: c_ulong = if is_focused {
                         self.colors.active
                     } else if window.floating() {
                         self.colors.floating
                     } else {
                         self.colors.normal
                     };
+                    //Force border opacity to 0xff
+                    let mut bytes = color.to_be_bytes();
+                    bytes[4] = 0xff;
+                    color = u64::from_be_bytes(bytes);
 
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
                 }
