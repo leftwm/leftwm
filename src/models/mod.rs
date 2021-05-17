@@ -1,5 +1,6 @@
 //! Objects (such as windows) used to develop `LeftWM`.
 mod dock_area;
+mod gutter;
 mod manager;
 mod margins;
 mod mode;
@@ -17,6 +18,8 @@ pub mod dto;
 use crate::layouts;
 
 pub use dock_area::DockArea;
+pub use gutter::Gutter;
+pub use gutter::Side;
 pub use manager::Manager;
 pub use margins::Margins;
 pub use mode::Mode;

@@ -1,4 +1,4 @@
-use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
+use super::{focus_handler, Config, Manager, Window, WindowChange, WindowType, Workspace};
 use crate::child_process::exec_shell;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
@@ -7,7 +7,13 @@ use crate::utils::helpers;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) -> bool {
+pub fn created(
+    mut manager: &mut Manager,
+    mut window: Window,
+    x: i32,
+    y: i32,
+    config: &Config,
+) -> bool {
     //don't add the window if the manager already knows about it
     if manager.windows.iter().any(|w| w.handle == window.handle) {
         return false;
@@ -116,7 +122,9 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     //new windows should be on the top of the stack
     manager.sort_windows();
 
-    focus_handler::focus_window(manager, &window.handle);
+    if config.focus_new_windows {
+        focus_handler::focus_window(manager, &window.handle);
+    }
 
     if let Some(cmd) = &manager.theme_setting.on_new_window_cmd.clone() {
         exec_shell(&cmd, &mut manager);

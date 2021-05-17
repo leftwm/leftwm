@@ -1,11 +1,13 @@
-use super::layouts::Layout;
-use crate::models::BBox;
+use super::{layouts::Layout, Margins};
+use crate::models::Gutter;
+use crate::models::Side;
 use crate::models::Tag;
 use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowType;
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
+use crate::{config::ThemeSetting, models::BBox};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -17,7 +19,9 @@ pub struct Workspace {
     pub layout: Layout,
     layout_rotation: usize,
     pub tags: Vec<TagId>,
+    pub margin: Margins,
     pub margin_multiplier: f32,
+    pub gutters: Vec<Gutter>,
     #[serde(skip)]
     all_tags: Vec<Tag>,
     layouts: Vec<Layout>,
@@ -53,7 +57,9 @@ impl Workspace {
             layout: Layout::new(&layouts),
             layout_rotation: 0,
             tags: vec![],
+            margin: Margins::Int(10),
             margin_multiplier: 1.0,
+            gutters: vec![],
             avoid: vec![],
             all_tags,
             layouts,
@@ -74,6 +80,12 @@ impl Workspace {
             }
             .into(),
         }
+    }
+
+    pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
+        self.margin = theme.workspace_margin.clone();
+        self.gutters = theme.get_list_of_gutters();
+        log::info!("Gutter: {:?}", self.gutters)
     }
 
     pub fn show_tag(&mut self, tag: &Tag) {
@@ -164,19 +176,38 @@ impl Workspace {
 
     #[must_use]
     pub fn x(&self) -> i32 {
-        self.xyhw_avoided.x()
+        let left = self.margin.clone().left() as f32;
+        let gutter = self.get_gutter(&Side::Left);
+        self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
     #[must_use]
     pub fn y(&self) -> i32 {
-        self.xyhw_avoided.y()
+        let top = self.margin.clone().top() as f32;
+        let gutter = self.get_gutter(&Side::Top);
+        self.xyhw_avoided.y() + (self.margin_multiplier * top) as i32 + gutter
     }
     #[must_use]
     pub fn height(&self) -> i32 {
-        self.xyhw_avoided.h()
+        let top = self.margin.clone().top() as f32;
+        let bottom = self.margin.clone().bottom() as f32;
+        //Only one side
+        let gutter = self.get_gutter(&Side::Top) + self.get_gutter(&Side::Bottom);
+        self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
     #[must_use]
     pub fn width(&self) -> i32 {
-        self.xyhw_avoided.w()
+        let left = self.margin.clone().left() as f32;
+        let right = self.margin.clone().right() as f32;
+        //Only one side
+        let gutter = self.get_gutter(&Side::Left) + self.get_gutter(&Side::Right);
+        self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
+    }
+
+    fn get_gutter(&self, side: &Side) -> i32 {
+        match self.gutters.iter().find(|g| &g.side == side) {
+            Some(g) => g.value,
+            None => 0,
+        }
     }
 
     #[must_use]

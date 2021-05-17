@@ -17,19 +17,30 @@ impl DisplayEventHandler {
     pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
-            DisplayEvent::WindowCreate(w, x, y) => window_handler::created(manager, w, x, y),
+            DisplayEvent::WindowCreate(w, x, y) => {
+                window_handler::created(manager, w, x, y, &self.config)
+            }
             DisplayEvent::WindowChange(w) => window_handler::changed(manager, w),
 
             //The window has been focused, do we want to do anything about it?
             DisplayEvent::MouseEnteredWindow(handle) => {
-                focus_handler::focus_window(manager, &handle)
+                // If the user says FocusTracksMouse = false, then don't follow
+                if !&self.config.focus_tracks_mouse {
+                    return false;
+                }
+                return focus_handler::focus_window(manager, &handle);
             }
 
             DisplayEvent::MoveFocusTo(x, y) => focus_handler::move_focus_to_point(manager, x, y),
 
             //This is a request to validate focus. Double check that we are focused the correct
             //thing under this point.
-            DisplayEvent::VerifyFocusedAt(x, y) => focus_handler::validate_focus_at(manager, x, y),
+            DisplayEvent::VerifyFocusedAt(x, y) => {
+                if !&self.config.focus_tracks_mouse {
+                    return false;
+                }
+                focus_handler::validate_focus_at(manager, x, y)
+            }
 
             DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
 

@@ -35,6 +35,8 @@ pub struct Config {
     pub scratchpad: Option<Vec<ScratchPad>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
+    pub focus_tracks_mouse: bool,
+    pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
 }
 
@@ -72,7 +74,8 @@ fn load_from_file() -> Result<Config> {
     }
 }
 
-fn is_program_in_path(program: &str) -> bool {
+#[must_use]
+pub fn is_program_in_path(program: &str) -> bool {
     if let Ok(path) = env::var("PATH") {
         for p in path.split(':') {
             let p_str = format!("{}/{}", p, program);
@@ -319,7 +322,9 @@ impl Default for Config {
             layouts: LAYOUTS.to_vec(),
             scratchpad: Some(vec![]),
             disable_current_tag_swap: false,
-            modkey: "Mod4".to_owned(),   //win key
+            focus_tracks_mouse: true, // default behaviour: mouse move auto-focuses window
+            focus_new_windows: true,  // default behaviour: focuses windows on creation
+            modkey: "Mod4".to_owned(), //win key
             mousekey: "Mod4".to_owned(), //win key
             keybind: commands,
         }
