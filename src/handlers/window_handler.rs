@@ -178,10 +178,10 @@ fn find_transient_parent<'w>(manager: &'w Manager, window: &Window) -> Option<&'
 
 pub fn update_workspace_avoid_list(manager: &mut Manager) {
     let mut avoid = vec![];
-    if let Some(w) = manager
+    for w in manager
         .windows
         .iter()
-        .find(|w| w.type_ == WindowType::Dock && w.strut.is_some())
+        .filter(|w| w.type_ == WindowType::Dock && w.strut.is_some())
     {
         //unwrap() is safe as we know w.strut is_some
         let to_avoid = w.strut.unwrap();
