@@ -13,6 +13,7 @@ pub struct XAtom {
     pub NetSupported: xlib::Atom,
     pub NetWMName: xlib::Atom,
     pub NetWMState: xlib::Atom,
+    pub NetWMPid: xlib::Atom,
 
     //pub NetWMStateSticky: xlib::Atom,
     //pub NetWMStateAbove: xlib::Atom,
@@ -57,6 +58,7 @@ impl XAtom {
             self.NetSupported,
             self.NetWMName,
             self.NetWMState,
+            self.NetWMPid,
             self.NetWMStateModal,
             self.NetWMStateSticky,
             self.NetWMStateMaximizedVert,
@@ -113,6 +115,9 @@ impl XAtom {
         }
         if atom == self.NetWMState {
             return "_NET_WM_STATE";
+        }
+        if atom == self.NetWMPid {
+            return "_NET_WM_PID";
         }
 
         if atom == self.NetWMStateModal {
@@ -194,6 +199,7 @@ impl XAtom {
             NetActiveWindow: from(xlib, dpy, "_NET_ACTIVE_WINDOW"),
             NetSupported: from(xlib, dpy, "_NET_SUPPORTED"),
             NetWMName: from(xlib, dpy, "_NET_WM_NAME"),
+            NetWMPid: from(xlib, dpy, "_NET_WM_PID"),
 
             NetWMState: from(xlib, dpy, "_NET_WM_STATE"),
             NetWMStateModal: from(xlib, dpy, "_NET_WM_STATE_MODAL"),

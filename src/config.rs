@@ -1,5 +1,6 @@
 //! `LeftWM` general configuration
 mod keybind;
+mod scratchpad;
 mod theme_setting;
 mod workspace_config;
 
@@ -18,6 +19,7 @@ use std::path::Path;
 use xdg::BaseDirectories;
 
 pub use keybind::Keybind;
+pub use scratchpad::ScratchPad;
 pub use theme_setting::ThemeSetting;
 pub use workspace_config::WorkspaceConfig;
 
@@ -30,6 +32,7 @@ pub struct Config {
     pub workspaces: Option<Vec<WorkspaceConfig>>,
     pub tags: Option<Vec<String>>,
     pub layouts: Vec<Layout>,
+    pub scratchpad: Option<Vec<ScratchPad>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
     pub focus_tracks_mouse: bool,
@@ -157,6 +160,14 @@ impl Config {
             return tags.clone();
         }
         Config::default().tags.unwrap()
+    }
+
+    #[must_use]
+    pub fn get_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+        if let Some(scratchpads) = &self.scratchpad {
+            return scratchpads.clone();
+        }
+        return vec![];
     }
 }
 
@@ -309,6 +320,7 @@ impl Default for Config {
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
+            scratchpad: Some(vec![]),
             disable_current_tag_swap: false,
             focus_tracks_mouse: true, // default behaviour: mouse move auto-focuses window
             focus_new_windows: true,  // default behaviour: focuses windows on creation

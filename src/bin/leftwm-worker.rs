@@ -1,10 +1,14 @@
-use leftwm::child_process::{self, Nanny};
+use leftwm::{
+    child_process::{self, Nanny},
+    models::Tag,
+};
 
 use crate::models::TagModel;
 use leftwm::{
     config, external_command_handler, models, CommandPipe, DisplayEvent, DisplayEventHandler,
     DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
 };
+use std::collections::HashMap;
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
@@ -26,12 +30,19 @@ fn main() {
 
         let config = config::load();
 
+        let mut tags: Vec<Tag> = config
+            .get_list_of_tags()
+            .iter()
+            .map(|s| TagModel::new(s))
+            .collect();
+        tags.push(TagModel::new("NSP"));
         let mut manager = Manager {
-            tags: config
-                .get_list_of_tags()
+            tags,
+            scratchpads: config
+                .get_list_of_scratchpads()
                 .iter()
-                .map(|s| TagModel::new(s))
-                .collect(),
+                .map(|s| (s.clone(), None))
+                .collect::<HashMap<_, _>>(),
             layouts: config.layouts.clone(),
             ..Manager::default()
         };

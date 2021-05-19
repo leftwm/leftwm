@@ -96,6 +96,7 @@ fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
         "CloseWindow" => Ok(ExternalCommand::CloseWindow),
         // These require arguments and might be more finicky
         "LoadTheme" => build_load_theme(s),
+        "ToggleScratchPad" => build_toggle_scratchpad(s),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
         "SendWindowToTag" => build_send_window_to_tag(s),
         "SetLayout" => build_set_layout(s),
@@ -112,6 +113,13 @@ fn build_load_theme(raw: &str) -> std::result::Result<ExternalCommand, ()> {
     } else {
         Err(())
     }
+}
+
+fn build_toggle_scratchpad(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+    let headless = without_head(raw, "ToggleScratchPad ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let name = *parts.get(0).ok_or(())?;
+    Ok(ExternalCommand::ToggleScratchPad(name.to_string()))
 }
 
 fn build_send_window_to_tag(raw: &str) -> std::result::Result<ExternalCommand, ()> {
@@ -159,6 +167,7 @@ pub enum ExternalCommand {
     LoadTheme(PathBuf),
     UnloadTheme,
     Reload,
+    ToggleScratchPad(String),
     ToggleFullScreen,
     SendWorkspaceToTag(usize, usize),
     SendWindowToTag(usize),
