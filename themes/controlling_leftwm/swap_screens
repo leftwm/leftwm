@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-echo "SwapScreens" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+leftwm-command "SwapScreens"
