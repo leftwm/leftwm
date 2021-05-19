@@ -398,7 +398,8 @@ fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
     focus_handler::move_cursor_over(manager, &window);
     let act = DisplayAction::MoveMouseOver(window.handle);
     manager.actions.push_back(act);
-    Some(true)
+    // This is required for those with focus_tracks_mouse = false
+    Some(focus_handler::focus_window(manager, &window.handle))
 }
 
 fn rotate_tag(manager: &mut Manager) -> Option<bool> {
