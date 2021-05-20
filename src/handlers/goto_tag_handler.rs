@@ -1,7 +1,7 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
 
-pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
+pub fn process(manager: &mut Manager, tag_num: usize, config: &Config) -> bool {
     if tag_num > manager.tags.len() || tag_num < 1 {
         return false;
     }
@@ -21,7 +21,7 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
         Some(aws) => aws.tags = new_tags,
         None => return false,
     }
-    focus_handler::focus_tag(manager, &tag.id);
+    focus_handler::focus_tag(manager, &tag.id, &config);
     true
 }
 

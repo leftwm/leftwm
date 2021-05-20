@@ -1,6 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::display_action::DisplayAction;
+use crate::{display_action::DisplayAction, utils::helpers};
 
 /// Marks a workspace as the focused workspace.
 //NOTE: should only be called externally from this file
@@ -35,7 +35,7 @@ fn focus_workspace_work(manager: &mut Manager, workspace_id: i32) -> Option<()> 
     Some(())
 }
 
-/// Create a `DisplayAction` to cause this window to become focused  
+/// Create a `DisplayAction` to cause this window to become focused
 pub fn focus_window(manager: &mut Manager, handle: &WindowHandle) -> bool {
     let window = match focus_window_by_handle_work(manager, handle) {
         Some(w) => w,
@@ -178,7 +178,7 @@ pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bo
 
 /// marks a tag as the focused tag
 //NOTE: should only be called externally from this file
-pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
+pub fn focus_tag(manager: &mut Manager, tag: &str, config: &Config) -> bool {
     if focus_tag_work(manager, tag).is_none() {
         return false;
     }
@@ -189,12 +189,25 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
         .filter(|w| w.has_tag(tag))
         .cloned()
         .collect();
-    for w in &to_focus {
-        focus_workspace_work(manager, w.id);
+    for ws in &to_focus {
+        focus_workspace_work(manager, ws.id);
     }
     //make sure the focused window is on this workspace
-    let act = DisplayAction::FocusWindowUnderCursor;
-    manager.actions.push_back(act);
+    if !config.focus_tracks_mouse {
+        if let Some(ws) = to_focus.first() {
+            let for_active_workspace = |x: &Window| -> bool {
+                helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+            };
+            let handle = match manager.windows.iter().find(|w| for_active_workspace(w)) {
+                Some(w) => w.handle,
+                None => return true,
+            };
+            focus_window_by_handle_work(manager, &handle);
+        }
+    } else {
+        let act = DisplayAction::FocusWindowUnderCursor;
+        manager.actions.push_back(act);
+    }
     true
 }
 

@@ -16,7 +16,9 @@ impl DisplayEventHandler {
     /// Returns true if changes need to be rendered.
     pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
         let update_needed = match event {
-            DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
+            DisplayEvent::ScreenCreate(s) => {
+                screen_create_handler::process(manager, s, &self.config)
+            }
             DisplayEvent::WindowCreate(w, x, y) => {
                 window_handler::created(manager, w, x, y, &self.config)
             }
@@ -72,8 +74,12 @@ impl DisplayEventHandler {
             }
 
             DisplayEvent::Movement(handle, x, y) => {
-                manager.screens.iter().any(|s| s.root == handle)
-                    && focus_handler::focus_workspace_under_cursor(manager, x, y)
+                if manager.screens.iter().any(|s| s.root == handle)
+                    && self.config.focus_tracks_mouse
+                {
+                    return focus_handler::focus_workspace_under_cursor(manager, x, y);
+                }
+                false
             }
 
             DisplayEvent::MoveWindow(handle, time, x, y) => {
