@@ -272,14 +272,14 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         window_handler::created(
             &mut manager,
-            Window::new(WindowHandle::MockHandle(1), None),
+            Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
             -1,
             &Config::default(),
         );
         window_handler::created(
             &mut manager,
-            Window::new(WindowHandle::MockHandle(2), None),
+            Window::new(WindowHandle::MockHandle(2), None, None),
             -1,
             -1,
             &Config::default(),
@@ -294,7 +294,7 @@ mod tests {
     fn focusing_the_same_window_shouldnt_add_to_the_history() {
         let mut manager = Manager::default();
         screen_create_handler::process(&mut manager, Screen::default());
-        let window = Window::new(WindowHandle::MockHandle(1), None);
+        let window = Window::new(WindowHandle::MockHandle(1), None, None);
         window_handler::created(&mut manager, window.clone(), -1, -1, &Config::default());
         focus_window(&mut manager, &window.handle);
         let start_length = manager.focused_workspace_history.len();
@@ -355,7 +355,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
-        let mut window = Window::new(WindowHandle::MockHandle(1), None);
+        let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag("2");
         manager.windows.push(window.clone());
         focus_window(&mut manager, &window.handle);
@@ -369,7 +369,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
-        let mut window = Window::new(WindowHandle::MockHandle(1), None);
+        let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag("2");
         manager.windows.push(window.clone());
         focus_window(&mut manager, &window.handle);

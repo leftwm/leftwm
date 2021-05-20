@@ -15,12 +15,10 @@ pub fn created(
     config: &Config,
 ) -> bool {
     //don't add the window if the manager already knows about it
-    for w in &manager.windows {
-        if w.handle == window.handle {
-            return false;
-        }
+    if manager.windows.iter().any(|w| w.handle == window.handle) {
+        return false;
     }
-
+    let is_scratchpad = is_scratchpad(manager, &window);
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
     //the workspace that has windows on its is still active not the empty workspace.
@@ -35,6 +33,12 @@ pub fn created(
     if let Some(ws) = ws {
         window.tags = ws.tags.clone();
         layout = ws.layout.clone();
+        if is_scratchpad {
+            window.set_floating(true);
+            let new_float_exact = ws.center_halfed();
+            window.normal = ws.xyhw;
+            window.set_floating_exact(new_float_exact);
+        }
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
             window.set_floating(true);
@@ -57,7 +61,11 @@ pub fn created(
             }
         }
     } else {
-        window.tags = vec![manager.tags[0].id.clone()]
+        window.tags = vec![manager.tags[0].id.clone()];
+        if is_scratchpad {
+            window.tag("NSP");
+            window.set_floating(true);
+        }
     }
     // if there is a window with an applied margin multiplier present use this multiplier
     // in any other case use default margins (multiplier '1.0')
@@ -123,6 +131,10 @@ pub fn created(
     }
 
     true
+}
+
+fn is_scratchpad(manager: &mut Manager, window: &Window) -> bool {
+    manager.scratchpads.iter().any(|(_, &id)| window.pid == id)
 }
 
 /// Process a collection of events, and apply them changes to a manager.

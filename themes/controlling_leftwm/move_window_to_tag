@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-echo "SendWindowToTag $1" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+leftwm-command "SendWindowToTag $1"

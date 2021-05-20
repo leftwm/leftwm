@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-echo "SendWorkspaceToTag $1 $2" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+leftwm-command "SendWorkspaceToTag $1 $2"

@@ -33,6 +33,7 @@ pub struct Window {
     pub never_focus: bool,
     pub debugging: bool,
     pub name: Option<String>,
+    pub pid: Option<u32>,
     pub type_: WindowType,
     pub tags: Vec<TagId>,
     pub border: i32,
@@ -48,7 +49,7 @@ pub struct Window {
 
 impl Window {
     #[must_use]
-    pub fn new(h: WindowHandle, name: Option<String>) -> Window {
+    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Window {
         Window {
             handle: h,
             transient: None,
@@ -57,6 +58,7 @@ impl Window {
             debugging: false,
             never_focus: false,
             name,
+            pid,
             type_: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
@@ -334,14 +336,14 @@ mod tests {
 
     #[test]
     fn should_be_able_to_tag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None);
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
         subject.tag("test");
         assert!(subject.has_tag("test"), "was unable to tag the window");
     }
 
     #[test]
     fn should_be_able_to_untag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None);
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
         subject.tag("test");
         subject.untag("test");
         assert!(!subject.has_tag("test"), "was unable to untag the window");
