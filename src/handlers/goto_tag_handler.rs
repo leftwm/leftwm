@@ -31,16 +31,17 @@ mod tests {
 
     #[test]
     fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
-        let mut manager = two_screen_mock_manager();
-        process(&mut manager, 1);
+        let config = &Config::default();
+        let mut manager = two_screen_mock_manager(&config);
+        process(&mut manager, 1, &config);
         assert_eq!(manager.workspaces[0].tags, ["2".to_owned()]);
         assert_eq!(manager.workspaces[1].tags, ["1".to_owned()]);
     }
 
-    fn two_screen_mock_manager() -> Manager {
+    fn two_screen_mock_manager(config: &Config) -> Manager {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         manager
     }
 }

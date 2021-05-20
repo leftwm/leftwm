@@ -473,8 +473,8 @@ mod tests {
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
         let mut manager = Manager::default();
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         // no tag creation here but one tag per screen is created
         assert!(process(
             &mut manager,
@@ -501,7 +501,7 @@ mod tests {
     fn go_to_tag_should_return_false_on_invalid_input() {
         let mut manager = Manager::default();
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         manager.tags = vec![
             TagModel::new("A15"),
             TagModel::new("B24"),
@@ -539,8 +539,8 @@ mod tests {
             ..Manager::default()
         };
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
 
         assert!(process(
             &mut manager,
