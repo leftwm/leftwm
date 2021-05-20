@@ -25,7 +25,7 @@ pub fn created(
     let ws: Option<&Workspace> = manager
         .workspaces
         .iter()
-        .find(|ws| ws.xyhw.contains_point(x, y))
+        .find(|ws| ws.xyhw.contains_point(x, y) && config.focus_tracks_mouse)
         .or_else(|| manager.focused_workspace()); //backup plan
 
     //Random value
