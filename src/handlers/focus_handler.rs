@@ -193,20 +193,18 @@ pub fn focus_tag(manager: &mut Manager, tag: &str, config: &Config) -> bool {
         focus_workspace_work(manager, ws.id);
     }
     //make sure the focused window is on this workspace
-    if !config.focus_tracks_mouse {
-        if let Some(ws) = to_focus.first() {
-            let for_active_workspace = |x: &Window| -> bool {
-                helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
-            };
-            let handle = match manager.windows.iter().find(|w| for_active_workspace(w)) {
-                Some(w) => w.handle,
-                None => return true,
-            };
-            focus_window_by_handle_work(manager, &handle);
-        }
-    } else {
+    if config.focus_tracks_mouse {
         let act = DisplayAction::FocusWindowUnderCursor;
         manager.actions.push_back(act);
+    } else if let Some(ws) = to_focus.first() {
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
+        let handle = match manager.windows.iter().find(|w| for_active_workspace(w)) {
+            Some(w) => w.handle,
+            None => return true,
+        };
+        focus_window_by_handle_work(manager, &handle);
     }
     true
 }
