@@ -161,6 +161,16 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
     manager.actions.push_back(act);
     manager.sort_windows();
+    if let Some(ws) = manager.focused_workspace() {
+        // TODO focus the window which takes the place on the screen of the closed window
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
+        if let Some(first) = manager.windows.iter().find(|w| for_active_workspace(w)) {
+            let handle = first.handle.clone();
+            focus_handler::focus_window(manager, &handle);
+        }
+    }
     Some(true)
 }
 
