@@ -167,7 +167,7 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
             helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
         };
         if let Some(first) = manager.windows.iter().find(|w| for_active_workspace(w)) {
-            let handle = first.handle.clone();
+            let handle = first.handle;
             focus_handler::focus_window(manager, &handle);
         }
     }
