@@ -44,7 +44,9 @@ impl DisplayEventHandler {
                 focus_handler::validate_focus_at(manager, x, y)
             }
 
-            DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
+            DisplayEvent::WindowDestroy(handle) => {
+                window_handler::destroyed(manager, &handle, &self.config)
+            }
 
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config

@@ -144,20 +144,27 @@ fn is_scratchpad(manager: &mut Manager, window: &Window) -> bool {
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
-    manager.windows = manager
-        .windows
-        .iter()
-        .filter(|w| &w.handle != handle)
-        .cloned()
-        .collect();
+pub fn destroyed(manager: &mut Manager, handle: &WindowHandle, config: &Config) -> bool {
+    manager.windows.retain(|w| &w.handle != handle);
 
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
 
     //make sure focus is recalculated
-    let act = DisplayAction::FocusWindowUnderCursor;
-    manager.actions.push_back(act);
+    if config.focus_tracks_mouse {
+        let act = DisplayAction::FocusWindowUnderCursor;
+        manager.actions.push_back(act);
+    } else if let Some(ws) = manager.focused_workspace() {
+        // TODO focus the window which takes the place on the screen of the closed window
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
+        let first = match manager.windows.iter().find(|w| for_active_workspace(w)) {
+            Some(w) => w.handle,
+            None => return true,
+        };
+        focus_handler::focus_window(manager, &first);
+    }
 
     true
 }
