@@ -28,9 +28,14 @@ pub fn created(
         .find(|ws| ws.xyhw.contains_point(x, y) && config.focus_tracks_mouse)
         .or_else(|| manager.focused_workspace()); //backup plan
 
+    let mut is_first = false;
     //Random value
     let mut layout: Layout = Layout::MainAndVertStack;
     if let Some(ws) = ws {
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
+        is_first = !manager.windows.iter().any(|w| for_active_workspace(w));
         window.tags = ws.tags.clone();
         layout = ws.layout.clone();
         if is_scratchpad {
@@ -122,7 +127,7 @@ pub fn created(
     //new windows should be on the top of the stack
     manager.sort_windows();
 
-    if config.focus_new_windows {
+    if config.focus_new_windows || is_first {
         focus_handler::focus_window(manager, &window.handle);
     }
 
