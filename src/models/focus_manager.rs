@@ -16,62 +16,62 @@ impl Default for FocusBehaviour {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct FocusManager {
     pub behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
-    pub focused_workspace_history: VecDeque<usize>,
-    pub focused_window_history: VecDeque<WindowHandle>,
-    pub focused_tag_history: VecDeque<String>,
+    pub workspace_history: VecDeque<usize>,
+    pub window_history: VecDeque<WindowHandle>,
+    pub tag_history: VecDeque<String>,
 }
 
 impl FocusManager {
     /// Return the currently focused workspace.
     #[must_use]
-    pub fn focused_workspace<'a, 'b>(&self, manager: &'a Manager) -> Option<&'b Workspace>
+    pub fn workspace<'a, 'b>(&self, manager: &'a Manager) -> Option<&'b Workspace>
     where
         'a: 'b,
     {
-        let index = *self.focused_workspace_history.get(0)?;
+        let index = *self.workspace_history.get(0)?;
         manager.workspaces.get(index)
     }
 
     /// Return the currently focused workspace.
-    pub fn focused_workspace_mut<'a, 'b>(
+    pub fn workspace_mut<'a, 'b>(
         &self,
-        manager: &'a mut Manager,
+        workspaces: &'a mut Vec<Workspace>,
     ) -> Option<&'b mut Workspace>
     where
         'a: 'b,
     {
-        let index = *self.focused_workspace_history.get(0)?;
-        manager.workspaces.get_mut(index)
+        let index = *self.workspace_history.get(0)?;
+        workspaces.get_mut(index)
     }
 
     /// Return the currently focused tag if the offset is 0.
     /// Offset is used to reach further down the history.
-    pub fn focused_tag(&self, offset: usize) -> Option<String> {
-        self.focused_tag_history
+    pub fn tag(&self, offset: usize) -> Option<String> {
+        self.tag_history
             .get(offset)
             .map(std::string::ToString::to_string)
     }
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn focused_window<'a, 'b>(&self, manager: &'a Manager) -> Option<&'b Window>
+    pub fn window<'a, 'b>(&self, manager: &'a Manager) -> Option<&'b Window>
     where
         'a: 'b,
     {
-        let handle = *self.focused_window_history.get(0)?;
+        let handle = *self.window_history.get(0)?;
         manager.windows.iter().find(|w| w.handle == handle)
     }
 
     /// Return the currently focused window.
-    pub fn focused_window_mut<'a, 'b>(&self, manager: &'a mut Manager) -> Option<&'b mut Window>
+    pub fn window_mut<'a, 'b>(&self, windows: &'a mut Vec<Window>) -> Option<&'b mut Window>
     where
         'a: 'b,
     {
-        let handle = *self.focused_window_history.get(0)?;
-        manager.windows.iter_mut().find(|w| w.handle == handle)
+        let handle = *self.window_history.get(0)?;
+        windows.iter_mut().find(|w| w.handle == handle)
     }
 }

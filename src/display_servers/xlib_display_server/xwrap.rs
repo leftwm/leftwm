@@ -59,7 +59,7 @@ pub struct XWrap {
     display: *mut xlib::Display,
     root: xlib::Window,
     pub atoms: XAtom,
-    cursors: XCursor,
+    pub cursors: XCursor,
     colors: Colors,
     managed_windows: Vec<xlib::Window>,
     pub tags: Vec<String>,
@@ -666,7 +666,7 @@ impl XWrap {
     pub fn setup_managed_window(
         &mut self,
         h: WindowHandle,
-        config: &Config,
+        follow_mouse: bool,
     ) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
@@ -710,7 +710,7 @@ impl XWrap {
                     }
                 }
                 _ => {
-                    if config.focus_new_windows {
+                    if follow_mouse {
                         let _ = self.move_cursor_to_window(handle);
                     }
                 }
@@ -732,6 +732,7 @@ impl XWrap {
                 handle,
             ); //cleanup
                //just watchout for these mouse combos so we can act on them
+            self.grab_buttons(handle, xlib::Button1, xlib::Mod4Mask);
             self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
             self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
             self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
@@ -1471,7 +1472,7 @@ impl XWrap {
                     return;
                 }
             }
-            Mode::Normal => {}
+            _ => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
             self.mode = mode.clone();
@@ -1479,32 +1480,47 @@ impl XWrap {
             if let Ok(loc) = self.get_cursor_point() {
                 self.mode_origin = loc
             }
-            unsafe {
-                let cursor = match mode {
-                    Mode::ResizingWindow(_) => self.cursors.resize,
-                    Mode::MovingWindow(_) => self.cursors.move_,
-                    Mode::Normal => self.cursors.normal,
-                };
-                //grab the mouse
-                (self.xlib.XGrabPointer)(
-                    self.display,
-                    self.root,
-                    0,
-                    MOUSEMASK as u32,
-                    xlib::GrabModeAsync,
-                    xlib::GrabModeAsync,
-                    0,
-                    cursor,
-                    xlib::CurrentTime,
-                );
-            }
+            let cursor = match mode {
+                Mode::ResizingWindow(_) => self.cursors.resize,
+                Mode::MovingWindow(_) => self.cursors.move_,
+                _ => self.cursors.normal,
+            };
+            self.grab_pointer(cursor);
         }
         if mode == Mode::Normal {
-            //release the mouse grab
-            unsafe {
-                (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
-            }
+            self.ungrab_pointer();
             self.mode = mode;
+        }
+    }
+
+    pub fn grab_pointer(&self, cursor: u64) {
+        unsafe {
+            //grab the mouse
+            (self.xlib.XGrabPointer)(
+                self.display,
+                self.root,
+                0,
+                MOUSEMASK as u32,
+                xlib::GrabModeAsync,
+                xlib::GrabModeAsync,
+                0,
+                cursor,
+                xlib::CurrentTime,
+            );
+        }
+    }
+
+    pub fn ungrab_pointer(&self) {
+        unsafe {
+            //release the mouse grab
+            (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
+        }
+    }
+
+    pub fn replay_click(&self) {
+        unsafe {
+            (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
+            (self.xlib.XSync)(self.display, 0);
         }
     }
 

@@ -1,6 +1,6 @@
 use leftwm::{
     child_process::{self, Nanny},
-    models::Tag,
+    models::{FocusManager, Tag},
 };
 
 use crate::models::TagModel;
@@ -30,6 +30,12 @@ fn main() {
 
         let config = config::load();
 
+        let focus_manager = FocusManager {
+            behaviour: config.focus_behaviour.clone(),
+            focus_new_windows: config.focus_new_windows,
+            ..FocusManager::default()
+        };
+
         let mut tags: Vec<Tag> = config
             .get_list_of_tags()
             .iter()
@@ -37,6 +43,7 @@ fn main() {
             .collect();
         tags.push(TagModel::new("NSP"));
         let mut manager = Manager {
+            focus_manager,
             tags,
             scratchpads: config
                 .get_list_of_scratchpads()

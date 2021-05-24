@@ -200,9 +200,9 @@ fn focus_previous_tag(manager: &mut Manager) -> Option<bool> {
 }
 
 fn swap_tags(manager: &mut Manager) -> Option<bool> {
-    if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
-        let hist_a = *manager.focused_workspace_history.get(0)?;
-        let hist_b = *manager.focused_workspace_history.get(1)?;
+    if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
+        let hist_a = *manager.focus_manager.workspace_history.get(0)?;
+        let hist_b = *manager.focus_manager.workspace_history.get(1)?;
         let mut temp = vec![];
         std::mem::swap(&mut manager.workspaces.get_mut(hist_a)?.tags, &mut temp);
         std::mem::swap(&mut manager.workspaces.get_mut(hist_b)?.tags, &mut temp);
@@ -211,7 +211,8 @@ fn swap_tags(manager: &mut Manager) -> Option<bool> {
     }
     if manager.workspaces.len() == 1 {
         let last = manager
-            .focused_tag_history
+            .focus_manager
+            .tag_history
             .get(1)
             .map(std::string::ToString::to_string)?;
 
@@ -231,8 +232,8 @@ fn close_window(manager: &mut Manager) -> Option<bool> {
 }
 
 fn move_to_last_workspace(manager: &mut Manager) -> Option<bool> {
-    if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
-        let index = *manager.focused_workspace_history.get(1)?;
+    if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
+        let index = *manager.focus_manager.workspace_history.get(1)?;
         let wp_tags = &manager.workspaces.get(index)?.tags.clone();
         let window = manager.focused_window_mut()?;
         window.tags = vec![wp_tags.get(0)?.clone()];

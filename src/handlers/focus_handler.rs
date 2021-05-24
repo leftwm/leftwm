@@ -25,13 +25,13 @@ fn focus_workspace_work(manager: &mut Manager, workspace_id: i32) -> Option<()> 
         }
     }
     //clean old ones
-    manager.focused_workspace_history.truncate(10);
+    manager.focus_manager.workspace_history.truncate(10);
     //add this focus to the history
     let index = manager
         .workspaces
         .iter()
         .position(|x| x.id == workspace_id)?;
-    manager.focused_workspace_history.push_front(index);
+    manager.focus_manager.workspace_history.push_front(index);
     Some(())
 }
 
@@ -82,9 +82,9 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
         }
     }
     //clean old ones
-    manager.focused_window_history.truncate(10);
+    manager.focus_manager.window_history.truncate(10);
     //add this focus to the history
-    manager.focused_window_history.push_front(*handle);
+    manager.focus_manager.window_history.push_front(*handle);
 
     Some(found.clone())
 }
@@ -206,9 +206,12 @@ fn focus_tag_work(manager: &mut Manager, tag: &str) -> Option<()> {
         }
     }
     //clean old ones
-    manager.focused_workspace_history.truncate(10);
+    manager.focus_manager.tag_history.truncate(10);
     //add this focus to the history
-    manager.focused_tag_history.push_front(tag.to_string());
+    manager
+        .focus_manager
+        .tag_history
+        .push_front(tag.to_string());
 
     Some(())
 }

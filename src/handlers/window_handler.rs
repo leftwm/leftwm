@@ -1,19 +1,13 @@
-use super::{focus_handler, Config, Manager, Window, WindowChange, WindowType, Workspace};
-use crate::child_process::exec_shell;
+use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::WindowHandle;
 use crate::utils::helpers;
+use crate::{child_process::exec_shell, models::FocusBehaviour};
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn created(
-    mut manager: &mut Manager,
-    mut window: Window,
-    x: i32,
-    y: i32,
-    config: &Config,
-) -> bool {
+pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) -> bool {
     //don't add the window if the manager already knows about it
     if manager.windows.iter().any(|w| w.handle == window.handle) {
         return false;
@@ -108,8 +102,10 @@ pub fn created(
         manager.windows.push(window.clone());
     }
 
+    let follow_mouse = manager.focus_manager.focus_new_windows
+        || manager.focus_manager.behaviour == FocusBehaviour::Sloppy;
     //let the DS know we are managing this window
-    let act = DisplayAction::AddedWindow(window.handle);
+    let act = DisplayAction::AddedWindow(window.handle, follow_mouse);
     manager.actions.push_back(act);
 
     //let the DS know the correct desktop to find this window
@@ -122,7 +118,7 @@ pub fn created(
     //new windows should be on the top of the stack
     manager.sort_windows();
 
-    if config.focus_new_windows {
+    if manager.focus_manager.focus_new_windows {
         focus_handler::focus_window(manager, &window.handle);
     }
 
