@@ -50,7 +50,7 @@ pub fn process_internal(
         Command::GotoTag => goto_tag(manager, &val, config),
 
         Command::CloseWindow => close_window(manager),
-        Command::SwapTags => swap_tags(manager),
+        Command::SwapTags => swap_tags(manager, config),
         Command::MoveToLastWorkspace => move_to_last_workspace(manager),
         Command::NextLayout => next_layout(manager),
         Command::PreviousLayout => previous_layout(manager),
@@ -59,8 +59,8 @@ pub fn process_internal(
 
         Command::FloatingToTile => floating_to_tile(manager),
 
-        Command::FocusNextTag => focus_next_tag(manager),
-        Command::FocusPreviousTag => focus_previous_tag(manager),
+        Command::FocusNextTag => focus_next_tag(manager, config),
+        Command::FocusPreviousTag => focus_previous_tag(manager, config),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, manager, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, manager, 1),
         Command::FocusWorkspaceNext => focus_workspace_change(manager, 1),
@@ -161,6 +161,16 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
     manager.actions.push_back(act);
     manager.sort_windows();
+    if let Some(ws) = manager.focused_workspace() {
+        // TODO focus the window which takes the place on the screen of the closed window
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
+        if let Some(first) = manager.windows.iter().find(|w| for_active_workspace(w)) {
+            let handle = first.handle;
+            focus_handler::focus_window(manager, &handle);
+        }
+    }
     Some(true)
 }
 
@@ -176,30 +186,30 @@ fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> Opt
             (_, _, _) => input_tag, // go to the input tag tag
         };
     }
-    Some(goto_tag_handler::process(manager, destination_tag))
+    Some(goto_tag_handler::process(manager, destination_tag, &config))
 }
 
-fn focus_next_tag(manager: &mut Manager) -> Option<bool> {
+fn focus_next_tag(manager: &mut Manager, config: &Config) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let mut index = manager.tags.iter().position(|x| x.id == current)? + 1;
     index += 1;
     if index > manager.tags.len() {
         index = 1;
     }
-    Some(goto_tag_handler::process(manager, index))
+    Some(goto_tag_handler::process(manager, index, &config))
 }
 
-fn focus_previous_tag(manager: &mut Manager) -> Option<bool> {
+fn focus_previous_tag(manager: &mut Manager, config: &Config) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let mut index = manager.tags.iter().position(|x| x.id == current)? + 1;
     index -= 1;
     if index < 1 {
         index = manager.tags.len();
     }
-    Some(goto_tag_handler::process(manager, index))
+    Some(goto_tag_handler::process(manager, index, &config))
 }
 
-fn swap_tags(manager: &mut Manager) -> Option<bool> {
+fn swap_tags(manager: &mut Manager, config: &Config) -> Option<bool> {
     if manager.workspaces.len() >= 2 && manager.focused_workspace_history.len() >= 2 {
         let hist_a = *manager.focused_workspace_history.get(0)?;
         let hist_b = *manager.focused_workspace_history.get(1)?;
@@ -216,7 +226,7 @@ fn swap_tags(manager: &mut Manager) -> Option<bool> {
             .map(std::string::ToString::to_string)?;
 
         let tag_index = manager.tags.iter().position(|x| x.id == last)? + 1;
-        return Some(goto_tag_handler::process(manager, tag_index));
+        return Some(goto_tag_handler::process(manager, tag_index, &config));
     }
     None
 }
@@ -473,8 +483,8 @@ mod tests {
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
         let mut manager = Manager::default();
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         // no tag creation here but one tag per screen is created
         assert!(process(
             &mut manager,
@@ -501,7 +511,7 @@ mod tests {
     fn go_to_tag_should_return_false_on_invalid_input() {
         let mut manager = Manager::default();
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         manager.tags = vec![
             TagModel::new("A15"),
             TagModel::new("B24"),
@@ -539,8 +549,8 @@ mod tests {
             ..Manager::default()
         };
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
 
         assert!(process(
             &mut manager,
