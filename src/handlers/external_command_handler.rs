@@ -34,7 +34,7 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
             return command_handler::process(manager, config, &Command::ToggleFullScreen, &None);
         }
         ExternalCommand::SendWorkspaceToTag(ws_index, tag_index) => {
-            return send_workspace_to_tag(manager, ws_index, tag_index, &config);
+            return send_workspace_to_tag(manager, ws_index, tag_index);
         }
         ExternalCommand::SendWindowToTag(tag_index) => {
             return send_window_to_tag(manager, config, tag_index);
@@ -119,16 +119,11 @@ fn load_theme(manager: &mut Manager, theme: ThemeSetting) -> bool {
     true
 }
 
-fn send_workspace_to_tag(
-    manager: &mut Manager,
-    ws_index: usize,
-    tag_index: usize,
-    config: &Config,
-) -> bool {
+fn send_workspace_to_tag(manager: &mut Manager, ws_index: usize, tag_index: usize) -> bool {
     if ws_index < manager.workspaces.len() && tag_index < manager.tags.len() {
         let workspace = &manager.workspaces[ws_index].clone();
         focus_handler::focus_workspace(manager, workspace);
-        goto_tag_handler::process(manager, tag_index + 1, &config);
+        goto_tag_handler::process(manager, tag_index + 1);
         return true;
     }
     false

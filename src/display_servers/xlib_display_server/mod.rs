@@ -110,8 +110,8 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.kill_window(&w);
                 None
             }
-            DisplayAction::AddedWindow(w, follow_mouse, grab_clicks) => {
-                self.xw.setup_managed_window(w, follow_mouse, grab_clicks)
+            DisplayAction::AddedWindow(w, follow_mouse) => {
+                self.xw.setup_managed_window(w, follow_mouse)
             }
             DisplayAction::MoveMouseOver(handle) => {
                 if let WindowHandle::XlibHandle(win) = handle {
@@ -162,10 +162,6 @@ impl DisplayServer for XlibDisplayServer {
             }
             DisplayAction::StartResizingWindow(w) => {
                 self.xw.set_mode(Mode::ResizingWindow(w));
-                None
-            }
-            DisplayAction::GrabPointer => {
-                self.xw.grab_pointer(self.xw.cursors.normal);
                 None
             }
             DisplayAction::NormalMode => {

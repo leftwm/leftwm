@@ -6,12 +6,11 @@
 // https://github.com/rust-lang/rust-clippy/issues/6563
 
 use super::*;
-use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::WindowState;
 use crate::utils::{child_process::exec_shell, helpers};
-use std::collections::VecDeque;
+use crate::{config::Config, models::FocusBehaviour};
 use std::str::FromStr;
 
 /* Please also update src/bin/leftwm-check if any of the following apply after your update:
@@ -47,10 +46,10 @@ pub fn process_internal(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag => goto_tag(manager, &val, config),
+        Command::GotoTag => goto_tag(manager, &val, &config),
 
         Command::CloseWindow => close_window(manager),
-        Command::SwapTags => swap_tags(manager, config),
+        Command::SwapTags => swap_tags(manager),
         Command::MoveToLastWorkspace => move_to_last_workspace(manager),
         Command::NextLayout => next_layout(manager),
         Command::PreviousLayout => previous_layout(manager),
@@ -59,8 +58,8 @@ pub fn process_internal(
 
         Command::FloatingToTile => floating_to_tile(manager),
 
-        Command::FocusNextTag => focus_next_tag(manager, config),
-        Command::FocusPreviousTag => focus_previous_tag(manager, config),
+        Command::FocusNextTag => focus_next_tag(manager),
+        Command::FocusPreviousTag => focus_previous_tag(manager),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, manager, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, manager, 1),
         Command::FocusWorkspaceNext => focus_workspace_change(manager, 1),
@@ -135,11 +134,10 @@ fn toggle_fullscreen(manager: &mut Manager) -> Option<bool> {
         states.remove(index);
     }
     window.set_states(states);
-    let mut acts = VecDeque::new();
-    acts.push_back(DisplayAction::SetFullScreen(window.clone(), !fullscreen));
-    acts.push_back(DisplayAction::MoveMouseOver(window.handle));
-    manager.actions.append(&mut acts);
-    Some(true)
+    let handle = window.handle;
+    let act = DisplayAction::SetFullScreen(window.clone(), !fullscreen);
+    manager.actions.push_back(act);
+    Some(handle_focus(manager, handle))
 }
 
 fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
@@ -161,14 +159,17 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
     manager.actions.push_back(act);
     manager.sort_windows();
-    if let Some(ws) = manager.focused_workspace() {
-        // TODO focus the window which takes the place on the screen of the closed window
-        let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
-        };
-        if let Some(first) = manager.windows.iter().find(|w| for_active_workspace(w)) {
-            let handle = first.handle;
-            focus_handler::focus_window(manager, &handle);
+    // Focus first window on the workspace when we are not following the mouse
+    if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
+        if let Some(ws) = manager.focused_workspace() {
+            // TODO focus the window which takes the place on the screen of the closed window
+            let for_active_workspace = |x: &Window| -> bool {
+                helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+            };
+            if let Some(first) = manager.windows.iter().find(|w| for_active_workspace(w)) {
+                let handle = first.handle;
+                focus_handler::focus_window(manager, &handle);
+            }
         }
     }
     Some(true)
@@ -186,27 +187,27 @@ fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> Opt
             (_, _, _) => input_tag, // go to the input tag tag
         };
     }
-    Some(goto_tag_handler::process(manager, destination_tag, &config))
+    Some(goto_tag_handler::process(manager, destination_tag))
 }
 
-fn focus_next_tag(manager: &mut Manager, config: &Config) -> Option<bool> {
+fn focus_next_tag(manager: &mut Manager) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let mut index = manager.tags.iter().position(|x| x.id == current)? + 1;
     index += 1;
     if index > manager.tags.len() {
         index = 1;
     }
-    Some(goto_tag_handler::process(manager, index, &config))
+    Some(goto_tag_handler::process(manager, index))
 }
 
-fn focus_previous_tag(manager: &mut Manager, config: &Config) -> Option<bool> {
+fn focus_previous_tag(manager: &mut Manager) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let mut index = manager.tags.iter().position(|x| x.id == current)? + 1;
     index -= 1;
     if index < 1 {
         index = manager.tags.len();
     }
-    Some(goto_tag_handler::process(manager, index, &config))
+    Some(goto_tag_handler::process(manager, index))
 }
 
 fn swap_tags(manager: &mut Manager) -> Option<bool> {
@@ -227,7 +228,7 @@ fn swap_tags(manager: &mut Manager) -> Option<bool> {
             .map(std::string::ToString::to_string)?;
 
         let tag_index = manager.tags.iter().position(|x| x.id == last)? + 1;
-        return Some(goto_tag_handler::process(manager, tag_index, &config));
+        return Some(goto_tag_handler::process(manager, tag_index));
     }
     None
 }
@@ -283,9 +284,8 @@ fn floating_to_tile(manager: &mut Manager) -> Option<bool> {
         return None;
     }
     window_handler::snap_to_workspace(window, &workspace);
-    let act = DisplayAction::MoveMouseOver(window.handle);
-    manager.actions.push_back(act);
-    Some(true)
+    let handle = window.handle;
+    Some(handle_focus(manager, handle))
 }
 
 fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> Option<bool>
@@ -325,9 +325,7 @@ fn move_window_change(
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
     manager.windows.append(&mut to_reorder);
-    let act = DisplayAction::MoveMouseOver(handle);
-    manager.actions.push_back(act);
-    Some(true)
+    Some(handle_focus(manager, handle))
 }
 
 //val and layout aren't used which is a bit awkward
@@ -358,8 +356,7 @@ fn move_window_top(
     manager.windows.append(&mut to_reorder);
     // focus follows the window if it was not already on top of the stack
     if index > 0 {
-        let act = DisplayAction::MoveMouseOver(handle);
-        manager.actions.push_back(act);
+        return Some(handle_focus(manager, handle));
     }
     Some(true)
 }
@@ -389,28 +386,23 @@ fn focus_window_change(
         handle = new_focused.handle;
     }
     manager.windows.append(&mut to_reorder);
-    let act = DisplayAction::MoveMouseOver(handle);
-    manager.actions.push_back(act);
-    // This is required for those with focus_tracks_mouse = false
-    Some(focus_handler::focus_window(manager, &handle))
+    Some(handle_focus(manager, handle))
 }
 
 fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
     let current = manager.focused_workspace()?;
     let workspace = helpers::relative_find(&manager.workspaces, |w| w == current, val)?.clone();
     focus_handler::focus_workspace(manager, &workspace);
-    let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
-    manager.actions.push_back(act);
+    if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
+        let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
+        manager.actions.push_back(act);
+    }
     let window = manager
         .windows
         .iter()
         .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)?
         .clone();
-    focus_handler::move_cursor_over(manager, &window);
-    let act = DisplayAction::MoveMouseOver(window.handle);
-    manager.actions.push_back(act);
-    // This is required for those with focus_tracks_mouse = false
-    Some(focus_handler::focus_window(manager, &window.handle))
+    Some(handle_focus(manager, window.handle))
 }
 
 fn rotate_tag(manager: &mut Manager) -> Option<bool> {
@@ -451,6 +443,17 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> Option<
     Some(true)
 }
 
+fn handle_focus(manager: &mut Manager, handle: WindowHandle) -> bool {
+    match manager.focus_manager.behaviour {
+        FocusBehaviour::Sloppy => {
+            let act = DisplayAction::MoveMouseOver(handle);
+            manager.actions.push_back(act);
+            true
+        }
+        _ => focus_handler::focus_window(manager, &handle),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -484,8 +487,8 @@ mod tests {
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
         let mut manager = Manager::default();
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default(), &config);
-        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
         // no tag creation here but one tag per screen is created
         assert!(process(
             &mut manager,
@@ -512,7 +515,7 @@ mod tests {
     fn go_to_tag_should_return_false_on_invalid_input() {
         let mut manager = Manager::default();
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default());
         manager.tags = vec![
             TagModel::new("A15"),
             TagModel::new("B24"),
@@ -550,8 +553,8 @@ mod tests {
             ..Manager::default()
         };
         let config = Config::default();
-        screen_create_handler::process(&mut manager, Screen::default(), &config);
-        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default());
+        screen_create_handler::process(&mut manager, Screen::default());
 
         assert!(process(
             &mut manager,

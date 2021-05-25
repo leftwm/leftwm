@@ -16,34 +16,30 @@ pub fn process(
     //look through the config and build a command if its defined in the config
     let act = build_action(manager, modmask, button, handle);
     if let Some(act) = act {
-        if let DisplayAction::GrabPointer = act {
-            return true;
-        } else {
-            //save off the info about position of the window when we started to move/resize
-            manager
-                .windows
-                .iter_mut()
-                .filter(|w| w.handle == handle)
-                .for_each(|w| {
-                    if w.floating() {
-                        let offset = w.get_floating_offsets().unwrap_or_default();
-                        w.start_loc = Some(offset);
-                    } else {
-                        let container = w.container_size.unwrap_or_default();
-                        let normal = w.normal;
-                        let floating = normal - container;
-                        w.set_floating_offsets(Some(floating));
-                        w.start_loc = Some(floating);
-                        w.set_floating(true);
-                    }
-                });
-            manager.move_to_top(&handle);
-        }
-
+        //save off the info about position of the window when we started to move/resize
+        manager
+            .windows
+            .iter_mut()
+            .filter(|w| w.handle == handle)
+            .for_each(|w| {
+                if w.floating() {
+                    let offset = w.get_floating_offsets().unwrap_or_default();
+                    w.start_loc = Some(offset);
+                } else {
+                    let container = w.container_size.unwrap_or_default();
+                    let normal = w.normal;
+                    let floating = normal - container;
+                    w.set_floating_offsets(Some(floating));
+                    w.start_loc = Some(floating);
+                    w.set_floating(true);
+                }
+            });
+        manager.move_to_top(&handle);
         manager.actions.push_back(act);
+        return false;
     }
 
-    false
+    true
 }
 
 fn build_action(
@@ -66,7 +62,7 @@ fn build_action(
             if manager.focus_manager.behaviour == FocusBehaviour::ClickTo {
                 focus_handler::focus_window(manager, &window);
             }
-            Some(DisplayAction::GrabPointer)
+            None
         }
         xlib::Button3 => {
             let _ = manager

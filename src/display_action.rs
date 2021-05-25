@@ -12,7 +12,7 @@ pub enum DisplayAction {
 
     /// Get triggered after a new window is discovered and WE are
     /// managing it.
-    AddedWindow(WindowHandle, bool, bool),
+    AddedWindow(WindowHandle, bool),
 
     /// Makes sure the mouse is over a given window.
     MoveMouseOver(WindowHandle),
@@ -44,8 +44,6 @@ pub enum DisplayAction {
     /// Tell the DM we are going to move a window and only send that
     /// type of events.
     StartMovingWindow(WindowHandle),
-
-    GrabPointer,
 
     /// Used to let the WM know of the current displayed tag changes.
     SetCurrentTags(String),

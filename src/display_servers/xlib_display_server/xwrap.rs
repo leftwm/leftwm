@@ -59,7 +59,7 @@ pub struct XWrap {
     display: *mut xlib::Display,
     root: xlib::Window,
     pub atoms: XAtom,
-    pub cursors: XCursor,
+    cursors: XCursor,
     colors: Colors,
     managed_windows: Vec<xlib::Window>,
     pub tags: Vec<String>,
@@ -652,7 +652,7 @@ impl XWrap {
 
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
                 }
-                if !is_focused {
+                if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
                     self.grab_buttons(h, xlib::Button1, xlib::AnyModifier);
                 }
                 self.send_config(window);
@@ -670,7 +670,6 @@ impl XWrap {
         &mut self,
         h: WindowHandle,
         follow_mouse: bool,
-        grab_clicks: bool,
     ) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
@@ -715,7 +714,7 @@ impl XWrap {
                 if follow_mouse {
                     let _ = self.move_cursor_to_window(handle);
                 }
-                if grab_clicks {
+                if self.focus_behaviour == FocusBehaviour::ClickTo {
                     self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
                 }
             }
