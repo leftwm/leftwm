@@ -35,7 +35,9 @@ impl DisplayEventHandler {
                 _ => return false,
             },
 
-            DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
+            DisplayEvent::WindowDestroy(handle) => {
+                window_handler::destroyed(manager, &handle, &self.config)
+            }
 
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
@@ -65,8 +67,12 @@ impl DisplayEventHandler {
             }
 
             DisplayEvent::Movement(handle, x, y) => {
-                manager.screens.iter().any(|s| s.root == handle)
-                    && focus_handler::focus_workspace_under_cursor(manager, x, y)
+                if manager.screens.iter().any(|s| s.root == handle)
+                    && self.config.focus_tracks_mouse
+                {
+                    return focus_handler::focus_workspace_under_cursor(manager, x, y);
+                }
+                false
             }
 
             DisplayEvent::MoveWindow(handle, time, x, y) => {

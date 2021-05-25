@@ -1,6 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::display_action::DisplayAction;
+use crate::{display_action::DisplayAction, utils::helpers};
 
 /// Marks a workspace as the focused workspace.
 //NOTE: should only be called externally from this file
@@ -178,7 +178,7 @@ pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bo
 
 /// marks a tag as the focused tag
 //NOTE: should only be called externally from this file
-pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
+pub fn focus_tag(manager: &mut Manager, tag: &str, config: &Config) -> bool {
     if focus_tag_work(manager, tag).is_none() {
         return false;
     }
@@ -189,12 +189,23 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
         .filter(|w| w.has_tag(tag))
         .cloned()
         .collect();
-    for w in &to_focus {
-        focus_workspace_work(manager, w.id);
+    for ws in &to_focus {
+        focus_workspace_work(manager, ws.id);
     }
     //make sure the focused window is on this workspace
-    let act = DisplayAction::FocusWindowUnderCursor;
-    manager.actions.push_back(act);
+    if config.focus_tracks_mouse {
+        let act = DisplayAction::FocusWindowUnderCursor;
+        manager.actions.push_back(act);
+    } else if let Some(ws) = to_focus.first() {
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
+        let handle = match manager.windows.iter().find(|w| for_active_workspace(w)) {
+            Some(w) => w.handle,
+            None => return true,
+        };
+        focus_window_by_handle_work(manager, &handle);
+    }
     true
 }
 
@@ -235,8 +246,9 @@ mod tests {
     #[test]
     fn focusing_a_workspace_should_make_it_active() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         let expected = manager.workspaces[0].clone();
         focus_workspace(&mut manager, &expected);
         let actual = manager.focused_workspace().unwrap();
@@ -246,8 +258,9 @@ mod tests {
     #[test]
     fn focusing_the_same_workspace_shouldnt_add_to_the_history() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         let ws = manager.workspaces[0].clone();
         focus_workspace(&mut manager, &ws);
         let start_length = manager.focused_workspace_history.len();
@@ -259,7 +272,8 @@ mod tests {
     #[test]
     fn focusing_a_window_should_make_it_active() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         window_handler::created(
             &mut manager,
             Window::new(WindowHandle::MockHandle(1), None, None),
@@ -283,7 +297,8 @@ mod tests {
     #[test]
     fn focusing_the_same_window_shouldnt_add_to_the_history() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         let window = Window::new(WindowHandle::MockHandle(1), None, None);
         window_handler::created(&mut manager, window.clone(), -1, -1, &Config::default());
         focus_window(&mut manager, &window.handle);
@@ -297,9 +312,10 @@ mod tests {
     #[test]
     fn focusing_a_tag_should_make_it_active() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         let expected = "Bla".to_owned();
-        focus_tag(&mut manager, &expected);
+        focus_tag(&mut manager, &expected, &config);
         let accual = manager.focused_tag(0).unwrap();
         assert_eq!(accual, expected);
     }
@@ -307,11 +323,12 @@ mod tests {
     #[test]
     fn focusing_the_same_tag_shouldnt_add_to_the_history() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         let tag = "Bla".to_owned();
-        focus_tag(&mut manager, &tag);
+        focus_tag(&mut manager, &tag, &config);
         let start_length = manager.focused_tag_history.len();
-        focus_tag(&mut manager, &tag);
+        focus_tag(&mut manager, &tag, &config);
         let end_length = manager.focused_tag_history.len();
         assert_eq!(start_length, end_length, "expected no new history event");
     }
@@ -319,9 +336,10 @@ mod tests {
     #[test]
     fn focusing_a_tag_should_focus_its_workspace() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
-        focus_tag(&mut manager, &"1".to_owned());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        focus_tag(&mut manager, &"1".to_owned(), &config);
         let actual = manager.focused_workspace().unwrap();
         let expected = 0;
         assert_eq!(actual.id, expected);
@@ -330,9 +348,10 @@ mod tests {
     #[test]
     fn focusing_a_workspace_should_focus_its_tag() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         let ws = manager.workspaces[1].clone();
         focus_workspace(&mut manager, &ws);
         let actual = manager.focused_tag(0).unwrap();
@@ -342,9 +361,10 @@ mod tests {
     #[test]
     fn focusing_a_window_should_focus_its_tag() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag("2");
         manager.windows.push(window.clone());
@@ -356,9 +376,10 @@ mod tests {
     #[test]
     fn focusing_a_window_should_focus_workspace() {
         let mut manager = Manager::default();
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        let config = &Config::default();
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
+        screen_create_handler::process(&mut manager, Screen::default(), &config);
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag("2");
         manager.windows.push(window.clone());
