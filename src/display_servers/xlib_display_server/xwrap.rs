@@ -667,6 +667,7 @@ impl XWrap {
         &mut self,
         h: WindowHandle,
         follow_mouse: bool,
+        grab_clicks: bool,
     ) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
@@ -697,22 +698,22 @@ impl XWrap {
                 (self.xlib.XSync)(self.display, 0);
             }
 
-            match self.get_window_type(handle) {
-                WindowType::Dock => {
-                    if let Some(dock_area) = self.get_window_strut_array(handle) {
-                        let dems = self.screens_area_dimensions();
-                        if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
-                            let mut change = WindowChange::new(h);
-                            change.strut = Some(xywh.into());
-                            change.type_ = Some(WindowType::Dock);
-                            return Some(DisplayEvent::WindowChange(change));
-                        }
+            if self.get_window_type(handle) == WindowType::Dock {
+                if let Some(dock_area) = self.get_window_strut_array(handle) {
+                    let dems = self.screens_area_dimensions();
+                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                        let mut change = WindowChange::new(h);
+                        change.strut = Some(xywh.into());
+                        change.type_ = Some(WindowType::Dock);
+                        return Some(DisplayEvent::WindowChange(change));
                     }
                 }
-                _ => {
-                    if follow_mouse {
-                        let _ = self.move_cursor_to_window(handle);
-                    }
+            } else {
+                if follow_mouse {
+                    let _ = self.move_cursor_to_window(handle);
+                }
+                if grab_clicks {
+                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
                 }
             }
             //make sure there is at least an empty list of _NET_WM_STATE
@@ -732,7 +733,6 @@ impl XWrap {
                 handle,
             ); //cleanup
                //just watchout for these mouse combos so we can act on them
-            self.grab_buttons(handle, xlib::Button1, xlib::Mod4Mask);
             self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
             self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
             self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
@@ -1472,7 +1472,7 @@ impl XWrap {
                     return;
                 }
             }
-            _ => {}
+            Mode::Normal => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
             self.mode = mode.clone();
@@ -1483,7 +1483,7 @@ impl XWrap {
             let cursor = match mode {
                 Mode::ResizingWindow(_) => self.cursors.resize,
                 Mode::MovingWindow(_) => self.cursors.move_,
-                _ => self.cursors.normal,
+                Mode::Normal => self.cursors.normal,
             };
             self.grab_pointer(cursor);
         }

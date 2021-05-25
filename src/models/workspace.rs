@@ -85,7 +85,6 @@ impl Workspace {
     pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
         self.margin = theme.workspace_margin.clone();
         self.gutters = theme.get_list_of_gutters();
-        log::info!("Gutter: {:?}", self.gutters)
     }
 
     pub fn show_tag(&mut self, tag: &Tag) {

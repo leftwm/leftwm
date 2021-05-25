@@ -110,8 +110,8 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.kill_window(&w);
                 None
             }
-            DisplayAction::AddedWindow(w, follow_mouse) => {
-                self.xw.setup_managed_window(w, follow_mouse)
+            DisplayAction::AddedWindow(w, follow_mouse, grab_clicks) => {
+                self.xw.setup_managed_window(w, follow_mouse, grab_clicks)
             }
             DisplayAction::MoveMouseOver(handle) => {
                 if let WindowHandle::XlibHandle(win) = handle {

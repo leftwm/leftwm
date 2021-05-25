@@ -104,8 +104,9 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
 
     let follow_mouse = manager.focus_manager.focus_new_windows
         || manager.focus_manager.behaviour == FocusBehaviour::Sloppy;
+    let grab_clicks = manager.focus_manager.behaviour == FocusBehaviour::ClickTo;
     //let the DS know we are managing this window
-    let act = DisplayAction::AddedWindow(window.handle, follow_mouse);
+    let act = DisplayAction::AddedWindow(window.handle, follow_mouse, grab_clicks);
     manager.actions.push_back(act);
 
     //let the DS know the correct desktop to find this window

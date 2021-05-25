@@ -12,7 +12,7 @@ pub enum DisplayAction {
 
     /// Get triggered after a new window is discovered and WE are
     /// managing it.
-    AddedWindow(WindowHandle, bool),
+    AddedWindow(WindowHandle, bool, bool),
 
     /// Makes sure the mouse is over a given window.
     MoveMouseOver(WindowHandle),

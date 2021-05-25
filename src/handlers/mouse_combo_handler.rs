@@ -16,29 +16,27 @@ pub fn process(
     //look through the config and build a command if its defined in the config
     let act = build_action(manager, modmask, button, handle);
     if let Some(act) = act {
-        match act {
-            DisplayAction::GrabPointer => {}
-            _ => {
-                //save off the info about position of the window when we started to move/resize
-                manager
-                    .windows
-                    .iter_mut()
-                    .filter(|w| w.handle == handle)
-                    .for_each(|w| {
-                        if w.floating() {
-                            let offset = w.get_floating_offsets().unwrap_or_default();
-                            w.start_loc = Some(offset);
-                        } else {
-                            let container = w.container_size.unwrap_or_default();
-                            let normal = w.normal;
-                            let floating = normal - container;
-                            w.set_floating_offsets(Some(floating));
-                            w.start_loc = Some(floating);
-                            w.set_floating(true);
-                        }
-                    });
-                manager.move_to_top(&handle);
-            }
+        if let DisplayAction::GrabPointer = act {
+        } else {
+            //save off the info about position of the window when we started to move/resize
+            manager
+                .windows
+                .iter_mut()
+                .filter(|w| w.handle == handle)
+                .for_each(|w| {
+                    if w.floating() {
+                        let offset = w.get_floating_offsets().unwrap_or_default();
+                        w.start_loc = Some(offset);
+                    } else {
+                        let container = w.container_size.unwrap_or_default();
+                        let normal = w.normal;
+                        let floating = normal - container;
+                        w.set_floating_offsets(Some(floating));
+                        w.start_loc = Some(floating);
+                        w.set_floating(true);
+                    }
+                });
+            manager.move_to_top(&handle);
         }
 
         manager.actions.push_back(act);
@@ -49,15 +47,14 @@ pub fn process(
 
 fn build_action(
     manager: &mut Manager,
-    _mod_mask: ModMask,
+    mut mod_mask: ModMask,
     button: Button,
     window: WindowHandle,
 ) -> Option<DisplayAction> {
     match button {
         xlib::Button1 => {
-            let mut mask = _mod_mask;
-            mask &= !(xlib::Mod2Mask | xlib::LockMask);
-            if mask == xlib::ControlMask || mask == (xlib::ControlMask | xlib::ShiftMask) {
+            mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
+            if mod_mask == xlib::ControlMask || mod_mask == (xlib::ControlMask | xlib::ShiftMask) {
                 let _ = manager
                     .windows
                     .iter()
