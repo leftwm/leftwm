@@ -17,6 +17,7 @@ pub fn process(
     let act = build_action(manager, modmask, button, handle);
     if let Some(act) = act {
         if let DisplayAction::GrabPointer = act {
+            return true;
         } else {
             //save off the info about position of the window when we started to move/resize
             manager

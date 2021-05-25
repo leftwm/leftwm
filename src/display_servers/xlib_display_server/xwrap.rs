@@ -13,7 +13,6 @@ use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
-use crate::config::ThemeSetting;
 use crate::models::DockArea;
 use crate::models::Mode;
 use crate::models::WindowChange;
@@ -22,6 +21,7 @@ use crate::models::WindowType;
 use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
+use crate::{config::ThemeSetting, models::FocusBehaviour};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
@@ -64,7 +64,7 @@ pub struct XWrap {
     managed_windows: Vec<xlib::Window>,
     pub tags: Vec<String>,
     pub mode: Mode,
-    pub mod_key_mask: ModMask,
+    pub focus_behaviour: FocusBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
@@ -140,7 +140,7 @@ impl XWrap {
             managed_windows: vec![],
             tags: vec![],
             mode: Mode::Normal,
-            mod_key_mask: 0,
+            focus_behaviour: FocusBehaviour::Sloppy,
             mouse_key_mask: 0,
             mode_origin: (0, 0),
             _task_guard,
@@ -651,6 +651,9 @@ impl XWrap {
                     color = u64::from_be_bytes(bytes);
 
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
+                }
+                if !is_focused {
+                    self.grab_buttons(h, xlib::Button1, xlib::AnyModifier);
                 }
                 self.send_config(window);
             } else {
@@ -1518,9 +1521,12 @@ impl XWrap {
     }
 
     pub fn replay_click(&self) {
-        unsafe {
-            (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
-            (self.xlib.XSync)(self.display, 0);
+        // Only replay the click when in ClickToFocus
+        if self.focus_behaviour == FocusBehaviour::ClickTo {
+            unsafe {
+                (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
+                (self.xlib.XSync)(self.display, 0);
+            }
         }
     }
 

@@ -42,7 +42,7 @@ impl DisplayServer for XlibDisplayServer {
             config: config.clone(),
         };
 
-        me.xw.mod_key_mask = utils::xkeysym_lookup::into_mod(&config.modkey);
+        me.xw.focus_behaviour = config.focus_behaviour.clone();
         me.xw.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey);
         me.xw.init(config, &me.theme); //setup events masks
         me
