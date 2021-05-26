@@ -33,4 +33,6 @@ if [ -x "$(command -v feh)" ]; then
 fi
 
 #open eww windows
-eww open bar &
+while [[ -z "$(eww windows | grep '[*]')" ]]; do
+  eww open bar
+done
