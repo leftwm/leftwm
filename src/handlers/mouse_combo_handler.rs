@@ -12,9 +12,10 @@ pub fn process(
     modmask: ModMask,
     button: Button,
     handle: WindowHandle,
+    modifier: ModMask,
 ) -> bool {
     //look through the config and build a command if its defined in the config
-    let act = build_action(manager, modmask, button, handle);
+    let act = build_action(manager, modmask, button, handle, modifier);
     if let Some(act) = act {
         //save off the info about position of the window when we started to move/resize
         manager
@@ -47,11 +48,12 @@ fn build_action(
     mut mod_mask: ModMask,
     button: Button,
     window: WindowHandle,
+    modifier: ModMask,
 ) -> Option<DisplayAction> {
     match button {
         xlib::Button1 => {
             mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
-            if mod_mask == xlib::ControlMask || mod_mask == (xlib::ControlMask | xlib::ShiftMask) {
+            if mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask) {
                 let _ = manager
                     .windows
                     .iter()

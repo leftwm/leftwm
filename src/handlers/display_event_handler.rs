@@ -3,6 +3,7 @@ use super::{
     window_move_handler, window_resize_handler, CommandBuilder, Config, DisplayEvent, Manager,
     Mode,
 };
+use crate::utils;
 use crate::utils::window_updater::update_windows;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
@@ -53,7 +54,8 @@ impl DisplayEventHandler {
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
-                mouse_combo_handler::process(manager, mod_mask, button, handle)
+                let mouse_key = utils::xkeysym_lookup::into_mod(&self.config.mousekey);
+                mouse_combo_handler::process(manager, mod_mask, button, handle, mouse_key)
             }
 
             DisplayEvent::ChangeToNormalMode => {
