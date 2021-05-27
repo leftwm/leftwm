@@ -1,23 +1,59 @@
-use super::{focus_handler, Config, Manager, Window, WindowChange, WindowType, Workspace};
-use crate::child_process::exec_shell;
+use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::WindowHandle;
 use crate::utils::helpers;
+use crate::{child_process::exec_shell, models::FocusBehaviour};
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn created(
-    mut manager: &mut Manager,
-    mut window: Window,
-    x: i32,
-    y: i32,
-    config: &Config,
-) -> bool {
+pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) -> bool {
     //don't add the window if the manager already knows about it
     if manager.windows.iter().any(|w| w.handle == window.handle) {
         return false;
     }
+
+    let mut is_first = false;
+    //Random value
+    let mut layout: Layout = Layout::MainAndVertStack;
+    setup_window(manager, &mut window, x, y, &mut layout, &mut is_first);
+    insert_window(manager, &window, &layout);
+
+    let follow_mouse = manager.focus_manager.focus_new_windows
+        || manager.focus_manager.behaviour == FocusBehaviour::Sloppy;
+    //let the DS know we are managing this window
+    let act = DisplayAction::AddedWindow(window.handle, follow_mouse);
+    manager.actions.push_back(act);
+
+    //let the DS know the correct desktop to find this window
+    if !window.tags.is_empty() {
+        let act = DisplayAction::SetWindowTags(window.handle, window.tags[0].clone());
+        manager.actions.push_back(act);
+    }
+
+    // tell the WM the new display order of the windows
+    //new windows should be on the top of the stack
+    manager.sort_windows();
+
+    if manager.focus_manager.focus_new_windows || is_first {
+        focus_handler::focus_window(manager, &window.handle);
+    }
+
+    if let Some(cmd) = &manager.theme_setting.on_new_window_cmd.clone() {
+        exec_shell(&cmd, &mut manager);
+    }
+
+    true
+}
+
+fn setup_window(
+    manager: &Manager,
+    window: &mut Window,
+    x: i32,
+    y: i32,
+    layout: &mut Layout,
+    is_first: &mut bool,
+) {
     let is_scratchpad = is_scratchpad(manager, &window);
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
@@ -25,24 +61,27 @@ pub fn created(
     let ws: Option<&Workspace> = manager
         .workspaces
         .iter()
-        .find(|ws| ws.xyhw.contains_point(x, y) && config.focus_tracks_mouse)
+        .find(|ws| {
+            ws.xyhw.contains_point(x, y)
+                && manager.focus_manager.behaviour == FocusBehaviour::Sloppy
+        })
         .or_else(|| manager.focused_workspace()); //backup plan
 
-    let mut is_first = false;
-    //Random value
-    let mut layout: Layout = Layout::MainAndVertStack;
     if let Some(ws) = ws {
         let for_active_workspace = |x: &Window| -> bool {
             helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
         };
-        is_first = !manager.windows.iter().any(|w| for_active_workspace(w));
+        *is_first = !manager.windows.iter().any(|w| for_active_workspace(w));
         window.tags = ws.tags.clone();
-        layout = ws.layout.clone();
+        *layout = ws.layout.clone();
         if is_scratchpad {
             window.set_floating(true);
             let new_float_exact = ws.center_halfed();
             window.normal = ws.xyhw;
             window.set_floating_exact(new_float_exact);
+        }
+        if window.type_ == WindowType::Normal {
+            window.apply_margin_multiplier(ws.margin_multiplier);
         }
         //if dialog, center in workspace
         if window.type_ == WindowType::Dialog {
@@ -54,7 +93,7 @@ pub fn created(
         if window.type_ == WindowType::Splash {
             if let Some(requested) = window.requested {
                 window.normal = ws.xyhw;
-                requested.update_window_floating(&mut window);
+                requested.update_window_floating(window);
                 let mut xhyw = window.get_floating_offsets().unwrap_or_default();
                 xhyw.center_relative(ws.xyhw, window.border, window.requested);
                 window.set_floating_offsets(Some(xhyw));
@@ -72,15 +111,6 @@ pub fn created(
             window.set_floating(true);
         }
     }
-    // if there is a window with an applied margin multiplier present use this multiplier
-    // in any other case use default margins (multiplier '1.0')
-    if window.type_ == WindowType::Normal {
-        let margin_multiplier = match manager.focused_window() {
-            Some(w) => w.margin_multiplier(),
-            None => 1.0,
-        };
-        window.apply_margin_multiplier(margin_multiplier);
-    }
 
     if let Some(parent) = find_transient_parent(manager, &window) {
         window.set_floating(true);
@@ -90,9 +120,9 @@ pub fn created(
     }
 
     window.update_for_theme(&manager.theme_setting);
-
-    //Dirty
-    if (Layout::Monocle == layout || Layout::MainAndDeck == layout)
+}
+fn insert_window(manager: &mut Manager, window: &Window, layout: &Layout) {
+    if (&Layout::Monocle == layout || &Layout::MainAndDeck == layout)
         && window.type_ == WindowType::Normal
     {
         let for_active_workspace = |x: &Window| -> bool {
@@ -100,7 +130,7 @@ pub fn created(
         };
 
         let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-        if Layout::Monocle == layout || to_reorder.is_empty() {
+        if &Layout::Monocle == layout || to_reorder.is_empty() {
             to_reorder.insert(0, window.clone());
         } else {
             to_reorder.insert(1, window.clone());
@@ -112,46 +142,22 @@ pub fn created(
     } else {
         manager.windows.push(window.clone());
     }
-
-    //let the DS know we are managing this window
-    let act = DisplayAction::AddedWindow(window.handle);
-    manager.actions.push_back(act);
-
-    //let the DS know the correct desktop to find this window
-    if !window.tags.is_empty() {
-        let act = DisplayAction::SetWindowTags(window.handle, window.tags[0].clone());
-        manager.actions.push_back(act);
-    }
-
-    // tell the WM the new display order of the windows
-    //new windows should be on the top of the stack
-    manager.sort_windows();
-
-    if config.focus_new_windows || is_first {
-        focus_handler::focus_window(manager, &window.handle);
-    }
-
-    if let Some(cmd) = &manager.theme_setting.on_new_window_cmd.clone() {
-        exec_shell(&cmd, &mut manager);
-    }
-
-    true
 }
 
-fn is_scratchpad(manager: &mut Manager, window: &Window) -> bool {
+fn is_scratchpad(manager: &Manager, window: &Window) -> bool {
     manager.scratchpads.iter().any(|(_, &id)| window.pid == id)
 }
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
-pub fn destroyed(manager: &mut Manager, handle: &WindowHandle, config: &Config) -> bool {
+pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     manager.windows.retain(|w| &w.handle != handle);
 
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
 
     //make sure focus is recalculated
-    if config.focus_tracks_mouse {
+    if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
         let act = DisplayAction::FocusWindowUnderCursor;
         manager.actions.push_back(act);
     } else if let Some(ws) = manager.focused_workspace() {

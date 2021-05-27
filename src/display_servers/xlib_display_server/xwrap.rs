@@ -13,7 +13,6 @@ use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
-use crate::config::ThemeSetting;
 use crate::models::DockArea;
 use crate::models::Mode;
 use crate::models::WindowChange;
@@ -22,6 +21,7 @@ use crate::models::WindowType;
 use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
+use crate::{config::ThemeSetting, models::FocusBehaviour};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
@@ -64,7 +64,7 @@ pub struct XWrap {
     managed_windows: Vec<xlib::Window>,
     pub tags: Vec<String>,
     pub mode: Mode,
-    pub mod_key_mask: ModMask,
+    pub focus_behaviour: FocusBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
@@ -140,7 +140,7 @@ impl XWrap {
             managed_windows: vec![],
             tags: vec![],
             mode: Mode::Normal,
-            mod_key_mask: 0,
+            focus_behaviour: FocusBehaviour::Sloppy,
             mouse_key_mask: 0,
             mode_origin: (0, 0),
             _task_guard,
@@ -652,6 +652,9 @@ impl XWrap {
 
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
                 }
+                if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.grab_buttons(h, xlib::Button1, xlib::AnyModifier);
+                }
                 self.send_config(window);
             } else {
                 unsafe {
@@ -666,7 +669,7 @@ impl XWrap {
     pub fn setup_managed_window(
         &mut self,
         h: WindowHandle,
-        config: &Config,
+        follow_mouse: bool,
     ) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
@@ -697,22 +700,22 @@ impl XWrap {
                 (self.xlib.XSync)(self.display, 0);
             }
 
-            match self.get_window_type(handle) {
-                WindowType::Dock => {
-                    if let Some(dock_area) = self.get_window_strut_array(handle) {
-                        let dems = self.screens_area_dimensions();
-                        if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
-                            let mut change = WindowChange::new(h);
-                            change.strut = Some(xywh.into());
-                            change.type_ = Some(WindowType::Dock);
-                            return Some(DisplayEvent::WindowChange(change));
-                        }
+            if self.get_window_type(handle) == WindowType::Dock {
+                if let Some(dock_area) = self.get_window_strut_array(handle) {
+                    let dems = self.screens_area_dimensions();
+                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                        let mut change = WindowChange::new(h);
+                        change.strut = Some(xywh.into());
+                        change.type_ = Some(WindowType::Dock);
+                        return Some(DisplayEvent::WindowChange(change));
                     }
                 }
-                _ => {
-                    if config.focus_new_windows {
-                        let _ = self.move_cursor_to_window(handle);
-                    }
+            } else {
+                if follow_mouse {
+                    let _ = self.move_cursor_to_window(handle);
+                }
+                if self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
                 }
             }
             //make sure there is at least an empty list of _NET_WM_STATE
@@ -1479,32 +1482,50 @@ impl XWrap {
             if let Ok(loc) = self.get_cursor_point() {
                 self.mode_origin = loc
             }
-            unsafe {
-                let cursor = match mode {
-                    Mode::ResizingWindow(_) => self.cursors.resize,
-                    Mode::MovingWindow(_) => self.cursors.move_,
-                    Mode::Normal => self.cursors.normal,
-                };
-                //grab the mouse
-                (self.xlib.XGrabPointer)(
-                    self.display,
-                    self.root,
-                    0,
-                    MOUSEMASK as u32,
-                    xlib::GrabModeAsync,
-                    xlib::GrabModeAsync,
-                    0,
-                    cursor,
-                    xlib::CurrentTime,
-                );
-            }
+            let cursor = match mode {
+                Mode::ResizingWindow(_) => self.cursors.resize,
+                Mode::MovingWindow(_) => self.cursors.move_,
+                Mode::Normal => self.cursors.normal,
+            };
+            self.grab_pointer(cursor);
         }
         if mode == Mode::Normal {
-            //release the mouse grab
-            unsafe {
-                (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
-            }
+            self.ungrab_pointer();
             self.mode = mode;
+        }
+    }
+
+    pub fn grab_pointer(&self, cursor: u64) {
+        unsafe {
+            //grab the mouse
+            (self.xlib.XGrabPointer)(
+                self.display,
+                self.root,
+                0,
+                MOUSEMASK as u32,
+                xlib::GrabModeAsync,
+                xlib::GrabModeAsync,
+                0,
+                cursor,
+                xlib::CurrentTime,
+            );
+        }
+    }
+
+    pub fn ungrab_pointer(&self) {
+        unsafe {
+            //release the mouse grab
+            (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
+        }
+    }
+
+    pub fn replay_click(&self) {
+        // Only replay the click when in ClickToFocus
+        if self.focus_behaviour == FocusBehaviour::ClickTo {
+            unsafe {
+                (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
+                (self.xlib.XSync)(self.display, 0);
+            }
         }
     }
 

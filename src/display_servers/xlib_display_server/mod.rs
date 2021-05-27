@@ -42,7 +42,7 @@ impl DisplayServer for XlibDisplayServer {
             config: config.clone(),
         };
 
-        me.xw.mod_key_mask = utils::xkeysym_lookup::into_mod(&config.modkey);
+        me.xw.focus_behaviour = config.focus_behaviour.clone();
         me.xw.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey);
         me.xw.init(config, &me.theme); //setup events masks
         me
@@ -110,7 +110,9 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.kill_window(&w);
                 None
             }
-            DisplayAction::AddedWindow(w) => self.xw.setup_managed_window(w, &self.config),
+            DisplayAction::AddedWindow(w, follow_mouse) => {
+                self.xw.setup_managed_window(w, follow_mouse)
+            }
             DisplayAction::MoveMouseOver(handle) => {
                 if let WindowHandle::XlibHandle(win) = handle {
                     let _ = self.xw.move_cursor_to_window(win);
