@@ -32,7 +32,13 @@ if [ -x "$(command -v feh)" ]; then
   feh --bg-scale $SCRIPTPATH/background.jpg
 fi
 
-#open eww windows
-while [[ -z "$(eww windows | grep '[*]')" ]]; do
-  eww open bar
+#open eww 'bar' windows
+#this is a bit of an uggly hack, a more elegant way will hopefully be possible with a future `eww` version
+sleep 1
+index=0
+sizes=( $(leftwm-state -q -n -t $SCRIPTPATH/sizes.liquid | sed -r '/^\s*$/d' ) )
+for size in "${sizes[@]}"
+do
+    eww open bar$index
+  let index=index+1
 done

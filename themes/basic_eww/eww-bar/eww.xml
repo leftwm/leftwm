@@ -90,7 +90,21 @@ contain are defined. -->
 
   <windows>
     <!-- These are the windows -->
-    <window name="bar" screen="0">
+    <window name="bar0" screen="0">
+      <geometry x="0%" y="0%" width="100%" height="24px"/> <!--Specifies geometry-->
+      <reserve side="top" distance="4%" layer="top"/>
+      <widget>
+        <bar/> <!--This is the def we created earlier-->
+      </widget>
+    </window>
+    <window name="bar1" screen="1">
+      <geometry x="0%" y="0%" width="100%" height="24px"/> <!--Specifies geometry-->
+      <reserve side="top" distance="4%" layer="top"/>
+      <widget>
+        <bar/> <!--This is the def we created earlier-->
+      </widget>
+    </window>
+    <window name="bar2" screen="2">
       <geometry x="0%" y="0%" width="100%" height="24px"/> <!--Specifies geometry-->
       <reserve side="top" distance="4%" layer="top"/>
       <widget>
