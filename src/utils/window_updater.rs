@@ -19,10 +19,9 @@ pub fn update_windows(manager: &mut Manager) {
             .iter_mut()
             .filter(|w| {
                 // It should always unwrap as strut is_some()
-                ws.contains_point(
-                    w.strut.unwrap_or_default().x(),
-                    w.strut.unwrap_or_default().y(),
-                )
+                let xyhw = w.strut.unwrap_or_default();
+                let (x, y) = xyhw.center();
+                ws.contains_point(x, y)
             })
             .for_each(|w| {
                 w.tags = ws.tags.clone();
