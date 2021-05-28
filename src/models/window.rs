@@ -91,7 +91,7 @@ impl Window {
     #[must_use]
     pub fn visible(&self) -> bool {
         self.visible
-            || self.type_ == WindowType::Dock
+            // || self.type_ == WindowType::Dock
             || self.type_ == WindowType::Menu
             || self.type_ == WindowType::Splash
             || self.type_ == WindowType::Dialog
