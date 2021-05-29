@@ -8,6 +8,7 @@ use super::Command;
 use crate::{
     errors::Result,
     layouts::{Layout, LAYOUTS},
+    models::FocusBehaviour,
 };
 use serde::{Deserialize, Serialize};
 use std::default::Default;
@@ -35,7 +36,7 @@ pub struct Config {
     pub scratchpad: Option<Vec<ScratchPad>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
-    pub focus_tracks_mouse: bool,
+    pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
 }
@@ -322,8 +323,8 @@ impl Default for Config {
             layouts: LAYOUTS.to_vec(),
             scratchpad: Some(vec![]),
             disable_current_tag_swap: false,
-            focus_tracks_mouse: true, // default behaviour: mouse move auto-focuses window
-            focus_new_windows: true,  // default behaviour: focuses windows on creation
+            focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
+            focus_new_windows: true, // default behaviour: focuses windows on creation
             modkey: "Mod4".to_owned(), //win key
             mousekey: "Mod4".to_owned(), //win key
             keybind: commands,

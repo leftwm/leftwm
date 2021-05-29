@@ -1,6 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::display_action::DisplayAction;
+use crate::{display_action::DisplayAction, models::FocusBehaviour, utils::helpers};
 
 /// Marks a workspace as the focused workspace.
 //NOTE: should only be called externally from this file
@@ -25,13 +25,13 @@ fn focus_workspace_work(manager: &mut Manager, workspace_id: i32) -> Option<()> 
         }
     }
     //clean old ones
-    manager.focused_workspace_history.truncate(10);
+    manager.focus_manager.workspace_history.truncate(10);
     //add this focus to the history
     let index = manager
         .workspaces
         .iter()
         .position(|x| x.id == workspace_id)?;
-    manager.focused_workspace_history.push_front(index);
+    manager.focus_manager.workspace_history.push_front(index);
     Some(())
 }
 
@@ -82,16 +82,11 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
         }
     }
     //clean old ones
-    manager.focused_window_history.truncate(10);
+    manager.focus_manager.window_history.truncate(10);
     //add this focus to the history
-    manager.focused_window_history.push_front(*handle);
+    manager.focus_manager.window_history.push_front(*handle);
 
     Some(found.clone())
-}
-
-pub fn move_cursor_over(manager: &mut Manager, window: &Window) {
-    let act = DisplayAction::MoveMouseOver(window.handle);
-    manager.actions.push_back(act);
 }
 
 pub fn validate_focus_at(manager: &mut Manager, x: i32, y: i32) -> bool {
@@ -189,26 +184,40 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
         .filter(|w| w.has_tag(tag))
         .cloned()
         .collect();
-    for w in &to_focus {
-        focus_workspace_work(manager, w.id);
+    for ws in &to_focus {
+        focus_workspace_work(manager, ws.id);
     }
     //make sure the focused window is on this workspace
-    let act = DisplayAction::FocusWindowUnderCursor;
-    manager.actions.push_back(act);
+    if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
+        let act = DisplayAction::FocusWindowUnderCursor;
+        manager.actions.push_back(act);
+    } else if let Some(ws) = to_focus.first() {
+        let for_active_workspace = |x: &Window| -> bool {
+            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+        };
+        let handle = match manager.windows.iter().find(|w| for_active_workspace(w)) {
+            Some(w) => w.handle,
+            None => return true,
+        };
+        focus_window_by_handle_work(manager, &handle);
+    }
     true
 }
 
 fn focus_tag_work(manager: &mut Manager, tag: &str) -> Option<()> {
     //no new history if no change
-    if let Some(t) = manager.focused_tag(0) {
+    if let Some(t) = manager.focus_manager.tag(0) {
         if t == tag {
             return None;
         }
     }
     //clean old ones
-    manager.focused_workspace_history.truncate(10);
+    manager.focus_manager.tag_history.truncate(10);
     //add this focus to the history
-    manager.focused_tag_history.push_front(tag.to_string());
+    manager
+        .focus_manager
+        .tag_history
+        .push_front(tag.to_string());
 
     Some(())
 }
@@ -247,9 +256,9 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         let ws = manager.workspaces[0].clone();
         focus_workspace(&mut manager, &ws);
-        let start_length = manager.focused_workspace_history.len();
+        let start_length = manager.focus_manager.workspace_history.len();
         focus_workspace(&mut manager, &ws);
-        let end_length = manager.focused_workspace_history.len();
+        let end_length = manager.focus_manager.workspace_history.len();
         assert_eq!(start_length, end_length, "expected no new history event");
     }
 
@@ -262,14 +271,12 @@ mod tests {
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
             -1,
-            &Config::default(),
         );
         window_handler::created(
             &mut manager,
             Window::new(WindowHandle::MockHandle(2), None, None),
             -1,
             -1,
-            &Config::default(),
         );
         let expected = manager.windows[0].clone();
         focus_window(&mut manager, &expected.handle);
@@ -282,12 +289,12 @@ mod tests {
         let mut manager = Manager::default();
         screen_create_handler::process(&mut manager, Screen::default());
         let window = Window::new(WindowHandle::MockHandle(1), None, None);
-        window_handler::created(&mut manager, window.clone(), -1, -1, &Config::default());
+        window_handler::created(&mut manager, window.clone(), -1, -1);
         focus_window(&mut manager, &window.handle);
-        let start_length = manager.focused_workspace_history.len();
-        window_handler::created(&mut manager, window.clone(), -1, -1, &Config::default());
+        let start_length = manager.focus_manager.workspace_history.len();
+        window_handler::created(&mut manager, window.clone(), -1, -1);
         focus_window(&mut manager, &window.handle);
-        let end_length = manager.focused_workspace_history.len();
+        let end_length = manager.focus_manager.workspace_history.len();
         assert_eq!(start_length, end_length, "expected no new history event");
     }
 
@@ -297,7 +304,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         let expected = "Bla".to_owned();
         focus_tag(&mut manager, &expected);
-        let accual = manager.focused_tag(0).unwrap();
+        let accual = manager.focus_manager.tag(0).unwrap();
         assert_eq!(accual, expected);
     }
 
@@ -307,9 +314,9 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         let tag = "Bla".to_owned();
         focus_tag(&mut manager, &tag);
-        let start_length = manager.focused_tag_history.len();
+        let start_length = manager.focus_manager.tag_history.len();
         focus_tag(&mut manager, &tag);
-        let end_length = manager.focused_tag_history.len();
+        let end_length = manager.focus_manager.tag_history.len();
         assert_eq!(start_length, end_length, "expected no new history event");
     }
 
@@ -332,7 +339,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         let ws = manager.workspaces[1].clone();
         focus_workspace(&mut manager, &ws);
-        let actual = manager.focused_tag(0).unwrap();
+        let actual = manager.focus_manager.tag(0).unwrap();
         assert_eq!("2", actual);
     }
 
@@ -346,7 +353,7 @@ mod tests {
         window.tag("2");
         manager.windows.push(window.clone());
         focus_window(&mut manager, &window.handle);
-        let actual = manager.focused_tag(0).unwrap();
+        let actual = manager.focus_manager.tag(0).unwrap();
         assert_eq!("2", actual);
     }
 
