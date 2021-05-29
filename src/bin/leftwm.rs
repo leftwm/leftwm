@@ -9,7 +9,7 @@ use std::sync::{
 fn main() {
     if let Ok(current_exe) = std::env::current_exe() {
         //boot everything in ~/.config/autostart
-        let mut children = Nanny::new().autostart();
+        let mut children = Nanny::autostart();
 
         let flag = Arc::new(AtomicBool::new(false));
         child_process::register_child_hook(flag.clone());

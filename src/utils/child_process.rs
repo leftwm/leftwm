@@ -15,20 +15,13 @@ pub struct Nanny {}
 
 impl Default for Nanny {
     fn default() -> Self {
-        Self::new()
+        Self {}
     }
 }
 
 impl Nanny {
     #[must_use]
-    pub const fn new() -> Self {
-        Self {}
-    }
-
-    // We allow this because Nanny is empty.
-    #[allow(clippy::unused_self)]
-    #[must_use]
-    pub fn autostart(&self) -> Children {
+    pub fn autostart() -> Children {
         dirs_next::home_dir()
             .map(|mut path| {
                 path.push(".config");
@@ -58,7 +51,7 @@ impl Nanny {
     }
 
     /// Runs a script if it exits
-    fn run_script(path: PathBuf) -> Result<Option<Child>> {
+    fn run_script(path: &Path) -> Result<Option<Child>> {
         if path.is_file() {
             Command::new(&path)
                 .stdin(Stdio::null())
@@ -77,10 +70,10 @@ impl Nanny {
     ///
     /// Will error if unable to open current config directory.
     /// Could be caused by inadequate permissions.
-    pub fn run_global_up_script(&self) -> Result<Option<Child>> {
+    pub fn run_global_up_script() -> Result<Option<Child>> {
         let mut path = Nanny::get_config_dir()?;
         path.push("up");
-        Nanny::run_script(path)
+        Nanny::run_script(&path)
     }
 
     /// Runs the 'up' script of the current theme, if there is one.
@@ -89,12 +82,12 @@ impl Nanny {
     ///
     /// Will error if unable to open current theme directory.
     /// Could be caused by inadequate permissions.
-    pub fn boot_current_theme(&self) -> Result<Option<Child>> {
+    pub fn boot_current_theme() -> Result<Option<Child>> {
         let mut path = Nanny::get_config_dir()?;
         path.push("themes");
         path.push("current");
         path.push("up");
-        Nanny::run_script(path)
+        Nanny::run_script(&path)
     }
 }
 
