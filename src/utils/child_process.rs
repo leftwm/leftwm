@@ -83,6 +83,8 @@ impl Nanny {
         Nanny::run_script(path)
     }
 
+    /// Runs the 'up' script of the current theme, if there is one.
+    ///
     /// # Errors
     ///
     /// Will error if unable to open current theme directory.
