@@ -1,4 +1,5 @@
-//! Starts programs in autostart, boots theme. Provides function to boot other desktop files also.
+//! Starts programs in autostart, runs global 'up' script, and boots theme. Provides function to
+//! boot other desktop files also.
 use crate::errors::Result;
 use crate::models::Manager;
 use std::collections::HashMap;
@@ -44,17 +45,20 @@ impl Nanny {
             .unwrap_or_default()
     }
 
+    /// Retrieve the path to the config directory. Tries to create it if it does not exist.
+    ///
     /// # Errors
     ///
-    /// Will error if unable to open current theme directory.
+    /// Will error if unable to open or create the config directory.
     /// Could be caused by inadequate permissions.
-    // We allow this because Nanny is empty.
-    #[allow(clippy::unused_self)]
-    pub fn boot_current_theme(&self) -> Result<Option<Child>> {
-        let mut path = BaseDirectories::with_prefix("leftwm")?.create_config_directory("")?;
-        path.push("themes");
-        path.push("current");
-        path.push("up");
+    fn get_config_dir() -> Result<PathBuf> {
+        BaseDirectories::with_prefix("leftwm")?
+            .create_config_directory("")
+            .map_err(|e| e.into())
+    }
+
+    /// Runs a script if it exits
+    fn run_script(path: PathBuf) -> Result<Option<Child>> {
         if path.is_file() {
             Command::new(&path)
                 .stdin(Stdio::null())
@@ -65,6 +69,30 @@ impl Nanny {
         } else {
             Ok(None)
         }
+    }
+
+    /// Runs the 'up' script in the config directory, if there is one.
+    ///
+    /// # Errors
+    ///
+    /// Will error if unable to open current config directory.
+    /// Could be caused by inadequate permissions.
+    pub fn run_global_up_script(&self) -> Result<Option<Child>> {
+        let mut path = Nanny::get_config_dir()?;
+        path.push("up");
+        Nanny::run_script(path)
+    }
+
+    /// # Errors
+    ///
+    /// Will error if unable to open current theme directory.
+    /// Could be caused by inadequate permissions.
+    pub fn boot_current_theme(&self) -> Result<Option<Child>> {
+        let mut path = Nanny::get_config_dir()?;
+        path.push("themes");
+        path.push("current");
+        path.push("up");
+        Nanny::run_script(path)
     }
 }
 

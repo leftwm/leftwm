@@ -165,8 +165,15 @@ async fn event_loop(
             }
         }
 
-        //after the very first loop boot the theme. we need the unix socket to already exist
+        //after the very first loop run the 'up' scripts (global and theme). we need the unix
+        //socket to already exist.
         after_first_loop.call_once(|| {
+            match Nanny::new().run_global_up_script() {
+                Ok(child) => {
+                    child.map(|child| manager.children.insert(child));
+                }
+                Err(err) => log::error!("Global up script faild: {}", err),
+            }
             match Nanny::new().boot_current_theme() {
                 Ok(child) => {
                     child.map(|child| manager.children.insert(child));
