@@ -1,6 +1,6 @@
 use leftwm::child_process::{self, Nanny};
 use std::env;
-use std::process::Command;
+use std::process::{exit, Command};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -68,7 +68,8 @@ fn main() {
 ///
 /// If a valid subcommand is supplied, executes that subcommand, passing `args` to the program.
 /// Valid subcommands are `check`, `command`, `state` and `theme`.
-/// Prints an error to STDERR and returns `false` if an invalid subcommand is supplied.
+/// Prints an error to STDERR and exits non-zero if an invalid subcommand is supplied, or there is
+/// some error while executing the subprocess.
 ///
 /// # Arguments
 ///
@@ -77,15 +78,23 @@ fn main() {
 /// # Panics
 ///
 /// Panics if `args` has length < 2.
-fn execute_subcommand(args: Vec<String>) -> bool {
-    if ["check", "command", "state", "theme"]
-        .iter()
-        .any(|x| x == &args[1])
-    {
-        println!("Running leftwm-{} with args {:?}", &args[1], &args[2..]);
-        true
+///
+/// # Exits
+///
+/// Exits 1 if the first argument is not a valid subcommand.
+/// Exits 2 if the first argument is a valid subcommand, but the associated program failed to run.
+fn execute_subcommand(args: Vec<String>) {
+    let subcommands = ["check", "command", "state", "theme"];
+    // If the second argument is a valid subcommand
+    if subcommands.iter().any(|x| x == &args[1]) {
+        // Run the command
+        let cmd = format!("leftwm-{}", &args[1]);
+        if let Err(e) = Command::new(&cmd).args(&args[2..]).spawn() {
+            eprintln!("Failed to execute {}. {}", cmd, e);
+            exit(2);
+        }
     } else {
         eprintln!("Invalid command '{}'.", &args[1]);
-        false
+        exit(1);
     }
 }
