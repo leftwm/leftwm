@@ -109,6 +109,10 @@ fn execute_subcommand(args: Vec<String>) {
 ///
 /// If `--help` or `--version` flags are not passed, this will do nothing.
 ///
+/// # Arguments
+///
+/// + `args` - The command line arguments leftwm was called with.
+///
 /// # Exits
 ///
 /// Exits early if `--help` or `--version` flags are passed.
