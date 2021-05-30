@@ -112,7 +112,7 @@ fn execute_subcommand(args: Vec<String>) {
 ///
 /// Exits early if --help or --version flags are passed.
 fn handle_help_or_version_flags(args: &[String]) {
-    App::new("leftwm")
+    App::new("LeftWM")
         .author("Lex Childs <lex.childs@gmail.com>")
         .about("A window manager for adventurers.")
         .long_about(
