@@ -13,6 +13,7 @@ use std::sync::{
 fn main() {
     let args: Vec<String> = env::args().collect();
 
+    // If at least one argument is given, execute a subcommand and exit.
     if args.len() > 1 {
         execute_subcommand(args);
         return;
