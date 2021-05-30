@@ -1,3 +1,8 @@
+//! Starts leftwm programs.
+//!
+//! If no arguments are passed, starts `leftwm-worker`. If arguments are passed, starts
+//! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
+
 use clap::{crate_version, App, AppSettings, SubCommand};
 use leftwm::child_process::{self, Nanny};
 use std::env;
@@ -7,10 +12,6 @@ use std::sync::{
     Arc,
 };
 
-/// Starts leftwm programs.
-///
-/// If no arguments are passed, starts `leftwm-worker`. If arguments are passed, starts
-/// `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -73,7 +74,7 @@ fn main() {
 ///
 /// If a valid subcommand is supplied, executes that subcommand, passing `args` to the program.
 /// Valid subcommands are `check`, `command`, `state` and `theme`.
-/// Prints an error to STDERR and exits non-zero if an invalid subcommand is supplied, or there is
+/// Prints an error to `STDERR` and exits non-zero if an invalid subcommand is supplied, or there is
 /// some error while executing the subprocess.
 ///
 /// # Arguments
@@ -104,13 +105,13 @@ fn execute_subcommand(args: Vec<String>) {
     }
 }
 
-/// Show program help text and exit if --help or --version flags are passed.
+/// Show program help text and exit if `--help` or `--version` flags are passed.
 ///
-/// If --help or --version flags are not passed, this will do nothing.
+/// If `--help` or `--version` flags are not passed, this will do nothing.
 ///
 /// # Exits
 ///
-/// Exits early if --help or --version flags are passed.
+/// Exits early if `--help` or `--version` flags are passed.
 fn handle_help_or_version_flags(args: &[String]) {
     App::new("LeftWM")
         .author("Lex Childs <lex.childs@gmail.com>")
