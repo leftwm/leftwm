@@ -1,3 +1,4 @@
+use clap::{crate_version, App, AppSettings, SubCommand};
 use leftwm::child_process::{self, Nanny};
 use std::env;
 use std::process::{exit, Command};
@@ -13,21 +14,24 @@ use std::sync::{
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    // If at least one argument is given, execute a subcommand and exit.
+    // If called with arguments, execute a subcommand or show program information as appropriate.
     if args.len() > 1 {
+        // Exits early if --help or --version flags are passed.
+        handle_help_or_version_flags(&args);
+
         execute_subcommand(args);
         return;
     }
 
-    // If not invoked with a subcommand, start leftwm.
+    // If _not_ invoked with a subcommand, start leftwm.
     if let Ok(current_exe) = std::env::current_exe() {
-        //boot everything in ~/.config/autostart
+        // Boot everything in ~/.config/autostart
         let mut children = Nanny::autostart();
 
         let flag = Arc::new(AtomicBool::new(false));
         child_process::register_child_hook(flag.clone());
 
-        //Fix for JAVA apps so they repaint correctly
+        // Fix for Java apps so they repaint correctly
         env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
 
         let worker_path = current_exe.with_file_name("leftwm-worker");
@@ -98,4 +102,30 @@ fn execute_subcommand(args: Vec<String>) {
         eprintln!("Invalid command '{}'.", &args[1]);
         exit(1);
     }
+}
+
+/// Show program help text and exit if --help or --version flags are passed.
+///
+/// If --help or --version flags are not passed, this will do nothing.
+///
+/// # Exits
+///
+/// Exits early if --help or --version flags are passed.
+fn handle_help_or_version_flags(args: &[String]) {
+    App::new("leftwm")
+        .author("Lex Childs <lex.childs@gmail.com>")
+        .about("A window manager for adventurers.")
+        .long_about(
+            "Starts LeftWM if no arguments are supplied. If a subcommand is given, executes the \
+             the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
+             it is installed.",
+        )
+        .version(crate_version!())
+        .version_short("v")
+        .settings(&[AppSettings::DisableHelpSubcommand, AppSettings::ColoredHelp])
+        .subcommand(SubCommand::with_name("check").about("Check syntax of the configuration file"))
+        .subcommand(SubCommand::with_name("command").about("Send external commands to LeftWM"))
+        .subcommand(SubCommand::with_name("state").about("Print the current state of LeftWM"))
+        .subcommand(SubCommand::with_name("theme").about("Manage LeftWM themes"))
+        .get_matches_from(args);
 }
