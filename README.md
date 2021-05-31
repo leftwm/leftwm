@@ -66,16 +66,34 @@ List of LeftWM dependencies:
 
 List of common dependencies for themes:
 
-| Dependency<br>(git)| Ubuntu 20.4.1<br> _sudo apt install {}_  | Arch<br> _sudo pacman -S {}_  | Fedora 33<br> _sudo dnf install {}_  | PKGS  |
-|- |- |- |- |- |
-| [feh](https://github.com/derf/feh)  | feh  | feh  | feh  | [feh](https://pkgs.org/search/?q=feh&on=provides)  |
-| [compton](https://github.com/chjj/compton)  | compton  | yay -S picom*  | compton  | [compton](https://pkgs.org/download/compton)  |
-| [picom](https://github.com/yshui/picom)  | manual **  | picom  | picom  | [picom](https://pkgs.org/download/picom)  |
-| [polybar](https://github.com/polybar/polybar)  | manual **  | yay -S polybar*  | polybar  | [polybar](https://pkgs.org/download/polybar)  |
-| [xmobar](https://github.com/jaor/xmobar)  | xmobar  | xmobar  | xmobar  | [xmobar](https://pkgs.org/download/xmobar)  |
-| [lemonbar](https://github.com/LemonBoy/bar)  | lemonbar  | yay -S lemonbar*  | manual **  | [lemonbar](https://pkgs.org/download/lemonbar)  |
-| [conky](https://github.com/brndnmtthws/conky)  | conky  | conky  | conky  | [conky](https://pkgs.org/download/conky)  |
-| [dmenu](https://git.suckless.org/dmenu)  | dmenu  | dmenu  | dmenu  | [dmenu](https://pkgs.org/download/dmenu)  |
+| Dependency<br>(git) | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS |
+|--------------------------|-----------|------------------|-----------|--------------------------|
+| [feh][feh-git]           | feh       | feh              | feh       | [feh][feh-pkg]           |
+| [compton][compton-git]   | compton   | yay -S picom*    | compton   | [compton][compton-pkg]   |
+| [picom][picom-git]       | manual ** | picom            | picom     | [picom][picom-pkg]       |
+| [polybar][polybar-git]   | manual ** | yay -S polybar*  | polybar   | [polybar][polybar-pkg]   |
+| [xmobar][xmobar-git]     | xmobar    | xmobar           | xmobar    | [xmobar][xmobar-pkg]     |
+| [lemonbar][lemonbar-git] | lemonbar  | yay -S lemonbar* | manual ** | [lemonbar][lemonbar-pkg] |
+| [conky][conky-git]       | conky     | conky            | conky     | [conky][conky-pkg]       |
+| [dmenu][dmenu-git]       | dmenu     | dmenu            | dmenu     | [dmenu][dmenu-pkg]       |
+
+[feh-git]: https://github.com/derf/feh
+[feh-pkg]: https://pkgs.org/search/?q=feh&on=provides
+[compton-git]: https://github.com/chjj/compton
+[compton-pkg]: https://pkgs.org/download/compton
+[picom-git]: https://github.com/yshui/picom
+[picom-pkg]: https://pkgs.org/download/picom
+[polybar-git]: https://github.com/polybar/polybar
+[polybar-pkg]: https://pkgs.org/download/polybar
+[xmobar-git]: https://github.com/jaor/xmobar
+[xmobar-pkg]: https://pkgs.org/download/xmobar
+[lemonbar-git]: https://github.com/LemonBoy/bar
+[lemonbar-pkg]: https://pkgs.org/download/lemonbar
+[conky-git]: https://github.com/brndnmtthws/conky
+[conky-pkg]: https://pkgs.org/download/conky
+[dmenu-git]: https://git.suckless.org/dmenu
+[dmenu-pkg]: https://pkgs.org/download/dmenu
+
 
 > \* You can use whichever AUR wrapper you like  
 > \*\* See the git page (link in first column) for how to install these manually
