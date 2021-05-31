@@ -71,11 +71,20 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             .enumerate()
             .find(|w| w.1.handle == old.handle)
         {
+            let mut tags = old.tags.clone();
+            if let Some(xyhw) = old.strut {
+                let (x, y) = xyhw.center();
+                if let Some(ws) = manager.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
+                    tags = ws.tags.clone()
+                }
+            }
+
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
             window.apply_margin_multiplier(old.margin_multiplier);
             window.normal = old.normal;
-            window.tags = old.tags.clone();
+            window.tags = tags;
+            window.strut = old.strut;
             ordered.push(window.clone());
             manager.windows.remove(index);
         }

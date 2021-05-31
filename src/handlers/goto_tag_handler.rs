@@ -1,4 +1,6 @@
 #![allow(clippy::wildcard_imports)]
+use crate::utils::helpers;
+
 use super::*;
 
 pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
@@ -13,16 +15,40 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
         Some(ws) => ws.tags.clone(),
         None => return false,
     };
+    let mut changed = vec![];
     if let Some(ws) = manager.workspaces.iter_mut().find(|ws| ws.tags == new_tags) {
+        update_dock_tags(&mut manager.windows, ws, &old_tags, &mut changed);
         ws.tags = old_tags;
     }
 
-    match manager.focused_workspace_mut() {
-        Some(aws) => aws.tags = new_tags,
+    match manager.focus_manager.workspace_mut(&mut manager.workspaces) {
+        Some(ws) => {
+            update_dock_tags(&mut manager.windows, ws, &new_tags, &mut changed);
+            ws.tags = new_tags
+        }
         None => return false,
     }
     focus_handler::focus_tag(manager, &tag.id);
     true
+}
+
+fn update_dock_tags(
+    windows: &mut Vec<Window>,
+    ws: &Workspace,
+    tags: &[String],
+    changed: &mut Vec<WindowHandle>,
+) {
+    let clone = changed.clone();
+    //Update the tags of the docks
+    windows
+        .iter_mut()
+        .filter(|w| {
+            helpers::intersect(&ws.tags, &w.tags) && w.strut.is_some() && !clone.contains(&w.handle)
+        })
+        .for_each(|w| {
+            w.tags = tags.to_vec();
+            changed.push(w.handle)
+        });
 }
 
 #[cfg(test)]
