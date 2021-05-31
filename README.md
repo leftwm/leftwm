@@ -124,10 +124,12 @@ List of common dependencies for themes:
 
 # Installation (with package manager)
 
-Archlinux ([AUR] - [paru] is an AUR helper like [yay], but written in [Rust].)
+Archlinux ([AUR])
 ```sh
 paru -S leftwm
 ```
+
+_[paru] is an AUR helper like [yay], but written in [Rust]._
 
 Fedora ([copr])
 ```sh
