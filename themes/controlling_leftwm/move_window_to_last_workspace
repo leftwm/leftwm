@@ -1,2 +1,2 @@
-#!/bin/bash
-echo "MoveWindowToLastWorkspace" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+#!/usr/bin/env bash
+leftwm-command "MoveWindowToLastWorkspace"

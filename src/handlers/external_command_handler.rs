@@ -18,38 +18,27 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
             let theme = ThemeSetting::default();
             return load_theme(manager, theme);
         }
-
         ExternalCommand::LoadTheme(path) => {
             let theme = ThemeSetting::load(&path);
             return load_theme(manager, theme);
         }
-
+        ExternalCommand::ToggleScratchPad(name) => {
+            return command_handler::process(
+                manager,
+                config,
+                &Command::ToggleScratchPad,
+                &Some(name),
+            );
+        }
         ExternalCommand::ToggleFullScreen => {
             return command_handler::process(manager, config, &Command::ToggleFullScreen, &None);
         }
-
         ExternalCommand::SendWorkspaceToTag(ws_index, tag_index) => {
-            if ws_index < manager.workspaces.len() && tag_index < manager.tags.len() {
-                let workspace = &manager.workspaces[ws_index].clone();
-                focus_handler::focus_workspace(manager, workspace);
-                goto_tag_handler::process(manager, tag_index + 1);
-                return true;
-            }
+            return send_workspace_to_tag(manager, ws_index, tag_index);
         }
-
         ExternalCommand::SendWindowToTag(tag_index) => {
-            if tag_index < manager.tags.len() {
-                //tag number as 1 based.
-                let tag_num = format!("{}", tag_index + 1);
-                return command_handler::process(
-                    manager,
-                    config,
-                    &Command::MoveToTag,
-                    &Some(tag_num),
-                );
-            }
+            return send_window_to_tag(manager, config, tag_index);
         }
-
         ExternalCommand::SetLayout(layout) => {
             return command_handler::process(manager, config, &Command::SetLayout, &Some(layout));
         }
@@ -61,7 +50,6 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
                 &Some(margin_multiplier),
             );
         }
-
         ExternalCommand::SwapScreens => {
             return command_handler::process(manager, config, &Command::SwapTags, &None);
         }
@@ -69,32 +57,27 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
         ExternalCommand::MoveWindowToLastWorkspace => {
             return command_handler::process(manager, config, &Command::MoveToLastWorkspace, &None);
         }
-
         ExternalCommand::FloatingToTile => {
             return command_handler::process(manager, config, &Command::FloatingToTile, &None);
         }
-
         ExternalCommand::MoveWindowUp => {
             return command_handler::process(manager, config, &Command::MoveWindowUp, &None);
         }
         ExternalCommand::MoveWindowDown => {
             return command_handler::process(manager, config, &Command::MoveWindowDown, &None);
         }
-
         ExternalCommand::FocusWindowUp => {
             return command_handler::process(manager, config, &Command::FocusWindowUp, &None);
         }
         ExternalCommand::FocusWindowDown => {
             return command_handler::process(manager, config, &Command::FocusWindowDown, &None);
         }
-
         ExternalCommand::FocusNextTag => {
             return command_handler::process(manager, config, &Command::FocusNextTag, &None);
         }
         ExternalCommand::FocusPreviousTag => {
             return command_handler::process(manager, config, &Command::FocusPreviousTag, &None);
         }
-
         ExternalCommand::FocusWorkspaceNext => {
             return command_handler::process(manager, config, &Command::FocusWorkspaceNext, &None);
         }
@@ -129,6 +112,28 @@ fn load_theme(manager: &mut Manager, theme: ThemeSetting) -> bool {
     for win in &mut manager.windows {
         win.update_for_theme(&theme);
     }
+    for ws in &mut manager.workspaces {
+        ws.update_for_theme(&theme);
+    }
     manager.theme_setting = theme;
     true
+}
+
+fn send_workspace_to_tag(manager: &mut Manager, ws_index: usize, tag_index: usize) -> bool {
+    if ws_index < manager.workspaces.len() && tag_index < manager.tags.len() {
+        let workspace = &manager.workspaces[ws_index].clone();
+        focus_handler::focus_workspace(manager, workspace);
+        goto_tag_handler::process(manager, tag_index + 1);
+        return true;
+    }
+    false
+}
+
+fn send_window_to_tag(manager: &mut Manager, config: &Config, tag_index: usize) -> bool {
+    if tag_index < manager.tags.len() {
+        //tag number as 1 based.
+        let tag_num = format!("{}", tag_index + 1);
+        return command_handler::process(manager, config, &Command::MoveToTag, &Some(tag_num));
+    }
+    false
 }

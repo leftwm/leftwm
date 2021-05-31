@@ -1,3 +1,4 @@
+//! A wrapper around many WM features
 //We allow this _ because if we don't we'll receive an error that it isn't read on _task_guard.
 #![allow(clippy::used_underscore_binding)]
 //We allow this so that extern "C" functions are not flagged as confusing. The current placement
@@ -12,7 +13,6 @@ use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
-use crate::config::ThemeSetting;
 use crate::models::DockArea;
 use crate::models::Mode;
 use crate::models::WindowChange;
@@ -21,6 +21,7 @@ use crate::models::WindowType;
 use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
+use crate::{config::ThemeSetting, models::FocusBehaviour};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
@@ -63,7 +64,7 @@ pub struct XWrap {
     managed_windows: Vec<xlib::Window>,
     pub tags: Vec<String>,
     pub mode: Mode,
-    pub mod_key_mask: ModMask,
+    pub focus_behaviour: FocusBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
@@ -79,7 +80,7 @@ impl Default for XWrap {
 impl XWrap {
     /// # Panics
     ///
-    /// Can panic if unable to contact xorg.  
+    /// Can panic if unable to contact xorg.
     #[must_use]
     pub fn new() -> XWrap {
         const SERVER: mio::Token = mio::Token(0);
@@ -139,7 +140,7 @@ impl XWrap {
             managed_windows: vec![],
             tags: vec![],
             mode: Mode::Normal,
-            mod_key_mask: 0,
+            focus_behaviour: FocusBehaviour::Sloppy,
             mouse_key_mask: 0,
             mode_origin: (0, 0),
             _task_guard,
@@ -637,15 +638,22 @@ impl XWrap {
                     let rh: u32 = window.height() as u32;
                     (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
 
-                    let color: c_ulong = if is_focused {
+                    let mut color: c_ulong = if is_focused {
                         self.colors.active
                     } else if window.floating() {
                         self.colors.floating
                     } else {
                         self.colors.normal
                     };
+                    //Force border opacity to 0xff
+                    let mut bytes = color.to_be_bytes();
+                    bytes[4] = 0xff;
+                    color = u64::from_be_bytes(bytes);
 
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
+                }
+                if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.grab_buttons(h, xlib::Button1, xlib::AnyModifier);
                 }
                 self.send_config(window);
             } else {
@@ -657,8 +665,12 @@ impl XWrap {
         }
     }
 
-    //this code is ran one time when a window is added to the managers list of windows
-    pub fn setup_managed_window(&mut self, h: WindowHandle) -> Option<DisplayEvent> {
+    //this code is run once when a window is added to the managers list of windows
+    pub fn setup_managed_window(
+        &mut self,
+        h: WindowHandle,
+        follow_mouse: bool,
+    ) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             self.managed_windows.push(handle);
@@ -688,20 +700,22 @@ impl XWrap {
                 (self.xlib.XSync)(self.display, 0);
             }
 
-            match self.get_window_type(handle) {
-                WindowType::Dock => {
-                    if let Some(dock_area) = self.get_window_strut_array(handle) {
-                        let dems = self.screens_area_dimensions();
-                        if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
-                            let mut change = WindowChange::new(h);
-                            change.strut = Some(xywh.into());
-                            change.type_ = Some(WindowType::Dock);
-                            return Some(DisplayEvent::WindowChange(change));
-                        }
+            if self.get_window_type(handle) == WindowType::Dock {
+                if let Some(dock_area) = self.get_window_strut_array(handle) {
+                    let dems = self.screens_area_dimensions();
+                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                        let mut change = WindowChange::new(h);
+                        change.strut = Some(xywh.into());
+                        change.type_ = Some(WindowType::Dock);
+                        return Some(DisplayEvent::WindowChange(change));
                     }
                 }
-                _ => {
+            } else {
+                if follow_mouse {
                     let _ = self.move_cursor_to_window(handle);
+                }
+                if self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
                 }
             }
             //make sure there is at least an empty list of _NET_WM_STATE
@@ -730,7 +744,7 @@ impl XWrap {
 
     /// # Errors
     ///
-    /// Will error if unale to obtain window attributes. See `get_window_attrs`.
+    /// Will error if unable to obtain window attributes. See `get_window_attrs`.
     pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), XlibError> {
         let attrs = self.get_window_attrs(window)?;
         let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
@@ -889,7 +903,7 @@ impl XWrap {
         }
     }
 
-    //this code is ran once when a window is destoryed
+    //this code is run once when a window is destroyed
     pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             unsafe {
@@ -1015,6 +1029,51 @@ impl XWrap {
                 None
             }
         }
+    }
+
+    #[must_use]
+    pub fn get_window_pid(&self, window: xlib::Window) -> Option<u32> {
+        if let Ok(id) = self.get_cardinal_prop(window, self.atoms.NetWMPid) {
+            return Some(id);
+        }
+        None
+    }
+
+    /// Get the `WMPid` of a window
+    /// # Errors
+    ///
+    /// Errors if window status = 0.
+    pub fn get_cardinal_prop(
+        &self,
+        window: xlib::Window,
+        atom: xlib::Atom,
+    ) -> Result<u32, XlibError> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::zeroed() };
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                atom,
+                0,
+                MAX_PROPERTY_VALUE_LEN / 4,
+                xlib::False,
+                xlib::XA_CARDINAL,
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut nitems_return,
+                &mut prop_return,
+            );
+            if status == i32::from(xlib::Success) && !prop_return.is_null() {
+                #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
+                let pid = *(prop_return as *const u32);
+                return Ok(pid);
+            }
+        };
+        Err(XlibError::FailedStatus)
     }
 
     #[must_use]
@@ -1270,7 +1329,7 @@ impl XWrap {
     }
 
     pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
-        //grab the keys with and without numlock (Mod2)
+        //grab the buttons with and without numlock (Mod2)
         let mods: Vec<u32> = vec![
             modifiers,
             modifiers | xlib::Mod2Mask,
@@ -1285,8 +1344,8 @@ impl XWrap {
                     window,
                     0,
                     BUTTONMASK as u32,
-                    xlib::GrabModeAsync,
                     xlib::GrabModeSync,
+                    xlib::GrabModeAsync,
                     0,
                     0,
                 );
@@ -1423,32 +1482,50 @@ impl XWrap {
             if let Ok(loc) = self.get_cursor_point() {
                 self.mode_origin = loc
             }
-            unsafe {
-                let cursor = match mode {
-                    Mode::ResizingWindow(_) => self.cursors.resize,
-                    Mode::MovingWindow(_) => self.cursors.move_,
-                    Mode::Normal => self.cursors.normal,
-                };
-                //grab the mouse
-                (self.xlib.XGrabPointer)(
-                    self.display,
-                    self.root,
-                    0,
-                    MOUSEMASK as u32,
-                    xlib::GrabModeAsync,
-                    xlib::GrabModeAsync,
-                    0,
-                    cursor,
-                    xlib::CurrentTime,
-                );
-            }
+            let cursor = match mode {
+                Mode::ResizingWindow(_) => self.cursors.resize,
+                Mode::MovingWindow(_) => self.cursors.move_,
+                Mode::Normal => self.cursors.normal,
+            };
+            self.grab_pointer(cursor);
         }
         if mode == Mode::Normal {
-            //release the mouse grab
-            unsafe {
-                (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
-            }
+            self.ungrab_pointer();
             self.mode = mode;
+        }
+    }
+
+    pub fn grab_pointer(&self, cursor: u64) {
+        unsafe {
+            //grab the mouse
+            (self.xlib.XGrabPointer)(
+                self.display,
+                self.root,
+                0,
+                MOUSEMASK as u32,
+                xlib::GrabModeAsync,
+                xlib::GrabModeAsync,
+                0,
+                cursor,
+                xlib::CurrentTime,
+            );
+        }
+    }
+
+    pub fn ungrab_pointer(&self) {
+        unsafe {
+            //release the mouse grab
+            (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
+        }
+    }
+
+    pub fn replay_click(&self) {
+        // Only replay the click when in ClickToFocus
+        if self.focus_behaviour == FocusBehaviour::ClickTo {
+            unsafe {
+                (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
+                (self.xlib.XSync)(self.display, 0);
+            }
         }
     }
 

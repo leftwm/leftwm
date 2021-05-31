@@ -1,10 +1,14 @@
-use leftwm::child_process::{self, Nanny};
+use leftwm::{
+    child_process::{self, Nanny},
+    models::{FocusManager, Tag},
+};
 
 use crate::models::TagModel;
 use leftwm::{
     config, external_command_handler, models, CommandPipe, DisplayEvent, DisplayEventHandler,
     DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
 };
+use std::collections::HashMap;
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
@@ -26,12 +30,26 @@ fn main() {
 
         let config = config::load();
 
+        let focus_manager = FocusManager {
+            behaviour: config.focus_behaviour.clone(),
+            focus_new_windows: config.focus_new_windows,
+            ..FocusManager::default()
+        };
+
+        let mut tags: Vec<Tag> = config
+            .get_list_of_tags()
+            .iter()
+            .map(|s| TagModel::new(s))
+            .collect();
+        tags.push(TagModel::new("NSP"));
         let mut manager = Manager {
-            tags: config
-                .get_list_of_tags()
+            focus_manager,
+            tags,
+            scratchpads: config
+                .get_list_of_scratchpads()
                 .iter()
-                .map(|s| TagModel::new(s))
-                .collect(),
+                .map(|s| (s.clone(), None))
+                .collect::<HashMap<_, _>>(),
             layouts: config.layouts.clone(),
             ..Manager::default()
         };
@@ -154,9 +172,16 @@ async fn event_loop(
             }
         }
 
-        //after the very first loop boot the theme. we need the unix socket to already exist
+        //after the very first loop run the 'up' scripts (global and theme). we need the unix
+        //socket to already exist.
         after_first_loop.call_once(|| {
-            match Nanny::new().boot_current_theme() {
+            match Nanny::run_global_up_script() {
+                Ok(child) => {
+                    child.map(|child| manager.children.insert(child));
+                }
+                Err(err) => log::error!("Global up script faild: {}", err),
+            }
+            match Nanny::boot_current_theme() {
                 Ok(child) => {
                     child.map(|child| manager.children.insert(child));
                 }

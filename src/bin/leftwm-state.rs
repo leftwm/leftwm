@@ -22,6 +22,14 @@ async fn main() -> Result<()> {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("string")
+                .short("s")
+                .long("string")
+                .value_name("STRING")
+                .help("Use a liquid template string literal to use for the output")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("workspace")
                 .short("w")
                 .long("workspace")
@@ -45,6 +53,8 @@ async fn main() -> Result<()> {
 
     let template_file = matches.value_of("template");
 
+    let string_literal = matches.value_of("string");
+
     let ws_num: Option<usize> = match value_t!(matches, "workspace", usize) {
         Ok(x) => Some(x),
         Err(_) => None,
@@ -60,6 +70,18 @@ async fn main() -> Result<()> {
             .build()
             .expect("Unable to build template")
             .parse(&template_str)
+            .expect("Unable to parse template");
+        while let Some(line) = stream_reader.next_line().await? {
+            let _droppable = template_handler(&template, newline, ws_num, &line);
+            if once {
+                break;
+            }
+        }
+    } else if let Some(string_literal) = string_literal {
+        let template = liquid::ParserBuilder::with_stdlib()
+            .build()
+            .expect("Unable to build template")
+            .parse(&string_literal)
             .expect("Unable to parse template");
         while let Some(line) = stream_reader.next_line().await? {
             let _droppable = template_handler(&template, newline, ws_num, &line);

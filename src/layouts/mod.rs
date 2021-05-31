@@ -156,10 +156,11 @@ mod tests {
             vec![],
             vec![],
         );
+        ws.margin = Margins::Int(0);
         ws.xyhw.set_minh(600);
         ws.xyhw.set_minw(800);
         ws.update_avoided_areas();
-        let mut w = Window::new(WindowHandle::MockHandle(1), None);
+        let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.border = 0;
         w.margin = Margins::Int(0);
         let mut windows = vec![&mut w];

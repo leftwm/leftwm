@@ -15,6 +15,7 @@ name = "leftwm"
 path = "src/lib.rs"
 
 [dependencies]
+git-version = "0.3.4"
 signal-hook = "0.3.4"
 mio = "0.7.7"
 nix = "0.20.0"

@@ -1,4 +1,5 @@
 use crate::errors::Result;
+use crate::models::Gutter;
 use crate::models::Margins;
 use serde::{Deserialize, Serialize};
 use std::default::Default;
@@ -10,6 +11,8 @@ use std::path::Path;
 pub struct ThemeSetting {
     pub border_width: i32,
     pub margin: Margins,
+    pub workspace_margin: Margins,
+    pub gutter: Option<Vec<Gutter>>,
     pub default_border_color: String,
     pub floating_border_color: String,
     pub focused_border_color: String,
@@ -21,6 +24,14 @@ impl ThemeSetting {
     #[must_use]
     pub fn load(path: &Path) -> ThemeSetting {
         load_theme_file(path).unwrap_or_default()
+    }
+
+    #[must_use]
+    pub fn get_list_of_gutters(&self) -> Vec<Gutter> {
+        if let Some(gutters) = &self.gutter {
+            return gutters.clone();
+        }
+        vec![]
     }
 }
 
@@ -35,6 +46,8 @@ impl Default for ThemeSetting {
         ThemeSetting {
             border_width: 1,
             margin: Margins::Int(10),
+            workspace_margin: Margins::Int(10),
+            gutter: None,
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
             focused_border_color: "#FF0000".to_owned(),
@@ -46,6 +59,7 @@ impl Default for ThemeSetting {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::Side;
 
     #[test]
     fn deserialize_empty_theme_config() {
@@ -61,10 +75,15 @@ mod tests {
         let config = r#"
 border_width = 0
 margin = 5
+workspace_margin = 5
 default_border_color = '#222222'
 floating_border_color = '#005500'
 focused_border_color = '#FFB53A'
 on_new_window = 'echo Hello World'
+
+[[gutter]]
+side = "Top"
+value = 0
 "#;
         let config: ThemeSetting = toml::from_str(config).unwrap();
 
@@ -73,6 +92,11 @@ on_new_window = 'echo Hello World'
             ThemeSetting {
                 border_width: 0,
                 margin: Margins::Int(5),
+                workspace_margin: Margins::Int(5),
+                gutter: Some(vec![Gutter {
+                    side: Side::Top,
+                    value: 0
+                }]),
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),

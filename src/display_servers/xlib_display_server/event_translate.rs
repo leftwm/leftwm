@@ -43,6 +43,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ButtonPress => {
                 let event = xlib::XButtonPressedEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
+                xw.replay_click();
                 Some(DisplayEvent::MouseCombo(event.state, event.button, h))
             }
             xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
@@ -84,7 +85,8 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
     }
     //build the new window, and fill in info about it from xlib
     let name = xw.get_window_name(event.window);
-    let mut w = Window::new(handle, name);
+    let pid = xw.get_window_pid(event.window);
+    let mut w = Window::new(handle, name, pid);
     let trans = xw.get_transient_for(event.window);
     if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
         hint.update_window_floating(&mut w);

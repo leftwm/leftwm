@@ -1,4 +1,6 @@
+use crate::config::ScratchPad;
 use crate::display_action::DisplayAction;
+use crate::models::FocusManager;
 use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::Tag;
@@ -10,7 +12,7 @@ use crate::utils::child_process::Children;
 use crate::{config::ThemeSetting, layouts::Layout};
 
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
@@ -19,14 +21,14 @@ pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
+    pub focus_manager: FocusManager,
     pub mode: Mode,
     pub theme_setting: ThemeSetting,
     #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
     pub layouts: Vec<Layout>,
-    pub focused_workspace_history: VecDeque<usize>,
-    pub focused_window_history: VecDeque<WindowHandle>,
-    pub focused_tag_history: VecDeque<String>,
+    #[serde(skip)]
+    pub scratchpads: HashMap<ScratchPad, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
 
     //this is used to limit framerate when resizing/moving windows
@@ -43,28 +45,19 @@ impl Manager {
     /// Return the currently focused workspace.
     #[must_use]
     pub fn focused_workspace(&self) -> Option<&Workspace> {
-        if self.focused_workspace_history.is_empty() {
-            return None;
-        }
-        let index = self.focused_workspace_history[0];
-        Some(&self.workspaces[index])
+        self.focus_manager.workspace(&self)
     }
 
     /// Return the currently focused workspace.
     pub fn focused_workspace_mut(&mut self) -> Option<&mut Workspace> {
-        if self.focused_workspace_history.is_empty() {
-            return None;
-        }
-        let index = self.focused_workspace_history[0];
-        Some(&mut self.workspaces[index])
+        self.focus_manager.workspace_mut(&mut self.workspaces)
     }
 
     /// Return the currently focused tag if the offset is 0.
     /// Offset is used to reach further down the history.
+    #[must_use]
     pub fn focused_tag(&self, offset: usize) -> Option<String> {
-        self.focused_tag_history
-            .get(offset)
-            .map(std::string::ToString::to_string)
+        self.focus_manager.tag(offset)
     }
 
     /// Return the index of a given tag.
@@ -76,30 +69,12 @@ impl Manager {
     /// Return the currently focused window.
     #[must_use]
     pub fn focused_window(&self) -> Option<&Window> {
-        if self.focused_window_history.is_empty() {
-            return None;
-        }
-        let handle = self.focused_window_history[0];
-        for w in &self.windows {
-            if handle == w.handle {
-                return Some(w);
-            }
-        }
-        None
+        self.focus_manager.window(&self)
     }
 
     /// Return the currently focused window.
     pub fn focused_window_mut(&mut self) -> Option<&mut Window> {
-        if self.focused_window_history.is_empty() {
-            return None;
-        }
-        let handle = self.focused_window_history[0];
-        for w in &mut self.windows {
-            if handle == w.handle {
-                return Some(w);
-            }
-        }
-        None
+        self.focus_manager.window_mut(&mut self.windows)
     }
 
     //sorts the windows and puts them in order of importance

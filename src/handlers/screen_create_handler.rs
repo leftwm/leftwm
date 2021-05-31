@@ -7,6 +7,7 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     let tag_index = manager.workspaces.len();
 
     let mut workspace = Workspace::new(screen.bbox, manager.tags.clone(), manager.layouts.clone());
+    workspace.update_for_theme(&manager.theme_setting);
     workspace.id = tag_index as i32;
     //make sure are enough tags for this new screen
     if manager.tags.len() <= tag_index {
@@ -37,7 +38,7 @@ mod tests {
     }
 
     #[test]
-    fn should_be_able_to_add_screens_with_perexisting_tags() {
+    fn should_be_able_to_add_screens_with_preexisting_tags() {
         let mut manager = Manager::default();
         manager.tags.push(TagModel::new("web"));
         manager.tags.push(TagModel::new("console"));
