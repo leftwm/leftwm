@@ -123,19 +123,30 @@ List of common dependencies for themes:
 
 # Installation (with package manager)
 
-LeftWM is available in the AUR as well as crates.io. Both are good options for simple installation.
-If you install LeftWM with crates.io, you will need to link to the xsession desktop file if you want
-to be able to login to LeftWM from a graphical login screen:
+Archlinux ([AUR])
+```sh
+yay -S leftwm
+```
 
-```bash
+Fedora ([copr])
+```sh
+sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
+```
+
+Cargo ([crates.io])
+```sh
+cargo install leftwm
+```
+If you install LeftWM with crates.io, you will need to link to the xsession desktop file if you want
+to be able to login to LeftWM from a display manager (GDM, SSDM, LightDM, etc.):
+
+```sh
 sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 ```
 
-LeftWM is also available in Fedora [Copr](https://copr.fedorainfracloud.org/coprs/atim/leftwm/):
-
-```bash
-sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
-```
+[AUR]: https://aur.archlinux.org/packages/leftwm
+[copr]: https://copr.fedorainfracloud.org/coprs/atim/leftwm/
+[crates.io]: https://crates.io/crates/leftwm
 
 # Manual Installation (no package manager)
 
