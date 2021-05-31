@@ -129,7 +129,7 @@ Archlinux ([AUR])
 paru -S leftwm
 ```
 
-_[paru] is an AUR helper like [yay], but written in [Rust]._
+[paru] is an AUR helper like [yay], but written in [Rust].
 
 Fedora ([copr])
 ```sh
