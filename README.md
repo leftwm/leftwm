@@ -119,7 +119,7 @@ List of common dependencies for themes:
 [dmenu-pkg]: https://pkgs.org/download/dmenu
 
 
-> \* You can use whichever AUR wrapper you like. See [paru] and [yay].
+> \* You can use whichever AUR wrapper you like. See [paru] and [yay].  
 > \*\* See the git page (link in first column) for how to install these manually
 
 # Installation (with package manager)
