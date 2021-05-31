@@ -188,7 +188,7 @@ simple black screen on login.  For a more customized look, install a theme.
 
 If your goal is to continously build leftwm and keep up to date with the latest releases, you may
 prefer to symlink the leftwm executables instead of copying them.  If you choose to install this
-way, make sure you do not move the build directory as it will break your installation.  
+way, make sure you do not move the build directory as it will break your installation.
 
 1. Dependencies: Rust, Cargo
 2. Clone the repository and cd into the directory
