@@ -89,16 +89,17 @@ List of LeftWM dependencies:
 
 List of common dependencies for themes:
 
+
 | Dependency<br>(git) | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS |
-|--------------------------|-----------|------------------|-----------|--------------------------|
-| [feh][feh-git]           | feh       | feh              | feh       | [feh][feh-pkg]           |
-| [compton][compton-git]   | compton   | yay -S picom*    | compton   | [compton][compton-pkg]   |
-| [picom][picom-git]       | manual ** | picom            | picom     | [picom][picom-pkg]       |
-| [polybar][polybar-git]   | manual ** | yay -S polybar*  | polybar   | [polybar][polybar-pkg]   |
-| [xmobar][xmobar-git]     | xmobar    | xmobar           | xmobar    | [xmobar][xmobar-pkg]     |
-| [lemonbar][lemonbar-git] | lemonbar  | yay -S lemonbar* | manual ** | [lemonbar][lemonbar-pkg] |
-| [conky][conky-git]       | conky     | conky            | conky     | [conky][conky-pkg]       |
-| [dmenu][dmenu-git]       | dmenu     | dmenu            | dmenu     | [dmenu][dmenu-pkg]       |
+|--------------------------|-----------|-------------------|-----------|--------------------------|
+| [feh][feh-git]           | feh       | feh               | feh       | [feh][feh-pkg]           |
+| [compton][compton-git]   | compton   | paru -S picom*    | compton   | [compton][compton-pkg]   |
+| [picom][picom-git]       | manual ** | picom             | picom     | [picom][picom-pkg]       |
+| [polybar][polybar-git]   | manual ** | paru -S polybar*  | polybar   | [polybar][polybar-pkg]   |
+| [xmobar][xmobar-git]     | xmobar    | xmobar            | xmobar    | [xmobar][xmobar-pkg]     |
+| [lemonbar][lemonbar-git] | lemonbar  | paru -S lemonbar* | manual ** | [lemonbar][lemonbar-pkg] |
+| [conky][conky-git]       | conky     | conky             | conky     | [conky][conky-pkg]       |
+| [dmenu][dmenu-git]       | dmenu     | dmenu             | dmenu     | [dmenu][dmenu-pkg]       |
 
 [feh-git]: https://github.com/derf/feh
 [feh-pkg]: https://pkgs.org/search/?q=feh&on=provides
@@ -118,14 +119,14 @@ List of common dependencies for themes:
 [dmenu-pkg]: https://pkgs.org/download/dmenu
 
 
-> \* You can use whichever AUR wrapper you like  
+> \* You can use whichever AUR wrapper you like. See [paru] and [yay].
 > \*\* See the git page (link in first column) for how to install these manually
 
 # Installation (with package manager)
 
-Archlinux ([AUR])
+Archlinux ([AUR] - [paru] is an AUR helper like [yay], but written in [Rust].)
 ```sh
-yay -S leftwm
+paru -S leftwm
 ```
 
 Fedora ([copr])
@@ -147,6 +148,8 @@ sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 [AUR]: https://aur.archlinux.org/packages/leftwm
 [copr]: https://copr.fedorainfracloud.org/coprs/atim/leftwm/
 [crates.io]: https://crates.io/crates/leftwm
+[paru]: https://github.com/Morganamilo/paru
+[yay]: https://github.com/Jguer/yay
 
 # Manual Installation (no package manager)
 
