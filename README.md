@@ -326,14 +326,20 @@ presented):
 
 1. Alacritty
 2. Termite
-3. URXVT
-4. RXVT
-5. ST
-6. ROXTerm
-7. Eterm
-8. Terminator
-9. Terminology
+3. Kitty
+4. URXVT
+5. RXVT
+6. ST
+7. ROXTerm
+8. Eterm
+9. XTerm
+10. Terminator
+11. Terminology
 10. Gnome Terminal
+12. XFCE4 Terminal
+13. Konsole
+14. UXTerm
+15. Guake
  
 
 ## Floating Windows
