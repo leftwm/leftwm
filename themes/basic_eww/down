@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+#set background
+if [ -x "$(command -v feh)" ]; then
+  feh --bg-scale $SCRIPTPATH/down.jpg
+fi
+
+echo "UnloadTheme" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+
+pkill compton
+pkill picom
+pkill polybar
+pkill conky
+if [ -x "$(command -v eww)" ]; then
+  eww kill
+fi

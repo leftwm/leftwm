@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+export SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+#if path to liblinkt is not not exported do so:
+if [ -z "$LD_LIBRARY_PATH" ]; then
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
+fi
+
+# Down the last running theme
+if [ -f "/tmp/leftwm-theme-down" ]; then
+    /tmp/leftwm-theme-down
+    rm /tmp/leftwm-theme-down
+fi
+ln -s $SCRIPTPATH/down /tmp/leftwm-theme-down
+
+# start eww daemon
+eww daemon &
+
+# Boot picom or compton if it exists
+if [ -x "$(command -v picom)" ]; then
+  picom --experimental-backends &> /dev/null &
+  # picom &> /dev/null &
+elif [ -x "$(command -v compton)" ]; then
+  compton &> /dev/null &
+fi
+
+# Set the theme.toml config
+leftwm-command "LoadTheme $SCRIPTPATH/theme.toml"
+
+# Set background
+if [ -x "$(command -v feh)" ]; then
+  feh --bg-scale $SCRIPTPATH/background.jpg
+fi
+
+#open eww 'bar' windows
+#this is a bit of an uggly hack, a more elegant way will hopefully be possible with a future `eww` version
+sleep 1
+index=0
+sizes=( $(leftwm-state -q -n -t $SCRIPTPATH/sizes.liquid | sed -r '/^\s*$/d' ) )
+for size in "${sizes[@]}"
+do
+    eww open bar$index
+  let index=index+1
+done
