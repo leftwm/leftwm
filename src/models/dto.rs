@@ -110,13 +110,7 @@ impl From<&Manager> for ManagerState {
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
         let working_tags = manager.tags[0..tags_len]
             .iter()
-            .filter(|tag| {
-                manager
-                    .windows
-                    .iter()
-                    .filter(|w| !(w.is_fullscreen() || w.floating()))
-                    .any(|w| w.has_tag(&tag.id))
-            })
+            .filter(|tag| manager.windows.iter().any(|w| w.has_tag(&tag.id)))
             .map(|t| t.id.clone())
             .collect();
         for ws in &manager.workspaces {
