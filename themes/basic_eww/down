@@ -13,4 +13,6 @@ pkill compton
 pkill picom
 pkill polybar
 pkill conky
-eww kill
+if [ -x "$(command -v eww)" ]; then
+  eww kill
+fi
