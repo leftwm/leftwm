@@ -1,0 +1,20 @@
+{% assign mine_open = '<button onclick="wmctrl -s ' %}
+{% assign visible_open = '<button onclick="wmctrl -s ' %}
+{% assign busy_open = '<button onclick="wmctrl -s ' %}
+{% assign close = '</button>' %}
+{% assign middle = '">' %}
+{% assign unoccupied = '<button onclick="wmctrl -s ' %}
+
+{{'<box>'}}
+{% for tag in workspace.tags %}
+{% if tag.mine %}
+{{mine_open}}{{tag.index}}{{middle}} {{ tag.name }} {{close}}
+{% elsif tag.visible  %}
+{{visible_open}}{{tag.index}}{{middle}} {{ tag.name }} {{close}}
+{% elsif tag.busy  %}
+{{busy_open}}{{tag.index}}{{middle}} {{ tag.name }} {{close}}
+{% else tag.visible  %}
+{{unoccupied}}{{tag.index}}{{middle}} {{ tag.name }} {{close}}
+{% endif %}
+{% endfor %}
+{{"</box>"}}
