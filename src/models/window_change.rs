@@ -3,7 +3,6 @@ use super::WindowHandle;
 use super::WindowState;
 use super::WindowType;
 use crate::models::{Margins, XyhwChange};
-use crate::Workspace;
 
 type MaybeWindowHandle = Option<WindowHandle>;
 type MaybeName = Option<String>;
@@ -35,7 +34,7 @@ impl WindowChange {
         }
     }
 
-    pub fn update(self, workspaces: &[Workspace], window: &mut Window) -> bool {
+    pub fn update(self, window: &mut Window) -> bool {
         let mut changed = false;
         if let Some(trans) = &self.transient {
             let changed_trans = window.transient.is_none() || &window.transient != trans;
@@ -70,13 +69,6 @@ impl WindowChange {
         }
         if let Some(strut) = self.strut {
             let changed_strut = strut.update_window_strut(window);
-            //Update the windows tags
-            if let Some(xyhw) = window.strut {
-                let (x, y) = xyhw.center();
-                if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-                    window.tags = ws.tags.clone();
-                }
-            }
             //////if changed_strut {
             //////    warn!("CHANGED: strut");
             //////}

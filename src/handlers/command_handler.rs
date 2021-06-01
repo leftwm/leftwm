@@ -214,32 +214,13 @@ fn swap_tags(manager: &mut Manager) -> Option<bool> {
     if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
         let hist_a = *manager.focus_manager.workspace_history.get(0)?;
         let hist_b = *manager.focus_manager.workspace_history.get(1)?;
-        //Update dock tags
-        let ws_a = manager.workspaces.get(hist_a)?;
-        let ws_b = manager.workspaces.get(hist_b)?;
-        let mut changed = vec![];
-        manager
-            .windows
-            .iter_mut()
-            .filter(|w| helpers::intersect(&ws_a.tags, &w.tags) && w.strut.is_some())
-            .for_each(|w| {
-                w.tags = ws_b.tags.clone();
-                changed.push(w.handle)
-            });
-        manager
-            .windows
-            .iter_mut()
-            .filter(|w| {
-                helpers::intersect(&ws_b.tags, &w.tags)
-                    && w.strut.is_some()
-                    && !changed.contains(&w.handle)
-            })
-            .for_each(|w| w.tags = ws_a.tags.clone());
         //Update workspace tags
         let mut temp = vec![];
         std::mem::swap(&mut manager.workspaces.get_mut(hist_a)?.tags, &mut temp);
         std::mem::swap(&mut manager.workspaces.get_mut(hist_b)?.tags, &mut temp);
         std::mem::swap(&mut manager.workspaces.get_mut(hist_a)?.tags, &mut temp);
+        //Update dock tags
+        manager.update_docks();
         return Some(true);
     }
     if manager.workspaces.len() == 1 {
