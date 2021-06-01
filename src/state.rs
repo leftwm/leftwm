@@ -85,6 +85,7 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             window.normal = old.normal;
             window.tags = tags;
             window.strut = old.strut;
+            window.set_states(old.states());
             ordered.push(window.clone());
             manager.windows.remove(index);
         }
