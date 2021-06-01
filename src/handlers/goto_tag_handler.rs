@@ -22,6 +22,7 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
         None => return false,
     }
     focus_handler::focus_tag(manager, &tag.id);
+    manager.update_docks();
     true
 }
 

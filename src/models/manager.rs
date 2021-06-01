@@ -77,6 +77,19 @@ impl Manager {
         self.focus_manager.window_mut(&mut self.windows)
     }
 
+    pub fn update_docks(&mut self) {
+        let workspaces = self.workspaces.clone();
+        self.windows
+            .iter_mut()
+            .filter(|w| w.strut.is_some())
+            .for_each(|w| {
+                let (x, y) = w.strut.unwrap_or_default().center();
+                if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
+                    w.tags = ws.tags.clone()
+                }
+            });
+    }
+
     //sorts the windows and puts them in order of importance
     //keeps the order for each importance level
     pub fn sort_windows(&mut self) {

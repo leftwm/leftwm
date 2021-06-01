@@ -176,21 +176,25 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
 }
 
 pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
+    let mut changed = false;
+    let strut_changed = change.strut.is_some();
     if let Some(w) = manager
         .windows
         .iter_mut()
         .find(|w| w.handle == change.handle)
     {
         log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
-        let changed = change.update(w);
+        changed = change.update(w);
         if w.type_ == WindowType::Dock {
             update_workspace_avoid_list(manager);
             //don't left changes from docks re-render the worker. This will result in an
             //infinite loop. Just be patient a rerender will occur.
         }
-        return changed;
     }
-    false
+    if strut_changed {
+        manager.update_docks();
+    }
+    changed
 }
 
 fn find_window<'w>(manager: &'w Manager, handle: &WindowHandle) -> Option<&'w Window> {
