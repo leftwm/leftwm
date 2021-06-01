@@ -63,6 +63,7 @@ fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
 /// Copy windows state.
 fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
     let mut ordered = vec![];
+    let mut had_strut = false;
 
     old_manager.windows.iter().for_each(|old| {
         if let Some((index, window)) = manager
@@ -71,25 +72,21 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             .enumerate()
             .find(|w| w.1.handle == old.handle)
         {
-            let mut tags = old.tags.clone();
-            if let Some(xyhw) = old.strut {
-                let (x, y) = xyhw.center();
-                if let Some(ws) = manager.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-                    tags = ws.tags.clone()
-                }
-            }
+            had_strut = old.strut.is_some() || had_strut;
 
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
             window.apply_margin_multiplier(old.margin_multiplier);
             window.normal = old.normal;
-            window.tags = tags;
+            window.tags = old.tags.clone();
             window.strut = old.strut;
             window.set_states(old.states());
             ordered.push(window.clone());
             manager.windows.remove(index);
         }
     });
-    // manager.windows.clear();
+    if had_strut {
+        manager.update_docks();
+    }
     manager.windows.append(&mut ordered);
 }
