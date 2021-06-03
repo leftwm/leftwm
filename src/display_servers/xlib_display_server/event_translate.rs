@@ -43,8 +43,10 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ButtonPress => {
                 let event = xlib::XButtonPressedEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
-                xw.replay_click();
-                Some(DisplayEvent::MouseCombo(event.state, event.button, h))
+                let mut mod_mask = event.state;
+                mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
+                xw.replay_click(mod_mask);
+                Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
             }
             xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
 
