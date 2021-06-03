@@ -1519,9 +1519,13 @@ impl XWrap {
         }
     }
 
-    pub fn replay_click(&self) {
-        // Only replay the click when in ClickToFocus
-        if self.focus_behaviour == FocusBehaviour::ClickTo {
+    pub fn replay_click(&self, mod_mask: ModMask) {
+        // Only replay the click when in ClickToFocus and we are not trying to move/resize the
+        // window
+        if self.focus_behaviour == FocusBehaviour::ClickTo
+            && !(mod_mask == self.mouse_key_mask
+                || mod_mask == (self.mouse_key_mask | xlib::ShiftMask))
+        {
             unsafe {
                 (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
                 (self.xlib.XSync)(self.display, 0);
