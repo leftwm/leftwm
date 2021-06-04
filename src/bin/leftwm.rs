@@ -95,9 +95,15 @@ fn execute_subcommand(args: Vec<String>) {
     if subcommands.iter().any(|x| x == &args[1]) {
         // Run the command
         let cmd = format!("leftwm-{}", &args[1]);
-        if let Err(e) = Command::new(&cmd).args(&args[2..]).spawn() {
-            eprintln!("Failed to execute {}. {}", cmd, e);
-            exit(2);
+        match &mut Command::new(&cmd).args(&args[2..]).spawn() {
+            Ok(child) => {
+                // Wait for process to end, otherwise it may continue to run in the background.
+                child.wait().expect("Failed to wait for child.");
+            }
+            Err(e) => {
+                eprintln!("Failed to execute {}. {}", cmd, e);
+                exit(2);
+            }
         }
     } else {
         eprintln!("Invalid command '{}'.", &args[1]);
