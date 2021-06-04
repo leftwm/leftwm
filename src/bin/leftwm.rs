@@ -15,13 +15,20 @@ use std::sync::{
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    // If called with arguments, execute a subcommand or show program information as appropriate.
+    // If called with arguments, attempt to execute a subcommand.
     if args.len() > 1 {
-        // Exits early if --help or --version flags are passed.
-        handle_help_or_version_flags(&args);
-
-        execute_subcommand(args);
-        return;
+        match execute_subcommand(&args) {
+            // Subcommand executed. Exit success.
+            Some(true) => exit(0),
+            // Subcommand was valid, but failed to execute. Exit failure.
+            Some(false) => exit(1),
+            // Subcommand was invalid. Let clap handle help, version or error messages.
+            None => handle_help_or_version_flags(&args),
+        }
+        // execute_subcommand() should return `None` if no valid subcommand was given, and in that
+        // case handle_help_or_version_flags() should display a help, version, or error message and
+        // exit. If we get here, something unexpected has happened.
+        unreachable!();
     }
 
     // If _not_ invoked with a subcommand, start leftwm.
@@ -85,11 +92,13 @@ fn main() {
 ///
 /// Panics if `args` has length < 2.
 ///
-/// # Exits
+/// # Returns
 ///
-/// Exits 1 if the first argument is not a valid subcommand.
-/// Exits 2 if the first argument is a valid subcommand, but the associated program failed to run.
-fn execute_subcommand(args: Vec<String>) {
+/// Returns `Some(true)` if the subcommand ran.
+/// Returns `Some(false)` if the first argument is a valid subcommand, but the associated program
+/// failed to run.
+/// Returns `None` if the first argument is not a valid subcommand.
+fn execute_subcommand(args: &[String]) -> Option<bool> {
     let subcommands = ["check", "command", "state", "theme"];
     // If the second argument is a valid subcommand
     if subcommands.iter().any(|x| x == &args[1]) {
@@ -99,15 +108,15 @@ fn execute_subcommand(args: Vec<String>) {
             Ok(child) => {
                 // Wait for process to end, otherwise it may continue to run in the background.
                 child.wait().expect("Failed to wait for child.");
+                Some(true)
             }
             Err(e) => {
                 eprintln!("Failed to execute {}. {}", cmd, e);
-                exit(2);
+                Some(false)
             }
         }
     } else {
-        eprintln!("Invalid command '{}'.", &args[1]);
-        exit(1);
+        None
     }
 }
 
@@ -122,7 +131,11 @@ fn execute_subcommand(args: Vec<String>) {
 /// # Exits
 ///
 /// Exits early if `--help` or `--version` flags are passed.
+/// Exits early if an invalid subcommand is given.
 fn handle_help_or_version_flags(args: &[String]) {
+    // If there are more than two arguments, do not invoke `clap`, since `clap` will get confused
+    // about arguments to subcommands and throw spurrious errors.
+
     App::new("LeftWM")
         .author("Lex Childs <lex.childs@gmail.com>")
         .about("A window manager for adventurers.")
