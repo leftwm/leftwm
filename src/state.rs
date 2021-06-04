@@ -1,5 +1,6 @@
 //! Save and restore manager state.
 
+use crate::display_action::DisplayAction;
 use crate::errors::Result;
 use crate::Manager;
 use std::fs::File;
@@ -73,6 +74,10 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             .find(|w| w.1.handle == old.handle)
         {
             had_strut = old.strut.is_some() || had_strut;
+            if let Some(tag) = old.tags.first() {
+                let act = DisplayAction::SetWindowTags(window.handle, tag.clone());
+                manager.actions.push_back(act);
+            }
 
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
