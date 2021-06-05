@@ -5,6 +5,7 @@
 
 use clap::{crate_version, App, AppSettings, SubCommand};
 use leftwm::child_process::{self, Nanny};
+use std::collections::BTreeMap;
 use std::env;
 use std::process::{exit, Command};
 use std::sync::{
@@ -13,17 +14,25 @@ use std::sync::{
 };
 
 fn main() {
+    let mut subcommands = BTreeMap::new();
+
+    // This is a complete list of accepted subcommands. To add a new one, add a new `insert()` here.
+    subcommands.insert("check", "Check syntax of the configuration file");
+    subcommands.insert("command", "Send external commands to LeftWM");
+    subcommands.insert("state", "Print the current state of LeftWM");
+    subcommands.insert("theme", "Manage LeftWM themes");
+
     let args: Vec<String> = env::args().collect();
 
     // If called with arguments, attempt to execute a subcommand.
     if args.len() > 1 {
-        match execute_subcommand(&args) {
+        match execute_subcommand(&args, &subcommands.keys().copied().collect::<Vec<_>>()) {
             // Subcommand executed. Exit success.
             Some(true) => exit(0),
             // Subcommand was valid, but failed to execute. Exit failure.
             Some(false) => exit(1),
             // Subcommand was invalid. Let clap handle help, version or error messages.
-            None => handle_help_or_version_flags(&args),
+            None => handle_help_or_version_flags(&args, &subcommands),
         }
         // execute_subcommand() should return `None` if no valid subcommand was given, and in that
         // case handle_help_or_version_flags() should display a help, version, or error message and
@@ -98,8 +107,7 @@ fn main() {
 /// Returns `Some(false)` if the first argument is a valid subcommand, but the associated program
 /// failed to run.
 /// Returns `None` if the first argument is not a valid subcommand.
-fn execute_subcommand(args: &[String]) -> Option<bool> {
-    let subcommands = ["check", "command", "state", "theme"];
+fn execute_subcommand(args: &[String], subcommands: &[&str]) -> Option<bool> {
     // If the second argument is a valid subcommand
     if subcommands.iter().any(|x| x == &args[1]) {
         // Run the command
@@ -132,11 +140,11 @@ fn execute_subcommand(args: &[String]) -> Option<bool> {
 ///
 /// Exits early if `--help` or `--version` flags are passed.
 /// Exits early if an invalid subcommand is given.
-fn handle_help_or_version_flags(args: &[String]) {
+fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &str>) {
     // If there are more than two arguments, do not invoke `clap`, since `clap` will get confused
     // about arguments to subcommands and throw spurrious errors.
 
-    App::new("LeftWM")
+    let mut app = App::new("LeftWM")
         .author("Lex Childs <lex.childs@gmail.com>")
         .about("A window manager for adventurers.")
         .long_about(
@@ -146,10 +154,9 @@ fn handle_help_or_version_flags(args: &[String]) {
         )
         .version(crate_version!())
         .version_short("v")
-        .settings(&[AppSettings::DisableHelpSubcommand, AppSettings::ColoredHelp])
-        .subcommand(SubCommand::with_name("check").about("Check syntax of the configuration file"))
-        .subcommand(SubCommand::with_name("command").about("Send external commands to LeftWM"))
-        .subcommand(SubCommand::with_name("state").about("Print the current state of LeftWM"))
-        .subcommand(SubCommand::with_name("theme").about("Manage LeftWM themes"))
-        .get_matches_from(args);
+        .settings(&[AppSettings::DisableHelpSubcommand, AppSettings::ColoredHelp]);
+    for (&subcommand, &description) in subcommands {
+        app = app.subcommand(SubCommand::with_name(subcommand).about(description));
+    }
+    app.get_matches_from(args);
 }
