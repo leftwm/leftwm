@@ -91,13 +91,15 @@ fn main() {
 /// Executes a subcommand.
 ///
 /// If a valid subcommand is supplied, executes that subcommand, passing `args` to the program.
-/// Valid subcommands are `check`, `command`, `state` and `theme`.
 /// Prints an error to `STDERR` and exits non-zero if an invalid subcommand is supplied, or there is
 /// some error while executing the subprocess.
 ///
 /// # Arguments
 ///
-/// + `args` - The command line arguments leftwm was called with.
+/// + `args` - The command line arguments leftwm was called with. Must be length >= 2, or this will
+///   panic.
+/// + `subcommands` - A list of subcommands that should be considered valid. Subcommands not in this
+///   list will not be executed.
 ///
 /// # Panics
 ///
@@ -130,18 +132,28 @@ fn execute_subcommand(args: &[String], subcommands: &[&str]) -> Option<bool> {
     }
 }
 
-/// Show program help text and exit if `--help` or `--version` flags are passed.
+/// Show program help text and exit if `--help` or `--version` flags are passed, or if an invalid
+/// argument is given.
 ///
-/// If `--help` or `--version` flags are not passed, this will do nothing.
+/// If the first argument is a valid subcommand, this will do nothing, and will not exit.
+/// This function is not intended to be called with valid subcommands as arguments, as it will exit
+/// when given valid subcommands along with arguments. This is because we don't keep track of what
+/// arguments are valid for each subcommand here, and `clap` assumes that all undocumented arguments
+/// are erroneous.
 ///
 /// # Arguments
 ///
-/// + `args` - The command line arguments leftwm was called with.
+/// + `args` - The command line arguments leftwm was called with. Do not pass in valid subcommands.
+/// + `subcommands` - A map of subcommand names and their descriptions. This determines what
+///   subcommands are listed in the help text, as well as what subcommands are considered as valid
+///   arguments.
 ///
 /// # Exits
 ///
 /// Exits early if `--help` or `--version` flags are passed.
 /// Exits early if an invalid subcommand is given.
+/// Exits early if a valid subcommand is given along with arguments to it. Avoid this usage, as the
+/// outcome is undesireable.
 fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &str>) {
     // If there are more than two arguments, do not invoke `clap`, since `clap` will get confused
     // about arguments to subcommands and throw spurrious errors.
