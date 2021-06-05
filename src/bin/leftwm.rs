@@ -167,7 +167,6 @@ fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &s
              it is installed.",
         )
         .version(crate_version!())
-        .version_short("v")
         .settings(&[AppSettings::DisableHelpSubcommand, AppSettings::ColoredHelp]);
     for (&subcommand, &description) in subcommands {
         app = app.subcommand(SubCommand::with_name(subcommand).about(description));
