@@ -22,11 +22,13 @@ fn main() {
     subcommands.insert("state", "Print the current state of LeftWM");
     subcommands.insert("theme", "Manage LeftWM themes");
 
+    let subcommand_names: Vec<&str> = subcommands.keys().copied().collect();
+
     let args: Vec<String> = env::args().collect();
 
     // If called with arguments, attempt to execute a subcommand.
     if args.len() > 1 {
-        match execute_subcommand(&args, &subcommands.keys().copied().collect::<Vec<_>>()) {
+        match execute_subcommand(&args, &subcommand_names) {
             // Subcommand executed. Exit success.
             Some(true) => exit(0),
             // Subcommand was valid, but failed to execute. Exit failure.
