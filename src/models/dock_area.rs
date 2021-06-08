@@ -6,20 +6,20 @@ use super::Screen;
 #[derive(Clone, Debug, Default)]
 pub struct DockArea {
     pub top: i32,
-    top_start_x: i32,
-    top_end_x: i32,
+    pub top_start_x: i32,
+    pub top_end_x: i32,
 
-    bottom: i32,
-    bottom_start_x: i32,
-    bottom_end_x: i32,
+    pub bottom: i32,
+    pub bottom_start_x: i32,
+    pub bottom_end_x: i32,
 
-    right: i32,
-    right_start_y: i32,
-    right_end_y: i32,
+    pub right: i32,
+    pub right_start_y: i32,
+    pub right_end_y: i32,
 
-    left: i32,
-    left_start_y: i32,
-    left_end_y: i32,
+    pub left: i32,
+    pub left_start_y: i32,
+    pub left_end_y: i32,
 }
 
 impl From<&[i64]> for DockArea {
@@ -43,18 +43,24 @@ impl From<&[i64]> for DockArea {
 
 impl DockArea {
     #[must_use]
-    pub fn as_xyhw(&self, screen_height: i32, screen_width: i32, screen: &Screen) -> Option<Xyhw> {
+    pub fn as_xyhw(
+        &self,
+        screens_height: i32,
+        screens_width: i32,
+        screen: &Screen,
+    ) -> Option<Xyhw> {
+        log::info!("DockArea: {:?}", self);
         if self.top > 0 {
             return Some(self.xyhw_from_top(screen.bbox.y));
         }
         if self.bottom > 0 {
-            return Some(self.xyhw_from_bottom(screen_height));
+            return Some(self.xyhw_from_bottom(screens_height, screen.bbox.y + screen.bbox.height));
         }
         if self.left > 0 {
             return Some(self.xyhw_from_left());
         }
         if self.right > 0 {
-            return Some(self.xyhw_from_right(screen_width));
+            return Some(self.xyhw_from_right(screens_width));
         }
         None
     }
@@ -70,11 +76,11 @@ impl DockArea {
         .into()
     }
 
-    fn xyhw_from_bottom(&self, screen_height: i32) -> Xyhw {
+    fn xyhw_from_bottom(&self, screens_height: i32, screen_bottom: i32) -> Xyhw {
         XyhwBuilder {
             x: self.bottom_start_x,
-            y: screen_height - self.bottom,
-            h: self.bottom,
+            y: screens_height - self.bottom,
+            h: self.bottom - (screens_height - screen_bottom),
             w: self.bottom_end_x - self.bottom_start_x,
             ..XyhwBuilder::default()
         }

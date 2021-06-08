@@ -173,7 +173,7 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
             let screen = xw
                 .get_screens()
                 .iter()
-                .find(|s| s.contains_point(0, dock_area.top))?
+                .find(|s| s.contains_dock_area(dock_area.clone(), dems))?
                 .clone();
             if let Some(strut_xywh) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
                 change.strut = Some(strut_xywh.into())

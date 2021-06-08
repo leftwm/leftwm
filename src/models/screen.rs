@@ -1,4 +1,4 @@
-use super::WindowHandle;
+use super::{DockArea, WindowHandle};
 use crate::config::WorkspaceConfig;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
@@ -35,6 +35,24 @@ impl Screen {
         let max_x = bbox.x + bbox.width;
         let max_y = bbox.y + bbox.height;
         (bbox.x <= x && x <= max_x) && (bbox.y <= y && y <= max_y)
+    }
+
+    #[must_use]
+    pub fn contains_dock_area(&self, dock_area: DockArea, screens_area: (i32, i32)) -> bool {
+        if dock_area.top > 0 {
+            return self.contains_point(dock_area.top_start_x, dock_area.top);
+        }
+        if dock_area.bottom > 0 {
+            return self
+                .contains_point(dock_area.bottom_start_x, screens_area.0 - dock_area.bottom);
+        }
+        if dock_area.left > 0 {
+            return self.contains_point(dock_area.left, dock_area.left_start_y);
+        }
+        if dock_area.right > 0 {
+            return self.contains_point(dock_area.right, dock_area.right_start_y);
+        }
+        false
     }
 }
 
