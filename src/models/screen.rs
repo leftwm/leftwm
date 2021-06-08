@@ -28,6 +28,14 @@ impl Screen {
             bbox,
         }
     }
+
+    #[must_use]
+    pub fn contains_point(&self, x: i32, y: i32) -> bool {
+        let bbox = &self.bbox;
+        let max_x = bbox.x + bbox.width;
+        let max_y = bbox.y + bbox.height;
+        (bbox.x <= x && x <= max_x) && (bbox.y <= y && y <= max_y)
+    }
 }
 
 impl From<&WorkspaceConfig> for Screen {

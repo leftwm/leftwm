@@ -1,9 +1,11 @@
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
 
+use super::Screen;
+
 #[derive(Clone, Debug, Default)]
 pub struct DockArea {
-    top: i32,
+    pub top: i32,
     top_start_x: i32,
     top_end_x: i32,
 
@@ -41,9 +43,9 @@ impl From<&[i64]> for DockArea {
 
 impl DockArea {
     #[must_use]
-    pub fn as_xyhw(&self, screen_height: i32, screen_width: i32) -> Option<Xyhw> {
+    pub fn as_xyhw(&self, screen_height: i32, screen_width: i32, screen: &Screen) -> Option<Xyhw> {
         if self.top > 0 {
-            return Some(self.xyhw_from_top());
+            return Some(self.xyhw_from_top(screen.bbox.y));
         }
         if self.bottom > 0 {
             return Some(self.xyhw_from_bottom(screen_height));
@@ -57,11 +59,11 @@ impl DockArea {
         None
     }
 
-    fn xyhw_from_top(&self) -> Xyhw {
+    fn xyhw_from_top(&self, screen_y: i32) -> Xyhw {
         XyhwBuilder {
             x: self.top_start_x,
-            y: 0,
-            h: self.top,
+            y: screen_y,
+            h: self.top - screen_y,
             w: self.top_end_x - self.top_start_x,
             ..XyhwBuilder::default()
         }

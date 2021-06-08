@@ -703,7 +703,13 @@ impl XWrap {
             if self.get_window_type(handle) == WindowType::Dock {
                 if let Some(dock_area) = self.get_window_strut_array(handle) {
                     let dems = self.screens_area_dimensions();
-                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                    let screen = self
+                        .get_screens()
+                        .iter()
+                        .find(|s| s.contains_point(0, dock_area.top))?
+                        .clone();
+
+                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
                         let mut change = WindowChange::new(h);
                         change.strut = Some(xywh.into());
                         change.type_ = Some(WindowType::Dock);
