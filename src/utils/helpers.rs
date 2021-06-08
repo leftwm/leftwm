@@ -92,7 +92,6 @@ where
     let index = list.iter().position(|x| test(x))?;
     let len = list.len() as i32;
     if len == 1 {
-        // return None;
         return list.get(index as usize);
     }
 
