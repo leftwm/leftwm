@@ -89,11 +89,11 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
+    let index = list.iter().position(|x| test(x))?;
     let len = list.len() as i32;
     if len == 1 {
-        return None;
+        return list.get(index as usize);
     }
-    let index = list.iter().position(|x| test(x))?;
 
     let mut find_index = index as i32 + shift;
     if find_index < 0 {
