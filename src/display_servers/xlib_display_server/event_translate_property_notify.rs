@@ -67,7 +67,7 @@ fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Opti
     let screen = xw
         .get_screens()
         .iter()
-        .find(|s| s.contains_dock_area(dock_area.clone(), dems))?
+        .find(|s| s.contains_dock_area(dock_area, dems))?
         .clone();
     let xywh = dock_area.as_xyhw(dems.0, dems.1, &screen)?;
     change.floating = Some(xywh.into());

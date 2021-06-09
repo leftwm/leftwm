@@ -3,7 +3,7 @@ use crate::models::XyhwBuilder;
 
 use super::Screen;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct DockArea {
     pub top: i32,
     pub top_start_x: i32,
@@ -130,7 +130,7 @@ mod tests {
             ..XyhwBuilder::default()
         }
         .into();
-        assert_eq!(area.xyhw_from_top(), expected);
+        assert_eq!(area.xyhw_from_top(0), expected);
     }
 
     #[test]
@@ -149,7 +149,7 @@ mod tests {
             ..XyhwBuilder::default()
         }
         .into();
-        assert_eq!(area.xyhw_from_bottom(1000), expected);
+        assert_eq!(area.xyhw_from_bottom(1000, 1000), expected);
     }
 
     #[test]
@@ -168,7 +168,7 @@ mod tests {
             ..XyhwBuilder::default()
         }
         .into();
-        assert_eq!(area.xyhw_from_left(), expected);
+        assert_eq!(area.xyhw_from_left(0), expected);
     }
 
     #[test]
@@ -187,6 +187,6 @@ mod tests {
             ..XyhwBuilder::default()
         }
         .into();
-        assert_eq!(area.xyhw_from_right(2000), expected);
+        assert_eq!(area.xyhw_from_right(2000, 2000), expected);
     }
 }

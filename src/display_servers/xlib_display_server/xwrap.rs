@@ -706,7 +706,7 @@ impl XWrap {
                     let screen = self
                         .get_screens()
                         .iter()
-                        .find(|s| s.contains_dock_area(dock_area.clone(), dems))?
+                        .find(|s| s.contains_dock_area(dock_area, dems))?
                         .clone();
 
                     if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
