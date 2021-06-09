@@ -2,7 +2,6 @@ use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace}
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::WindowHandle;
-use crate::models::Xyhw;
 use crate::utils::helpers;
 use crate::{child_process::exec_shell, models::FocusBehaviour};
 
@@ -152,16 +151,10 @@ fn is_scratchpad(manager: &Manager, window: &Window) -> bool {
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
 pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
-    //make sure the workspaces do not draw on the docks
-    if let Some(dock) = manager
-        .windows
-        .iter()
-        .find(|w| w.handle == *handle && w.type_ == WindowType::Dock)
-    {
-        update_workspace_avoid_list(&mut manager.workspaces, dock.strut, false);
-    }
-
     manager.windows.retain(|w| &w.handle != handle);
+
+    //make sure the workspaces do not draw on the docks
+    update_workspace_avoid_list(manager);
 
     //make sure focus is recalculated
     if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
@@ -193,7 +186,7 @@ pub fn changed(manager: &mut Manager, change: WindowChange) -> bool {
         log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
         changed = change.update(w);
         if w.type_ == WindowType::Dock {
-            update_workspace_avoid_list(&mut manager.workspaces, w.strut, true);
+            update_workspace_avoid_list(manager);
             //don't left changes from docks re-render the worker. This will result in an
             //infinite loop. Just be patient a rerender will occur.
         }
@@ -217,17 +210,29 @@ fn find_transient_parent<'w>(manager: &'w Manager, window: &Window) -> Option<&'
     Some(w)
 }
 
-pub fn update_workspace_avoid_list(workspaces: &mut Vec<Workspace>, s: Option<Xyhw>, new: bool) {
-    if let Some(strut) = s {
-        let (x, y) = strut.center();
-        if let Some(ws) = workspaces.iter_mut().find(|ws| ws.contains_point(x, y)) {
-            if new {
-                ws.avoid.push(strut);
-            } else {
-                ws.avoid.retain(|&s| s != strut)
-            }
-            ws.update_avoided_areas();
-        }
+pub fn update_workspace_avoid_list(manager: &mut Manager) {
+    let mut avoid = vec![];
+    manager
+        .windows
+        .iter()
+        .filter(|w| w.type_ == WindowType::Dock && w.strut.is_some())
+        .for_each(|w| {
+            //unwrap() is safe as we know w.strut is_some
+            let to_avoid = w.strut.unwrap();
+            log::debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
+            avoid.push(to_avoid);
+        });
+    for ws in &mut manager.workspaces {
+        let struts = avoid
+            .clone()
+            .into_iter()
+            .filter(|s| {
+                let (x, y) = s.center();
+                ws.contains_point(x, y)
+            })
+            .collect();
+        ws.avoid = struts;
+        ws.update_avoided_areas();
     }
 }
 

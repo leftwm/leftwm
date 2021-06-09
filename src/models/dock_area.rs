@@ -57,10 +57,10 @@ impl DockArea {
             return Some(self.xyhw_from_bottom(screens_height, screen.bbox.y + screen.bbox.height));
         }
         if self.left > 0 {
-            return Some(self.xyhw_from_left());
+            return Some(self.xyhw_from_left(screen.bbox.x));
         }
         if self.right > 0 {
-            return Some(self.xyhw_from_right(screens_width));
+            return Some(self.xyhw_from_right(screens_width, screen.bbox.x + screen.bbox.width));
         }
         None
     }
@@ -87,23 +87,23 @@ impl DockArea {
         .into()
     }
 
-    fn xyhw_from_left(&self) -> Xyhw {
+    fn xyhw_from_left(&self, screen_x: i32) -> Xyhw {
         XyhwBuilder {
-            x: 0,
+            x: screen_x,
             y: self.left_start_y,
             h: self.left_end_y - self.left_start_y,
-            w: self.left,
+            w: self.left - screen_x,
             ..XyhwBuilder::default()
         }
         .into()
     }
 
-    fn xyhw_from_right(&self, screen_width: i32) -> Xyhw {
+    fn xyhw_from_right(&self, screens_width: i32, screen_right: i32) -> Xyhw {
         XyhwBuilder {
-            x: screen_width - self.right,
+            x: screens_width - self.right,
             y: self.right_start_y,
             h: self.right_end_y - self.right_start_y,
-            w: self.right,
+            w: self.right - (screens_width - screen_right),
             ..XyhwBuilder::default()
         }
         .into()
