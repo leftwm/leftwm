@@ -212,19 +212,27 @@ fn find_transient_parent<'w>(manager: &'w Manager, window: &Window) -> Option<&'
 
 pub fn update_workspace_avoid_list(manager: &mut Manager) {
     let mut avoid = vec![];
-    for w in manager
+    manager
         .windows
         .iter()
         .filter(|w| w.type_ == WindowType::Dock && w.strut.is_some())
-    {
-        //unwrap() is safe as we know w.strut is_some
-        let to_avoid = w.strut.unwrap();
-        log::debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
-        avoid.push(to_avoid);
-    }
-    for w in &mut manager.workspaces {
-        w.avoid = avoid.clone();
-        w.update_avoided_areas();
+        .for_each(|w| {
+            //unwrap() is safe as we know w.strut is_some
+            let to_avoid = w.strut.unwrap();
+            log::debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
+            avoid.push(to_avoid);
+        });
+    for ws in &mut manager.workspaces {
+        let struts = avoid
+            .clone()
+            .into_iter()
+            .filter(|s| {
+                let (x, y) = s.center();
+                ws.contains_point(x, y)
+            })
+            .collect();
+        ws.avoid = struts;
+        ws.update_avoided_areas();
     }
 }
 
