@@ -50,7 +50,7 @@ impl Screen {
             return self.contains_point(dock_area.left, dock_area.left_start_y);
         }
         if dock_area.right > 0 {
-            return self.contains_point(screens_area.1 + dock_area.right, dock_area.right_start_y);
+            return self.contains_point(screens_area.1 - dock_area.right, dock_area.right_start_y);
         }
         false
     }
