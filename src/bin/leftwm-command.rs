@@ -12,9 +12,15 @@ async fn main() -> Result<()> {
         .about("Sends external commands to LeftWM")
         .arg(
             Arg::with_name("command")
-                .help("The command to be sent.")
-                .required(true)
+                .help("The command to be sent. See 'list' flag.")
+                // .required(true)
                 .multiple(true),
+        )
+        .arg(
+            Arg::with_name("list")
+                .help("Print a list of available commands with their arguments.")
+                .short("l")
+                .long("list")
         )
         .get_matches();
 
@@ -31,6 +37,43 @@ async fn main() -> Result<()> {
                 eprintln!(" ERROR: Couldn't write to commands.pipe: {}", e);
             }
         }
+    }
+
+    let command_list = matches.occurrences_of("list") == 1;
+    
+    if command_list {
+       println!("
+        Available Commands:
+        Commands without arguments:
+        UnloadTheme
+        Reload (currently unused)
+        ToggleFullScreen
+        SwapScreens
+        MoveWindowToLastWorkspace
+        FloatingToTile
+        MoveWindowUp
+        MoveWindowDown
+        FocusWindowUp
+        MoveWindowTop (currently unused)
+        FocusWindowDown
+        FocusNextTag
+        FocusPreviousTag
+        FocusWorkspaceNext
+        FocusWorkspacePrevious
+        NextLayout
+        PreviousLayout
+        RotateTag
+        CloseWindow
+
+        These require arguments and might be more finicky
+        
+        LoadTheme, Args: <Path_to/theme.toml> 
+        ToggleScratchPad, Args: <ScratchpadName>
+        SendWorkspaceToTag, Args: <workspaxe_index> <tag_index> (int)
+        SendWindowToTag, Args: <tag_index> (int)
+        SetLayout, Args: <LayoutName>
+        SetMarginMultiplier, Args: <multiplier-value> (float)
+         ") 
     }
     Ok(())
 }
