@@ -17,7 +17,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     //Random value
     let mut layout: Layout = Layout::MainAndVertStack;
     setup_window(manager, &mut window, x, y, &mut layout, &mut is_first);
-    insert_window(manager, &window, &layout);
+    insert_window(manager, &mut window, &layout);
 
     let follow_mouse = manager.focus_manager.focus_new_windows
         || manager.focus_manager.behaviour == FocusBehaviour::Sloppy;
@@ -47,7 +47,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
 }
 
 fn setup_window(
-    manager: &Manager,
+    manager: &mut Manager,
     window: &mut Window,
     x: i32,
     y: i32,
@@ -74,6 +74,7 @@ fn setup_window(
         *is_first = !manager.windows.iter().any(|w| for_active_workspace(w));
         window.tags = ws.tags.clone();
         *layout = ws.layout.clone();
+
         if is_scratchpad {
             window.set_floating(true);
             let new_float_exact = ws.center_halfed();
@@ -121,16 +122,33 @@ fn setup_window(
 
     window.update_for_theme(&manager.theme_setting);
 }
-fn insert_window(manager: &mut Manager, window: &Window, layout: &Layout) {
+fn insert_window(manager: &mut Manager, window: &mut Window, layout: &Layout) {
+    // If the tag contains a fullscreen window, minimize it
+    let for_active_workspace = |x: &Window| -> bool {
+        helpers::intersect(&window.tags, &x.tags) && x.type_ != WindowType::Dock
+    };
+    let mut was_fullscreen = false;
+    if let Some(fsw) = manager
+        .windows
+        .iter_mut()
+        .find(|w| for_active_workspace(w) && w.is_fullscreen())
+    {
+        if let Some(act) = fsw.toggle_fullscreen() {
+            manager.actions.push_back(act);
+            was_fullscreen = true;
+        }
+    }
+
     if (&Layout::Monocle == layout || &Layout::MainAndDeck == layout)
         && window.type_ == WindowType::Normal
     {
-        let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&window.tags, &x.tags) && x.type_ != WindowType::Dock
-        };
-
         let mut to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
         if &Layout::Monocle == layout || to_reorder.is_empty() {
+            if was_fullscreen {
+                if let Some(act) = window.toggle_fullscreen() {
+                    manager.actions.push_back(act);
+                }
+            }
             to_reorder.insert(0, window.clone());
         } else {
             to_reorder.insert(1, window.clone());
@@ -212,19 +230,27 @@ fn find_transient_parent<'w>(manager: &'w Manager, window: &Window) -> Option<&'
 
 pub fn update_workspace_avoid_list(manager: &mut Manager) {
     let mut avoid = vec![];
-    for w in manager
+    manager
         .windows
         .iter()
         .filter(|w| w.type_ == WindowType::Dock && w.strut.is_some())
-    {
-        //unwrap() is safe as we know w.strut is_some
-        let to_avoid = w.strut.unwrap();
-        log::debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
-        avoid.push(to_avoid);
-    }
-    for w in &mut manager.workspaces {
-        w.avoid = avoid.clone();
-        w.update_avoided_areas();
+        .for_each(|w| {
+            //unwrap() is safe as we know w.strut is_some
+            let to_avoid = w.strut.unwrap();
+            log::debug!("AVOID STRUT:[{:?}] {:?}", w.handle, to_avoid);
+            avoid.push(to_avoid);
+        });
+    for ws in &mut manager.workspaces {
+        let struts = avoid
+            .clone()
+            .into_iter()
+            .filter(|s| {
+                let (x, y) = s.center();
+                ws.contains_point(x, y)
+            })
+            .collect();
+        ws.avoid = struts;
+        ws.update_avoided_areas();
     }
 }
 

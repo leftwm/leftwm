@@ -43,8 +43,10 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ButtonPress => {
                 let event = xlib::XButtonPressedEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
-                xw.replay_click();
-                Some(DisplayEvent::MouseCombo(event.state, event.button, h))
+                let mut mod_mask = event.state;
+                mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
+                xw.replay_click(mod_mask);
+                Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
             }
             xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
 
@@ -168,7 +170,12 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
     if window_type == WindowType::Dock {
         if let Some(dock_area) = xw.get_window_strut_array(event.window) {
             let dems = xw.screens_area_dimensions();
-            if let Some(strut_xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+            let screen = xw
+                .get_screens()
+                .iter()
+                .find(|s| s.contains_dock_area(dock_area, dems))?
+                .clone();
+            if let Some(strut_xywh) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
                 change.strut = Some(strut_xywh.into())
             }
         }

@@ -703,7 +703,13 @@ impl XWrap {
             if self.get_window_type(handle) == WindowType::Dock {
                 if let Some(dock_area) = self.get_window_strut_array(handle) {
                     let dems = self.screens_area_dimensions();
-                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1) {
+                    let screen = self
+                        .get_screens()
+                        .iter()
+                        .find(|s| s.contains_dock_area(dock_area, dems))?
+                        .clone();
+
+                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
                         let mut change = WindowChange::new(h);
                         change.strut = Some(xywh.into());
                         change.type_ = Some(WindowType::Dock);
@@ -1519,9 +1525,13 @@ impl XWrap {
         }
     }
 
-    pub fn replay_click(&self) {
-        // Only replay the click when in ClickToFocus
-        if self.focus_behaviour == FocusBehaviour::ClickTo {
+    pub fn replay_click(&self, mod_mask: ModMask) {
+        // Only replay the click when in ClickToFocus and we are not trying to move/resize the
+        // window
+        if self.focus_behaviour == FocusBehaviour::ClickTo
+            && !(mod_mask == self.mouse_key_mask
+                || mod_mask == (self.mouse_key_mask | xlib::ShiftMask))
+        {
             unsafe {
                 (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
                 (self.xlib.XSync)(self.display, 0);

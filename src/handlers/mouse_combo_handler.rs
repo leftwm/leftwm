@@ -45,14 +45,13 @@ pub fn process(
 
 fn build_action(
     manager: &mut Manager,
-    mut mod_mask: ModMask,
+    mod_mask: ModMask,
     button: Button,
     window: WindowHandle,
     modifier: ModMask,
 ) -> Option<DisplayAction> {
     match button {
         xlib::Button1 => {
-            mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
             if mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask) {
                 let _ = manager
                     .windows

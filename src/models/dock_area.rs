@@ -1,23 +1,25 @@
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
 
-#[derive(Clone, Debug, Default)]
+use super::Screen;
+
+#[derive(Copy, Clone, Debug, Default)]
 pub struct DockArea {
-    top: i32,
-    top_start_x: i32,
-    top_end_x: i32,
+    pub top: i32,
+    pub top_start_x: i32,
+    pub top_end_x: i32,
 
-    bottom: i32,
-    bottom_start_x: i32,
-    bottom_end_x: i32,
+    pub bottom: i32,
+    pub bottom_start_x: i32,
+    pub bottom_end_x: i32,
 
-    right: i32,
-    right_start_y: i32,
-    right_end_y: i32,
+    pub right: i32,
+    pub right_start_y: i32,
+    pub right_end_y: i32,
 
-    left: i32,
-    left_start_y: i32,
-    left_end_y: i32,
+    pub left: i32,
+    pub left_start_y: i32,
+    pub left_end_y: i32,
 }
 
 impl From<&[i64]> for DockArea {
@@ -41,61 +43,67 @@ impl From<&[i64]> for DockArea {
 
 impl DockArea {
     #[must_use]
-    pub fn as_xyhw(&self, screen_height: i32, screen_width: i32) -> Option<Xyhw> {
+    pub fn as_xyhw(
+        &self,
+        screens_height: i32,
+        screens_width: i32,
+        screen: &Screen,
+    ) -> Option<Xyhw> {
+        log::info!("DockArea: {:?}", self);
         if self.top > 0 {
-            return Some(self.xyhw_from_top());
+            return Some(self.xyhw_from_top(screen.bbox.y));
         }
         if self.bottom > 0 {
-            return Some(self.xyhw_from_bottom(screen_height));
+            return Some(self.xyhw_from_bottom(screens_height, screen.bbox.y + screen.bbox.height));
         }
         if self.left > 0 {
-            return Some(self.xyhw_from_left());
+            return Some(self.xyhw_from_left(screen.bbox.x));
         }
         if self.right > 0 {
-            return Some(self.xyhw_from_right(screen_width));
+            return Some(self.xyhw_from_right(screens_width, screen.bbox.x + screen.bbox.width));
         }
         None
     }
 
-    fn xyhw_from_top(&self) -> Xyhw {
+    fn xyhw_from_top(&self, screen_y: i32) -> Xyhw {
         XyhwBuilder {
             x: self.top_start_x,
-            y: 0,
-            h: self.top,
+            y: screen_y,
+            h: self.top - screen_y,
             w: self.top_end_x - self.top_start_x,
             ..XyhwBuilder::default()
         }
         .into()
     }
 
-    fn xyhw_from_bottom(&self, screen_height: i32) -> Xyhw {
+    fn xyhw_from_bottom(&self, screens_height: i32, screen_bottom: i32) -> Xyhw {
         XyhwBuilder {
             x: self.bottom_start_x,
-            y: screen_height - self.bottom,
-            h: self.bottom,
+            y: screens_height - self.bottom,
+            h: self.bottom - (screens_height - screen_bottom),
             w: self.bottom_end_x - self.bottom_start_x,
             ..XyhwBuilder::default()
         }
         .into()
     }
 
-    fn xyhw_from_left(&self) -> Xyhw {
+    fn xyhw_from_left(&self, screen_x: i32) -> Xyhw {
         XyhwBuilder {
-            x: 0,
+            x: screen_x,
             y: self.left_start_y,
             h: self.left_end_y - self.left_start_y,
-            w: self.left,
+            w: self.left - screen_x,
             ..XyhwBuilder::default()
         }
         .into()
     }
 
-    fn xyhw_from_right(&self, screen_width: i32) -> Xyhw {
+    fn xyhw_from_right(&self, screens_width: i32, screen_right: i32) -> Xyhw {
         XyhwBuilder {
-            x: screen_width - self.right,
+            x: screens_width - self.right,
             y: self.right_start_y,
             h: self.right_end_y - self.right_start_y,
-            w: self.right,
+            w: self.right - (screens_width - screen_right),
             ..XyhwBuilder::default()
         }
         .into()
@@ -122,7 +130,7 @@ mod tests {
             ..XyhwBuilder::default()
         }
         .into();
-        assert_eq!(area.xyhw_from_top(), expected);
+        assert_eq!(area.xyhw_from_top(0), expected);
     }
 
     #[test]
@@ -141,7 +149,7 @@ mod tests {
             ..XyhwBuilder::default()
         }
         .into();
-        assert_eq!(area.xyhw_from_bottom(1000), expected);
+        assert_eq!(area.xyhw_from_bottom(1000, 1000), expected);
     }
 
     #[test]
@@ -160,7 +168,7 @@ mod tests {
             ..XyhwBuilder::default()
         }
         .into();
-        assert_eq!(area.xyhw_from_left(), expected);
+        assert_eq!(area.xyhw_from_left(0), expected);
     }
 
     #[test]
@@ -179,6 +187,6 @@ mod tests {
             ..XyhwBuilder::default()
         }
         .into();
-        assert_eq!(area.xyhw_from_right(2000), expected);
+        assert_eq!(area.xyhw_from_right(2000, 2000), expected);
     }
 }
