@@ -8,7 +8,6 @@
 use super::*;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
-use crate::models::WindowState;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 use std::str::FromStr;
@@ -125,17 +124,8 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
 
 fn toggle_fullscreen(manager: &mut Manager) -> Option<bool> {
     let window = manager.focused_window_mut()?;
-    let fullscreen = window.is_fullscreen();
-    let mut states = window.states();
-    if !fullscreen {
-        states.push(WindowState::Fullscreen);
-    } else if fullscreen {
-        let index = states.iter().position(|s| *s == WindowState::Fullscreen)?;
-        states.remove(index);
-    }
-    window.set_states(states);
     let handle = window.handle;
-    let act = DisplayAction::SetFullScreen(window.clone(), !fullscreen);
+    let act = window.toggle_fullscreen()?;
     manager.actions.push_back(act);
     Some(handle_focus(manager, handle))
 }
