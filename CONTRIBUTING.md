@@ -62,8 +62,3 @@ If possilbe please provide a snippet for the relevant wiki-article/section, so t
 ### Tips and Tricks
 
 There is also a [tips and tricks](https://github.com/leftwm/leftwm/wiki/Contributing-to-Leftwm---Tips-and-Tricks) section in the wiki full of info from different contributors on the LeftWM team.
-
-### User Documentatio
-
-When introducing new commands or config options it is helpfull to provide some user level documentation and keep the initial PR message body updated with this documentation.
-If possilbe please provide a snippet for the relevant wiki-article/section, so this can be updated acordingly as quick as possible.
