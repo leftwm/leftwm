@@ -366,18 +366,20 @@ fn focus_window_change(
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
         let len = to_reorder.len() as i32;
-        let index = match to_reorder.iter().position(|x: &Window| !x.floating()) {
-            Some(i) => {
-                if i as i32 == len - 1 {
-                    i
-                } else {
-                    i + 1
+        if len > 0 {
+            let index = match to_reorder.iter().position(|x: &Window| !x.floating()) {
+                Some(i) => {
+                    if i as i32 == len - 1 {
+                        i
+                    } else {
+                        i + 1
+                    }
                 }
-            }
-            None => len.checked_sub(1)? as usize,
-        };
-        let window_group = &to_reorder[..=index];
-        handle = helpers::relative_find(&window_group, is_handle, -val)?.handle;
+                None => len.saturating_sub(1) as usize,
+            };
+            let window_group = &to_reorder[..=index];
+            handle = helpers::relative_find(&window_group, is_handle, -val)?.handle;
+        }
     } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val) {
         handle = new_focused.handle;
     }
