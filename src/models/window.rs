@@ -159,7 +159,6 @@ impl Window {
         self.transient.is_some()
             || self.type_ == WindowType::Dock
             || self.type_ == WindowType::Splash
-            || self.is_fullscreen()
     }
     #[must_use]
     pub fn can_move(&self) -> bool {
