@@ -49,7 +49,6 @@ impl DockArea {
         screens_width: i32,
         screen: &Screen,
     ) -> Option<Xyhw> {
-        log::info!("DockArea: {:?}", self);
         if self.top > 0 {
             return Some(self.xyhw_from_top(screen.bbox.y));
         }

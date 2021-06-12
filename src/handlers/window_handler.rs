@@ -163,7 +163,10 @@ fn insert_window(manager: &mut Manager, window: &mut Window, layout: &Layout) {
 }
 
 fn is_scratchpad(manager: &Manager, window: &Window) -> bool {
-    manager.scratchpads.iter().any(|(_, &id)| window.pid == id)
+    manager
+        .active_scratchpads
+        .iter()
+        .any(|(_, &id)| window.pid == id)
 }
 
 /// Process a collection of events, and apply them changes to a manager.

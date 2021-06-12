@@ -8,7 +8,6 @@ use leftwm::{
     config, external_command_handler, models, CommandPipe, DisplayEvent, DisplayEventHandler,
     DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
 };
-use std::collections::HashMap;
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
@@ -45,11 +44,7 @@ fn main() {
         let mut manager = Manager {
             focus_manager,
             tags,
-            scratchpads: config
-                .get_list_of_scratchpads()
-                .iter()
-                .map(|s| (s.clone(), None))
-                .collect::<HashMap<_, _>>(),
+            scratchpads: config.get_list_of_scratchpads(),
             layouts: config.layouts.clone(),
             ..Manager::default()
         };

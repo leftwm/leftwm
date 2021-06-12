@@ -91,13 +91,13 @@ fn execute(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
 fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
     let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
-    let (s, id) = manager
+    let s = manager
         .scratchpads
         .iter()
-        .find(|(s, _)| name == s.name.clone())
-        .map(|(s, id)| (s.clone(), id))?;
+        .find(|s| name == s.name.clone())
+        .map(|s| s.clone())?;
 
-    if id.is_some() {
+    if let Some(id) = manager.active_scratchpads.get(&s.name) {
         if let Some(w) = manager.windows.iter_mut().find(|w| w.pid == *id) {
             let is_tagged = w.has_tag(tag);
             w.clear_tags();
@@ -112,13 +112,9 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
             return Some(true);
         }
     }
+    let name = s.name.clone();
     let pid = exec_shell(&s.value, manager);
-    let id = manager
-        .scratchpads
-        .iter_mut()
-        .find(|(s, _)| name == s.name.clone())
-        .map(|(_, id)| id)?;
-    *id = pid;
+    manager.active_scratchpads.insert(name, pid);
     None
 }
 

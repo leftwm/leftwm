@@ -49,6 +49,7 @@ fn load_old_state() -> Result<Manager> {
 fn restore_state(manager: &mut Manager, old_manager: &Manager) {
     restore_workspaces(manager, old_manager);
     restore_windows(manager, old_manager);
+    restore_scratchpads(manager, old_manager);
 }
 
 /// Restore workspaces layout.
@@ -82,6 +83,7 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
             window.apply_margin_multiplier(old.margin_multiplier);
+            window.pid = old.pid;
             window.normal = old.normal;
             window.tags = old.tags.clone();
             window.strut = old.strut;
@@ -94,4 +96,10 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
         manager.update_docks();
     }
     manager.windows.append(&mut ordered);
+}
+
+fn restore_scratchpads(manager: &mut Manager, old_manager: &Manager) {
+    for (scratchpad, id) in &old_manager.active_scratchpads {
+        manager.active_scratchpads.insert(scratchpad.clone(), *id);
+    }
 }
