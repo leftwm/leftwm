@@ -94,8 +94,8 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
     let s = manager
         .scratchpads
         .iter()
-        .find(|s| name == s.name.clone())
-        .map(|s| s.clone())?;
+        .find(|s| name == s.name.clone())?
+        .clone();
 
     if let Some(id) = manager.active_scratchpads.get(&s.name) {
         if let Some(w) = manager.windows.iter_mut().find(|w| w.pid == *id) {
