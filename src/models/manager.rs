@@ -27,8 +27,8 @@ pub struct Manager {
     #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
     pub layouts: Vec<Layout>,
-    #[serde(skip)]
-    pub scratchpads: HashMap<ScratchPad, Option<u32>>,
+    pub scratchpads: Vec<ScratchPad>,
+    pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
 
     //this is used to limit framerate when resizing/moving windows

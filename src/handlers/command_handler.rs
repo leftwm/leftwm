@@ -91,13 +91,13 @@ fn execute(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
 fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
     let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
-    let (s, id) = manager
+    let s = manager
         .scratchpads
         .iter()
-        .find(|(s, _)| name == s.name.clone())
-        .map(|(s, id)| (s.clone(), id))?;
+        .find(|s| name == s.name.clone())?
+        .clone();
 
-    if id.is_some() {
+    if let Some(id) = manager.active_scratchpads.get(&s.name) {
         if let Some(w) = manager.windows.iter_mut().find(|w| w.pid == *id) {
             let is_tagged = w.has_tag(tag);
             w.clear_tags();
@@ -112,13 +112,9 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
             return Some(true);
         }
     }
+    let name = s.name.clone();
     let pid = exec_shell(&s.value, manager);
-    let id = manager
-        .scratchpads
-        .iter_mut()
-        .find(|(s, _)| name == s.name.clone())
-        .map(|(_, id)| id)?;
-    *id = pid;
+    manager.active_scratchpads.insert(name, pid);
     None
 }
 
@@ -369,12 +365,21 @@ fn focus_window_change(
         handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
-        if to_reorder.len() == 1_usize {
-            return None;
+        let len = to_reorder.len() as i32;
+        if len > 0 {
+            let index = match to_reorder.iter().position(|x: &Window| !x.floating()) {
+                Some(i) => {
+                    if i as i32 == len - 1 {
+                        i
+                    } else {
+                        i + 1
+                    }
+                }
+                None => len.saturating_sub(1) as usize,
+            };
+            let window_group = &to_reorder[..=index];
+            handle = helpers::relative_find(&window_group, is_handle, -val)?.handle;
         }
-        let index = to_reorder.iter().position(|x: &Window| !x.floating())? + 1;
-        let window_group = &to_reorder[..=index];
-        handle = helpers::relative_find(&window_group, is_handle, -val)?.handle;
     } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val) {
         handle = new_focused.handle;
     }
