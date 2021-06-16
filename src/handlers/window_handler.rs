@@ -177,20 +177,24 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
 
-    //make sure focus is recalculated
-    if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
-        let act = DisplayAction::FocusWindowUnderCursor;
-        manager.actions.push_back(act);
-    } else if let Some(ws) = manager.focused_workspace() {
-        // TODO focus the window which takes the place on the screen of the closed window
-        let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
-        };
-        let first = match manager.windows.iter().find(|w| for_active_workspace(w)) {
-            Some(w) => w.handle,
-            None => return true,
-        };
-        focus_handler::focus_window(manager, &first);
+    let focused = manager.focus_manager.window_history.get(0);
+
+    //make sure focus is recalculated if we closed the currently focused window
+    if focused == Some(handle) {
+        if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
+            let act = DisplayAction::FocusWindowUnderCursor;
+            manager.actions.push_back(act);
+        } else if let Some(ws) = manager.focused_workspace() {
+            // TODO focus the window which takes the place on the screen of the closed window
+            let for_active_workspace = |x: &Window| -> bool {
+                helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
+            };
+            let first = match manager.windows.iter().find(|w| for_active_workspace(w)) {
+                Some(w) => w.handle,
+                None => return true,
+            };
+            focus_handler::focus_window(manager, &first);
+        }
     }
 
     true
