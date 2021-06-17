@@ -653,6 +653,7 @@ impl XWrap {
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
                 }
                 if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.ungrab_buttons(h);
                     self.grab_buttons(h, xlib::Button1, xlib::AnyModifier);
                 }
                 self.send_config(window);
@@ -721,6 +722,7 @@ impl XWrap {
                     let _ = self.move_cursor_to_window(handle);
                 }
                 if self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.ungrab_buttons(handle);
                     self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
                 }
             }
@@ -732,19 +734,23 @@ impl XWrap {
     }
 
     fn grab_mouse_clicks(&self, handle: xlib::Window) {
+        self.ungrab_buttons(handle);
+        //just watchout for these mouse combos so we can act on them
+        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
+        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
+        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
+        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
+    }
+
+    fn ungrab_buttons(&self, handle: xlib::Window) {
+        //cleanup all old watches
         unsafe {
-            //cleanup all old watches
             (self.xlib.XUngrabButton)(
                 self.display,
                 xlib::AnyButton as u32,
                 xlib::AnyModifier,
                 handle,
-            ); //cleanup
-               //just watchout for these mouse combos so we can act on them
-            self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
-            self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
-            self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
-            self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
+            );
         }
     }
 
