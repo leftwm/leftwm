@@ -97,18 +97,35 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
         .find(|s| name == s.name.clone())?
         .clone();
 
+    let mut handle = None;
+    if let Some(ws) = manager.focused_workspace() {
+        handle = manager
+            .windows
+            .iter()
+            .find(|w| ws.is_managed(w))
+            .map(|w| w.handle);
+    }
+
     if let Some(id) = manager.active_scratchpads.get(&s.name) {
         if let Some(w) = manager.windows.iter_mut().find(|w| w.pid == *id) {
             let is_tagged = w.has_tag(tag);
             w.clear_tags();
             if is_tagged {
                 w.tag("NSP");
+                if let Some(prev) = manager.focus_manager.window_history.get(1) {
+                    handle = Some(*prev);
+                }
             } else {
                 w.tag(tag);
+                handle = Some(w.handle);
             }
             let act = DisplayAction::SetWindowTags(w.handle, w.tags.get(0)?.to_string());
             manager.actions.push_back(act);
+
             manager.sort_windows();
+            if let Some(h) = handle {
+                handle_focus(manager, h);
+            }
             return Some(true);
         }
     }
