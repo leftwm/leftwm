@@ -158,7 +158,11 @@ fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &s
     // If there are more than two arguments, do not invoke `clap`, since `clap` will get confused
     // about arguments to subcommands and throw spurrious errors.
 
-    let version = format!("{}, Git-Hash: {}", crate_version!(), git_version::git_version!(fallback = "NONE"));
+    let version = format!(
+        "{}, Git-Hash: {}",
+        crate_version!(),
+        git_version::git_version!(fallback = "NONE")
+    );
     let mut app = App::new("LeftWM")
         .author("Lex Childs <lex.childs@gmail.com>")
         .about("A window manager for adventurers.")
