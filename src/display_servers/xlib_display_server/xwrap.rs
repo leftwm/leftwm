@@ -702,7 +702,8 @@ impl XWrap {
                 (self.xlib.XSync)(self.display, 0);
             }
 
-            if self.get_window_type(handle) == WindowType::Dock {
+            let type_ = self.get_window_type(handle);
+            if type_ == WindowType::Dock || type_ == WindowType::Desktop {
                 if let Some(dock_area) = self.get_window_strut_array(handle) {
                     let dems = self.screens_area_dimensions();
                     let screen = self
@@ -714,7 +715,7 @@ impl XWrap {
                     if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
                         let mut change = WindowChange::new(h);
                         change.strut = Some(xyhw.into());
-                        change.type_ = Some(WindowType::Dock);
+                        change.type_ = Some(type_);
                         return Some(DisplayEvent::WindowChange(change));
                     }
                 } else if let Ok(geo) = self.get_window_geometry(handle) {
@@ -722,7 +723,7 @@ impl XWrap {
                     geo.update(&mut xyhw);
                     let mut change = WindowChange::new(h);
                     change.strut = Some(xyhw.into());
-                    change.type_ = Some(WindowType::Dock);
+                    change.type_ = Some(type_);
                     return Some(DisplayEvent::WindowChange(change));
                 }
             } else {

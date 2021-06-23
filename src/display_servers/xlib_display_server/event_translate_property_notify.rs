@@ -3,6 +3,7 @@ use super::XWrap;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::models::WindowType;
+use crate::models::Xyhw;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
@@ -62,17 +63,29 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
 fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
     let handle = WindowHandle::XlibHandle(window);
     let mut change = WindowChange::new(handle);
-    let dock_area = xw.get_window_strut_array(window)?;
-    let dems = xw.screens_area_dimensions();
-    let screen = xw
-        .get_screens()
-        .iter()
-        .find(|s| s.contains_dock_area(dock_area, dems))?
-        .clone();
-    let xywh = dock_area.as_xyhw(dems.0, dems.1, &screen)?;
-    change.floating = Some(xywh.into());
-    change.type_ = Some(WindowType::Dock);
-    Some(change)
+    let type_ = xw.get_window_type(window);
+
+    if let Some(dock_area) = xw.get_window_strut_array(window) {
+        let dems = xw.screens_area_dimensions();
+        let screen = xw
+            .get_screens()
+            .iter()
+            .find(|s| s.contains_dock_area(dock_area, dems))?
+            .clone();
+
+        if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
+            change.floating = Some(xyhw.into());
+            change.type_ = Some(type_);
+            return Some(change);
+        }
+    } else if let Ok(geo) = xw.get_window_geometry(window) {
+        let mut xyhw = Xyhw::default();
+        geo.update(&mut xyhw);
+        change.floating = Some(xyhw.into());
+        change.type_ = Some(type_);
+        return Some(change);
+    }
+    None
 }
 
 fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
