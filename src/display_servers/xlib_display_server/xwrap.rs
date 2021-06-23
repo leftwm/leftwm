@@ -18,6 +18,7 @@ use crate::models::Mode;
 use crate::models::WindowChange;
 use crate::models::WindowState;
 use crate::models::WindowType;
+use crate::models::Xyhw;
 use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
@@ -710,12 +711,19 @@ impl XWrap {
                         .find(|s| s.contains_dock_area(dock_area, dems))?
                         .clone();
 
-                    if let Some(xywh) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
+                    if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
                         let mut change = WindowChange::new(h);
-                        change.strut = Some(xywh.into());
+                        change.strut = Some(xyhw.into());
                         change.type_ = Some(WindowType::Dock);
                         return Some(DisplayEvent::WindowChange(change));
                     }
+                } else if let Ok(geo) = self.get_window_geometry(handle) {
+                    let mut xyhw = Xyhw::default();
+                    geo.update(&mut xyhw);
+                    let mut change = WindowChange::new(h);
+                    change.strut = Some(xyhw.into());
+                    change.type_ = Some(WindowType::Dock);
+                    return Some(DisplayEvent::WindowChange(change));
                 }
             } else {
                 if follow_mouse {
