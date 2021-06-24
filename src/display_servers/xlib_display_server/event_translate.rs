@@ -22,14 +22,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::MapRequest => from_map_request(raw_event, xw),
 
             // window is deleted
-            xlib::UnmapNotify => from_unmap_event(raw_event),
-
-            // window is deleted
-            xlib::DestroyNotify => {
-                let event = xlib::XDestroyWindowEvent::from(raw_event);
-                let h = WindowHandle::XlibHandle(event.window);
-                Some(DisplayEvent::WindowDestroy(h))
-            }
+            xlib::UnmapNotify | xlib::DestroyNotify => from_unmap_event(raw_event),
 
             xlib::ClientMessage => {
                 match &xw.mode {
@@ -111,12 +104,8 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
 
 fn from_unmap_event(raw_event: xlib::XEvent) -> Option<DisplayEvent> {
     let event = xlib::XUnmapEvent::from(raw_event);
-    if event.send_event == xlib::False {
-        None
-    } else {
-        let h = WindowHandle::XlibHandle(event.window);
-        Some(DisplayEvent::WindowDestroy(h))
-    }
+    let h = WindowHandle::XlibHandle(event.window);
+    Some(DisplayEvent::WindowDestroy(h))
 }
 
 fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
