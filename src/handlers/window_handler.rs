@@ -68,9 +68,8 @@ fn setup_window(
         .or_else(|| manager.focused_workspace()); //backup plan
 
     if let Some(ws) = ws {
-        let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
-        };
+        let for_active_workspace =
+            |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
         *is_first = !manager.windows.iter().any(|w| for_active_workspace(w));
         window.tags = ws.tags.clone();
         *layout = ws.layout.clone();
@@ -124,9 +123,8 @@ fn setup_window(
 }
 fn insert_window(manager: &mut Manager, window: &mut Window, layout: &Layout) {
     // If the tag contains a fullscreen window, minimize it
-    let for_active_workspace = |x: &Window| -> bool {
-        helpers::intersect(&window.tags, &x.tags) && x.type_ != WindowType::Dock
-    };
+    let for_active_workspace =
+        |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
     let mut was_fullscreen = false;
     if let Some(fsw) = manager
         .windows
@@ -186,9 +184,8 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
             manager.actions.push_back(act);
         } else if let Some(ws) = manager.focused_workspace() {
             // TODO focus the window which takes the place on the screen of the closed window
-            let for_active_workspace = |x: &Window| -> bool {
-                helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
-            };
+            let for_active_workspace =
+                |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
             let first = match manager.windows.iter().find(|w| for_active_workspace(w)) {
                 Some(w) => w.handle,
                 None => return true,

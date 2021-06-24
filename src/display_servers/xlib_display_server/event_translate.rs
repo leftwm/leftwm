@@ -7,6 +7,7 @@ use crate::models::Window;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::models::WindowType;
+use crate::models::Xyhw;
 use crate::models::XyhwChange;
 use x11_dl::xlib;
 
@@ -167,7 +168,7 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
         ..XyhwChange::default()
     };
     change.floating = Some(xyhw);
-    if window_type == WindowType::Dock {
+    if window_type == WindowType::Dock || window_type == WindowType::Desktop {
         if let Some(dock_area) = xw.get_window_strut_array(event.window) {
             let dems = xw.screens_area_dimensions();
             let screen = xw
@@ -175,9 +176,14 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
                 .iter()
                 .find(|s| s.contains_dock_area(dock_area, dems))?
                 .clone();
-            if let Some(strut_xywh) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
-                change.strut = Some(strut_xywh.into())
+
+            if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
+                change.strut = Some(xyhw.into());
             }
+        } else if let Ok(geo) = xw.get_window_geometry(event.window) {
+            let mut xyhw = Xyhw::default();
+            geo.update(&mut xyhw);
+            change.strut = Some(xyhw.into());
         }
     }
     Some(DisplayEvent::WindowChange(change))

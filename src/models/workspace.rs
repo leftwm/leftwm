@@ -4,7 +4,6 @@ use crate::models::Side;
 use crate::models::Tag;
 use crate::models::TagId;
 use crate::models::Window;
-use crate::models::WindowType;
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
 use crate::{config::ThemeSetting, models::BBox};
@@ -139,7 +138,7 @@ impl Workspace {
     /// Returns true if the workspace is to update the locations info of this window.
     #[must_use]
     pub fn is_managed(&self, window: &Window) -> bool {
-        self.is_displaying(window) && window.type_ != WindowType::Dock
+        self.is_displaying(window) && !window.is_unmanaged()
     }
 
     pub fn update_windows(&self, windows: &mut Vec<Window>) {

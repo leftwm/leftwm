@@ -81,7 +81,7 @@ impl WindowChange {
             //}
             changed = changed || changed_type;
             window.type_ = type_.clone();
-            if window.type_ == WindowType::Dock {
+            if window.is_unmanaged() {
                 window.border = 0;
                 window.margin = Margins::Int(0);
             }
