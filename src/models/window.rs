@@ -92,7 +92,6 @@ impl Window {
     #[must_use]
     pub fn visible(&self) -> bool {
         self.visible
-            // || self.type_ == WindowType::Dock
             || self.type_ == WindowType::Menu
             || self.type_ == WindowType::Splash
             || self.type_ == WindowType::Dialog
@@ -156,32 +155,37 @@ impl Window {
     }
     #[must_use]
     pub fn must_float(&self) -> bool {
-        self.transient.is_some()
-            || self.type_ == WindowType::Dock
-            || self.type_ == WindowType::Splash
+        self.transient.is_some() || self.is_unmanaged() || self.type_ == WindowType::Splash
     }
     #[must_use]
     pub fn can_move(&self) -> bool {
-        self.type_ != WindowType::Dock
+        !self.is_unmanaged()
     }
     #[must_use]
     pub fn can_resize(&self) -> bool {
-        self.type_ != WindowType::Dock
+        !self.is_unmanaged()
     }
 
     #[must_use]
     pub fn can_focus(&self) -> bool {
-        !self.never_focus && self.type_ != WindowType::Dock && self.visible()
+        !self.never_focus && !self.is_unmanaged() && self.visible()
     }
 
     pub fn set_width(&mut self, width: i32) {
         self.normal.set_w(width)
     }
+
     pub fn set_height(&mut self, height: i32) {
         self.normal.set_h(height)
     }
+
     pub fn set_states(&mut self, states: Vec<WindowState>) {
         self.states = states;
+    }
+
+    #[must_use]
+    pub fn has_state(&self, state: &WindowState) -> bool {
+        self.states.contains(state)
     }
 
     #[must_use]
@@ -226,7 +230,7 @@ impl Window {
                     * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
-        if value < 100 && self.type_ != WindowType::Dock {
+        if value < 100 && !self.is_unmanaged() {
             value = 100
         }
         value
@@ -246,7 +250,7 @@ impl Window {
                     * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
-        if value < 100 && self.type_ != WindowType::Dock {
+        if value < 100 && !self.is_unmanaged() {
             value = 100
         }
         value
@@ -341,6 +345,11 @@ impl Window {
             }
         }
         self.tags = new_tags;
+    }
+
+    #[must_use]
+    pub fn is_unmanaged(&self) -> bool {
+        self.type_ == WindowType::Desktop || self.type_ == WindowType::Dock
     }
 }
 

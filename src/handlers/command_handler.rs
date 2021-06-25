@@ -166,9 +166,8 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
         if let Some(ws) = manager.focused_workspace() {
             // TODO focus the window which takes the place on the screen of the closed window
-            let for_active_workspace = |x: &Window| -> bool {
-                helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
-            };
+            let for_active_workspace =
+                |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
             if let Some(first) = manager.windows.iter().find(|w| for_active_workspace(w)) {
                 let handle = first.handle;
                 focus_handler::focus_window(manager, &handle);
@@ -241,7 +240,7 @@ fn swap_tags(manager: &mut Manager) -> Option<bool> {
 
 fn close_window(manager: &mut Manager) -> Option<bool> {
     let window = manager.focused_window()?;
-    if window.type_ != WindowType::Dock {
+    if !window.is_unmanaged() {
         let act = DisplayAction::KillWindow(window.handle);
         manager.actions.push_back(act);
     }
@@ -303,7 +302,7 @@ where
     let (tags, layout) = (w.tags.clone(), Some(w.layout.clone()));
 
     let for_active_workspace =
-        |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.type_ != WindowType::Dock };
+        |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
 
     let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
     func(manager, val, handle, &layout, to_reorder)
