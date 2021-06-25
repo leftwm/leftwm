@@ -40,7 +40,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     }
 
     if let Some(cmd) = &manager.theme_setting.on_new_window_cmd.clone() {
-        exec_shell(&cmd, &mut manager);
+        exec_shell(cmd, &mut manager);
     }
 
     true
@@ -54,7 +54,7 @@ fn setup_window(
     layout: &mut Layout,
     is_first: &mut bool,
 ) {
-    let is_scratchpad = is_scratchpad(manager, &window);
+    let is_scratchpad = is_scratchpad(manager, window);
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
     //the workspace that has windows on its is still active not the empty workspace.
@@ -112,7 +112,7 @@ fn setup_window(
         }
     }
 
-    if let Some(parent) = find_transient_parent(manager, &window) {
+    if let Some(parent) = find_transient_parent(manager, window) {
         window.set_floating(true);
         let new_float_exact = parent.calculated_xyhw().center_halfed();
         window.normal = parent.normal;

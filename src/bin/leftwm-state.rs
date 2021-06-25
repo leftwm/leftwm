@@ -81,7 +81,7 @@ async fn main() -> Result<()> {
         let template = liquid::ParserBuilder::with_stdlib()
             .build()
             .expect("Unable to build template")
-            .parse(&string_literal)
+            .parse(string_literal)
             .expect("Unable to parse template");
         while let Some(line) = stream_reader.next_line().await? {
             let _droppable = template_handler(&template, newline, ws_num, &line);
@@ -102,7 +102,7 @@ async fn main() -> Result<()> {
 }
 
 fn raw_handler(line: &str) -> Result<()> {
-    let s: ManagerState = serde_json::from_str(&line)?;
+    let s: ManagerState = serde_json::from_str(line)?;
     let display: DisplayState = s.into();
     let json = serde_json::to_string(&display)?;
     println!("{}", json);
@@ -115,7 +115,7 @@ fn template_handler(
     ws_num: Option<usize>,
     line: &str,
 ) -> Result<()> {
-    let s: ManagerState = serde_json::from_str(&line)?;
+    let s: ManagerState = serde_json::from_str(line)?;
     let display: DisplayState = s.into();
 
     let globals = if let Some(ws_num) = ws_num {

@@ -97,10 +97,10 @@ where
 
     let mut find_index = index as i32 + shift;
     if find_index < 0 {
-        find_index += len
+        find_index += len;
     }
     if find_index >= len {
-        find_index -= len
+        find_index -= len;
     }
     list.get(find_index as usize)
 }

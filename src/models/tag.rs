@@ -48,7 +48,7 @@ impl TagModel {
         }
         *mwp += delta as u8;
         if *mwp > 100 {
-            *mwp = 100
+            *mwp = 100;
         }
     }
 

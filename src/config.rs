@@ -22,7 +22,7 @@ use xdg::BaseDirectories;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use theme_setting::ThemeSetting;
-pub use workspace_config::WorkspaceConfig;
+pub use workspace_config::Workspace;
 
 /// General configuration
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -30,7 +30,7 @@ pub use workspace_config::WorkspaceConfig;
 pub struct Config {
     pub modkey: String,
     pub mousekey: String,
-    pub workspaces: Option<Vec<WorkspaceConfig>>,
+    pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
     pub layouts: Vec<Layout>,
     pub scratchpad: Option<Vec<ScratchPad>>,
@@ -70,7 +70,7 @@ fn load_from_file() -> Result<Config> {
         let config = Config::default();
         let toml = toml::to_string(&config).unwrap();
         let mut file = File::create(&config_filename)?;
-        file.write_all(&toml.as_bytes())?;
+        file.write_all(toml.as_bytes())?;
         Ok(config)
     }
 }

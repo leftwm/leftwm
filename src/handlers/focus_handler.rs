@@ -56,7 +56,7 @@ pub fn focus_window(manager: &mut Manager, handle: &WindowHandle) -> bool {
     }
 
     //make sure the focused window's tag is focused
-    if let Some(tag) = tags.iter().find(|t| window.has_tag(&t)) {
+    if let Some(tag) = tags.iter().find(|t| window.has_tag(t)) {
         let _ = focus_tag_work(manager, tag);
     }
     true
@@ -136,7 +136,7 @@ fn focus_closest_window(manager: &mut Manager, x: i32, y: i32) -> bool {
     let mut dists: Vec<(i32, &Window)> = manager
         .windows
         .iter()
-        .filter(|x| ws.is_managed(&x) && x.can_focus())
+        .filter(|x| ws.is_managed(x) && x.can_focus())
         .map(|w| (distance(w, x, y), w))
         .collect();
     dists.sort_by(|a, b| (a.0).cmp(&b.0));
