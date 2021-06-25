@@ -7,6 +7,7 @@ use crate::models::Window;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::models::WindowType;
+use crate::models::Xyhw;
 use crate::models::XyhwChange;
 use x11_dl::xlib;
 
@@ -22,14 +23,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::MapRequest => from_map_request(raw_event, xw),
 
             // window is deleted
-            xlib::UnmapNotify => from_unmap_event(raw_event),
-
-            // window is deleted
-            xlib::DestroyNotify => {
-                let event = xlib::XDestroyWindowEvent::from(raw_event);
-                let h = WindowHandle::XlibHandle(event.window);
-                Some(DisplayEvent::WindowDestroy(h))
-            }
+            xlib::UnmapNotify | xlib::DestroyNotify => Some(from_unmap_event(raw_event)),
 
             xlib::ClientMessage => {
                 match &xw.mode {
@@ -109,14 +103,10 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
     Some(DisplayEvent::WindowCreate(w, cursor.0, cursor.1))
 }
 
-fn from_unmap_event(raw_event: xlib::XEvent) -> Option<DisplayEvent> {
+fn from_unmap_event(raw_event: xlib::XEvent) -> DisplayEvent {
     let event = xlib::XUnmapEvent::from(raw_event);
-    if event.send_event == xlib::False {
-        None
-    } else {
-        let h = WindowHandle::XlibHandle(event.window);
-        Some(DisplayEvent::WindowDestroy(h))
-    }
+    let h = WindowHandle::XlibHandle(event.window);
+    DisplayEvent::WindowDestroy(h)
 }
 
 fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
@@ -167,7 +157,7 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
         ..XyhwChange::default()
     };
     change.floating = Some(xyhw);
-    if window_type == WindowType::Dock {
+    if window_type == WindowType::Dock || window_type == WindowType::Desktop {
         if let Some(dock_area) = xw.get_window_strut_array(event.window) {
             let dems = xw.screens_area_dimensions();
             let screen = xw
@@ -175,9 +165,14 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
                 .iter()
                 .find(|s| s.contains_dock_area(dock_area, dems))?
                 .clone();
-            if let Some(strut_xywh) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
-                change.strut = Some(strut_xywh.into())
+
+            if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
+                change.strut = Some(xyhw.into());
             }
+        } else if let Ok(geo) = xw.get_window_geometry(event.window) {
+            let mut xyhw = Xyhw::default();
+            geo.update(&mut xyhw);
+            change.strut = Some(xyhw.into());
         }
     }
     Some(DisplayEvent::WindowChange(change))

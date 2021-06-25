@@ -66,7 +66,7 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
     //Docks don't want to get focus. If they do weird things happen. They don't get events...
     //Do the focus, Add the action to the list of action
     let found: &Window = manager.windows.iter().find(|w| &w.handle == handle)?;
-    if found.type_ == WindowType::Dock {
+    if found.is_unmanaged() {
         return None;
     }
     //NOTE: we are intentionally creating the focus event even if we think this window
@@ -192,9 +192,8 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
         let act = DisplayAction::FocusWindowUnderCursor;
         manager.actions.push_back(act);
     } else if let Some(ws) = to_focus.first() {
-        let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&ws.tags, &x.tags) && x.type_ != WindowType::Dock
-        };
+        let for_active_workspace =
+            |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
         let handle = match manager.windows.iter().find(|w| for_active_workspace(w)) {
             Some(w) => w.handle,
             None => return true,
