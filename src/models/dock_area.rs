@@ -41,6 +41,25 @@ impl From<&[i64]> for DockArea {
     }
 }
 
+impl From<&[i32]> for DockArea {
+    fn from(slice: &[i32]) -> Self {
+        DockArea {
+            left: slice[0],
+            right: slice[1],
+            top: slice[2],
+            bottom: slice[3],
+            left_start_y: slice[4],
+            left_end_y: slice[5],
+            right_start_y: slice[6],
+            right_end_y: slice[7],
+            top_start_x: slice[8],
+            top_end_x: slice[9],
+            bottom_start_x: slice[10],
+            bottom_end_x: slice[11],
+        }
+    }
+}
+
 impl DockArea {
     #[must_use]
     pub fn as_xyhw(
