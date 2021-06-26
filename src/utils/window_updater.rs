@@ -17,10 +17,7 @@ pub fn update_windows(manager: &mut Manager) {
             .windows
             .iter_mut()
             .filter(|w| ws.is_displaying(w) && w.is_fullscreen())
-            .for_each(|w| {
-                w.set_floating(false);
-                w.normal = ws.xyhw;
-            });
+            .for_each(|w| w.normal = ws.xyhw);
     }
     manager
         .windows

@@ -1,6 +1,6 @@
 use leftwm::{
     child_process::{self, Nanny},
-    models::{FocusManager, Tag},
+    models::{FocusBehaviour, FocusManager, Tag},
 };
 
 use crate::models::TagModel;
@@ -8,7 +8,6 @@ use leftwm::{
     config, external_command_handler, models, CommandPipe, DisplayEvent, DisplayEventHandler,
     DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
 };
-use std::collections::HashMap;
 use std::panic;
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
@@ -45,11 +44,7 @@ fn main() {
         let mut manager = Manager {
             focus_manager,
             tags,
-            scratchpads: config
-                .get_list_of_scratchpads()
-                .iter()
-                .map(|s| (s.clone(), None))
-                .collect::<HashMap<_, _>>(),
+            scratchpads: config.get_list_of_scratchpads(),
             layouts: config.layouts.clone(),
             ..Manager::default()
         };
@@ -126,7 +121,7 @@ async fn event_loop(
             }
             //Once in a blue moon we miss the focus event,
             //This is to double check that we know which window is currently focused
-            _ = timeout(100), if event_buffer.is_empty() => {
+            _ = timeout(100), if event_buffer.is_empty() && manager.focus_manager.behaviour == FocusBehaviour::Sloppy => {
                 let mut focus_event = display_server.verify_focused_window();
                 event_buffer.append(&mut focus_event);
                 continue;
