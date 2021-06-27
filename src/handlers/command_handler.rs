@@ -125,6 +125,9 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
             manager.sort_windows();
             if let Some(h) = handle {
                 handle_focus(manager, h);
+                if !is_tagged {
+                    manager.move_to_top(&h);
+                }
             }
             return Some(true);
         }
