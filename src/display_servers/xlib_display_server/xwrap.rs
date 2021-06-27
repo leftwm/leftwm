@@ -778,19 +778,21 @@ impl XWrap {
     // TODO: Verify that Error is unreachable or specify conditions that may result
     // in an error.
     pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), XlibError> {
-        let none: c_int = 0;
-        unsafe {
-            (self.xlib.XWarpPointer)(
-                self.display,
-                none as u64,
-                self.get_default_root(),
-                none,
-                none,
-                none as u32,
-                none as u32,
-                point.0,
-                point.1,
-            );
+        if point.0 >= 0 && point.1 >= 0 {
+            let none: c_int = 0;
+            unsafe {
+                (self.xlib.XWarpPointer)(
+                    self.display,
+                    none as u64,
+                    self.get_default_root(),
+                    none,
+                    none,
+                    none as u32,
+                    none as u32,
+                    point.0,
+                    point.1,
+                );
+            }
         }
         Ok(())
     }
