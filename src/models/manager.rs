@@ -13,6 +13,7 @@ use crate::{config::ThemeSetting, layouts::Layout};
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
+use std::os::raw::c_ulong;
 use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
@@ -32,7 +33,7 @@ pub struct Manager {
     pub actions: VecDeque<DisplayAction>,
 
     //this is used to limit framerate when resizing/moving windows
-    pub frame_rate_limitor: u64,
+    pub frame_rate_limitor: c_ulong,
     #[serde(skip)]
     pub children: Children,
     #[serde(skip)]
