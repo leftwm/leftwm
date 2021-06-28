@@ -147,14 +147,14 @@ impl Children {
     }
     /// Merge another `Children` into this `Children`.
     pub fn merge(&mut self, reaper: Self) {
-        self.inner.extend(reaper.inner.into_iter())
+        self.inner.extend(reaper.inner.into_iter());
     }
     /// Try reaping all the children processes managed by this struct.
     pub fn reap(&mut self) {
         // The `try_wait` needs `child` to be `mut`, but only `HashMap::retain`
         // allows modifying the value. Here `id` is not needed.
         self.inner
-            .retain(|_, child| child.try_wait().map_or(true, |ret| ret.is_none()))
+            .retain(|_, child| child.try_wait().map_or(true, |ret| ret.is_none()));
     }
 }
 
@@ -172,7 +172,7 @@ impl FromIterator<Child> for Children {
 impl Extend<Child> for Children {
     fn extend<T: IntoIterator<Item = Child>>(&mut self, iter: T) {
         self.inner
-            .extend(iter.into_iter().map(|child| (child.id(), child)))
+            .extend(iter.into_iter().map(|child| (child.id(), child)));
     }
 }
 

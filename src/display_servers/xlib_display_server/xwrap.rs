@@ -36,10 +36,10 @@ use x11_dl::xlib;
 //const WITHDRAWN_STATE: WindowStateConst = 0;
 //const NORMAL_STATE: WindowStateConst = 1;
 //const ICONIC_STATE: WindowStateConst = 2;
-const MAX_PROPERTY_VALUE_LEN: i64 = 4096;
+const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
 
-const BUTTONMASK: i64 = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
-const MOUSEMASK: i64 = BUTTONMASK | xlib::PointerMotionMask;
+const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
+const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
 
 pub struct Colors {
     normal: c_ulong,
@@ -412,7 +412,7 @@ impl XWrap {
             if status == i32::from(xlib::Success) && !prop_return.is_null() {
                 #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
                 //let result = *(prop_return as *const u32);
-                let ptr = prop_return as *const u64;
+                let ptr = prop_return as *const c_ulong;
                 let results: &[xlib::Atom] = slice::from_raw_parts(ptr, nitems_return as usize);
                 return results.to_vec();
             }
@@ -481,8 +481,8 @@ impl XWrap {
         //set the WM NAME
         self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName);
 
-        self.set_desktop_prop_u64(
-            self.get_default_root() as u64,
+        self.set_desktop_prop_c_ulong(
+            self.get_default_root() as c_ulong,
             self.atoms.NetSupportingWmCheck,
             xlib::XA_WINDOW,
         );
@@ -492,7 +492,7 @@ impl XWrap {
         self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
     }
 
-    fn set_desktop_prop_u64(&self, value: u64, atom: c_ulong, type_: c_ulong) {
+    fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, type_: c_ulong) {
         let data = vec![value as u32];
         unsafe {
             (self.xlib.XChangeProperty)(
@@ -554,7 +554,7 @@ impl XWrap {
             }
         }
         if indexes.is_empty() {
-            indexes.push(0)
+            indexes.push(0);
         }
         self.set_desktop_prop(&indexes, self.atoms.NetDesktopViewport);
     }
@@ -568,7 +568,7 @@ impl XWrap {
             }
         }
         if indexes.is_empty() {
-            indexes.push(0)
+            indexes.push(0);
         }
         unsafe {
             (self.xlib.XChangeProperty)(
@@ -593,7 +593,7 @@ impl XWrap {
             }
         }
         if indexes.is_empty() {
-            indexes.push(0)
+            indexes.push(0);
         }
         self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
     }
@@ -647,9 +647,9 @@ impl XWrap {
                         self.colors.normal
                     };
                     //Force border opacity to 0xff
-                    let mut bytes = color.to_be_bytes();
-                    bytes[4] = 0xff;
-                    color = u64::from_be_bytes(bytes);
+                    let mut bytes = color.to_le_bytes();
+                    bytes[3] = 0xff;
+                    color = c_ulong::from_le_bytes(bytes);
 
                     (self.xlib.XSetWindowBorder)(self.display, h, color);
                 }
@@ -783,7 +783,7 @@ impl XWrap {
             unsafe {
                 (self.xlib.XWarpPointer)(
                     self.display,
-                    none as u64,
+                    none as c_ulong,
                     self.get_default_root(),
                     none,
                     none,
@@ -878,7 +878,7 @@ impl XWrap {
             );
             if status == i32::from(xlib::Success) {
                 #[allow(clippy::cast_ptr_alignment)]
-                let array_ptr = prop_return as *const i64;
+                let array_ptr = prop_return as *const c_long;
                 let slice = slice::from_raw_parts(array_ptr, nitems_return as usize);
                 if slice.len() == 12 {
                     return Some(DockArea::from(slice));
@@ -914,7 +914,7 @@ impl XWrap {
             );
             if status == i32::from(xlib::Success) {
                 #[allow(clippy::cast_ptr_alignment)]
-                let array_ptr = prop_return as *const i64;
+                let array_ptr = prop_return as *const c_long;
                 let slice = slice::from_raw_parts(array_ptr, nitems_return as usize);
                 if slice.len() == 12 {
                     return Some(DockArea::from(slice));
@@ -1019,8 +1019,8 @@ impl XWrap {
             msg.window = window;
             msg.message_type = self.atoms.WMProtocols;
             msg.format = 32;
-            msg.data.set_long(0, atom as i64);
-            msg.data.set_long(1, xlib::CurrentTime as i64);
+            msg.data.set_long(0, atom as c_long);
+            msg.data.set_long(1, xlib::CurrentTime as c_long);
             let mut ev: xlib::XEvent = msg.into();
             unsafe { (self.xlib.XSendEvent)(self.display, window, 0, xlib::NoEventMask, &mut ev) };
             return true;
@@ -1377,7 +1377,7 @@ impl XWrap {
     }
 
     pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
-        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, u64::from(keysym)) };
+        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, c_ulong::from(keysym)) };
         //grab the keys with and without numlock (Mod2)
         let mods: Vec<u32> = vec![
             modifiers,
@@ -1503,7 +1503,7 @@ impl XWrap {
             self.mode = mode.clone();
             //safe this point as the start of the move/resize
             if let Ok(loc) = self.get_cursor_point() {
-                self.mode_origin = loc
+                self.mode_origin = loc;
             }
             let cursor = match mode {
                 Mode::ResizingWindow(_) => self.cursors.resize,
@@ -1518,7 +1518,7 @@ impl XWrap {
         }
     }
 
-    pub fn grab_pointer(&self, cursor: u64) {
+    pub fn grab_pointer(&self, cursor: c_ulong) {
         unsafe {
             //grab the mouse
             (self.xlib.XGrabPointer)(

@@ -49,7 +49,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     }
 
     if let Some(cmd) = &manager.theme_setting.on_new_window_cmd.clone() {
-        exec_shell(&cmd, &mut manager);
+        exec_shell(cmd, &mut manager);
     }
 
     true
@@ -121,7 +121,7 @@ fn setup_window(
         }
     }
 
-    if let Some(parent) = find_transient_parent(manager, &window) {
+    if let Some(parent) = find_transient_parent(manager, window) {
         window.set_floating(true);
         let new_float_exact = parent.calculated_xyhw().center_halfed();
         window.normal = parent.normal;

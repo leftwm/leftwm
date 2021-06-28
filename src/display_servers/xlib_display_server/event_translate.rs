@@ -86,7 +86,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
     let trans = xw.get_transient_for(event.window);
     if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
         hint.update_window_floating(&mut w);
-        w.set_requested(hint)
+        w.set_requested(hint);
     }
     w.set_states(xw.get_window_states(event.window));
     if w.floating() {
