@@ -57,7 +57,7 @@ impl Layout {
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
-                main_and_vert_stack::update(workspace, windows)
+                main_and_vert_stack::update(workspace, windows);
             }
             Self::MainAndHorizontalStack => main_and_horizontal_stack::update(workspace, windows),
             Self::MainAndDeck => main_and_deck::update(workspace, windows),

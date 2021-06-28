@@ -1,5 +1,5 @@
 use super::{DockArea, WindowHandle};
-use crate::config::WorkspaceConfig;
+use crate::config::Workspace;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use x11_dl::xlib;
@@ -56,8 +56,8 @@ impl Screen {
     }
 }
 
-impl From<&WorkspaceConfig> for Screen {
-    fn from(wsc: &WorkspaceConfig) -> Self {
+impl From<&Workspace> for Screen {
+    fn from(wsc: &Workspace) -> Self {
         Screen {
             root: WindowHandle::MockHandle(0),
             bbox: BBox {

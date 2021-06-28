@@ -11,7 +11,7 @@ pub type Button = c_uint;
 pub fn into_modmask(keys: &[String]) -> ModMask {
     let mut mask = 0;
     for s in keys {
-        mask |= into_mod(&s);
+        mask |= into_mod(s);
     }
     //clean the mask
     mask &= !(xlib::Mod2Mask | xlib::LockMask);

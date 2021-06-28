@@ -45,7 +45,7 @@ impl Manager {
     /// Return the currently focused workspace.
     #[must_use]
     pub fn focused_workspace(&self) -> Option<&Workspace> {
-        self.focus_manager.workspace(&self)
+        self.focus_manager.workspace(self)
     }
 
     /// Return the currently focused workspace.
@@ -69,7 +69,7 @@ impl Manager {
     /// Return the currently focused window.
     #[must_use]
     pub fn focused_window(&self) -> Option<&Window> {
-        self.focus_manager.window(&self)
+        self.focus_manager.window(self)
     }
 
     /// Return the currently focused window.
@@ -85,7 +85,7 @@ impl Manager {
             .for_each(|w| {
                 let (x, y) = w.strut.unwrap_or_default().center();
                 if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-                    w.tags = ws.tags.clone()
+                    w.tags = ws.tags.clone();
                 }
             });
     }

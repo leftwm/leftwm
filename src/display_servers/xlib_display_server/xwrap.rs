@@ -554,7 +554,7 @@ impl XWrap {
             }
         }
         if indexes.is_empty() {
-            indexes.push(0)
+            indexes.push(0);
         }
         self.set_desktop_prop(&indexes, self.atoms.NetDesktopViewport);
     }
@@ -568,7 +568,7 @@ impl XWrap {
             }
         }
         if indexes.is_empty() {
-            indexes.push(0)
+            indexes.push(0);
         }
         unsafe {
             (self.xlib.XChangeProperty)(
@@ -593,7 +593,7 @@ impl XWrap {
             }
         }
         if indexes.is_empty() {
-            indexes.push(0)
+            indexes.push(0);
         }
         self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
     }
@@ -1501,7 +1501,7 @@ impl XWrap {
             self.mode = mode.clone();
             //safe this point as the start of the move/resize
             if let Ok(loc) = self.get_cursor_point() {
-                self.mode_origin = loc
+                self.mode_origin = loc;
             }
             let cursor = match mode {
                 Mode::ResizingWindow(_) => self.cursors.resize,

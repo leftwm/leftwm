@@ -191,16 +191,16 @@ impl Xyhw {
 
     fn update_limits(&mut self) {
         if self.h > self.maxh {
-            self.h = self.maxh
+            self.h = self.maxh;
         }
         if self.w > self.maxw {
-            self.w = self.maxw
+            self.w = self.maxw;
         }
         if self.h < self.minh {
-            self.h = self.minh
+            self.h = self.minh;
         }
         if self.w < self.minw {
-            self.w = self.minw
+            self.w = self.minw;
         }
     }
 
