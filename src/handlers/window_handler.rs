@@ -16,8 +16,17 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     let mut is_first = false;
     //Random value
     let mut layout: Layout = Layout::MainAndVertStack;
-    setup_window(manager, &mut window, x, y, &mut layout, &mut is_first);
-    insert_window(manager, &mut window, &layout);
+    let is_scratchpad = is_scratchpad(manager, &window);
+    setup_window(
+        manager,
+        &mut window,
+        x,
+        y,
+        is_scratchpad,
+        &mut layout,
+        &mut is_first,
+    );
+    insert_window(manager, &mut window, is_scratchpad, &layout);
 
     let follow_mouse = manager.focus_manager.focus_new_windows
         || manager.focus_manager.behaviour == FocusBehaviour::Sloppy;
@@ -51,10 +60,10 @@ fn setup_window(
     window: &mut Window,
     x: i32,
     y: i32,
+    is_scratchpad: bool,
     layout: &mut Layout,
     is_first: &mut bool,
 ) {
-    let is_scratchpad = is_scratchpad(manager, window);
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
     //the workspace that has windows on its is still active not the empty workspace.
@@ -121,7 +130,7 @@ fn setup_window(
 
     window.update_for_theme(&manager.theme_setting);
 }
-fn insert_window(manager: &mut Manager, window: &mut Window, layout: &Layout) {
+fn insert_window(manager: &mut Manager, window: &mut Window, is_scratchpad: bool, layout: &Layout) {
     // If the tag contains a fullscreen window, minimize it
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
@@ -152,7 +161,10 @@ fn insert_window(manager: &mut Manager, window: &mut Window, layout: &Layout) {
             to_reorder.insert(1, window.clone());
         }
         manager.windows.append(&mut to_reorder);
-    } else if window.type_ == WindowType::Dialog || window.type_ == WindowType::Splash {
+    } else if window.type_ == WindowType::Dialog
+        || window.type_ == WindowType::Splash
+        || is_scratchpad
+    {
         //Slow
         manager.windows.insert(0, window.clone());
     } else {
