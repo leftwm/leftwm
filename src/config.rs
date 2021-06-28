@@ -240,6 +240,60 @@ impl Default for Config {
                 command: Command::MoveWindowUp,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "k".to_owned(),
+            },
+            Keybind {
+                command: Command::MoveWindowDown,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "j".to_owned(),
+            },
+            Keybind {
+                command: Command::MoveWindowTop,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "Return".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWindowUp,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "k".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWindowDown,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "j".to_owned(),
+            },
+            Keybind {
+                command: Command::NextLayout,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+                key: "k".to_owned(),
+            },
+            Keybind {
+                command: Command::PreviousLayout,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+                key: "j".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWorkspaceNext,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "l".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWorkspacePrevious,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "h".to_owned(),
+            },
+            Keybind {
+                command: Command::MoveWindowUp,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "Up".to_owned(),
             },
             Keybind {
@@ -247,12 +301,6 @@ impl Default for Config {
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "Down".to_owned(),
-            },
-            Keybind {
-                command: Command::MoveWindowTop,
-                value: None,
-                modifier: vec!["modkey".to_owned()],
-                key: "Return".to_owned(),
             },
             Keybind {
                 command: Command::FocusWindowUp,
