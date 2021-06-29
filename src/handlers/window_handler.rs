@@ -170,27 +170,36 @@ fn is_scratchpad(manager: &Manager, window: &Window) -> bool {
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
 pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
+    let sloppy = manager.focus_manager.behaviour == FocusBehaviour::Sloppy;
+    //Find the next or previous window on the workspace
+    let mut new_handle = None;
+    if !sloppy {
+        if let Some(ws) = manager.focused_workspace() {
+            if let Some(i) = manager.windows.iter().position(|w| w.handle == *handle) {
+                let p = manager.windows.get(i - 1).filter(|w| ws.is_managed(w));
+                new_handle = manager
+                    .windows
+                    .get(i + 1)
+                    .filter(|w| ws.is_managed(w))
+                    .or(p)
+                    .map(|w| w.handle);
+                log::info!("Handle {:?}", new_handle);
+            }
+        }
+    }
     manager.windows.retain(|w| &w.handle != handle);
 
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
 
     let focused = manager.focus_manager.window_history.get(0);
-
     //make sure focus is recalculated if we closed the currently focused window
     if focused == Some(handle) {
-        if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
+        if sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             manager.actions.push_back(act);
-        } else if let Some(ws) = manager.focused_workspace() {
-            // TODO focus the window which takes the place on the screen of the closed window
-            let for_active_workspace =
-                |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
-            let first = match manager.windows.iter().find(|w| for_active_workspace(w)) {
-                Some(w) => w.handle,
-                None => return true,
-            };
-            focus_handler::focus_window(manager, &first);
+        } else if let Some(h) = new_handle {
+            focus_handler::focus_window(manager, &h);
         }
     }
 

@@ -155,25 +155,36 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     };
 
     let window = manager.focused_window_mut()?;
+    let handle = window.handle;
+    let tags = window.tags.clone();
     window.clear_tags();
     window.set_floating(false);
     window.tag(&tag.id);
     window.apply_margin_multiplier(margin_multiplier);
     let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
     manager.actions.push_back(act);
-    manager.sort_windows();
-    // Focus first window on the workspace when we are not following the mouse
+
+    //Focus the next or previous window on the workspace
     if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
-        if let Some(ws) = manager.focused_workspace() {
-            // TODO focus the window which takes the place on the screen of the closed window
+        if let Some(i) = manager.windows.iter().position(|w| w.handle == handle) {
             let for_active_workspace =
-                |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
-            if let Some(first) = manager.windows.iter().find(|w| for_active_workspace(w)) {
-                let handle = first.handle;
-                focus_handler::focus_window(manager, &handle);
+                |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
+            let p = manager
+                .windows
+                .get(i - 1)
+                .filter(|w| for_active_workspace(w));
+            if let Some(new_handle) = manager
+                .windows
+                .get(i + 1)
+                .filter(|w| for_active_workspace(w))
+                .or(p) //Backup
+                .map(|w| w.handle
+            {
+                focus_handler::focus_window(manager, &new_handle);
             }
         }
     }
+    manager.sort_windows();
     Some(true)
 }
 
