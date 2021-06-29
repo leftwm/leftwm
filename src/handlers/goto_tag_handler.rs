@@ -13,6 +13,15 @@ pub fn process(manager: &mut Manager, tag_num: usize) -> bool {
         Some(ws) => ws.tags.clone(),
         None => return false,
     };
+    let handle = manager.focused_window().map(|w| w.handle);
+    if let Some(handle) = handle {
+        let old_handle = manager
+            .focus_manager
+            .tags_last_window
+            .entry(old_tags[0].clone())
+            .or_insert(handle);
+        *old_handle = handle;
+    }
     if let Some(ws) = manager.workspaces.iter_mut().find(|ws| ws.tags == new_tags) {
         ws.tags = old_tags;
     }

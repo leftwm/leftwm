@@ -181,9 +181,8 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
                     .windows
                     .get(i + 1)
                     .filter(|w| ws.is_managed(w))
-                    .or(p)
+                    .or(p) //Backup
                     .map(|w| w.handle);
-                log::info!("Handle {:?}", new_handle);
             }
         }
     }

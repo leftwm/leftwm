@@ -178,7 +178,7 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
                 .get(i + 1)
                 .filter(|w| for_active_workspace(w))
                 .or(p) //Backup
-                .map(|w| w.handle
+                .map(|w| w.handle)
             {
                 focus_handler::focus_window(manager, &new_handle);
             }
