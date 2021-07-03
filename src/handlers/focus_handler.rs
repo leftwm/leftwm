@@ -1,6 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::{display_action::DisplayAction, models::FocusBehaviour, utils::helpers};
+use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 /// Marks a workspace as the focused workspace.
 //NOTE: should only be called externally from this file
@@ -191,10 +191,10 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
         let act = DisplayAction::FocusWindowUnderCursor;
         manager.actions.push_back(act);
+    } else if let Some(handle) = manager.focus_manager.tags_last_window.get(tag).copied() {
+        focus_window_by_handle_work(manager, &handle);
     } else if let Some(ws) = to_focus.first() {
-        let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
-        let handle = match manager.windows.iter().find(|w| for_active_workspace(w)) {
+        let handle = match manager.windows.iter().find(|w| ws.is_managed(w)) {
             Some(w) => w.handle,
             None => return true,
         };

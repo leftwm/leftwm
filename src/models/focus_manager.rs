@@ -1,7 +1,7 @@
-use crate::{models::WindowHandle, Manager, Window, Workspace};
+use crate::{models::TagId, models::WindowHandle, Manager, Window, Workspace};
 
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum FocusBehaviour {
@@ -23,6 +23,7 @@ pub struct FocusManager {
     pub workspace_history: VecDeque<usize>,
     pub window_history: VecDeque<WindowHandle>,
     pub tag_history: VecDeque<String>,
+    pub tags_last_window: HashMap<TagId, WindowHandle>,
 }
 
 impl FocusManager {
