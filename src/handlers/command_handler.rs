@@ -154,9 +154,23 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
         None => 1.0,
     };
 
+    let handle = manager.focused_window()?.handle;
+    let mut new_handle = None;
+    //Focus the next or previous window on the workspace
+    if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
+        if let Some(ws) = manager.focused_workspace().cloned() {
+            let for_active_workspace = |x: &Window| -> bool { ws.is_managed(x) };
+            let mut windows = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == handle };
+            let p = helpers::relative_find(&windows, is_handle, -1, false);
+            new_handle = helpers::relative_find(&windows, is_handle, 1, false)
+                .or(p) //Backup
+                .map(|w| w.handle);
+            manager.windows.append(&mut windows);
+        }
+    }
+
     let window = manager.focused_window_mut()?;
-    let handle = window.handle;
-    let tags = window.tags.clone();
     window.clear_tags();
     window.set_floating(false);
     window.tag(&tag.id);
@@ -164,27 +178,10 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
     manager.actions.push_back(act);
 
-    //Focus the next or previous window on the workspace
-    if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
-        if let Some(i) = manager.windows.iter().position(|w| w.handle == handle) {
-            let for_active_workspace =
-                |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
-            let p = manager
-                .windows
-                .get(i - 1)
-                .filter(|w| for_active_workspace(w));
-            if let Some(new_handle) = manager
-                .windows
-                .get(i + 1)
-                .filter(|w| for_active_workspace(w))
-                .or(p) //Backup
-                .map(|w| w.handle)
-            {
-                focus_handler::focus_window(manager, &new_handle);
-            }
-        }
-    }
     manager.sort_windows();
+    if let Some(new_handle) = new_handle {
+        focus_handler::focus_window(manager, &new_handle);
+    }
     Some(true)
 }
 
@@ -328,12 +325,12 @@ fn move_window_change(
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     if let Some(Layout::Monocle) = layout {
-        handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+        handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
         let main = to_reorder.remove(0);
         if main.handle != handle {
-            handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+            handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         }
         let _ = helpers::cycle_vec(&mut to_reorder, val);
         to_reorder.insert(0, main);
@@ -389,7 +386,7 @@ fn focus_window_change(
         // For Monocle we want to also move windows up/down
         // Not the best solution but results
         // in desired behaviour
-        handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+        handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
         let len = to_reorder.len() as i32;
@@ -405,9 +402,9 @@ fn focus_window_change(
                 None => len.saturating_sub(1) as usize,
             };
             let window_group = &to_reorder[..=index];
-            handle = helpers::relative_find(window_group, is_handle, -val)?.handle;
+            handle = helpers::relative_find(window_group, is_handle, -val, true)?.handle;
         }
-    } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val) {
+    } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val, true) {
         handle = new_focused.handle;
     }
     manager.windows.append(&mut to_reorder);
@@ -416,7 +413,8 @@ fn focus_window_change(
 
 fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
     let current = manager.focused_workspace()?;
-    let workspace = helpers::relative_find(&manager.workspaces, |w| w == current, val)?.clone();
+    let workspace =
+        helpers::relative_find(&manager.workspaces, |w| w == current, val, true)?.clone();
     focus_handler::focus_workspace(manager, &workspace);
     if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
         let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());

@@ -174,18 +174,21 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     //Find the next or previous window on the workspace
     let mut new_handle = None;
     if !sloppy {
-        if let Some(ws) = manager.focused_workspace() {
-            if let Some(i) = manager.windows.iter().position(|w| w.handle == *handle) {
-                let p = manager.windows.get(i - 1).filter(|w| ws.is_managed(w));
-                new_handle = manager
-                    .windows
-                    .get(i + 1)
-                    .filter(|w| ws.is_managed(w))
-                    .or(p) //Backup
-                    .map(|w| w.handle);
-            }
+        if let Some(ws) = manager.focused_workspace().cloned() {
+            let for_active_workspace = |x: &Window| -> bool { ws.is_managed(x) };
+            let mut windows = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            let is_handle = |x: &Window| -> bool { x.handle == *handle };
+            let p = helpers::relative_find(&windows, is_handle, -1, false);
+            new_handle = helpers::relative_find(&windows, for_active_workspace, 1, false)
+                .or(p) //Backup
+                .map(|w| w.handle);
+            manager.windows.append(&mut windows);
         }
     }
+    manager
+        .focus_manager
+        .tags_last_window
+        .retain(|_, h| h != handle);
     manager.windows.retain(|w| &w.handle != handle);
 
     //make sure the workspaces do not draw on the docks

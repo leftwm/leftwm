@@ -84,7 +84,7 @@ where
     Some(())
 }
 
-pub fn relative_find<T, F>(list: &[T], test: F, shift: i32) -> Option<&T>
+pub fn relative_find<T, F>(list: &[T], test: F, shift: i32, should_loop: bool) -> Option<&T>
 where
     F: Fn(&T) -> bool,
     T: Clone,
@@ -96,11 +96,12 @@ where
     }
 
     let mut find_index = index as i32 + shift;
-    if find_index < 0 {
+    if find_index < 0 && should_loop {
         find_index += len;
-    }
-    if find_index >= len {
+    } else if find_index >= len && should_loop {
         find_index -= len;
+    } else if find_index < 0 || find_index >= len {
+        return None;
     }
     list.get(find_index as usize)
 }
