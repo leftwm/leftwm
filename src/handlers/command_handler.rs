@@ -174,8 +174,6 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     }
 
     let window = manager.focused_window_mut()?;
-    let handle = window.handle;
-    let tags = window.tags.clone();
     window.clear_tags();
     window.set_floating(false);
     window.tag(&tag.id);
