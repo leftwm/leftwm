@@ -125,6 +125,9 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
             manager.sort_windows();
             if let Some(h) = handle {
                 handle_focus(manager, h);
+                if !is_tagged {
+                    manager.move_to_top(&h);
+                }
             }
             return Some(true);
         }
@@ -171,6 +174,8 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     }
 
     let window = manager.focused_window_mut()?;
+    let handle = window.handle;
+    let tags = window.tags.clone();
     window.clear_tags();
     window.set_floating(false);
     window.tag(&tag.id);
@@ -182,6 +187,7 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     if let Some(new_handle) = new_handle {
         focus_handler::focus_window(manager, &new_handle);
     }
+    manager.sort_windows();
     Some(true)
 }
 
