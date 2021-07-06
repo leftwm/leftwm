@@ -90,7 +90,6 @@ where
     T: Clone,
 {
     let index = list.iter().position(|x| test(x))?;
-    log::info!("Index: {:?}", index);
     let len = list.len() as i32;
     if len == 1 {
         return list.get(index as usize);
