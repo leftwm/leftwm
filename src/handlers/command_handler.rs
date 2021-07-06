@@ -158,20 +158,8 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     };
 
     let handle = manager.focused_window()?.handle;
-    let mut new_handle = None;
     //Focus the next or previous window on the workspace
-    if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
-        if let Some(ws) = manager.focused_workspace().cloned() {
-            let for_active_workspace = |x: &Window| -> bool { ws.is_managed(x) };
-            let mut windows = helpers::vec_extract(&mut manager.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { x.handle == handle };
-            let p = helpers::relative_find(&windows, is_handle, -1, false);
-            new_handle = helpers::relative_find(&windows, is_handle, 1, false)
-                .or(p) //Backup
-                .map(|w| w.handle);
-            manager.windows.append(&mut windows);
-        }
-    }
+    let new_handle = window_handler::get_next_or_previous(manager, &handle);
 
     let window = manager.focused_window_mut()?;
     window.clear_tags();
@@ -185,7 +173,6 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     if let Some(new_handle) = new_handle {
         focus_handler::focus_window(manager, &new_handle);
     }
-    manager.sort_windows();
     Some(true)
 }
 
