@@ -1,9 +1,11 @@
 //! Theme configuration for `LeftWM`
-use crate::config::Task;
 use crate::errors::Result;
 use crate::models::Margins;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "unstable")]
 use std::collections::HashMap;
+#[cfg(feature = "unstable")]
+use crate::config::Task;
 use std::default::Default;
 use std::fs;
 use std::path::Path;
@@ -48,6 +50,7 @@ impl Default for GlobalTheme {
 /// Holds theme settings
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(default)]
+#[cfg(not(feature = "unstable"))]
 pub struct ThemeSetting {
     /// Border width for each window
     pub border_width: i32,
@@ -63,13 +66,30 @@ pub struct ThemeSetting {
     /// Commands to run when new windows are created
     #[serde(rename = "on_new_window")]
     pub on_new_window_cmd: Option<String>,
+}
+
+/// Holds theme settings
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(default)]
+#[cfg(feature = "unstable")]
+pub struct ThemeSetting {
+    /// Border width for each window
+    pub border_width: i32,
+    /// Margins on the edges of the screen/between windows. Uses [top right bottom left] or
+    /// [top/bottom right/left] like HTML.
+    pub window_margin: Margins,
+    /// The border color around non-floating, non-focused windows. Uses HEX (e.g. #500000).
+    pub default_border_color: String,
+    /// The border color around floating windows. Uses HEX (e.g. #500000).
+    pub floating_border_color: String,
+    /// The border color around focused windows. Uses HEX (e.g. #500000).
+    pub focused_border_color: String,
+    /// Commands to run when new windows are created
+    #[serde(rename = "on_new_window")]
+    pub on_new_window_cmd: Option<String>,
     /// Global configuration
-    // Is Option<> bound to support older versions of themes.
-    // TODO: Require this by removing option once enough themes support new version.
     pub global: Option<GlobalTheme>,
     /// Tasks to run when leftwm-worker (re)starts or stops.
-    // Is Option<> bound to support older versions of themes.
-    // TODO: Require this by removing option once enough themes support new version.
     pub task: Option<HashMap<String, Task>>,
 }
 
@@ -87,10 +107,23 @@ fn load_theme_file(path: &Path) -> Result<ThemeSetting> {
 }
 
 impl Default for ThemeSetting {
+#[cfg(not(feature = "unstable"))]
     fn default() -> Self {
         ThemeSetting {
             border_width: 1,
             margin: Margins::Int(10),
+            default_border_color: "#000000".to_owned(),
+            floating_border_color: "#000000".to_owned(),
+            focused_border_color: "#FF0000".to_owned(),
+            on_new_window_cmd: None,
+        }
+    }
+
+#[cfg(feature = "unstable")]
+    fn default() -> Self {
+        ThemeSetting {
+            border_width: 1,
+            window_margin: Margins::Int(10),
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
             focused_border_color: "#FF0000".to_owned(),
@@ -119,7 +152,7 @@ mod tests {
     fn deserialize_custom_theme_config_for_older_themes() {
         let config = r#"
 border_width = 0
-margin = 5
+window_margin = 5
 default_border_color = '#222222'
 floating_border_color = '#005500'
 focused_border_color = '#FFB53A'
@@ -131,7 +164,7 @@ on_new_window = 'echo Hello World'
             config,
             ThemeSetting {
                 border_width: 0,
-                margin: Margins::Int(5),
+                window_margin: Margins::Int(5),
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),
@@ -146,7 +179,7 @@ on_new_window = 'echo Hello World'
     fn deserialize_custom_theme_config() {
         let config = r###"
                     border_width = 0
-                    margin = 5
+                    window_margin = 5
                     default_border_color = '#222222'
                     floating_border_color = '#005500'
                     focused_border_color = '#FFB53A'
@@ -182,7 +215,7 @@ on_new_window = 'echo Hello World'
             config,
             ThemeSetting {
                 border_width: 0,
-                margin: Margins::Int(5),
+                window_margin: Margins::Int(5),
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),
