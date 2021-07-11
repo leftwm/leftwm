@@ -1,6 +1,7 @@
 //! `LeftWM` general configuration
 mod keybind;
 mod scratchpad;
+mod task;
 mod theme_setting;
 mod workspace_config;
 
@@ -21,6 +22,7 @@ use xdg::BaseDirectories;
 
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
+pub use task::{Component, Task};
 pub use theme_setting::ThemeSetting;
 pub use workspace_config::Workspace;
 
