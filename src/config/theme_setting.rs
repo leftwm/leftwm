@@ -1,12 +1,12 @@
 //! Theme configuration for `LeftWM`
+#[cfg(feature = "unstable")]
+use crate::config::Task;
 use crate::errors::Result;
 use crate::models::Gutter;
 use crate::models::Margins;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "unstable")]
 use std::collections::HashMap;
-#[cfg(feature = "unstable")]
-use crate::config::Task;
 use std::default::Default;
 use std::fs;
 use std::path::Path;
@@ -81,6 +81,10 @@ pub struct ThemeSetting {
     /// Margins on the edges of the screen/between windows. Uses [top right bottom left] or
     /// [top/bottom right/left] like HTML.
     pub window_margin: Margins,
+    /// Margin around workspace:
+    pub workspace_margin: Margins,
+    /// Gutter around workspace
+    pub gutter: Option<Vec<Gutter>>,
     /// The border color around non-floating, non-focused windows. Uses HEX (e.g. #500000).
     pub default_border_color: String,
     /// The border color around floating windows. Uses HEX (e.g. #500000).
@@ -118,7 +122,7 @@ fn load_theme_file(path: &Path) -> Result<ThemeSetting> {
 }
 
 impl Default for ThemeSetting {
-#[cfg(not(feature = "unstable"))]
+    #[cfg(not(feature = "unstable"))]
     fn default() -> Self {
         ThemeSetting {
             border_width: 1,
@@ -132,11 +136,13 @@ impl Default for ThemeSetting {
         }
     }
 
-#[cfg(feature = "unstable")]
+    #[cfg(feature = "unstable")]
     fn default() -> Self {
         ThemeSetting {
             border_width: 1,
             window_margin: Margins::Int(10),
+            workspace_margin: Margins::Int(10),
+            gutter: None,
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
             focused_border_color: "#FF0000".to_owned(),
@@ -150,8 +156,9 @@ impl Default for ThemeSetting {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::Side;
     use crate::config::Component;
+    use crate::config::Task;
+    use crate::models::Side;
 
     #[test]
     fn deserialize_empty_theme_config() {
@@ -180,17 +187,41 @@ value = 0
 "#;
         let config: ThemeSetting = toml::from_str(config).unwrap();
 
+        #[cfg(feature = "unstable")]
         assert_eq!(
             config,
             ThemeSetting {
                 border_width: 0,
                 window_margin: Margins::Int(5),
+                workspace_margin: Margins::Int(5),
+                gutter: Some(vec![Gutter {
+                    side: Side::Top,
+                    value: 0
+                }]),
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),
                 on_new_window_cmd: Some("echo Hello World".to_string()),
                 global: None,
                 task: None,
+            }
+        );
+
+        #[cfg(not(feature = "unstable"))]
+        assert_eq!(
+            config,
+            ThemeSetting {
+                border_width: 0,
+                margin: Margins::Int(5),
+                workspace_margin: Margins::Int(5),
+                gutter: Some(vec![Gutter {
+                    side: Side::Top,
+                    value: 0
+                }]),
+                default_border_color: "#222222".to_string(),
+                floating_border_color: "#005500".to_string(),
+                focused_border_color: "#FFB53A".to_string(),
+                on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );
     }
@@ -218,7 +249,7 @@ value = 0
                     "###;
         let config: ThemeSetting = toml::from_str(config).unwrap();
 
-        let mut task_hmap = HashMap::new();
+        let mut task_hmap = std::collections::HashMap::new();
         task_hmap.insert(
             "polybar".to_string(),
             Task {
@@ -231,11 +262,14 @@ value = 0
                 install: None,
             },
         );
+        #[cfg(feature = "unstable")]
         assert_eq!(
             config,
             ThemeSetting {
                 border_width: 0,
                 window_margin: Margins::Int(5),
+                workspace_margin: Margins::Int(10),
+                gutter: None,
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),
@@ -250,6 +284,21 @@ value = 0
                     version: Some("1.0.0".to_string()),
                 }),
                 task: Some(task_hmap),
+            }
+        );
+
+        #[cfg(not(feature = "unstable"))]
+        assert_eq!(
+            config,
+            ThemeSetting {
+                border_width: 0,
+                margin: Margins::Int(10),
+                workspace_margin: Margins::Int(10),
+                gutter: None,
+                default_border_color: "#222222".to_string(),
+                floating_border_color: "#005500".to_string(),
+                focused_border_color: "#FFB53A".to_string(),
+                on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );
     }

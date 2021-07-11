@@ -78,7 +78,7 @@ impl Window {
     #[cfg(feature = "unstable")]
     pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
         if self.type_ == WindowType::Normal {
-                self.margin = theme.window_margin.clone();
+            self.margin = theme.window_margin.clone();
             self.border = theme.border_width;
         } else {
             self.margin = Margins::Int(0);
@@ -89,7 +89,7 @@ impl Window {
     #[cfg(not(feature = "unstable"))]
     pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
         if self.type_ == WindowType::Normal {
-                self.margin = theme.margin.clone();
+            self.margin = theme.margin.clone();
             self.border = theme.border_width;
         } else {
             self.margin = Margins::Int(0);

@@ -330,29 +330,13 @@ fn move_window_change(
     mut to_reorder: Vec<Window>,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    let mut act = DisplayAction::MoveMouseOver(handle);
-    if let Some(crate::layouts::Layout::Monocle) = layout {
-        // For Monocle we want to also move windows up/down
-        // Not the best solution but results
-        // in desired behaviour
-        let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
-            Some(h) => h.handle,
-            None => return false,
-        };
-        helpers::cycle_vec(&mut to_reorder, val);
-        act = DisplayAction::MoveMouseOver(new_handle);
-    } else if let Some(crate::layouts::Layout::MainAndDeck) = layout {
-        if to_reorder.len() > 1 {
-            let main = to_reorder.remove(0);
-            if main.handle != handle {
-                let new_handle = match helpers::relative_find(&to_reorder, is_handle, -val) {
-                    Some(h) => h.handle,
-                    None => return false,
-                };
-                act = DisplayAction::MoveMouseOver(new_handle);
-            }
-            helpers::cycle_vec(&mut to_reorder, val);
-            to_reorder.insert(0, main);
+    if let Some(Layout::Monocle) = layout {
+        handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+        let _ = helpers::cycle_vec(&mut to_reorder, val);
+    } else if let Some(Layout::MainAndDeck) = layout {
+        let main = to_reorder.remove(0);
+        if main.handle != handle {
+            handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
         }
         let _ = helpers::cycle_vec(&mut to_reorder, val);
         to_reorder.insert(0, main);
