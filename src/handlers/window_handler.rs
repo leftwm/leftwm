@@ -182,22 +182,12 @@ fn is_scratchpad(manager: &Manager, window: &Window) -> bool {
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
 pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
-    let sloppy = manager.focus_manager.behaviour == FocusBehaviour::Sloppy;
     //Find the next or previous window on the workspace
-    let mut new_handle = None;
-    if !sloppy {
-        if let Some(ws) = manager.focused_workspace() {
-            if let Some(i) = manager.windows.iter().position(|w| w.handle == *handle) {
-                let p = manager.windows.get(i - 1).filter(|w| ws.is_managed(w));
-                new_handle = manager
-                    .windows
-                    .get(i + 1)
-                    .filter(|w| ws.is_managed(w))
-                    .or(p) //Backup
-                    .map(|w| w.handle);
-            }
-        }
-    }
+    let new_handle = get_next_or_previous(manager, handle);
+    manager
+        .focus_manager
+        .tags_last_window
+        .retain(|_, h| h != handle);
     manager.windows.retain(|w| &w.handle != handle);
 
     //make sure the workspaces do not draw on the docks
@@ -206,7 +196,7 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
     let focused = manager.focus_manager.window_history.get(0);
     //make sure focus is recalculated if we closed the currently focused window
     if focused == Some(handle) {
-        if sloppy {
+        if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             manager.actions.push_back(act);
         } else if let Some(h) = new_handle {
@@ -301,4 +291,21 @@ pub fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
         window.start_loc = Some(start_loc);
     }
     true
+}
+
+//Find the next or previous window on the workspace
+pub fn get_next_or_previous(manager: &mut Manager, handle: &WindowHandle) -> Option<WindowHandle> {
+    if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
+        let ws = manager.focused_workspace().cloned()?;
+        let for_active_workspace = |x: &Window| -> bool { ws.is_managed(x) };
+        let mut windows = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+        let is_handle = |x: &Window| -> bool { &x.handle == handle };
+        let p = helpers::relative_find(&windows, is_handle, -1, false);
+        let new_handle = helpers::relative_find(&windows, is_handle, 1, false)
+            .or(p) //Backup
+            .map(|w| w.handle);
+        manager.windows.append(&mut windows);
+        return new_handle;
+    }
+    None
 }
