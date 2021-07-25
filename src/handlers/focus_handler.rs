@@ -43,21 +43,24 @@ pub fn focus_window(manager: &mut Manager, handle: &WindowHandle) -> bool {
     };
 
     //make sure the focused window's workspace is focused
-    let (tags, workspace_id) = match manager
+    let (focused_window_tag, workspace_id) = match manager
         .workspaces
         .iter()
         .find(|ws| ws.is_displaying(&window))
     {
-        Some(ws) => (ws.tags.clone(), Some(ws.id)),
-        None => (vec![], None),
+        Some(ws) => (
+            ws.tags.iter().find(|t| window.has_tag(t)).cloned(),
+            Some(ws.id),
+        ),
+        None => (None, None),
     };
     if let Some(workspace_id) = workspace_id {
         let _ = focus_workspace_work(manager, workspace_id);
     }
 
     //make sure the focused window's tag is focused
-    if let Some(tag) = tags.iter().find(|t| window.has_tag(t)) {
-        let _ = focus_tag_work(manager, tag);
+    if let Some(tag) = focused_window_tag {
+        let _ = focus_tag_work(manager, &tag);
     }
     true
 }
