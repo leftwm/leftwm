@@ -224,11 +224,10 @@ fn focus_tag_work(manager: &mut Manager, tag: &str) -> Option<()> {
 /// Create an action to inform the DM of the new current tags.
 pub fn update_current_tags(manager: &mut Manager) {
     if let Some(workspace) = manager.focused_workspace() {
-        let tags = workspace.tags.clone();
-        if tags.is_empty() {
+        if let Some(tag) = workspace.tags.first().cloned() {
             manager
                 .actions
-                .push_back(DisplayAction::SetCurrentTags(tags[0].clone()));
+                .push_back(DisplayAction::SetCurrentTags(tag));
         }
     }
 }
