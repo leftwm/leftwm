@@ -115,14 +115,14 @@ pub fn validate_focus_at(manager: &mut Manager, x: i32, y: i32) -> bool {
 }
 
 pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
-    let found: Option<Window> = manager
+    let handle_found: Option<WindowHandle> = manager
         .windows
         .iter()
         .filter(|x| x.can_focus())
         .find(|w| w.contains_point(x, y))
-        .cloned();
-    match found {
-        Some(found) => focus_window(manager, &found.handle),
+        .map(|w| w.handle.clone());
+    match handle_found {
+        Some(found) => focus_window(manager, &found),
         //backup plan, move focus closest window in workspace
         None => focus_closest_window(manager, x, y),
     }
