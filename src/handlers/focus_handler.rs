@@ -120,7 +120,7 @@ pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
         .iter()
         .filter(|x| x.can_focus())
         .find(|w| w.contains_point(x, y))
-        .map(|w| w.handle.clone());
+        .map(|w| w.handle);
     match handle_found {
         Some(found) => focus_window(manager, &found),
         //backup plan, move focus closest window in workspace
