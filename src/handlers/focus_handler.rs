@@ -1,6 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::{display_action::DisplayAction, models::FocusBehaviour, utils::helpers};
+use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 /// Marks a workspace as the focused workspace.
 //NOTE: should only be called externally from this file
@@ -43,21 +43,24 @@ pub fn focus_window(manager: &mut Manager, handle: &WindowHandle) -> bool {
     };
 
     //make sure the focused window's workspace is focused
-    let (tags, workspace_id) = match manager
+    let (focused_window_tag, workspace_id) = match manager
         .workspaces
         .iter()
         .find(|ws| ws.is_displaying(&window))
     {
-        Some(ws) => (ws.tags.clone(), Some(ws.id)),
-        None => (vec![], None),
+        Some(ws) => (
+            ws.tags.iter().find(|t| window.has_tag(t)).cloned(),
+            Some(ws.id),
+        ),
+        None => (None, None),
     };
     if let Some(workspace_id) = workspace_id {
         let _ = focus_workspace_work(manager, workspace_id);
     }
 
     //make sure the focused window's tag is focused
-    if let Some(tag) = tags.iter().find(|t| window.has_tag(&t)) {
-        let _ = focus_tag_work(manager, tag);
+    if let Some(tag) = focused_window_tag {
+        let _ = focus_tag_work(manager, &tag);
     }
     true
 }
@@ -115,14 +118,14 @@ pub fn validate_focus_at(manager: &mut Manager, x: i32, y: i32) -> bool {
 }
 
 pub fn move_focus_to_point(manager: &mut Manager, x: i32, y: i32) -> bool {
-    let found: Option<Window> = manager
+    let handle_found: Option<WindowHandle> = manager
         .windows
         .iter()
         .filter(|x| x.can_focus())
         .find(|w| w.contains_point(x, y))
-        .cloned();
-    match found {
-        Some(found) => focus_window(manager, &found.handle),
+        .map(|w| w.handle);
+    match handle_found {
+        Some(found) => focus_window(manager, &found),
         //backup plan, move focus closest window in workspace
         None => focus_closest_window(manager, x, y),
     }
@@ -136,7 +139,7 @@ fn focus_closest_window(manager: &mut Manager, x: i32, y: i32) -> bool {
     let mut dists: Vec<(i32, &Window)> = manager
         .windows
         .iter()
-        .filter(|x| ws.is_managed(&x) && x.can_focus())
+        .filter(|x| ws.is_managed(x) && x.can_focus())
         .map(|w| (distance(w, x, y), w))
         .collect();
     dists.sort_by(|a, b| (a.0).cmp(&b.0));
@@ -191,10 +194,10 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
         let act = DisplayAction::FocusWindowUnderCursor;
         manager.actions.push_back(act);
+    } else if let Some(handle) = manager.focus_manager.tags_last_window.get(tag).copied() {
+        focus_window_by_handle_work(manager, &handle);
     } else if let Some(ws) = to_focus.first() {
-        let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
-        let handle = match manager.windows.iter().find(|w| for_active_workspace(w)) {
+        let handle = match manager.windows.iter().find(|w| ws.is_managed(w)) {
             Some(w) => w.handle,
             None => return true,
         };
@@ -224,11 +227,10 @@ fn focus_tag_work(manager: &mut Manager, tag: &str) -> Option<()> {
 /// Create an action to inform the DM of the new current tags.
 pub fn update_current_tags(manager: &mut Manager) {
     if let Some(workspace) = manager.focused_workspace() {
-        let tags = workspace.tags.clone();
-        if tags.is_empty() {
+        if let Some(tag) = workspace.tags.first().cloned() {
             manager
                 .actions
-                .push_back(DisplayAction::SetCurrentTags(tags[0].clone()));
+                .push_back(DisplayAction::SetCurrentTags(tag));
         }
     }
 }

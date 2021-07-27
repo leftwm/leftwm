@@ -13,6 +13,7 @@ use crate::{config::ThemeSetting, layouts::Layout};
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
+use std::os::raw::c_ulong;
 use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
@@ -32,7 +33,7 @@ pub struct Manager {
     pub actions: VecDeque<DisplayAction>,
 
     //this is used to limit framerate when resizing/moving windows
-    pub frame_rate_limitor: u64,
+    pub frame_rate_limitor: c_ulong,
     #[serde(skip)]
     pub children: Children,
     #[serde(skip)]
@@ -45,7 +46,7 @@ impl Manager {
     /// Return the currently focused workspace.
     #[must_use]
     pub fn focused_workspace(&self) -> Option<&Workspace> {
-        self.focus_manager.workspace(&self)
+        self.focus_manager.workspace(self)
     }
 
     /// Return the currently focused workspace.
@@ -69,7 +70,7 @@ impl Manager {
     /// Return the currently focused window.
     #[must_use]
     pub fn focused_window(&self) -> Option<&Window> {
-        self.focus_manager.window(&self)
+        self.focus_manager.window(self)
     }
 
     /// Return the currently focused window.
@@ -85,7 +86,7 @@ impl Manager {
             .for_each(|w| {
                 let (x, y) = w.strut.unwrap_or_default().center();
                 if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-                    w.tags = ws.tags.clone()
+                    w.tags = ws.tags.clone();
                 }
             });
     }

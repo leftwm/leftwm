@@ -59,7 +59,7 @@ impl DisplayServer for XlibDisplayServer {
                 Some(f) => f.handle == window.handle,
                 None => false,
             };
-            self.xw.update_window(&window, is_focused);
+            self.xw.update_window(window, is_focused);
             if window.is_fullscreen() {
                 self.xw.move_to_top(&window.handle);
             }
@@ -90,7 +90,7 @@ impl DisplayServer for XlibDisplayServer {
             let event = XEvent(&self.xw, xlib_event).into();
             if let Some(e) = event {
                 log::trace!("DisplayEvent: {:?}", e);
-                events.push(e)
+                events.push(e);
             }
         }
 
@@ -145,7 +145,7 @@ impl DisplayServer for XlibDisplayServer {
                     .iter()
                     .filter(|&x| *x != self.root)
                     .map(|x| WindowHandle::XlibHandle(*x))
-                    .filter(|h| !wins.contains(&h))
+                    .filter(|h| !wins.contains(h))
                     .collect();
                 let all: Vec<WindowHandle> = unmanged.iter().chain(wins.iter()).copied().collect();
                 self.xw.restack(all);
@@ -174,7 +174,7 @@ impl DisplayServer for XlibDisplayServer {
             }
             DisplayAction::SetWindowTags(handle, tag) => {
                 if let WindowHandle::XlibHandle(window) = handle {
-                    self.xw.set_window_desktop(window, &tag)
+                    self.xw.set_window_desktop(window, &tag);
                 }
                 None
             }
@@ -257,6 +257,6 @@ impl XlibDisplayServer {
     }
 
     pub fn flush(&self) {
-        self.xw.flush()
+        self.xw.flush();
     }
 }

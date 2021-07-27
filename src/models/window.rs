@@ -172,11 +172,11 @@ impl Window {
     }
 
     pub fn set_width(&mut self, width: i32) {
-        self.normal.set_w(width)
+        self.normal.set_w(width);
     }
 
     pub fn set_height(&mut self, height: i32) {
-        self.normal.set_h(height)
+        self.normal.set_h(height);
     }
 
     pub fn set_states(&mut self, states: Vec<WindowState>) {
@@ -194,7 +194,7 @@ impl Window {
     }
 
     pub fn set_requested(&mut self, change: XyhwChange) {
-        self.requested = Some(change)
+        self.requested = Some(change);
     }
 
     pub fn get_requested(&mut self) -> Option<XyhwChange> {
@@ -207,7 +207,7 @@ impl Window {
             log::warn!(
                 "Negative margin multiplier detected. Will be applied as absolute: {:?}",
                 self.margin_multiplier()
-            )
+            );
         };
     }
 
@@ -231,7 +231,7 @@ impl Window {
                 - (self.border * 2);
         }
         if value < 100 && !self.is_unmanaged() {
-            value = 100
+            value = 100;
         }
         value
     }
@@ -251,16 +251,16 @@ impl Window {
                 - (self.border * 2);
         }
         if value < 100 && !self.is_unmanaged() {
-            value = 100
+            value = 100;
         }
         value
     }
 
     pub fn set_x(&mut self, x: i32) {
-        self.normal.set_x(x)
+        self.normal.set_x(x);
     }
     pub fn set_y(&mut self, y: i32) {
-        self.normal.set_y(y)
+        self.normal.set_y(y);
     }
 
     #[must_use]
@@ -341,7 +341,7 @@ impl Window {
         let mut new_tags: Vec<TagId> = Vec::new();
         for t in &self.tags {
             if t != tag {
-                new_tags.push(t.clone())
+                new_tags.push(t.clone());
             }
         }
         self.tags = new_tags;

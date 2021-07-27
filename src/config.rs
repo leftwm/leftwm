@@ -22,7 +22,7 @@ use xdg::BaseDirectories;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use theme_setting::ThemeSetting;
-pub use workspace_config::WorkspaceConfig;
+pub use workspace_config::Workspace;
 
 /// General configuration
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -30,7 +30,7 @@ pub use workspace_config::WorkspaceConfig;
 pub struct Config {
     pub modkey: String,
     pub mousekey: String,
-    pub workspaces: Option<Vec<WorkspaceConfig>>,
+    pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
     pub layouts: Vec<Layout>,
     pub scratchpad: Option<Vec<ScratchPad>>,
@@ -70,7 +70,7 @@ fn load_from_file() -> Result<Config> {
         let config = Config::default();
         let toml = toml::to_string(&config).unwrap();
         let mut file = File::create(&config_filename)?;
-        file.write_all(&toml.as_bytes())?;
+        file.write_all(toml.as_bytes())?;
         Ok(config)
     }
 }
@@ -240,6 +240,60 @@ impl Default for Config {
                 command: Command::MoveWindowUp,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "k".to_owned(),
+            },
+            Keybind {
+                command: Command::MoveWindowDown,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
+                key: "j".to_owned(),
+            },
+            Keybind {
+                command: Command::MoveWindowTop,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "Return".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWindowUp,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "k".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWindowDown,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "j".to_owned(),
+            },
+            Keybind {
+                command: Command::NextLayout,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+                key: "k".to_owned(),
+            },
+            Keybind {
+                command: Command::PreviousLayout,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Control".to_owned()],
+                key: "j".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWorkspaceNext,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "l".to_owned(),
+            },
+            Keybind {
+                command: Command::FocusWorkspacePrevious,
+                value: None,
+                modifier: vec!["modkey".to_owned()],
+                key: "h".to_owned(),
+            },
+            Keybind {
+                command: Command::MoveWindowUp,
+                value: None,
+                modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "Up".to_owned(),
             },
             Keybind {
@@ -247,12 +301,6 @@ impl Default for Config {
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "Down".to_owned(),
-            },
-            Keybind {
-                command: Command::MoveWindowTop,
-                value: None,
-                modifier: vec!["modkey".to_owned()],
-                key: "Return".to_owned(),
             },
             Keybind {
                 command: Command::FocusWindowUp,

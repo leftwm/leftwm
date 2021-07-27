@@ -16,8 +16,17 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     let mut is_first = false;
     //Random value
     let mut layout: Layout = Layout::MainAndVertStack;
-    setup_window(manager, &mut window, x, y, &mut layout, &mut is_first);
-    insert_window(manager, &mut window, &layout);
+    let is_scratchpad = is_scratchpad(manager, &window);
+    setup_window(
+        manager,
+        &mut window,
+        x,
+        y,
+        is_scratchpad,
+        &mut layout,
+        &mut is_first,
+    );
+    insert_window(manager, &mut window, is_scratchpad, &layout);
 
     let follow_mouse = manager.focus_manager.focus_new_windows
         || manager.focus_manager.behaviour == FocusBehaviour::Sloppy;
@@ -40,7 +49,7 @@ pub fn created(mut manager: &mut Manager, mut window: Window, x: i32, y: i32) ->
     }
 
     if let Some(cmd) = &manager.theme_setting.on_new_window_cmd.clone() {
-        exec_shell(&cmd, &mut manager);
+        exec_shell(cmd, &mut manager);
     }
 
     true
@@ -51,10 +60,10 @@ fn setup_window(
     window: &mut Window,
     x: i32,
     y: i32,
+    is_scratchpad: bool,
     layout: &mut Layout,
     is_first: &mut bool,
 ) {
-    let is_scratchpad = is_scratchpad(manager, &window);
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
     //the workspace that has windows on its is still active not the empty workspace.
@@ -112,7 +121,7 @@ fn setup_window(
         }
     }
 
-    if let Some(parent) = find_transient_parent(manager, &window) {
+    if let Some(parent) = find_transient_parent(manager, window) {
         window.set_floating(true);
         let new_float_exact = parent.calculated_xyhw().center_halfed();
         window.normal = parent.normal;
@@ -121,7 +130,7 @@ fn setup_window(
 
     window.update_for_theme(&manager.theme_setting);
 }
-fn insert_window(manager: &mut Manager, window: &mut Window, layout: &Layout) {
+fn insert_window(manager: &mut Manager, window: &mut Window, is_scratchpad: bool, layout: &Layout) {
     // If the tag contains a fullscreen window, minimize it
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
@@ -152,7 +161,10 @@ fn insert_window(manager: &mut Manager, window: &mut Window, layout: &Layout) {
             to_reorder.insert(1, window.clone());
         }
         manager.windows.append(&mut to_reorder);
-    } else if window.type_ == WindowType::Dialog || window.type_ == WindowType::Splash {
+    } else if window.type_ == WindowType::Dialog
+        || window.type_ == WindowType::Splash
+        || is_scratchpad
+    {
         //Slow
         manager.windows.insert(0, window.clone());
     } else {
@@ -170,27 +182,25 @@ fn is_scratchpad(manager: &Manager, window: &Window) -> bool {
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns true if changes need to be rendered.
 pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
+    //Find the next or previous window on the workspace
+    let new_handle = get_next_or_previous(manager, handle);
+    manager
+        .focus_manager
+        .tags_last_window
+        .retain(|_, h| h != handle);
     manager.windows.retain(|w| &w.handle != handle);
 
     //make sure the workspaces do not draw on the docks
     update_workspace_avoid_list(manager);
 
     let focused = manager.focus_manager.window_history.get(0);
-
     //make sure focus is recalculated if we closed the currently focused window
     if focused == Some(handle) {
         if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             manager.actions.push_back(act);
-        } else if let Some(ws) = manager.focused_workspace() {
-            // TODO focus the window which takes the place on the screen of the closed window
-            let for_active_workspace =
-                |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
-            let first = match manager.windows.iter().find(|w| for_active_workspace(w)) {
-                Some(w) => w.handle,
-                None => return true,
-            };
-            focus_handler::focus_window(manager, &first);
+        } else if let Some(h) = new_handle {
+            focus_handler::focus_window(manager, &h);
         }
     }
 
@@ -281,4 +291,21 @@ pub fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
         window.start_loc = Some(start_loc);
     }
     true
+}
+
+//Find the next or previous window on the workspace
+pub fn get_next_or_previous(manager: &mut Manager, handle: &WindowHandle) -> Option<WindowHandle> {
+    if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
+        let ws = manager.focused_workspace().cloned()?;
+        let for_active_workspace = |x: &Window| -> bool { ws.is_managed(x) };
+        let mut windows = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+        let is_handle = |x: &Window| -> bool { &x.handle == handle };
+        let p = helpers::relative_find(&windows, is_handle, -1, false);
+        let new_handle = helpers::relative_find(&windows, is_handle, 1, false)
+            .or(p) //Backup
+            .map(|w| w.handle);
+        manager.windows.append(&mut windows);
+        return new_handle;
+    }
+    None
 }

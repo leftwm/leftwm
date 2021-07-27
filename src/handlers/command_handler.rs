@@ -33,19 +33,19 @@ pub fn process_internal(
     val: &Option<String>,
 ) -> Option<bool> {
     match command {
-        Command::Execute => execute(manager, &val),
+        Command::Execute => execute(manager, val),
 
-        Command::ToggleScratchPad => toggle_scratchpad(manager, &val),
+        Command::ToggleScratchPad => toggle_scratchpad(manager, val),
 
         Command::ToggleFullScreen => toggle_fullscreen(manager),
 
-        Command::MoveToTag => move_to_tag(&val, manager),
+        Command::MoveToTag => move_to_tag(val, manager),
 
         Command::MoveWindowUp => move_focus_common_vars(move_window_change, manager, -1),
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag => goto_tag(manager, &val, &config),
+        Command::GotoTag => goto_tag(manager, val, config),
 
         Command::CloseWindow => close_window(manager),
         Command::SwapTags => swap_tags(manager),
@@ -53,7 +53,7 @@ pub fn process_internal(
         Command::NextLayout => next_layout(manager),
         Command::PreviousLayout => previous_layout(manager),
 
-        Command::SetLayout => set_layout(&val, manager),
+        Command::SetLayout => set_layout(val, manager),
 
         Command::FloatingToTile => floating_to_tile(manager),
 
@@ -77,9 +77,9 @@ pub fn process_internal(
 
         Command::RotateTag => rotate_tag(manager),
 
-        Command::IncreaseMainWidth => change_main_width(manager, &val, 1),
-        Command::DecreaseMainWidth => change_main_width(manager, &val, -1),
-        Command::SetMarginMultiplier => set_margin_multiplier(manager, &val),
+        Command::IncreaseMainWidth => change_main_width(manager, val, 1),
+        Command::DecreaseMainWidth => change_main_width(manager, val, -1),
+        Command::SetMarginMultiplier => set_margin_multiplier(manager, val),
     }
 }
 
@@ -125,6 +125,9 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
             manager.sort_windows();
             if let Some(h) = handle {
                 handle_focus(manager, h);
+                if !is_tagged {
+                    manager.move_to_top(&h);
+                }
             }
             return Some(true);
         }
@@ -154,6 +157,10 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
         None => 1.0,
     };
 
+    let handle = manager.focused_window()?.handle;
+    //Focus the next or previous window on the workspace
+    let new_handle = window_handler::get_next_or_previous(manager, &handle);
+
     let window = manager.focused_window_mut()?;
     window.clear_tags();
     window.set_floating(false);
@@ -161,18 +168,10 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     window.apply_margin_multiplier(margin_multiplier);
     let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
     manager.actions.push_back(act);
+
     manager.sort_windows();
-    // Focus first window on the workspace when we are not following the mouse
-    if manager.focus_manager.behaviour != FocusBehaviour::Sloppy {
-        if let Some(ws) = manager.focused_workspace() {
-            // TODO focus the window which takes the place on the screen of the closed window
-            let for_active_workspace =
-                |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
-            if let Some(first) = manager.windows.iter().find(|w| for_active_workspace(w)) {
-                let handle = first.handle;
-                focus_handler::focus_window(manager, &handle);
-            }
-        }
+    if let Some(new_handle) = new_handle {
+        focus_handler::focus_window(manager, &new_handle);
     }
     Some(true)
 }
@@ -317,12 +316,12 @@ fn move_window_change(
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     if let Some(Layout::Monocle) = layout {
-        handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+        handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
         let main = to_reorder.remove(0);
         if main.handle != handle {
-            handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+            handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         }
         let _ = helpers::cycle_vec(&mut to_reorder, val);
         to_reorder.insert(0, main);
@@ -354,7 +353,7 @@ fn move_window_top(
         _ => 0,
     };
     if new_index >= len {
-        new_index -= len
+        new_index -= len;
     }
     list.insert(new_index, item);
 
@@ -378,7 +377,7 @@ fn focus_window_change(
         // For Monocle we want to also move windows up/down
         // Not the best solution but results
         // in desired behaviour
-        handle = helpers::relative_find(&to_reorder, is_handle, -val)?.handle;
+        handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
         let len = to_reorder.len() as i32;
@@ -394,9 +393,9 @@ fn focus_window_change(
                 None => len.saturating_sub(1) as usize,
             };
             let window_group = &to_reorder[..=index];
-            handle = helpers::relative_find(&window_group, is_handle, -val)?.handle;
+            handle = helpers::relative_find(window_group, is_handle, -val, true)?.handle;
         }
-    } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val) {
+    } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val, true) {
         handle = new_focused.handle;
     }
     manager.windows.append(&mut to_reorder);
@@ -405,7 +404,8 @@ fn focus_window_change(
 
 fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
     let current = manager.focused_workspace()?;
-    let workspace = helpers::relative_find(&manager.workspaces, |w| w == current, val)?.clone();
+    let workspace =
+        helpers::relative_find(&manager.workspaces, |w| w == current, val, true)?.clone();
     focus_handler::focus_workspace(manager, &workspace);
     if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
         let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
@@ -449,7 +449,7 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> Option<
             helpers::vec_extract(&mut manager.windows, for_active_workspace);
         for w in &mut to_apply_margin_multiplier {
             if let Some(ws) = manager.focused_workspace() {
-                w.apply_margin_multiplier(ws.margin_multiplier())
+                w.apply_margin_multiplier(ws.margin_multiplier());
             }
         }
         manager.windows.append(&mut to_apply_margin_multiplier);
