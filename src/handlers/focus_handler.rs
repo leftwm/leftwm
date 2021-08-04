@@ -195,10 +195,23 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
         focus_window_by_handle_work(manager, &handle);
     } else if let Some(ws) = to_focus.first() {
         let handle = match manager.windows.iter().find(|w| ws.is_managed(w)) {
-            Some(w) => w.handle,
-            None => return true,
+            Some(w) => Some(w.handle),
+            None => None,
         };
-        focus_window_by_handle_work(manager, &handle);
+        if let Some(h) = handle {
+            focus_window_by_handle_work(manager, &h);
+        }
+    }
+
+    // Unfocus last window if the target tag is empty
+    if let Some(window) = manager.focused_window().cloned() {
+        if !window.tags.contains(&tag.to_owned()) {
+            // Arbitrary handle value here, hopefully not used by any real window
+            let w = Window::new(WindowHandle::XlibHandle(u64::MAX), None, None);
+            manager.focus_manager.window_history.push_front(w.handle);
+            let act = DisplayAction::WindowTakeFocus(w);
+            manager.actions.push_back(act);
+        }
     }
     true
 }
@@ -369,5 +382,18 @@ mod tests {
         let actual = manager.focused_workspace().unwrap().id;
         let expected = manager.workspaces[1].id;
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn focusing_an_empty_tag_should_unfocus_any_focused_window() {
+        let mut manager = Manager::default();
+        screen_create_handler::process(&mut manager, Screen::default());
+        let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
+        window.tag("1");
+        manager.windows.push(window.clone());
+        focus_window(&mut manager, &window.handle);
+        focus_tag(&mut manager, "2");
+        let focused = manager.focused_window();
+        assert!(focused.is_none());
     }
 }
