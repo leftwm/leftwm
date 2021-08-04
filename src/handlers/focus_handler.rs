@@ -194,10 +194,7 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     } else if let Some(handle) = manager.focus_manager.tags_last_window.get(tag).copied() {
         focus_window_by_handle_work(manager, &handle);
     } else if let Some(ws) = to_focus.first() {
-        let handle = match manager.windows.iter().find(|w| ws.is_managed(w)) {
-            Some(w) => Some(w.handle),
-            None => None,
-        };
+        let handle = manager.windows.iter().find(|w| ws.is_managed(w)).map(|w| w.handle);
         if let Some(h) = handle {
             focus_window_by_handle_work(manager, &h);
         }
