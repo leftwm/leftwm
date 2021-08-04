@@ -92,10 +92,10 @@ impl Workspace {
             .into_iter()
             .filter(|gutter| gutter.wsid == self.id || gutter.wsid == None)
             .fold(vec![], |mut acc, gutter| {
-                match acc.iter().position(|g| g.side == gutter.side) {
-                    Some(x) => {
-                        if acc[x].wsid.is_none() {
-                            acc[x] = gutter
+                match acc.iter().enumerate().find(|(_i, g)| g.side == gutter.side) {
+                    Some((i, x)) => {
+                        if x.wsid.is_none() {
+                            acc[i] = gutter
                         }
                     }
                     None => acc.push(gutter),
