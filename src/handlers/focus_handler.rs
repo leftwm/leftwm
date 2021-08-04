@@ -1,4 +1,6 @@
 #![allow(clippy::wildcard_imports)]
+use std::os::raw::c_ulong;
+
 use super::*;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
@@ -204,7 +206,7 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     if let Some(window) = manager.focused_window().cloned() {
         if !window.tags.contains(&tag.to_owned()) {
             // Arbitrary handle value here, hopefully not used by any real window
-            let w = Window::new(WindowHandle::XlibHandle(u64::MAX), None, None);
+            let w = Window::new(WindowHandle::XlibHandle(c_ulong::MAX), None, None);
             manager.focus_manager.window_history.push_front(w.handle);
             let act = DisplayAction::WindowTakeFocus(w);
             manager.actions.push_back(act);
