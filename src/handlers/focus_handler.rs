@@ -17,7 +17,7 @@ pub fn focus_workspace(manager: &mut Manager, workspace: &Workspace) -> bool {
     false
 }
 
-fn focus_workspace_work(manager: &mut Manager, workspace_id: i32) -> Option<()> {
+fn focus_workspace_work(manager: &mut Manager, workspace_id: Option<i32>) -> Option<()> {
     //no new history if no change
     if let Some(fws) = manager.focused_workspace() {
         if fws.id == workspace_id {
@@ -161,7 +161,7 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
 pub fn focus_workspace_under_cursor(manager: &mut Manager, x: i32, y: i32) -> bool {
     let focused_id = match manager.focused_workspace() {
         Some(fws) => fws.id,
-        None => -1,
+        None => None,
     };
     if let Some(w) = manager
         .workspaces
@@ -247,7 +247,7 @@ mod tests {
         let expected = manager.workspaces[0].clone();
         focus_workspace(&mut manager, &expected);
         let actual = manager.focused_workspace().unwrap();
-        assert_eq!(0, actual.id);
+        assert_eq!(Some(0), actual.id);
     }
 
     #[test]
@@ -328,7 +328,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         focus_tag(&mut manager, &"1".to_owned());
         let actual = manager.focused_workspace().unwrap();
-        let expected = 0;
+        let expected = Some(0);
         assert_eq!(actual.id, expected);
     }
 

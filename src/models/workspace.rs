@@ -13,7 +13,7 @@ use std::fmt;
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
-    pub id: i32,
+    pub id: Option<i32>,
     /// Active layout
     pub layout: Layout,
     layout_rotation: usize,
@@ -33,7 +33,7 @@ impl fmt::Debug for Workspace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Workspace {{ id: {}, tags: {:?}, x: {}, y: {} }}",
+            "Workspace {{ id: {:?}, tags: {:?}, x: {}, y: {} }}",
             self.id,
             self.tags,
             self.xyhw.x(),
@@ -44,7 +44,7 @@ impl fmt::Debug for Workspace {
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Workspace) -> bool {
-        self.id != -1 && self.id == other.id
+        self.id != None && self.id == other.id
     }
 }
 
@@ -52,7 +52,7 @@ impl Workspace {
     #[must_use]
     pub fn new(bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Workspace {
         Workspace {
-            id: -1,
+            id: None,
             layout: Layout::new(&layouts),
             layout_rotation: 0,
             tags: vec![],
@@ -83,7 +83,25 @@ impl Workspace {
 
     pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
         self.margin = theme.workspace_margin.clone();
-        self.gutters = theme.get_list_of_gutters();
+        self.gutters = self.get_gutters_for_theme(theme);
+    }
+
+    pub fn get_gutters_for_theme(&mut self, theme: &ThemeSetting) -> Vec<Gutter> {
+        theme
+            .get_list_of_gutters()
+            .into_iter()
+            .filter(|gutter| gutter.wsid == self.id || gutter.wsid == None)
+            .fold(vec![], |mut acc, gutter| {
+                match acc.iter().position(|g| g.side == gutter.side) {
+                    Some(x) => {
+                        if acc[x].wsid.is_none() {
+                            acc[x] = gutter
+                        }
+                    }
+                    None => acc.push(gutter),
+                }
+                acc
+            })
     }
 
     pub fn show_tag(&mut self, tag: &Tag) {

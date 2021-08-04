@@ -6,4 +6,5 @@ pub struct Workspace {
     pub y: i32,
     pub height: i32,
     pub width: i32,
+    pub id: Option<i32>,
 }

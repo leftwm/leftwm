@@ -139,7 +139,7 @@ impl Manager {
 
     #[must_use]
     pub fn workspaces_display(&self) -> String {
-        let mut focused_id = -1;
+        let mut focused_id = None;
         if let Some(f) = self.focused_workspace() {
             focused_id = f.id;
         }
