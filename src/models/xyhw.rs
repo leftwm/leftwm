@@ -38,8 +38,8 @@ impl Default for XyhwBuilder {
         XyhwBuilder {
             x: 0,
             y: 0,
-            w: 0,
-            h: 0,
+            w: 800,
+            h: 600,
             minw: 5,
             maxw: 999_999_999,
             minh: 5,
@@ -53,8 +53,8 @@ impl Default for Xyhw {
         Xyhw {
             x: 0,
             y: 0,
-            w: 0,
-            h: 0,
+            w: 800,
+            h: 600,
             minw: 5,
             maxw: 999_999_999,
             minh: 5,

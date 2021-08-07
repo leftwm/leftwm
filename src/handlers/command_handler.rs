@@ -56,6 +56,8 @@ pub fn process_internal(
         Command::SetLayout => set_layout(val, manager),
 
         Command::FloatingToTile => floating_to_tile(manager),
+        Command::TileToFloating => tile_to_floating(manager),
+        Command::ToggleFloating => toggle_floating(manager),
 
         Command::FocusNextTag => focus_next_tag(manager),
         Command::FocusPreviousTag => focus_previous_tag(manager),
@@ -290,6 +292,26 @@ fn floating_to_tile(manager: &mut Manager) -> Option<bool> {
     window_handler::snap_to_workspace(window, &workspace);
     let handle = window.handle;
     Some(handle_focus(manager, handle))
+}
+
+fn tile_to_floating(manager: &mut Manager) -> Option<bool> {
+    let window = manager.focused_window_mut()?;
+    if window.must_float() {
+        return None;
+    }
+    //Not ideal as is_floating and must_float are connected so have to check
+    //them separately
+    if window.floating() {
+        return None;
+    }
+    window.set_floating(true);
+    Some(true)
+}
+
+fn toggle_floating(manager: &mut Manager) -> Option<bool> {
+    let window = manager.focused_window_mut()?;
+    if window.floating() {floating_to_tile(manager);} else {tile_to_floating(manager);}
+    Some(true)
 }
 
 fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> Option<bool>

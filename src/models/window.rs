@@ -79,6 +79,7 @@ impl Window {
         if self.type_ == WindowType::Normal {
             self.margin = theme.margin.clone();
             self.border = theme.border_width;
+            self.set_floating(theme.always_float);
         } else {
             self.margin = Margins::Int(0);
             self.border = 0;

@@ -10,6 +10,9 @@ use std::path::Path;
 #[serde(default)]
 pub struct ThemeSetting {
     pub border_width: i32,
+    pub default_width: i32,
+    pub default_height: i32,
+    pub always_float: bool,
     pub margin: Margins,
     pub workspace_margin: Margins,
     pub gutter: Option<Vec<Gutter>>,
@@ -45,6 +48,9 @@ impl Default for ThemeSetting {
     fn default() -> Self {
         ThemeSetting {
             border_width: 1,
+            default_width: 800,
+            default_height: 600,
+            always_float: false,
             margin: Margins::Int(10),
             workspace_margin: Margins::Int(10),
             gutter: None,
@@ -74,6 +80,9 @@ mod tests {
     fn deserialize_custom_theme_config() {
         let config = r#"
 border_width = 0
+default_width = 400
+default_height = 400
+always_float = true
 margin = 5
 workspace_margin = 5
 default_border_color = '#222222'
@@ -91,6 +100,9 @@ value = 0
             config,
             ThemeSetting {
                 border_width: 0,
+                default_width: 400,
+                default_height: 400,
+                always_float: true,
                 margin: Margins::Int(5),
                 workspace_margin: Margins::Int(5),
                 gutter: Some(vec![Gutter {

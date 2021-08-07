@@ -11,6 +11,8 @@ pub enum Command {
     ToggleFullScreen,
     GotoTag,
     FloatingToTile,
+    TileToFloating,
+    ToggleFloating,
     MoveWindowUp,
     MoveWindowDown,
     MoveWindowTop,
