@@ -13,7 +13,7 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
         manager.layouts.clone(),
     );
     if workspace.id.is_none() {
-        workspace.id = Some(tag_index as i32);
+        workspace.id = Some(i32::MAX - tag_index as i32);
     }
     if workspace.id.unwrap_or(0) as usize >= manager.tags.len() {
         dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
