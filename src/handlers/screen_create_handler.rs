@@ -6,7 +6,12 @@ use crate::models::TagModel;
 pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     let tag_index = manager.workspaces.len();
 
-    let mut workspace = Workspace::new(screen.bbox, manager.tags.clone(), manager.layouts.clone());
+    let mut workspace = Workspace::new(
+        screen.wsid,
+        screen.bbox,
+        manager.tags.clone(),
+        manager.layouts.clone(),
+    );
     if workspace.id.is_none() {
         workspace.id = Some(tag_index as i32);
     }

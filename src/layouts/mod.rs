@@ -147,6 +147,7 @@ mod tests {
     fn should_fullscreen_a_single_window() {
         //size defaults to 600x800
         let mut ws = Workspace::new(
+            None,
             BBox {
                 width: 0,
                 height: 0,

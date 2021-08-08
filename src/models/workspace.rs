@@ -50,9 +50,9 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Workspace {
+    pub fn new(id: Option<i32>, bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Workspace {
         Workspace {
-            id: None,
+            id: id,
             layout: Layout::new(&layouts),
             layout_rotation: 0,
             tags: vec![],
@@ -320,6 +320,7 @@ mod tests {
     #[test]
     fn empty_ws_should_not_contain_window() {
         let subject = Workspace::new(
+            None,
             BBox {
                 width: 600,
                 height: 800,
@@ -339,6 +340,7 @@ mod tests {
     #[test]
     fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
         let mut subject = Workspace::new(
+            None,
             BBox {
                 width: 600,
                 height: 800,
