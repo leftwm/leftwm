@@ -247,7 +247,7 @@ mod tests {
         let expected = manager.workspaces[0].clone();
         focus_workspace(&mut manager, &expected);
         let actual = manager.focused_workspace().unwrap();
-        assert_eq!(Some(i32::MAX), actual.id);
+        assert_eq!(Some(0), actual.id);
     }
 
     #[test]
@@ -328,7 +328,7 @@ mod tests {
         screen_create_handler::process(&mut manager, Screen::default());
         focus_tag(&mut manager, &"1".to_owned());
         let actual = manager.focused_workspace().unwrap();
-        let expected = Some(i32::MAX);
+        let expected = Some(0);
         assert_eq!(actual.id, expected);
     }
 
