@@ -618,7 +618,7 @@ impl XWrap {
         }
     }
 
-    pub fn update_window(&self, window: &Window, is_focused: bool) {
+    pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
         if let WindowHandle::XlibHandle(h) = window.handle {
             if window.visible() {
                 let mut changes = xlib::XWindowChanges {
@@ -661,7 +661,8 @@ impl XWrap {
             } else {
                 unsafe {
                     //if not visible x is <---- way over there <----
-                    (self.xlib.XMoveWindow)(self.display, h, window.width() * -2, window.y());
+                    //(self.xlib.XMoveWindow)(self.display, h, window.width() * -2, window.y());
+                    (self.xlib.XMoveWindow)(self.display, h, hide_offset, window.y());
                 }
             }
         }

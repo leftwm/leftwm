@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
+use crate::models::Manager;
 use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::Window;
@@ -53,13 +54,32 @@ impl DisplayServer for XlibDisplayServer {
         self.xw.load_colors(&self.theme);
     }
 
-    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {
+    fn update_windows(
+        &self,
+        windows: Vec<&Window>,
+        focused_window: Option<&Window>,
+        manager: &Manager,
+    ) {
+        let tags: Vec<&String> = manager.workspaces.iter().flat_map(|w| &w.tags).collect();
+
+        let max_tag_index: Option<usize> = tags.iter().filter_map(|&t| manager.tag_index(t)).max();
+        let to_the_right = manager
+            .screens
+            .iter()
+            .map(|s| s.bbox.width + s.bbox.x + 100)
+            .max();
+        let max_screen_width = manager.screens.iter().map(|s| s.bbox.width).max();
+
         for window in windows {
             let is_focused = match focused_window {
                 Some(f) => f.handle == window.handle,
                 None => false,
             };
-            self.xw.update_window(window, is_focused);
+
+            let hide_offset = right_offset(max_tag_index, to_the_right, manager, window)
+                .unwrap_or_else(|| left_offset(max_screen_width, window));
+
+            self.xw.update_window(window, is_focused, hide_offset);
             if window.is_fullscreen() {
                 self.xw.move_to_top(&window.handle);
             }
@@ -263,4 +283,32 @@ impl XlibDisplayServer {
     pub fn flush(&self) {
         self.xw.flush();
     }
+}
+
+//return an offset to hide the window in the right, if it should be hidden on the right
+fn right_offset(
+    max_tag_index: Option<usize>,
+    max_right_screen: Option<i32>,
+    manager: &Manager,
+    window: &Window,
+) -> Option<i32> {
+    let max_tag_index = max_tag_index?;
+    let max_right_screen = max_right_screen?;
+    for tag in &window.tags {
+        let index = manager.tag_index(tag)?;
+        if index > max_tag_index {
+            return Some(max_right_screen + window.x());
+        }
+    }
+    None
+}
+
+//return an offset to hide the window on the left
+fn left_offset(max_screen_width: Option<i32>, window: &Window) -> i32 {
+    let mut left = -(window.width());
+    if let Some(screen_width) = max_screen_width {
+        let best_left = window.x() - screen_width;
+        left = std::cmp::min(best_left, left);
+    }
+    left
 }

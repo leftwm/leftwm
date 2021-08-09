@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
+use crate::models::Manager;
 use crate::models::Screen;
 use crate::models::Window;
 use crate::models::Workspace;
@@ -17,7 +18,13 @@ pub trait DisplayServer {
 
     fn update_theme_settings(&mut self, _settings: ThemeSetting) {}
 
-    fn update_windows(&self, _windows: Vec<&Window>, _focused: Option<&Window>) {}
+    fn update_windows(
+        &self,
+        _windows: Vec<&Window>,
+        _focused: Option<&Window>,
+        _manager: &Manager,
+    ) {
+    }
 
     fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
 
