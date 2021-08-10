@@ -1252,6 +1252,21 @@ impl XWrap {
         }
     }
 
+    pub fn unfocus(&self) {
+        let windows = self.get_windows_for_root(self.get_default_root());
+        if let Ok(windows) = windows {
+            let dock = windows.iter().find(|w| {
+                self.get_atom_prop_value(**w, self.atoms.NetWMWindowType)
+                    == Some(self.atoms.NetWMWindowTypeDock)
+            });
+            if let Some(dock) = dock {
+                self.window_take_focus(&Window::new(WindowHandle::XlibHandle(*dock), None, None));
+                return;
+            }
+        }
+        self.window_take_focus(&Window::new(self.get_default_root_handle(), None, None));
+    }
+
     pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             //nicely ask the window to close

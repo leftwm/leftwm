@@ -1,5 +1,4 @@
 #![allow(clippy::wildcard_imports)]
-use std::os::raw::c_ulong;
 
 use super::*;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
@@ -196,7 +195,11 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     } else if let Some(handle) = manager.focus_manager.tags_last_window.get(tag).copied() {
         focus_window_by_handle_work(manager, &handle);
     } else if let Some(ws) = to_focus.first() {
-        let handle = manager.windows.iter().find(|w| ws.is_managed(w)).map(|w| w.handle);
+        let handle = manager
+            .windows
+            .iter()
+            .find(|w| ws.is_managed(w))
+            .map(|w| w.handle);
         if let Some(h) = handle {
             focus_window_by_handle_work(manager, &h);
         }
@@ -205,14 +208,7 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     // Unfocus last window if the target tag is empty
     if let Some(window) = manager.focused_window().cloned() {
         if !window.tags.contains(&tag.to_owned()) {
-            let w = manager.windows.clone().into_iter().find(|w| w.type_ == WindowType::Dock);
-            let act = match w {
-                Some(w) => DisplayAction::WindowTakeFocus(w),
-                // Fallback to last method if no dock for now
-                None => DisplayAction::WindowTakeFocus(Window::new(WindowHandle::XlibHandle(c_ulong::MAX), None, None)),
-            };
-            // TODO: Append None to the window history
-            manager.actions.push_back(act);
+            manager.actions.push_back(DisplayAction::Unfocus);
         }
     }
     true

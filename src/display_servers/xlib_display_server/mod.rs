@@ -131,6 +131,10 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.window_take_focus(&w);
                 None
             }
+            DisplayAction::Unfocus => {
+                self.xw.unfocus();
+                None
+            }
             DisplayAction::SetFullScreen(w, fullscreen) => {
                 self.xw.set_fullscreen(&w, fullscreen);
                 None
