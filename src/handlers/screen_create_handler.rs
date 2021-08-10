@@ -37,6 +37,9 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     focus_handler::focus_tag(manager, &next_tag.id);
     workspace.show_tag(&next_tag);
     manager.workspaces.push(workspace.clone());
+    manager
+        .workspaces
+        .sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
     manager.screens.push(screen);
     focus_handler::focus_workspace(manager, &workspace);
     false
