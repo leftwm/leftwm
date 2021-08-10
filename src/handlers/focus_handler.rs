@@ -205,10 +205,13 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     // Unfocus last window if the target tag is empty
     if let Some(window) = manager.focused_window().cloned() {
         if !window.tags.contains(&tag.to_owned()) {
-            // Arbitrary handle value here, hopefully not used by any real window
-            let w = Window::new(WindowHandle::XlibHandle(c_ulong::MAX), None, None);
-            manager.focus_manager.window_history.push_front(w.handle);
-            let act = DisplayAction::WindowTakeFocus(w);
+            let w = manager.windows.clone().into_iter().find(|w| w.type_ == WindowType::Dock);
+            let act = match w {
+                Some(w) => DisplayAction::WindowTakeFocus(w),
+                // Fallback to last method if no dock for now
+                None => DisplayAction::WindowTakeFocus(Window::new(WindowHandle::XlibHandle(c_ulong::MAX), None, None)),
+            };
+            // TODO: Append None to the window history
             manager.actions.push_back(act);
         }
     }
