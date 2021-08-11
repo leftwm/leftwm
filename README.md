@@ -399,7 +399,8 @@ width = 1720
 id = 0
 ```
 ---
-**NOTE**You do not have to define an ID for each workspace, but if you assign an ID to one workspace all subsequently defined worksapces without an ID will be assigned an ID incrementing from the largest ID currently assigned to any workspace. In the above example if the second workspace was not defined with ID = 0 it would be assigned ID = 2. Keep this in mind when creating or customizing themes.
+**NOTE**
+You do not have to define an ID for each workspace, but if you assign an ID to one workspace all subsequently defined worksapces without an ID will be assigned an ID incrementing from the largest ID currently assigned to any workspace. In the above example if the second workspace was not defined with ID = 0 it would be assigned ID = 2. Keep this in mind when creating or customizing themes.
 ---
 
 ## Tags / Desktops
