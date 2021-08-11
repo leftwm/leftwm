@@ -81,7 +81,7 @@ fn load_from_file() -> Result<Config> {
     }
 }
 
-fn check_workspace_ids(config: &Config) -> bool {
+pub fn check_workspace_ids(config: &Config) -> bool {
     config.workspaces.clone().map_or(true, |wss| {
         let ids = get_workspace_ids(&wss);
         if ids.iter().any(|id| id.is_some()) {
@@ -92,15 +92,15 @@ fn check_workspace_ids(config: &Config) -> bool {
     })
 }
 
-fn get_workspace_ids(wss: &[Workspace]) -> Vec<Option<i32>> {
+pub fn get_workspace_ids(wss: &[Workspace]) -> Vec<Option<i32>> {
     wss.iter().map(|ws| ws.id).collect()
 }
 
-fn all_ids_some(ids: &[Option<i32>]) -> bool {
+pub fn all_ids_some(ids: &[Option<i32>]) -> bool {
     ids.iter().all(|id| id.is_some())
 }
 
-fn all_ids_unique(ids: &[Option<i32>]) -> bool {
+pub fn all_ids_unique(ids: &[Option<i32>]) -> bool {
     let mut sorted = ids.to_vec();
     sorted.sort();
     sorted.dedup();
