@@ -1,10 +1,10 @@
+use super::MaybeWindowHandle;
 use super::Window;
 use super::WindowHandle;
 use super::WindowState;
 use super::WindowType;
 use crate::models::{Margins, XyhwChange};
 
-type MaybeWindowHandle = Option<WindowHandle>;
 type MaybeName = Option<String>;
 
 #[derive(Debug, Clone)]

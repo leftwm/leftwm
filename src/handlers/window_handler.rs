@@ -195,7 +195,7 @@ pub fn destroyed(manager: &mut Manager, handle: &WindowHandle) -> bool {
 
     let focused = manager.focus_manager.window_history.get(0);
     //make sure focus is recalculated if we closed the currently focused window
-    if focused == Some(handle) {
+    if focused == Some(&Some(*handle)) {
         if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             manager.actions.push_back(act);

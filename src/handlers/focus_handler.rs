@@ -85,7 +85,7 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
     //clean old ones
     manager.focus_manager.window_history.truncate(10);
     //add this focus to the history
-    manager.focus_manager.window_history.push_front(*handle);
+    manager.focus_manager.window_history.push_front(Some(*handle));
 
     Some(found.clone())
 }
@@ -209,6 +209,7 @@ pub fn focus_tag(manager: &mut Manager, tag: &str) -> bool {
     if let Some(window) = manager.focused_window().cloned() {
         if !window.tags.contains(&tag.to_owned()) {
             manager.actions.push_back(DisplayAction::Unfocus);
+            manager.focus_manager.window_history.push_front(None);
         }
     }
     true
