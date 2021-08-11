@@ -23,6 +23,7 @@ use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
 use crate::{config::ThemeSetting, models::FocusBehaviour};
+use std::alloc::handle_alloc_error;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
@@ -1253,18 +1254,25 @@ impl XWrap {
     }
 
     pub fn unfocus(&self) {
-        let windows = self.get_windows_for_root(self.get_default_root());
-        if let Ok(windows) = windows {
-            let dock = windows.iter().find(|w| {
-                self.get_atom_prop_value(**w, self.atoms.NetWMWindowType)
-                    == Some(self.atoms.NetWMWindowTypeDock)
-            });
-            if let Some(dock) = dock {
-                self.window_take_focus(&Window::new(WindowHandle::XlibHandle(*dock), None, None));
-                return;
-            }
+        let handle = self.get_default_root();
+        unsafe {
+            (self.xlib.XSetInputFocus)(
+                self.display,
+                handle,
+                xlib::RevertToNone,
+                xlib::CurrentTime,
+            );
+            (self.xlib.XChangeProperty)(
+                self.display,
+                self.get_default_root(),
+                self.atoms.NetActiveWindow,
+                xlib::XA_WINDOW,
+                32,
+                xlib::PropModeReplace,
+                vec![c_ulong::MAX].as_ptr().cast::<u8>(),
+                1,
+            );
         }
-        self.window_take_focus(&Window::new(self.get_default_root_handle(), None, None));
     }
 
     pub fn kill_window(&self, h: &WindowHandle) {
