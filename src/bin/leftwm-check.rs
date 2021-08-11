@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use leftwm::config::Config;
+use leftwm::config::{Config, Workspace};
 use leftwm::config::Keybind;
 use leftwm::errors::Result;
 use leftwm::utils;
@@ -49,6 +49,7 @@ async fn main() -> Result<()> {
             if verbose {
                 dbg!(&config);
             }
+            check_workspace_ids(config.workspaces, verbose);
             check_keybinds(config.keybind, verbose);
         }
         Err(e) => {
@@ -90,6 +91,22 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             std::io::ErrorKind::Other,
             "Configuration not found in path",
         )))
+    }
+}
+
+/// Checks defined workspaces to ensure no ID collisions occur. 
+fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> bool {
+    if let Some(wss) = workspaces {
+        if verbose {
+            println!("Checking config for valid workspace definitions.");
+        }
+        let res = wss.iter().all(|ws| ws.id.is_some()) || wss.iter().all(|ws| ws.id.is_none());
+        if !res {
+            println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.toml")
+        }
+        res
+    } else {
+        true
     }
 }
 

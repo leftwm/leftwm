@@ -65,7 +65,13 @@ fn load_from_file() -> Result<Config> {
     let config_filename = path.place_config_file("config.toml")?;
     if Path::new(&config_filename).exists() {
         let contents = fs::read_to_string(config_filename)?;
-        Ok(toml::from_str(&contents)?)
+        let config = toml::from_str(&contents)?;
+        if check_workspace_ids(&config) {
+            Ok(config)
+        } else {
+            log::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
+            Ok(Config::default())
+        }
     } else {
         let config = Config::default();
         let toml = toml::to_string(&config).unwrap();
@@ -73,6 +79,32 @@ fn load_from_file() -> Result<Config> {
         file.write_all(toml.as_bytes())?;
         Ok(config)
     }
+}
+
+fn check_workspace_ids(config: &Config) -> bool {
+    config.workspaces.clone().map_or(true, |wss| {
+        let ids = get_workspace_ids(&wss);
+        if ids.iter().any(|id| id.is_some()) {
+            all_ids_some(&ids) && all_ids_unique(&ids)
+        } else {
+            true
+        }
+    })
+}
+
+fn get_workspace_ids(wss: &[Workspace]) -> Vec<Option<i32>> {
+    wss.iter().map(|ws| ws.id).collect()
+}
+
+fn all_ids_some(ids: &[Option<i32>]) -> bool {
+    ids.iter().all(|id| id.is_some())
+}
+
+fn all_ids_unique(ids: &[Option<i32>]) -> bool {
+    let mut sorted = ids.to_vec();
+    sorted.sort();
+    sorted.dedup();
+    ids.len() == sorted.len()
 }
 
 #[must_use]
