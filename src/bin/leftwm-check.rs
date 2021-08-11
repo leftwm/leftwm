@@ -102,7 +102,7 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
         }
         let res = wss.iter().all(|ws| ws.id.is_some()) || wss.iter().all(|ws| ws.id.is_none());
         if !res {
-            println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.toml")
+            println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.")
         }
         res
     } else {
