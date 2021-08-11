@@ -112,10 +112,8 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
             w.clear_tags();
             if is_tagged {
                 w.tag("NSP");
-                if let Some(prev) = manager.focus_manager.window_history.get(1) {
-                    if let Some(prev) = prev {
-                        handle = Some(*prev);
-                    }
+                if let Some(Some(prev)) = manager.focus_manager.window_history.get(1) {
+                    handle = Some(*prev);
                 }
             } else {
                 w.tag(tag);

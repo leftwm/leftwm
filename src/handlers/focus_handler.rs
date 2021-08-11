@@ -85,7 +85,10 @@ fn focus_window_by_handle_work(manager: &mut Manager, handle: &WindowHandle) -> 
     //clean old ones
     manager.focus_manager.window_history.truncate(10);
     //add this focus to the history
-    manager.focus_manager.window_history.push_front(Some(*handle));
+    manager
+        .focus_manager
+        .window_history
+        .push_front(Some(*handle));
 
     Some(found.clone())
 }

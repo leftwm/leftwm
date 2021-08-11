@@ -23,7 +23,6 @@ use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
 use crate::{config::ThemeSetting, models::FocusBehaviour};
-use std::alloc::handle_alloc_error;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
@@ -1256,12 +1255,7 @@ impl XWrap {
     pub fn unfocus(&self) {
         let handle = self.get_default_root();
         unsafe {
-            (self.xlib.XSetInputFocus)(
-                self.display,
-                handle,
-                xlib::RevertToNone,
-                xlib::CurrentTime,
-            );
+            (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
             (self.xlib.XChangeProperty)(
                 self.display,
                 self.get_default_root(),
