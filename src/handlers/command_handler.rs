@@ -321,12 +321,10 @@ fn move_window_change(
     } else if let Some(Layout::MainAndDeck) = layout {
         if let Some(index) = to_reorder.iter().position(|x: &Window| !x.floating()) {
             let mut window_group = to_reorder.split_off(index + 1);
-            // let main = window_group.remove(0);
             if !to_reorder.iter().any(|w| w.handle == handle) {
                 handle = helpers::relative_find(&window_group, is_handle, -val, true)?.handle;
             }
             let _ = helpers::cycle_vec(&mut window_group, val);
-            // window_group.insert(0, main);
             to_reorder.append(&mut window_group);
         }
     } else {
