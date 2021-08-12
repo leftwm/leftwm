@@ -3,6 +3,8 @@ use crate::{models::TagId, models::WindowHandle, Manager, Window, Workspace};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
+use super::MaybeWindowHandle;
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum FocusBehaviour {
     Sloppy,
@@ -21,7 +23,7 @@ pub struct FocusManager {
     pub behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub workspace_history: VecDeque<usize>,
-    pub window_history: VecDeque<WindowHandle>,
+    pub window_history: VecDeque<MaybeWindowHandle>,
     pub tag_history: VecDeque<String>,
     pub tags_last_window: HashMap<TagId, WindowHandle>,
 }
@@ -64,7 +66,10 @@ impl FocusManager {
         'a: 'b,
     {
         let handle = *self.window_history.get(0)?;
-        manager.windows.iter().find(|w| w.handle == handle)
+        if let Some(handle) = handle {
+            return manager.windows.iter().find(|w| w.handle == handle);
+        }
+        None
     }
 
     /// Return the currently focused window.
@@ -73,6 +78,9 @@ impl FocusManager {
         'a: 'b,
     {
         let handle = *self.window_history.get(0)?;
-        windows.iter_mut().find(|w| w.handle == handle)
+        if let Some(handle) = handle {
+            return windows.iter_mut().find(|w| w.handle == handle);
+        }
+        None
     }
 }
