@@ -1252,6 +1252,23 @@ impl XWrap {
         }
     }
 
+    pub fn unfocus(&self) {
+        let handle = self.get_default_root();
+        unsafe {
+            (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
+            (self.xlib.XChangeProperty)(
+                self.display,
+                self.get_default_root(),
+                self.atoms.NetActiveWindow,
+                xlib::XA_WINDOW,
+                32,
+                xlib::PropModeReplace,
+                vec![c_ulong::MAX].as_ptr().cast::<u8>(),
+                1,
+            );
+        }
+    }
+
     pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             //nicely ask the window to close

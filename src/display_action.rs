@@ -34,6 +34,9 @@ pub enum DisplayAction {
     /// Tell a window that it is to become focused.
     WindowTakeFocus(Window),
 
+    /// Remove focus on any visible window by focusing the root window
+    Unfocus,
+
     /// To the window under the cursor to take the focus
     FocusWindowUnderCursor,
 

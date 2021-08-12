@@ -41,3 +41,4 @@ pub use tag::Tag;
 pub use tag::TagModel;
 
 pub type TagId = String;
+type MaybeWindowHandle = Option<WindowHandle>;
