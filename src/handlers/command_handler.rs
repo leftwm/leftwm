@@ -319,12 +319,14 @@ fn move_window_change(
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if let Some(Layout::MainAndDeck) = layout {
-        let main = to_reorder.remove(0);
-        if main.handle != handle {
-            handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
+        if let Some(index) = to_reorder.iter().position(|x: &Window| !x.floating()) {
+            let mut window_group = to_reorder.split_off(index + 1);
+            if !to_reorder.iter().any(|w| w.handle == handle) {
+                handle = helpers::relative_find(&window_group, is_handle, -val, true)?.handle;
+            }
+            let _ = helpers::cycle_vec(&mut window_group, val);
+            to_reorder.append(&mut window_group);
         }
-        let _ = helpers::cycle_vec(&mut to_reorder, val);
-        to_reorder.insert(0, main);
     } else {
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
