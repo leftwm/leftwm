@@ -245,15 +245,15 @@ impl Workspace {
         let (horz, vert) = rotations.get(self.layout_rotation)?;
         let tags = &mut self.current_tags(tags);
         let tag = tags.get_mut(0)?;
-        tag.flip_horizontal(*horz);
-        tag.flip_vertical(*vert);
+        tag.flipped_horizontal = *horz;
+        tag.flipped_vertical = *vert;
         Some(())
     }
 
     #[must_use]
     pub fn flipped_horizontal(&self, tags: &mut Vec<Tag>) -> bool {
         if let Some(tag) = self.current_tags(tags).get(0) {
-            return tag.flipped_horizontal();
+            return tag.flipped_horizontal;
         }
         false
     }
@@ -261,7 +261,7 @@ impl Workspace {
     #[must_use]
     pub fn flipped_vertical(&self, tags: &mut Vec<Tag>) -> bool {
         if let Some(tag) = self.current_tags(tags).get(0) {
-            return tag.flipped_vertical();
+            return tag.flipped_vertical;
         }
         false
     }

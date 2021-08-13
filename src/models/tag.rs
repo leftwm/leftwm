@@ -9,9 +9,9 @@ pub struct Tag {
     #[serde(skip)]
     main_width_percentage: u8,
     #[serde(skip)]
-    flipped_horizontal: bool,
+    pub flipped_horizontal: bool,
     #[serde(skip)]
-    flipped_vertical: bool,
+    pub flipped_vertical: bool,
 }
 
 impl Tag {
@@ -27,7 +27,6 @@ impl Tag {
 
     pub fn change_main_width(&mut self, delta: i8) {
         //Check we are not gonna go negative
-        log::info!("Hi, {:?}", self.id);
         let mwp = &mut self.main_width_percentage;
         if (*mwp as i8) < -delta {
             *mwp = 0;
@@ -55,23 +54,5 @@ impl Tag {
     #[must_use]
     pub fn main_width_percentage(&self) -> f32 {
         f32::from(self.main_width_percentage)
-    }
-
-    pub fn flip_horizontal(&mut self, val: bool) {
-        self.flipped_horizontal = val;
-    }
-
-    pub fn flip_vertical(&mut self, val: bool) {
-        self.flipped_vertical = val;
-    }
-
-    #[must_use]
-    pub fn flipped_horizontal(&self) -> bool {
-        self.flipped_horizontal
-    }
-
-    #[must_use]
-    pub fn flipped_vertical(&self) -> bool {
-        self.flipped_vertical
     }
 }
