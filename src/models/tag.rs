@@ -2,42 +2,33 @@
 // this is `TagModel` and not `WindowModel` or anything else.
 #![allow(clippy::module_name_repetitions)]
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
-pub struct TagModel {
+pub struct Tag {
     pub id: String,
-    //HACK: This Arc<Mutex> has nothing to do with threading
-    //It appears to be a dirty hack mutate this TagModel without having
-    //a mutable reference. This should be refactored
     #[serde(skip)]
-    main_width_percentage: Arc<Mutex<u8>>,
+    main_width_percentage: u8,
     #[serde(skip)]
-    flipped_horizontal: Arc<AtomicBool>,
+    flipped_horizontal: bool,
     #[serde(skip)]
-    flipped_vertical: Arc<AtomicBool>,
+    flipped_vertical: bool,
 }
 
-impl TagModel {
+impl Tag {
     #[must_use]
     pub fn new(id: &str) -> Tag {
-        Arc::new(TagModel {
+        Tag {
             id: id.to_owned(),
-            main_width_percentage: Arc::new(Mutex::new(50)),
-            flipped_horizontal: Arc::new(AtomicBool::new(false)),
-            flipped_vertical: Arc::new(AtomicBool::new(false)),
-        })
+            main_width_percentage: 50,
+            flipped_horizontal: false,
+            flipped_vertical: false,
+        }
     }
 
-    /// # Panics
-    ///
-    /// Panics if `main_width_percentage` cannot be unwrapped.
-    // TODO: Verify that `unwrap` panic cannot be hit and add note above.
-    pub fn change_main_width(&self, delta: i8) {
-        let lock = self.main_width_percentage.clone();
-        let mut mwp = lock.lock().expect("FATAL ERROR: Mutex is corrupt");
+    pub fn change_main_width(&mut self, delta: i8) {
         //Check we are not gonna go negative
+        log::info!("Hi, {:?}", self.id);
+        let mwp = &mut self.main_width_percentage;
         if (*mwp as i8) < -delta {
             *mwp = 0;
             return;
@@ -52,14 +43,8 @@ impl TagModel {
         }
     }
 
-    /// # Panics
-    ///
-    /// Panics if `main_width_percentage` cannot be unwrapped.
-    // TODO: Verify that `unwrap` panic cannot be hit and add note above.
-    pub fn set_main_width(&self, val: u8) {
-        let lock = self.main_width_percentage.clone();
-        let mut mwp = lock.lock().expect("FATAL ERROR: Mutex is corrupt");
-
+    pub fn set_main_width(&mut self, val: u8) {
+        let mwp = &mut self.main_width_percentage;
         if val > 100 {
             *mwp = 100;
         } else {
@@ -67,42 +52,26 @@ impl TagModel {
         }
     }
 
-    /// # Panics
-    ///
-    /// Panics if `main_width_percentage` cannot be unwrapped.
-    // TODO: Verify that `unwrap` panic cannot be hit and add note above.
     #[must_use]
     pub fn main_width_percentage(&self) -> f32 {
-        let lock = self.main_width_percentage.clone();
-        let mwp = lock.lock().expect("FATAL ERROR: Mutex is corrupt");
-        f32::from(*mwp)
+        f32::from(self.main_width_percentage)
     }
 
-    pub fn flip_horizontal(&self, val: bool) {
-        let clone = self.flipped_horizontal.clone();
-        Arc::try_unwrap(clone)
-            .unwrap_err()
-            .store(val, Ordering::SeqCst);
+    pub fn flip_horizontal(&mut self, val: bool) {
+        self.flipped_horizontal = val;
     }
 
-    pub fn flip_vertical(&self, val: bool) {
-        let clone = self.flipped_vertical.clone();
-        Arc::try_unwrap(clone)
-            .unwrap_err()
-            .store(val, Ordering::SeqCst);
+    pub fn flip_vertical(&mut self, val: bool) {
+        self.flipped_vertical = val;
     }
 
     #[must_use]
     pub fn flipped_horizontal(&self) -> bool {
-        let clone = self.flipped_horizontal.clone();
-        Arc::try_unwrap(clone).unwrap_err().load(Ordering::SeqCst)
+        self.flipped_horizontal
     }
 
     #[must_use]
     pub fn flipped_vertical(&self) -> bool {
-        let clone = self.flipped_vertical.clone();
-        Arc::try_unwrap(clone).unwrap_err().load(Ordering::SeqCst)
+        self.flipped_vertical
     }
 }
-
-pub type Tag = Arc<TagModel>;

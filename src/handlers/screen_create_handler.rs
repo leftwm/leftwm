@@ -1,5 +1,5 @@
 use super::{focus_handler, Manager, Screen, Workspace};
-use crate::models::TagModel;
+use crate::models::Tag;
 
 /// Process a collection of events, and apply them changes to a manager.
 /// Returns `true` if changes need to be rendered.
@@ -12,12 +12,12 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     //make sure are enough tags for this new screen
     if manager.tags.len() <= tag_index {
         let id = (tag_index + 1).to_string();
-        manager.tags.push(TagModel::new(&id));
+        manager.tags.push(Tag::new(&id));
     }
     let next_tag = manager.tags[tag_index].clone();
     focus_handler::focus_workspace(manager, &workspace);
     focus_handler::focus_tag(manager, &next_tag.id);
-    workspace.show_tag(&next_tag);
+    workspace.show_tag(&mut manager.tags, &next_tag);
     manager.workspaces.push(workspace.clone());
     manager.screens.push(screen);
     focus_handler::focus_workspace(manager, &workspace);
@@ -40,9 +40,9 @@ mod tests {
     #[test]
     fn should_be_able_to_add_screens_with_preexisting_tags() {
         let mut manager = Manager::default();
-        manager.tags.push(TagModel::new("web"));
-        manager.tags.push(TagModel::new("console"));
-        manager.tags.push(TagModel::new("code"));
+        manager.tags.push(Tag::new("web"));
+        manager.tags.push(Tag::new("console"));
+        manager.tags.push(Tag::new("code"));
         process(&mut manager, Screen::default());
         process(&mut manager, Screen::default());
         assert!(manager.workspaces[0].has_tag("web"));

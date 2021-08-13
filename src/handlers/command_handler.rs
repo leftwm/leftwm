@@ -166,7 +166,7 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     window.set_floating(false);
     window.tag(&tag.id);
     window.apply_margin_multiplier(margin_multiplier);
-    let act = DisplayAction::SetWindowTags(window.handle, tag.id.clone());
+    let act = DisplayAction::SetWindowTags(window.handle, tag.id);
     manager.actions.push_back(act);
 
     manager.sort_windows();
@@ -258,21 +258,27 @@ fn move_to_last_workspace(manager: &mut Manager) -> Option<bool> {
 }
 
 fn next_layout(manager: &mut Manager) -> Option<bool> {
-    let workspace = manager.focused_workspace_mut()?;
-    workspace.next_layout();
+    let workspace = manager
+        .focus_manager
+        .workspace_mut(&mut manager.workspaces)?;
+    workspace.next_layout(&mut manager.tags);
     Some(true)
 }
 
 fn previous_layout(manager: &mut Manager) -> Option<bool> {
-    let workspace = manager.focused_workspace_mut()?;
-    workspace.prev_layout();
+    let workspace = manager
+        .focus_manager
+        .workspace_mut(&mut manager.workspaces)?;
+    workspace.prev_layout(&mut manager.tags);
     Some(true)
 }
 
 fn set_layout(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     let layout = Layout::from_str(val.as_ref()?).ok()?;
-    let workspace = manager.focused_workspace_mut()?;
-    workspace.set_layout(layout);
+    let workspace = manager
+        .focus_manager
+        .workspace_mut(&mut manager.workspaces)?;
+    workspace.set_layout(&mut manager.tags, layout);
     Some(true)
 }
 
@@ -422,15 +428,19 @@ fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
 }
 
 fn rotate_tag(manager: &mut Manager) -> Option<bool> {
-    let workspace = manager.focused_workspace_mut()?;
-    let _ = workspace.rotate_layout();
+    let workspace = manager
+        .focus_manager
+        .workspace_mut(&mut manager.workspaces)?;
+    let _ = workspace.rotate_layout(&mut manager.tags);
     Some(true)
 }
 
 fn change_main_width(manager: &mut Manager, val: &Option<String>, factor: i8) -> Option<bool> {
-    let workspace = manager.focused_workspace_mut()?;
+    let workspace = manager
+        .focus_manager
+        .workspace_mut(&mut manager.workspaces)?;
     let delta: i8 = val.as_ref()?.parse().ok()?;
-    workspace.change_main_width(delta * factor);
+    workspace.change_main_width(&mut manager.tags, delta * factor);
     Some(true)
 }
 
@@ -473,7 +483,7 @@ fn handle_focus(manager: &mut Manager, handle: WindowHandle) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::TagModel;
+    use crate::models::Tag;
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::default();
@@ -533,12 +543,12 @@ mod tests {
         let config = Config::default();
         screen_create_handler::process(&mut manager, Screen::default());
         manager.tags = vec![
-            TagModel::new("A15"),
-            TagModel::new("B24"),
-            TagModel::new("C"),
-            TagModel::new("6D4"),
-            TagModel::new("E39"),
-            TagModel::new("F67"),
+            Tag::new("A15"),
+            Tag::new("B24"),
+            Tag::new("C"),
+            Tag::new("6D4"),
+            Tag::new("E39"),
+            Tag::new("F67"),
         ];
         assert!(!process(
             &mut manager,
@@ -559,12 +569,12 @@ mod tests {
     fn go_to_tag_should_go_to_tag_and_set_history() {
         let mut manager = Manager {
             tags: vec![
-                TagModel::new("A15"),
-                TagModel::new("B24"),
-                TagModel::new("C"),
-                TagModel::new("6D4"),
-                TagModel::new("E39"),
-                TagModel::new("F67"),
+                Tag::new("A15"),
+                Tag::new("B24"),
+                Tag::new("C"),
+                Tag::new("6D4"),
+                Tag::new("E39"),
+                Tag::new("F67"),
             ],
             ..Manager::default()
         };

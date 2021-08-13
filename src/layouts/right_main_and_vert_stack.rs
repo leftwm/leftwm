@@ -1,3 +1,4 @@
+use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 
@@ -52,7 +53,7 @@ use crate::models::Workspace;
 /// |      4      |                           |
 /// +--------------------+--------------------+
 
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
     let window_count = windows.len();
 
     if window_count == 0 {
@@ -61,7 +62,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
 
     let primary_width = match window_count {
         1 => workspace.width() as i32,
-        _ => (workspace.width() as f32 / 100.0 * workspace.main_width()).floor() as i32,
+        _ => (workspace.width() as f32 / 100.0 * workspace.main_width(tags)).floor() as i32,
     };
 
     let thrid_part = workspace.width() - primary_width;
@@ -70,7 +71,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         1 => (workspace.x(), 0),
         _ => (workspace.x() + thrid_part, workspace.x()),
     };
-    if workspace.flipped_horizontal() {
+    if workspace.flipped_horizontal(tags) {
         main_x = workspace.x();
         stack_x = workspace.x() + primary_width;
     }
