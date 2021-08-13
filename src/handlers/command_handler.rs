@@ -210,7 +210,7 @@ fn focus_tag_change(manager: &mut Manager, delta: i8) -> Option<bool> {
             None => active_tags.len() - 1,
         }
     } else {
-        index += 1;
+        index += delta as usize;
         if index >= active_tags.len() {
             index = 0;
         }
