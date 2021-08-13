@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct Tag {
     pub id: String,
+    pub hidden: bool,
     #[serde(skip)]
-    main_width_percentage: u8,
+    pub main_width_percentage: u8,
     #[serde(skip)]
     pub flipped_horizontal: bool,
     #[serde(skip)]
@@ -19,6 +20,7 @@ impl Tag {
     pub fn new(id: &str) -> Tag {
         Tag {
             id: id.to_owned(),
+            hidden: false,
             main_width_percentage: 50,
             flipped_horizontal: false,
             flipped_vertical: false,

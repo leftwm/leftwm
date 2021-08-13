@@ -8,6 +8,7 @@
 use super::*;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
+use crate::models::TagId;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 use std::str::FromStr;
@@ -57,8 +58,8 @@ pub fn process_internal(
 
         Command::FloatingToTile => floating_to_tile(manager),
 
-        Command::FocusNextTag => focus_next_tag(manager),
-        Command::FocusPreviousTag => focus_previous_tag(manager),
+        Command::FocusNextTag => focus_tag_change(manager, 1),
+        Command::FocusPreviousTag => focus_tag_change(manager, -1),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, manager, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, manager, 1),
         Command::FocusWorkspaceNext => focus_workspace_change(manager, 1),
@@ -191,24 +192,31 @@ fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> Opt
     Some(goto_tag_handler::process(manager, destination_tag))
 }
 
-fn focus_next_tag(manager: &mut Manager) -> Option<bool> {
+fn focus_tag_change(manager: &mut Manager, delta: i8) -> Option<bool> {
     let current = manager.focused_tag(0)?;
-    let mut index = manager.tags.iter().position(|x| x.id == current)? + 1;
-    index += 1;
-    if index > manager.tags.len() {
-        index = 1;
+    let active_tags: Vec<(usize, TagId)> = manager
+        .tags
+        .iter()
+        .enumerate()
+        .filter(|(_, tag)| !tag.hidden)
+        .map(|(i, tag)| (i + 1, tag.id.clone()))
+        .collect();
+    let mut index = active_tags
+        .iter()
+        .position(|(_, tag_id)| *tag_id == current)?;
+    if delta.is_negative() {
+        index = match index.checked_sub(delta.abs() as usize) {
+            Some(i) => i,
+            None => active_tags.len() - 1,
+        }
+    } else {
+        index += 1;
+        if index >= active_tags.len() {
+            index = 0;
+        }
     }
-    Some(goto_tag_handler::process(manager, index))
-}
-
-fn focus_previous_tag(manager: &mut Manager) -> Option<bool> {
-    let current = manager.focused_tag(0)?;
-    let mut index = manager.tags.iter().position(|x| x.id == current)? + 1;
-    index -= 1;
-    if index < 1 {
-        index = manager.tags.len();
-    }
-    Some(goto_tag_handler::process(manager, index))
+    let (next, _) = *active_tags.get(index)?;
+    Some(goto_tag_handler::process(manager, next))
 }
 
 fn swap_tags(manager: &mut Manager) -> Option<bool> {

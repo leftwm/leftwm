@@ -39,7 +39,11 @@ fn main() {
             .iter()
             .map(|s| Tag::new(s))
             .collect();
-        tags.push(Tag::new("NSP"));
+        tags.push(Tag {
+            id: "NSP".to_owned(),
+            hidden: true,
+            ..Tag::default()
+        });
         let mut manager = Manager {
             focus_manager,
             tags,
