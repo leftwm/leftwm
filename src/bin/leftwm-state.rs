@@ -202,6 +202,7 @@ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
 mod tests {
     use super::*;
     use assert_cmd::prelude::*;
+    use escargot::*;
     use predicates::prelude::*;
     use std::fs::File;
     use std::io::{self, Write};
@@ -233,7 +234,13 @@ mod tests {
             );
             println!("{}", std::fs::read_to_string(&main_template_path).unwrap());
             dbg!(super::get_partials(Some(temp_dir.path())).await?);
-            let mut cmd = Command::cargo_bin("leftwm-state").unwrap();
+            let bin_for_test = escargot::CargoBuild::new()
+                .bin("leftwm-state")
+                .current_release()
+                .current_target()
+                .run()
+                .unwrap();
+            let mut cmd = bin_for_test.command();
             cmd.arg("-t").arg(&main_template_path).arg("-q");
             println!("{:?}", cmd.output());
             cmd.assert().success();
