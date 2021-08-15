@@ -209,10 +209,9 @@ mod tests {
     use std::process::Command;
     use tempfile::tempdir;
 
-    #[tokio::test]
-    async fn passing_template_flag_checks_for_partials() -> Result<()> {
+    #[test]
+    fn passing_template_flag_checks_for_partials() -> Result<()> {
         let temp_dir = tempdir()?;
-        //let temp_dir_str = temp_dir.path().to_str().unwrap_or("");
         let main_template_name = "temp.liquid";
         let main_template_path = temp_dir.path().join(main_template_name);
 
@@ -227,24 +226,21 @@ mod tests {
         );
         writeln!(main_template_file, "{}", main_template_content)?;
         writeln!(partial_template_file, "This is the partial content.")?;
-        if std::path::Path::new(&partial_template_path).exists() {
-            println!(
-                "{:?}, and {:?}",
-                &main_template_path, &partial_template_path
-            );
-            println!("{}", std::fs::read_to_string(&main_template_path).unwrap());
-            dbg!(super::get_partials(Some(temp_dir.path())).await?);
-            let bin_for_test = escargot::CargoBuild::new()
-                .bin("leftwm-state")
-                .current_release()
-                .current_target()
-                .run()
-                .unwrap();
-            let mut cmd = bin_for_test.command();
-            cmd.arg("-t").arg(&main_template_path).arg("-q");
-            println!("{:?}", cmd.output());
-            cmd.assert().success();
-        }
+        assert!(std::path::Path::new(&partial_template_path).exists());
+        let bin_for_test = escargot::CargoBuild::new()
+            .bin("leftwm-state")
+            .current_release()
+            .current_target()
+            .run()
+            .unwrap();
+        let mut cmd = bin_for_test.command();
+        cmd.arg("-t").arg(&main_template_path).arg("-q");
+        cmd.assert()
+            .stdout(predicate::str::contains(
+                partial_template_path.to_str().unwrap(),
+            ))
+            .stdout(predicate::str::contains("This is the partial content."))
+            .success();
 
         drop(main_template_file);
         drop(partial_template_file);
