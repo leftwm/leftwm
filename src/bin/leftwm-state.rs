@@ -1,8 +1,8 @@
 use clap::{value_t, App, Arg};
 use leftwm::errors::Result;
 use leftwm::models::dto::{DisplayState, ManagerState};
-use std::str;
 use std::path::Path;
+use std::str;
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader, Lines};
 use tokio::net::UnixStream;
@@ -67,25 +67,7 @@ async fn main() -> Result<()> {
 
     if let Some(template_file) = template_file {
         let path = Path::new(template_file);
-        let mut partial_paths = vec![];
-        if let Some(parent) = path.parent() {
-            let mut entries = fs::read_dir(parent).await?;
-            while let Some(entry) = entries.next_entry().await? {
-                let f_n = entry.file_name();
-                let f_n_str = f_n.to_str().unwrap_or(" ");
-                if f_n_str.starts_with("_") && f_n_str.ends_with(".liquid") {
-                    partial_paths.push(entry)
-                }
-
-            }
-            
-        }
-
-        let mut partials = liquid::partials::EagerCompiler::<liquid::partials::InMemorySource>::empty();
-        for path in partial_paths {
-            partials.add(path.path().as_path().to_str().unwrap_or(" "), fs::read_to_string(path.path()).await?);
-        }
-
+        let partials = get_partials(path.parent()).await?;
         let template_str = fs::read_to_string(template_file).await?;
         let template = liquid::ParserBuilder::with_stdlib()
             .partials(partials)
@@ -121,6 +103,33 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn get_partials(
+    dir: Option<&Path>,
+) -> Result<liquid::partials::EagerCompiler<liquid::partials::InMemorySource>> {
+    let mut partials = liquid::partials::EagerCompiler::<liquid::partials::InMemorySource>::empty();
+    match dir {
+        Some(d) => {
+            let mut entries = fs::read_dir(d).await?;
+            let mut partial_paths = vec![];
+            while let Some(entry) = entries.next_entry().await? {
+                let f_n = entry.file_name();
+                let f_n_str = f_n.to_str().unwrap_or(" ");
+                if f_n_str.starts_with('_') && f_n_str.ends_with(".liquid") {
+                    partial_paths.push(entry)
+                }
+            }
+            for path in partial_paths {
+                partials.add(
+                    path.path().as_path().to_str().unwrap_or(" "),
+                    fs::read_to_string(path.path()).await?,
+                );
+            }
+            Ok(partials)
+        }
+        None => Ok(partials),
+    }
 }
 
 fn raw_handler(line: &str) -> Result<()> {
