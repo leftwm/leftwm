@@ -70,6 +70,7 @@ async fn main() -> Result<()> {
     if let Some(template_file) = template_file {
         let path = Path::new(template_file);
         let partials = get_partials(path.parent()).await?;
+        println!("{:?}", partials);
         let template_str = fs::read_to_string(template_file).await?;
         let template = liquid::ParserBuilder::with_stdlib()
             .partials(partials)
@@ -195,4 +196,52 @@ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
     let socket_file = base.place_runtime_file("current_state.sock")?;
     let stream = UnixStream::connect(socket_file).await?;
     Ok(BufReader::new(stream).lines())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_cmd::prelude::*;
+    use predicates::prelude::*;
+    use std::fs::File;
+    use std::io::{self, Write};
+    use std::process::Command;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn passing_template_flag_checks_for_partials() -> Result<()> {
+        let temp_dir = tempdir()?;
+        //let temp_dir_str = temp_dir.path().to_str().unwrap_or("");
+        let main_template_name = "temp.liquid";
+        let main_template_path = temp_dir.path().join(main_template_name);
+
+        let partial_template_name = "_partial.liquid";
+        let partial_template_path = temp_dir.path().join(partial_template_name);
+
+        let mut main_template_file = std::fs::File::create(&main_template_path)?;
+        let mut partial_template_file = std::fs::File::create(&partial_template_path)?;
+        let main_template_content = format!(
+            "{{% include \"{}\" %}}",
+            &partial_template_path.to_str().unwrap()
+        );
+        writeln!(main_template_file, "{}", main_template_content)?;
+        writeln!(partial_template_file, "This is the partial content.")?;
+        if std::path::Path::new(&partial_template_path).exists() {
+            println!(
+                "{:?}, and {:?}",
+                &main_template_path, &partial_template_path
+            );
+            println!("{}", std::fs::read_to_string(&main_template_path).unwrap());
+            dbg!(super::get_partials(Some(temp_dir.path())).await?);
+            let mut cmd = Command::cargo_bin("leftwm-state").unwrap();
+            cmd.arg("-t").arg(&main_template_path).arg("-q");
+            println!("{:?}", cmd.output());
+            cmd.assert().success();
+        }
+
+        drop(main_template_file);
+        drop(partial_template_file);
+        temp_dir.close()?;
+        Ok(())
+    }
 }
