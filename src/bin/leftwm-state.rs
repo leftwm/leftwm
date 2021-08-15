@@ -8,6 +8,8 @@ use tokio::io::{AsyncBufReadExt, BufReader, Lines};
 use tokio::net::UnixStream;
 use xdg::BaseDirectories;
 
+type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource>;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = App::new("LeftWM State")
@@ -105,10 +107,8 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn get_partials(
-    dir: Option<&Path>,
-) -> Result<liquid::partials::EagerCompiler<liquid::partials::InMemorySource>> {
-    let mut partials = liquid::partials::EagerCompiler::<liquid::partials::InMemorySource>::empty();
+async fn get_partials(dir: Option<&Path>) -> Result<Partials> {
+    let mut partials = Partials::empty();
     match dir {
         Some(d) => {
             let mut entries = fs::read_dir(d).await?;
