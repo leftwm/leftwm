@@ -202,15 +202,18 @@ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
 mod tests {
     use super::*;
     use assert_cmd::prelude::*;
-    use escargot::*;
+    use escargot::CargoBuild;
     use predicates::prelude::*;
     use std::fs::File;
-    use std::io::{self, Write};
-    use std::process::Command;
+    use std::io::Write;
     use tempfile::tempdir;
 
+    const UNKNOWN_PARTIAL_ERR: &str = r#"thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Error { inner: InnerError { msg: Singleton("Unknown partial-template"#;
+
     #[test]
-    fn passing_template_flag_checks_for_partials() -> Result<()> {
+    fn template_flag_partials() -> Result<()> {
+        // several tests included in one to avoid writing files mult times
+
         let temp_dir = tempdir()?;
         let main_template_name = "temp.liquid";
         let main_template_path = temp_dir.path().join(main_template_name);
@@ -218,23 +221,37 @@ mod tests {
         let partial_template_name = "_partial.liquid";
         let partial_template_path = temp_dir.path().join(partial_template_name);
 
-        let mut main_template_file = std::fs::File::create(&main_template_path)?;
-        let mut partial_template_file = std::fs::File::create(&partial_template_path)?;
+        // created the path but not the file yet
+        assert!(!std::path::Path::new(&partial_template_path).exists());
+
+        let mut main_template_file = File::create(&main_template_path)?;
         let main_template_content = format!(
             "{{% include \"{}\" %}}",
             &partial_template_path.to_str().unwrap()
         );
-        writeln!(main_template_file, "{}", main_template_content)?;
-        writeln!(partial_template_file, "This is the partial content.")?;
-        assert!(std::path::Path::new(&partial_template_path).exists());
-        let bin_for_test = escargot::CargoBuild::new()
+        main_template_file.write_all(&main_template_content.as_bytes())?;
+        let bin_for_test = CargoBuild::new()
             .bin("leftwm-state")
             .current_release()
             .current_target()
             .run()
             .unwrap();
+
         let mut cmd = bin_for_test.command();
         cmd.arg("-t").arg(&main_template_path).arg("-q");
+
+        // run the command before creating partial file should give err:
+        cmd.assert()
+            .stderr(predicate::str::starts_with(UNKNOWN_PARTIAL_ERR))
+            .failure();
+
+        let mut partial_template_file = File::create(&partial_template_path)?;
+        partial_template_file.write_all(b"This is the partial content.")?;
+
+        // created the partial file
+        assert!(std::path::Path::new(&partial_template_path).exists());
+
+        // check that partial file gets registered and used
         cmd.assert()
             .stdout(predicate::str::contains(
                 partial_template_path.to_str().unwrap(),
