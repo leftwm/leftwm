@@ -52,7 +52,7 @@ impl Workspace {
     #[must_use]
     pub fn new(id: Option<i32>, bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Workspace {
         Workspace {
-            id: id,
+            id,
             layout: Layout::new(&layouts),
             layout_rotation: 0,
             tags: vec![],
