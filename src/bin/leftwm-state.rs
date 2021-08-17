@@ -229,7 +229,7 @@ mod tests {
             "{{% include \"{}\" %}}",
             &partial_template_path.to_str().unwrap()
         );
-        main_template_file.write_all(&main_template_content.as_bytes())?;
+        main_template_file.write_all(main_template_content.as_bytes())?;
         let bin_for_test = CargoBuild::new()
             .bin("leftwm-state")
             .current_release()
