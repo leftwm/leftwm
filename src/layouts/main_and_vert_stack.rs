@@ -1,9 +1,10 @@
+use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 
 /// Layout which splits the workspace into two columns, gives one window all of the left column,
 /// and divides the right column among all the other windows.
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
     let window_count = windows.len();
     if window_count == 0 {
         return;
@@ -11,12 +12,12 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
 
     let width = match window_count {
         1 => workspace.width() as i32,
-        _ => (workspace.width() as f32 / 100.0 * workspace.main_width()).floor() as i32,
+        _ => (workspace.width() as f32 / 100.0 * workspace.main_width(tags)).floor() as i32,
     };
 
     let mut main_x = workspace.x();
     let mut stack_x = workspace.x() + width;
-    if workspace.flipped_horizontal() {
+    if workspace.flipped_horizontal(tags) {
         main_x = match window_count {
             1 => main_x,
             _ => main_x + workspace.width() - width,

@@ -1,3 +1,5 @@
+use crate::models::Tag;
+
 use super::models::Window;
 use super::models::Workspace;
 use serde::{Deserialize, Serialize};
@@ -54,21 +56,30 @@ impl Layout {
         }
         Layout::Fibonacci
     }
-    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+    pub fn update_windows(
+        &self,
+        workspace: &Workspace,
+        windows: &mut Vec<&mut Window>,
+        tags: &mut Vec<Tag>,
+    ) {
         match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
-                main_and_vert_stack::update(workspace, windows);
+                main_and_vert_stack::update(workspace, windows, tags);
             }
-            Self::MainAndHorizontalStack => main_and_horizontal_stack::update(workspace, windows),
-            Self::MainAndDeck => main_and_deck::update(workspace, windows),
+            Self::MainAndHorizontalStack => {
+                main_and_horizontal_stack::update(workspace, windows, tags);
+            }
+            Self::MainAndDeck => main_and_deck::update(workspace, windows, tags),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),
-            Self::Fibonacci => fibonacci::update(workspace, windows),
-            Self::CenterMain => center_main::update(workspace, windows),
-            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows),
+            Self::Fibonacci => fibonacci::update(workspace, windows, tags),
+            Self::CenterMain => center_main::update(workspace, windows, tags),
+            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows, tags),
             Self::Monocle => monocle::update(workspace, windows),
-            Self::RightWiderLeftStack => right_main_and_vert_stack::update(workspace, windows),
+            Self::RightWiderLeftStack => {
+                right_main_and_vert_stack::update(workspace, windows, tags);
+            }
         }
     }
 
