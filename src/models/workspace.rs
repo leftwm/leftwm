@@ -95,7 +95,7 @@ impl Workspace {
                 match acc.iter().enumerate().find(|(_i, g)| g.side == gutter.side) {
                     Some((i, x)) => {
                         if x.wsid.is_none() {
-                            acc[i] = gutter
+                            acc[i] = gutter;
                         }
                     }
                     None => acc.push(gutter),
