@@ -28,7 +28,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         };
     }
 
-    //build build the main window.
+    //build the main window.
     let mut iter = windows.iter_mut();
     {
         if let Some(first) = iter.next() {
