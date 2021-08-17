@@ -95,7 +95,8 @@ value = 0
                 workspace_margin: Margins::Int(5),
                 gutter: Some(vec![Gutter {
                     side: Side::Top,
-                    value: 0
+                    value: 0,
+                    wsid: None,
                 }]),
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),

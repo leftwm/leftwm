@@ -4,3 +4,5 @@
 /target
 **/*.rs.bk
 leftwm.logs
+
+sweep.timestamp

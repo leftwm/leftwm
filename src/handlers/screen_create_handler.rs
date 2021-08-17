@@ -6,9 +6,27 @@ use crate::models::TagModel;
 pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     let tag_index = manager.workspaces.len();
 
-    let mut workspace = Workspace::new(screen.bbox, manager.tags.clone(), manager.layouts.clone());
+    let mut workspace = Workspace::new(
+        screen.wsid,
+        screen.bbox,
+        manager.tags.clone(),
+        manager.layouts.clone(),
+    );
+    if workspace.id.is_none() {
+        workspace.id = Some(
+            manager
+                .workspaces
+                .iter()
+                .map(|ws| ws.id.unwrap_or(-1))
+                .max()
+                .unwrap_or(-1)
+                + 1,
+        );
+    }
+    if workspace.id.unwrap_or(0) as usize >= manager.tags.len() {
+        dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
+    }
     workspace.update_for_theme(&manager.theme_setting);
-    workspace.id = tag_index as i32;
     //make sure are enough tags for this new screen
     if manager.tags.len() <= tag_index {
         let id = (tag_index + 1).to_string();
@@ -19,6 +37,9 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     focus_handler::focus_tag(manager, &next_tag.id);
     workspace.show_tag(&next_tag);
     manager.workspaces.push(workspace.clone());
+    manager
+        .workspaces
+        .sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
     manager.screens.push(screen);
     focus_handler::focus_workspace(manager, &workspace);
     false
