@@ -2,8 +2,8 @@ use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 
-/// Layout which splits the workspace into two columns, gives one window all of the left column,
-/// and divides the right column among all the other windows.
+/// Layout which splits the workspace into two rows, gives one window all of the upper row,
+/// and divides the lower row among all the other windows.
 pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
     let window_count = windows.len();
     if window_count == 0 {
@@ -28,7 +28,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         };
     }
 
-    //build build the main window.
+    //build the main window.
     let mut iter = windows.iter_mut();
     {
         if let Some(first) = iter.next() {
