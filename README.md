@@ -381,6 +381,28 @@ x = 1720
 height = 1440
 width = 1720
 ```
+You may optionally specify an ID for your defined workspaces. This is helpful if you want to assign different gutter settings to each workspace in your theme.
+
+```toml
+[[workspaces]]
+y = 0
+x = 1720
+height = 1440
+width = 1720
+id = 1
+
+[[workspaces]]
+y = 0
+x = 0
+height = 1440
+width = 1720
+id = 0
+```
+---
+**NOTE**
+You do not have to define an ID for each workspace, but if you assign an ID to one workspace all subsequently defined worksapces without an ID will be assigned an ID incrementing from the largest ID currently assigned to any workspace. In the above example if the second workspace was not defined with ID = 0 it would be assigned ID = 2. Keep this in mind when creating or customizing themes.
+
+---
 
 ## Tags / Desktops
 

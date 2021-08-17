@@ -1,3 +1,4 @@
+use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 
@@ -13,7 +14,7 @@ use crate::models::Workspace;
 /// |           |     | 5|-.|
 /// +-----------+-----+-----+
 /// ```
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
     let mut x = workspace.x();
     let mut y = workspace.y();
     let mut height = workspace.height() as i32;
@@ -28,7 +29,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         let half_width = (width as f32 / 2.0).floor() as i32;
         let half_height = (height as f32 / 2.0).floor() as i32;
         let (main_x, alt_x);
-        if workspace.flipped_horizontal() {
+        if workspace.flipped_horizontal(tags) {
             main_x = x + half_width;
             alt_x = x;
         } else {
@@ -36,7 +37,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
             alt_x = x + half_width;
         }
         let (new_y, alt_y);
-        if workspace.flipped_vertical() {
+        if workspace.flipped_vertical(tags) {
             new_y = y;
             alt_y = y + half_height;
         } else {

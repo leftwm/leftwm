@@ -3,9 +3,8 @@ use leftwm::{
     models::{FocusBehaviour, FocusManager, Tag},
 };
 
-use crate::models::TagModel;
 use leftwm::{
-    config, external_command_handler, models, CommandPipe, DisplayEvent, DisplayEventHandler,
+    config, external_command_handler, CommandPipe, DisplayEvent, DisplayEventHandler,
     DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
 };
 use std::panic;
@@ -38,9 +37,13 @@ fn main() {
         let mut tags: Vec<Tag> = config
             .get_list_of_tags()
             .iter()
-            .map(|s| TagModel::new(s))
+            .map(|s| Tag::new(s))
             .collect();
-        tags.push(TagModel::new("NSP"));
+        tags.push(Tag {
+            id: "NSP".to_owned(),
+            hidden: true,
+            ..Tag::default()
+        });
         let mut manager = Manager {
             focus_manager,
             tags,

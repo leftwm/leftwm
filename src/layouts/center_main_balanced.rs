@@ -1,3 +1,4 @@
+use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 
@@ -150,7 +151,7 @@ use crate::models::Workspace;
 /// |      |  8|10|             |      |  9   |
 /// +------+---+--+-------------+------+------+
 /// ```
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
     let window_count = windows.len();
 
     if window_count == 0 {
@@ -201,12 +202,12 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
 
     for (i, window) in iter.enumerate() {
         if i % 2 == 0 {
-            if workspace.flipped_horizontal() {
+            if workspace.flipped_horizontal(tags) {
                 right_windows.push(window);
             } else {
                 left_windows.push(window);
             }
-        } else if workspace.flipped_horizontal() {
+        } else if workspace.flipped_horizontal(tags) {
             left_windows.push(window);
         } else {
             right_windows.push(window);

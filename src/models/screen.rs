@@ -9,6 +9,7 @@ pub struct Screen {
     pub root: WindowHandle,
     #[serde(flatten)]
     pub bbox: BBox,
+    pub wsid: Option<i32>,
 }
 
 /// Screen Bounding Box
@@ -26,6 +27,7 @@ impl Screen {
         Screen {
             root: WindowHandle::MockHandle(0),
             bbox,
+            wsid: None,
         }
     }
 
@@ -66,6 +68,7 @@ impl From<&Workspace> for Screen {
                 x: wsc.x,
                 y: wsc.y,
             },
+            wsid: wsc.id,
         }
     }
 }
@@ -80,6 +83,7 @@ impl From<&xlib::XWindowAttributes> for Screen {
                 x: root.x,
                 y: root.y,
             },
+            wsid: None,
         }
     }
 }
@@ -94,6 +98,7 @@ impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
                 x: root.x_org.into(),
                 y: root.y_org.into(),
             },
+            wsid: None,
         }
     }
 }
@@ -108,6 +113,7 @@ impl Default for Screen {
                 x: 0,
                 y: 0,
             },
+            wsid: None,
         }
     }
 }

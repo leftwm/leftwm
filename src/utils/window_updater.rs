@@ -11,7 +11,7 @@ pub fn update_windows(manager: &mut Manager) {
         .for_each(|w| w.set_visible(w.tags.is_empty()));
 
     for ws in &mut manager.workspaces {
-        ws.update_windows(&mut manager.windows);
+        ws.update_windows(&mut manager.windows, &mut manager.tags);
 
         manager
             .windows
