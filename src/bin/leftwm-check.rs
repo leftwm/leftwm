@@ -258,19 +258,19 @@ fn check_theme(verbose: bool) -> Result<()> {
                         "\x1b[1;91mERROR: No `{}` script found.\x1b[0m",
                         file_name
                     ));
-                Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "File not found.",
-                )))
+                    Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "File not found.",
+                    )))
                 } else {
                     returns.push(format!(
                         "\x1b[1;91mERROR:No `{}` file found.\x1b[0m",
                         file_name
                     ));
-                Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "File not found.",
-                )))
+                    Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "File not found.",
+                    )))
                 }
             }
         };
