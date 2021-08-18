@@ -80,7 +80,7 @@ async fn main() -> Result<()> {
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands
          "
-        )
+        );
     }
     Ok(())
 }

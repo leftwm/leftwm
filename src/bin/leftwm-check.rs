@@ -109,11 +109,11 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
             {
                 println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
                 false
-            } else if !leftwm::config::all_ids_unique(&ids) {
+            } else if leftwm::config::all_ids_unique(&ids) {
+                true
+            } else {
                 println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
                 false
-            } else {
-                true
             }
         } else {
             true
@@ -236,43 +236,42 @@ fn check_theme(verbose: bool) -> Result<()> {
                     println!(
                         "Found symlink `current`, pointing to theme folder: {:?}",
                         fs::read_link(&p).unwrap()
-                    )
+                    );
                 } else {
-                    println!("Found `current` theme folder: {:?}", p)
+                    println!("Found `current` theme folder: {:?}", p);
                 }
             }
         }
-        None => {
-            returns.push(
-                format!("\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m")
-            )
-        }
+        None => returns.push(
+            "\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m".to_string(),
+        ),
     };
-    let theme_files = vec![
-        "up",
-        "down",
-        "theme.toml"
-        ];
+    let theme_files = vec!["up", "down", "theme.toml"];
     for file_name in &theme_files {
-        let tf = match BaseDirectories::with_prefix(path_current_theme
-              .clone()
-              .unwrap())?
-              .find_config_file(&file_name) {
+        let tf = match BaseDirectories::with_prefix(path_current_theme.clone().unwrap())?
+            .find_config_file(&file_name)
+        {
             Some(f) => Ok(f),
-            None => {
-               if *file_name == "up" || *file_name == "down" {
-                    returns.push(
-                        format!("\x1b[1;91mERROR: No `{}` script found.\x1b[0m", file_name)
-                    );
-               } else if *file_name == "theme.toml" {
-                    returns.push(
-                        format!("\x1b[1;91mERROR:No `{}` file found.\x1b[0m", file_name)
-                    );
-               };
-               Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                     std::io::ErrorKind::Other,
-                     "File not found.",
-               )))
+            _ => {
+                if *file_name == "up" || *file_name == "down" {
+                    returns.push(format!(
+                        "\x1b[1;91mERROR: No `{}` script found.\x1b[0m",
+                        file_name
+                    ));
+                Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "File not found.",
+                )))
+                } else {
+                    returns.push(format!(
+                        "\x1b[1;91mERROR:No `{}` file found.\x1b[0m",
+                        file_name
+                    ));
+                Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "File not found.",
+                )))
+                }
             }
         };
         let metadata = match fs::metadata(tf.as_ref().unwrap()) {
@@ -287,23 +286,26 @@ fn check_theme(verbose: bool) -> Result<()> {
         let permissions = metadata.permissions();
         if tf.as_ref().unwrap().ends_with("up") || tf.as_ref().unwrap().ends_with("down") {
             if verbose {
-                if metadata.is_file()
-                    && permissions.mode() & 0o111 != 0
-                {
-                    println!("Found {:?} with executable permissions: {:?}", tf.unwrap(), permissions.mode() & 0o111 != 0)
+                if metadata.is_file() && permissions.mode() & 0o111 != 0 {
+                    println!(
+                        "Found {:?} with executable permissions: {:?}",
+                        tf.unwrap(),
+                        permissions.mode() & 0o111 != 0
+                    );
                 } else {
-                    println!("\x1b[1;91mERROR: Found {:?}, but missing executable permissions!\x1b[0m", tf.unwrap())
+                    println!(
+                        "\x1b[1;91mERROR: Found {:?}, but missing executable permissions!\x1b[0m",
+                        tf.unwrap()
+                    );
                 }
             }
-        } else if tf.as_ref().unwrap().ends_with("theme.toml")  {
-           if verbose && metadata.is_file() {
-                println!("Found {:?}", tf.unwrap())
-            }
+        } else if tf.as_ref().unwrap().ends_with("theme.toml") && verbose && metadata.is_file() {
+            println!("Found {:?}", tf.unwrap());
         }
     }
     if returns.is_empty() {
-            println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
-            Ok(())
+        println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
+        Ok(())
     } else {
         Err(leftwm::errors::LeftError::from(std::io::Error::new(
             std::io::ErrorKind::Other,
