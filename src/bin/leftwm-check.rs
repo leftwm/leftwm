@@ -4,6 +4,7 @@ use leftwm::errors::Result;
 use leftwm::utils;
 use leftwm::Command;
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
@@ -57,6 +58,8 @@ async fn main() -> Result<()> {
     }
     println!("\x1b[0;94m::\x1b[0m Checking environment . . .");
     check_elogind(verbose)?;
+    println!("\x1b[0;94m::\x1b[0m Checking theme . . .");
+    check_theme(verbose)?;
 
     Ok(())
 }
@@ -216,5 +219,95 @@ fn check_elogind(verbose: bool) -> Result<()> {
             );
             Ok(())
         }
+    }
+}
+
+/// Checks if `.config/leftwm/theme/current/` is a valid path
+/// Checks if `up` and `down` scripts are in the `current` directory and have executable permission
+/// Checks if `theme.toml` is in the `current` path
+fn check_theme(verbose: bool) -> Result<()> {
+    let mut returns = Vec::new();
+    let path_current_theme =
+        BaseDirectories::with_prefix("leftwm/themes")?.find_config_file("current");
+    match &path_current_theme {
+        Some(p) => {
+            if verbose {
+                if fs::symlink_metadata(&p)?.file_type().is_symlink() {
+                    println!(
+                        "Found symlink `current`, pointing to theme folder: {:?}",
+                        fs::read_link(&p).unwrap()
+                    )
+                } else {
+                    println!("Found `current` theme folder: {:?}", p)
+                }
+            }
+        }
+        None => {
+            returns.push(
+                format!("\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m")
+            )
+        }
+    };
+    let theme_files = vec![
+        "up",
+        "down",
+        "theme.toml"
+        ];
+    for file_name in &theme_files {
+        let tf = match BaseDirectories::with_prefix(path_current_theme
+              .clone()
+              .unwrap())?
+              .find_config_file(&file_name) {
+            Some(f) => Ok(f),
+            None => {
+               if *file_name == "up" || *file_name == "down" {
+                    returns.push(
+                        format!("\x1b[1;91mERROR: No `{}` script found.\x1b[0m", file_name)
+                    );
+               } else if *file_name == "theme.toml" {
+                    returns.push(
+                        format!("\x1b[1;91mERROR:No `{}` file found.\x1b[0m", file_name)
+                    );
+               };
+               Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                     std::io::ErrorKind::Other,
+                     "File not found.",
+               )))
+            }
+        };
+        let metadata = match fs::metadata(tf.as_ref().unwrap()) {
+            Ok(metadata) => metadata,
+            Err(_) => {
+                return Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Couldn't read metadata.",
+                )))
+            }
+        };
+        let permissions = metadata.permissions();
+        if tf.as_ref().unwrap().ends_with("up") || tf.as_ref().unwrap().ends_with("down") {
+            if verbose {
+                if metadata.is_file()
+                    && permissions.mode() & 0o111 != 0
+                {
+                    println!("Found {:?} with executable permissions: {:?}", tf.unwrap(), permissions.mode() & 0o111 != 0)
+                } else {
+                    println!("\x1b[1;91mERROR: Found {:?}, but missing executable permissions!\x1b[0m", tf.unwrap())
+                }
+            }
+        } else if tf.as_ref().unwrap().ends_with("theme.toml")  {
+           if verbose && metadata.is_file() {
+                println!("Found {:?}", tf.unwrap())
+            }
+        }
+    }
+    if returns.is_empty() {
+            println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
+            Ok(())
+    } else {
+        Err(leftwm::errors::LeftError::from(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "\x1b[1;91mERROR: Theme is broken: {}\x1b[1;91m",
+        )))
     }
 }
