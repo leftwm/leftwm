@@ -1,12 +1,13 @@
-// We allow this so that we can be verbose and indicate that
-// this is `TagModel` and not `WindowModel` or anything else.
-#![allow(clippy::module_name_repetitions)]
 use serde::{Deserialize, Serialize};
+
+use crate::layouts::Layout;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct Tag {
     pub id: String,
     pub hidden: bool,
+    pub layout: Layout,
+    pub layouts: Vec<Layout>,
     #[serde(skip)]
     pub main_width_percentage: u8,
     #[serde(skip)]
@@ -17,10 +18,12 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(id: &str) -> Tag {
+    pub fn new(id: &str, layouts: Vec<Layout>) -> Tag {
         Tag {
             id: id.to_owned(),
             hidden: false,
+            layout: Layout::new(&layouts),
+            layouts,
             main_width_percentage: 50,
             flipped_horizontal: false,
             flipped_vertical: false,

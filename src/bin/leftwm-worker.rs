@@ -37,7 +37,7 @@ fn main() {
         let mut tags: Vec<Tag> = config
             .get_list_of_tags()
             .iter()
-            .map(|s| Tag::new(s))
+            .map(|s| Tag::new(s, config.layouts.clone()))
             .collect();
         tags.push(Tag {
             id: "NSP".to_owned(),

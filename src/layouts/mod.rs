@@ -48,6 +48,12 @@ pub const LAYOUTS: [Layout; 12] = [
     Layout::LeftWiderRightStack,
 ];
 
+impl Default for Layout {
+    fn default() -> Self {
+        Layout::MainAndVertStack
+    }
+}
+
 // This is tedious, but simple and effective.
 impl Layout {
     pub fn new(layouts: &[Layout]) -> Self {

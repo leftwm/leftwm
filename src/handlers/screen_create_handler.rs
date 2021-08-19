@@ -30,7 +30,7 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
     //make sure are enough tags for this new screen
     if manager.tags.len() <= tag_index {
         let id = (tag_index + 1).to_string();
-        manager.tags.push(Tag::new(&id));
+        manager.tags.push(Tag::new(&id, manager.layouts.clone()));
     }
     let next_tag = manager.tags[tag_index].clone();
     focus_handler::focus_workspace(manager, &workspace);
