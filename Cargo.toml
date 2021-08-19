@@ -46,6 +46,7 @@ tempfile = "3.2.0"
 assert_cmd = "2"
 predicates = "2"
 escargot = "0.5.2"
+filesystem = "0.4.4"
 
 [features]
 default = ["slow-dm-fix", "slog-term"]
