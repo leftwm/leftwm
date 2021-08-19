@@ -226,10 +226,53 @@ fn check_elogind(verbose: bool) -> Result<()> {
 /// Checks if `up` and `down` scripts are in the `current` directory and have executable permission
 /// Checks if `theme.toml` is in the `current` path
 fn check_theme(verbose: bool) -> Result<()> {
-    let mut returns = Vec::new();
+    //let mut returns = Vec::new();
     let path_current_theme =
         BaseDirectories::with_prefix("leftwm/themes")?.find_config_file("current");
-    match &path_current_theme {
+
+    match check_current_theme_set(&path_current_theme, verbose) {
+        Ok(_) => check_theme_contents(
+            BaseDirectories::with_prefix("leftwm/themes")?.find_config_files("current"),
+            verbose,
+        ),
+        Err(e) => Err(e),
+    }
+}
+
+fn check_theme_contents(mut iter: xdg::FileFindIterator, verbose: bool) -> Result<()> {
+    match missing_expected_file(&mut iter) {
+        Some(file) => Err(leftwm::errors::LeftError::from(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("File: \'{}\' not found.", file),
+        ))),
+        None => {
+            for filepath in iter {
+                match filepath {
+                    f if f.ends_with("up") => match check_permissions(f, verbose) {
+                        Ok(_fp) => continue,
+                        Err(e) => return Err(e),
+                    },
+                    f if f.ends_with("down") => match check_permissions(f, verbose) {
+                        Ok(_fp) => continue,
+                        Err(e) => return Err(e),
+                    },
+                    //f if f.ends_with("theme.toml") => check_theme_toml(f),
+                    _ => (),
+                }
+            }
+            Ok(())
+        }
+    }
+}
+
+fn missing_expected_file<'a>(iter: &mut xdg::FileFindIterator) -> Option<&'a str> {
+    vec!["up", "down", "theme.toml"]
+        .into_iter()
+        .find(|f| iter.find(|fp| fp.ends_with(f)).is_none())
+}
+
+fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<&PathBuf> {
+    match &filepath {
         Some(p) => {
             if verbose {
                 if fs::symlink_metadata(&p)?.file_type().is_symlink() {
@@ -237,79 +280,53 @@ fn check_theme(verbose: bool) -> Result<()> {
                         "Found symlink `current`, pointing to theme folder: {:?}",
                         fs::read_link(&p).unwrap()
                     );
+                    Ok(p)
                 } else {
                     println!("Found `current` theme folder: {:?}", p);
+                    Ok(p)
                 }
+            } else {
+                Ok(p)
             }
         }
-        None => returns.push(
-            "\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m".to_string(),
-        ),
-    };
-    let theme_files = vec!["up", "down", "theme.toml"];
-    for file_name in &theme_files {
-        let tf = match BaseDirectories::with_prefix(path_current_theme.clone().unwrap())?
-            .find_config_file(&file_name)
-        {
-            Some(f) => Ok(f),
-            _ => {
-                if *file_name == "up" || *file_name == "down" {
-                    returns.push(format!(
-                        "\x1b[1;91mERROR: No `{}` script found.\x1b[0m",
-                        file_name
-                    ));
-                    Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "File not found.",
-                    )))
-                } else {
-                    returns.push(format!(
-                        "\x1b[1;91mERROR:No `{}` file found.\x1b[0m",
-                        file_name
-                    ));
-                    Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "File not found.",
-                    )))
-                }
-            }
-        };
-        let metadata = match fs::metadata(tf.as_ref().unwrap()) {
-            Ok(metadata) => metadata,
-            Err(_) => {
-                return Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Couldn't read metadata.",
-                )))
-            }
-        };
-        let permissions = metadata.permissions();
-        if tf.as_ref().unwrap().ends_with("up") || tf.as_ref().unwrap().ends_with("down") {
-            if verbose {
-                if metadata.is_file() && permissions.mode() & 0o111 != 0 {
-                    println!(
-                        "Found {:?} with executable permissions: {:?}",
-                        tf.unwrap(),
-                        permissions.mode() & 0o111 != 0
-                    );
-                } else {
-                    println!(
-                        "\x1b[1;91mERROR: Found {:?}, but missing executable permissions!\x1b[0m",
-                        tf.unwrap()
-                    );
-                }
-            }
-        } else if tf.as_ref().unwrap().ends_with("theme.toml") && verbose && metadata.is_file() {
-            println!("Found {:?}", tf.unwrap());
-        }
-    }
-    if returns.is_empty() {
-        println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
-        Ok(())
-    } else {
-        Err(leftwm::errors::LeftError::from(std::io::Error::new(
+        None => Err(leftwm::errors::LeftError::from(std::io::Error::new(
             std::io::ErrorKind::Other,
-            "\x1b[1;91mERROR: Theme is broken: {}\x1b[1;91m",
-        )))
+            "\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m".to_string(),
+        ))),
+    }
+}
+
+fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
+    let metadata = match fs::metadata(&filepath) {
+        Ok(metadata) => metadata,
+        Err(_) => {
+            return Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Couldn't read metadata.",
+            )))
+        }
+    };
+    let permissions = metadata.permissions();
+    if verbose {
+        if metadata.is_file() && (permissions.mode() & 0o111 != 0) {
+            println!(
+                "Found {:?} with executable permissions: {:?}",
+                &filepath,
+                permissions.mode() & 0o111 != 0
+            );
+            Ok(filepath)
+        } else {
+            let error = format!(
+                "\x1b[1;91mERROR: Found {:?}, but missing executable permissions!\x1b[0m",
+                &filepath
+            );
+            println!("{}", error);
+            Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                error,
+            )))
+        }
+    } else {
+        Ok(filepath)
     }
 }
