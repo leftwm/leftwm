@@ -17,28 +17,29 @@
             :onchange "")
     time))
 
-(defwidget workspaces []
-    (box :class "workspaces"
-         :orientation "h"
-         :space-evenly true
-         :halign "start"
-         :spacing 10
-            (button :class "ws-button-mine" :onclick "wmctrl -s 0" ``)
-            (button :class "ws-button-busy" :onclick "wmctrl -s 1" ``)
-            (button :class "ws-button-busy" :onclick "wmctrl -s 2" ``)
-            (button :class "ws-button" :onclick "wmctrl -s 3" `·`)
-            (button :class "ws-button" :onclick "wmctrl -s 4" `·`)
-            (button :class "ws-button" :onclick "wmctrl -s 5" `·`)
-            (button :class "ws-button" :onclick "wmctrl -s 6" `·`)
-            (button :class "ws-button" :onclick "wmctrl -s 7" `·`)
-            (button :class "ws-button" :onclick "wmctrl -s 8" `·`)))
 ; (defwidget workspaces []
-  ; (box :class "workspaces"
-       ; :orientation "h"
-       ; :space-evenly true
-       ; :halign "start"
-       ; :spacing 10
-    ; (literal :content {wm-tags})))
+    ; (box :class "workspaces"
+         ; :orientation "h"
+         ; :space-evenly true
+         ; :halign "start"
+         ; :spacing 10
+            ; (button :class "ws-button-mine" :onclick "wmctrl -s 0" `1`)
+            ; (button :class "ws-button-busy" :onclick "wmctrl -s 1" `2`)
+            ; (button :class "ws-button-busy" :onclick "wmctrl -s 2" `3`)
+            ; (button :class "ws-button" :onclick "wmctrl -s 3" `·`)
+            ; (button :class "ws-button" :onclick "wmctrl -s 4" `·`)
+            ; (button :class "ws-button" :onclick "wmctrl -s 5" `·`)
+            ; (button :class "ws-button" :onclick "wmctrl -s 6" `·`)
+            ; (button :class "ws-button" :onclick "wmctrl -s 7" `·`)
+            ; (button :class "ws-button" :onclick "wmctrl -s 8" `·`)))
+
+(defwidget workspaces []
+  (box :class "workspaces"
+       :orientation "h"
+       :space-evenly true
+       :halign "start"
+       :spacing 10
+    (literal :content {wm-tags})))
 
 (defwidget music []
   (box :class "music"
@@ -73,7 +74,7 @@
 (deflisten wm-tags
   "leftwm-state -w 0 -t ~/.config/leftwm/themes/current/template.liquid")
 
-(defwindow bar
+(defwindow bar0
   :monitor 0
   :windowtype "dock"
   :geometry (geometry :x "0%"
