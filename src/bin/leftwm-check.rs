@@ -232,21 +232,21 @@ fn check_theme(verbose: bool) -> Result<()> {
 
     match check_current_theme_set(&path_current_theme, verbose) {
         Ok(_) => check_theme_contents(
-            BaseDirectories::with_prefix("leftwm/themes")?.find_config_files("current"),
+            BaseDirectories::with_prefix("leftwm/themes")?.list_config_files("current"),
             verbose,
         ),
         Err(e) => Err(e),
     }
 }
 
-fn check_theme_contents(mut iter: xdg::FileFindIterator, verbose: bool) -> Result<()> {
-    match missing_expected_file(&mut iter) {
+fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> Result<()> {
+    match missing_expected_file(&filepaths) {
         Some(file) => Err(leftwm::errors::LeftError::from(std::io::Error::new(
             std::io::ErrorKind::Other,
             format!("File: \'{}\' not found.", file),
         ))),
         None => {
-            for filepath in iter {
+            for filepath in filepaths {
                 match filepath {
                     f if f.ends_with("up") => match check_permissions(f, verbose) {
                         Ok(_fp) => continue,
@@ -265,10 +265,10 @@ fn check_theme_contents(mut iter: xdg::FileFindIterator, verbose: bool) -> Resul
     }
 }
 
-fn missing_expected_file<'a>(iter: &mut xdg::FileFindIterator) -> Option<&'a str> {
+fn missing_expected_file<'a>(filepaths: &[PathBuf]) -> Option<&'a str> {
     vec!["up", "down", "theme.toml"]
         .into_iter()
-        .find(|f| iter.find(|fp| fp.ends_with(f)).is_none())
+        .find(|f| filepaths.iter().find(|fp| fp.ends_with(f)).is_none())
 }
 
 fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<&PathBuf> {
@@ -328,5 +328,15 @@ fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
         }
     } else {
         Ok(filepath)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_check_theme() {
+        assert!(check_theme(true).is_ok())
     }
 }
