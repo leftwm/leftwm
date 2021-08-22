@@ -198,11 +198,8 @@ mod test {
     use tokio::io::AsyncWriteExt;
     use tokio::time;
 
-    #[test]
-    fn read_command() {
-        futures::executor::block_on(read_command_async());
-    }
-    async fn read_command_async() {
+    #[tokio::test]
+    async fn read_command() {
         let pipe_file = temp_path().await.unwrap();
         let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
 
@@ -237,11 +234,8 @@ mod test {
         }
     }
 
-    #[test]
-    fn pipe_cleanup() {
-        futures::executor::block_on(pipe_cleanup_async());
-    }
-    async fn pipe_cleanup_async() {
+    #[tokio::test]
+    async fn pipe_cleanup() {
         let pipe_file = temp_path().await.unwrap();
         fs::remove_file(pipe_file.as_path()).await.unwrap();
 

@@ -110,11 +110,8 @@ mod test {
     use crate::utils::helpers::test::temp_path;
     use tokio::io::{AsyncBufReadExt, BufReader};
 
-    #[test]
-    fn multiple_peers() {
-        futures::executor::block_on(multiple_peers_async());
-    }
-    async fn multiple_peers_async() {
+    #[tokio::test]
+    async fn multiple_peers() {
         let manager = Manager::default();
 
         let socket_file = temp_path().await.unwrap();
@@ -155,11 +152,8 @@ mod test {
         state_socket.shutdown().await;
     }
 
-    #[test]
-    fn get_update() {
-        futures::executor::block_on(get_update_async());
-    }
-    async fn get_update_async() {
+    #[tokio::test]
+    async fn get_update() {
         let manager = Manager::default();
 
         let socket_file = temp_path().await.unwrap();
@@ -186,11 +180,8 @@ mod test {
         state_socket.shutdown().await;
     }
 
-    #[test]
-    fn socket_cleanup() {
-        futures::executor::block_on(socket_cleanup_async());
-    }
-    async fn socket_cleanup_async() {
+    #[tokio::test]
+    async fn socket_cleanup() {
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();
         state_socket.listen(socket_file.clone()).await.unwrap();
@@ -198,19 +189,18 @@ mod test {
         assert!(!socket_file.exists());
     }
 
-    #[test]
-    fn socket_already_bound() {
-        futures::executor::block_on(socket_already_bound_async());
-    }
-    async fn socket_already_bound_async() {
+    #[tokio::test]
+    async fn socket_already_bound() {
         let socket_file = temp_path().await.unwrap();
         let mut old_socket = StateSocket::default();
         old_socket.listen(socket_file.clone()).await.unwrap();
         assert!(socket_file.exists());
+
         let mut state_socket = StateSocket::default();
         state_socket.listen(socket_file.clone()).await.unwrap();
         state_socket.shutdown().await;
         assert!(!socket_file.exists());
+
         old_socket.shutdown().await;
     }
 }
