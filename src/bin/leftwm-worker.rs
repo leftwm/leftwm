@@ -40,7 +40,7 @@ fn main() {
         };
 
         let mut tags: Vec<Tag> = config
-            .get_list_of_tags()
+            .create_list_of_tags()
             .iter()
             .map(|s| Tag::new(s))
             .collect();
@@ -52,7 +52,7 @@ fn main() {
         let mut manager = Manager {
             focus_manager,
             tags,
-            scratchpads: config.get_list_of_scratchpads(),
+            scratchpads: config.create_list_of_scratchpads(),
             layouts: config.layouts.clone(),
             ..Manager::default()
         };

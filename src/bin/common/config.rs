@@ -17,7 +17,7 @@ use std::path::Path;
 use xdg::BaseDirectories;
 
 /// General configuration
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
@@ -176,18 +176,13 @@ impl leftwm::config::Config for Config {
             .collect()
     }
 
-    fn get_list_of_tags(&self) -> Vec<String> {
+    fn create_list_of_tags(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();
         }
-        Config::default().tags.unwrap()
-    }
-
-    fn get_list_of_scratchpads(&self) -> Vec<ScratchPad> {
-        if let Some(scratchpads) = &self.scratchpad {
-            return scratchpads.clone();
-        }
-        return vec![];
+        Config::default()
+            .tags
+            .expect("we created it in the Default impl; qed")
     }
 
     fn workspaces(&self) -> Option<&[Workspace]> {
@@ -204,6 +199,15 @@ impl leftwm::config::Config for Config {
 
     fn disable_current_tag_swap(&self) -> bool {
         self.disable_current_tag_swap
+    }
+}
+
+impl Config {
+    pub fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+        if let Some(scratchpads) = &self.scratchpad {
+            return scratchpads.clone();
+        }
+        return vec![];
     }
 }
 

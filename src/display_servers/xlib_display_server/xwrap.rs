@@ -1485,7 +1485,7 @@ impl XWrap {
         }
 
         //EWMH stuff for desktops
-        self.tags = config.get_list_of_tags();
+        self.tags = config.create_list_of_tags();
         self.init_desktops_hints();
 
         //cleanup grabs

@@ -500,10 +500,7 @@ mod tests {
         fn mapped_bindings(&self) -> Vec<Keybind> {
             todo!()
         }
-        fn get_list_of_tags(&self) -> Vec<String> {
-            todo!()
-        }
-        fn get_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+        fn create_list_of_tags(&self) -> Vec<String> {
             todo!()
         }
         fn workspaces(&self) -> Option<&[Workspace]> {
