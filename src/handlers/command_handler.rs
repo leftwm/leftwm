@@ -491,11 +491,39 @@ fn handle_focus(manager: &mut Manager, handle: WindowHandle) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::{Config, FocusBehaviour, Keybind, ScratchPad, Workspace};
     use crate::models::Tag;
+
+    struct TestConfig;
+
+    impl Config for TestConfig {
+        fn mapped_bindings(&self) -> Vec<Keybind> {
+            todo!()
+        }
+        fn get_list_of_tags(&self) -> Vec<String> {
+            todo!()
+        }
+        fn get_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+            todo!()
+        }
+        fn workspaces(&self) -> Option<&[Workspace]> {
+            todo!()
+        }
+        fn focus_behaviour(&self) -> FocusBehaviour {
+            todo!()
+        }
+        fn mousekey(&self) -> &str {
+            todo!()
+        }
+        fn disable_current_tag_swap(&self) -> bool {
+            todo!()
+        }
+    }
+
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::default();
-        let config = Config::default();
+        let config = TestConfig;
         // no screen creation here
         assert!(!process(
             &mut manager,
@@ -520,7 +548,7 @@ mod tests {
     #[test]
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
         let mut manager = Manager::default();
-        let config = Config::default();
+        let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         // no tag creation here but one tag per screen is created
@@ -548,7 +576,7 @@ mod tests {
     #[test]
     fn go_to_tag_should_return_false_on_invalid_input() {
         let mut manager = Manager::default();
-        let config = Config::default();
+        let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());
         manager.tags = vec![
             Tag::new("A15"),
@@ -586,7 +614,7 @@ mod tests {
             ],
             ..Manager::default()
         };
-        let config = Config::default();
+        let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
 

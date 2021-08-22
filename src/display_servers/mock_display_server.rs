@@ -8,8 +8,8 @@ pub struct MockDisplayServer {
     pub screens: Vec<Screen>,
 }
 
-impl DisplayServer for MockDisplayServer {
-    fn new(_: &Config) -> MockDisplayServer {
+impl<C: Config> DisplayServer<C> for MockDisplayServer {
+    fn new(_: C) -> MockDisplayServer {
         MockDisplayServer { screens: vec![] }
     }
 

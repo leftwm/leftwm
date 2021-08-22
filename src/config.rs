@@ -3,7 +3,7 @@ mod scratchpad;
 mod theme_setting;
 mod workspace_config;
 
-use crate::models::FocusBehaviour;
+pub use crate::models::FocusBehaviour;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use theme_setting::ThemeSetting;
