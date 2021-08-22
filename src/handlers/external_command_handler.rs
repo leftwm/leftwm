@@ -4,7 +4,8 @@ use crate::config::Config;
 use crate::config::ThemeSetting;
 use crate::utils::command_pipe::ExternalCommand;
 use crate::utils::window_updater::update_windows;
-pub fn process(manager: &mut Manager, config: &Config, command: ExternalCommand) -> bool {
+
+pub fn process(manager: &mut Manager, config: &impl Config, command: ExternalCommand) -> bool {
     let needs_redraw = process_work(manager, config, command);
     if needs_redraw {
         update_windows(manager);
@@ -12,7 +13,7 @@ pub fn process(manager: &mut Manager, config: &Config, command: ExternalCommand)
     needs_redraw
 }
 
-fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand) -> bool {
+fn process_work(manager: &mut Manager, config: &impl Config, command: ExternalCommand) -> bool {
     match command {
         ExternalCommand::UnloadTheme => {
             let theme = ThemeSetting::default();
@@ -129,7 +130,7 @@ fn send_workspace_to_tag(manager: &mut Manager, ws_index: usize, tag_index: usiz
     false
 }
 
-fn send_window_to_tag(manager: &mut Manager, config: &Config, tag_index: usize) -> bool {
+fn send_window_to_tag(manager: &mut Manager, config: &impl Config, tag_index: usize) -> bool {
     if tag_index < manager.tags.len() {
         //tag number as 1 based.
         let tag_num = format!("{}", tag_index + 1);

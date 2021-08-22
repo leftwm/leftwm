@@ -6,6 +6,8 @@ use crate::Manager;
 use std::fs::File;
 use std::path::Path;
 
+// TODO: partially move to bin as the serialization process is left at the discretion of the bin
+
 // TODO: make configurable
 /// Path to file where state will be dumper upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";

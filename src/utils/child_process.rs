@@ -185,7 +185,6 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 
 /// Sends command to shell for execution
 /// Assumes STDIN/STDOUT unwanted.
-
 pub fn exec_shell(command: &str, manager: &mut Manager) -> Option<u32> {
     let child = Command::new("sh")
         .arg("-c")

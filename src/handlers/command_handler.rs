@@ -20,7 +20,7 @@ use std::str::FromStr;
  *  */
 pub fn process(
     manager: &mut Manager,
-    config: &Config,
+    config: &impl Config,
     command: &Command,
     val: &Option<String>,
 ) -> bool {
@@ -29,7 +29,7 @@ pub fn process(
 
 pub fn process_internal(
     manager: &mut Manager,
-    config: &Config,
+    config: &impl Config,
     command: &Command,
     val: &Option<String>,
 ) -> Option<bool> {
@@ -177,13 +177,13 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     Some(true)
 }
 
-fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> Option<bool> {
+fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &impl Config) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
     let input_tag = val.as_ref()?.parse().ok()?;
     let mut destination_tag = input_tag;
-    if !config.disable_current_tag_swap {
+    if !config.disable_current_tag_swap() {
         destination_tag = match (current_tag, previous_tag, input_tag) {
             (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => prev_tag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
             (_, _, _) => input_tag, // go to the input tag tag

@@ -8,11 +8,11 @@ use crate::utils::window_updater::update_windows;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 /// Configuration container for processing `DisplayEvents`.
-pub struct DisplayEventHandler {
-    pub config: Config,
+pub struct DisplayEventHandler<C> {
+    pub config: C,
 }
 
-impl DisplayEventHandler {
+impl<C: Config> DisplayEventHandler<C> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
@@ -54,7 +54,7 @@ impl DisplayEventHandler {
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
-                let mouse_key = utils::xkeysym_lookup::into_mod(&self.config.mousekey);
+                let mouse_key = utils::xkeysym_lookup::into_mod(self.config.mousekey());
                 mouse_combo_handler::process(manager, mod_mask, button, handle, mouse_key)
             }
 
