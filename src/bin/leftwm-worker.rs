@@ -1,5 +1,8 @@
+mod common;
+
 use leftwm::{
     child_process::{self, Nanny},
+    config::Config as _,
     models::{FocusBehaviour, FocusManager, Tag},
 };
 
@@ -9,9 +12,11 @@ use leftwm::{
 };
 use std::panic;
 use std::path::{Path, PathBuf};
-use std::sync::{atomic::Ordering, Once};
+use std::sync::{atomic::Ordering, Arc, Once};
 
-fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
+use common::config::Config;
+
+fn get_events<T: DisplayServer<C>, C: leftwm::config::Config>(ds: &mut T) -> Vec<DisplayEvent> {
     ds.get_next_events()
 }
 
@@ -26,7 +31,7 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        let config = config::load();
+        let config = common::config::load();
 
         let focus_manager = FocusManager {
             behaviour: config.focus_behaviour.clone(),
@@ -54,7 +59,8 @@ fn main() {
 
         child_process::register_child_hook(manager.reap_requested.clone());
 
-        let mut display_server = XlibDisplayServer::new(&config);
+        let config = Arc::new(config);
+        let mut display_server = XlibDisplayServer::new(config.clone());
         let handler = DisplayEventHandler {
             config: config.clone(),
         };
@@ -87,9 +93,9 @@ async fn timeout(mills: u64) {
 
 async fn event_loop(
     manager: &mut Manager,
-    display_server: &mut XlibDisplayServer,
-    handler: &DisplayEventHandler,
-    config: crate::config::Config,
+    display_server: &mut XlibDisplayServer<Arc<Config>>,
+    handler: &DisplayEventHandler<Arc<Config>>,
+    config: Arc<Config>,
 ) {
     let socket_file = place_runtime_file("current_state.sock")
         .expect("ERROR: couldn't create current_state.sock");

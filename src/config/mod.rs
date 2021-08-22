@@ -37,3 +37,37 @@ pub trait Config {
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     fn disable_current_tag_swap(&self) -> bool;
 }
+
+use std::sync::Arc;
+impl<C> Config for Arc<C>
+where
+    C: Config,
+{
+    fn mapped_bindings(&self) -> Vec<Keybind> {
+        C::mapped_bindings(self)
+    }
+
+    fn get_list_of_tags(&self) -> Vec<String> {
+        C::get_list_of_tags(self)
+    }
+
+    fn get_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+        C::get_list_of_scratchpads(self)
+    }
+
+    fn workspaces(&self) -> Option<&[Workspace]> {
+        C::workspaces(self)
+    }
+
+    fn focus_behaviour(&self) -> FocusBehaviour {
+        C::focus_behaviour(self)
+    }
+
+    fn mousekey(&self) -> &str {
+        C::mousekey(self)
+    }
+
+    fn disable_current_tag_swap(&self) -> bool {
+        C::disable_current_tag_swap(self)
+    }
+}

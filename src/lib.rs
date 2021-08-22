@@ -20,7 +20,7 @@ mod display_event;
 pub mod display_servers;
 pub mod errors;
 mod handlers;
-mod layouts;
+pub mod layouts;
 pub mod models;
 pub mod state;
 pub mod utils;

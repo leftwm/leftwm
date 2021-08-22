@@ -5,7 +5,7 @@ use std::collections::{HashMap, VecDeque};
 
 use super::MaybeWindowHandle;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum FocusBehaviour {
     Sloppy,
     ClickTo,

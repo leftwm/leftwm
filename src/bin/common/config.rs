@@ -1,6 +1,7 @@
 //! `LeftWM` general configuration
 
-use crate::{
+use leftwm::{
+    config::{Keybind, ScratchPad, Workspace},
     errors::Result,
     layouts::{Layout, LAYOUTS},
     models::FocusBehaviour,
@@ -14,8 +15,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use xdg::BaseDirectories;
-
-use crate::config::{Keybind, ScratchPad, ThemeSetting, Workspace};
 
 /// General configuration
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -160,10 +159,8 @@ fn exit_strategy<'s>() -> &'s str {
     "pkill leftwm"
 }
 
-impl Config {
-    /// Returns a collection of bindings with the mod key mapped.
-    #[must_use]
-    pub fn mapped_bindings(&self) -> Vec<Keybind> {
+impl leftwm::config::Config for Config {
+    fn mapped_bindings(&self) -> Vec<Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -179,24 +176,34 @@ impl Config {
             .collect()
     }
 
-    /// # Panics
-    ///
-    /// Will panic if the default tags cannot be unwrapped. Not likely to occur, as this is defined
-    /// behaviour.
-    #[must_use]
-    pub fn get_list_of_tags(&self) -> Vec<String> {
+    fn get_list_of_tags(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();
         }
         Config::default().tags.unwrap()
     }
 
-    #[must_use]
-    pub fn get_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+    fn get_list_of_scratchpads(&self) -> Vec<ScratchPad> {
         if let Some(scratchpads) = &self.scratchpad {
             return scratchpads.clone();
         }
         return vec![];
+    }
+
+    fn workspaces(&self) -> Option<&[Workspace]> {
+        self.workspaces.as_deref()
+    }
+
+    fn focus_behaviour(&self) -> FocusBehaviour {
+        self.focus_behaviour
+    }
+
+    fn mousekey(&self) -> &str {
+        &self.mousekey
+    }
+
+    fn disable_current_tag_swap(&self) -> bool {
+        self.disable_current_tag_swap
     }
 }
 

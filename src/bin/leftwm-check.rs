@@ -1,11 +1,15 @@
+mod common;
+
 use clap::{App, Arg};
-use leftwm::config::{Config, Keybind, Workspace};
+use leftwm::config::{Keybind, Workspace};
 use leftwm::errors::Result;
 use leftwm::utils;
 use leftwm::Command;
 use std::fs;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
+
+use common::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -100,13 +104,13 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
         if verbose {
             println!("Checking config for valid workspace definitions.");
         }
-        let ids = leftwm::config::get_workspace_ids(&wss);
+        let ids = common::config::get_workspace_ids(&wss);
         if ids.iter().any(|id| id.is_some()) {
-            if !leftwm::config::all_ids_some(&ids)
+            if !common::config::all_ids_some(&ids)
             {
                 println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
                 false
-            } else if !leftwm::config::all_ids_unique(&ids) {
+            } else if !common::config::all_ids_unique(&ids) {
                 println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
                 false
             } else {
@@ -176,7 +180,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
     // We also cross-reference the ENV variable
     match (
         std::env::var("XDG_RUNTIME_DIR"),
-        leftwm::config::is_program_in_path("loginctl"),
+        common::config::is_program_in_path("loginctl"),
     ) {
         (Ok(val), true) => {
             if verbose {

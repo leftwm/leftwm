@@ -24,7 +24,7 @@ mod xcursor;
 
 static SETUP: Once = Once::new();
 
-pub struct XlibDisplayServer<C: Config> {
+pub struct XlibDisplayServer<C> {
     xw: XWrap,
     root: xlib::Window,
     config: C,
