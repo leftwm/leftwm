@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use leftwm::config::{Config, Keybind, Workspace};
+use leftwm::config::{Config, Keybind, ThemeSetting, Workspace};
 use leftwm::errors::Result;
 use leftwm::utils;
 use leftwm::Command;
@@ -104,7 +104,7 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
             println!("Checking config for valid workspace definitions.");
         }
         let ids = leftwm::config::get_workspace_ids(&wss);
-        if ids.iter().any(|id| id.is_some()) {
+        if ids.iter().any(std::option::Option::is_some) {
             if !leftwm::config::all_ids_some(&ids)
             {
                 println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
@@ -240,35 +240,38 @@ fn check_theme(verbose: bool) -> Result<()> {
 }
 
 fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> Result<()> {
-    match missing_expected_file(&filepaths) {
-        Some(file) => Err(leftwm::errors::LeftError::from(std::io::Error::new(
+    if let Some(file) = missing_expected_file(&filepaths) {
+        Err(leftwm::errors::LeftError::from(std::io::Error::new(
             std::io::ErrorKind::Other,
             format!("File: \'{}\' not found.", file),
-        ))),
-        None => {
-            for filepath in filepaths {
-                match filepath {
-                    f if f.ends_with("up") => match check_permissions(f, verbose) {
-                        Ok(_fp) => continue,
-                        Err(e) => return Err(e),
-                    },
-                    f if f.ends_with("down") => match check_permissions(f, verbose) {
-                        Ok(_fp) => continue,
-                        Err(e) => return Err(e),
-                    },
-                    //f if f.ends_with("theme.toml") => check_theme_toml(f),
-                    _ => (),
-                }
+        )))
+    } else {
+        for filepath in filepaths {
+            match filepath {
+                f if f.ends_with("up") => match check_permissions(f, verbose) {
+                    Ok(_fp) => continue,
+                    Err(e) => return Err(e),
+                },
+                f if f.ends_with("down") => match check_permissions(f, verbose) {
+                    Ok(_fp) => continue,
+                    Err(e) => return Err(e),
+                },
+                f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
+                    Ok(_fp) => continue,
+                    Err(e) => return Err(e),
+                },
+                _ => (),
             }
-            Ok(())
         }
+        println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
+        Ok(())
     }
 }
 
 fn missing_expected_file<'a>(filepaths: &[PathBuf]) -> Option<&'a str> {
     vec!["up", "down", "theme.toml"]
         .into_iter()
-        .find(|f| filepaths.iter().find(|fp| fp.ends_with(f)).is_none())
+        .find(|f| !filepaths.iter().any(|fp| fp.ends_with(f)))
 }
 
 fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<&PathBuf> {
@@ -280,18 +283,15 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
                         "Found symlink `current`, pointing to theme folder: {:?}",
                         fs::read_link(&p).unwrap()
                     );
-                    Ok(p)
                 } else {
                     println!("Found `current` theme folder: {:?}", p);
-                    Ok(p)
                 }
-            } else {
-                Ok(p)
             }
+            Ok(p)
         }
         None => Err(leftwm::errors::LeftError::from(std::io::Error::new(
             std::io::ErrorKind::Other,
-            "\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m".to_string(),
+            "ERROR: No theme folder or symlink `current` found.".to_string(),
         ))),
     }
 }
@@ -320,6 +320,41 @@ fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
                 "\x1b[1;91mERROR: Found {:?}, but missing executable permissions!\x1b[0m",
                 &filepath
             );
+            println!("{}", error);
+            Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                error,
+            )))
+        }
+    } else {
+        Ok(filepath)
+    }
+}
+
+fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
+    let metadata = match fs::metadata(&filepath) {
+        Ok(metadata) => metadata,
+        Err(_) => {
+            return Err(leftwm::errors::LeftError::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Couldn't read metadata.",
+            )))
+        }
+    };
+    let contents = fs::read_to_string(&filepath.as_path())?;
+    let theme_parsable = toml::from_str::<ThemeSetting>(&contents).is_ok();
+    if verbose {
+        if metadata.is_file() {
+            println!("Found {:?}", &filepath);
+            // TODO better Errormessage for broken theme file
+            if theme_parsable {
+                println!("The theme file looks OK.");
+            } else {
+                println!("The theme file is broken.");
+            }
+            Ok(filepath)
+        } else {
+            let error = "ERROR: No `theme.toml` found".to_string();
             println!("{}", error);
             Err(leftwm::errors::LeftError::from(std::io::Error::new(
                 std::io::ErrorKind::Other,
