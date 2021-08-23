@@ -365,13 +365,3 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
         Ok(filepath)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_check_theme() {
-        assert!(check_theme(true).is_ok())
-    }
-}
