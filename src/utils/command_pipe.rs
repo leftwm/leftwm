@@ -198,8 +198,12 @@ mod test {
     use tokio::io::AsyncWriteExt;
     use tokio::time;
 
-    #[tokio::test]
-    async fn read_command() {
+    #[test]
+    fn read_command() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(read_command_async());
+    }
+    async fn read_command_async() {
         let pipe_file = temp_path().await.unwrap();
         let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
 
@@ -234,8 +238,12 @@ mod test {
         }
     }
 
-    #[tokio::test]
-    async fn pipe_cleanup() {
+    #[test]
+    fn pipe_cleanup() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(pipe_cleanup_async());
+    }
+    async fn pipe_cleanup_async() {
         let pipe_file = temp_path().await.unwrap();
         fs::remove_file(pipe_file.as_path()).await.unwrap();
 

@@ -1,11 +1,15 @@
 use clap::{value_t, App, Arg};
 use leftwm::errors::Result;
 use leftwm::models::dto::{DisplayState, ManagerState};
+use std::ffi::OsStr;
+use std::path::Path;
 use std::str;
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader, Lines};
 use tokio::net::UnixStream;
 use xdg::BaseDirectories;
+
+type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource>;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -65,8 +69,11 @@ async fn main() -> Result<()> {
     let newline = matches.occurrences_of("newline") == 1;
 
     if let Some(template_file) = template_file {
+        let path = Path::new(template_file);
+        let partials = get_partials(path.parent()).await?;
         let template_str = fs::read_to_string(template_file).await?;
         let template = liquid::ParserBuilder::with_stdlib()
+            .partials(partials)
             .build()
             .expect("Unable to build template")
             .parse(&template_str)
@@ -99,6 +106,42 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn get_partials(dir: Option<&Path>) -> Result<Partials> {
+    let mut partials = Partials::empty();
+    match dir {
+        Some(d) => {
+            let entries = fs::read_dir(d).await?;
+
+            let partial_paths = partials_in_dir_entries(entries).await?;
+
+            for path in partial_paths {
+                partials.add(
+                    path.path().as_path().to_str().unwrap_or(" "),
+                    fs::read_to_string(path.path()).await?,
+                );
+            }
+            Ok(partials)
+        }
+        None => Ok(partials),
+    }
+}
+
+async fn partials_in_dir_entries(mut entries: fs::ReadDir) -> Result<Vec<fs::DirEntry>> {
+    let mut partial_paths = vec![];
+    while let Some(entry) = entries.next_entry().await? {
+        let f_n = entry.file_name();
+        if is_partial_filename(&f_n) {
+            partial_paths.push(entry)
+        }
+    }
+    Ok(partial_paths)
+}
+
+fn is_partial_filename(filename: &OsStr) -> bool {
+    let f_n = filename.to_str().unwrap_or(" ");
+    f_n.starts_with('_') && f_n.ends_with(".liquid")
 }
 
 fn raw_handler(line: &str) -> Result<()> {
@@ -164,4 +207,27 @@ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
     let socket_file = base.place_runtime_file("current_state.sock")?;
     let stream = UnixStream::connect(socket_file).await?;
     Ok(BufReader::new(stream).lines())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn correctly_identifies_partial_template_filenames() {
+        let file_names = vec![
+            "main.liquid",
+            "_partial.liquid",
+            "߀nonascii-in-filename.liquid", // first char U07C0
+            "1_partial.liquid",
+            "_liquid.txt",
+        ];
+        let partials = file_names
+            .iter()
+            .map(|f_n| OsStr::new(*f_n))
+            .filter(|f_n| is_partial_filename(f_n))
+            .collect::<Vec<&OsStr>>();
+
+        assert!(partials == vec![OsStr::new("_partial.liquid")])
+    }
 }
