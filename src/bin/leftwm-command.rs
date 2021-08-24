@@ -69,6 +69,8 @@ async fn main() -> Result<()> {
         CloseWindow
 
         Commands with arguments:
+            Use quotations for the command and arguments, like this:
+            leftwm-command \"<command> <args>\"
 
         LoadTheme              Args: <Path_to/theme.toml> 
         ToggleScratchPad       Args: <ScratchpadName>
