@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
         Commands without arguments:
         
         UnloadTheme
-        Reload (currently non-funct)
+        Reload
         ToggleFullScreen
         SwapScreens
         MoveWindowToLastWorkspace
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
         MoveWindowUp
         MoveWindowDown
         FocusWindowUp
-        MoveWindowTop (currently non-funct)
+        MoveWindowTop
         FocusWindowDown
         FocusNextTag
         FocusPreviousTag
