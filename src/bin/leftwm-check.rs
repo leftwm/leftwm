@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
         Ok(config) => {
             println!("\x1b[0;92m    -> Configuration loaded OK \x1b[0m");
             if config == Config::default() {
-                println!("\x1b[1;32mWARN: The file loaded was the default. Your configuration is likely invalid \x1b[0m");
+                println!("\x1b[1;93mWARN: The file loaded was the default. Your configuration is likely invalid \x1b[0m");
             }
             if verbose {
                 dbg!(&config);
@@ -215,7 +215,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
                 println!(":: XDG_RUNTIME_DIR: {:?}, LOGINCTL OKAY", e);
             }
             println!(
-                "\x1b[1;33mWARN: Elogind/systemd installed but XDG_RUNTIME_DIR not set.\nThis may be because elogind isn't started. \x1b[0m",
+                "\x1b[1;93mWARN: Elogind/systemd installed but XDG_RUNTIME_DIR not set.\nThis may be because elogind isn't started. \x1b[0m",
             );
             Ok(())
         }
@@ -284,14 +284,14 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
                         fs::read_link(&p).unwrap()
                     );
                 } else {
-                    println!("Found `current` theme folder: {:?}", p);
+                    println!("\x1b[1;93mWARN: Found `current` theme folder: {:?}. Use of a symlink is recommended, instead.\x1b[0m", p);
                 }
             }
             Ok(p)
         }
         None => Err(leftwm::errors::LeftError::from(std::io::Error::new(
             std::io::ErrorKind::Other,
-            "ERROR: No theme folder or symlink `current` found.".to_string(),
+            "\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m".to_string(),
         ))),
     }
 }
@@ -332,14 +332,14 @@ fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
 }
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
-    let metadata = match fs::metadata(&filepath) {
-        Ok(metadata) => metadata,
-        Err(_) => {
-            return Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Couldn't read metadata.",
-            )))
-        }
+    let metadata = if let Ok(metadata) = fs::metadata(&filepath) {
+        metadata
+    } else {
+        let error = "\x1b[1;91mERROR: Could not read metadata!\x1b[0m".to_string();
+        return Err(leftwm::errors::LeftError::from(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            error,
+        )));
     };
     let contents = fs::read_to_string(&filepath.as_path())?;
     let theme_parsable = toml::from_str::<ThemeSetting>(&contents).is_ok();
@@ -350,11 +350,11 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             if theme_parsable {
                 println!("The theme file looks OK.");
             } else {
-                println!("The theme file is broken.");
+                println!("\x1b[1;91mERROR: The theme file is broken.\x1b[0m");
             }
             Ok(filepath)
         } else {
-            let error = "ERROR: No `theme.toml` found".to_string();
+            let error = "\x1b[1;91mERROR: No `theme.toml` found\x1b[0m".to_string();
             println!("{}", error);
             Err(leftwm::errors::LeftError::from(std::io::Error::new(
                 std::io::ErrorKind::Other,
