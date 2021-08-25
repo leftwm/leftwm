@@ -3,26 +3,26 @@
 }
 
 //Global Styles
-.bar0 {
+window {
   background-color: #3a3a3a;
   color: #b0b4bc;
-  padding: 10px;
+  font-family: CascadiaCode;
 }
 
-// Styles on classes (see eww.yuck for more information)
+// Styles on classes (see eww.xml for more information)
 
 .sidestuff slider {
   all: unset;
   color: #ffd5cd;
 }
 
-.metric scale trough highlight {
+.slider-vol scale trough highlight {
   all: unset;
   background-color: #D35D6E;
   color: #000000;
   border-radius: 10px;
 }
-.metric scale trough {
+.slider-vol scale trough {
   all: unset;
   background-color: #4e4e4e;
   border-radius: 50px;
@@ -31,13 +31,13 @@
   margin-left: 10px;
   margin-right: 20px;
 }
-.metric scale trough highlight {
+.slider-ram scale trough highlight {
   all: unset;
   background-color: #D35D6E;
   color: #000000;
   border-radius: 10px;
 }
-.metric scale trough {
+.slider-ram scale trough {
   all: unset;
   background-color: #4e4e4e;
   border-radius: 50px;
@@ -49,20 +49,11 @@
 .label-ram {
   font-size: large;
 }
+.time {
+  padding-right: 10px;
+}
 .workspaces button:hover {
   color: #D35D6E;
 }
-.ws-button-mine {
-  color: #4e4e4e;
-  background-color: #ffd5ca;
-}
-.ws-button-visible {
-  color: #D35D6E;
-  background-color: #4e4e4e;
-}
-.ws-button-busy {
-  color: #D35D6E;
-}
-.ws-button {
-  color: #b0b4bc;
-}
+
+  
