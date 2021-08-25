@@ -160,7 +160,9 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
         keybind
             .modifier
             .iter()
-            .filter(|&m| m != "modkey" && utils::xkeysym_lookup::into_mod(m) == 0)
+            .filter(|&m| {
+                m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(m) == 0
+            })
             .for_each(|m| {
                 returns.push((keybind.clone(), format!("Modifier `{}` is not valid", m)))
             });
