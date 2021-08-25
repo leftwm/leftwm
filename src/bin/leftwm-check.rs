@@ -156,6 +156,14 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
                 format!("Key `{}` is not valid", keybind.key),
             ));
         }
+
+        keybind
+            .modifier
+            .iter()
+            .filter(|&m| m != "modkey" && utils::xkeysym_lookup::into_mod(m) == 0)
+            .for_each(|m| {
+                returns.push((keybind.clone(), format!("Modifier `{}` is not valid", m)))
+            });
     }
     if returns.is_empty() {
         println!("\x1b[0;92m    -> All keybinds OK\x1b[0m");
