@@ -543,21 +543,21 @@ mod tests {
         // no screen creation here
         assert!(!process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("6".to_string())
         ));
         assert!(!process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
         ));
         assert!(!process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("15".to_string())
@@ -573,14 +573,14 @@ mod tests {
         // no tag creation here but one tag per screen is created
         assert!(process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
         ));
         assert!(process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("1".to_string())
@@ -588,7 +588,7 @@ mod tests {
         // we only have one tag per screen created automatically
         assert!(!process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("3".to_string())
@@ -610,21 +610,21 @@ mod tests {
         ];
         assert!(!process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("abc".to_string())
         ),);
         assert!(!process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("ab45c".to_string())
         ));
         assert!(!process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &None
@@ -650,7 +650,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("6".to_string())
@@ -659,7 +659,7 @@ mod tests {
         assert_eq!(current_tag, Some(5));
         assert!(process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
@@ -669,7 +669,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("3".to_string())
@@ -679,7 +679,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
-            Box::new(TestState),
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("4".to_string())
