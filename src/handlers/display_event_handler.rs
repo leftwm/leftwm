@@ -3,6 +3,7 @@ use super::{
     window_move_handler, window_resize_handler, CommandBuilder, Config, DisplayEvent, Manager,
     Mode,
 };
+use crate::state::State;
 use crate::utils;
 use crate::utils::window_updater::update_windows;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
@@ -15,7 +16,7 @@ pub struct DisplayEventHandler<C> {
 impl<C: Config> DisplayEventHandler<C> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
-    pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
+    pub fn process(&self, manager: &mut Manager, state: &impl State, event: DisplayEvent) -> bool {
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
             DisplayEvent::WindowCreate(w, x, y) => window_handler::created(manager, w, x, y),
@@ -43,14 +44,14 @@ impl<C: Config> DisplayEventHandler<C> {
                 let build = CommandBuilder::new(&self.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some((cmd, val)) = command {
-                    command_handler::process(manager, &self.config, &cmd, &val)
+                    command_handler::process(manager, state, &self.config, &cmd, &val)
                 } else {
                     false
                 }
             }
 
             DisplayEvent::SendCommand(command, value) => {
-                command_handler::process(manager, &self.config, &command, &value)
+                command_handler::process(manager, state, &self.config, &command, &value)
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {

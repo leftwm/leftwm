@@ -9,6 +9,7 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::TagId;
+use crate::state::State;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 use std::str::FromStr;
@@ -20,15 +21,17 @@ use std::str::FromStr;
  *  */
 pub fn process(
     manager: &mut Manager,
+    state: &impl State,
     config: &impl Config,
     command: &Command,
     val: &Option<String>,
 ) -> bool {
-    process_internal(manager, config, command, val).unwrap_or(false)
+    process_internal(manager, state, config, command, val).unwrap_or(false)
 }
 
 pub fn process_internal(
     manager: &mut Manager,
+    state: &impl State,
     config: &impl Config,
     command: &Command,
     val: &Option<String>,
@@ -68,7 +71,10 @@ pub fn process_internal(
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
-            manager.soft_reload();
+            if let Err(err) = state.save(manager) {
+                log::error!("Cannot save state: {}", err);
+            }
+            manager.hard_reload();
             None
         }
         Command::HardReload => {
@@ -492,7 +498,9 @@ fn handle_focus(manager: &mut Manager, handle: WindowHandle) -> bool {
 mod tests {
     use super::*;
     use crate::config::{Config, FocusBehaviour, Keybind, ScratchPad, Workspace};
+    use crate::errors::Result;
     use crate::models::Tag;
+    use crate::state::State;
 
     struct TestConfig;
 
@@ -517,6 +525,17 @@ mod tests {
         }
     }
 
+    struct TestState;
+
+    impl State for TestState {
+        fn save(&self, manager: &Manager) -> Result<()> {
+            todo!()
+        }
+        fn load(&self, manager: &mut Manager) {
+            todo!()
+        }
+    }
+
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::default();
@@ -524,18 +543,21 @@ mod tests {
         // no screen creation here
         assert!(!process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("6".to_string())
         ));
         assert!(!process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
         ));
         assert!(!process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("15".to_string())
@@ -551,12 +573,14 @@ mod tests {
         // no tag creation here but one tag per screen is created
         assert!(process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
         ));
         assert!(process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("1".to_string())
@@ -564,6 +588,7 @@ mod tests {
         // we only have one tag per screen created automatically
         assert!(!process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("3".to_string())
@@ -585,17 +610,25 @@ mod tests {
         ];
         assert!(!process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("abc".to_string())
         ),);
         assert!(!process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("ab45c".to_string())
         ));
-        assert!(!process(&mut manager, &config, &Command::GotoTag, &None));
+        assert!(!process(
+            &mut manager,
+            Box::new(TestState),
+            &config,
+            &Command::GotoTag,
+            &None
+        ));
     }
 
     #[test]
@@ -617,6 +650,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("6".to_string())
@@ -625,6 +659,7 @@ mod tests {
         assert_eq!(current_tag, Some(5));
         assert!(process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
@@ -634,6 +669,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("3".to_string())
@@ -643,6 +679,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
+            Box::new(TestState),
             &config,
             &Command::GotoTag,
             &Some("4".to_string())

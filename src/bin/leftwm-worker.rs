@@ -7,8 +7,8 @@ use leftwm::{
 };
 
 use leftwm::{
-    config, external_command_handler, CommandPipe, DisplayEvent, DisplayEventHandler,
-    DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
+    external_command_handler, CommandPipe, DisplayEvent, DisplayEventHandler, DisplayServer,
+    Manager, Mode, State, StateSocket, Window, Workspace, XlibDisplayServer,
 };
 use std::panic;
 use std::path::{Path, PathBuf};
@@ -32,6 +32,7 @@ fn main() {
         let _rt_guard = rt.enter();
 
         let config = common::config::load();
+        let state = common::state::State;
 
         let focus_manager = FocusManager {
             behaviour: config.focus_behaviour.clone(),
@@ -70,6 +71,7 @@ fn main() {
             &mut display_server,
             &handler,
             config,
+            state,
         ));
     });
 
@@ -96,6 +98,7 @@ async fn event_loop(
     display_server: &mut XlibDisplayServer<Arc<Config>>,
     handler: &DisplayEventHandler<Arc<Config>>,
     config: Arc<Config>,
+    state: common::state::State,
 ) {
     let socket_file = place_runtime_file("current_state.sock")
         .expect("ERROR: couldn't create current_state.sock");
@@ -136,11 +139,11 @@ async fn event_loop(
                 continue;
             }
             Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
-                needs_update = external_command_handler::process(manager, &config, cmd) || needs_update;
+                needs_update = external_command_handler::process(manager, &config, &state, cmd) || needs_update;
                 display_server.update_theme_settings(manager.theme_setting.clone());
             }
             else => {
-                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, event) || needs_update)
+                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, &state, event) || needs_update)
             }
         }
 
@@ -192,7 +195,7 @@ async fn event_loop(
                 Err(err) => log::error!("Theme loading failed: {}", err),
             }
 
-            leftwm::state::load(manager);
+            state.load(manager);
         });
 
         if manager.reap_requested.swap(false, Ordering::SeqCst) {

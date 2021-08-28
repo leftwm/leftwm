@@ -7,7 +7,6 @@ use crate::models::Tag;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
-use crate::state;
 use crate::utils::child_process::Children;
 use crate::{config::ThemeSetting, layouts::Layout};
 
@@ -17,7 +16,7 @@ use std::os::raw::c_ulong;
 use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
-#[derive(Default, Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
@@ -169,16 +168,6 @@ impl Manager {
             })
             .collect();
         list.join(" ")
-    }
-
-    /// Soft reload the worker.
-    ///
-    /// First write current state to a file and then exit current process.
-    pub fn soft_reload(&mut self) {
-        if let Err(err) = state::save(self) {
-            log::error!("Cannot save state: {}", err);
-        }
-        self.hard_reload();
     }
 
     /// Reload the worker without saving state.

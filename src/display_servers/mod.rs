@@ -1,9 +1,6 @@
-use crate::config::Config;
-use crate::config::ThemeSetting;
+use crate::config::{Config, ThemeSetting};
 use crate::display_action::DisplayAction;
-use crate::models::Screen;
-use crate::models::Window;
-use crate::models::Workspace;
+use crate::models::{Window, Workspace};
 use crate::DisplayEvent;
 #[cfg(test)]
 mod mock_display_server;

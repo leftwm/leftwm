@@ -1,112 +1,115 @@
-use super::{command_handler, focus_handler, goto_tag_handler, Manager};
-use crate::command::Command;
+use super::{command_handler, focus_handler, goto_tag_handler, Command, Manager};
 use crate::config::Config;
 use crate::config::ThemeSetting;
+use crate::state::State;
 use crate::utils::command_pipe::ExternalCommand;
 use crate::utils::window_updater::update_windows;
 
-pub fn process(manager: &mut Manager, config: &impl Config, command: ExternalCommand) -> bool {
-    let needs_redraw = process_work(manager, config, command);
+pub fn process(
+    manager: &mut Manager,
+    config: &impl Config,
+    state: &impl State,
+    command: ExternalCommand,
+) -> bool {
+    let needs_redraw = process_work(manager, state, config, command);
     if needs_redraw {
         update_windows(manager);
     }
     needs_redraw
 }
 
-fn process_work(manager: &mut Manager, config: &impl Config, command: ExternalCommand) -> bool {
+fn process_work(
+    manager: &mut Manager,
+    state: &impl State,
+    config: &impl Config,
+    command: ExternalCommand,
+) -> bool {
     match command {
         ExternalCommand::UnloadTheme => {
             let theme = ThemeSetting::default();
-            return load_theme(manager, theme);
+            load_theme(manager, theme)
         }
         ExternalCommand::LoadTheme(path) => {
             let theme = ThemeSetting::load(&path);
-            return load_theme(manager, theme);
+            load_theme(manager, theme)
         }
-        ExternalCommand::ToggleScratchPad(name) => {
-            return command_handler::process(
-                manager,
-                config,
-                &Command::ToggleScratchPad,
-                &Some(name),
-            );
-        }
+        ExternalCommand::ToggleScratchPad(name) => command_handler::process(
+            manager,
+            state,
+            config,
+            &Command::ToggleScratchPad,
+            &Some(name),
+        ),
         ExternalCommand::ToggleFullScreen => {
-            return command_handler::process(manager, config, &Command::ToggleFullScreen, &None);
+            command_handler::process(manager, state, config, &Command::ToggleFullScreen, &None)
         }
         ExternalCommand::SendWorkspaceToTag(ws_index, tag_index) => {
-            return send_workspace_to_tag(manager, ws_index, tag_index);
+            send_workspace_to_tag(manager, ws_index, tag_index)
         }
         ExternalCommand::SendWindowToTag(tag_index) => {
-            return send_window_to_tag(manager, config, tag_index);
+            send_window_to_tag(manager, state, config, tag_index)
         }
         ExternalCommand::SetLayout(layout) => {
-            return command_handler::process(manager, config, &Command::SetLayout, &Some(layout));
+            command_handler::process(manager, state, config, &Command::SetLayout, &Some(layout))
         }
-        ExternalCommand::SetMarginMultiplier(margin_multiplier) => {
-            return command_handler::process(
-                manager,
-                config,
-                &Command::SetMarginMultiplier,
-                &Some(margin_multiplier),
-            );
-        }
+        ExternalCommand::SetMarginMultiplier(margin_multiplier) => command_handler::process(
+            manager,
+            state,
+            config,
+            &Command::SetMarginMultiplier,
+            &Some(margin_multiplier),
+        ),
         ExternalCommand::SwapScreens => {
-            return command_handler::process(manager, config, &Command::SwapTags, &None);
+            command_handler::process(manager, state, config, &Command::SwapTags, &None)
         }
-
         ExternalCommand::MoveWindowToLastWorkspace => {
-            return command_handler::process(manager, config, &Command::MoveToLastWorkspace, &None);
+            command_handler::process(manager, state, config, &Command::MoveToLastWorkspace, &None)
         }
         ExternalCommand::FloatingToTile => {
-            return command_handler::process(manager, config, &Command::FloatingToTile, &None);
+            command_handler::process(manager, state, config, &Command::FloatingToTile, &None)
         }
         ExternalCommand::MoveWindowUp => {
-            return command_handler::process(manager, config, &Command::MoveWindowUp, &None);
+            command_handler::process(manager, state, config, &Command::MoveWindowUp, &None)
         }
         ExternalCommand::MoveWindowDown => {
-            return command_handler::process(manager, config, &Command::MoveWindowDown, &None);
+            command_handler::process(manager, state, config, &Command::MoveWindowDown, &None)
         }
         ExternalCommand::FocusWindowUp => {
-            return command_handler::process(manager, config, &Command::FocusWindowUp, &None);
+            command_handler::process(manager, state, config, &Command::FocusWindowUp, &None)
         }
         ExternalCommand::FocusWindowDown => {
-            return command_handler::process(manager, config, &Command::FocusWindowDown, &None);
+            command_handler::process(manager, state, config, &Command::FocusWindowDown, &None)
         }
         ExternalCommand::FocusNextTag => {
-            return command_handler::process(manager, config, &Command::FocusNextTag, &None);
+            command_handler::process(manager, state, config, &Command::FocusNextTag, &None)
         }
         ExternalCommand::FocusPreviousTag => {
-            return command_handler::process(manager, config, &Command::FocusPreviousTag, &None);
+            command_handler::process(manager, state, config, &Command::FocusPreviousTag, &None)
         }
         ExternalCommand::FocusWorkspaceNext => {
-            return command_handler::process(manager, config, &Command::FocusWorkspaceNext, &None);
+            command_handler::process(manager, state, config, &Command::FocusWorkspaceNext, &None)
         }
-        ExternalCommand::FocusWorkspacePrevious => {
-            return command_handler::process(
-                manager,
-                config,
-                &Command::FocusWorkspacePrevious,
-                &None,
-            );
-        }
+        ExternalCommand::FocusWorkspacePrevious => command_handler::process(
+            manager,
+            state,
+            config,
+            &Command::FocusWorkspacePrevious,
+            &None,
+        ),
         ExternalCommand::NextLayout => {
-            return command_handler::process(manager, config, &Command::NextLayout, &None);
+            command_handler::process(manager, state, config, &Command::NextLayout, &None)
         }
         ExternalCommand::PreviousLayout => {
-            return command_handler::process(manager, config, &Command::PreviousLayout, &None);
+            command_handler::process(manager, state, config, &Command::PreviousLayout, &None)
         }
         ExternalCommand::RotateTag => {
-            return command_handler::process(manager, config, &Command::RotateTag, &None);
+            command_handler::process(manager, state, config, &Command::RotateTag, &None)
         }
         ExternalCommand::CloseWindow => {
-            return command_handler::process(manager, config, &Command::CloseWindow, &None);
+            command_handler::process(manager, state, config, &Command::CloseWindow, &None)
         }
-
-        ExternalCommand::Reload | ExternalCommand::MoveWindowTop => {}
+        ExternalCommand::Reload | ExternalCommand::MoveWindowTop => false,
     }
-
-    false
 }
 
 fn load_theme(manager: &mut Manager, theme: ThemeSetting) -> bool {
@@ -130,11 +133,22 @@ fn send_workspace_to_tag(manager: &mut Manager, ws_index: usize, tag_index: usiz
     false
 }
 
-fn send_window_to_tag(manager: &mut Manager, config: &impl Config, tag_index: usize) -> bool {
+fn send_window_to_tag(
+    manager: &mut Manager,
+    state: &impl State,
+    config: &impl Config,
+    tag_index: usize,
+) -> bool {
     if tag_index < manager.tags.len() {
         //tag number as 1 based.
         let tag_num = format!("{}", tag_index + 1);
-        return command_handler::process(manager, config, &Command::MoveToTag, &Some(tag_num));
+        return command_handler::process(
+            manager,
+            state,
+            config,
+            &Command::MoveToTag,
+            &Some(tag_num),
+        );
     }
     false
 }
