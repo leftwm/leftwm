@@ -269,12 +269,10 @@ pub fn update_workspace_avoid_list(manager: &mut Manager) {
 }
 
 pub fn snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
-    window.debugging = true;
     window.set_floating(false);
 
     //we are reparenting
     if window.tags != workspace.tags {
-        window.debugging = true;
         window.tags = workspace.tags.clone();
         let mut offset = window.get_floating_offsets().unwrap_or_default();
         let mut start_loc = window.start_loc.unwrap_or_default();
