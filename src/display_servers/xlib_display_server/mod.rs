@@ -10,6 +10,7 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
+use std::sync::Arc;
 use std::sync::Once;
 use x11_dl::xlib;
 
@@ -29,15 +30,14 @@ pub struct XlibDisplayServer<C> {
     xw: XWrap,
     root: xlib::Window,
     config: C,
-    theme: ThemeSetting,
+    theme: Arc<ThemeSetting>,
 }
 
 impl<C> DisplayServer<C> for XlibDisplayServer<C>
 where
     C: Config,
 {
-    fn new(config: C) -> Self {
-        let theme = ThemeSetting::default();
+    fn new(config: C, theme: Arc<ThemeSetting>) -> Self {
         let mut wrap = XWrap::new();
 
         wrap.focus_behaviour = config.focus_behaviour();
@@ -54,7 +54,7 @@ where
         }
     }
 
-    fn update_theme_settings(&mut self, settings: ThemeSetting) {
+    fn update_theme_settings(&mut self, settings: Arc<ThemeSetting>) {
         self.theme = settings;
         self.xw.load_colors(&self.theme);
     }

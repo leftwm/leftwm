@@ -16,14 +16,14 @@ use std::os::raw::c_ulong;
 use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Manager {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
     pub mode: Mode,
-    pub theme_setting: ThemeSetting,
+    pub theme_setting: Arc<ThemeSetting>,
     #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
     pub layouts: Vec<Layout>,
@@ -173,5 +173,39 @@ impl Manager {
     /// Reload the worker without saving state.
     pub fn hard_reload(&mut self) {
         self.reload_requested = true;
+    }
+}
+
+#[cfg(test)]
+impl Manager {
+    pub fn new_test() -> Self {
+        use crate::models::Margins;
+
+        Manager {
+            screens: Default::default(),
+            windows: Default::default(),
+            workspaces: Default::default(),
+            focus_manager: Default::default(),
+            mode: Default::default(),
+            theme_setting: Arc::new(ThemeSetting {
+                border_width: Default::default(),
+                margin: Margins::Int(0),
+                workspace_margin: Margins::Int(0),
+                gutter: Default::default(),
+                default_border_color: Default::default(),
+                floating_border_color: Default::default(),
+                focused_border_color: Default::default(),
+                on_new_window_cmd: Default::default(),
+            }),
+            tags: Default::default(),
+            layouts: Default::default(),
+            scratchpads: Default::default(),
+            active_scratchpads: Default::default(),
+            actions: Default::default(),
+            frame_rate_limitor: Default::default(),
+            children: Default::default(),
+            reap_requested: Default::default(),
+            reload_requested: Default::default(),
+        }
     }
 }

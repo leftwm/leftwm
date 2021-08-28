@@ -48,7 +48,7 @@ mod tests {
     }
 
     fn two_screen_mock_manager() -> Manager {
-        let mut manager = Manager::default();
+        let mut manager = Manager::new_test();
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         manager

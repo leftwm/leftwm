@@ -1,13 +1,14 @@
-use crate::errors::Result;
 use crate::models::Gutter;
 use crate::models::Margins;
 use serde::{Deserialize, Serialize};
-use std::default::Default;
-use std::fs;
 use std::path::Path;
 
+pub trait ThemeLoader {
+    fn load(&self, path: &Path) -> ThemeSetting;
+    fn default(&self) -> ThemeSetting;
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(default)]
 pub struct ThemeSetting {
     pub border_width: i32,
     pub margin: Margins,
@@ -22,11 +23,6 @@ pub struct ThemeSetting {
 
 impl ThemeSetting {
     #[must_use]
-    pub fn load(path: &Path) -> ThemeSetting {
-        load_theme_file(path).unwrap_or_default()
-    }
-
-    #[must_use]
     pub fn get_list_of_gutters(&self) -> Vec<Gutter> {
         if let Some(gutters) = &self.gutter {
             return gutters.clone();
@@ -35,40 +31,10 @@ impl ThemeSetting {
     }
 }
 
-fn load_theme_file(path: &Path) -> Result<ThemeSetting> {
-    let contents = fs::read_to_string(path)?;
-    let from_file: ThemeSetting = toml::from_str(&contents)?;
-    Ok(from_file)
-}
-
-impl Default for ThemeSetting {
-    fn default() -> Self {
-        ThemeSetting {
-            border_width: 1,
-            margin: Margins::Int(10),
-            workspace_margin: Margins::Int(10),
-            gutter: None,
-            default_border_color: "#000000".to_owned(),
-            floating_border_color: "#000000".to_owned(),
-            focused_border_color: "#FF0000".to_owned(),
-            on_new_window_cmd: None,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::models::Side;
-
-    #[test]
-    fn deserialize_empty_theme_config() {
-        let config = "";
-        let config: ThemeSetting = toml::from_str(config).unwrap();
-        let default_config = ThemeSetting::default();
-
-        assert_eq!(config, default_config);
-    }
 
     #[test]
     fn deserialize_custom_theme_config() {

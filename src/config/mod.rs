@@ -6,7 +6,7 @@ mod workspace_config;
 pub use crate::models::FocusBehaviour;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
-pub use theme_setting::ThemeSetting;
+pub use theme_setting::{ThemeLoader, ThemeSetting};
 pub use workspace_config::Workspace;
 
 pub trait Config {

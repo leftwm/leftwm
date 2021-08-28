@@ -497,7 +497,7 @@ fn handle_focus(manager: &mut Manager, handle: WindowHandle) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{Config, FocusBehaviour, Keybind, ScratchPad, Workspace};
+    use crate::config::{Config, FocusBehaviour, Keybind, Workspace};
     use crate::errors::Result;
     use crate::models::Tag;
     use crate::state::State;
@@ -528,17 +528,17 @@ mod tests {
     struct TestState;
 
     impl State for TestState {
-        fn save(&self, manager: &Manager) -> Result<()> {
+        fn save(&self, _manager: &Manager) -> Result<()> {
             unimplemented!()
         }
-        fn load(&self, manager: &mut Manager) {
+        fn load(&self, _manager: &mut Manager) {
             unimplemented!()
         }
     }
 
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
-        let mut manager = Manager::default();
+        let mut manager = Manager::new_test();
         let config = TestConfig;
         // no screen creation here
         assert!(!process(
@@ -566,7 +566,7 @@ mod tests {
 
     #[test]
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
-        let mut manager = Manager::default();
+        let mut manager = Manager::new_test();
         let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
@@ -597,7 +597,7 @@ mod tests {
 
     #[test]
     fn go_to_tag_should_return_false_on_invalid_input() {
-        let mut manager = Manager::default();
+        let mut manager = Manager::new_test();
         let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());
         manager.tags = vec![
@@ -642,7 +642,7 @@ mod tests {
                 Tag::new("E39"),
                 Tag::new("F67"),
             ],
-            ..Manager::default()
+            ..Manager::new_test()
         };
         let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());

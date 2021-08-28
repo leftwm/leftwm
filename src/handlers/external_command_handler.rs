@@ -1,17 +1,20 @@
 use super::{command_handler, focus_handler, goto_tag_handler, Command, Manager};
 use crate::config::Config;
+use crate::config::ThemeLoader;
 use crate::config::ThemeSetting;
 use crate::state::State;
 use crate::utils::command_pipe::ExternalCommand;
 use crate::utils::window_updater::update_windows;
+use std::sync::Arc;
 
 pub fn process(
     manager: &mut Manager,
-    config: &impl Config,
     state: &impl State,
+    config: &impl Config,
+    theme_loader: &impl ThemeLoader,
     command: ExternalCommand,
 ) -> bool {
-    let needs_redraw = process_work(manager, state, config, command);
+    let needs_redraw = process_work(manager, state, config, theme_loader, command);
     if needs_redraw {
         update_windows(manager);
     }
@@ -22,15 +25,16 @@ fn process_work(
     manager: &mut Manager,
     state: &impl State,
     config: &impl Config,
+    theme_loader: &impl ThemeLoader,
     command: ExternalCommand,
 ) -> bool {
     match command {
         ExternalCommand::UnloadTheme => {
-            let theme = ThemeSetting::default();
+            let theme = theme_loader.default();
             load_theme(manager, theme)
         }
         ExternalCommand::LoadTheme(path) => {
-            let theme = ThemeSetting::load(&path);
+            let theme = theme_loader.load(&path);
             load_theme(manager, theme)
         }
         ExternalCommand::ToggleScratchPad(name) => command_handler::process(
@@ -124,7 +128,7 @@ fn load_theme(manager: &mut Manager, theme: ThemeSetting) -> bool {
     for ws in &mut manager.workspaces {
         ws.update_for_theme(&theme);
     }
-    manager.theme_setting = theme;
+    manager.theme_setting = Arc::new(theme);
     true
 }
 

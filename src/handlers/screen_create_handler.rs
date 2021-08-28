@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn creating_two_screens_should_tag_them_with_first_and_second_tags() {
-        let mut manager = Manager::default();
+        let mut manager = Manager::new_test();
         process(&mut manager, Screen::default());
         process(&mut manager, Screen::default());
         assert!(manager.workspaces[0].has_tag("1"));
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn should_be_able_to_add_screens_with_preexisting_tags() {
-        let mut manager = Manager::default();
+        let mut manager = Manager::new_test();
         manager.tags.push(Tag::new("web"));
         manager.tags.push(Tag::new("console"));
         manager.tags.push(Tag::new("code"));

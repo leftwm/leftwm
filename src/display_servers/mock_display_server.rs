@@ -1,7 +1,9 @@
 use super::Config;
 use super::DisplayEvent;
 use super::DisplayServer;
+use super::ThemeSetting;
 use crate::models::Screen;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct MockDisplayServer {
@@ -9,7 +11,7 @@ pub struct MockDisplayServer {
 }
 
 impl<C: Config> DisplayServer<C> for MockDisplayServer {
-    fn new(_: C) -> MockDisplayServer {
+    fn new(_: C, _: Arc<ThemeSetting>) -> MockDisplayServer {
         MockDisplayServer { screens: vec![] }
     }
 

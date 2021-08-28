@@ -3,6 +3,7 @@ mod common;
 use leftwm::{
     child_process::{self, Nanny},
     config::Config as _,
+    config::ThemeLoader as _,
     models::{FocusBehaviour, FocusManager, Tag},
 };
 
@@ -33,6 +34,8 @@ fn main() {
 
         let config = common::config::load();
         let state = common::state::State;
+        let theme_loader = common::theme_setting::ThemeLoader;
+        let default_theme = Arc::new(theme_loader.default());
 
         let focus_manager = FocusManager {
             behaviour: config.focus_behaviour.clone(),
@@ -50,18 +53,29 @@ fn main() {
             hidden: true,
             ..Tag::default()
         });
+        // TODO use constructor pattern
         let mut manager = Manager {
             focus_manager,
             tags,
             scratchpads: config.create_list_of_scratchpads(),
             layouts: config.layouts.clone(),
-            ..Manager::default()
+            theme_setting: default_theme.clone(),
+            screens: Default::default(),
+            windows: Default::default(),
+            workspaces: Default::default(),
+            mode: Default::default(),
+            active_scratchpads: Default::default(),
+            actions: Default::default(),
+            frame_rate_limitor: Default::default(),
+            children: Default::default(),
+            reap_requested: Default::default(),
+            reload_requested: Default::default(),
         };
 
         child_process::register_child_hook(manager.reap_requested.clone());
 
         let config = Arc::new(config);
-        let mut display_server = XlibDisplayServer::new(config.clone());
+        let mut display_server = XlibDisplayServer::new(config.clone(), default_theme.clone());
         let handler = DisplayEventHandler {
             config: config.clone(),
         };
@@ -72,6 +86,7 @@ fn main() {
             &handler,
             config,
             state,
+            theme_loader,
         ));
     });
 
@@ -99,6 +114,7 @@ async fn event_loop(
     handler: &DisplayEventHandler<Arc<Config>>,
     config: Arc<Config>,
     state: common::state::State,
+    theme_loader: common::theme_setting::ThemeLoader,
 ) {
     let socket_file = place_runtime_file("current_state.sock")
         .expect("ERROR: couldn't create current_state.sock");
@@ -139,7 +155,7 @@ async fn event_loop(
                 continue;
             }
             Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
-                needs_update = external_command_handler::process(manager, &config, &state, cmd) || needs_update;
+                needs_update = external_command_handler::process(manager, &state, &config, &theme_loader, cmd) || needs_update;
                 display_server.update_theme_settings(manager.theme_setting.clone());
             }
             else => {
