@@ -38,7 +38,7 @@ fn main() {
         let default_theme = Arc::new(theme_loader.default());
 
         let focus_manager = FocusManager {
-            behaviour: config.focus_behaviour.clone(),
+            behaviour: config.focus_behaviour,
             focus_new_windows: config.focus_new_windows,
             ..FocusManager::default()
         };
@@ -75,7 +75,7 @@ fn main() {
         child_process::register_child_hook(manager.reap_requested.clone());
 
         let config = Arc::new(config);
-        let mut display_server = XlibDisplayServer::new(config.clone(), default_theme.clone());
+        let mut display_server = XlibDisplayServer::new(config.clone(), default_theme);
         let handler = DisplayEventHandler {
             config: config.clone(),
         };
