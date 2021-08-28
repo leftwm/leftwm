@@ -506,22 +506,22 @@ mod tests {
 
     impl Config for TestConfig {
         fn mapped_bindings(&self) -> Vec<Keybind> {
-            todo!()
+            unimplemented!()
         }
         fn create_list_of_tags(&self) -> Vec<String> {
-            todo!()
+            unimplemented!()
         }
         fn workspaces(&self) -> Option<&[Workspace]> {
-            todo!()
+            unimplemented!()
         }
         fn focus_behaviour(&self) -> FocusBehaviour {
-            todo!()
+            unimplemented!()
         }
         fn mousekey(&self) -> &str {
-            todo!()
+            unimplemented!()
         }
         fn disable_current_tag_swap(&self) -> bool {
-            todo!()
+            false
         }
     }
 
@@ -529,10 +529,10 @@ mod tests {
 
     impl State for TestState {
         fn save(&self, manager: &Manager) -> Result<()> {
-            todo!()
+            unimplemented!()
         }
         fn load(&self, manager: &mut Manager) {
-            todo!()
+            unimplemented!()
         }
     }
 
