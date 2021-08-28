@@ -1,7 +1,7 @@
 use super::Config;
 use super::DisplayEvent;
 use super::DisplayServer;
-use super::Screen;
+use crate::models::Screen;
 
 #[derive(Clone)]
 pub struct MockDisplayServer {

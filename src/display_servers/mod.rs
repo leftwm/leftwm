@@ -1,7 +1,6 @@
 use crate::config::{Config, ThemeSetting};
 use crate::display_action::DisplayAction;
 use crate::models::Manager;
-use crate::models::Screen;
 use crate::models::Window;
 use crate::models::Workspace;
 use crate::DisplayEvent;
