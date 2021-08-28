@@ -34,6 +34,7 @@ pub struct Config {
 }
 
 #[must_use]
+#[allow(dead_code)]
 pub fn load() -> Config {
     load_from_file()
         .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))
