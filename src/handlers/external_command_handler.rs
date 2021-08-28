@@ -71,6 +71,9 @@ fn process_work(
         ExternalCommand::MoveWindowUp => {
             command_handler::process(manager, state, config, &Command::MoveWindowUp, &None)
         }
+        ExternalCommand::MoveWindowTop => {
+            command_handler::process(manager, state, config, &Command::MoveWindowTop, &None)
+        }
         ExternalCommand::MoveWindowDown => {
             command_handler::process(manager, state, config, &Command::MoveWindowDown, &None)
         }
@@ -108,7 +111,9 @@ fn process_work(
         ExternalCommand::CloseWindow => {
             command_handler::process(manager, state, config, &Command::CloseWindow, &None)
         }
-        ExternalCommand::Reload | ExternalCommand::MoveWindowTop => false,
+        ExternalCommand::Reload => {
+            command_handler::process(manager, state, config, &Command::SoftReload, &None)
+        }
     }
 }
 
