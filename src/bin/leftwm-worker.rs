@@ -143,7 +143,7 @@ async fn event_loop(
                 display_server.update_theme_settings(manager.theme_setting.clone());
             }
             else => {
-                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, &state, event) || needs_update)
+                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, &state, event) || needs_update);
             }
         }
 
