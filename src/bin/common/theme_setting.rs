@@ -8,7 +8,13 @@ pub struct ThemeLoader;
 
 impl leftwm::config::ThemeLoader for ThemeLoader {
     fn load(&self, path: &Path) -> ThemeSetting {
-        load_theme_file(path).unwrap_or_else(|_| self.default())
+        match load_theme_file(path) {
+            Ok(theme) => theme,
+            Err(err) => {
+                log::error!("Could not load theme at path {}: {}", path.display(), err);
+                self.default()
+            }
+        }
     }
 
     fn default(&self) -> ThemeSetting {
