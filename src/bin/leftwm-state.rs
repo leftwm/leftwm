@@ -133,7 +133,7 @@ async fn partials_in_dir_entries(mut entries: fs::ReadDir) -> Result<Vec<fs::Dir
     while let Some(entry) = entries.next_entry().await? {
         let f_n = entry.file_name();
         if is_partial_filename(&f_n) {
-            partial_paths.push(entry)
+            partial_paths.push(entry);
         }
     }
     Ok(partial_paths)
