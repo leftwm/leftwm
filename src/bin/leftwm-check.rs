@@ -170,7 +170,9 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
                 ));
             }
         }
-        if bindings.contains_key(&(keybind.modifier.clone(), keybind.key.clone())) {
+        let mut modkey = keybind.modifier.clone();
+        modkey.sort();
+        if let Some(conflict_key) = bindings.get(&(modkey.clone(), keybind.key.clone())) {
             returns.push((
                 None,
                 format!(
@@ -180,14 +182,13 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
                     \n\x1b[0mHelp: change one of the keybindings to something else.\n",
                     keybind.modifier.join(" + "),
                     keybind.key,
-                    bindings
-                        .get(&(keybind.modifier.clone(), keybind.key.clone()))
-                        .expect("fatal"),
+                    conflict_key,
                     keybind.command,
                 ),
             ));
+        } else {
+            bindings.insert((modkey, keybind.key), keybind.command);
         }
-        bindings.insert((keybind.modifier, keybind.key), keybind.command);
     }
     if returns.is_empty() {
         println!("\x1b[0;92m    -> All keybinds OK\x1b[0m");
