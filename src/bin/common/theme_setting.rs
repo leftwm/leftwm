@@ -21,7 +21,7 @@ impl leftwm::config::ThemeLoader for ThemeLoader {
         ThemeSetting {
             border_width: 1,
             margin: Margins::Int(10),
-            workspace_margin: Margins::Int(10),
+            workspace_margin: Some(Margins::Int(10)),
             gutter: None,
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),

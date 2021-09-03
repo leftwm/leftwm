@@ -12,7 +12,7 @@ pub trait ThemeLoader {
 pub struct ThemeSetting {
     pub border_width: i32,
     pub margin: Margins,
-    pub workspace_margin: Margins,
+    pub workspace_margin: Option<Margins>,
     pub gutter: Option<Vec<Gutter>>,
     pub default_border_color: String,
     pub floating_border_color: String,

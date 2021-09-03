@@ -82,7 +82,10 @@ impl Workspace {
     }
 
     pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
-        self.margin = theme.workspace_margin.clone();
+        self.margin = theme
+            .workspace_margin
+            .clone()
+            .unwrap_or_else(|| Margins::Int(0));
         self.gutters = self.get_gutters_for_theme(theme);
     }
 
