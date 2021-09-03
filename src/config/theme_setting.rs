@@ -58,7 +58,7 @@ value = 0
             ThemeSetting {
                 border_width: 0,
                 margin: Margins::Int(5),
-                workspace_margin: Margins::Int(5),
+                workspace_margin: Some(Margins::Int(5)),
                 gutter: Some(vec![Gutter {
                     side: Side::Top,
                     value: 0,

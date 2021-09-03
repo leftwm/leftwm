@@ -190,7 +190,7 @@ impl Manager {
             theme_setting: Arc::new(ThemeSetting {
                 border_width: Default::default(),
                 margin: Margins::Int(0),
-                workspace_margin: Margins::Int(0),
+                workspace_margin: None,
                 gutter: Default::default(),
                 default_border_color: Default::default(),
                 floating_border_color: Default::default(),
