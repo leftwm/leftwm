@@ -55,7 +55,7 @@ impl StateSocket {
     /// # Errors
     /// Will return Err if a mut ref to the peer is unavailable.
     /// Will return error if state cannot be serialized
-    pub async fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
+    pub async fn write_manager_state<CMD>(&mut self, manager: &Manager<CMD>) -> Result<()> {
         if self.listener.is_some() {
             let state: ManagerState = manager.into();
             let mut json = serde_json::to_string(&state)?;
@@ -116,7 +116,7 @@ mod test {
         rt.block_on(multiple_peers_async());
     }
     async fn multiple_peers_async() {
-        let manager = Manager::new_test();
+        let manager = Manager::new_test(vec![]);
 
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();
@@ -162,7 +162,7 @@ mod test {
         rt.block_on(get_update_async());
     }
     async fn get_update_async() {
-        let manager = Manager::new_test();
+        let manager = Manager::new_test(vec![]);
 
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();

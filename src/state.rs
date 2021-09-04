@@ -13,8 +13,8 @@ pub trait State {
     /// if unable to serialize the text.
     /// May be caused by inadequate permissions, not enough
     /// space on drive, or other typical filesystem issues.
-    fn save(&self, manager: &Manager) -> Result<()>;
+    fn save<CMD>(&self, manager: &Manager<CMD>) -> Result<()>;
 
     /// Load saved state if it exists.
-    fn load(&self, manager: &mut Manager);
+    fn load<CMD>(&self, manager: &mut Manager<CMD>);
 }

@@ -14,23 +14,25 @@ use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 use std::str::FromStr;
 
-/* Please also update src/bin/leftwm-check if any of the following apply after your update:
- * - a command now requires a value
- * - a command no longer requires a value
- * - a new command is introduced that requires a value
- *  */
-pub fn process(
-    manager: &mut Manager,
-    state: &impl State,
-    config: &impl Config,
-    command: &Command,
-    val: &Option<String>,
-) -> bool {
-    process_internal(manager, state, config, command, val).unwrap_or(false)
+impl<CMD> Manager<CMD> {
+    /* Please also update src/bin/leftwm-check if any of the following apply after your update:
+     * - a command now requires a value
+     * - a command no longer requires a value
+     * - a new command is introduced that requires a value
+     *  */
+    pub fn command_handler(
+        &mut self,
+        state: &impl State,
+        config: &impl Config,
+        command: &Command,
+        val: &Option<String>,
+    ) -> bool {
+        process_internal(self, state, config, command, val).unwrap_or(false)
+    }
 }
 
-pub fn process_internal(
-    manager: &mut Manager,
+fn process_internal<CMD>(
+    manager: &mut Manager<CMD>,
     state: &impl State,
     config: &impl Config,
     command: &Command,
@@ -90,12 +92,12 @@ pub fn process_internal(
     }
 }
 
-fn execute(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+fn execute<CMD>(manager: &mut Manager<CMD>, val: &Option<String>) -> Option<bool> {
     let _ = exec_shell(val.as_ref()?, manager);
     None
 }
 
-fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+fn toggle_scratchpad<CMD>(manager: &mut Manager<CMD>, val: &Option<String>) -> Option<bool> {
     let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
     let s = manager
@@ -145,7 +147,7 @@ fn toggle_scratchpad(manager: &mut Manager, val: &Option<String>) -> Option<bool
     None
 }
 
-fn toggle_fullscreen(manager: &mut Manager) -> Option<bool> {
+fn toggle_fullscreen<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     let window = manager.focused_window_mut()?;
     let handle = window.handle;
     let act = window.toggle_fullscreen()?;
@@ -153,7 +155,7 @@ fn toggle_fullscreen(manager: &mut Manager) -> Option<bool> {
     Some(handle_focus(manager, handle))
 }
 
-fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
+fn move_to_tag<CMD>(val: &Option<String>, manager: &mut Manager<CMD>) -> Option<bool> {
     let tag_num: usize = val.as_ref()?.parse().ok()?;
     let tag = manager.tags.get(tag_num - 1)?.clone();
 
@@ -166,7 +168,7 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
 
     let handle = manager.focused_window()?.handle;
     //Focus the next or previous window on the workspace
-    let new_handle = window_handler::get_next_or_previous(manager, &handle);
+    let new_handle = manager.get_next_or_previous(&handle);
 
     let window = manager.focused_window_mut()?;
     window.clear_tags();
@@ -178,12 +180,16 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
 
     manager.sort_windows();
     if let Some(new_handle) = new_handle {
-        focus_handler::focus_window(manager, &new_handle);
+        manager.focus_window(&new_handle);
     }
     Some(true)
 }
 
-fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &impl Config) -> Option<bool> {
+fn goto_tag<CMD>(
+    manager: &mut Manager<CMD>,
+    val: &Option<String>,
+    config: &impl Config,
+) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
@@ -195,10 +201,10 @@ fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &impl Config) -
             (_, _, _) => input_tag, // go to the input tag tag
         };
     }
-    Some(goto_tag_handler::process(manager, destination_tag))
+    Some(manager.goto_tag_handler(destination_tag))
 }
 
-fn focus_tag_change(manager: &mut Manager, delta: i8) -> Option<bool> {
+fn focus_tag_change<CMD>(manager: &mut Manager<CMD>, delta: i8) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let active_tags: Vec<(usize, TagId)> = manager
         .tags
@@ -222,10 +228,10 @@ fn focus_tag_change(manager: &mut Manager, delta: i8) -> Option<bool> {
         }
     }
     let (next, _) = *active_tags.get(index)?;
-    Some(goto_tag_handler::process(manager, next))
+    Some(manager.goto_tag_handler(next))
 }
 
-fn swap_tags(manager: &mut Manager) -> Option<bool> {
+fn swap_tags<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
         let hist_a = *manager.focus_manager.workspace_history.get(0)?;
         let hist_b = *manager.focus_manager.workspace_history.get(1)?;
@@ -246,12 +252,12 @@ fn swap_tags(manager: &mut Manager) -> Option<bool> {
             .map(std::string::ToString::to_string)?;
 
         let tag_index = manager.tags.iter().position(|x| x.id == last)? + 1;
-        return Some(goto_tag_handler::process(manager, tag_index));
+        return Some(manager.goto_tag_handler(tag_index));
     }
     None
 }
 
-fn close_window(manager: &mut Manager) -> Option<bool> {
+fn close_window<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     let window = manager.focused_window()?;
     if !window.is_unmanaged() {
         let act = DisplayAction::KillWindow(window.handle);
@@ -260,7 +266,7 @@ fn close_window(manager: &mut Manager) -> Option<bool> {
     None
 }
 
-fn move_to_last_workspace(manager: &mut Manager) -> Option<bool> {
+fn move_to_last_workspace<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
         let index = *manager.focus_manager.workspace_history.get(1)?;
         let wp_tags = &manager.workspaces.get(index)?.tags.clone();
@@ -271,7 +277,7 @@ fn move_to_last_workspace(manager: &mut Manager) -> Option<bool> {
     None
 }
 
-fn next_layout(manager: &mut Manager) -> Option<bool> {
+fn next_layout<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     let workspace = manager
         .focus_manager
         .workspace_mut(&mut manager.workspaces)?;
@@ -279,7 +285,7 @@ fn next_layout(manager: &mut Manager) -> Option<bool> {
     Some(true)
 }
 
-fn previous_layout(manager: &mut Manager) -> Option<bool> {
+fn previous_layout<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     let workspace = manager
         .focus_manager
         .workspace_mut(&mut manager.workspaces)?;
@@ -287,7 +293,7 @@ fn previous_layout(manager: &mut Manager) -> Option<bool> {
     Some(true)
 }
 
-fn set_layout(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
+fn set_layout<CMD>(val: &Option<String>, manager: &mut Manager<CMD>) -> Option<bool> {
     let layout = Layout::from_str(val.as_ref()?).ok()?;
     let workspace = manager
         .focus_manager
@@ -296,7 +302,7 @@ fn set_layout(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     Some(true)
 }
 
-fn floating_to_tile(manager: &mut Manager) -> Option<bool> {
+fn floating_to_tile<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     let workspace = manager.focused_workspace()?.clone();
     let window = manager.focused_window_mut()?;
     if window.must_float() {
@@ -307,14 +313,14 @@ fn floating_to_tile(manager: &mut Manager) -> Option<bool> {
     if !window.floating() {
         return None;
     }
-    window_handler::snap_to_workspace(window, &workspace);
+    window.snap_to_workspace(&workspace);
     let handle = window.handle;
     Some(handle_focus(manager, handle))
 }
 
-fn move_focus_common_vars<F>(func: F, manager: &mut Manager, val: i32) -> Option<bool>
+fn move_focus_common_vars<F, CMD>(func: F, manager: &mut Manager<CMD>, val: i32) -> Option<bool>
 where
-    F: Fn(&mut Manager, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> Option<bool>,
+    F: Fn(&mut Manager<CMD>, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> Option<bool>,
 {
     let handle = manager.focused_window()?.handle;
     let w = manager.focused_workspace()?;
@@ -327,8 +333,8 @@ where
     func(manager, val, handle, &layout, to_reorder)
 }
 
-fn move_window_change(
-    manager: &mut Manager,
+fn move_window_change<CMD>(
+    manager: &mut Manager<CMD>,
     val: i32,
     mut handle: WindowHandle,
     layout: &Option<Layout>,
@@ -355,8 +361,8 @@ fn move_window_change(
 }
 
 //val and layout aren't used which is a bit awkward
-fn move_window_top(
-    manager: &mut Manager,
+fn move_window_top<CMD>(
+    manager: &mut Manager<CMD>,
     _val: i32,
     handle: WindowHandle,
     _layout: &Option<Layout>,
@@ -387,8 +393,8 @@ fn move_window_top(
     Some(true)
 }
 
-fn focus_window_change(
-    manager: &mut Manager,
+fn focus_window_change<CMD>(
+    manager: &mut Manager<CMD>,
     val: i32,
     mut handle: WindowHandle,
     layout: &Option<Layout>,
@@ -424,11 +430,11 @@ fn focus_window_change(
     Some(handle_focus(manager, handle))
 }
 
-fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
+fn focus_workspace_change<CMD>(manager: &mut Manager<CMD>, val: i32) -> Option<bool> {
     let current = manager.focused_workspace()?;
     let workspace =
         helpers::relative_find(&manager.workspaces, |w| w == current, val, true)?.clone();
-    focus_handler::focus_workspace(manager, &workspace);
+    manager.focus_workspace(&workspace);
     if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
         let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
         manager.actions.push_back(act);
@@ -441,7 +447,7 @@ fn focus_workspace_change(manager: &mut Manager, val: i32) -> Option<bool> {
     Some(handle_focus(manager, window.handle))
 }
 
-fn rotate_tag(manager: &mut Manager) -> Option<bool> {
+fn rotate_tag<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     let workspace = manager
         .focus_manager
         .workspace_mut(&mut manager.workspaces)?;
@@ -449,7 +455,11 @@ fn rotate_tag(manager: &mut Manager) -> Option<bool> {
     Some(true)
 }
 
-fn change_main_width(manager: &mut Manager, val: &Option<String>, factor: i8) -> Option<bool> {
+fn change_main_width<CMD>(
+    manager: &mut Manager<CMD>,
+    val: &Option<String>,
+    factor: i8,
+) -> Option<bool> {
     let workspace = manager
         .focus_manager
         .workspace_mut(&mut manager.workspaces)?;
@@ -458,7 +468,7 @@ fn change_main_width(manager: &mut Manager, val: &Option<String>, factor: i8) ->
     Some(true)
 }
 
-fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> Option<bool> {
+fn set_margin_multiplier<CMD>(manager: &mut Manager<CMD>, val: &Option<String>) -> Option<bool> {
     let margin_multiplier: f32 = val.as_ref()?.parse().ok()?;
     let ws = manager.focused_workspace_mut()?;
     ws.set_margin_multiplier(margin_multiplier);
@@ -483,80 +493,54 @@ fn set_margin_multiplier(manager: &mut Manager, val: &Option<String>) -> Option<
     Some(true)
 }
 
-fn handle_focus(manager: &mut Manager, handle: WindowHandle) -> bool {
+fn handle_focus<CMD>(manager: &mut Manager<CMD>, handle: WindowHandle) -> bool {
     match manager.focus_manager.behaviour {
         FocusBehaviour::Sloppy => {
             let act = DisplayAction::MoveMouseOver(handle);
             manager.actions.push_back(act);
             true
         }
-        _ => focus_handler::focus_window(manager, &handle),
+        _ => manager.focus_window(&handle),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{Config, FocusBehaviour, Keybind, Workspace};
+    use crate::config::TestConfig;
     use crate::errors::Result;
     use crate::models::Tag;
     use crate::state::State;
 
-    struct TestConfig;
-
-    impl Config for TestConfig {
-        fn mapped_bindings(&self) -> Vec<Keybind> {
-            unimplemented!()
-        }
-        fn create_list_of_tags(&self) -> Vec<String> {
-            unimplemented!()
-        }
-        fn workspaces(&self) -> Option<&[Workspace]> {
-            unimplemented!()
-        }
-        fn focus_behaviour(&self) -> FocusBehaviour {
-            unimplemented!()
-        }
-        fn mousekey(&self) -> &str {
-            unimplemented!()
-        }
-        fn disable_current_tag_swap(&self) -> bool {
-            false
-        }
-    }
-
     struct TestState;
 
     impl State for TestState {
-        fn save(&self, _manager: &Manager) -> Result<()> {
+        fn save<CMD>(&self, _manager: &Manager<CMD>) -> Result<()> {
             unimplemented!()
         }
-        fn load(&self, _manager: &mut Manager) {
+        fn load<CMD>(&self, _manager: &mut Manager<CMD>) {
             unimplemented!()
         }
     }
 
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
-        let mut manager = Manager::new_test();
-        let config = TestConfig;
+        let mut manager = Manager::new_test(vec![]);
+        let config = TestConfig { tags: vec![] };
         // no screen creation here
-        assert!(!process(
-            &mut manager,
+        assert!(!manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
             &Some("6".to_string())
         ));
-        assert!(!process(
-            &mut manager,
+        assert!(!manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
         ));
-        assert!(!process(
-            &mut manager,
+        assert!(!manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
@@ -566,28 +550,25 @@ mod tests {
 
     #[test]
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
-        let mut manager = Manager::new_test();
-        let config = TestConfig;
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        let mut manager = Manager::new_test(vec![]);
+        let config = TestConfig { tags: vec![] };
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
         // no tag creation here but one tag per screen is created
-        assert!(process(
-            &mut manager,
+        assert!(manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
         ));
-        assert!(process(
-            &mut manager,
+        assert!(manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
             &Some("1".to_string())
         ));
         // we only have one tag per screen created automatically
-        assert!(!process(
-            &mut manager,
+        assert!(!manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
@@ -597,9 +578,9 @@ mod tests {
 
     #[test]
     fn go_to_tag_should_return_false_on_invalid_input() {
-        let mut manager = Manager::new_test();
-        let config = TestConfig;
-        screen_create_handler::process(&mut manager, Screen::default());
+        let mut manager = Manager::new_test(vec![]);
+        let config = TestConfig { tags: vec![] };
+        manager.screen_create_handler(Screen::default());
         manager.tags = vec![
             Tag::new("A15"),
             Tag::new("B24"),
@@ -608,48 +589,36 @@ mod tests {
             Tag::new("E39"),
             Tag::new("F67"),
         ];
-        assert!(!process(
-            &mut manager,
+        assert!(!manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
             &Some("abc".to_string())
         ),);
-        assert!(!process(
-            &mut manager,
+        assert!(!manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
             &Some("ab45c".to_string())
         ));
-        assert!(!process(
-            &mut manager,
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &None
-        ));
+        assert!(!manager.command_handler(&TestState, &config, &Command::GotoTag, &None));
     }
 
     #[test]
     fn go_to_tag_should_go_to_tag_and_set_history() {
-        let mut manager = Manager {
-            tags: vec![
-                Tag::new("A15"),
-                Tag::new("B24"),
-                Tag::new("C"),
-                Tag::new("6D4"),
-                Tag::new("E39"),
-                Tag::new("F67"),
-            ],
-            ..Manager::new_test()
-        };
-        let config = TestConfig;
-        screen_create_handler::process(&mut manager, Screen::default());
-        screen_create_handler::process(&mut manager, Screen::default());
+        let mut manager = Manager::new_test(vec![
+            "A15".to_string(),
+            "B24".to_string(),
+            "C".to_string(),
+            "6D4".to_string(),
+            "E39".to_string(),
+            "F67".to_string(),
+        ]);
+        let config = TestConfig { tags: vec![] };
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
 
-        assert!(process(
-            &mut manager,
+        assert!(manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
@@ -657,8 +626,7 @@ mod tests {
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(5));
-        assert!(process(
-            &mut manager,
+        assert!(manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
@@ -667,8 +635,7 @@ mod tests {
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(1));
 
-        assert!(process(
-            &mut manager,
+        assert!(manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,
@@ -677,8 +644,7 @@ mod tests {
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(2));
 
-        assert!(process(
-            &mut manager,
+        assert!(manager.command_handler(
             &TestState,
             &config,
             &Command::GotoTag,

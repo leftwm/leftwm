@@ -1,5 +1,6 @@
-use crate::config::ScratchPad;
+use crate::config::{Config, ScratchPad, ThemeSetting};
 use crate::display_action::DisplayAction;
+use crate::layouts::Layout;
 use crate::models::FocusManager;
 use crate::models::Mode;
 use crate::models::Screen;
@@ -8,16 +9,16 @@ use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
 use crate::utils::child_process::Children;
-use crate::{config::ThemeSetting, layouts::Layout};
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
+use std::marker::PhantomData;
 use std::os::raw::c_ulong;
 use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Manager {
+pub struct Manager<CMD> {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
@@ -39,9 +40,43 @@ pub struct Manager {
     pub reap_requested: Arc<AtomicBool>,
     #[serde(skip)]
     pub reload_requested: bool,
+    #[serde(skip)]
+    pub marker: PhantomData<CMD>,
 }
 
-impl Manager {
+impl<CMD> Manager<CMD> {
+    pub fn new(config: &impl Config, theme_setting: Arc<ThemeSetting>) -> Self {
+        let mut tags: Vec<Tag> = config
+            .create_list_of_tags()
+            .iter()
+            .map(|s| Tag::new(s))
+            .collect();
+        tags.push(Tag {
+            id: "NSP".to_owned(),
+            hidden: true,
+            ..Tag::default()
+        });
+
+        Self {
+            theme_setting,
+            tags,
+            focus_manager: FocusManager::new(config),
+            scratchpads: config.create_list_of_scratchpads(),
+            layouts: config.layouts(),
+            screens: Default::default(),
+            windows: Default::default(),
+            workspaces: Default::default(),
+            mode: Default::default(),
+            active_scratchpads: Default::default(),
+            actions: Default::default(),
+            frame_rate_limitor: Default::default(),
+            children: Default::default(),
+            reap_requested: Default::default(),
+            reload_requested: Default::default(),
+            marker: PhantomData,
+        }
+    }
+
     /// Return the currently focused workspace.
     #[must_use]
     pub fn focused_workspace(&self) -> Option<&Workspace> {
@@ -177,35 +212,22 @@ impl Manager {
 }
 
 #[cfg(test)]
-impl Manager {
-    pub fn new_test() -> Self {
+impl Manager<()> {
+    pub fn new_test(tags: Vec<String>) -> Self {
+        use crate::config::TestConfig;
         use crate::models::Margins;
 
-        Manager {
-            screens: Default::default(),
-            windows: Default::default(),
-            workspaces: Default::default(),
-            focus_manager: Default::default(),
-            mode: Default::default(),
-            theme_setting: Arc::new(ThemeSetting {
-                border_width: Default::default(),
-                margin: Margins::Int(0),
-                workspace_margin: None,
-                gutter: Default::default(),
-                default_border_color: Default::default(),
-                floating_border_color: Default::default(),
-                focused_border_color: Default::default(),
-                on_new_window_cmd: Default::default(),
-            }),
-            tags: Default::default(),
-            layouts: Default::default(),
-            scratchpads: Default::default(),
-            active_scratchpads: Default::default(),
-            actions: Default::default(),
-            frame_rate_limitor: Default::default(),
-            children: Default::default(),
-            reap_requested: Default::default(),
-            reload_requested: Default::default(),
-        }
+        let theme_setting = Arc::new(ThemeSetting {
+            border_width: Default::default(),
+            margin: Margins::Int(0),
+            workspace_margin: None,
+            gutter: Default::default(),
+            default_border_color: Default::default(),
+            floating_border_color: Default::default(),
+            focused_border_color: Default::default(),
+            on_new_window_cmd: Default::default(),
+        });
+
+        Manager::new(&TestConfig { tags }, theme_setting)
     }
 }

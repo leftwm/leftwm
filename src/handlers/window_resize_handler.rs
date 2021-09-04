@@ -1,11 +1,18 @@
 use super::{Manager, Window, WindowHandle};
 
-pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_w: i32, offset_h: i32) -> bool {
-    if let Some(w) = manager.windows.iter_mut().find(|w| &w.handle == handle) {
-        process_window(w, offset_w, offset_h);
-        return true;
+impl<CMD> Manager<CMD> {
+    pub fn window_resize_handler(
+        &mut self,
+        handle: &WindowHandle,
+        offset_w: i32,
+        offset_h: i32,
+    ) -> bool {
+        if let Some(w) = self.windows.iter_mut().find(|w| &w.handle == handle) {
+            process_window(w, offset_w, offset_h);
+            return true;
+        }
+        false
     }
-    false
 }
 
 fn process_window(window: &mut Window, offset_w: i32, offset_h: i32) {

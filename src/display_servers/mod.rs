@@ -20,11 +20,11 @@ pub trait DisplayServer<C: Config> {
 
     fn update_theme_settings(&mut self, _settings: Arc<ThemeSetting>) {}
 
-    fn update_windows(
+    fn update_windows<CMD>(
         &self,
         _windows: Vec<&Window>,
         _focused: Option<&Window>,
-        _manager: &Manager,
+        _manager: &Manager<CMD>,
     ) {
     }
 

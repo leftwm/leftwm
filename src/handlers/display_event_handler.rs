@@ -1,11 +1,6 @@
-use super::{
-    command_handler, focus_handler, mouse_combo_handler, screen_create_handler, window_handler,
-    window_move_handler, window_resize_handler, CommandBuilder, Config, DisplayEvent, Manager,
-    Mode,
-};
+use super::{CommandBuilder, Config, DisplayEvent, Manager, Mode};
 use crate::state::State;
 use crate::utils;
-use crate::utils::window_updater::update_windows;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 /// Configuration container for processing `DisplayEvents`.
@@ -16,47 +11,52 @@ pub struct DisplayEventHandler<C> {
 impl<C: Config> DisplayEventHandler<C> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
-    pub fn process(&self, manager: &mut Manager, state: &impl State, event: DisplayEvent) -> bool {
+    pub fn process<CMD>(
+        &self,
+        manager: &mut Manager<CMD>,
+        state: &impl State,
+        event: DisplayEvent,
+    ) -> bool {
         let update_needed = match event {
-            DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
-            DisplayEvent::WindowCreate(w, x, y) => window_handler::created(manager, w, x, y),
-            DisplayEvent::WindowChange(w) => window_handler::changed(manager, w),
+            DisplayEvent::ScreenCreate(s) => manager.screen_create_handler(s),
+            DisplayEvent::WindowCreate(w, x, y) => manager.window_created_handler(w, x, y),
+            DisplayEvent::WindowChange(w) => manager.window_changed_handler(w),
 
             //The window has been focused, do we want to do anything about it?
             DisplayEvent::MouseEnteredWindow(handle) => match manager.focus_manager.behaviour {
-                FocusBehaviour::Sloppy => return focus_handler::focus_window(manager, &handle),
+                FocusBehaviour::Sloppy => return manager.focus_window(&handle),
                 _ => return false,
             },
 
-            DisplayEvent::MoveFocusTo(x, y) => focus_handler::move_focus_to_point(manager, x, y),
+            DisplayEvent::MoveFocusTo(x, y) => manager.move_focus_to_point(x, y),
 
             //This is a request to validate focus. Double check that we are focused the correct
             //thing under this point.
             DisplayEvent::VerifyFocusedAt(x, y) => match manager.focus_manager.behaviour {
-                FocusBehaviour::Sloppy => return focus_handler::validate_focus_at(manager, x, y),
+                FocusBehaviour::Sloppy => return manager.validate_focus_at(x, y),
                 _ => return false,
             },
 
-            DisplayEvent::WindowDestroy(handle) => window_handler::destroyed(manager, &handle),
+            DisplayEvent::WindowDestroy(handle) => manager.window_destroyed_handler(&handle),
 
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
                 let build = CommandBuilder::new(&self.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some((cmd, val)) = command {
-                    command_handler::process(manager, state, &self.config, &cmd, &val)
+                    manager.command_handler(state, &self.config, &cmd, &val)
                 } else {
                     false
                 }
             }
 
             DisplayEvent::SendCommand(command, value) => {
-                command_handler::process(manager, state, &self.config, &command, &value)
+                manager.command_handler(state, &self.config, &command, &value)
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
                 let mouse_key = utils::xkeysym_lookup::into_mod(self.config.mousekey());
-                mouse_combo_handler::process(manager, mod_mask, button, handle, mouse_key)
+                manager.mouse_combo_handler(mod_mask, button, handle, mouse_key)
             }
 
             DisplayEvent::ChangeToNormalMode => {
@@ -71,7 +71,7 @@ impl<C: Config> DisplayEventHandler<C> {
                 if manager.screens.iter().any(|s| s.root == handle)
                     && manager.focus_manager.behaviour == FocusBehaviour::Sloppy
                 {
-                    return focus_handler::focus_workspace_under_cursor(manager, x, y);
+                    return manager.focus_workspace_under_cursor(x, y);
                 }
                 false
             }
@@ -80,7 +80,7 @@ impl<C: Config> DisplayEventHandler<C> {
                 //limit the frame rate to 60f/sec. otherwise you get lag
                 let mut refresh = false;
                 if (time - manager.frame_rate_limitor) > (1000 / 60) {
-                    refresh = window_move_handler::process(manager, &handle, x, y);
+                    refresh = manager.window_move_handler(&handle, x, y);
                     manager.frame_rate_limitor = time;
                 }
                 refresh
@@ -89,7 +89,7 @@ impl<C: Config> DisplayEventHandler<C> {
                 //limit the frame rate to 60f/sec. otherwise you get lag
                 let mut refresh = false;
                 if (time - manager.frame_rate_limitor) > (1000 / 60) {
-                    refresh = window_resize_handler::process(manager, &handle, x, y);
+                    refresh = manager.window_resize_handler(&handle, x, y);
                     manager.frame_rate_limitor = time;
                 }
                 refresh
@@ -97,7 +97,7 @@ impl<C: Config> DisplayEventHandler<C> {
         };
 
         if update_needed {
-            update_windows(manager);
+            manager.update_windows();
         }
 
         update_needed

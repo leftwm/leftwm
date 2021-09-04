@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::{models::TagId, models::WindowHandle, Manager, Window, Workspace};
 
 use serde::{Deserialize, Serialize};
@@ -18,7 +19,7 @@ impl Default for FocusBehaviour {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FocusManager {
     pub behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
@@ -29,9 +30,20 @@ pub struct FocusManager {
 }
 
 impl FocusManager {
+    pub fn new(config: &impl Config) -> Self {
+        Self {
+            behaviour: config.focus_behaviour(),
+            focus_new_windows: config.focus_new_windows(),
+            workspace_history: Default::default(),
+            window_history: Default::default(),
+            tag_history: Default::default(),
+            tags_last_window: Default::default(),
+        }
+    }
+
     /// Return the currently focused workspace.
     #[must_use]
-    pub fn workspace<'a, 'b>(&self, manager: &'a Manager) -> Option<&'b Workspace>
+    pub fn workspace<'a, 'b, CMD>(&self, manager: &'a Manager<CMD>) -> Option<&'b Workspace>
     where
         'a: 'b,
     {
@@ -61,7 +73,7 @@ impl FocusManager {
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn window<'a, 'b>(&self, manager: &'a Manager) -> Option<&'b Window>
+    pub fn window<'a, 'b, CMD>(&self, manager: &'a Manager<CMD>) -> Option<&'b Window>
     where
         'a: 'b,
     {

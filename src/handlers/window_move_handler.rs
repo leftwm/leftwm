@@ -1,22 +1,29 @@
-use super::{window_handler, Manager, Window, WindowHandle, Workspace};
+use super::{Manager, Window, WindowHandle, Workspace};
 
-pub fn process(manager: &mut Manager, handle: &WindowHandle, offset_x: i32, offset_y: i32) -> bool {
-    let margin_multiplier = match manager
-        .windows
-        .iter()
-        .find(|other| other.has_tag(&manager.focused_tag(0).unwrap_or_default()))
-    {
-        Some(w) => w.margin_multiplier(),
-        None => 1.0,
-    };
-    match manager.windows.iter_mut().find(|w| w.handle == *handle) {
-        Some(w) => {
-            process_window(w, offset_x, offset_y);
-            w.apply_margin_multiplier(margin_multiplier);
-            snap_to_workspaces(w, &manager.workspaces);
-            true
+impl<CMD> Manager<CMD> {
+    pub fn window_move_handler(
+        &mut self,
+        handle: &WindowHandle,
+        offset_x: i32,
+        offset_y: i32,
+    ) -> bool {
+        let margin_multiplier = match self
+            .windows
+            .iter()
+            .find(|other| other.has_tag(&self.focused_tag(0).unwrap_or_default()))
+        {
+            Some(w) => w.margin_multiplier(),
+            None => 1.0,
+        };
+        match self.windows.iter_mut().find(|w| w.handle == *handle) {
+            Some(w) => {
+                process_window(w, offset_x, offset_y);
+                w.apply_margin_multiplier(margin_multiplier);
+                snap_to_workspaces(w, &self.workspaces);
+                true
+            }
+            None => false,
         }
-        None => false,
     }
 }
 
@@ -62,16 +69,16 @@ fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
     let ws_top = workspace.y();
     let ws_bottom = workspace.y() + workspace.height();
     if (win_top - ws_top).abs() < dist {
-        return window_handler::snap_to_workspace(window, workspace);
+        return window.snap_to_workspace(workspace);
     }
     if (win_bottom - ws_bottom).abs() < dist {
-        return window_handler::snap_to_workspace(window, workspace);
+        return window.snap_to_workspace(workspace);
     }
     if (win_left - ws_left).abs() < dist {
-        return window_handler::snap_to_workspace(window, workspace);
+        return window.snap_to_workspace(workspace);
     }
     if (win_right - ws_right).abs() < dist {
-        return window_handler::snap_to_workspace(window, workspace);
+        return window.snap_to_workspace(workspace);
     }
     false
 }

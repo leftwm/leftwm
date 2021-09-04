@@ -2,14 +2,13 @@ mod common;
 
 use leftwm::{
     child_process::{self, Nanny},
-    config::Config as _,
     config::ThemeLoader as _,
-    models::{FocusBehaviour, FocusManager, Tag},
+    models::FocusBehaviour,
 };
 
 use leftwm::{
-    external_command_handler, CommandPipe, DisplayEvent, DisplayEventHandler, DisplayServer,
-    Manager, Mode, State, StateSocket, Window, Workspace, XlibDisplayServer,
+    CommandPipe, DisplayEvent, DisplayEventHandler, DisplayServer, Manager, Mode, State,
+    StateSocket, Window, Workspace, XlibDisplayServer,
 };
 use std::panic;
 use std::path::{Path, PathBuf};
@@ -37,40 +36,7 @@ fn main() {
         let theme_loader = common::theme_setting::ThemeLoader;
         let default_theme = Arc::new(theme_loader.default());
 
-        let focus_manager = FocusManager {
-            behaviour: config.focus_behaviour,
-            focus_new_windows: config.focus_new_windows,
-            ..FocusManager::default()
-        };
-
-        let mut tags: Vec<Tag> = config
-            .create_list_of_tags()
-            .iter()
-            .map(|s| Tag::new(s))
-            .collect();
-        tags.push(Tag {
-            id: "NSP".to_owned(),
-            hidden: true,
-            ..Tag::default()
-        });
-        // TODO use constructor pattern
-        let mut manager = Manager {
-            focus_manager,
-            tags,
-            scratchpads: config.create_list_of_scratchpads(),
-            layouts: config.layouts.clone(),
-            theme_setting: default_theme.clone(),
-            screens: Default::default(),
-            windows: Default::default(),
-            workspaces: Default::default(),
-            mode: Default::default(),
-            active_scratchpads: Default::default(),
-            actions: Default::default(),
-            frame_rate_limitor: Default::default(),
-            children: Default::default(),
-            reap_requested: Default::default(),
-            reload_requested: Default::default(),
-        };
+        let mut manager = Manager::<()>::new(&config, default_theme.clone());
 
         child_process::register_child_hook(manager.reap_requested.clone());
 
@@ -108,8 +74,8 @@ async fn timeout(mills: u64) {
     sleep(Duration::from_millis(mills)).await;
 }
 
-async fn event_loop(
-    manager: &mut Manager,
+async fn event_loop<CMD>(
+    manager: &mut Manager<CMD>,
     display_server: &mut XlibDisplayServer<Arc<Config>>,
     handler: &DisplayEventHandler<Arc<Config>>,
     config: Arc<Config>,
@@ -155,7 +121,7 @@ async fn event_loop(
                 continue;
             }
             Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
-                needs_update = external_command_handler::process(manager, &state, &config, &theme_loader, cmd) || needs_update;
+                needs_update = manager.external_command_handler(&state, &config, &theme_loader, cmd) || needs_update;
                 display_server.update_theme_settings(manager.theme_setting.clone());
             }
             else => {

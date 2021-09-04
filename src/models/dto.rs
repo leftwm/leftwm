@@ -103,8 +103,8 @@ fn viewport_into_display_workspace(
     }
 }
 
-impl From<&Manager> for ManagerState {
-    fn from(manager: &Manager) -> Self {
+impl<CMD> From<&Manager<CMD>> for ManagerState {
+    fn from(manager: &Manager<CMD>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         let mut tags_len = manager.tags.len();
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };

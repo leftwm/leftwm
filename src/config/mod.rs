@@ -3,6 +3,7 @@ mod scratchpad;
 mod theme_setting;
 mod workspace_config;
 
+use crate::layouts::Layout;
 pub use crate::models::FocusBehaviour;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
@@ -23,6 +24,12 @@ pub trait Config {
 
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     fn disable_current_tag_swap(&self) -> bool;
+
+    fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
+
+    fn layouts(&self) -> Vec<Layout>;
+
+    fn focus_new_windows(&self) -> bool;
 }
 
 use std::sync::Arc;
@@ -52,5 +59,53 @@ where
 
     fn disable_current_tag_swap(&self) -> bool {
         C::disable_current_tag_swap(self)
+    }
+
+    fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+        C::create_list_of_scratchpads(self)
+    }
+
+    fn layouts(&self) -> Vec<Layout> {
+        C::layouts(self)
+    }
+
+    fn focus_new_windows(&self) -> bool {
+        C::focus_new_windows(self)
+    }
+}
+
+#[cfg(test)]
+pub struct TestConfig {
+    pub tags: Vec<String>,
+}
+
+#[cfg(test)]
+impl Config for TestConfig {
+    fn mapped_bindings(&self) -> Vec<Keybind> {
+        unimplemented!()
+    }
+    fn create_list_of_tags(&self) -> Vec<String> {
+        self.tags.clone()
+    }
+    fn workspaces(&self) -> Option<&[Workspace]> {
+        unimplemented!()
+    }
+    fn focus_behaviour(&self) -> FocusBehaviour {
+        FocusBehaviour::Sloppy
+    }
+    fn mousekey(&self) -> &str {
+        unimplemented!()
+    }
+    fn disable_current_tag_swap(&self) -> bool {
+        false
+    }
+    fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+        vec![]
+    }
+    fn layouts(&self) -> Vec<Layout> {
+        vec![]
+    }
+    fn focus_new_windows(&self) -> bool {
+        false
     }
 }

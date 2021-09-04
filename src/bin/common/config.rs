@@ -201,14 +201,20 @@ impl leftwm::config::Config for Config {
     fn disable_current_tag_swap(&self) -> bool {
         self.disable_current_tag_swap
     }
-}
 
-impl Config {
-    pub fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+    fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
         if let Some(scratchpads) = &self.scratchpad {
             return scratchpads.clone();
         }
         return vec![];
+    }
+
+    fn layouts(&self) -> Vec<Layout> {
+        self.layouts.clone()
+    }
+
+    fn focus_new_windows(&self) -> bool {
+        self.focus_new_windows
     }
 }
 

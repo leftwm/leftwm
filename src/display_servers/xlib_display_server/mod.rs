@@ -59,11 +59,11 @@ where
         self.xw.load_colors(&self.theme);
     }
 
-    fn update_windows(
+    fn update_windows<CMD>(
         &self,
         windows: Vec<&Window>,
         focused_window: Option<&Window>,
-        manager: &Manager,
+        manager: &Manager<CMD>,
     ) {
         let tags: Vec<&String> = manager.workspaces.iter().flat_map(|w| &w.tags).collect();
 
@@ -294,10 +294,10 @@ where
 }
 
 //return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset(
+fn right_offset<CMD>(
     max_tag_index: Option<usize>,
     max_right_screen: Option<i32>,
-    manager: &Manager,
+    manager: &Manager<CMD>,
     window: &Window,
 ) -> Option<i32> {
     let max_tag_index = max_tag_index?;

@@ -164,9 +164,11 @@ fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExternalCommand {
+    // external commands
     LoadTheme(PathBuf),
     UnloadTheme,
     Reload,
+    // built-in commands
     ToggleScratchPad(String),
     ToggleFullScreen,
     SendWorkspaceToTag(usize, usize),

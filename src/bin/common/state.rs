@@ -12,13 +12,13 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 pub struct State;
 
 impl leftwm::State for State {
-    fn save(&self, manager: &Manager) -> Result<()> {
+    fn save<CMD>(&self, manager: &Manager<CMD>) -> Result<()> {
         let state_file = File::create(STATE_FILE)?;
         serde_json::to_writer(state_file, &manager)?;
         Ok(())
     }
 
-    fn load(&self, manager: &mut Manager) {
+    fn load<CMD>(&self, manager: &mut Manager<CMD>) {
         if Path::new(STATE_FILE).exists() {
             match load_old_state() {
                 Ok(old_manager) => restore_state(manager, &old_manager),
@@ -33,21 +33,21 @@ impl leftwm::State for State {
 }
 
 /// Read old state from a state file.
-fn load_old_state() -> Result<Manager> {
+fn load_old_state<CMD>() -> Result<Manager<CMD>> {
     let file = File::open(STATE_FILE)?;
     let old_manager = serde_json::from_reader(file)?;
     Ok(old_manager)
 }
 
 /// Apply saved state to a running manager.
-fn restore_state(manager: &mut Manager, old_manager: &Manager) {
+fn restore_state<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) {
     restore_workspaces(manager, old_manager);
     restore_windows(manager, old_manager);
     restore_scratchpads(manager, old_manager);
 }
 
 /// Restore workspaces layout.
-fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
+fn restore_workspaces<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) {
     for workspace in &mut manager.workspaces {
         if let Some(old_workspace) = old_manager.workspaces.iter().find(|w| w.id == workspace.id) {
             workspace.layout = old_workspace.layout.clone();
@@ -57,7 +57,7 @@ fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
 }
 
 /// Copy windows state.
-fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
+fn restore_windows<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) {
     let mut ordered = vec![];
     let mut had_strut = false;
 
@@ -92,7 +92,7 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
     manager.windows.append(&mut ordered);
 }
 
-fn restore_scratchpads(manager: &mut Manager, old_manager: &Manager) {
+fn restore_scratchpads<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) {
     for (scratchpad, id) in &old_manager.active_scratchpads {
         manager.active_scratchpads.insert(scratchpad.clone(), *id);
     }
