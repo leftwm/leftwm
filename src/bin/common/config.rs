@@ -5,7 +5,7 @@ use leftwm::{
     errors::Result,
     layouts::{Layout, LAYOUTS},
     models::FocusBehaviour,
-    Command,
+    Command, Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::default::Default;
@@ -30,7 +30,7 @@ pub struct Config {
     pub disable_current_tag_swap: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
-    pub keybind: Vec<Keybind>,
+    pub keybind: Vec<Keybind<()>>,
 }
 
 #[must_use]
@@ -160,8 +160,8 @@ fn exit_strategy<'s>() -> &'s str {
     "pkill leftwm"
 }
 
-impl leftwm::config::Config for Config {
-    fn mapped_bindings(&self) -> Vec<Keybind> {
+impl leftwm::config::Config<()> for Config {
+    fn mapped_bindings(&self) -> Vec<Keybind<()>> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -215,6 +215,10 @@ impl leftwm::config::Config for Config {
 
     fn focus_new_windows(&self) -> bool {
         self.focus_new_windows
+    }
+
+    fn command_handler(&self, command: &(), manager: &mut Manager<()>) -> Option<bool> {
+        None
     }
 }
 

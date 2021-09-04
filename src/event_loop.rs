@@ -12,10 +12,10 @@ use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
 impl<CMD> Manager<CMD> {
-    pub async fn event_loop<C: Config>(
-        &mut self,
-        display_server: &mut XlibDisplayServer<C>,
-        handler: &DisplayEventHandler<C>,
+    pub async fn event_loop<C: Config<CMD>>(
+        mut self,
+        display_server: &mut XlibDisplayServer<C, CMD>,
+        handler: &DisplayEventHandler<C, CMD>,
         config: C,
         state: &impl State,
         theme_loader: &impl ThemeLoader,
@@ -42,13 +42,13 @@ impl<CMD> Manager<CMD> {
         let notify = display_server.task_notify();
         loop {
             if self.mode == Mode::Normal {
-                state_socket.write_manager_state(self).await.ok();
+                state_socket.write_manager_state(&mut self).await.ok();
             }
             display_server.flush();
 
             let mut needs_update = false;
             tokio::select! {
-                _ = display_server.wait_readable(), if event_buffer.is_empty() => {
+                _ = notify.notified(), if event_buffer.is_empty() => {
                     event_buffer.append(&mut get_events(display_server));
                     continue;
                 }
@@ -64,7 +64,7 @@ impl<CMD> Manager<CMD> {
                     display_server.update_theme_settings(self.theme_setting.clone());
                 }
                 else => {
-                    event_buffer.drain(..).for_each(|event| needs_update = handler.process(self, state, event) || needs_update);
+                    event_buffer.drain(..).for_each(|event| needs_update = handler.process(&mut self, state, event) || needs_update);
                 }
             }
 
@@ -74,7 +74,7 @@ impl<CMD> Manager<CMD> {
                     Mode::Normal => {
                         let windows: Vec<&Window> = self.windows.iter().collect();
                         let focused = self.focused_window();
-                        display_server.update_windows(windows, focused, self);
+                        display_server.update_windows(windows, focused, &self);
                         let workspaces: Vec<&Workspace> = self.workspaces.iter().collect();
                         let focused = self.focused_workspace();
                         display_server.update_workspaces(workspaces, focused);
@@ -84,7 +84,7 @@ impl<CMD> Manager<CMD> {
                         let focused = self.focused_window();
                         let windows: Vec<&Window> =
                             (&self.windows).iter().filter(|w| &w.handle == h).collect();
-                        display_server.update_windows(windows, focused, self);
+                        display_server.update_windows(windows, focused, &self);
                     }
                 }
             }
@@ -114,7 +114,7 @@ impl<CMD> Manager<CMD> {
                     Err(err) => log::error!("Theme loading failed: {}", err),
                 }
 
-                state.load(self);
+                state.load(&mut self);
             });
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {
@@ -141,6 +141,8 @@ async fn timeout(mills: u64) {
     sleep(Duration::from_millis(mills)).await;
 }
 
-fn get_events<T: DisplayServer<C>, C: Config>(ds: &mut T) -> Vec<crate::DisplayEvent> {
+fn get_events<T: DisplayServer<C, CMD>, C: Config<CMD>, CMD>(
+    ds: &mut T,
+) -> Vec<crate::DisplayEvent<CMD>> {
     ds.get_next_events()
 }

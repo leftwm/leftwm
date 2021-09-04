@@ -5,14 +5,16 @@ mod workspace_config;
 
 use crate::layouts::Layout;
 pub use crate::models::FocusBehaviour;
+use crate::Manager;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
+use std::sync::Arc;
 pub use theme_setting::{ThemeLoader, ThemeSetting};
 pub use workspace_config::Workspace;
 
-pub trait Config {
+pub trait Config<CMD> {
     /// Returns a collection of bindings with the mod key mapped.
-    fn mapped_bindings(&self) -> Vec<Keybind>;
+    fn mapped_bindings(&self) -> Vec<Keybind<CMD>>;
 
     fn create_list_of_tags(&self) -> Vec<String>;
 
@@ -30,14 +32,15 @@ pub trait Config {
     fn layouts(&self) -> Vec<Layout>;
 
     fn focus_new_windows(&self) -> bool;
+
+    fn command_handler(&self, command: &CMD, manager: &mut Manager<CMD>) -> Option<bool>;
 }
 
-use std::sync::Arc;
-impl<C> Config for Arc<C>
+impl<C, CMD> Config<CMD> for Arc<C>
 where
-    C: Config,
+    C: Config<CMD>,
 {
-    fn mapped_bindings(&self) -> Vec<Keybind> {
+    fn mapped_bindings(&self) -> Vec<Keybind<CMD>> {
         C::mapped_bindings(self)
     }
 
@@ -72,6 +75,10 @@ where
     fn focus_new_windows(&self) -> bool {
         C::focus_new_windows(self)
     }
+
+    fn command_handler(&self, command: &CMD, manager: &mut Manager<CMD>) -> Option<bool> {
+        C::command_handler(self, command, manager)
+    }
 }
 
 #[cfg(test)]
@@ -80,8 +87,8 @@ pub struct TestConfig {
 }
 
 #[cfg(test)]
-impl Config for TestConfig {
-    fn mapped_bindings(&self) -> Vec<Keybind> {
+impl<CMD> Config<CMD> for TestConfig {
+    fn mapped_bindings(&self) -> Vec<Keybind<CMD>> {
         unimplemented!()
     }
     fn create_list_of_tags(&self) -> Vec<String> {

@@ -30,7 +30,7 @@ pub struct FocusManager {
 }
 
 impl FocusManager {
-    pub fn new(config: &impl Config) -> Self {
+    pub fn new<CMD>(config: &impl Config<CMD>) -> Self {
         Self {
             behaviour: config.focus_behaviour(),
             focus_new_windows: config.focus_new_windows(),

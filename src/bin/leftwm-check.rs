@@ -131,7 +131,7 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
 /// Checks to see if value is provided (if required)
 /// Checks to see if keys are valid against Xkeysym
 /// Ideally, we will pass this to the command handler with a dummy config
-fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
+fn check_keybinds(keybinds: Vec<Keybind<()>>, verbose: bool) -> bool {
     let mut returns = Vec::new();
     let value_required_commands = vec![
         Command::ToggleScratchPad,

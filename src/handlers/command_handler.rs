@@ -23,9 +23,9 @@ impl<CMD> Manager<CMD> {
     pub fn command_handler(
         &mut self,
         state: &impl State,
-        config: &impl Config,
-        command: &Command,
-        val: &Option<String>,
+        config: &impl Config<CMD>,
+        command: &Command<CMD>,
+        val: Option<&str>,
     ) -> bool {
         process_internal(self, state, config, command, val).unwrap_or(false)
     }
@@ -34,9 +34,9 @@ impl<CMD> Manager<CMD> {
 fn process_internal<CMD>(
     manager: &mut Manager<CMD>,
     state: &impl State,
-    config: &impl Config,
-    command: &Command,
-    val: &Option<String>,
+    config: &impl Config<CMD>,
+    command: &Command<CMD>,
+    val: Option<&str>,
 ) -> Option<bool> {
     match command {
         Command::Execute => execute(manager, val),
@@ -89,15 +89,16 @@ fn process_internal<CMD>(
         Command::IncreaseMainWidth => change_main_width(manager, val, 1),
         Command::DecreaseMainWidth => change_main_width(manager, val, -1),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, val),
+        Command::Other(cmd) => config.command_handler(cmd, manager),
     }
 }
 
-fn execute<CMD>(manager: &mut Manager<CMD>, val: &Option<String>) -> Option<bool> {
+fn execute<CMD>(manager: &mut Manager<CMD>, val: Option<&str>) -> Option<bool> {
     let _ = exec_shell(val.as_ref()?, manager);
     None
 }
 
-fn toggle_scratchpad<CMD>(manager: &mut Manager<CMD>, val: &Option<String>) -> Option<bool> {
+fn toggle_scratchpad<CMD>(manager: &mut Manager<CMD>, val: Option<&str>) -> Option<bool> {
     let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
     let s = manager
@@ -155,7 +156,7 @@ fn toggle_fullscreen<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     Some(handle_focus(manager, handle))
 }
 
-fn move_to_tag<CMD>(val: &Option<String>, manager: &mut Manager<CMD>) -> Option<bool> {
+fn move_to_tag<CMD>(val: Option<&str>, manager: &mut Manager<CMD>) -> Option<bool> {
     let tag_num: usize = val.as_ref()?.parse().ok()?;
     let tag = manager.tags.get(tag_num - 1)?.clone();
 
@@ -187,8 +188,8 @@ fn move_to_tag<CMD>(val: &Option<String>, manager: &mut Manager<CMD>) -> Option<
 
 fn goto_tag<CMD>(
     manager: &mut Manager<CMD>,
-    val: &Option<String>,
-    config: &impl Config,
+    val: Option<&str>,
+    config: &impl Config<CMD>,
 ) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
@@ -293,7 +294,7 @@ fn previous_layout<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     Some(true)
 }
 
-fn set_layout<CMD>(val: &Option<String>, manager: &mut Manager<CMD>) -> Option<bool> {
+fn set_layout<CMD>(val: Option<&str>, manager: &mut Manager<CMD>) -> Option<bool> {
     let layout = Layout::from_str(val.as_ref()?).ok()?;
     let workspace = manager
         .focus_manager
@@ -457,7 +458,7 @@ fn rotate_tag<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
 
 fn change_main_width<CMD>(
     manager: &mut Manager<CMD>,
-    val: &Option<String>,
+    val: Option<&str>,
     factor: i8,
 ) -> Option<bool> {
     let workspace = manager
@@ -468,7 +469,7 @@ fn change_main_width<CMD>(
     Some(true)
 }
 
-fn set_margin_multiplier<CMD>(manager: &mut Manager<CMD>, val: &Option<String>) -> Option<bool> {
+fn set_margin_multiplier<CMD>(manager: &mut Manager<CMD>, val: Option<&str>) -> Option<bool> {
     let margin_multiplier: f32 = val.as_ref()?.parse().ok()?;
     let ws = manager.focused_workspace_mut()?;
     ws.set_margin_multiplier(margin_multiplier);

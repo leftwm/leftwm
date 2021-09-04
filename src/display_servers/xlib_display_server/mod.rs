@@ -10,6 +10,7 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
+use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Once;
 use tokio::sync::Notify;
@@ -27,16 +28,17 @@ mod xcursor;
 
 static SETUP: Once = Once::new();
 
-pub struct XlibDisplayServer<C> {
+pub struct XlibDisplayServer<C, CMD> {
     xw: XWrap,
     root: xlib::Window,
     config: C,
     theme: Arc<ThemeSetting>,
+    marker: PhantomData<CMD>,
 }
 
-impl<C> DisplayServer<C> for XlibDisplayServer<C>
+impl<C, CMD> DisplayServer<C, CMD> for XlibDisplayServer<C, CMD>
 where
-    C: Config,
+    C: Config<CMD>,
 {
     fn new(config: C, theme: Arc<ThemeSetting>) -> Self {
         let mut wrap = XWrap::new();
@@ -52,6 +54,7 @@ where
             root,
             theme,
             config,
+            marker: PhantomData,
         }
     }
 
@@ -60,7 +63,7 @@ where
         self.xw.load_colors(&self.theme);
     }
 
-    fn update_windows<CMD>(
+    fn update_windows(
         &self,
         windows: Vec<&Window>,
         focused_window: Option<&Window>,
@@ -101,7 +104,7 @@ where
         }
     }
 
-    fn get_next_events(&mut self) -> Vec<DisplayEvent> {
+    fn get_next_events(&mut self) -> Vec<DisplayEvent<CMD>> {
         let mut events = vec![];
         SETUP.call_once(|| {
             for e in self.initial_events() {
@@ -129,9 +132,9 @@ where
         events
     }
 
-    fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
+    fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent<CMD>> {
         log::trace!("DisplayAction: {:?}", act);
-        let event: Option<DisplayEvent> = match act {
+        let event: Option<DisplayEvent<CMD>> = match act {
             DisplayAction::KillWindow(w) => {
                 self.xw.kill_window(&w);
                 None
@@ -216,12 +219,12 @@ where
     }
 }
 
-impl<C> XlibDisplayServer<C>
+impl<C, CMD> XlibDisplayServer<C, CMD>
 where
-    C: Config,
+    C: Config<CMD>,
 {
     /// Return a vec of events for setting up state of WM.
-    fn initial_events(&self) -> Vec<DisplayEvent> {
+    fn initial_events(&self) -> Vec<DisplayEvent<CMD>> {
         let mut events = vec![];
         if let Some(workspaces) = self.config.workspaces() {
             if workspaces.is_empty() {
@@ -250,11 +253,11 @@ where
         events
     }
 
-    pub fn verify_focused_window(&mut self) -> Vec<DisplayEvent> {
+    pub fn verify_focused_window(&mut self) -> Vec<DisplayEvent<CMD>> {
         self.verify_focused_window_work().unwrap_or_default()
     }
 
-    fn verify_focused_window_work(&mut self) -> Option<Vec<DisplayEvent>> {
+    fn verify_focused_window_work(&mut self) -> Option<Vec<DisplayEvent<CMD>>> {
         let point = self.xw.get_cursor_point().ok()?;
         Some(vec![DisplayEvent::VerifyFocusedAt(point.0, point.1)])
     }

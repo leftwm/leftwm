@@ -10,7 +10,7 @@ impl<CMD> Manager<CMD> {
     pub fn external_command_handler(
         &mut self,
         state: &impl State,
-        config: &impl Config,
+        config: &impl Config<CMD>,
         theme_loader: &impl ThemeLoader,
         command: ExternalCommand,
     ) -> bool {
@@ -25,7 +25,7 @@ impl<CMD> Manager<CMD> {
 fn process_work<CMD>(
     manager: &mut Manager<CMD>,
     state: &impl State,
-    config: &impl Config,
+    config: &impl Config<CMD>,
     theme_loader: &impl ThemeLoader,
     command: ExternalCommand,
 ) -> bool {
@@ -39,10 +39,10 @@ fn process_work<CMD>(
             load_theme(manager, theme)
         }
         ExternalCommand::ToggleScratchPad(name) => {
-            manager.command_handler(state, config, &Command::ToggleScratchPad, &Some(name))
+            manager.command_handler(state, config, &Command::ToggleScratchPad, Some(&name))
         }
         ExternalCommand::ToggleFullScreen => {
-            manager.command_handler(state, config, &Command::ToggleFullScreen, &None)
+            manager.command_handler(state, config, &Command::ToggleFullScreen, None)
         }
         ExternalCommand::SendWorkspaceToTag(ws_index, tag_index) => {
             send_workspace_to_tag(manager, ws_index, tag_index)
@@ -51,64 +51,64 @@ fn process_work<CMD>(
             send_window_to_tag(manager, state, config, tag_index)
         }
         ExternalCommand::SetLayout(layout) => {
-            manager.command_handler(state, config, &Command::SetLayout, &Some(layout))
+            manager.command_handler(state, config, &Command::SetLayout, Some(&layout))
         }
         ExternalCommand::SetMarginMultiplier(margin_multiplier) => manager.command_handler(
             state,
             config,
             &Command::SetMarginMultiplier,
-            &Some(margin_multiplier),
+            Some(&margin_multiplier),
         ),
         ExternalCommand::SwapScreens => {
-            manager.command_handler(state, config, &Command::SwapTags, &None)
+            manager.command_handler(state, config, &Command::SwapTags, None)
         }
         ExternalCommand::MoveWindowToLastWorkspace => {
-            manager.command_handler(state, config, &Command::MoveToLastWorkspace, &None)
+            manager.command_handler(state, config, &Command::MoveToLastWorkspace, None)
         }
         ExternalCommand::FloatingToTile => {
-            manager.command_handler(state, config, &Command::FloatingToTile, &None)
+            manager.command_handler(state, config, &Command::FloatingToTile, None)
         }
         ExternalCommand::MoveWindowUp => {
-            manager.command_handler(state, config, &Command::MoveWindowUp, &None)
+            manager.command_handler(state, config, &Command::MoveWindowUp, None)
         }
         ExternalCommand::MoveWindowTop => {
-            manager.command_handler(state, config, &Command::MoveWindowTop, &None)
+            manager.command_handler(state, config, &Command::MoveWindowTop, None)
         }
         ExternalCommand::MoveWindowDown => {
-            manager.command_handler(state, config, &Command::MoveWindowDown, &None)
+            manager.command_handler(state, config, &Command::MoveWindowDown, None)
         }
         ExternalCommand::FocusWindowUp => {
-            manager.command_handler(state, config, &Command::FocusWindowUp, &None)
+            manager.command_handler(state, config, &Command::FocusWindowUp, None)
         }
         ExternalCommand::FocusWindowDown => {
-            manager.command_handler(state, config, &Command::FocusWindowDown, &None)
+            manager.command_handler(state, config, &Command::FocusWindowDown, None)
         }
         ExternalCommand::FocusNextTag => {
-            manager.command_handler(state, config, &Command::FocusNextTag, &None)
+            manager.command_handler(state, config, &Command::FocusNextTag, None)
         }
         ExternalCommand::FocusPreviousTag => {
-            manager.command_handler(state, config, &Command::FocusPreviousTag, &None)
+            manager.command_handler(state, config, &Command::FocusPreviousTag, None)
         }
         ExternalCommand::FocusWorkspaceNext => {
-            manager.command_handler(state, config, &Command::FocusWorkspaceNext, &None)
+            manager.command_handler(state, config, &Command::FocusWorkspaceNext, None)
         }
         ExternalCommand::FocusWorkspacePrevious => {
-            manager.command_handler(state, config, &Command::FocusWorkspacePrevious, &None)
+            manager.command_handler(state, config, &Command::FocusWorkspacePrevious, None)
         }
         ExternalCommand::NextLayout => {
-            manager.command_handler(state, config, &Command::NextLayout, &None)
+            manager.command_handler(state, config, &Command::NextLayout, None)
         }
         ExternalCommand::PreviousLayout => {
-            manager.command_handler(state, config, &Command::PreviousLayout, &None)
+            manager.command_handler(state, config, &Command::PreviousLayout, None)
         }
         ExternalCommand::RotateTag => {
-            manager.command_handler(state, config, &Command::RotateTag, &None)
+            manager.command_handler(state, config, &Command::RotateTag, None)
         }
         ExternalCommand::CloseWindow => {
-            manager.command_handler(state, config, &Command::CloseWindow, &None)
+            manager.command_handler(state, config, &Command::CloseWindow, None)
         }
         ExternalCommand::Reload => {
-            manager.command_handler(state, config, &Command::SoftReload, &None)
+            manager.command_handler(state, config, &Command::SoftReload, None)
         }
     }
 }
@@ -141,13 +141,13 @@ fn send_workspace_to_tag<CMD>(
 fn send_window_to_tag<CMD>(
     manager: &mut Manager<CMD>,
     state: &impl State,
-    config: &impl Config,
+    config: &impl Config<CMD>,
     tag_index: usize,
 ) -> bool {
     if tag_index < manager.tags.len() {
         //tag number as 1 based.
         let tag_num = format!("{}", tag_index + 1);
-        return manager.command_handler(state, config, &Command::MoveToTag, &Some(tag_num));
+        return manager.command_handler(state, config, &Command::MoveToTag, Some(&tag_num));
     }
     false
 }

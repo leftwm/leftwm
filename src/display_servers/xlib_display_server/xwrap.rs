@@ -669,11 +669,11 @@ impl XWrap {
     }
 
     //this code is run once when a window is added to the managers list of windows
-    pub fn setup_managed_window(
+    pub fn setup_managed_window<CMD>(
         &mut self,
         h: WindowHandle,
         follow_mouse: bool,
-    ) -> Option<DisplayEvent> {
+    ) -> Option<DisplayEvent<CMD>> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             self.managed_windows.push(handle);
@@ -1437,7 +1437,7 @@ impl XWrap {
     }
 
     // TODO: split into smaller functions
-    pub fn init(&mut self, config: &impl Config, theme: &ThemeSetting) {
+    pub fn init<CMD>(&mut self, config: &impl Config<CMD>, theme: &ThemeSetting) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask

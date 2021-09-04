@@ -7,12 +7,12 @@ use super::XKeysym;
 use std::collections::HashMap;
 use x11_dl::xlib;
 
-pub struct CommandBuilder {
-    keybinds: HashMap<(ModMask, XKeysym), Keybind>,
+pub struct CommandBuilder<CMD> {
+    keybinds: HashMap<(ModMask, XKeysym), Keybind<CMD>>,
 }
 
-impl CommandBuilder {
-    pub fn new(config: &impl Config) -> CommandBuilder {
+impl<CMD> CommandBuilder<CMD> {
+    pub fn new(config: &impl Config<CMD>) -> CommandBuilder<CMD> {
         let binds = config.mapped_bindings();
         let mut lookup = HashMap::new();
         for b in binds {
@@ -24,7 +24,7 @@ impl CommandBuilder {
         CommandBuilder { keybinds: lookup }
     }
 
-    pub fn find_keybind_for(&self, m: ModMask, key: XKeysym) -> Option<&Keybind> {
+    pub fn find_keybind_for(&self, m: ModMask, key: XKeysym) -> Option<&Keybind<CMD>> {
         let mut mask = m;
         mask &= !(xlib::Mod2Mask | xlib::LockMask);
         mask &= xlib::ShiftMask
@@ -43,12 +43,12 @@ impl CommandBuilder {
         mask: ModMask,
         key: XKeysym,
         //event: XKeyEvent,
-    ) -> Option<(Command, Option<String>)> {
+    ) -> Option<(&Command<CMD>, Option<&str>)> {
         let keybind = self.find_keybind_for(mask, key);
         match keybind {
             Some(bind) => {
-                let cmd = bind.command.clone();
-                let val = bind.value.clone();
+                let cmd = &bind.command;
+                let val = bind.value.as_deref();
                 Some((cmd, val))
             }
             None => None,

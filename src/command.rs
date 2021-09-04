@@ -1,7 +1,9 @@
+use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum Command {
+#[derive(Serialize, Deserialize, Clone, PartialEq, Derivative)]
+#[derivative(Debug)]
+pub enum Command<CMD> {
     Execute,
     CloseWindow,
     SwapTags,
@@ -30,4 +32,5 @@ pub enum Command {
     IncreaseMainWidth,
     DecreaseMainWidth,
     SetMarginMultiplier,
+    Other(#[derivative(Debug = "ignore")] CMD),
 }

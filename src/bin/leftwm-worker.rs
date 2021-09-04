@@ -25,15 +25,13 @@ fn main() {
         let theme_loader = common::theme_setting::ThemeLoader;
         let default_theme = Arc::new(theme_loader.default());
 
-        let mut manager = Manager::<()>::new(&config, default_theme.clone());
+        let manager = Manager::<()>::new(&config, default_theme.clone());
 
         child_process::register_child_hook(manager.reap_requested.clone());
 
         let config = Arc::new(config);
         let mut display_server = XlibDisplayServer::new(config.clone(), default_theme);
-        let handler = DisplayEventHandler {
-            config: config.clone(),
-        };
+        let handler = DisplayEventHandler::new(config.clone());
 
         rt.block_on(manager.event_loop(
             &mut display_server,

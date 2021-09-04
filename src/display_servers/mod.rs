@@ -13,14 +13,14 @@ use std::sync::Arc;
 pub use self::mock_display_server::MockDisplayServer;
 pub use self::xlib_display_server::XlibDisplayServer;
 
-pub trait DisplayServer<C: Config> {
+pub trait DisplayServer<C: Config<CMD>, CMD> {
     fn new(config: C, theme: Arc<ThemeSetting>) -> Self;
 
-    fn get_next_events(&mut self) -> Vec<DisplayEvent>;
+    fn get_next_events(&mut self) -> Vec<DisplayEvent<CMD>>;
 
     fn update_theme_settings(&mut self, _settings: Arc<ThemeSetting>) {}
 
-    fn update_windows<CMD>(
+    fn update_windows(
         &self,
         _windows: Vec<&Window>,
         _focused: Option<&Window>,
@@ -30,7 +30,7 @@ pub trait DisplayServer<C: Config> {
 
     fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
 
-    fn execute_action(&mut self, _act: DisplayAction) -> Option<DisplayEvent> {
+    fn execute_action(&mut self, _act: DisplayAction) -> Option<DisplayEvent<CMD>> {
         None
     }
 }

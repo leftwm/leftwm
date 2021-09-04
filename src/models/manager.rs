@@ -45,7 +45,7 @@ pub struct Manager<CMD> {
 }
 
 impl<CMD> Manager<CMD> {
-    pub fn new(config: &impl Config, theme_setting: Arc<ThemeSetting>) -> Self {
+    pub fn new(config: &impl Config<CMD>, theme_setting: Arc<ThemeSetting>) -> Self {
         let mut tags: Vec<Tag> = config
             .create_list_of_tags()
             .iter()

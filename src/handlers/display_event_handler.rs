@@ -2,20 +2,29 @@ use super::{CommandBuilder, Config, DisplayEvent, Manager, Mode};
 use crate::state::State;
 use crate::utils;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
+use std::marker::PhantomData;
 
 /// Configuration container for processing `DisplayEvents`.
-pub struct DisplayEventHandler<C> {
+pub struct DisplayEventHandler<C, CMD> {
     pub config: C,
+    marker: PhantomData<CMD>,
 }
 
-impl<C: Config> DisplayEventHandler<C> {
+impl<C: Config<CMD>, CMD> DisplayEventHandler<C, CMD> {
+    pub fn new(config: C) -> Self {
+        Self {
+            config,
+            marker: PhantomData,
+        }
+    }
+
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
-    pub fn process<CMD>(
+    pub fn process(
         &self,
         manager: &mut Manager<CMD>,
         state: &impl State,
-        event: DisplayEvent,
+        event: DisplayEvent<CMD>,
     ) -> bool {
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => manager.screen_create_handler(s),
@@ -41,17 +50,17 @@ impl<C: Config> DisplayEventHandler<C> {
 
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
-                let build = CommandBuilder::new(&self.config);
+                let build = CommandBuilder::<CMD>::new(&self.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some((cmd, val)) = command {
-                    manager.command_handler(state, &self.config, &cmd, &val)
+                    manager.command_handler(state, &self.config, cmd, val)
                 } else {
                     false
                 }
             }
 
             DisplayEvent::SendCommand(command, value) => {
-                manager.command_handler(state, &self.config, &command, &value)
+                manager.command_handler(state, &self.config, &command, value.as_deref())
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {

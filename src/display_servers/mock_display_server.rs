@@ -10,13 +10,13 @@ pub struct MockDisplayServer {
     pub screens: Vec<Screen>,
 }
 
-impl<C: Config> DisplayServer<C> for MockDisplayServer {
+impl<C: Config<CMD>, CMD> DisplayServer<C, CMD> for MockDisplayServer {
     fn new(_: C, _: Arc<ThemeSetting>) -> MockDisplayServer {
         MockDisplayServer { screens: vec![] }
     }
 
     //testing a couple mock event
-    fn get_next_events(&mut self) -> Vec<DisplayEvent> {
+    fn get_next_events(&mut self) -> Vec<DisplayEvent<CMD>> {
         vec![]
     }
 }
