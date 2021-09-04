@@ -12,6 +12,7 @@ use crate::DisplayEvent;
 use crate::DisplayServer;
 use std::sync::Arc;
 use std::sync::Once;
+use tokio::sync::Notify;
 use x11_dl::xlib;
 
 mod event_translate;
@@ -282,6 +283,10 @@ where
             }
         }
         all
+    }
+
+    pub fn task_notify(&self) -> Arc<Notify> {
+        self.xw.task_notify.clone()
     }
 
     pub async fn wait_readable(&mut self) {

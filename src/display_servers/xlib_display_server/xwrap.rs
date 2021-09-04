@@ -69,7 +69,7 @@ pub struct XWrap {
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
-    task_notify: Arc<Notify>,
+    pub task_notify: Arc<Notify>,
 }
 
 impl Default for XWrap {
