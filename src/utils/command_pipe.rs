@@ -75,7 +75,10 @@ async fn read_from_pipe(
 fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
     let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
     match head {
-        "UnloadTheme" => Ok(ExternalCommand::UnloadTheme),
+        // TODO
+        //"UnloadTheme" => Ok(ExternalCommand::UnloadTheme),
+        // These require arguments and might be more finicky
+        //"LoadTheme" => build_load_theme(s),
         "Reload" => Ok(ExternalCommand::Reload),
         "ToggleFullScreen" => Ok(ExternalCommand::ToggleFullScreen),
         "SwapScreens" => Ok(ExternalCommand::SwapScreens),
@@ -94,8 +97,6 @@ fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
         "PreviousLayout" => Ok(ExternalCommand::PreviousLayout),
         "RotateTag" => Ok(ExternalCommand::RotateTag),
         "CloseWindow" => Ok(ExternalCommand::CloseWindow),
-        // These require arguments and might be more finicky
-        "LoadTheme" => build_load_theme(s),
         "ToggleScratchPad" => build_toggle_scratchpad(s),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
         "SendWindowToTag" => build_send_window_to_tag(s),
@@ -105,6 +106,8 @@ fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
     }
 }
 
+// TODO
+/*
 fn build_load_theme(raw: &str) -> std::result::Result<ExternalCommand, ()> {
     let headless = without_head(raw, "LoadTheme ");
     let path = Path::new(headless);
@@ -114,6 +117,7 @@ fn build_load_theme(raw: &str) -> std::result::Result<ExternalCommand, ()> {
         Err(())
     }
 }
+*/
 
 fn build_toggle_scratchpad(raw: &str) -> std::result::Result<ExternalCommand, ()> {
     let headless = without_head(raw, "ToggleScratchPad ");
@@ -164,11 +168,7 @@ fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExternalCommand {
-    // external commands
-    LoadTheme(PathBuf),
-    UnloadTheme,
     Reload,
-    // built-in commands
     ToggleScratchPad(String),
     ToggleFullScreen,
     SendWorkspaceToTag(usize, usize),

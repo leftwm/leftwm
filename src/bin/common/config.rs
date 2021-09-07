@@ -1,11 +1,12 @@
 //! `LeftWM` general configuration
 
+use super::{Command, ThemeSetting};
 use leftwm::{
     config::{Keybind, ScratchPad, Workspace},
     errors::Result,
     layouts::{Layout, LAYOUTS},
-    models::FocusBehaviour,
-    Command, Manager,
+    models::{FocusBehaviour, Gutter, Margins},
+    Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::default::Default;
@@ -13,11 +14,14 @@ use std::env;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
+/// Path to file where state will be dumper upon soft reload.
+const STATE_FILE: &str = "/tmp/leftwm.state";
+
 /// General configuration
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
@@ -30,7 +34,11 @@ pub struct Config {
     pub disable_current_tag_swap: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
-    pub keybind: Vec<Keybind<()>>,
+    pub keybind: Vec<Keybind<Command>>,
+    pub state: Option<PathBuf>,
+
+    #[serde(skip)]
+    pub theme_setting: ThemeSetting,
 }
 
 #[must_use]
@@ -160,8 +168,8 @@ fn exit_strategy<'s>() -> &'s str {
     "pkill leftwm"
 }
 
-impl leftwm::config::Config<()> for Config {
-    fn mapped_bindings(&self) -> Vec<Keybind<()>> {
+impl leftwm::Config<Command> for Config {
+    fn mapped_bindings(&self) -> Vec<Keybind<Command>> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -217,8 +225,74 @@ impl leftwm::config::Config<()> for Config {
         self.focus_new_windows
     }
 
-    fn command_handler(&self, command: &(), manager: &mut Manager<()>) -> Option<bool> {
-        None
+    fn command_handler(command: &Command, manager: &mut Manager<Self, Command>) -> Option<bool> {
+        command.execute(manager)
+    }
+
+    fn border_width(&self) -> i32 {
+        self.theme_setting.border_width.clone()
+    }
+
+    fn margin(&self) -> Margins {
+        self.theme_setting.margin.clone()
+    }
+
+    fn workspace_margin(&self) -> Option<Margins> {
+        self.theme_setting.workspace_margin.clone()
+    }
+
+    fn gutter(&self) -> Option<Vec<Gutter>> {
+        self.theme_setting.gutter.clone()
+    }
+
+    fn default_border_color(&self) -> &str {
+        &self.theme_setting.default_border_color
+    }
+
+    fn floating_border_color(&self) -> &str {
+        &self.theme_setting.floating_border_color
+    }
+
+    fn focused_border_color(&self) -> &str {
+        &self.theme_setting.focused_border_color
+    }
+
+    fn on_new_window_cmd(&self) -> Option<String> {
+        self.theme_setting.on_new_window_cmd.clone()
+    }
+
+    fn get_list_of_gutters(&self) -> Vec<Gutter> {
+        self.theme_setting.gutter.clone().unwrap_or_default()
+    }
+
+    fn save_state(manager: &Manager<Self, Command>) -> Result<()> {
+        let path = manager.config.state_file();
+        let state_file = File::create(&path)?;
+        serde_json::to_writer(state_file, &manager)?;
+        Ok(())
+    }
+
+    fn load_state(manager: &mut Manager<Self, Command>) {
+        let path = manager.config.state_file().to_owned();
+        if path.exists() {
+            match super::load_old_state(&path) {
+                Ok(old_manager) => super::restore_state(manager, &old_manager),
+                Err(err) => log::error!("Cannot load old state: {}", err),
+            }
+            // Clean old state.
+            if let Err(err) = std::fs::remove_file(&path) {
+                log::error!("Cannot remove old state file: {}", err);
+            }
+        }
+    }
+}
+
+impl Config {
+    fn state_file(&self) -> &Path {
+        self.state
+            .as_ref()
+            .map(|x| x.as_path())
+            .unwrap_or_else(|| Path::new(STATE_FILE))
     }
 }
 
@@ -228,6 +302,8 @@ impl Default for Config {
     // considerably.
     #[allow(clippy::too_many_lines)]
     fn default() -> Self {
+        use leftwm::Command;
+
         const WORKSPACES_NUM: usize = 10;
         let mut commands = vec![
             // Mod + p => Open dmenu
@@ -426,6 +502,8 @@ impl Default for Config {
             modkey: "Mod4".to_owned(), //win key
             mousekey: "Mod4".to_owned(), //win key
             keybind: commands,
+            theme_setting: ThemeSetting::default(),
+            state: None,
         }
     }
 }

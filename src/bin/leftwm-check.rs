@@ -1,17 +1,15 @@
 mod common;
 
 use clap::{App, Arg};
-use leftwm::config::{Keybind, ThemeSetting, Workspace};
+use common::{Command, Config, ThemeSetting};
+use leftwm::config::{Keybind, Workspace};
 use leftwm::errors::Result;
 use leftwm::utils;
-use leftwm::Command;
 use std::collections::HashMap;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
-
-use common::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -48,9 +46,6 @@ async fn main() -> Result<()> {
     match load_from_file(config_file, verbose) {
         Ok(config) => {
             println!("\x1b[0;92m    -> Configuration loaded OK \x1b[0m");
-            if config == Config::default() {
-                println!("\x1b[1;93mWARN: The file loaded was the default. Your configuration is likely invalid \x1b[0m");
-            }
             if verbose {
                 dbg!(&config);
             }
@@ -108,13 +103,13 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
         if verbose {
             println!("Checking config for valid workspace definitions.");
         }
-        let ids = common::config::get_workspace_ids(&wss);
+        let ids = common::get_workspace_ids(&wss);
         if ids.iter().any(std::option::Option::is_some) {
-            if !common::config::all_ids_some(&ids)
+            if !common::all_ids_some(&ids)
             {
                 println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
                 false
-            } else if common::config::all_ids_unique(&ids) {
+            } else if common::all_ids_unique(&ids) {
                 true
             } else {
                 println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
@@ -131,28 +126,25 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
 /// Checks to see if value is provided (if required)
 /// Checks to see if keys are valid against Xkeysym
 /// Ideally, we will pass this to the command handler with a dummy config
-fn check_keybinds(keybinds: Vec<Keybind<()>>, verbose: bool) -> bool {
+fn check_keybinds(keybinds: Vec<Keybind<Command>>, verbose: bool) -> bool {
     let mut returns = Vec::new();
-    let value_required_commands = vec![
-        Command::ToggleScratchPad,
-        Command::MoveToTag,
-        Command::GotoTag,
-        Command::Execute,
-        Command::IncreaseMainWidth,
-        Command::DecreaseMainWidth,
-        Command::SetLayout,
-        Command::SetMarginMultiplier,
-    ];
     println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
     let mut bindings = HashMap::new();
     for keybind in keybinds {
         if verbose {
             println!("Keybind: {:?} {}", keybind, keybind.value.is_none());
         }
-        if value_required_commands
-            .iter()
-            .any(|i| i.clone() == keybind.command)
-            && keybind.value.is_none()
+        if matches!(
+            keybind.command,
+            leftwm::Command::ToggleScratchPad
+                | leftwm::Command::MoveToTag
+                | leftwm::Command::GotoTag
+                | leftwm::Command::Execute
+                | leftwm::Command::IncreaseMainWidth
+                | leftwm::Command::DecreaseMainWidth
+                | leftwm::Command::SetLayout
+                | leftwm::Command::SetMarginMultiplier
+        ) && keybind.value.is_none()
         {
             returns.push((
                 Some(keybind.clone()),
@@ -220,7 +212,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
     // We also cross-reference the ENV variable
     match (
         std::env::var("XDG_RUNTIME_DIR"),
-        common::config::is_program_in_path("loginctl"),
+        common::is_program_in_path("loginctl"),
     ) {
         (Ok(val), true) => {
             if verbose {

@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::layouts::Layout;
 use crate::models::Manager;
 use serde::{Deserialize, Serialize};
@@ -103,8 +104,8 @@ fn viewport_into_display_workspace(
     }
 }
 
-impl<CMD> From<&Manager<CMD>> for ManagerState {
-    fn from(manager: &Manager<CMD>) -> Self {
+impl<C: Config<CMD>, CMD> From<&Manager<C, CMD>> for ManagerState {
+    fn from(manager: &Manager<C, CMD>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         let mut tags_len = manager.tags.len();
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };

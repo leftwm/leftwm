@@ -1,6 +1,7 @@
 use super::{Manager, Window, WindowHandle};
+use crate::config::Config;
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     pub fn window_resize_handler(
         &mut self,
         handle: &WindowHandle,

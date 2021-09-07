@@ -1,6 +1,7 @@
+use crate::config::Config;
 use crate::models::Manager;
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     /*
      * step over all the windows for each workspace and updates all the things
      * based on the new state of the WM

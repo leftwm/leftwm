@@ -1,15 +1,9 @@
 mod common;
 
-use leftwm::{
-    child_process::{self},
-    config::ThemeLoader as _,
-};
-
-use leftwm::{DisplayEventHandler, DisplayServer, Manager, XlibDisplayServer};
-use std::panic;
-use std::sync::Arc;
-
+use leftwm::child_process::{self};
+use leftwm::{DisplayServer, Manager, XlibDisplayServer};
 use slog::{o, Drain};
+use std::panic;
 
 fn main() {
     //let _log_guard = setup_logfile();
@@ -20,26 +14,14 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        let config = common::config::load();
-        let state = common::state::State;
-        let theme_loader = common::theme_setting::ThemeLoader;
-        let default_theme = Arc::new(theme_loader.default());
+        let config = common::load();
 
-        let manager = Manager::<()>::new(&config, default_theme.clone());
+        let mut display_server = XlibDisplayServer::new(&config);
+        let manager = Manager::<common::Config, common::Command>::new(config);
 
         child_process::register_child_hook(manager.reap_requested.clone());
 
-        let config = Arc::new(config);
-        let mut display_server = XlibDisplayServer::new(config.clone(), default_theme);
-        let handler = DisplayEventHandler::new(config.clone());
-
-        rt.block_on(manager.event_loop(
-            &mut display_server,
-            &handler,
-            config,
-            &state,
-            &theme_loader,
-        ));
+        rt.block_on(manager.event_loop(&mut display_server));
     });
 
     match completed {

@@ -1,4 +1,4 @@
-use crate::config::{Config, ScratchPad, ThemeSetting};
+use crate::config::{Config, ScratchPad};
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::FocusManager;
@@ -18,13 +18,13 @@ use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Manager<CMD> {
+pub struct Manager<C, CMD> {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
     pub mode: Mode,
-    pub theme_setting: Arc<ThemeSetting>,
+    pub config: C,
     #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
     pub layouts: Vec<Layout>,
@@ -44,8 +44,11 @@ pub struct Manager<CMD> {
     pub marker: PhantomData<CMD>,
 }
 
-impl<CMD> Manager<CMD> {
-    pub fn new(config: &impl Config<CMD>, theme_setting: Arc<ThemeSetting>) -> Self {
+impl<C, CMD> Manager<C, CMD>
+where
+    C: Config<CMD>,
+{
+    pub fn new(config: C) -> Self {
         let mut tags: Vec<Tag> = config
             .create_list_of_tags()
             .iter()
@@ -58,9 +61,8 @@ impl<CMD> Manager<CMD> {
         });
 
         Self {
-            theme_setting,
             tags,
-            focus_manager: FocusManager::new(config),
+            focus_manager: FocusManager::new(&config),
             scratchpads: config.create_list_of_scratchpads(),
             layouts: config.layouts(),
             screens: Default::default(),
@@ -73,6 +75,7 @@ impl<CMD> Manager<CMD> {
             children: Default::default(),
             reap_requested: Default::default(),
             reload_requested: Default::default(),
+            config,
             marker: PhantomData,
         }
     }
@@ -208,6 +211,16 @@ impl<CMD> Manager<CMD> {
     /// Reload the worker without saving state.
     pub fn hard_reload(&mut self) {
         self.reload_requested = true;
+    }
+
+    pub fn update_for_theme(&mut self) -> bool {
+        for win in &mut self.windows {
+            win.update_for_theme(&self.config);
+        }
+        for ws in &mut self.workspaces {
+            ws.update_for_theme(&self.config);
+        }
+        true
     }
 }
 

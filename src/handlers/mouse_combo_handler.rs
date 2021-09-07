@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::models::Manager;
 use crate::models::Mode;
 use crate::models::WindowHandle;
@@ -6,7 +7,7 @@ use crate::utils::xkeysym_lookup::ModMask;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 use x11_dl::xlib;
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     pub fn mouse_combo_handler(
         &mut self,
         modmask: ModMask,
@@ -43,8 +44,8 @@ impl<CMD> Manager<CMD> {
     }
 }
 
-fn build_action<CMD>(
-    manager: &mut Manager<CMD>,
+fn build_action<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     mod_mask: ModMask,
     button: Button,
     window: WindowHandle,

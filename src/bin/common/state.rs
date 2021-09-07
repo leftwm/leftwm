@@ -1,63 +1,32 @@
 //! Save and restore manager state.
 
+use super::{Command, Config};
 use leftwm::errors::Result;
 use leftwm::{DisplayAction, Manager};
 use std::fs::File;
 use std::path::Path;
 
-// TODO: make configurable
-/// Path to file where state will be dumper upon soft reload.
-const STATE_FILE: &str = "/tmp/leftwm.state";
-
-pub struct State;
-
-impl leftwm::State for State {
-    fn save<CMD>(&self, manager: &Manager<CMD>) -> Result<()> {
-        let state_file = File::create(STATE_FILE)?;
-        serde_json::to_writer(state_file, &manager)?;
-        Ok(())
-    }
-
-    fn load<CMD>(&self, manager: &mut Manager<CMD>) {
-        if Path::new(STATE_FILE).exists() {
-            match load_old_state() {
-                Ok(old_manager) => restore_state(manager, &old_manager),
-                Err(err) => log::error!("Cannot load old state: {}", err),
-            }
-            // Clean old state.
-            if let Err(err) = std::fs::remove_file(STATE_FILE) {
-                log::error!("Cannot remove old state file: {}", err);
-            }
-        }
-    }
-}
-
 /// Read old state from a state file.
-fn load_old_state<CMD>() -> Result<Manager<CMD>> {
-    let file = File::open(STATE_FILE)?;
+pub fn load_old_state(path: impl AsRef<Path>) -> Result<Manager<Config, Command>> {
+    let file = File::open(path)?;
     let old_manager = serde_json::from_reader(file)?;
     Ok(old_manager)
 }
 
 /// Apply saved state to a running manager.
-fn restore_state<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) {
-    restore_workspaces(manager, old_manager);
-    restore_windows(manager, old_manager);
-    restore_scratchpads(manager, old_manager);
-}
-
-/// Restore workspaces layout.
-fn restore_workspaces<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) {
+pub fn restore_state(
+    manager: &mut Manager<Config, Command>,
+    old_manager: &Manager<Config, Command>,
+) {
+    // restore workspaces
     for workspace in &mut manager.workspaces {
         if let Some(old_workspace) = old_manager.workspaces.iter().find(|w| w.id == workspace.id) {
             workspace.layout = old_workspace.layout.clone();
             workspace.margin_multiplier = old_workspace.margin_multiplier;
         }
     }
-}
 
-/// Copy windows state.
-fn restore_windows<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) {
+    // restore windows
     let mut ordered = vec![];
     let mut had_strut = false;
 
@@ -90,9 +59,8 @@ fn restore_windows<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) 
         manager.update_docks();
     }
     manager.windows.append(&mut ordered);
-}
 
-fn restore_scratchpads<CMD>(manager: &mut Manager<CMD>, old_manager: &Manager<CMD>) {
+    // restore scratchpads
     for (scratchpad, id) in &old_manager.active_scratchpads {
         manager.active_scratchpads.insert(scratchpad.clone(), *id);
     }

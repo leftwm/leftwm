@@ -1,7 +1,8 @@
 use super::{Manager, Screen, Workspace};
+use crate::config::Config;
 use crate::models::Tag;
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     /// Process a collection of events, and apply them changes to a manager.
     ///
     /// Returns `true` if changes need to be rendered.
@@ -27,7 +28,7 @@ impl<CMD> Manager<CMD> {
         if workspace.id.unwrap_or(0) as usize >= self.tags.len() {
             dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
         }
-        workspace.update_for_theme(&self.theme_setting);
+        workspace.update_for_theme(&self.config);
         //make sure are enough tags for this new screen
         if self.tags.len() <= tag_index {
             let id = (tag_index + 1).to_string();

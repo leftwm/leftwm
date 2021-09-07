@@ -1,11 +1,12 @@
 use super::{Manager, Window, WindowChange, WindowType, Workspace};
+use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::WindowHandle;
 use crate::utils::helpers;
 use crate::{child_process::exec_shell, models::FocusBehaviour};
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn window_created_handler(&mut self, mut window: Window, x: i32, y: i32) -> bool {
@@ -49,7 +50,7 @@ impl<CMD> Manager<CMD> {
             self.focus_window(&window.handle);
         }
 
-        if let Some(cmd) = &self.theme_setting.on_new_window_cmd.clone() {
+        if let Some(cmd) = &self.config.on_new_window_cmd() {
             exec_shell(cmd, self);
         }
 
@@ -168,8 +169,8 @@ impl Window {
     }
 }
 
-fn setup_window<CMD>(
-    manager: &mut Manager<CMD>,
+fn setup_window<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     window: &mut Window,
     x: i32,
     y: i32,
@@ -241,10 +242,10 @@ fn setup_window<CMD>(
         window.set_floating_exact(new_float_exact);
     }
 
-    window.update_for_theme(&manager.theme_setting);
+    window.update_for_theme(&manager.config);
 }
-fn insert_window<CMD>(
-    manager: &mut Manager<CMD>,
+fn insert_window<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     window: &mut Window,
     is_scratchpad: bool,
     layout: &Layout,
@@ -290,19 +291,22 @@ fn insert_window<CMD>(
     }
 }
 
-fn is_scratchpad<CMD>(manager: &Manager<CMD>, window: &Window) -> bool {
+fn is_scratchpad<C: Config<CMD>, CMD>(manager: &Manager<C, CMD>, window: &Window) -> bool {
     manager
         .active_scratchpads
         .iter()
         .any(|(_, &id)| window.pid == id)
 }
 
-fn find_window<'w, CMD>(manager: &'w Manager<CMD>, handle: &WindowHandle) -> Option<&'w Window> {
+fn find_window<'w, C: Config<CMD>, CMD>(
+    manager: &'w Manager<C, CMD>,
+    handle: &WindowHandle,
+) -> Option<&'w Window> {
     manager.windows.iter().find(|w| &w.handle == handle)
 }
 
-fn find_transient_parent<'w, CMD>(
-    manager: &'w Manager<CMD>,
+fn find_transient_parent<'w, C: Config<CMD>, CMD>(
+    manager: &'w Manager<C, CMD>,
     window: &Window,
 ) -> Option<&'w Window> {
     let handle = &window.transient?;

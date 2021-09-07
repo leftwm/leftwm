@@ -1,10 +1,9 @@
-use std::os::raw::c_long;
-
 use super::DisplayEvent;
 use super::XWrap;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::Command;
+use std::os::raw::c_long;
 use x11_dl::xlib;
 
 pub fn from_event<CMD>(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent<CMD>> {

@@ -43,7 +43,10 @@ impl FocusManager {
 
     /// Return the currently focused workspace.
     #[must_use]
-    pub fn workspace<'a, 'b, CMD>(&self, manager: &'a Manager<CMD>) -> Option<&'b Workspace>
+    pub fn workspace<'a, 'b, C: Config<CMD>, CMD>(
+        &self,
+        manager: &'a Manager<C, CMD>,
+    ) -> Option<&'b Workspace>
     where
         'a: 'b,
     {
@@ -73,7 +76,10 @@ impl FocusManager {
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn window<'a, 'b, CMD>(&self, manager: &'a Manager<CMD>) -> Option<&'b Window>
+    pub fn window<'a, 'b, C: Config<CMD>, CMD>(
+        &self,
+        manager: &'a Manager<C, CMD>,
+    ) -> Option<&'b Window>
     where
         'a: 'b,
     {

@@ -9,32 +9,23 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::TagId;
-use crate::state::State;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 use std::str::FromStr;
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     /* Please also update src/bin/leftwm-check if any of the following apply after your update:
      * - a command now requires a value
      * - a command no longer requires a value
      * - a new command is introduced that requires a value
      *  */
-    pub fn command_handler(
-        &mut self,
-        state: &impl State,
-        config: &impl Config<CMD>,
-        command: &Command<CMD>,
-        val: Option<&str>,
-    ) -> bool {
-        process_internal(self, state, config, command, val).unwrap_or(false)
+    pub fn command_handler(&mut self, command: &Command<CMD>, val: Option<&str>) -> bool {
+        process_internal(self, command, val).unwrap_or(false)
     }
 }
 
-fn process_internal<CMD>(
-    manager: &mut Manager<CMD>,
-    state: &impl State,
-    config: &impl Config<CMD>,
+fn process_internal<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     command: &Command<CMD>,
     val: Option<&str>,
 ) -> Option<bool> {
@@ -51,7 +42,7 @@ fn process_internal<CMD>(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag => goto_tag(manager, val, config),
+        Command::GotoTag => goto_tag(manager, val),
 
         Command::CloseWindow => close_window(manager),
         Command::SwapTags => swap_tags(manager),
@@ -73,7 +64,7 @@ fn process_internal<CMD>(
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
-            if let Err(err) = state.save(manager) {
+            if let Err(err) = C::save_state(manager) {
                 log::error!("Cannot save state: {}", err);
             }
             manager.hard_reload();
@@ -89,16 +80,19 @@ fn process_internal<CMD>(
         Command::IncreaseMainWidth => change_main_width(manager, val, 1),
         Command::DecreaseMainWidth => change_main_width(manager, val, -1),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, val),
-        Command::Other(cmd) => config.command_handler(cmd, manager),
+        Command::Other(cmd) => C::command_handler(cmd, manager),
     }
 }
 
-fn execute<CMD>(manager: &mut Manager<CMD>, val: Option<&str>) -> Option<bool> {
+fn execute<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, val: Option<&str>) -> Option<bool> {
     let _ = exec_shell(val.as_ref()?, manager);
     None
 }
 
-fn toggle_scratchpad<CMD>(manager: &mut Manager<CMD>, val: Option<&str>) -> Option<bool> {
+fn toggle_scratchpad<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
+    val: Option<&str>,
+) -> Option<bool> {
     let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
     let s = manager
@@ -148,7 +142,7 @@ fn toggle_scratchpad<CMD>(manager: &mut Manager<CMD>, val: Option<&str>) -> Opti
     None
 }
 
-fn toggle_fullscreen<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
+fn toggle_fullscreen<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
     let window = manager.focused_window_mut()?;
     let handle = window.handle;
     let act = window.toggle_fullscreen()?;
@@ -156,7 +150,10 @@ fn toggle_fullscreen<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     Some(handle_focus(manager, handle))
 }
 
-fn move_to_tag<CMD>(val: Option<&str>, manager: &mut Manager<CMD>) -> Option<bool> {
+fn move_to_tag<C: Config<CMD>, CMD>(
+    val: Option<&str>,
+    manager: &mut Manager<C, CMD>,
+) -> Option<bool> {
     let tag_num: usize = val.as_ref()?.parse().ok()?;
     let tag = manager.tags.get(tag_num - 1)?.clone();
 
@@ -186,17 +183,13 @@ fn move_to_tag<CMD>(val: Option<&str>, manager: &mut Manager<CMD>) -> Option<boo
     Some(true)
 }
 
-fn goto_tag<CMD>(
-    manager: &mut Manager<CMD>,
-    val: Option<&str>,
-    config: &impl Config<CMD>,
-) -> Option<bool> {
+fn goto_tag<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, val: Option<&str>) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
     let input_tag = val.as_ref()?.parse().ok()?;
     let mut destination_tag = input_tag;
-    if !config.disable_current_tag_swap() {
+    if !manager.config.disable_current_tag_swap() {
         destination_tag = match (current_tag, previous_tag, input_tag) {
             (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => prev_tag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
             (_, _, _) => input_tag, // go to the input tag tag
@@ -205,7 +198,7 @@ fn goto_tag<CMD>(
     Some(manager.goto_tag_handler(destination_tag))
 }
 
-fn focus_tag_change<CMD>(manager: &mut Manager<CMD>, delta: i8) -> Option<bool> {
+fn focus_tag_change<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, delta: i8) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let active_tags: Vec<(usize, TagId)> = manager
         .tags
@@ -232,7 +225,7 @@ fn focus_tag_change<CMD>(manager: &mut Manager<CMD>, delta: i8) -> Option<bool> 
     Some(manager.goto_tag_handler(next))
 }
 
-fn swap_tags<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
+fn swap_tags<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
     if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
         let hist_a = *manager.focus_manager.workspace_history.get(0)?;
         let hist_b = *manager.focus_manager.workspace_history.get(1)?;
@@ -258,7 +251,7 @@ fn swap_tags<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     None
 }
 
-fn close_window<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
+fn close_window<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
     let window = manager.focused_window()?;
     if !window.is_unmanaged() {
         let act = DisplayAction::KillWindow(window.handle);
@@ -267,7 +260,7 @@ fn close_window<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     None
 }
 
-fn move_to_last_workspace<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
+fn move_to_last_workspace<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
     if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
         let index = *manager.focus_manager.workspace_history.get(1)?;
         let wp_tags = &manager.workspaces.get(index)?.tags.clone();
@@ -278,7 +271,7 @@ fn move_to_last_workspace<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     None
 }
 
-fn next_layout<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
+fn next_layout<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
     let workspace = manager
         .focus_manager
         .workspace_mut(&mut manager.workspaces)?;
@@ -286,7 +279,7 @@ fn next_layout<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     Some(true)
 }
 
-fn previous_layout<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
+fn previous_layout<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
     let workspace = manager
         .focus_manager
         .workspace_mut(&mut manager.workspaces)?;
@@ -294,7 +287,10 @@ fn previous_layout<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     Some(true)
 }
 
-fn set_layout<CMD>(val: Option<&str>, manager: &mut Manager<CMD>) -> Option<bool> {
+fn set_layout<C: Config<CMD>, CMD>(
+    val: Option<&str>,
+    manager: &mut Manager<C, CMD>,
+) -> Option<bool> {
     let layout = Layout::from_str(val.as_ref()?).ok()?;
     let workspace = manager
         .focus_manager
@@ -303,7 +299,7 @@ fn set_layout<CMD>(val: Option<&str>, manager: &mut Manager<CMD>) -> Option<bool
     Some(true)
 }
 
-fn floating_to_tile<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
+fn floating_to_tile<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
     let workspace = manager.focused_workspace()?.clone();
     let window = manager.focused_window_mut()?;
     if window.must_float() {
@@ -319,9 +315,13 @@ fn floating_to_tile<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     Some(handle_focus(manager, handle))
 }
 
-fn move_focus_common_vars<F, CMD>(func: F, manager: &mut Manager<CMD>, val: i32) -> Option<bool>
+fn move_focus_common_vars<F, C: Config<CMD>, CMD>(
+    func: F,
+    manager: &mut Manager<C, CMD>,
+    val: i32,
+) -> Option<bool>
 where
-    F: Fn(&mut Manager<CMD>, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> Option<bool>,
+    F: Fn(&mut Manager<C, CMD>, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> Option<bool>,
 {
     let handle = manager.focused_window()?.handle;
     let w = manager.focused_workspace()?;
@@ -334,8 +334,8 @@ where
     func(manager, val, handle, &layout, to_reorder)
 }
 
-fn move_window_change<CMD>(
-    manager: &mut Manager<CMD>,
+fn move_window_change<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     val: i32,
     mut handle: WindowHandle,
     layout: &Option<Layout>,
@@ -362,8 +362,8 @@ fn move_window_change<CMD>(
 }
 
 //val and layout aren't used which is a bit awkward
-fn move_window_top<CMD>(
-    manager: &mut Manager<CMD>,
+fn move_window_top<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     _val: i32,
     handle: WindowHandle,
     _layout: &Option<Layout>,
@@ -394,8 +394,8 @@ fn move_window_top<CMD>(
     Some(true)
 }
 
-fn focus_window_change<CMD>(
-    manager: &mut Manager<CMD>,
+fn focus_window_change<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     val: i32,
     mut handle: WindowHandle,
     layout: &Option<Layout>,
@@ -431,7 +431,10 @@ fn focus_window_change<CMD>(
     Some(handle_focus(manager, handle))
 }
 
-fn focus_workspace_change<CMD>(manager: &mut Manager<CMD>, val: i32) -> Option<bool> {
+fn focus_workspace_change<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
+    val: i32,
+) -> Option<bool> {
     let current = manager.focused_workspace()?;
     let workspace =
         helpers::relative_find(&manager.workspaces, |w| w == current, val, true)?.clone();
@@ -448,7 +451,7 @@ fn focus_workspace_change<CMD>(manager: &mut Manager<CMD>, val: i32) -> Option<b
     Some(handle_focus(manager, window.handle))
 }
 
-fn rotate_tag<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
+fn rotate_tag<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
     let workspace = manager
         .focus_manager
         .workspace_mut(&mut manager.workspaces)?;
@@ -456,8 +459,8 @@ fn rotate_tag<CMD>(manager: &mut Manager<CMD>) -> Option<bool> {
     Some(true)
 }
 
-fn change_main_width<CMD>(
-    manager: &mut Manager<CMD>,
+fn change_main_width<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     val: Option<&str>,
     factor: i8,
 ) -> Option<bool> {
@@ -469,7 +472,10 @@ fn change_main_width<CMD>(
     Some(true)
 }
 
-fn set_margin_multiplier<CMD>(manager: &mut Manager<CMD>, val: Option<&str>) -> Option<bool> {
+fn set_margin_multiplier<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
+    val: Option<&str>,
+) -> Option<bool> {
     let margin_multiplier: f32 = val.as_ref()?.parse().ok()?;
     let ws = manager.focused_workspace_mut()?;
     ws.set_margin_multiplier(margin_multiplier);
@@ -494,7 +500,7 @@ fn set_margin_multiplier<CMD>(manager: &mut Manager<CMD>, val: Option<&str>) -> 
     Some(true)
 }
 
-fn handle_focus<CMD>(manager: &mut Manager<CMD>, handle: WindowHandle) -> bool {
+fn handle_focus<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, handle: WindowHandle) -> bool {
     match manager.focus_manager.behaviour {
         FocusBehaviour::Sloppy => {
             let act = DisplayAction::MoveMouseOver(handle);
@@ -516,10 +522,10 @@ mod tests {
     struct TestState;
 
     impl State for TestState {
-        fn save<CMD>(&self, _manager: &Manager<CMD>) -> Result<()> {
+        fn save<C: Config<CMD>, CMD>(&self, _manager: &Manager<C, CMD>) -> Result<()> {
             unimplemented!()
         }
-        fn load<CMD>(&self, _manager: &mut Manager<CMD>) {
+        fn load<C: Config<CMD>, CMD>(&self, _manager: &mut Manager<C, CMD>) {
             unimplemented!()
         }
     }

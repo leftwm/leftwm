@@ -3,7 +3,7 @@
 use super::*;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     /// Marks a workspace as the focused workspace.
     //NOTE: should only be called externally from this file
     pub fn focus_workspace(&mut self, workspace: &Workspace) -> bool {
@@ -154,7 +154,7 @@ impl<CMD> Manager<CMD> {
     }
 }
 
-fn focus_workspace_work<CMD>(manager: &mut Manager<CMD>, workspace_id: Option<i32>) -> Option<()> {
+fn focus_workspace_work<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, workspace_id: Option<i32>) -> Option<()> {
     //no new history if no change
     if let Some(fws) = manager.focused_workspace() {
         if fws.id == workspace_id {
@@ -171,8 +171,8 @@ fn focus_workspace_work<CMD>(manager: &mut Manager<CMD>, workspace_id: Option<i3
     manager.focus_manager.workspace_history.push_front(index);
     Some(())
 }
-fn focus_window_by_handle_work<CMD>(
-    manager: &mut Manager<CMD>,
+fn focus_window_by_handle_work<C: Config<CMD>, CMD>(
+    manager: &mut Manager<C, CMD>,
     handle: &WindowHandle,
 ) -> Option<Window> {
     //Docks don't want to get focus. If they do weird things happen. They don't get events...
@@ -204,7 +204,7 @@ fn focus_window_by_handle_work<CMD>(
     Some(found.clone())
 }
 
-fn focus_closest_window<CMD>(manager: &mut Manager<CMD>, x: i32, y: i32) -> bool {
+fn focus_closest_window<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, x: i32, y: i32) -> bool {
     let ws = match manager.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
         Some(ws) => ws,
         None => return false,
@@ -231,7 +231,7 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
     (xs + ys).sqrt().abs().floor() as i32
 }
 
-fn focus_tag_work<CMD>(manager: &mut Manager<CMD>, tag: &str) -> Option<()> {
+fn focus_tag_work<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, tag: &str) -> Option<()> {
     //no new history if no change
     if let Some(t) = manager.focus_manager.tag(0) {
         if t == tag {

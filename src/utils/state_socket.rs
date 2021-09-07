@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::errors::{stream_error, Result};
 use crate::models::dto::ManagerState;
 use crate::models::Manager;
@@ -55,7 +56,10 @@ impl StateSocket {
     /// # Errors
     /// Will return Err if a mut ref to the peer is unavailable.
     /// Will return error if state cannot be serialized
-    pub async fn write_manager_state<CMD>(&mut self, manager: &Manager<CMD>) -> Result<()> {
+    pub async fn write_manager_state<C: Config<CMD>, CMD>(
+        &mut self,
+        manager: &Manager<C, CMD>,
+    ) -> Result<()> {
         if self.listener.is_some() {
             let state: ManagerState = manager.into();
             let mut json = serde_json::to_string(&state)?;

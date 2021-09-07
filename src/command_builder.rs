@@ -5,14 +5,16 @@ use super::Command;
 use super::ModMask;
 use super::XKeysym;
 use std::collections::HashMap;
+use std::marker::PhantomData;
 use x11_dl::xlib;
 
-pub struct CommandBuilder<CMD> {
+pub struct CommandBuilder<C, CMD> {
     keybinds: HashMap<(ModMask, XKeysym), Keybind<CMD>>,
+    marker: PhantomData<C>,
 }
 
-impl<CMD> CommandBuilder<CMD> {
-    pub fn new(config: &impl Config<CMD>) -> CommandBuilder<CMD> {
+impl<C: Config<CMD>, CMD> CommandBuilder<C, CMD> {
+    pub fn new(config: &impl Config<CMD>) -> Self {
         let binds = config.mapped_bindings();
         let mut lookup = HashMap::new();
         for b in binds {
@@ -21,7 +23,10 @@ impl<CMD> CommandBuilder<CMD> {
                 lookup.insert(id, b);
             }
         }
-        CommandBuilder { keybinds: lookup }
+        CommandBuilder {
+            keybinds: lookup,
+            marker: PhantomData,
+        }
     }
 
     pub fn find_keybind_for(&self, m: ModMask, key: XKeysym) -> Option<&Keybind<CMD>> {

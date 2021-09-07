@@ -1,7 +1,7 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     pub fn goto_tag_handler(&mut self, tag_num: usize) -> bool {
         if tag_num > self.tags.len() || tag_num < 1 {
             return false;

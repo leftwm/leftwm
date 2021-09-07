@@ -1,25 +1,12 @@
+use crate::{child_process::Nanny, config::Config, models::FocusBehaviour};
 use crate::{
-    child_process::Nanny,
-    config::{Config, ThemeLoader},
-    models::FocusBehaviour,
+    CommandPipe, DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
 };
-use crate::{
-    CommandPipe, DisplayEventHandler, DisplayServer, Manager, Mode, State, StateSocket, Window,
-    Workspace, XlibDisplayServer,
-};
-use futures::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
-impl<CMD> Manager<CMD> {
-    pub async fn event_loop<C: Config<CMD>>(
-        mut self,
-        display_server: &mut XlibDisplayServer<C, CMD>,
-        handler: &DisplayEventHandler<C, CMD>,
-        config: C,
-        state: &impl State,
-        theme_loader: &impl ThemeLoader,
-    ) {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
+    pub async fn event_loop(mut self, display_server: &mut XlibDisplayServer<CMD>) {
         let socket_file = place_runtime_file("current_state.sock")
             .expect("ERROR: couldn't create current_state.sock");
         let mut state_socket = StateSocket::default();
@@ -60,11 +47,11 @@ impl<CMD> Manager<CMD> {
                     continue;
                 }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
-                    needs_update = self.external_command_handler(state, &config, theme_loader, cmd) || needs_update;
-                    display_server.update_theme_settings(self.theme_setting.clone());
+                    needs_update = self.external_command_handler(cmd) || needs_update;
+                    display_server.update_theme_settings(&self.config);
                 }
                 else => {
-                    event_buffer.drain(..).for_each(|event| needs_update = handler.process(&mut self, state, event) || needs_update);
+                    event_buffer.drain(..).for_each(|event| needs_update = self.display_event_handler(event) || needs_update);
                 }
             }
 
@@ -114,7 +101,7 @@ impl<CMD> Manager<CMD> {
                     Err(err) => log::error!("Theme loading failed: {}", err),
                 }
 
-                state.load(&mut self);
+                C::load_state(&mut self);
             });
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {
@@ -141,8 +128,6 @@ async fn timeout(mills: u64) {
     sleep(Duration::from_millis(mills)).await;
 }
 
-fn get_events<T: DisplayServer<C, CMD>, C: Config<CMD>, CMD>(
-    ds: &mut T,
-) -> Vec<crate::DisplayEvent<CMD>> {
+fn get_events<T: DisplayServer<CMD>, CMD>(ds: &mut T) -> Vec<crate::DisplayEvent<CMD>> {
     ds.get_next_events()
 }

@@ -1,5 +1,4 @@
 use crate::config::Config;
-use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Manager;
 use crate::models::Mode;
@@ -10,9 +9,7 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
-use std::marker::PhantomData;
 use std::sync::Arc;
-use std::sync::Once;
 use tokio::sync::Notify;
 use x11_dl::xlib;
 
@@ -26,48 +23,43 @@ pub use xwrap::XWrap;
 use event_translate::XEvent;
 mod xcursor;
 
-static SETUP: Once = Once::new();
-
-pub struct XlibDisplayServer<C, CMD> {
+pub struct XlibDisplayServer<CMD> {
     xw: XWrap,
     root: xlib::Window,
-    config: C,
-    theme: Arc<ThemeSetting>,
-    marker: PhantomData<CMD>,
+    initial_events: Option<Vec<DisplayEvent<CMD>>>,
 }
 
-impl<C, CMD> DisplayServer<C, CMD> for XlibDisplayServer<C, CMD>
-where
-    C: Config<CMD>,
-{
-    fn new(config: C, theme: Arc<ThemeSetting>) -> Self {
+impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
+    fn new(config: &impl Config<CMD>) -> Self {
         let mut wrap = XWrap::new();
 
         wrap.focus_behaviour = config.focus_behaviour();
         wrap.mouse_key_mask = utils::xkeysym_lookup::into_mod(config.mousekey());
-        wrap.init(&config, &theme); //setup events masks
+        wrap.init(config); //setup events masks
 
         let root = wrap.get_default_root();
-
-        Self {
+        let instance = Self {
             xw: wrap,
             root,
-            theme,
-            config,
-            marker: PhantomData,
+            initial_events: None,
+        };
+        let initial_events = instance.initial_events(config);
+
+        Self {
+            initial_events: Some(initial_events),
+            ..instance
         }
     }
 
-    fn update_theme_settings(&mut self, settings: Arc<ThemeSetting>) {
-        self.theme = settings;
-        self.xw.load_colors(&self.theme);
+    fn update_theme_settings(&mut self, config: &impl Config<CMD>) {
+        self.xw.load_colors(config);
     }
 
-    fn update_windows(
+    fn update_windows<C: Config<CMD>>(
         &self,
         windows: Vec<&Window>,
         focused_window: Option<&Window>,
-        manager: &Manager<CMD>,
+        manager: &Manager<C, CMD>,
     ) {
         let tags: Vec<&String> = manager.workspaces.iter().flat_map(|w| &w.tags).collect();
 
@@ -106,11 +98,12 @@ where
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent<CMD>> {
         let mut events = vec![];
-        SETUP.call_once(|| {
-            for e in self.initial_events() {
+
+        if let Some(initial_events) = self.initial_events.take() {
+            for e in initial_events {
                 (&mut events).push(e);
             }
-        });
+        }
 
         let event_in_queue = self.xw.queue_len();
 
@@ -219,14 +212,11 @@ where
     }
 }
 
-impl<C, CMD> XlibDisplayServer<C, CMD>
-where
-    C: Config<CMD>,
-{
+impl<CMD> XlibDisplayServer<CMD> {
     /// Return a vec of events for setting up state of WM.
-    fn initial_events(&self) -> Vec<DisplayEvent<CMD>> {
+    fn initial_events(&self, config: &impl Config<CMD>) -> Vec<DisplayEvent<CMD>> {
         let mut events = vec![];
-        if let Some(workspaces) = self.config.workspaces() {
+        if let Some(workspaces) = config.workspaces() {
             if workspaces.is_empty() {
                 // tell manager about existing screens
                 self.xw.get_screens().into_iter().for_each(|screen| {
@@ -302,10 +292,10 @@ where
 }
 
 //return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset<CMD>(
+fn right_offset<C: Config<CMD>, CMD>(
     max_tag_index: Option<usize>,
     max_right_screen: Option<i32>,
-    manager: &Manager<CMD>,
+    manager: &Manager<C, CMD>,
     window: &Window,
 ) -> Option<i32> {
     let max_tag_index = max_tag_index?;

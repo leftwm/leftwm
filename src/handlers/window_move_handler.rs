@@ -1,6 +1,7 @@
 use super::{Manager, Window, WindowHandle, Workspace};
+use crate::config::Config;
 
-impl<CMD> Manager<CMD> {
+impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     pub fn window_move_handler(
         &mut self,
         handle: &WindowHandle,

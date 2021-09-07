@@ -1,15 +1,13 @@
 mod keybind;
 mod scratchpad;
-mod theme_setting;
 mod workspace_config;
 
+use crate::errors::Result;
 use crate::layouts::Layout;
-pub use crate::models::FocusBehaviour;
+pub use crate::models::{FocusBehaviour, Gutter, Margins};
 use crate::Manager;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
-use std::sync::Arc;
-pub use theme_setting::{ThemeLoader, ThemeSetting};
 pub use workspace_config::Workspace;
 
 pub trait Config<CMD> {
@@ -33,52 +31,37 @@ pub trait Config<CMD> {
 
     fn focus_new_windows(&self) -> bool;
 
-    fn command_handler(&self, command: &CMD, manager: &mut Manager<CMD>) -> Option<bool>;
-}
+    fn command_handler(command: &CMD, manager: &mut Manager<Self, CMD>) -> Option<bool>
+    where
+        Self: Sized;
 
-impl<C, CMD> Config<CMD> for Arc<C>
-where
-    C: Config<CMD>,
-{
-    fn mapped_bindings(&self) -> Vec<Keybind<CMD>> {
-        C::mapped_bindings(self)
-    }
+    fn border_width(&self) -> i32;
+    fn margin(&self) -> Margins;
+    fn workspace_margin(&self) -> Option<Margins>;
+    fn gutter(&self) -> Option<Vec<Gutter>>;
+    fn default_border_color(&self) -> &str;
+    fn floating_border_color(&self) -> &str;
+    fn focused_border_color(&self) -> &str;
+    fn on_new_window_cmd(&self) -> Option<String>;
+    fn get_list_of_gutters(&self) -> Vec<Gutter>;
 
-    fn create_list_of_tags(&self) -> Vec<String> {
-        C::create_list_of_tags(self)
-    }
+    /// Write current state to a file.
+    /// It will be used to restore the state after soft reload.
+    ///
+    /// # Errors
+    ///
+    /// Will return error if unable to create `state_file` or
+    /// if unable to serialize the text.
+    /// May be caused by inadequate permissions, not enough
+    /// space on drive, or other typical filesystem issues.
+    fn save_state(manager: &Manager<Self, CMD>) -> Result<()>
+    where
+        Self: Sized;
 
-    fn workspaces(&self) -> Option<&[Workspace]> {
-        C::workspaces(self)
-    }
-
-    fn focus_behaviour(&self) -> FocusBehaviour {
-        C::focus_behaviour(self)
-    }
-
-    fn mousekey(&self) -> &str {
-        C::mousekey(self)
-    }
-
-    fn disable_current_tag_swap(&self) -> bool {
-        C::disable_current_tag_swap(self)
-    }
-
-    fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
-        C::create_list_of_scratchpads(self)
-    }
-
-    fn layouts(&self) -> Vec<Layout> {
-        C::layouts(self)
-    }
-
-    fn focus_new_windows(&self) -> bool {
-        C::focus_new_windows(self)
-    }
-
-    fn command_handler(&self, command: &CMD, manager: &mut Manager<CMD>) -> Option<bool> {
-        C::command_handler(self, command, manager)
-    }
+    /// Load saved state if it exists.
+    fn load_state(manager: &mut Manager<Self, CMD>)
+    where
+        Self: Sized;
 }
 
 #[cfg(test)]
@@ -87,7 +70,7 @@ pub struct TestConfig {
 }
 
 #[cfg(test)]
-impl<CMD> Config<CMD> for TestConfig {
+impl<C: Config<CMD>, CMD> Config<CMD> for TestConfig {
     fn mapped_bindings(&self) -> Vec<Keybind<CMD>> {
         unimplemented!()
     }
