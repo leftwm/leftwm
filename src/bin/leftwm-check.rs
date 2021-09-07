@@ -5,6 +5,7 @@ use leftwm::config::{Keybind, ThemeSetting, Workspace};
 use leftwm::errors::Result;
 use leftwm::utils;
 use leftwm::Command;
+use std::collections::HashMap;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -143,6 +144,7 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
         Command::SetMarginMultiplier,
     ];
     println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
+    let mut bindings = HashMap::new();
     for keybind in keybinds {
         if verbose {
             println!("Keybind: {:?} {}", keybind, keybind.value.is_none());
@@ -153,21 +155,43 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
             && keybind.value.is_none()
         {
             returns.push((
-                keybind.clone(),
+                Some(keybind.clone()),
                 "This keybind requres a `string`".to_owned(),
             ));
         }
         if utils::xkeysym_lookup::into_keysym(&keybind.key).is_none() {
             returns.push((
-                keybind.clone(),
+                Some(keybind.clone()),
                 format!("Key `{}` is not valid", keybind.key),
             ));
         }
 
         for m in &keybind.modifier {
             if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(m) == 0 {
-                returns.push((keybind.clone(), format!("Modifier `{}` is not valid", m)))
+                returns.push((
+                    Some(keybind.clone()),
+                    format!("Modifier `{}` is not valid", m),
+                ));
             }
+        }
+        let mut modkey = keybind.modifier.clone();
+        modkey.sort();
+        if let Some(conflict_key) = bindings.get(&(modkey.clone(), keybind.key.clone())) {
+            returns.push((
+                None,
+                format!(
+                    "\x1b[0m\x1b[1mMultiple commands bound to key combination {} + {}:\
+                    \n\x1b[1;91m    -> {:?}\
+                    \n    -> {:?}\
+                    \n\x1b[0mHelp: change one of the keybindings to something else.\n",
+                    keybind.modifier.join(" + "),
+                    keybind.key,
+                    conflict_key,
+                    keybind.command,
+                ),
+            ));
+        } else {
+            bindings.insert((modkey, keybind.key), keybind.command);
         }
     }
     if returns.is_empty() {
@@ -175,10 +199,17 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
         true
     } else {
         for error in returns {
-            println!(
-                "\x1b[1;91mERROR: {} for keybind {:?}\x1b[0m",
-                error.1, error.0
-            );
+            match error.0 {
+                Some(binding) => {
+                    println!(
+                        "\x1b[1;91mERROR: {} for keybind {:?}\x1b[0m",
+                        error.1, binding
+                    );
+                }
+                None => {
+                    println!("\x1b[1;91mERROR: {} \x1b[0m", error.1);
+                }
+            }
         }
         false
     }
