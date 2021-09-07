@@ -1437,7 +1437,7 @@ impl XWrap {
     }
 
     // TODO: split into smaller functions
-    pub fn init(&mut self, config: &Config, theme: &ThemeSetting) {
+    pub fn init(&mut self, config: &impl Config, theme: &ThemeSetting) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
@@ -1486,7 +1486,7 @@ impl XWrap {
         }
 
         //EWMH stuff for desktops
-        self.tags = config.get_list_of_tags();
+        self.tags = config.create_list_of_tags();
         self.init_desktops_hints();
 
         //cleanup grabs

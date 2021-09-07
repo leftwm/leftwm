@@ -10,6 +10,7 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
+use std::sync::Arc;
 use std::sync::Once;
 use x11_dl::xlib;
 
@@ -25,31 +26,35 @@ mod xcursor;
 
 static SETUP: Once = Once::new();
 
-pub struct XlibDisplayServer {
+pub struct XlibDisplayServer<C> {
     xw: XWrap,
     root: xlib::Window,
-    config: Config,
-    theme: ThemeSetting,
+    config: C,
+    theme: Arc<ThemeSetting>,
 }
 
-impl DisplayServer for XlibDisplayServer {
-    fn new(config: &Config) -> XlibDisplayServer {
-        let wrap = XWrap::new();
+impl<C> DisplayServer<C> for XlibDisplayServer<C>
+where
+    C: Config,
+{
+    fn new(config: C, theme: Arc<ThemeSetting>) -> Self {
+        let mut wrap = XWrap::new();
+
+        wrap.focus_behaviour = config.focus_behaviour();
+        wrap.mouse_key_mask = utils::xkeysym_lookup::into_mod(config.mousekey());
+        wrap.init(&config, &theme); //setup events masks
+
         let root = wrap.get_default_root();
-        let mut me = XlibDisplayServer {
+
+        Self {
             xw: wrap,
             root,
-            theme: ThemeSetting::default(),
-            config: config.clone(),
-        };
-
-        me.xw.focus_behaviour = config.focus_behaviour.clone();
-        me.xw.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey);
-        me.xw.init(config, &me.theme); //setup events masks
-        me
+            theme,
+            config,
+        }
     }
 
-    fn update_theme_settings(&mut self, settings: ThemeSetting) {
+    fn update_theme_settings(&mut self, settings: Arc<ThemeSetting>) {
         self.theme = settings;
         self.xw.load_colors(&self.theme);
     }
@@ -210,11 +215,14 @@ impl DisplayServer for XlibDisplayServer {
     }
 }
 
-impl XlibDisplayServer {
+impl<C> XlibDisplayServer<C>
+where
+    C: Config,
+{
     /// Return a vec of events for setting up state of WM.
     fn initial_events(&self) -> Vec<DisplayEvent> {
         let mut events = vec![];
-        if let Some(workspaces) = &self.config.workspaces {
+        if let Some(workspaces) = self.config.workspaces() {
             if workspaces.is_empty() {
                 // tell manager about existing screens
                 self.xw.get_screens().into_iter().for_each(|screen| {

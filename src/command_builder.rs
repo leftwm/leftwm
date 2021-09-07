@@ -12,7 +12,7 @@ pub struct CommandBuilder {
 }
 
 impl CommandBuilder {
-    pub fn new(config: &Config) -> CommandBuilder {
+    pub fn new(config: &impl Config) -> CommandBuilder {
         let binds = config.mapped_bindings();
         let mut lookup = HashMap::new();
         for b in binds {

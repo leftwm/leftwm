@@ -3,19 +3,20 @@ use super::{
     window_move_handler, window_resize_handler, CommandBuilder, Config, DisplayEvent, Manager,
     Mode,
 };
+use crate::state::State;
 use crate::utils;
 use crate::utils::window_updater::update_windows;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 /// Configuration container for processing `DisplayEvents`.
-pub struct DisplayEventHandler {
-    pub config: Config,
+pub struct DisplayEventHandler<C> {
+    pub config: C,
 }
 
-impl DisplayEventHandler {
+impl<C: Config> DisplayEventHandler<C> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
-    pub fn process(&self, manager: &mut Manager, event: DisplayEvent) -> bool {
+    pub fn process(&self, manager: &mut Manager, state: &impl State, event: DisplayEvent) -> bool {
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => screen_create_handler::process(manager, s),
             DisplayEvent::WindowCreate(w, x, y) => window_handler::created(manager, w, x, y),
@@ -43,18 +44,18 @@ impl DisplayEventHandler {
                 let build = CommandBuilder::new(&self.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some((cmd, val)) = command {
-                    command_handler::process(manager, &self.config, &cmd, &val)
+                    command_handler::process(manager, state, &self.config, &cmd, &val)
                 } else {
                     false
                 }
             }
 
             DisplayEvent::SendCommand(command, value) => {
-                command_handler::process(manager, &self.config, &command, &value)
+                command_handler::process(manager, state, &self.config, &command, &value)
             }
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
-                let mouse_key = utils::xkeysym_lookup::into_mod(&self.config.mousekey);
+                let mouse_key = utils::xkeysym_lookup::into_mod(self.config.mousekey());
                 mouse_combo_handler::process(manager, mod_mask, button, handle, mouse_key)
             }
 

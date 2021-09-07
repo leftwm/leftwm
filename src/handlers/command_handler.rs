@@ -9,6 +9,7 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
 use crate::models::TagId;
+use crate::state::State;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 use std::str::FromStr;
@@ -20,16 +21,18 @@ use std::str::FromStr;
  *  */
 pub fn process(
     manager: &mut Manager,
-    config: &Config,
+    state: &impl State,
+    config: &impl Config,
     command: &Command,
     val: &Option<String>,
 ) -> bool {
-    process_internal(manager, config, command, val).unwrap_or(false)
+    process_internal(manager, state, config, command, val).unwrap_or(false)
 }
 
 pub fn process_internal(
     manager: &mut Manager,
-    config: &Config,
+    state: &impl State,
+    config: &impl Config,
     command: &Command,
     val: &Option<String>,
 ) -> Option<bool> {
@@ -68,7 +71,10 @@ pub fn process_internal(
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
-            manager.soft_reload();
+            if let Err(err) = state.save(manager) {
+                log::error!("Cannot save state: {}", err);
+            }
+            manager.hard_reload();
             None
         }
         Command::HardReload => {
@@ -177,13 +183,13 @@ fn move_to_tag(val: &Option<String>, manager: &mut Manager) -> Option<bool> {
     Some(true)
 }
 
-fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &Config) -> Option<bool> {
+fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &impl Config) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
     let input_tag = val.as_ref()?.parse().ok()?;
     let mut destination_tag = input_tag;
-    if !config.disable_current_tag_swap {
+    if !config.disable_current_tag_swap() {
         destination_tag = match (current_tag, previous_tag, input_tag) {
             (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => prev_tag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
             (_, _, _) => input_tag, // go to the input tag tag
@@ -491,26 +497,67 @@ fn handle_focus(manager: &mut Manager, handle: WindowHandle) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::{Config, FocusBehaviour, Keybind, Workspace};
+    use crate::errors::Result;
     use crate::models::Tag;
+    use crate::state::State;
+
+    struct TestConfig;
+
+    impl Config for TestConfig {
+        fn mapped_bindings(&self) -> Vec<Keybind> {
+            unimplemented!()
+        }
+        fn create_list_of_tags(&self) -> Vec<String> {
+            unimplemented!()
+        }
+        fn workspaces(&self) -> Option<&[Workspace]> {
+            unimplemented!()
+        }
+        fn focus_behaviour(&self) -> FocusBehaviour {
+            unimplemented!()
+        }
+        fn mousekey(&self) -> &str {
+            unimplemented!()
+        }
+        fn disable_current_tag_swap(&self) -> bool {
+            false
+        }
+    }
+
+    struct TestState;
+
+    impl State for TestState {
+        fn save(&self, _manager: &Manager) -> Result<()> {
+            unimplemented!()
+        }
+        fn load(&self, _manager: &mut Manager) {
+            unimplemented!()
+        }
+    }
+
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
-        let mut manager = Manager::default();
-        let config = Config::default();
+        let mut manager = Manager::new_test();
+        let config = TestConfig;
         // no screen creation here
         assert!(!process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("6".to_string())
         ));
         assert!(!process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
         ));
         assert!(!process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("15".to_string())
@@ -519,19 +566,21 @@ mod tests {
 
     #[test]
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
-        let mut manager = Manager::default();
-        let config = Config::default();
+        let mut manager = Manager::new_test();
+        let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
         // no tag creation here but one tag per screen is created
         assert!(process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
         ));
         assert!(process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("1".to_string())
@@ -539,6 +588,7 @@ mod tests {
         // we only have one tag per screen created automatically
         assert!(!process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("3".to_string())
@@ -547,8 +597,8 @@ mod tests {
 
     #[test]
     fn go_to_tag_should_return_false_on_invalid_input() {
-        let mut manager = Manager::default();
-        let config = Config::default();
+        let mut manager = Manager::new_test();
+        let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());
         manager.tags = vec![
             Tag::new("A15"),
@@ -560,17 +610,25 @@ mod tests {
         ];
         assert!(!process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("abc".to_string())
         ),);
         assert!(!process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("ab45c".to_string())
         ));
-        assert!(!process(&mut manager, &config, &Command::GotoTag, &None));
+        assert!(!process(
+            &mut manager,
+            &TestState,
+            &config,
+            &Command::GotoTag,
+            &None
+        ));
     }
 
     #[test]
@@ -584,14 +642,15 @@ mod tests {
                 Tag::new("E39"),
                 Tag::new("F67"),
             ],
-            ..Manager::default()
+            ..Manager::new_test()
         };
-        let config = Config::default();
+        let config = TestConfig;
         screen_create_handler::process(&mut manager, Screen::default());
         screen_create_handler::process(&mut manager, Screen::default());
 
         assert!(process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("6".to_string())
@@ -600,6 +659,7 @@ mod tests {
         assert_eq!(current_tag, Some(5));
         assert!(process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("2".to_string())
@@ -609,6 +669,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("3".to_string())
@@ -618,6 +679,7 @@ mod tests {
 
         assert!(process(
             &mut manager,
+            &TestState,
             &config,
             &Command::GotoTag,
             &Some("4".to_string())

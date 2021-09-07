@@ -1,17 +1,23 @@
+mod common;
+
 use leftwm::{
     child_process::{self, Nanny},
+    config::Config as _,
+    config::ThemeLoader as _,
     models::{FocusBehaviour, FocusManager, Tag},
 };
 
 use leftwm::{
-    config, external_command_handler, CommandPipe, DisplayEvent, DisplayEventHandler,
-    DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
+    external_command_handler, CommandPipe, DisplayEvent, DisplayEventHandler, DisplayServer,
+    Manager, Mode, State, StateSocket, Window, Workspace, XlibDisplayServer,
 };
 use std::panic;
 use std::path::{Path, PathBuf};
-use std::sync::{atomic::Ordering, Once};
+use std::sync::{atomic::Ordering, Arc, Once};
 
-fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
+use common::config::Config;
+
+fn get_events<T: DisplayServer<C>, C: leftwm::config::Config>(ds: &mut T) -> Vec<DisplayEvent> {
     ds.get_next_events()
 }
 
@@ -26,16 +32,19 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        let config = config::load();
+        let config = common::config::load();
+        let state = common::state::State;
+        let theme_loader = common::theme_setting::ThemeLoader;
+        let default_theme = Arc::new(theme_loader.default());
 
         let focus_manager = FocusManager {
-            behaviour: config.focus_behaviour.clone(),
+            behaviour: config.focus_behaviour,
             focus_new_windows: config.focus_new_windows,
             ..FocusManager::default()
         };
 
         let mut tags: Vec<Tag> = config
-            .get_list_of_tags()
+            .create_list_of_tags()
             .iter()
             .map(|s| Tag::new(s))
             .collect();
@@ -44,17 +53,29 @@ fn main() {
             hidden: true,
             ..Tag::default()
         });
+        // TODO use constructor pattern
         let mut manager = Manager {
             focus_manager,
             tags,
-            scratchpads: config.get_list_of_scratchpads(),
+            scratchpads: config.create_list_of_scratchpads(),
             layouts: config.layouts.clone(),
-            ..Manager::default()
+            theme_setting: default_theme.clone(),
+            screens: Default::default(),
+            windows: Default::default(),
+            workspaces: Default::default(),
+            mode: Default::default(),
+            active_scratchpads: Default::default(),
+            actions: Default::default(),
+            frame_rate_limitor: Default::default(),
+            children: Default::default(),
+            reap_requested: Default::default(),
+            reload_requested: Default::default(),
         };
 
         child_process::register_child_hook(manager.reap_requested.clone());
 
-        let mut display_server = XlibDisplayServer::new(&config);
+        let config = Arc::new(config);
+        let mut display_server = XlibDisplayServer::new(config.clone(), default_theme);
         let handler = DisplayEventHandler {
             config: config.clone(),
         };
@@ -64,6 +85,8 @@ fn main() {
             &mut display_server,
             &handler,
             config,
+            state,
+            theme_loader,
         ));
     });
 
@@ -87,9 +110,11 @@ async fn timeout(mills: u64) {
 
 async fn event_loop(
     manager: &mut Manager,
-    display_server: &mut XlibDisplayServer,
-    handler: &DisplayEventHandler,
-    config: crate::config::Config,
+    display_server: &mut XlibDisplayServer<Arc<Config>>,
+    handler: &DisplayEventHandler<Arc<Config>>,
+    config: Arc<Config>,
+    state: common::state::State,
+    theme_loader: common::theme_setting::ThemeLoader,
 ) {
     let socket_file = place_runtime_file("current_state.sock")
         .expect("ERROR: couldn't create current_state.sock");
@@ -130,11 +155,11 @@ async fn event_loop(
                 continue;
             }
             Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
-                needs_update = external_command_handler::process(manager, &config, cmd) || needs_update;
+                needs_update = external_command_handler::process(manager, &state, &config, &theme_loader, cmd) || needs_update;
                 display_server.update_theme_settings(manager.theme_setting.clone());
             }
             else => {
-                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, event) || needs_update);
+                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, &state, event) || needs_update);
             }
         }
 
@@ -186,7 +211,7 @@ async fn event_loop(
                 Err(err) => log::error!("Theme loading failed: {}", err),
             }
 
-            leftwm::state::load(manager);
+            state.load(manager);
         });
 
         if manager.reap_requested.swap(false, Ordering::SeqCst) {

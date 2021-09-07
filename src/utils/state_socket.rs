@@ -116,7 +116,7 @@ mod test {
         rt.block_on(multiple_peers_async());
     }
     async fn multiple_peers_async() {
-        let manager = Manager::default();
+        let manager = Manager::new_test();
 
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();
@@ -162,7 +162,7 @@ mod test {
         rt.block_on(get_update_async());
     }
     async fn get_update_async() {
-        let manager = Manager::default();
+        let manager = Manager::new_test();
 
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();

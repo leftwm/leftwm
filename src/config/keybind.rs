@@ -1,4 +1,4 @@
-use super::Command;
+use crate::Command;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
