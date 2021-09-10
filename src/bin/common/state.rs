@@ -71,10 +71,6 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             .find(|w| w.1.handle == old.handle)
         {
             had_strut = old.strut.is_some() || had_strut;
-            // if let Some(tag) = old.tags.first() {
-                // let act = DisplayAction::SetWindowTags(window.handle, tag.clone());
-                // manager.actions.push_back(act);
-            // }
 
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
@@ -88,25 +84,19 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
                 for t in &old.tags {
                     let manager_tags = manager.tags.clone();
                     let old_tags = old_manager.tags.clone();
-                    // log::info!("Current tags(len: {:?}):\n{:?}", &manager_tags.len(), &manager_tags);
-                    // log::info!("Old Tags (len: {:?}):\n{:?}", &old_tags.len(), &old_tags);
                     let tag_index = &old_tags.iter().position(|o| &o.id == t);
-                    // let tag_index = &old.tags.iter().position(|ot| ot == t);
-                    // log::info!("Tag Index: {:?}, Old Tag: {:?}, New Tag: {:?}, Number of current tags: {:?}",
-                      // &tag_index, &t, &manager_tags[old_tags.iter().position(|o| &o.id == t).unwrap()].id, &manager_tags.len());
                     // if the config prior reload had more tags then the new one
                     // we want to move windows of lost tags to the 'first' tag
-                    if &tag_index.unwrap() <= &manager_tags.len() {
-                    log::info!("Index: {:?} old tag: {:?}", &tag_index.unwrap(), t);
-                      let designated_id = &manager_tags[tag_index.clone().unwrap()].id;
-                      log::info!("Assigning tag ID: {:?}", &designated_id);
-                        // window.tag(designated_id);
-                        // window.tag(&manager_tags[3].id.clone());
-                        let act = DisplayAction::SetWindowTags(window.handle, designated_id.to_string());
+                    if tag_index.unwrap() <= manager_tags.len() {
+                        log::info!("Index: {:?} old tag: {:?}", &tag_index.unwrap(), t);
+                        let designated_id = &manager_tags[tag_index.unwrap()].id;
+                        log::info!("Assigning tag ID: {:?}", &designated_id);
+                        let act =
+                            DisplayAction::SetWindowTags(window.handle, designated_id.to_string());
                         manager.actions.push_back(act);
                     } else {
-                    log::info!("Assigning default tag ID: {:?}", &manager_tags[0].id);
-                    window.tag(&manager_tags[0].id.clone());
+                        log::info!("Assigning default tag ID: {:?}", &manager_tags[0].id);
+                        window.tag(&manager_tags[0].id.clone());
                     }
                 }
             }
