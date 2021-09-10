@@ -3,7 +3,7 @@
 #![allow(clippy::module_name_repetitions)]
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Tag {
     pub id: String,
     pub hidden: bool,

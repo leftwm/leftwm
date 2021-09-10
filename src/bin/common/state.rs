@@ -79,7 +79,19 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             window.apply_margin_multiplier(old.margin_multiplier);
             window.pid = old.pid;
             window.normal = old.normal;
-            window.tags = old.tags.clone();
+            if manager.tags.eq(&old_manager.tags) {
+                window.tags = old.tags.clone();
+            } else {
+                for t in &old.tags {
+                    let tag_index = &old.tags.iter().position(|ot| ot == t).unwrap();
+                    // if the config prior reload had more tags then the new one
+                    // we want to move windows of lost tags to the 'first' tag
+                    if tag_index > &manager.tags.len() {
+                        window.tag(&manager.tags[0].id);
+                    }
+                    window.tag(&manager.tags[*tag_index].id);
+                }
+            }
             window.strut = old.strut;
             window.set_states(old.states());
             ordered.push(window.clone());
