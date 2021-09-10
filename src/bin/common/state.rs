@@ -6,14 +6,16 @@ use std::fs::File;
 use std::path::Path;
 
 // TODO: make configurable
-/// Path to file where state will be dumper upon soft reload.
+/// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
 
-pub struct State;
+pub
+struct State;
 
 impl leftwm::State for State {
     fn save(&self, manager: &Manager) -> Result<()> {
         let state_file = File::create(STATE_FILE)?;
+        // log::info!("Current manager: {:?}", &manager);
         serde_json::to_writer(state_file, &manager)?;
         Ok(())
     }
@@ -33,22 +35,31 @@ impl leftwm::State for State {
 }
 
 /// Read old state from a state file.
-fn load_old_state() -> Result<Manager> {
-    let file = File::open(STATE_FILE)?;
-    let old_manager = serde_json::from_reader(file)?;
-    Ok(old_manager)
+fn load_old_state() -> Result<Manager>{
+  let file = File::open(STATE_FILE)?;
+  let old_manager = serde_json::from_reader(file)?;
+  // log::info!("Old manager: {:?}", &old_manager);
+  Ok(old_manager)
 }
 
 /// Apply saved state to a running manager.
-fn restore_state(manager: &mut Manager, old_manager: &Manager) {
-    restore_workspaces(manager, old_manager);
-    restore_windows(manager, old_manager);
-    restore_scratchpads(manager, old_manager);
+fn restore_state(
+  manager: &mut Manager,
+  old_manager: &Manager,
+)
+{
+  restore_workspaces(manager, old_manager);
+  restore_windows(manager, old_manager);
+  restore_scratchpads(manager, old_manager);
 }
 
 /// Restore workspaces layout.
-fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
-    for workspace in &mut manager.workspaces {
+fn restore_workspaces(
+  manager: &mut Manager,
+  old_manager: &Manager,
+)
+{
+  for workspace in &mut manager.workspaces {
         if let Some(old_workspace) = old_manager.workspaces.iter().find(|w| w.id == workspace.id) {
             workspace.layout = old_workspace.layout.clone();
             workspace.margin_multiplier = old_workspace.margin_multiplier;
@@ -57,11 +68,15 @@ fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
 }
 
 /// Copy windows state.
-fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
-    let mut ordered = vec![];
-    let mut had_strut = false;
+fn restore_windows(
+  manager: &mut Manager,
+  old_manager: &Manager,
+)
+{
+  let mut ordered = vec![];
+  let mut had_strut = false;
 
-    old_manager.windows.iter().for_each(|old| {
+  old_manager.windows.iter().for_each(|old| {
         if let Some((index, window)) = manager
             .windows
             .iter_mut()
@@ -82,14 +97,23 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             if manager.tags.eq(&old_manager.tags) {
                 window.tags = old.tags.clone();
             } else {
+                log::info!("Tag config changed, mapping tags based on index.");
                 for t in &old.tags {
+                    // let tag_index = &old_manager.tags.iter().position(|ot| &ot.id == t).unwrap();
                     let tag_index = &old.tags.iter().position(|ot| ot == t).unwrap();
+                    let manager_tags = manager.tags.clone();
+                    log::info!("Tag Index: {:?}, Old Tag: {:?}, New Tag: {:?}, Number of current tags: {:?}",
+                      &tag_index, &t, &manager_tags[tag_index.clone()].id, &manager_tags.len());
+                    log::info!("Current Tags: {:?}", &manager_tags);
                     // if the config prior reload had more tags then the new one
                     // we want to move windows of lost tags to the 'first' tag
-                    if tag_index > &manager.tags.len() {
-                        window.tag(&manager.tags[0].id);
+                    if tag_index <= &manager_tags.len() {
+                      let designated_id = &manager_tags[tag_index.clone()].id;
+                      log::info!("Assigning Tag ID: {:?}", designated_id);
+                        // window.tag(designated_id);
+                        window.tag(&manager_tags[0].id);
                     }
-                    window.tag(&manager.tags[*tag_index].id);
+                    window.tag(&manager_tags[0].id);
                 }
             }
             window.strut = old.strut;
@@ -98,14 +122,18 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             manager.windows.remove(index);
         }
     });
-    if had_strut {
+  if had_strut {
         manager.update_docks();
     }
-    manager.windows.append(&mut ordered);
+  manager.windows.append(&mut ordered);
 }
 
-fn restore_scratchpads(manager: &mut Manager, old_manager: &Manager) {
-    for (scratchpad, id) in &old_manager.active_scratchpads {
+fn restore_scratchpads(
+  manager: &mut Manager,
+  old_manager: &Manager,
+)
+{
+  for (scratchpad, id) in &old_manager.active_scratchpads {
         manager.active_scratchpads.insert(scratchpad.clone(), *id);
     }
 }
