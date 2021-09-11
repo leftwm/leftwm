@@ -1,7 +1,7 @@
 //! Save and restore manager state.
 
 use leftwm::errors::Result;
-use leftwm::{DisplayAction, Manager};
+use leftwm::Manager;
 use std::fs::File;
 use std::path::Path;
 
@@ -14,7 +14,6 @@ pub struct State;
 impl leftwm::State for State {
     fn save(&self, manager: &Manager) -> Result<()> {
         let state_file = File::create(STATE_FILE)?;
-        // log::info!("Current manager: {:?}", &manager);
         serde_json::to_writer(state_file, &manager)?;
         Ok(())
     }
@@ -37,7 +36,6 @@ impl leftwm::State for State {
 fn load_old_state() -> Result<Manager> {
     let file = File::open(STATE_FILE)?;
     let old_manager = serde_json::from_reader(file)?;
-    // log::info!("Old manager: {:?}", &old_manager);
     Ok(old_manager)
 }
 
@@ -82,22 +80,23 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             } else {
                 log::info!("Tag config changed, mapping tags based on index.");
                 for t in &old.tags {
-                    let manager_tags = manager.tags.clone();
+                log::info!("Window before: {:?}", &window.tags);
+                    let manager_tags = &manager.tags.clone();
                     let old_tags = old_manager.tags.clone();
                     let tag_index = &old_tags.iter().position(|o| &o.id == t);
+                    window.clear_tags();
                     // if the config prior reload had more tags then the new one
                     // we want to move windows of lost tags to the 'first' tag
                     if tag_index.unwrap() <= manager_tags.len() {
                         log::info!("Index: {:?} old tag: {:?}", &tag_index.unwrap(), t);
-                        let designated_id = &manager_tags[tag_index.unwrap()].id;
+                        let designated_id = &manager_tags[tag_index.clone().unwrap()].id;
                         log::info!("Assigning tag ID: {:?}", &designated_id);
-                        let act =
-                            DisplayAction::SetWindowTags(window.handle, designated_id.to_string());
-                        manager.actions.push_back(act);
+                        window.tag(&designated_id);
                     } else {
-                        log::info!("Assigning default tag ID: {:?}", &manager_tags[0].id);
-                        window.tag(&manager_tags[0].id.clone());
+                        log::info!("Default ID: {:?}", &manager_tags[0].id);
+                        window.tag(&manager_tags.first().unwrap().id);
                     }
+                log::info!("Window after: {:?}", &window.tags);
                 }
             }
             window.strut = old.strut;
