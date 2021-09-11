@@ -64,6 +64,7 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
     old_manager.windows.iter().for_each(|old| {
         if let Some((index, window)) = manager
             .windows
+            .clone()
             .iter_mut()
             .enumerate()
             .find(|w| w.1.handle == old.handle)
@@ -78,19 +79,24 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             if manager.tags.eq(&old_manager.tags) {
                 window.tags = old.tags.clone();
             } else {
-                for t in &old.tags {
+                old.tags.iter().for_each(|t| {
                     let manager_tags = &manager.tags.clone();
-                    let tag_index = &old_manager.tags.clone().iter().position(|o| &o.id == t).unwrap();
+                    let tag_index = &old_manager
+                        .tags
+                        .clone()
+                        .iter()
+                        .position(|o| &o.id == t)
+                        .unwrap();
                     window.clear_tags();
-                    // if the config prior reload had more tags then the new one
-                    // we want to move windows of lost tags to the 'first' tag
+                    // if the config prior reload had more tags then the current one
+                    // we want to move windows of 'lost tags' to the 'first' tag
                     // also we want to ignore the `NSP` tag for length check
-                    if tag_index < &(manager_tags.len() - 1) {
+                    if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
                         window.tag(&manager_tags[*tag_index].id);
                     } else {
                         window.tag(&manager_tags.first().unwrap().id);
                     }
-                }
+                });
             }
             window.strut = old.strut;
             window.set_states(old.states());
