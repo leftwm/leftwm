@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::Manager;
 use serde::{Deserialize, Serialize};
@@ -104,17 +105,19 @@ fn viewport_into_display_workspace(
     }
 }
 
-impl<C: Config<CMD>, CMD> From<&Manager<C, CMD>> for ManagerState {
-    fn from(manager: &Manager<C, CMD>) -> Self {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> From<&Manager<C, CMD, SERVER>>
+    for ManagerState
+{
+    fn from(manager: &Manager<C, CMD, SERVER>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         let mut tags_len = manager.tags.len();
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
         let working_tags = manager.tags[0..tags_len]
             .iter()
-            .filter(|tag| manager.windows.iter().any(|w| w.has_tag(&tag.id)))
+            .filter(|tag| manager.state.windows.iter().any(|w| w.has_tag(&tag.id)))
             .map(|t| t.id.clone())
             .collect();
-        for ws in &manager.workspaces {
+        for ws in &manager.state.workspaces {
             viewports.push(Viewport {
                 tags: ws.tags.clone(),
                 x: ws.xyhw.x(),

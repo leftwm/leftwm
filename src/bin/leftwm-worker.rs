@@ -1,7 +1,6 @@
 mod common;
 
-use leftwm::child_process::{self};
-use leftwm::{DisplayServer, Manager, XlibDisplayServer};
+use leftwm::{Manager, XlibDisplayServer};
 use slog::{o, Drain};
 use std::panic;
 
@@ -16,12 +15,10 @@ fn main() {
 
         let config = common::load();
 
-        let mut display_server = XlibDisplayServer::new(&config);
-        let manager = Manager::<common::Config, common::Command>::new(config);
+        let manager = Manager::<common::Config, common::Command, XlibDisplayServer<_>>::new(config);
+        manager.register_child_hook();
 
-        child_process::register_child_hook(manager.reap_requested.clone());
-
-        rt.block_on(manager.event_loop(&mut display_server));
+        rt.block_on(manager.event_loop());
     });
 
     match completed {

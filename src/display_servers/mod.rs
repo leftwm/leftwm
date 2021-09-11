@@ -7,6 +7,8 @@ use crate::DisplayEvent;
 #[cfg(test)]
 mod mock_display_server;
 pub mod xlib_display_server;
+use futures::prelude::*;
+use std::pin::Pin;
 
 #[cfg(test)]
 pub use self::mock_display_server::MockDisplayServer;
@@ -23,8 +25,10 @@ pub trait DisplayServer<CMD> {
         &self,
         _windows: Vec<&Window>,
         _focused: Option<&Window>,
-        _manager: &Manager<C, CMD>,
-    ) {
+        _manager: &Manager<C, CMD, Self>,
+    ) where
+        Self: Sized,
+    {
     }
 
     fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
@@ -32,4 +36,10 @@ pub trait DisplayServer<CMD> {
     fn execute_action(&mut self, _act: DisplayAction) -> Option<DisplayEvent<CMD>> {
         None
     }
+
+    fn wait_readable(&self) -> Pin<Box<dyn Future<Output = ()>>>;
+
+    fn flush(&self);
+
+    fn verify_focused_window(&self) -> Vec<DisplayEvent<CMD>>;
 }

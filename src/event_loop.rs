@@ -1,12 +1,10 @@
 use crate::{child_process::Nanny, config::Config, models::FocusBehaviour};
-use crate::{
-    CommandPipe, DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
-};
+use crate::{CommandPipe, DisplayServer, Manager, Mode, StateSocket, Window, Workspace};
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
-impl<C: Config<CMD>, CMD> Manager<C, CMD> {
-    pub async fn event_loop(mut self, display_server: &mut XlibDisplayServer<CMD>) {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
+    pub async fn event_loop(mut self) {
         let socket_file = place_runtime_file("current_state.sock")
             .expect("ERROR: couldn't create current_state.sock");
         let mut state_socket = StateSocket::default();
@@ -26,29 +24,28 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
 
         //main event loop
         let mut event_buffer = vec![];
-        let notify = display_server.task_notify();
         loop {
-            if self.mode == Mode::Normal {
+            if self.state.mode == Mode::Normal {
                 state_socket.write_manager_state(&mut self).await.ok();
             }
-            display_server.flush();
+            self.display_server.flush();
 
             let mut needs_update = false;
             tokio::select! {
-                _ = notify.notified(), if event_buffer.is_empty() => {
-                    event_buffer.append(&mut get_events(display_server));
+                _ = self.display_server.wait_readable(), if event_buffer.is_empty() => {
+                    event_buffer.append(&mut self.display_server.get_next_events());
                     continue;
                 }
                 //Once in a blue moon we miss the focus event,
                 //This is to double check that we know which window is currently focused
-                _ = timeout(100), if event_buffer.is_empty() && self.focus_manager.behaviour == FocusBehaviour::Sloppy => {
-                    let mut focus_event = display_server.verify_focused_window();
+                _ = timeout(100), if event_buffer.is_empty() && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy => {
+                    let mut focus_event = self.display_server.verify_focused_window();
                     event_buffer.append(&mut focus_event);
                     continue;
                 }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
                     needs_update = self.external_command_handler(cmd) || needs_update;
-                    display_server.update_theme_settings(&self.config);
+                    self.display_server.update_theme_settings(&self.state.config);
                 }
                 else => {
                     event_buffer.drain(..).for_each(|event| needs_update = self.display_event_handler(event) || needs_update);
@@ -57,29 +54,31 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
 
             //if we need to update the displayed state
             if needs_update {
-                match &self.mode {
+                match self.state.mode {
                     Mode::Normal => {
-                        let windows: Vec<&Window> = self.windows.iter().collect();
+                        let windows: Vec<&Window> = self.state.windows.iter().collect();
                         let focused = self.focused_window();
-                        display_server.update_windows(windows, focused, &self);
-                        let workspaces: Vec<&Workspace> = self.workspaces.iter().collect();
+                        self.display_server.update_windows(windows, focused, &self);
+                        let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
                         let focused = self.focused_workspace();
-                        display_server.update_workspaces(workspaces, focused);
+                        self.display_server.update_workspaces(workspaces, focused);
                     }
                     //when (resizing / moving) only deal with the single window
                     Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
                         let focused = self.focused_window();
-                        let windows: Vec<&Window> =
-                            (&self.windows).iter().filter(|w| &w.handle == h).collect();
-                        display_server.update_windows(windows, focused, &self);
+                        let windows: Vec<&Window> = (&self.state.windows)
+                            .iter()
+                            .filter(|w| w.handle == h)
+                            .collect();
+                        self.display_server.update_windows(windows, focused, &self);
                     }
                 }
             }
 
             //preform any actions requested by the handler
-            while !self.actions.is_empty() {
-                if let Some(act) = self.actions.pop_front() {
-                    if let Some(event) = display_server.execute_action(act) {
+            while !self.state.actions.is_empty() {
+                if let Some(act) = self.state.actions.pop_front() {
+                    if let Some(event) = self.display_server.execute_action(act) {
                         event_buffer.push(event);
                     }
                 }
@@ -126,8 +125,4 @@ where
 async fn timeout(mills: u64) {
     use tokio::time::{sleep, Duration};
     sleep(Duration::from_millis(mills)).await;
-}
-
-fn get_events<T: DisplayServer<CMD>, CMD>(ds: &mut T) -> Vec<crate::DisplayEvent<CMD>> {
-    ds.get_next_events()
 }

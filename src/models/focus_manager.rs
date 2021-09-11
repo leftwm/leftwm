@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::display_servers::DisplayServer;
 use crate::{models::TagId, models::WindowHandle, Manager, Window, Workspace};
 
 use serde::{Deserialize, Serialize};
@@ -43,15 +44,15 @@ impl FocusManager {
 
     /// Return the currently focused workspace.
     #[must_use]
-    pub fn workspace<'a, 'b, C: Config<CMD>, CMD>(
+    pub fn workspace<'a, 'b, C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         &self,
-        manager: &'a Manager<C, CMD>,
+        manager: &'a Manager<C, CMD, SERVER>,
     ) -> Option<&'b Workspace>
     where
         'a: 'b,
     {
         let index = *self.workspace_history.get(0)?;
-        manager.workspaces.get(index)
+        manager.state.workspaces.get(index)
     }
 
     /// Return the currently focused workspace.
@@ -76,16 +77,16 @@ impl FocusManager {
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn window<'a, 'b, C: Config<CMD>, CMD>(
+    pub fn window<'a, 'b, C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         &self,
-        manager: &'a Manager<C, CMD>,
+        manager: &'a Manager<C, CMD, SERVER>,
     ) -> Option<&'b Window>
     where
         'a: 'b,
     {
         let handle = *self.window_history.get(0)?;
         if let Some(handle) = handle {
-            return manager.windows.iter().find(|w| w.handle == handle);
+            return manager.state.windows.iter().find(|w| w.handle == handle);
         }
         None
     }

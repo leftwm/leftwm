@@ -6,7 +6,7 @@ use leftwm::{
     errors::Result,
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, Margins},
-    Manager,
+    DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::default::Default;
@@ -225,7 +225,10 @@ impl leftwm::Config<Command> for Config {
         self.focus_new_windows
     }
 
-    fn command_handler(command: &Command, manager: &mut Manager<Self, Command>) -> Option<bool> {
+    fn command_handler<SERVER: DisplayServer<Command>>(
+        command: &Command,
+        manager: &mut Manager<Self, Command, SERVER>,
+    ) -> Option<bool> {
         command.execute(manager)
     }
 
@@ -265,24 +268,29 @@ impl leftwm::Config<Command> for Config {
         self.theme_setting.gutter.clone().unwrap_or_default()
     }
 
-    fn save_state(manager: &Manager<Self, Command>) -> Result<()> {
-        let path = manager.config.state_file();
+    fn save_state<SERVER: DisplayServer<Command>>(
+        manager: &Manager<Self, Command, SERVER>,
+    ) -> Result<()> {
+        let path = manager.state.config.state_file();
         let state_file = File::create(&path)?;
-        serde_json::to_writer(state_file, &manager)?;
+        serde_json::to_writer(state_file, &manager.state)?;
         Ok(())
     }
 
-    fn load_state(manager: &mut Manager<Self, Command>) {
-        let path = manager.config.state_file().to_owned();
-        if path.exists() {
-            match super::load_old_state(&path) {
-                Ok(old_manager) => super::restore_state(manager, &old_manager),
-                Err(err) => log::error!("Cannot load old state: {}", err),
+    fn load_state<SERVER: DisplayServer<Command>>(manager: &mut Manager<Self, Command, SERVER>) {
+        let path = manager.state.config.state_file().to_owned();
+        match File::open(&path) {
+            Ok(file) => {
+                match serde_json::from_reader(file) {
+                    Ok(state) => manager.restore_state(&state),
+                    Err(err) => log::error!("Cannot load old state: {}", err),
+                }
+                // Clean old state.
+                if let Err(err) = std::fs::remove_file(&path) {
+                    log::error!("Cannot remove old state file: {}", err);
+                }
             }
-            // Clean old state.
-            if let Err(err) = std::fs::remove_file(&path) {
-                log::error!("Cannot remove old state file: {}", err);
-            }
+            Err(err) => log::error!("Cannot open old state: {}", err),
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::models::WindowHandle;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
 pub enum Mode {
     ResizingWindow(WindowHandle),
     MovingWindow(WindowHandle),

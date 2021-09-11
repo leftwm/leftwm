@@ -25,6 +25,7 @@ mod event_loop;
 mod handlers;
 pub mod layouts;
 pub mod models;
+mod state;
 pub mod utils;
 
 use utils::xkeysym_lookup::Button;
@@ -43,6 +44,7 @@ pub use models::Manager;
 pub use models::Mode;
 pub use models::Window;
 pub use models::Workspace;
+pub use state::State;
 pub use utils::child_process;
 pub use utils::command_pipe::CommandPipe;
 pub use utils::state_socket::StateSocket;

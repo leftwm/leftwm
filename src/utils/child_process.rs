@@ -1,6 +1,7 @@
 //! Starts programs in autostart, runs global 'up' script, and boots theme. Provides function to
 //! boot other desktop files also.
 use crate::config::Config;
+use crate::display_servers::DisplayServer;
 use crate::errors::Result;
 use crate::models::Manager;
 use std::collections::HashMap;
@@ -186,9 +187,9 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 
 /// Sends command to shell for execution
 /// Assumes STDIN/STDOUT unwanted.
-pub fn exec_shell<C: Config<CMD>, CMD>(
+pub fn exec_shell<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     command: &str,
-    manager: &mut Manager<C, CMD>,
+    manager: &mut Manager<C, CMD, SERVER>,
 ) -> Option<u32> {
     let child = Command::new("sh")
         .arg("-c")

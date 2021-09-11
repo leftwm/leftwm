@@ -1,14 +1,15 @@
 use super::{Manager, Window, WindowHandle};
 use crate::config::Config;
+use crate::display_servers::DisplayServer;
 
-impl<C: Config<CMD>, CMD> Manager<C, CMD> {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     pub fn window_resize_handler(
         &mut self,
         handle: &WindowHandle,
         offset_w: i32,
         offset_h: i32,
     ) -> bool {
-        if let Some(w) = self.windows.iter_mut().find(|w| &w.handle == handle) {
+        if let Some(w) = self.state.windows.iter_mut().find(|w| &w.handle == handle) {
             process_window(w, offset_w, offset_h);
             return true;
         }

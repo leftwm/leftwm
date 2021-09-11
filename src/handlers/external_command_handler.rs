@@ -1,8 +1,9 @@
 use super::{Command, Manager};
 use crate::config::Config;
+use crate::display_servers::DisplayServer;
 use crate::utils::command_pipe::ExternalCommand;
 
-impl<C: Config<CMD>, CMD> Manager<C, CMD> {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     pub fn external_command_handler(&mut self, command: ExternalCommand) -> bool {
         let needs_redraw = process_work(self, command);
         if needs_redraw {
@@ -12,8 +13,8 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     }
 }
 
-fn process_work<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn process_work<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     command: ExternalCommand,
 ) -> bool {
     match command {
@@ -63,13 +64,13 @@ fn process_work<C: Config<CMD>, CMD>(
     }
 }
 
-fn send_workspace_to_tag<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn send_workspace_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     ws_index: usize,
     tag_index: usize,
 ) -> bool {
-    if ws_index < manager.workspaces.len() && tag_index < manager.tags.len() {
-        let workspace = &manager.workspaces[ws_index].clone();
+    if ws_index < manager.state.workspaces.len() && tag_index < manager.tags.len() {
+        let workspace = &manager.state.workspaces[ws_index].clone();
         manager.focus_workspace(workspace);
         manager.goto_tag_handler(tag_index + 1);
         return true;
@@ -77,8 +78,8 @@ fn send_workspace_to_tag<C: Config<CMD>, CMD>(
     false
 }
 
-fn send_window_to_tag<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn send_window_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     tag_index: usize,
 ) -> bool {
     if tag_index < manager.tags.len() {

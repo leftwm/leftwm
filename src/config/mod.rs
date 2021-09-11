@@ -2,6 +2,7 @@ mod keybind;
 mod scratchpad;
 mod workspace_config;
 
+use crate::display_servers::DisplayServer;
 use crate::errors::Result;
 use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins};
@@ -31,9 +32,13 @@ pub trait Config<CMD> {
 
     fn focus_new_windows(&self) -> bool;
 
-    fn command_handler(command: &CMD, manager: &mut Manager<Self, CMD>) -> Option<bool>
+    fn command_handler<SERVER>(
+        command: &CMD,
+        manager: &mut Manager<Self, CMD, SERVER>,
+    ) -> Option<bool>
     where
-        Self: Sized;
+        Self: Sized,
+        SERVER: DisplayServer<CMD>;
 
     fn border_width(&self) -> i32;
     fn margin(&self) -> Margins;
@@ -54,14 +59,16 @@ pub trait Config<CMD> {
     /// if unable to serialize the text.
     /// May be caused by inadequate permissions, not enough
     /// space on drive, or other typical filesystem issues.
-    fn save_state(manager: &Manager<Self, CMD>) -> Result<()>
+    fn save_state<SERVER>(manager: &Manager<Self, CMD, SERVER>) -> Result<()>
     where
-        Self: Sized;
+        Self: Sized,
+        SERVER: DisplayServer<CMD>;
 
     /// Load saved state if it exists.
-    fn load_state(manager: &mut Manager<Self, CMD>)
+    fn load_state<SERVER>(manager: &mut Manager<Self, CMD, SERVER>)
     where
-        Self: Sized;
+        Self: Sized,
+        SERVER: DisplayServer<CMD>;
 }
 
 #[cfg(test)]
@@ -70,7 +77,7 @@ pub struct TestConfig {
 }
 
 #[cfg(test)]
-impl<C: Config<CMD>, CMD> Config<CMD> for TestConfig {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Config<CMD> for TestConfig {
     fn mapped_bindings(&self) -> Vec<Keybind<CMD>> {
         unimplemented!()
     }

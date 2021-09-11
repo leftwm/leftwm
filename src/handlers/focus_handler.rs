@@ -1,9 +1,10 @@
 #![allow(clippy::wildcard_imports)]
 
 use super::*;
+use crate::display_servers::DisplayServer;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
-impl<C: Config<CMD>, CMD> Manager<C, CMD> {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     /// Marks a workspace as the focused workspace.
     //NOTE: should only be called externally from this file
     pub fn focus_workspace(&mut self, workspace: &Workspace) -> bool {
@@ -27,14 +28,18 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
         };
 
         //make sure the focused window's workspace is focused
-        let (focused_window_tag, workspace_id) =
-            match self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
-                Some(ws) => (
-                    ws.tags.iter().find(|t| window.has_tag(t)).cloned(),
-                    Some(ws.id),
-                ),
-                None => (None, None),
-            };
+        let (focused_window_tag, workspace_id) = match self
+            .state
+            .workspaces
+            .iter()
+            .find(|ws| ws.is_displaying(&window))
+        {
+            Some(ws) => (
+                ws.tags.iter().find(|t| window.has_tag(t)).cloned(),
+                Some(ws.id),
+            ),
+            None => (None, None),
+        };
         if let Some(workspace_id) = workspace_id {
             let _ = focus_workspace_work(self, workspace_id);
         }
@@ -52,6 +57,7 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
             None => None,
         };
         if let Some(w) = self
+            .state
             .workspaces
             .iter()
             .find(|ws| ws.contains_point(x, y) && ws.id != focused_id)
@@ -70,6 +76,7 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
         }
         // check each workspace, if its displaying this tag it should be focused too
         let to_focus: Vec<Workspace> = self
+            .state
             .workspaces
             .iter()
             .filter(|w| w.has_tag(tag))
@@ -79,13 +86,14 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
             focus_workspace_work(self, ws.id);
         }
         //make sure the focused window is on this workspace
-        if self.focus_manager.behaviour == FocusBehaviour::Sloppy {
+        if self.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
-            self.actions.push_back(act);
-        } else if let Some(handle) = self.focus_manager.tags_last_window.get(tag).copied() {
+            self.state.actions.push_back(act);
+        } else if let Some(handle) = self.state.focus_manager.tags_last_window.get(tag).copied() {
             focus_window_by_handle_work(self, &handle);
         } else if let Some(ws) = to_focus.first() {
             let handle = self
+                .state
                 .windows
                 .iter()
                 .find(|w| ws.is_managed(w))
@@ -98,8 +106,8 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
         // Unfocus last window if the target tag is empty
         if let Some(window) = self.focused_window().cloned() {
             if !window.tags.contains(&tag.to_owned()) {
-                self.actions.push_back(DisplayAction::Unfocus);
-                self.focus_manager.window_history.push_front(None);
+                self.state.actions.push_back(DisplayAction::Unfocus);
+                self.state.focus_manager.window_history.push_front(None);
             }
         }
         true
@@ -112,6 +120,7 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
         };
         //only look at windows we can focus
         let found: Option<Window> = self
+            .state
             .windows
             .iter()
             .filter(|x| x.can_focus())
@@ -132,6 +141,7 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
 
     pub fn move_focus_to_point(&mut self, x: i32, y: i32) -> bool {
         let handle_found: Option<WindowHandle> = self
+            .state
             .windows
             .iter()
             .filter(|x| x.can_focus())
@@ -148,13 +158,18 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     pub fn update_current_tags(&mut self) {
         if let Some(workspace) = self.focused_workspace() {
             if let Some(tag) = workspace.tags.first().cloned() {
-                self.actions.push_back(DisplayAction::SetCurrentTags(tag));
+                self.state
+                    .actions
+                    .push_back(DisplayAction::SetCurrentTags(tag));
             }
         }
     }
 }
 
-fn focus_workspace_work<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, workspace_id: Option<i32>) -> Option<()> {
+fn focus_workspace_work<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+    workspace_id: Option<i32>,
+) -> Option<()> {
     //no new history if no change
     if let Some(fws) = manager.focused_workspace() {
         if fws.id == workspace_id {
@@ -162,29 +177,34 @@ fn focus_workspace_work<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, work
         }
     }
     //clean old ones
-    manager.focus_manager.workspace_history.truncate(10);
+    manager.state.focus_manager.workspace_history.truncate(10);
     //add this focus to the history
     let index = manager
+        .state
         .workspaces
         .iter()
         .position(|x| x.id == workspace_id)?;
-    manager.focus_manager.workspace_history.push_front(index);
+    manager
+        .state
+        .focus_manager
+        .workspace_history
+        .push_front(index);
     Some(())
 }
-fn focus_window_by_handle_work<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn focus_window_by_handle_work<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     handle: &WindowHandle,
 ) -> Option<Window> {
     //Docks don't want to get focus. If they do weird things happen. They don't get events...
     //Do the focus, Add the action to the list of action
-    let found: &Window = manager.windows.iter().find(|w| &w.handle == handle)?;
+    let found: &Window = manager.state.windows.iter().find(|w| &w.handle == handle)?;
     if found.is_unmanaged() {
         return None;
     }
     //NOTE: we are intentionally creating the focus event even if we think this window
     //is already in focus. This is to force the DM to update its knowledge of the focused window
     let act = DisplayAction::WindowTakeFocus(found.clone());
-    manager.actions.push_back(act);
+    manager.state.actions.push_back(act);
 
     //no new history if no change
     if let Some(fw) = manager.focused_window() {
@@ -194,9 +214,10 @@ fn focus_window_by_handle_work<C: Config<CMD>, CMD>(
         }
     }
     //clean old ones
-    manager.focus_manager.window_history.truncate(10);
+    manager.state.focus_manager.window_history.truncate(10);
     //add this focus to the history
     manager
+        .state
         .focus_manager
         .window_history
         .push_front(Some(*handle));
@@ -204,12 +225,22 @@ fn focus_window_by_handle_work<C: Config<CMD>, CMD>(
     Some(found.clone())
 }
 
-fn focus_closest_window<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, x: i32, y: i32) -> bool {
-    let ws = match manager.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
+fn focus_closest_window<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+    x: i32,
+    y: i32,
+) -> bool {
+    let ws = match manager
+        .state
+        .workspaces
+        .iter()
+        .find(|ws| ws.contains_point(x, y))
+    {
         Some(ws) => ws,
         None => return false,
     };
     let mut dists: Vec<(i32, &Window)> = manager
+        .state
         .windows
         .iter()
         .filter(|x| ws.is_managed(x) && x.can_focus())
@@ -231,17 +262,21 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
     (xs + ys).sqrt().abs().floor() as i32
 }
 
-fn focus_tag_work<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, tag: &str) -> Option<()> {
+fn focus_tag_work<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+    tag: &str,
+) -> Option<()> {
     //no new history if no change
-    if let Some(t) = manager.focus_manager.tag(0) {
+    if let Some(t) = manager.state.focus_manager.tag(0) {
         if t == tag {
             return None;
         }
     }
     //clean old ones
-    manager.focus_manager.tag_history.truncate(10);
+    manager.state.focus_manager.tag_history.truncate(10);
     //add this focus to the history
     manager
+        .state
         .focus_manager
         .tag_history
         .push_front(tag.to_string());

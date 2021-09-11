@@ -7,13 +7,14 @@
 
 use super::*;
 use crate::display_action::DisplayAction;
+use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::TagId;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 use std::str::FromStr;
 
-impl<C: Config<CMD>, CMD> Manager<C, CMD> {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     /* Please also update src/bin/leftwm-check if any of the following apply after your update:
      * - a command now requires a value
      * - a command no longer requires a value
@@ -24,8 +25,8 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
     }
 }
 
-fn process_internal<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     command: &Command<CMD>,
     val: Option<&str>,
 ) -> Option<bool> {
@@ -84,18 +85,22 @@ fn process_internal<C: Config<CMD>, CMD>(
     }
 }
 
-fn execute<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, val: Option<&str>) -> Option<bool> {
+fn execute<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+    val: Option<&str>,
+) -> Option<bool> {
     let _ = exec_shell(val.as_ref()?, manager);
     None
 }
 
-fn toggle_scratchpad<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn toggle_scratchpad<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     val: Option<&str>,
 ) -> Option<bool> {
     let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
     let s = manager
+        .state
         .scratchpads
         .iter()
         .find(|s| name == s.name.clone())?
@@ -104,19 +109,20 @@ fn toggle_scratchpad<C: Config<CMD>, CMD>(
     let mut handle = None;
     if let Some(ws) = manager.focused_workspace() {
         handle = manager
+            .state
             .windows
             .iter()
             .find(|w| ws.is_managed(w))
             .map(|w| w.handle);
     }
 
-    if let Some(id) = manager.active_scratchpads.get(&s.name) {
-        if let Some(w) = manager.windows.iter_mut().find(|w| w.pid == *id) {
+    if let Some(id) = manager.state.active_scratchpads.get(&s.name) {
+        if let Some(w) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
             let is_tagged = w.has_tag(tag);
             w.clear_tags();
             if is_tagged {
                 w.tag("NSP");
-                if let Some(Some(prev)) = manager.focus_manager.window_history.get(1) {
+                if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
                     handle = Some(*prev);
                 }
             } else {
@@ -124,7 +130,7 @@ fn toggle_scratchpad<C: Config<CMD>, CMD>(
                 handle = Some(w.handle);
             }
             let act = DisplayAction::SetWindowTags(w.handle, w.tags.get(0)?.to_string());
-            manager.actions.push_back(act);
+            manager.state.actions.push_back(act);
 
             manager.sort_windows();
             if let Some(h) = handle {
@@ -138,28 +144,30 @@ fn toggle_scratchpad<C: Config<CMD>, CMD>(
     }
     let name = s.name.clone();
     let pid = exec_shell(&s.value, manager);
-    manager.active_scratchpads.insert(name, pid);
+    manager.state.active_scratchpads.insert(name, pid);
     None
 }
 
-fn toggle_fullscreen<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
+fn toggle_fullscreen<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+) -> Option<bool> {
     let window = manager.focused_window_mut()?;
     let handle = window.handle;
     let act = window.toggle_fullscreen()?;
-    manager.actions.push_back(act);
+    manager.state.actions.push_back(act);
     Some(handle_focus(manager, handle))
 }
 
-fn move_to_tag<C: Config<CMD>, CMD>(
+fn move_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     val: Option<&str>,
-    manager: &mut Manager<C, CMD>,
+    manager: &mut Manager<C, CMD, SERVER>,
 ) -> Option<bool> {
     let tag_num: usize = val.as_ref()?.parse().ok()?;
     let tag = manager.tags.get(tag_num - 1)?.clone();
 
     // In order to apply the correct margin multiplier we want to copy this value
     // from any window already present on the target tag
-    let margin_multiplier = match manager.windows.iter().find(|w| w.has_tag(&tag.id)) {
+    let margin_multiplier = match manager.state.windows.iter().find(|w| w.has_tag(&tag.id)) {
         Some(w) => w.margin_multiplier(),
         None => 1.0,
     };
@@ -174,7 +182,7 @@ fn move_to_tag<C: Config<CMD>, CMD>(
     window.tag(&tag.id);
     window.apply_margin_multiplier(margin_multiplier);
     let act = DisplayAction::SetWindowTags(window.handle, tag.id);
-    manager.actions.push_back(act);
+    manager.state.actions.push_back(act);
 
     manager.sort_windows();
     if let Some(new_handle) = new_handle {
@@ -183,13 +191,16 @@ fn move_to_tag<C: Config<CMD>, CMD>(
     Some(true)
 }
 
-fn goto_tag<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, val: Option<&str>) -> Option<bool> {
+fn goto_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+    val: Option<&str>,
+) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
     let input_tag = val.as_ref()?.parse().ok()?;
     let mut destination_tag = input_tag;
-    if !manager.config.disable_current_tag_swap() {
+    if !manager.state.config.disable_current_tag_swap() {
         destination_tag = match (current_tag, previous_tag, input_tag) {
             (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => prev_tag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
             (_, _, _) => input_tag, // go to the input tag tag
@@ -198,7 +209,10 @@ fn goto_tag<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, val: Option<&str
     Some(manager.goto_tag_handler(destination_tag))
 }
 
-fn focus_tag_change<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, delta: i8) -> Option<bool> {
+fn focus_tag_change<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+    delta: i8,
+) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let active_tags: Vec<(usize, TagId)> = manager
         .tags
@@ -225,21 +239,35 @@ fn focus_tag_change<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, delta: i
     Some(manager.goto_tag_handler(next))
 }
 
-fn swap_tags<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
-    if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
-        let hist_a = *manager.focus_manager.workspace_history.get(0)?;
-        let hist_b = *manager.focus_manager.workspace_history.get(1)?;
+fn swap_tags<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+) -> Option<bool> {
+    if manager.state.workspaces.len() >= 2
+        && manager.state.focus_manager.workspace_history.len() >= 2
+    {
+        let hist_a = *manager.state.focus_manager.workspace_history.get(0)?;
+        let hist_b = *manager.state.focus_manager.workspace_history.get(1)?;
         //Update workspace tags
         let mut temp = vec![];
-        std::mem::swap(&mut manager.workspaces.get_mut(hist_a)?.tags, &mut temp);
-        std::mem::swap(&mut manager.workspaces.get_mut(hist_b)?.tags, &mut temp);
-        std::mem::swap(&mut manager.workspaces.get_mut(hist_a)?.tags, &mut temp);
+        std::mem::swap(
+            &mut manager.state.workspaces.get_mut(hist_a)?.tags,
+            &mut temp,
+        );
+        std::mem::swap(
+            &mut manager.state.workspaces.get_mut(hist_b)?.tags,
+            &mut temp,
+        );
+        std::mem::swap(
+            &mut manager.state.workspaces.get_mut(hist_a)?.tags,
+            &mut temp,
+        );
         //Update dock tags
         manager.update_docks();
         return Some(true);
     }
-    if manager.workspaces.len() == 1 {
+    if manager.state.workspaces.len() == 1 {
         let last = manager
+            .state
             .focus_manager
             .tag_history
             .get(1)
@@ -251,19 +279,25 @@ fn swap_tags<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool>
     None
 }
 
-fn close_window<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
+fn close_window<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+) -> Option<bool> {
     let window = manager.focused_window()?;
     if !window.is_unmanaged() {
         let act = DisplayAction::KillWindow(window.handle);
-        manager.actions.push_back(act);
+        manager.state.actions.push_back(act);
     }
     None
 }
 
-fn move_to_last_workspace<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
-    if manager.workspaces.len() >= 2 && manager.focus_manager.workspace_history.len() >= 2 {
-        let index = *manager.focus_manager.workspace_history.get(1)?;
-        let wp_tags = &manager.workspaces.get(index)?.tags.clone();
+fn move_to_last_workspace<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+) -> Option<bool> {
+    if manager.state.workspaces.len() >= 2
+        && manager.state.focus_manager.workspace_history.len() >= 2
+    {
+        let index = *manager.state.focus_manager.workspace_history.get(1)?;
+        let wp_tags = &manager.state.workspaces.get(index)?.tags.clone();
         let window = manager.focused_window_mut()?;
         window.tags = vec![wp_tags.get(0)?.clone()];
         return Some(true);
@@ -271,35 +305,44 @@ fn move_to_last_workspace<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) ->
     None
 }
 
-fn next_layout<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
+fn next_layout<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+) -> Option<bool> {
     let workspace = manager
+        .state
         .focus_manager
-        .workspace_mut(&mut manager.workspaces)?;
+        .workspace_mut(&mut manager.state.workspaces)?;
     workspace.next_layout(&mut manager.tags);
     Some(true)
 }
 
-fn previous_layout<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
+fn previous_layout<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+) -> Option<bool> {
     let workspace = manager
+        .state
         .focus_manager
-        .workspace_mut(&mut manager.workspaces)?;
+        .workspace_mut(&mut manager.state.workspaces)?;
     workspace.prev_layout(&mut manager.tags);
     Some(true)
 }
 
-fn set_layout<C: Config<CMD>, CMD>(
+fn set_layout<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     val: Option<&str>,
-    manager: &mut Manager<C, CMD>,
+    manager: &mut Manager<C, CMD, SERVER>,
 ) -> Option<bool> {
     let layout = Layout::from_str(val.as_ref()?).ok()?;
     let workspace = manager
+        .state
         .focus_manager
-        .workspace_mut(&mut manager.workspaces)?;
+        .workspace_mut(&mut manager.state.workspaces)?;
     workspace.set_layout(&mut manager.tags, layout);
     Some(true)
 }
 
-fn floating_to_tile<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
+fn floating_to_tile<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+) -> Option<bool> {
     let workspace = manager.focused_workspace()?.clone();
     let window = manager.focused_window_mut()?;
     if window.must_float() {
@@ -315,13 +358,19 @@ fn floating_to_tile<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Optio
     Some(handle_focus(manager, handle))
 }
 
-fn move_focus_common_vars<F, C: Config<CMD>, CMD>(
+fn move_focus_common_vars<F, C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     func: F,
-    manager: &mut Manager<C, CMD>,
+    manager: &mut Manager<C, CMD, SERVER>,
     val: i32,
 ) -> Option<bool>
 where
-    F: Fn(&mut Manager<C, CMD>, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> Option<bool>,
+    F: Fn(
+        &mut Manager<C, CMD, SERVER>,
+        i32,
+        WindowHandle,
+        &Option<Layout>,
+        Vec<Window>,
+    ) -> Option<bool>,
 {
     let handle = manager.focused_window()?.handle;
     let w = manager.focused_workspace()?;
@@ -330,12 +379,12 @@ where
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
 
-    let to_reorder = helpers::vec_extract(&mut manager.windows, for_active_workspace);
+    let to_reorder = helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
     func(manager, val, handle, &layout, to_reorder)
 }
 
-fn move_window_change<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn move_window_change<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     val: i32,
     mut handle: WindowHandle,
     layout: &Option<Layout>,
@@ -357,13 +406,13 @@ fn move_window_change<C: Config<CMD>, CMD>(
     } else {
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
-    manager.windows.append(&mut to_reorder);
+    manager.state.windows.append(&mut to_reorder);
     Some(handle_focus(manager, handle))
 }
 
 //val and layout aren't used which is a bit awkward
-fn move_window_top<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn move_window_top<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     _val: i32,
     handle: WindowHandle,
     _layout: &Option<Layout>,
@@ -386,7 +435,7 @@ fn move_window_top<C: Config<CMD>, CMD>(
     }
     list.insert(new_index, item);
 
-    manager.windows.append(&mut to_reorder);
+    manager.state.windows.append(&mut to_reorder);
     // focus follows the window if it was not already on top of the stack
     if index > 0 {
         return Some(handle_focus(manager, handle));
@@ -394,8 +443,8 @@ fn move_window_top<C: Config<CMD>, CMD>(
     Some(true)
 }
 
-fn focus_window_change<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn focus_window_change<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     val: i32,
     mut handle: WindowHandle,
     layout: &Option<Layout>,
@@ -427,23 +476,24 @@ fn focus_window_change<C: Config<CMD>, CMD>(
     } else if let Some(new_focused) = helpers::relative_find(&to_reorder, is_handle, val, true) {
         handle = new_focused.handle;
     }
-    manager.windows.append(&mut to_reorder);
+    manager.state.windows.append(&mut to_reorder);
     Some(handle_focus(manager, handle))
 }
 
-fn focus_workspace_change<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn focus_workspace_change<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     val: i32,
 ) -> Option<bool> {
     let current = manager.focused_workspace()?;
     let workspace =
-        helpers::relative_find(&manager.workspaces, |w| w == current, val, true)?.clone();
+        helpers::relative_find(&manager.state.workspaces, |w| w == current, val, true)?.clone();
     manager.focus_workspace(&workspace);
-    if manager.focus_manager.behaviour == FocusBehaviour::Sloppy {
+    if manager.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
         let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
-        manager.actions.push_back(act);
+        manager.state.actions.push_back(act);
     }
     let window = manager
+        .state
         .windows
         .iter()
         .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)?
@@ -451,29 +501,33 @@ fn focus_workspace_change<C: Config<CMD>, CMD>(
     Some(handle_focus(manager, window.handle))
 }
 
-fn rotate_tag<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>) -> Option<bool> {
+fn rotate_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+) -> Option<bool> {
     let workspace = manager
+        .state
         .focus_manager
-        .workspace_mut(&mut manager.workspaces)?;
+        .workspace_mut(&mut manager.state.workspaces)?;
     let _ = workspace.rotate_layout(&mut manager.tags);
     Some(true)
 }
 
-fn change_main_width<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn change_main_width<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     val: Option<&str>,
     factor: i8,
 ) -> Option<bool> {
     let workspace = manager
+        .state
         .focus_manager
-        .workspace_mut(&mut manager.workspaces)?;
+        .workspace_mut(&mut manager.state.workspaces)?;
     let delta: i8 = val.as_ref()?.parse().ok()?;
     workspace.change_main_width(&mut manager.tags, delta * factor);
     Some(true)
 }
 
-fn set_margin_multiplier<C: Config<CMD>, CMD>(
-    manager: &mut Manager<C, CMD>,
+fn set_margin_multiplier<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
     val: Option<&str>,
 ) -> Option<bool> {
     let margin_multiplier: f32 = val.as_ref()?.parse().ok()?;
@@ -481,6 +535,7 @@ fn set_margin_multiplier<C: Config<CMD>, CMD>(
     ws.set_margin_multiplier(margin_multiplier);
     let tags = ws.tags.clone();
     if manager
+        .state
         .windows
         .iter()
         .any(|w| w.type_ == WindowType::Normal)
@@ -489,22 +544,28 @@ fn set_margin_multiplier<C: Config<CMD>, CMD>(
             helpers::intersect(&tags, &x.tags) && x.type_ == WindowType::Normal
         };
         let mut to_apply_margin_multiplier =
-            helpers::vec_extract(&mut manager.windows, for_active_workspace);
+            helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
         for w in &mut to_apply_margin_multiplier {
             if let Some(ws) = manager.focused_workspace() {
                 w.apply_margin_multiplier(ws.margin_multiplier());
             }
         }
-        manager.windows.append(&mut to_apply_margin_multiplier);
+        manager
+            .state
+            .windows
+            .append(&mut to_apply_margin_multiplier);
     }
     Some(true)
 }
 
-fn handle_focus<C: Config<CMD>, CMD>(manager: &mut Manager<C, CMD>, handle: WindowHandle) -> bool {
-    match manager.focus_manager.behaviour {
+fn handle_focus<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+    handle: WindowHandle,
+) -> bool {
+    match manager.state.focus_manager.behaviour {
         FocusBehaviour::Sloppy => {
             let act = DisplayAction::MoveMouseOver(handle);
-            manager.actions.push_back(act);
+            manager.state.actions.push_back(act);
             true
         }
         _ => manager.focus_window(&handle),
@@ -522,10 +583,16 @@ mod tests {
     struct TestState;
 
     impl State for TestState {
-        fn save<C: Config<CMD>, CMD>(&self, _manager: &Manager<C, CMD>) -> Result<()> {
+        fn save<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+            &self,
+            _manager: &Manager<C, CMD, SERVER>,
+        ) -> Result<()> {
             unimplemented!()
         }
-        fn load<C: Config<CMD>, CMD>(&self, _manager: &mut Manager<C, CMD>) {
+        fn load<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+            &self,
+            _manager: &mut Manager<C, CMD, SERVER>,
+        ) {
             unimplemented!()
         }
     }

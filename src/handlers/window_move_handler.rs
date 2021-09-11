@@ -1,7 +1,8 @@
 use super::{Manager, Window, WindowHandle, Workspace};
 use crate::config::Config;
+use crate::display_servers::DisplayServer;
 
-impl<C: Config<CMD>, CMD> Manager<C, CMD> {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     pub fn window_move_handler(
         &mut self,
         handle: &WindowHandle,
@@ -9,6 +10,7 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
         offset_y: i32,
     ) -> bool {
         let margin_multiplier = match self
+            .state
             .windows
             .iter()
             .find(|other| other.has_tag(&self.focused_tag(0).unwrap_or_default()))
@@ -16,11 +18,11 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
             Some(w) => w.margin_multiplier(),
             None => 1.0,
         };
-        match self.windows.iter_mut().find(|w| w.handle == *handle) {
+        match self.state.windows.iter_mut().find(|w| w.handle == *handle) {
             Some(w) => {
                 process_window(w, offset_x, offset_y);
                 w.apply_margin_multiplier(margin_multiplier);
-                snap_to_workspaces(w, &self.workspaces);
+                snap_to_workspaces(w, &self.state.workspaces);
                 true
             }
             None => false,

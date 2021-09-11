@@ -1,7 +1,8 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
+use crate::display_servers::DisplayServer;
 
-impl<C: Config<CMD>, CMD> Manager<C, CMD> {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     pub fn goto_tag_handler(&mut self, tag_num: usize) -> bool {
         if tag_num > self.tags.len() || tag_num < 1 {
             return false;
@@ -17,13 +18,19 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
         let handle = self.focused_window().map(|w| w.handle);
         if let Some(handle) = handle {
             let old_handle = self
+                .state
                 .focus_manager
                 .tags_last_window
                 .entry(old_tags[0].clone())
                 .or_insert(handle);
             *old_handle = handle;
         }
-        if let Some(ws) = self.workspaces.iter_mut().find(|ws| ws.tags == new_tags) {
+        if let Some(ws) = self
+            .state
+            .workspaces
+            .iter_mut()
+            .find(|ws| ws.tags == new_tags)
+        {
             ws.tags = old_tags;
         }
 

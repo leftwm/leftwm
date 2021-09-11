@@ -1,23 +1,25 @@
 use super::{Manager, Screen, Workspace};
 use crate::config::Config;
+use crate::display_servers::DisplayServer;
 use crate::models::Tag;
 
-impl<C: Config<CMD>, CMD> Manager<C, CMD> {
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
-        let tag_index = self.workspaces.len();
+        let tag_index = self.state.workspaces.len();
 
         let mut workspace = Workspace::new(
             screen.wsid,
             screen.bbox,
             self.tags.clone(),
-            self.layouts.clone(),
+            self.state.layouts.clone(),
         );
         if workspace.id.is_none() {
             workspace.id = Some(
-                self.workspaces
+                self.state
+                    .workspaces
                     .iter()
                     .map(|ws| ws.id.unwrap_or(-1))
                     .max()
@@ -28,7 +30,7 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
         if workspace.id.unwrap_or(0) as usize >= self.tags.len() {
             dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
         }
-        workspace.update_for_theme(&self.config);
+        workspace.update_for_theme(&self.state.config);
         //make sure are enough tags for this new screen
         if self.tags.len() <= tag_index {
             let id = (tag_index + 1).to_string();
@@ -38,9 +40,9 @@ impl<C: Config<CMD>, CMD> Manager<C, CMD> {
         self.focus_workspace(&workspace);
         self.focus_tag(&next_tag.id);
         workspace.show_tag(&mut self.tags, &next_tag);
-        self.workspaces.push(workspace.clone());
-        self.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
-        self.screens.push(screen);
+        self.state.workspaces.push(workspace.clone());
+        self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
+        self.state.screens.push(screen);
         self.focus_workspace(&workspace);
         false
     }

@@ -1,5 +1,5 @@
 use super::Config;
-use leftwm::Manager;
+use leftwm::{DisplayServer, Manager};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -10,14 +10,17 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn execute(&self, manager: &mut Manager<Config, Self>) -> Option<bool> {
+    pub fn execute<SERVER: DisplayServer<Self>>(
+        &self,
+        manager: &mut Manager<Config, Self, SERVER>,
+    ) -> Option<bool> {
         match self {
             Command::UnloadTheme => {
-                manager.config.theme_setting = Default::default();
+                manager.state.config.theme_setting = Default::default();
                 Some(manager.update_for_theme())
             }
             Command::LoadTheme(path) => {
-                manager.config.theme_setting.load(&path);
+                manager.state.config.theme_setting.load(&path);
                 Some(manager.update_for_theme())
             }
         }

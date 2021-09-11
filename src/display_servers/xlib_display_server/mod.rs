@@ -9,8 +9,8 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
-use std::sync::Arc;
-use tokio::sync::Notify;
+use futures::prelude::*;
+use std::pin::Pin;
 use x11_dl::xlib;
 
 mod event_translate;
@@ -59,17 +59,23 @@ impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
         &self,
         windows: Vec<&Window>,
         focused_window: Option<&Window>,
-        manager: &Manager<C, CMD>,
+        manager: &Manager<C, CMD, Self>,
     ) {
-        let tags: Vec<&String> = manager.workspaces.iter().flat_map(|w| &w.tags).collect();
+        let tags: Vec<&String> = manager
+            .state
+            .workspaces
+            .iter()
+            .flat_map(|w| &w.tags)
+            .collect();
 
         let max_tag_index: Option<usize> = tags.iter().filter_map(|&t| manager.tag_index(t)).max();
         let to_the_right = manager
+            .state
             .screens
             .iter()
             .map(|s| s.bbox.width + s.bbox.x + 100)
             .max();
-        let max_screen_width = manager.screens.iter().map(|s| s.bbox.width).max();
+        let max_screen_width = manager.state.screens.iter().map(|s| s.bbox.width).max();
 
         for window in windows {
             let is_focused = match focused_window {
@@ -210,6 +216,21 @@ impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
         }
         event
     }
+
+    fn wait_readable(&self) -> Pin<Box<dyn Future<Output = ()>>> {
+        let task_notify = self.xw.task_notify.clone();
+        Box::pin(async move {
+            task_notify.notified().await;
+        })
+    }
+
+    fn flush(&self) {
+        self.xw.flush();
+    }
+
+    fn verify_focused_window(&self) -> Vec<DisplayEvent<CMD>> {
+        self.verify_focused_window_work().unwrap_or_default()
+    }
 }
 
 impl<CMD> XlibDisplayServer<CMD> {
@@ -243,11 +264,7 @@ impl<CMD> XlibDisplayServer<CMD> {
         events
     }
 
-    pub fn verify_focused_window(&mut self) -> Vec<DisplayEvent<CMD>> {
-        self.verify_focused_window_work().unwrap_or_default()
-    }
-
-    fn verify_focused_window_work(&mut self) -> Option<Vec<DisplayEvent<CMD>>> {
+    fn verify_focused_window_work(&self) -> Option<Vec<DisplayEvent<CMD>>> {
         let point = self.xw.get_cursor_point().ok()?;
         Some(vec![DisplayEvent::VerifyFocusedAt(point.0, point.1)])
     }
@@ -277,25 +294,13 @@ impl<CMD> XlibDisplayServer<CMD> {
         }
         all
     }
-
-    pub fn task_notify(&self) -> Arc<Notify> {
-        self.xw.task_notify.clone()
-    }
-
-    pub async fn wait_readable(&mut self) {
-        self.xw.wait_readable().await;
-    }
-
-    pub fn flush(&self) {
-        self.xw.flush();
-    }
 }
 
 //return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset<C: Config<CMD>, CMD>(
+fn right_offset<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     max_tag_index: Option<usize>,
     max_right_screen: Option<i32>,
-    manager: &Manager<C, CMD>,
+    manager: &Manager<C, CMD, SERVER>,
     window: &Window,
 ) -> Option<i32> {
     let max_tag_index = max_tag_index?;
