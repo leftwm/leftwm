@@ -78,25 +78,18 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
             if manager.tags.eq(&old_manager.tags) {
                 window.tags = old.tags.clone();
             } else {
-                log::info!("Tag config changed, mapping tags based on index.");
                 for t in &old.tags {
-                log::info!("Window before: {:?}", &window.tags);
                     let manager_tags = &manager.tags.clone();
-                    let old_tags = old_manager.tags.clone();
-                    let tag_index = &old_tags.iter().position(|o| &o.id == t);
+                    let tag_index = &old_manager.tags.clone().iter().position(|o| &o.id == t).unwrap();
                     window.clear_tags();
                     // if the config prior reload had more tags then the new one
                     // we want to move windows of lost tags to the 'first' tag
-                    if tag_index.unwrap() <= manager_tags.len() {
-                        log::info!("Index: {:?} old tag: {:?}", &tag_index.unwrap(), t);
-                        let designated_id = &manager_tags[tag_index.clone().unwrap()].id;
-                        log::info!("Assigning tag ID: {:?}", &designated_id);
-                        window.tag(&designated_id);
+                    // also we want to ignore the `NSP` tag for length check
+                    if tag_index < &(manager_tags.len() - 1) {
+                        window.tag(&manager_tags[*tag_index].id);
                     } else {
-                        log::info!("Default ID: {:?}", &manager_tags[0].id);
                         window.tag(&manager_tags.first().unwrap().id);
                     }
-                log::info!("Window after: {:?}", &window.tags);
                 }
             }
             window.strut = old.strut;
