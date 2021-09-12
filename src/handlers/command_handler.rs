@@ -51,6 +51,9 @@ pub fn process_internal(
 
         Command::GotoTag => goto_tag(manager, val, config),
 
+        Command::NextTag => next_tag(manager),
+        Command::PrevTag => prev_tag(manager),
+
         Command::CloseWindow => close_window(manager),
         Command::SwapTags => swap_tags(manager),
         Command::MoveToLastWorkspace => move_to_last_workspace(manager),
@@ -196,6 +199,33 @@ fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &impl Config) -
         };
     }
     Some(goto_tag_handler::process(manager, destination_tag))
+}
+
+fn next_tag(manager: &mut Manager) -> Option<bool> {
+    let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
+
+    let next_tag = {
+        let tag_inc = current_tag? + 2;
+        if tag_inc >= manager.tags.len() {
+            1
+        } else {
+            tag_inc
+        }
+    };
+    Some(goto_tag_handler::process(manager, next_tag))
+}
+
+fn prev_tag(manager: &mut Manager) -> Option<bool> {
+    let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
+
+    let next_tag = {
+        if current_tag? == 0 {
+            manager.tags.len() - 1
+        } else {
+            current_tag?
+        }
+    };
+    Some(goto_tag_handler::process(manager, next_tag))
 }
 
 fn focus_tag_change(manager: &mut Manager, delta: i8) -> Option<bool> {

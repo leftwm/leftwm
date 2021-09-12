@@ -10,6 +10,8 @@ pub enum Command {
     ToggleScratchPad,
     ToggleFullScreen,
     GotoTag,
+    NextTag,
+    PrevTag,
     FloatingToTile,
     MoveWindowUp,
     MoveWindowDown,
