@@ -109,7 +109,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         if let Some(first) = iter.next() {
             first.set_height(workspace.height());
             first.set_width(primary_width);
-            first.set_x(workspace.x() + primary_x);
+            first.set_x(primary_x);
             first.set_y(workspace.y());
         }
     }
