@@ -21,6 +21,8 @@ pub trait Config {
 
     fn mousekey(&self) -> &str;
 
+    fn get_state_file_path(&self) -> &str;
+
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     fn disable_current_tag_swap(&self) -> bool;
 }
@@ -48,6 +50,10 @@ where
 
     fn mousekey(&self) -> &str {
         C::mousekey(self)
+    }
+
+    fn get_state_file_path(&self) -> &str {
+        C::get_state_file_path(self)
     }
 
     fn disable_current_tag_swap(&self) -> bool {

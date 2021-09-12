@@ -1,13 +1,19 @@
 //! Save and restore manager state.
 
+use leftwm::config::Config;
 use leftwm::errors::Result;
 use leftwm::{DisplayAction, Manager};
 use std::fs::File;
 use std::path::Path;
 
+<<<<<<< Updated upstream
 // TODO: make configurable
 /// Path to file where state will be dumper upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
+=======
+/// Path to file where state will be dumped upon soft reload.
+pub const STATE_FILE: &str = "/tmp/leftwm.state";
+>>>>>>> Stashed changes
 
 pub struct State;
 
@@ -18,23 +24,22 @@ impl leftwm::State for State {
         Ok(())
     }
 
-    fn load(&self, manager: &mut Manager) {
-        if Path::new(STATE_FILE).exists() {
-            match load_old_state() {
-                Ok(old_manager) => restore_state(manager, &old_manager),
-                Err(err) => log::error!("Cannot load old state: {}", err),
-            }
-            // Clean old state.
-            if let Err(err) = std::fs::remove_file(STATE_FILE) {
-                log::error!("Cannot remove old state file: {}", err);
-            }
+    fn load(&self, manager: &mut Manager, config: &dyn Config) {
+        let state_path = Path::new(config.get_state_file_path()).to_str();
+        match load_old_state(&state_path.unwrap()) {
+            Ok(old_manager) => restore_state(manager, &old_manager),
+            Err(err) => log::error!("Cannot load old state: {}", err),
+        }
+        // Clean old state.
+        if let Err(err) = std::fs::remove_file(&state_path.unwrap()) {
+            log::error!("Cannot remove old state file: {}", err);
         }
     }
 }
 
 /// Read old state from a state file.
-fn load_old_state() -> Result<Manager> {
-    let file = File::open(STATE_FILE)?;
+fn load_old_state(path: &str) -> Result<Manager> {
+    let file = File::open(path)?;
     let old_manager = serde_json::from_reader(file)?;
     Ok(old_manager)
 }

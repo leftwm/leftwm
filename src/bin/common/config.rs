@@ -31,6 +31,7 @@ pub struct Config {
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
+    pub state_file: Option<String>,
 }
 
 #[must_use]
@@ -196,6 +197,15 @@ impl leftwm::config::Config for Config {
 
     fn mousekey(&self) -> &str {
         &self.mousekey
+    }
+
+    fn get_state_file_path(&self) -> &str {
+        let state_file_path = &self.state_file.clone().unwrap();
+        if std::path::Path::new(&state_file_path).exists() {
+            &self.state_file.unwrap()
+        } else {
+            crate::common::state::STATE_FILE
+        }
     }
 
     fn disable_current_tag_swap(&self) -> bool {
@@ -416,6 +426,7 @@ impl Default for Config {
             modkey: "Mod4".to_owned(), //win key
             mousekey: "Mod4".to_owned(), //win key
             keybind: commands,
+            state_file: Some(crate::common::state::STATE_FILE.to_string()),
         }
     }
 }

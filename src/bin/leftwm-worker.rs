@@ -211,7 +211,7 @@ async fn event_loop(
                 Err(err) => log::error!("Theme loading failed: {}", err),
             }
 
-            state.load(manager);
+            state.load(manager, config);
         });
 
         if manager.reap_requested.swap(false, Ordering::SeqCst) {

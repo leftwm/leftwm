@@ -1,5 +1,6 @@
 //! Save and restore manager state.
 
+use crate::config::Config;
 use crate::errors::Result;
 use crate::Manager;
 
@@ -16,5 +17,5 @@ pub trait State {
     fn save(&self, manager: &Manager) -> Result<()>;
 
     /// Load saved state if it exists.
-    fn load(&self, manager: &mut Manager);
+    fn load(&self, manager: &mut Manager, config: &dyn Config);
 }
