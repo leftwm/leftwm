@@ -76,7 +76,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
     };
 
     let (primary_x, secondary_x, stack_x) = match window_count {
-        1 => (0, 0, 0),
+        1 => (workspace.x(), 0, 0),
         2 => {
             let (px, sx);
             if workspace.flipped_horizontal(tags) {
