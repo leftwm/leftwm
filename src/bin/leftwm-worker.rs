@@ -33,7 +33,6 @@ fn main() {
         let _rt_guard = rt.enter();
 
         let config = common::config::load();
-        log::info!("Complete config: {:?}", &config.state_file);
         let state = common::state::State;
         let theme_loader = common::theme_setting::ThemeLoader;
         let default_theme = Arc::new(theme_loader.default());

@@ -1,9 +1,8 @@
 //! Save and restore manager state.
-mod common;
 
+use crate::config::Config;
 use crate::errors::Result;
 use crate::Manager;
-use common::config::Config;
 
 pub trait State {
     /// Write current state to a file.
@@ -15,8 +14,8 @@ pub trait State {
     /// if unable to serialize the text.
     /// May be caused by inadequate permissions, not enough
     /// space on drive, or other typical filesystem issues.
-    fn save(&self, manager: &Manager, config: &Config) -> Result<()>;
+    fn save(&self, manager: &Manager, config: &dyn Config) -> Result<()>;
 
     /// Load saved state if it exists.
-    fn load(&self, manager: &mut Manager, config: &Config);
+    fn load(&self, manager: &mut Manager, config: &dyn Config);
 }
