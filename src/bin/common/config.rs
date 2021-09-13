@@ -200,7 +200,7 @@ impl leftwm::config::Config for Config {
     }
 
     fn get_state_file_path(&self) -> &str {
-        return &self.state_file.as_ref().unwrap();
+        self.state_file.as_ref().unwrap()
     }
 
     fn disable_current_tag_swap(&self) -> bool {

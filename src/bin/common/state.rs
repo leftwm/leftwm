@@ -22,7 +22,7 @@ impl leftwm::State for State {
     fn load(&self, manager: &mut Manager, config: &dyn Config) {
         let state_path = Path::new(config.get_state_file_path()).to_str();
         log::info!("Read statefile: {:?}", &state_path);
-        match load_old_state(&state_path.unwrap()) {
+        match load_old_state(state_path.unwrap()) {
             Ok(old_manager) => restore_state(manager, &old_manager),
             Err(err) => log::error!("Cannot load old state: {}", err),
         }
