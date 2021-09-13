@@ -34,7 +34,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         let num_rows_in_this_col = remaining_windows / remaining_columns;
 
         let win_height = workspace.height() / num_rows_in_this_col;
-        let win_width = workspace.width() / num_cols;
+        let win_width = workspace.width(window_count as usize) / num_cols;
 
         for row in 0..num_rows_in_this_col {
             let (_idx, win) = match iter.next() {
@@ -43,7 +43,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
             };
             win.set_height(win_height);
             win.set_width(win_width);
-            win.set_x(workspace.x() + win_width * col);
+            win.set_x(workspace.x(window_count as usize) + win_width * col);
             win.set_y(workspace.y() + win_height * row);
         }
     }

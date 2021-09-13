@@ -159,19 +159,19 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
     }
 
     let primary_width = match window_count {
-        1 => workspace.width() as i32,
-        _ => ((workspace.width() as f32 / 100.0) * workspace.main_width(tags)).floor() as i32,
+        1 => workspace.width(window_count) as i32,
+        _ => ((workspace.width(window_count) as f32 / 100.0) * workspace.main_width(tags)).floor() as i32,
     };
 
     let secondary_width = match window_count {
         1 => 0_i32,
-        2 => workspace.width() - primary_width,
-        _ => ((workspace.width() - primary_width) as f32 / 2.0).floor() as i32,
+        2 => workspace.width(window_count) - primary_width,
+        _ => ((workspace.width(window_count) - primary_width) as f32 / 2.0).floor() as i32,
     };
 
     let primary_x = match window_count {
-        1 => 0_i32,
-        _ => workspace.x() + secondary_width,
+        1 => workspace.x(window_count),
+        _ => workspace.x(window_count) + secondary_width,
     };
 
     let mut iter = windows.iter_mut();
@@ -189,7 +189,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         if let Some(second) = iter.next() {
             second.set_height(workspace.height());
             second.set_width(secondary_width);
-            second.set_x(workspace.x());
+            second.set_x(workspace.x(window_count));
             second.set_y(workspace.y());
         }
         return;
@@ -220,14 +220,14 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
 
     update_fibonacci(
         left_windows,
-        workspace.x(),
+        workspace.x(window_count),
         workspace.y(),
         workspace.height(),
         secondary_width,
     );
     update_fibonacci(
         right_windows,
-        workspace.x() + secondary_width + primary_width,
+        workspace.x(window_count) + secondary_width + primary_width,
         workspace.y(),
         workspace.height(),
         secondary_width,

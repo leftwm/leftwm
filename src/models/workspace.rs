@@ -27,6 +27,7 @@ pub struct Workspace {
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
+    pub max_window_width: Option<i32>,
 }
 
 impl fmt::Debug for Workspace {
@@ -50,7 +51,7 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(id: Option<i32>, bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Workspace {
+    pub fn new(id: Option<i32>, bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>, max_window_width: Option<i32>) -> Workspace {
         Workspace {
             id,
             layout: Layout::new(&layouts),
@@ -78,6 +79,7 @@ impl Workspace {
                 ..XyhwBuilder::default()
             }
             .into(),
+            max_window_width,
         }
     }
 
@@ -191,18 +193,27 @@ impl Workspace {
         }
     }
 
-    #[must_use]
-    pub fn x(&self) -> i32 {
+    pub fn x_without_window(&self) -> i32 {
         let left = self.margin.clone().left() as f32;
         let gutter = self.get_gutter(&Side::Left);
         self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
+
+    #[must_use]
+    pub fn x(&self, window_count: usize) -> i32 {
+        match self.width_without_window() - self.width(window_count) {
+            0 => self.x_without_window(),
+            remainder => self.x_without_window() + (remainder / 2),
+        }
+    }
+
     #[must_use]
     pub fn y(&self) -> i32 {
         let top = self.margin.clone().top() as f32;
         let gutter = self.get_gutter(&Side::Top);
         self.xyhw_avoided.y() + (self.margin_multiplier * top) as i32 + gutter
     }
+
     #[must_use]
     pub fn height(&self) -> i32 {
         let top = self.margin.clone().top() as f32;
@@ -211,13 +222,21 @@ impl Workspace {
         let gutter = self.get_gutter(&Side::Top) + self.get_gutter(&Side::Bottom);
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
-    #[must_use]
-    pub fn width(&self) -> i32 {
+
+    pub fn width_without_window(&self) -> i32 {
         let left = self.margin.clone().left() as f32;
         let right = self.margin.clone().right() as f32;
         //Only one side
         let gutter = self.get_gutter(&Side::Left) + self.get_gutter(&Side::Right);
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
+    }
+
+    #[must_use]
+    pub fn width(&self, window_count: usize) -> i32 {
+        match self.max_window_width {
+            Some(x) => std::cmp::min(window_count as i32 * x, self.width_without_window()),
+            None => self.width_without_window(),
+        }
     }
 
     fn get_gutter(&self, side: &Side) -> i32 {
@@ -326,6 +345,7 @@ mod tests {
             },
             vec![],
             vec![],
+            None
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
         assert!(
@@ -346,6 +366,7 @@ mod tests {
             },
             vec![],
             vec![],
+            None
         );
         let tag = crate::models::Tag::new("test");
         let mut tags = vec![tag.clone()];

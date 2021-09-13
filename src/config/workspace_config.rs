@@ -7,4 +7,5 @@ pub struct Workspace {
     pub height: i32,
     pub width: i32,
     pub id: Option<i32>,
+    pub max_window_width: Option<i32>,
 }

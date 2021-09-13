@@ -70,6 +70,7 @@ fn main() {
             children: leftwm::child_process::Children::default(),
             reap_requested: std::sync::Arc::default(),
             reload_requested: Default::default(),
+            max_window_width: config.max_window_width,
         };
 
         child_process::register_child_hook(manager.reap_requested.clone());

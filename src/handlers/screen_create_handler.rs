@@ -11,6 +11,7 @@ pub fn process(manager: &mut Manager, screen: Screen) -> bool {
         screen.bbox,
         manager.tags.clone(),
         manager.layouts.clone(),
+        screen.max_window_width.or(manager.max_window_width)
     );
     if workspace.id.is_none() {
         workspace.id = Some(

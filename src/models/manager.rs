@@ -29,6 +29,7 @@ pub struct Manager {
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
+    pub max_window_width: Option<i32>,
 
     //this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
@@ -205,6 +206,7 @@ impl Manager {
             children: Default::default(),
             reap_requested: Default::default(),
             reload_requested: Default::default(),
+            max_window_width: None,
         }
     }
 }
