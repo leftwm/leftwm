@@ -200,12 +200,7 @@ impl leftwm::config::Config for Config {
     }
 
     fn get_state_file_path(&self) -> &str {
-        let state_file_path = &self.state_file.clone().unwrap();
-        if std::path::Path::new(&state_file_path).exists() {
-            &self.state_file.unwrap()
-        } else {
-            crate::common::state::STATE_FILE
-        }
+        return &self.state_file.as_ref().unwrap();
     }
 
     fn disable_current_tag_swap(&self) -> bool {

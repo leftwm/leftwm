@@ -71,7 +71,7 @@ pub fn process_internal(
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
-            if let Err(err) = state.save(manager) {
+            if let Err(err) = state.save(manager, config) {
                 log::error!("Cannot save state: {}", err);
             }
             manager.hard_reload();
