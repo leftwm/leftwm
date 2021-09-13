@@ -520,6 +520,9 @@ mod tests {
         fn mousekey(&self) -> &str {
             unimplemented!()
         }
+        fn get_state_file_path(&self) -> &str {
+            unimplemented!()
+        }
         fn disable_current_tag_swap(&self) -> bool {
             false
         }
@@ -528,10 +531,10 @@ mod tests {
     struct TestState;
 
     impl State for TestState {
-        fn save(&self, _manager: &Manager) -> Result<()> {
+        fn save(&self, _manager: &Manager, _config: &dyn Config) -> Result<()> {
             unimplemented!()
         }
-        fn load(&self, _manager: &mut Manager) {
+        fn load(&self, _manager: &mut Manager, _config: &dyn Config) {
             unimplemented!()
         }
     }
