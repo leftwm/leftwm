@@ -24,7 +24,6 @@ pub struct Manager {
     pub focus_manager: FocusManager,
     pub mode: Mode,
     pub theme_setting: Arc<ThemeSetting>,
-    #[serde(skip)]
     pub tags: Vec<Tag>, //list of all known tags
     pub layouts: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,

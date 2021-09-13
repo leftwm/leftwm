@@ -1,12 +1,12 @@
 //! Save and restore manager state.
 
 use leftwm::errors::Result;
-use leftwm::{DisplayAction, Manager};
+use leftwm::Manager;
 use std::fs::File;
 use std::path::Path;
 
 // TODO: make configurable
-/// Path to file where state will be dumper upon soft reload.
+/// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
 
 pub struct State;
@@ -64,22 +64,40 @@ fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
     old_manager.windows.iter().for_each(|old| {
         if let Some((index, window)) = manager
             .windows
+            .clone()
             .iter_mut()
             .enumerate()
             .find(|w| w.1.handle == old.handle)
         {
             had_strut = old.strut.is_some() || had_strut;
-            if let Some(tag) = old.tags.first() {
-                let act = DisplayAction::SetWindowTags(window.handle, tag.clone());
-                manager.actions.push_back(act);
-            }
 
             window.set_floating(old.floating());
             window.set_floating_offsets(old.get_floating_offsets());
             window.apply_margin_multiplier(old.margin_multiplier);
             window.pid = old.pid;
             window.normal = old.normal;
-            window.tags = old.tags.clone();
+            if manager.tags.eq(&old_manager.tags) {
+                window.tags = old.tags.clone();
+            } else {
+                old.tags.iter().for_each(|t| {
+                    let manager_tags = &manager.tags.clone();
+                    let tag_index = &old_manager
+                        .tags
+                        .clone()
+                        .iter()
+                        .position(|o| &o.id == t)
+                        .unwrap();
+                    window.clear_tags();
+                    // if the config prior reload had more tags then the current one
+                    // we want to move windows of 'lost tags' to the 'first' tag
+                    // also we want to ignore the `NSP` tag for length check
+                    if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
+                        window.tag(&manager_tags[*tag_index].id);
+                    } else {
+                        window.tag(&manager_tags.first().unwrap().id);
+                    }
+                });
+            }
             window.strut = old.strut;
             window.set_states(old.states());
             ordered.push(window.clone());
