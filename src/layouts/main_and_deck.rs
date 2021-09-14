@@ -13,7 +13,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
 
     let width = match window_count {
         1 => workspace.width(window_count) as i32,
-        _ => (workspace.width(window_count) as f32 / 100.0 * workspace.main_width(tags)).floor() as i32,
+        _ => (workspace.width(window_count) as f32 / 100.0 * workspace.main_width(tags)).floor()
+            as i32,
     };
 
     let mut main_x = workspace.x(window_count);

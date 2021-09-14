@@ -51,7 +51,13 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(id: Option<i32>, bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>, max_window_width: Option<i32>) -> Workspace {
+    pub fn new(
+        id: Option<i32>,
+        bbox: BBox,
+        all_tags: Vec<Tag>,
+        layouts: Vec<Layout>,
+        max_window_width: Option<i32>,
+    ) -> Workspace {
         Workspace {
             id,
             layout: Layout::new(&layouts),
@@ -345,7 +351,7 @@ mod tests {
             },
             vec![],
             vec![],
-            None
+            None,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
         assert!(
@@ -366,7 +372,7 @@ mod tests {
             },
             vec![],
             vec![],
-            None
+            None,
         );
         let tag = crate::models::Tag::new("test");
         let mut tags = vec![tag.clone()];

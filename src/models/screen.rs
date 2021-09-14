@@ -71,7 +71,7 @@ impl From<&Workspace> for Screen {
                 y: wsc.y,
             },
             wsid: wsc.id,
-            max_window_width: wsc.max_window_width
+            max_window_width: wsc.max_window_width,
         }
     }
 }

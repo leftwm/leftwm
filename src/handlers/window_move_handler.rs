@@ -39,7 +39,6 @@ fn snap_to_workspaces(window: &mut Window, workspaces: &[Workspace]) -> bool {
 //to be snapable, the window must be inside the workspace AND the a side must be close to
 //the workspaces edge
 fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
-        
     if window.must_float() {
         return false;
     }

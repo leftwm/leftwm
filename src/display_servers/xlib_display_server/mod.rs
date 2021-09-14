@@ -231,7 +231,6 @@ where
                 });
             } else {
                 for wsc in workspaces.iter() {
-                    
                     let mut screen = Screen::from(wsc);
                     screen.root = WindowHandle::XlibHandle(self.root);
                     let e = DisplayEvent::ScreenCreate(screen);
