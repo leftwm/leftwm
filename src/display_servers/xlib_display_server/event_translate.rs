@@ -111,7 +111,7 @@ fn from_mapping_notify(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEve
     if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
         // refresh keyboard
         log::info!("Updating keyboard");
-        xw.refresh_keyboard(&mut event).unwrap();
+        xw.refresh_keyboard(&mut event).ok()?;
 
         // Reload keybinds
         Some(DisplayEvent::KeyGrabReload)
