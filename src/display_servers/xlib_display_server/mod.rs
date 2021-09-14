@@ -207,6 +207,10 @@ where
                 }
                 None
             }
+            DisplayAction::ReloadKeyGrabs(keybinds) => {
+                self.xw.reset_grabs(&keybinds);
+                None
+            }
         };
         if event.is_some() {
             log::trace!("DisplayEvent: {:?}", event);
