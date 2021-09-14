@@ -64,13 +64,9 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         return;
     }
 
-    /*let primary_width = match window_count {
-        1 => workspace.width() as i32,
-        _ => ((workspace.width() as f32 / 100.0) * workspace.main_width(tags)).floor() as i32,
-    };*/
-    let primary_width = match workspace.max_window_width {
-        Some(x) => x,
-        None => -1
+    let primary_width = match window_count {
+        1 => workspace.width(window_count) as i32,
+        _ => ((workspace.width(window_count) as f32 / 100.0) * workspace.main_width(tags)).floor() as i32,
     };
 
     let secondary_width = match window_count {
