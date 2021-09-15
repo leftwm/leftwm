@@ -28,6 +28,13 @@ impl<C: Config> DisplayEventHandler<C> {
                 _ => return false,
             },
 
+            DisplayEvent::KeyGrabReload => {
+                manager
+                    .actions
+                    .push_back(DisplayAction::ReloadKeyGrabs(self.config.mapped_bindings()));
+                false
+            }
+
             DisplayEvent::MoveFocusTo(x, y) => focus_handler::move_focus_to_point(manager, x, y),
 
             //This is a request to validate focus. Double check that we are focused the correct

@@ -13,6 +13,7 @@ use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
+use crate::config::Keybind;
 use crate::models::DockArea;
 use crate::models::Mode;
 use crate::models::WindowChange;
@@ -174,6 +175,11 @@ impl XWrap {
             1
         }
 
+        // setup cached keymap/modifier information, otherwise MappingNotify might never be called
+        // from:
+        // https://stackoverflow.com/questions/35569562/how-to-catch-keyboard-layout-change-event-and-get-current-new-keyboard-layout-on
+        xw.keysym_to_keycode(x11_dl::keysym::XK_F1);
+
         unsafe {
             (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
             (xw.xlib.XSync)(xw.display, xlib::False);
@@ -254,8 +260,25 @@ impl XWrap {
 
     #[must_use]
     pub fn keycode_to_keysym(&self, keycode: u32) -> utils::xkeysym_lookup::XKeysym {
-        let sym = unsafe { (self.xlib.XKeycodeToKeysym)(self.display, keycode as u8, 0) };
+        // Not using XKeysymToKeycode because deprecated
+        let sym = unsafe { (self.xlib.XkbKeycodeToKeysym)(self.display, keycode as u8, 0, 0) };
         sym as u32
+    }
+
+    pub fn keysym_to_keycode(&self, keysym: utils::xkeysym_lookup::XKeysym) -> u32 {
+        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, keysym.into()) };
+        u32::from(code)
+    }
+
+    /// # Errors
+    /// Will error if updating the keyboard failed
+    pub fn refresh_keyboard(&self, evt: &mut xlib::XMappingEvent) -> Result<(), XlibError> {
+        let status = unsafe { (self.xlib.XRefreshKeyboardMapping)(evt) };
+        if status == 0 {
+            Err(XlibError::FailedStatus)
+        } else {
+            Ok(())
+        }
     }
 
     /// # Errors
@@ -1489,21 +1512,31 @@ impl XWrap {
         self.tags = config.create_list_of_tags();
         self.init_desktops_hints();
 
-        //cleanup grabs
-        unsafe {
-            (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
-        }
-
-        //grab all the key combos from the config file
-        config.mapped_bindings().iter().for_each(|kb| {
-            if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
-                let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
-                self.grab_keys(root, keysym, modmask);
-            }
-        });
+        self.reset_grabs(&config.mapped_bindings());
 
         unsafe {
             (self.xlib.XSync)(self.display, 0);
+        }
+    }
+
+    /// Cleans first all old keygrabs and then reaplies them from the config
+    pub fn reset_grabs(&self, keybinds: &[Keybind]) {
+        //cleanup grabs
+        unsafe {
+            (self.xlib.XUngrabKey)(
+                self.display,
+                xlib::AnyKey,
+                xlib::AnyModifier,
+                self.get_default_root(),
+            );
+        }
+
+        //grab all the key combos from the config file
+        for kb in keybinds {
+            if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
+                let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
+                self.grab_keys(self.get_default_root(), keysym, modmask);
+            }
         }
     }
 

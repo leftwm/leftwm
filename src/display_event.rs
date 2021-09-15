@@ -9,6 +9,7 @@ use crate::Command;
 pub enum DisplayEvent {
     Movement(WindowHandle, i32, i32),
     KeyCombo(ModMask, XKeysym),
+    KeyGrabReload, // Reloads keys for when keyboard changes
     MouseCombo(ModMask, Button, WindowHandle),
     WindowCreate(Window, i32, i32),
     WindowChange(WindowChange),
