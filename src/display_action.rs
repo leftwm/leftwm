@@ -1,3 +1,4 @@
+use crate::config::Keybind;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use serde::{Deserialize, Serialize};
@@ -57,4 +58,7 @@ pub enum DisplayAction {
     /// Tell the DM to return to normal mode if it is not (ie resize a
     /// window or moving a window).
     NormalMode,
+
+    /// Reload keygrabs, needed when keyboard changes
+    ReloadKeyGrabs(Vec<Keybind>),
 }
