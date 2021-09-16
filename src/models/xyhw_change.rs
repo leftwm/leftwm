@@ -2,7 +2,7 @@ use crate::models::Window;
 use crate::models::Xyhw;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
 pub struct XyhwChange {
     pub x: Option<i32>,
     pub y: Option<i32>,
@@ -14,24 +14,9 @@ pub struct XyhwChange {
     pub maxh: Option<i32>,
 }
 
-impl Default for XyhwChange {
-    fn default() -> Self {
-        XyhwChange {
-            x: None,
-            y: None,
-            w: None,
-            h: None,
-            minw: None,
-            maxw: None,
-            minh: None,
-            maxh: None,
-        }
-    }
-}
-
 impl From<Xyhw> for XyhwChange {
     fn from(xywh: Xyhw) -> Self {
-        XyhwChange {
+        Self {
             x: Some(xywh.x()),
             y: Some(xywh.y()),
             w: Some(xywh.w()),

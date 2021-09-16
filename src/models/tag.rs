@@ -14,8 +14,8 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(id: &str) -> Tag {
-        Tag {
+    pub fn new(id: &str) -> Self {
+        Self {
             id: id.to_owned(),
             hidden: false,
             main_width_percentage: 50,
