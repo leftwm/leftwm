@@ -29,6 +29,7 @@ pub fn process(
     process_internal(manager, state, config, command, val).unwrap_or(false)
 }
 
+/// Processes a command and invokes the associated function.
 pub fn process_internal(
     manager: &mut Manager,
     state: &impl State,
@@ -188,13 +189,14 @@ fn goto_tag(manager: &mut Manager, val: &Option<String>, config: &impl Config) -
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
     let input_tag = val.as_ref()?.parse().ok()?;
-    let mut destination_tag = input_tag;
-    if !config.disable_current_tag_swap() {
-        destination_tag = match (current_tag, previous_tag, input_tag) {
+    let destination_tag = if config.disable_current_tag_swap() {
+        input_tag
+    } else {
+        match (current_tag, previous_tag, input_tag) {
             (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => prev_tag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
             (_, _, _) => input_tag, // go to the input tag tag
-        };
-    }
+        }
+    };
     Some(goto_tag_handler::process(manager, destination_tag))
 }
 

@@ -84,7 +84,7 @@ impl XWrap {
     ///
     /// Can panic if unable to contact xorg.
     #[must_use]
-    pub fn new() -> XWrap {
+    pub fn new() -> Self {
         const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().expect("Couldn't not connect to Xorg Server");
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
@@ -132,7 +132,7 @@ impl XWrap {
             active: 0,
         };
 
-        let xw = XWrap {
+        let xw = Self {
             xlib,
             display,
             root,
@@ -163,6 +163,10 @@ impl XWrap {
             (xw.xlib.XSync)(xw.display, xlib::False);
         };
 
+        // This is allowed for now as const extern fns
+        // are not yet stable (1.56.0, 16 Sept 2021)
+        // see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information
+        #[allow(clippy::missing_const_for_fn)]
         extern "C" fn on_error_from_xlib(
             _: *mut xlib::Display,
             er: *mut xlib::XErrorEvent,
@@ -240,12 +244,12 @@ impl XWrap {
 
     //returns all the screens the display
     #[must_use]
-    pub fn get_default_root_handle(&self) -> WindowHandle {
+    pub const fn get_default_root_handle(&self) -> WindowHandle {
         WindowHandle::XlibHandle(self.get_default_root())
     }
 
     #[must_use]
-    pub fn get_default_root(&self) -> xlib::Window {
+    pub const fn get_default_root(&self) -> xlib::Window {
         self.root
     }
 
