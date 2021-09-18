@@ -1,4 +1,4 @@
-use super::{DockArea, WindowHandle};
+use super::{DockArea, Size, WindowHandle};
 use crate::config::Workspace;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
@@ -10,7 +10,7 @@ pub struct Screen {
     #[serde(flatten)]
     pub bbox: BBox,
     pub wsid: Option<i32>,
-    pub max_window_width: Option<i32>,
+    pub max_window_width: Option<Size>,
 }
 
 /// Screen Bounding Box

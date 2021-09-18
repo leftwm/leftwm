@@ -4,7 +4,7 @@ use leftwm::{
     config::{Keybind, ScratchPad, Workspace},
     errors::Result,
     layouts::{Layout, LAYOUTS},
-    models::FocusBehaviour,
+    models::{FocusBehaviour, Size},
     Command,
 };
 use serde::{Deserialize, Serialize};
@@ -24,7 +24,7 @@ pub struct Config {
     pub mousekey: String,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
-    pub max_window_width: Option<i32>,
+    pub max_window_width: Option<Size>,
     pub layouts: Vec<Layout>,
     pub scratchpad: Option<Vec<ScratchPad>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag

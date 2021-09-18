@@ -1,3 +1,4 @@
+use super::Size;
 use super::{layouts::Layout, Margins};
 use crate::models::Gutter;
 use crate::models::Side;
@@ -30,7 +31,7 @@ pub struct Workspace {
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
-    pub max_window_width: Option<i32>,
+    pub max_window_width: Option<Size>,
 }
 
 impl fmt::Debug for Workspace {
@@ -59,7 +60,7 @@ impl Workspace {
         bbox: BBox,
         all_tags: Vec<Tag>,
         layouts: Vec<Layout>,
-        max_window_width: Option<i32>,
+        max_window_width: Option<Size>,
     ) -> Self {
         Self {
             id,
@@ -253,7 +254,10 @@ impl Workspace {
     #[must_use]
     pub fn width_limited(&self, window_count: usize) -> i32 {
         match self.max_window_width {
-            Some(x) => std::cmp::min(window_count as i32 * x, self.width()),
+            Some(size) => std::cmp::min(
+                (size.into_absolute(self.width() as f32) * window_count as f32).floor() as i32,
+                self.width(),
+            ),
             None => self.width(),
         }
     }

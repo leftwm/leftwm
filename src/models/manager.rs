@@ -15,6 +15,8 @@ use std::collections::{HashMap, VecDeque};
 use std::os::raw::c_ulong;
 use std::sync::{atomic::AtomicBool, Arc};
 
+use super::Size;
+
 /// Maintains current program state.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Manager {
@@ -29,7 +31,7 @@ pub struct Manager {
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
-    pub max_window_width: Option<i32>,
+    pub max_window_width: Option<Size>,
 
     //this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
