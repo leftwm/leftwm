@@ -64,7 +64,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         return;
     }
 
-    let workspace_width = workspace.width(window_count);
+    let workspace_width = workspace.width_limited(window_count);
+    let workspace_x = workspace.x_limited(window_count);
 
     let primary_width = match window_count {
         1 => workspace_width,
@@ -78,27 +79,27 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
     };
 
     let (primary_x, secondary_x, stack_x) = match window_count {
-        1 => (workspace.x(window_count), 0, 0),
+        1 => (workspace_x, 0, 0),
         2 => {
             let (px, sx);
             if workspace.flipped_horizontal(tags) {
-                px = workspace.x(window_count);
-                sx = workspace.x(window_count) + primary_width;
+                px = workspace_x;
+                sx = workspace_x + primary_width;
             } else {
-                px = workspace.x(window_count) + secondary_width;
-                sx = workspace.x(window_count);
+                px = workspace_x + secondary_width;
+                sx = workspace_x;
             }
             (px, sx, 0)
         }
         _ => {
-            let px = workspace.x(window_count) + secondary_width;
+            let px = workspace_x + secondary_width;
             let (sx, stx);
             if workspace.flipped_horizontal(tags) {
-                sx = workspace.x(window_count) + primary_width + secondary_width;
-                stx = workspace.x(window_count);
+                sx = workspace_x + primary_width + secondary_width;
+                stx = workspace_x;
             } else {
-                sx = workspace.x(window_count);
-                stx = workspace.x(window_count) + primary_width + secondary_width;
+                sx = workspace_x;
+                stx = workspace_x + primary_width + secondary_width;
             }
             (px, sx, stx)
         }

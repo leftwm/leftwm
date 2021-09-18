@@ -158,7 +158,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         return;
     }
 
-    let workspace_width = workspace.width(window_count);
+    let workspace_width = workspace.width_limited(window_count);
+    let workspace_x = workspace.x_limited(window_count);
 
     let primary_width = match window_count {
         1 => workspace_width,
@@ -172,8 +173,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
     };
 
     let primary_x = match window_count {
-        1 => workspace.x(window_count),
-        _ => workspace.x(window_count) + secondary_width,
+        1 => workspace_x,
+        _ => workspace_x + secondary_width,
     };
 
     let mut iter = windows.iter_mut();
@@ -191,7 +192,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         if let Some(second) = iter.next() {
             second.set_height(workspace.height());
             second.set_width(secondary_width);
-            second.set_x(workspace.x(window_count));
+            second.set_x(workspace_x);
             second.set_y(workspace.y());
         }
         return;
@@ -222,14 +223,14 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
 
     update_fibonacci(
         left_windows,
-        workspace.x(window_count),
+        workspace_x,
         workspace.y(),
         workspace.height(),
         secondary_width,
     );
     update_fibonacci(
         right_windows,
-        workspace.x(window_count) + secondary_width + primary_width,
+        workspace_x + secondary_width + primary_width,
         workspace.y(),
         workspace.height(),
         secondary_width,

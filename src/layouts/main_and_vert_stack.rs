@@ -11,23 +11,24 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         return;
     }
 
-    let workspace_width = workspace.width(window_count);
+    let workspace_width = workspace.width_limited(window_count);
+    let workspace_x = workspace.x_limited(window_count);
 
-    let width = match window_count {
+    let primary_width = match window_count {
         1 => workspace_width as i32,
         _ => (workspace_width as f32 / 100.0 * workspace.main_width(tags)).floor() as i32,
     };
 
-    let mut main_x = workspace.x(window_count);
-    let mut stack_x = workspace.x(window_count) + width;
+    let mut main_x = workspace_x;
+    let mut stack_x = workspace_x + primary_width;
     if workspace.flipped_horizontal(tags) {
         main_x = match window_count {
             1 => main_x,
-            _ => main_x + workspace_width - width,
+            _ => main_x + workspace_width - primary_width,
         };
         stack_x = match window_count {
             1 => 0,
-            _ => workspace.x(window_count),
+            _ => workspace_x,
         };
     }
 
@@ -36,7 +37,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
     {
         if let Some(first) = iter.next() {
             first.set_height(workspace.height());
-            first.set_width(width);
+            first.set_width(primary_width);
             first.set_x(main_x);
             first.set_y(workspace.y());
         }
@@ -48,7 +49,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
     let mut y = 0;
     for w in iter {
         w.set_height(height);
-        w.set_width(workspace.width(window_count) - width);
+        w.set_width(workspace_width - primary_width);
         w.set_x(stack_x);
         w.set_y(workspace.y() + y);
         y += height;

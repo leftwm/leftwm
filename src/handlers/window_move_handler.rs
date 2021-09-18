@@ -57,8 +57,8 @@ fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
 
     //check for close edge
     let dist = 10;
-    let ws_left = workspace.x_without_window();
-    let ws_right = workspace.x_without_window() + workspace.width_without_window();
+    let ws_left = workspace.x();
+    let ws_right = workspace.x() + workspace.width();
     let ws_top = workspace.y();
     let ws_bottom = workspace.y() + workspace.height();
     if (win_top - ws_top).abs() < dist {

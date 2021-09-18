@@ -199,17 +199,22 @@ impl Workspace {
         }
     }
 
-    pub fn x_without_window(&self) -> i32 {
+    /// Returns the original width of the workspace, 
+    /// disregarding the optional 'max_window_width' configuration
+    #[must_use]
+    pub fn x(&self) -> i32 {
         let left = self.margin.clone().left() as f32;
         let gutter = self.get_gutter(&Side::Left);
         self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
 
+    /// Returns the x position for the workspace, 
+    /// while accounting for the optional 'max_window_width' configuration
     #[must_use]
-    pub fn x(&self, window_count: usize) -> i32 {
-        match self.width_without_window() - self.width(window_count) {
-            0 => self.x_without_window(),
-            remainder => self.x_without_window() + (remainder / 2),
+    pub fn x_limited(&self, window_count: usize) -> i32 {
+        match self.width() - self.width_limited(window_count) {
+            0 => self.x(),
+            remainder => self.x() + (remainder / 2),
         }
     }
 
@@ -229,7 +234,10 @@ impl Workspace {
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
 
-    pub fn width_without_window(&self) -> i32 {
+    /// Returns the original x position for the workspace, 
+    /// disregarding the optional 'max_window_width' configuration
+    #[must_use]
+    pub fn width(&self) -> i32 {
         let left = self.margin.clone().left() as f32;
         let right = self.margin.clone().right() as f32;
         //Only one side
@@ -237,11 +245,13 @@ impl Workspace {
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
     }
 
+    /// Returns the width of the workspace, 
+    /// while accounting for the optional 'max_window_width' configuration
     #[must_use]
-    pub fn width(&self, window_count: usize) -> i32 {
+    pub fn width_limited(&self, window_count: usize) -> i32 {
         match self.max_window_width {
-            Some(x) => std::cmp::min(window_count as i32 * x, self.width_without_window()),
-            None => self.width_without_window(),
+            Some(x) => std::cmp::min(window_count as i32 * x, self.width()),
+            None => self.width(),
         }
     }
 
