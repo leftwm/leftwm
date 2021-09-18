@@ -11,8 +11,8 @@ pub struct MockDisplayServer {
 }
 
 impl<C: Config> DisplayServer<C> for MockDisplayServer {
-    fn new(_: C, _: Arc<ThemeSetting>) -> MockDisplayServer {
-        MockDisplayServer { screens: vec![] }
+    fn new(_: C, _: Arc<ThemeSetting>) -> Self {
+        Self { screens: vec![] }
     }
 
     //testing a couple mock event

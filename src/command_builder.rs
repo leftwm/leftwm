@@ -12,7 +12,7 @@ pub struct CommandBuilder {
 }
 
 impl CommandBuilder {
-    pub fn new(config: &impl Config) -> CommandBuilder {
+    pub fn new(config: &impl Config) -> Self {
         let binds = config.mapped_bindings();
         let mut lookup = HashMap::new();
         for b in binds {
@@ -21,7 +21,7 @@ impl CommandBuilder {
                 lookup.insert(id, b);
             }
         }
-        CommandBuilder { keybinds: lookup }
+        Self { keybinds: lookup }
     }
 
     pub fn find_keybind_for(&self, m: ModMask, key: XKeysym) -> Option<&Keybind> {

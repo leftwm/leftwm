@@ -21,6 +21,9 @@ pub struct Workspace {
     pub margin: Margins,
     pub margin_multiplier: f32,
     pub gutters: Vec<Gutter>,
+    // We allow dead code here, as >1.56.0 complains
+    // This should be investigated further.
+    #[allow(dead_code)]
     #[serde(skip)]
     all_tags: Vec<Tag>,
     layouts: Vec<Layout>,
@@ -44,7 +47,7 @@ impl fmt::Debug for Workspace {
 }
 
 impl PartialEq for Workspace {
-    fn eq(&self, other: &Workspace) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.id != None && self.id == other.id
     }
 }
@@ -52,13 +55,13 @@ impl PartialEq for Workspace {
 impl Workspace {
     #[must_use]
     pub fn new(
-        id: Option<i32>,
-        bbox: BBox,
-        all_tags: Vec<Tag>,
-        layouts: Vec<Layout>,
+        id: Option<i32>, 
+        bbox: BBox, 
+        all_tags: Vec<Tag>, 
+        layouts: Vec<Layout>, 
         max_window_width: Option<i32>,
-    ) -> Workspace {
-        Workspace {
+    ) -> Self {
+        Self {
             id,
             layout: Layout::new(&layouts),
             layout_rotation: 0,
@@ -118,7 +121,7 @@ impl Workspace {
     }
 
     #[must_use]
-    pub fn contains_point(&self, x: i32, y: i32) -> bool {
+    pub const fn contains_point(&self, x: i32, y: i32) -> bool {
         self.xyhw.contains_point(x, y)
     }
 
@@ -339,7 +342,7 @@ impl Workspace {
 
     /// Get a reference to the tag model's margin multiplier.
     #[must_use]
-    pub fn margin_multiplier(&self) -> f32 {
+    pub const fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
     }
 }

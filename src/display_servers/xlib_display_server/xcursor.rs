@@ -16,9 +16,9 @@ const SIZING: c_uint = 120;
 const FLEUR: c_uint = 52;
 
 impl XCursor {
-    pub fn new(xlib: &xlib::Xlib, dpy: *mut xlib::Display) -> XCursor {
+    pub fn new(xlib: &xlib::Xlib, dpy: *mut xlib::Display) -> Self {
         unsafe {
-            XCursor {
+            Self {
                 normal: (xlib.XCreateFontCursor)(dpy, LEFT_PTR),
                 resize: (xlib.XCreateFontCursor)(dpy, SIZING),
                 move_: (xlib.XCreateFontCursor)(dpy, FLEUR),

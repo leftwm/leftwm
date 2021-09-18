@@ -182,7 +182,7 @@ impl leftwm::config::Config for Config {
         if let Some(tags) = &self.tags {
             return tags.clone();
         }
-        Config::default()
+        Self::default()
             .tags
             .expect("we created it in the Default impl; qed")
     }
@@ -406,7 +406,7 @@ impl Default for Config {
             .map(|s| (*s).to_string())
             .collect();
 
-        Config {
+        Self {
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
