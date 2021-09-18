@@ -55,10 +55,10 @@ impl PartialEq for Workspace {
 impl Workspace {
     #[must_use]
     pub fn new(
-        id: Option<i32>, 
-        bbox: BBox, 
-        all_tags: Vec<Tag>, 
-        layouts: Vec<Layout>, 
+        id: Option<i32>,
+        bbox: BBox,
+        all_tags: Vec<Tag>,
+        layouts: Vec<Layout>,
         max_window_width: Option<i32>,
     ) -> Self {
         Self {
@@ -202,8 +202,8 @@ impl Workspace {
         }
     }
 
-    /// Returns the original width of the workspace, 
-    /// disregarding the optional 'max_window_width' configuration
+    /// Returns the original width of the workspace,
+    /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn x(&self) -> i32 {
         let left = self.margin.clone().left() as f32;
@@ -211,8 +211,8 @@ impl Workspace {
         self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
 
-    /// Returns the x position for the workspace, 
-    /// while accounting for the optional 'max_window_width' configuration
+    /// Returns the x position for the workspace,
+    /// while accounting for the optional `max_window_width` configuration
     #[must_use]
     pub fn x_limited(&self, window_count: usize) -> i32 {
         match self.width() - self.width_limited(window_count) {
@@ -237,8 +237,8 @@ impl Workspace {
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
 
-    /// Returns the original x position for the workspace, 
-    /// disregarding the optional 'max_window_width' configuration
+    /// Returns the original x position for the workspace,
+    /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn width(&self) -> i32 {
         let left = self.margin.clone().left() as f32;
@@ -248,8 +248,8 @@ impl Workspace {
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
     }
 
-    /// Returns the width of the workspace, 
-    /// while accounting for the optional 'max_window_width' configuration
+    /// Returns the width of the workspace,
+    /// while accounting for the optional `max_window_width` configuration
     #[must_use]
     pub fn width_limited(&self, window_count: usize) -> i32 {
         match self.max_window_width {
