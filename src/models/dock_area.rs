@@ -24,7 +24,7 @@ pub struct DockArea {
 
 impl From<&[i64]> for DockArea {
     fn from(slice: &[i64]) -> Self {
-        DockArea {
+        Self {
             left: slice[0] as i32,
             right: slice[1] as i32,
             top: slice[2] as i32,
@@ -43,7 +43,7 @@ impl From<&[i64]> for DockArea {
 
 impl From<&[i32]> for DockArea {
     fn from(slice: &[i32]) -> Self {
-        DockArea {
+        Self {
             left: slice[0],
             right: slice[1],
             top: slice[2],

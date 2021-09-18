@@ -91,7 +91,7 @@ impl XAtom {
         ]
     }
 
-    pub fn get_name(&self, atom: xlib::Atom) -> &str {
+    pub const fn get_name(&self, atom: xlib::Atom) -> &str {
         if atom == self.WMProtocols {
             return "WM_PROTOCOLS";
         }
@@ -190,8 +190,8 @@ impl XAtom {
         "(UNKNOWN)"
     }
 
-    pub fn new(xlib: &xlib::Xlib, dpy: *mut xlib::Display) -> XAtom {
-        XAtom {
+    pub fn new(xlib: &xlib::Xlib, dpy: *mut xlib::Display) -> Self {
+        Self {
             WMProtocols: from(xlib, dpy, "WM_PROTOCOLS"),
             WMDelete: from(xlib, dpy, "WM_DELETE_WINDOW"),
             WMState: from(xlib, dpy, "WM_STATE"),

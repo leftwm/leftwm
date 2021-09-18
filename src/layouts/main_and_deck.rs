@@ -17,17 +17,18 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
     };
 
     let mut main_x = workspace.x();
-    let mut stack_x = workspace.x() + width;
-    if workspace.flipped_horizontal(tags) {
+    let stack_x = if workspace.flipped_horizontal(tags) {
         main_x = match window_count {
             1 => main_x,
             _ => main_x + workspace.width() - width,
         };
-        stack_x = match window_count {
+        match window_count {
             1 => 0,
             _ => workspace.x(),
-        };
-    }
+        }
+    } else {
+        workspace.x() + width
+    };
 
     //Display main and second window
     let mut iter = windows.iter_mut();

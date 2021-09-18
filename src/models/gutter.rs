@@ -19,14 +19,14 @@ pub struct Gutter {
 
 impl Gutter {
     #[must_use]
-    pub fn new(side: Side, value: i32, wsid: Option<WorkSpaceID>) -> Gutter {
-        Gutter { side, value, wsid }
+    pub const fn new(side: Side, value: i32, wsid: Option<WorkSpaceID>) -> Self {
+        Self { side, value, wsid }
     }
 }
 
 impl Default for Gutter {
     fn default() -> Self {
-        Gutter {
+        Self {
             side: Side::Top,
             value: 0,
             wsid: None,

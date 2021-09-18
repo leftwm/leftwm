@@ -180,7 +180,7 @@ impl Manager {
     pub fn new_test() -> Self {
         use crate::models::Margins;
 
-        Manager {
+        Self {
             screens: Default::default(),
             windows: Default::default(),
             workspaces: Default::default(),
