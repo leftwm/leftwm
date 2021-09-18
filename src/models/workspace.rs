@@ -289,6 +289,10 @@ impl Workspace {
         self.xyhw_avoided.center_halfed()
     }
 
+    pub fn right_bottom(&self) -> Xyhw {
+        self.xyhw_avoided.right_bottom_corner()
+    }
+
     pub fn update_avoided_areas(&mut self) {
         let mut xyhw = self.xyhw;
         for a in &self.avoid {

@@ -85,7 +85,7 @@ fn setup_window(
 
         if is_scratchpad {
             window.set_floating(true);
-            let new_float_exact = ws.center_halfed();
+            let new_float_exact = ws.right_bottom();
             window.normal = ws.xyhw;
             window.set_floating_exact(new_float_exact);
         }

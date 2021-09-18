@@ -268,6 +268,17 @@ impl Xyhw {
         .into()
     }
 
+    pub fn right_bottom_corner(&self) -> Xyhw {
+        XyhwBuilder {
+            x: self.x + self.w - (self.w / 2 + self.w / 20),
+            y: self.y + (self.h / 5), //- (self.h / 4),
+            h: (self.h - self.h / 5),
+            w: (self.w / 2 + self.w / 20),
+            ..XyhwBuilder::default()
+        }
+        .into()
+    }
+
     pub fn center_relative(&mut self, outer: Self, border: i32, change: Option<XyhwChange>) {
         // If this is a Splash screen, for some reason w/h are sometimes not sized properly. We
         // therefore want to use the minimum or maximum sizing instead in order to center the
