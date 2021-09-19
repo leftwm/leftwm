@@ -203,7 +203,7 @@ impl Workspace {
         }
     }
 
-    /// Returns the original width of the workspace,
+    /// Returns the original x position of the workspace,
     /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn x(&self) -> i32 {
@@ -238,7 +238,7 @@ impl Workspace {
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
 
-    /// Returns the original x position for the workspace,
+    /// Returns the original width for the workspace,
     /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn width(&self) -> i32 {
