@@ -8,7 +8,10 @@
         <img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
     </a>
     <a href="https://github.com/leftwm/leftwm/wiki">
-        <img src="https://img.shields.io/badge/wiki-0.2.6-green.svg" alt="wiki" />
+        <img src="https://img.shields.io/badge/wiki-0.2.8-green.svg" alt="wiki" />
+    </a>
+    <a href="https://discord.gg/c9rB3wDnVs">
+        <img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
     </a>
     <a href="https://docs.rs/leftwm/">
         <img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" />
@@ -37,6 +40,7 @@
   - [Tags / Desktops](#tags--desktops)
   - [Layouts](#layouts)
 - [Troubleshooting](#troubleshooting)
+- [Support](#support)
 
 # Why go left
 
@@ -443,3 +447,7 @@ The default layouts are [all of the kinds](src/layouts/mod.rs#L16) described by 
 | No config.toml file exists | LeftWM does not always ship with a `config.toml`. You will need to execute LeftWM at least once for one to be generated. | Try the following: ``` leftwm-worker ``` |
 | Config.toml is not being parsed | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR. | Try the following: ``` leftwm-check ``` |
 | Keybinding doesn't work | It's likely you need to specify a value or have a typo. | See Wiki |
+
+## Support
+
+LeftWM now has a [Discord](https://discord.gg/c9rB3wDnVs) channel for faster help. 
