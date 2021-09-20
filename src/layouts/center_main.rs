@@ -66,7 +66,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
 
     let column_count = match window_count {
         1 | 2 => window_count,
-        _ => 3
+        _ => 3,
     };
     let workspace_width = workspace.width_limited(column_count);
     let workspace_x = workspace.x_limited(column_count);
