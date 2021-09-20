@@ -10,8 +10,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
         return;
     }
 
-    let workspace_width = workspace.width_limited(window_count);
-    let workspace_x = workspace.x_limited(window_count);
+    let workspace_width = workspace.width_limited(1);
+    let workspace_x = workspace.x_limited(1);
     let mut iter = windows.iter_mut();
 
     //maximize primary window

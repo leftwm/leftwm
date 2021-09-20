@@ -16,10 +16,14 @@ use crate::models::Workspace;
 /// ```
 pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
     let window_count = windows.len();
-    let mut x = workspace.x_limited(window_count);
+    let column_count = match window_count {
+        1 => 1,
+        _ => 2
+    };
+    let mut x = workspace.x_limited(column_count);
     let mut y = workspace.y();
     let mut height = workspace.height() as i32;
-    let mut width = workspace.width_limited(window_count) as i32;
+    let mut width = workspace.width_limited(column_count) as i32;
 
     for i in 0..window_count {
         if i % 2 != 0 {

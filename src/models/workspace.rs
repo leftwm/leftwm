@@ -215,8 +215,8 @@ impl Workspace {
     /// Returns the x position for the workspace,
     /// while accounting for the optional `max_window_width` configuration
     #[must_use]
-    pub fn x_limited(&self, window_count: usize) -> i32 {
-        match self.width() - self.width_limited(window_count) {
+    pub fn x_limited(&self, column_count: usize) -> i32 {
+        match self.width() - self.width_limited(column_count) {
             0 => self.x(),
             remainder => self.x() + (remainder / 2),
         }
@@ -252,10 +252,10 @@ impl Workspace {
     /// Returns the width of the workspace,
     /// while accounting for the optional `max_window_width` configuration
     #[must_use]
-    pub fn width_limited(&self, window_count: usize) -> i32 {
+    pub fn width_limited(&self, column_count: usize) -> i32 {
         match self.max_window_width {
             Some(size) => std::cmp::min(
-                (size.into_absolute(self.width() as f32) * window_count as f32).floor() as i32,
+                (size.into_absolute(self.width() as f32) * column_count as f32).floor() as i32,
                 self.width(),
             ),
             None => self.width(),
