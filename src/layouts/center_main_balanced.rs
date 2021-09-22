@@ -158,20 +158,27 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         return;
     }
 
+    let column_count = match window_count {
+        1 | 2 => window_count,
+        _ => 3,
+    };
+    let workspace_width = workspace.width_limited(column_count);
+    let workspace_x = workspace.x_limited(column_count);
+
     let primary_width = match window_count {
-        1 => workspace.width() as i32,
-        _ => ((workspace.width() as f32 / 100.0) * workspace.main_width(tags)).floor() as i32,
+        1 => workspace_width,
+        _ => ((workspace_width as f32 / 100.0) * workspace.main_width(tags)).floor() as i32,
     };
 
     let secondary_width = match window_count {
         1 => 0_i32,
-        2 => workspace.width() - primary_width,
-        _ => ((workspace.width() - primary_width) as f32 / 2.0).floor() as i32,
+        2 => workspace_width - primary_width,
+        _ => ((workspace_width - primary_width) as f32 / 2.0).floor() as i32,
     };
 
     let primary_x = match window_count {
-        1 => 0_i32,
-        _ => workspace.x() + secondary_width,
+        1 => workspace_x,
+        _ => workspace_x + secondary_width,
     };
 
     let mut iter = windows.iter_mut();
@@ -189,7 +196,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         if let Some(second) = iter.next() {
             second.set_height(workspace.height());
             second.set_width(secondary_width);
-            second.set_x(workspace.x());
+            second.set_x(workspace_x);
             second.set_y(workspace.y());
         }
         return;
@@ -220,14 +227,14 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
 
     update_fibonacci(
         left_windows,
-        workspace.x(),
+        workspace_x,
         workspace.y(),
         workspace.height(),
         secondary_width,
     );
     update_fibonacci(
         right_windows,
-        workspace.x() + secondary_width + primary_width,
+        workspace_x + secondary_width + primary_width,
         workspace.y(),
         workspace.height(),
         secondary_width,

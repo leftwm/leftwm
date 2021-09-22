@@ -10,6 +10,13 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
         return;
     }
 
+    let column_count = match window_count {
+        1 => 1,
+        _ => 2,
+    };
+    let workspace_width = workspace.width_limited(column_count);
+    let workspace_x = workspace.x_limited(column_count);
+
     let height = match window_count {
         1 => workspace.height() as i32,
         _ => (workspace.height() as f32 / 100.0 * workspace.main_width(tags)).floor() as i32,
@@ -32,21 +39,21 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
     let mut iter = windows.iter_mut();
     {
         if let Some(first) = iter.next() {
-            first.set_width(workspace.width());
+            first.set_width(workspace_width);
             first.set_height(height);
-            first.set_x(workspace.x());
+            first.set_x(workspace_x);
             first.set_y(main_y);
         }
     }
 
     //stack all the others
-    let width_f = workspace.width() as f32 / (window_count - 1) as f32;
+    let width_f = workspace_width as f32 / (window_count - 1) as f32;
     let width = width_f.floor() as i32;
     let mut x = 0;
     for w in iter {
         w.set_height(workspace.height() - height);
         w.set_width(width);
-        w.set_x(workspace.x() + x);
+        w.set_x(workspace_x + x);
         w.set_y(stack_y);
         x += width;
     }
