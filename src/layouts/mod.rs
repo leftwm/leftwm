@@ -167,6 +167,7 @@ mod tests {
             },
             vec![],
             vec![],
+            None,
         );
         ws.margin = Margins::Int(0);
         ws.xyhw.set_minh(600);
