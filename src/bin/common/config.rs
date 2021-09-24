@@ -410,7 +410,7 @@ impl Default for Config {
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
-            scratchpad: Some(vec![ScratchPad::default()]),
+            scratchpad: Some(vec![]),
             disable_current_tag_swap: false,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
             focus_new_windows: true, // default behaviour: focuses windows on creation
