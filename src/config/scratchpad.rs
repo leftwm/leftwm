@@ -9,3 +9,16 @@ pub struct ScratchPad {
     pub x: i32,
     pub y: i32,
 }
+
+impl Default for ScratchPad {
+    fn default() -> Self {
+        Self {
+            name: "st".to_string(),
+            value: "st".to_string(),
+            width: 50,
+            height: 50,
+            x: 25,
+            y: 25,
+        }
+    }
+}

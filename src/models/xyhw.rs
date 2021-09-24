@@ -280,12 +280,12 @@ impl Xyhw {
         } else {
             25
         };
-        let h_sane = if (10..90).contains(&scratch_pad.height) {
+        let height_sane = if (10..90).contains(&scratch_pad.height) {
             scratch_pad.height
         } else {
             50
         };
-        let w_sane = if (10..90).contains(&scratch_pad.width) {
+        let width_sane = if (10..90).contains(&scratch_pad.width) {
             scratch_pad.width
         } else {
             50
@@ -294,8 +294,8 @@ impl Xyhw {
         XyhwBuilder {
             x: self.x + self.w * x_sane / 100,
             y: self.y + self.h * y_sane / 100, //- (self.h / 4),
-            h: self.h * h_sane / 100,
-            w: self.w * w_sane / 100,
+            h: self.h * height_sane / 100,
+            w: self.w * width_sane / 100,
             ..XyhwBuilder::default()
         }
         .into()
