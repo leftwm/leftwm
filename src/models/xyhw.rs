@@ -1,5 +1,6 @@
 //! Various window and workspace sizing structs.
 #![allow(clippy::module_name_repetitions)]
+use crate::config::ScratchPad;
 use crate::models::XyhwChange;
 use serde::{Deserialize, Serialize};
 use std::cmp;
@@ -268,12 +269,33 @@ impl Xyhw {
         .into()
     }
 
-    pub fn right_bottom_corner(&self) -> Xyhw {
+    pub fn scratchpad_size_position(&self, scratch_pad: &ScratchPad) -> Xyhw {
+        let x_sane = if (0..90).contains(&scratch_pad.x) {
+            scratch_pad.x
+        } else {
+            25
+        };
+        let y_sane = if (0..90).contains(&scratch_pad.y) {
+            scratch_pad.y
+        } else {
+            25
+        };
+        let h_sane = if (10..90).contains(&scratch_pad.height) {
+            scratch_pad.height
+        } else {
+            50
+        };
+        let w_sane = if (10..90).contains(&scratch_pad.width) {
+            scratch_pad.width
+        } else {
+            50
+        };
+
         XyhwBuilder {
-            x: self.x + self.w - (self.w / 2 + self.w / 20),
-            y: self.y + (self.h / 5), //- (self.h / 4),
-            h: (self.h - self.h / 5),
-            w: (self.w / 2 + self.w / 20),
+            x: self.x + self.w * x_sane / 100,
+            y: self.y + self.h * y_sane / 100, //- (self.h / 4),
+            h: self.h * h_sane / 100,
+            w: self.w * w_sane / 100,
             ..XyhwBuilder::default()
         }
         .into()

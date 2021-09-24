@@ -85,9 +85,18 @@ fn setup_window(
 
         if is_scratchpad {
             window.set_floating(true);
-            let new_float_exact = ws.right_bottom();
-            window.normal = ws.xyhw;
-            window.set_floating_exact(new_float_exact);
+            for (scratchpad_name, _id) in manager.active_scratchpads.clone() {
+                let s = manager
+                    .scratchpads
+                    .iter()
+                    .find(|s| scratchpad_name == s.name.clone())
+                    .unwrap()
+                    .clone();
+
+                let new_float_exact = ws.scratchpad_xyhw(&s);
+                window.normal = ws.xyhw;
+                window.set_floating_exact(new_float_exact);
+            }
         }
         if window.type_ == WindowType::Normal {
             window.apply_margin_multiplier(ws.margin_multiplier);

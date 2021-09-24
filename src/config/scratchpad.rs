@@ -4,4 +4,8 @@ use serde::{Deserialize, Serialize};
 pub struct ScratchPad {
     pub name: String,
     pub value: String,
+    pub width: i32,
+    pub height: i32,
+    pub x: i32,
+    pub y: i32,
 }
