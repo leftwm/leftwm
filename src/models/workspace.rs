@@ -1,3 +1,4 @@
+use super::Size;
 use super::{layouts::Layout, Margins};
 use crate::models::Gutter;
 use crate::models::Side;
@@ -30,6 +31,7 @@ pub struct Workspace {
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
+    pub max_window_width: Option<Size>,
 }
 
 impl fmt::Debug for Workspace {
@@ -53,7 +55,13 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(id: Option<i32>, bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Self {
+    pub fn new(
+        id: Option<i32>,
+        bbox: BBox,
+        all_tags: Vec<Tag>,
+        layouts: Vec<Layout>,
+        max_window_width: Option<Size>,
+    ) -> Self {
         Self {
             id,
             layout: Layout::new(&layouts),
@@ -81,6 +89,7 @@ impl Workspace {
                 ..XyhwBuilder::default()
             }
             .into(),
+            max_window_width,
         }
     }
 
@@ -194,18 +203,32 @@ impl Workspace {
         }
     }
 
+    /// Returns the original x position of the workspace,
+    /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn x(&self) -> i32 {
         let left = self.margin.clone().left() as f32;
         let gutter = self.get_gutter(&Side::Left);
         self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
+
+    /// Returns the x position for the workspace,
+    /// while accounting for the optional `max_window_width` configuration
+    #[must_use]
+    pub fn x_limited(&self, column_count: usize) -> i32 {
+        match self.width() - self.width_limited(column_count) {
+            0 => self.x(),
+            remainder => self.x() + (remainder / 2),
+        }
+    }
+
     #[must_use]
     pub fn y(&self) -> i32 {
         let top = self.margin.clone().top() as f32;
         let gutter = self.get_gutter(&Side::Top);
         self.xyhw_avoided.y() + (self.margin_multiplier * top) as i32 + gutter
     }
+
     #[must_use]
     pub fn height(&self) -> i32 {
         let top = self.margin.clone().top() as f32;
@@ -214,6 +237,9 @@ impl Workspace {
         let gutter = self.get_gutter(&Side::Top) + self.get_gutter(&Side::Bottom);
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
+
+    /// Returns the original width for the workspace,
+    /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn width(&self) -> i32 {
         let left = self.margin.clone().left() as f32;
@@ -221,6 +247,19 @@ impl Workspace {
         //Only one side
         let gutter = self.get_gutter(&Side::Left) + self.get_gutter(&Side::Right);
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
+    }
+
+    /// Returns the width of the workspace,
+    /// while accounting for the optional `max_window_width` configuration
+    #[must_use]
+    pub fn width_limited(&self, column_count: usize) -> i32 {
+        match self.max_window_width {
+            Some(size) => std::cmp::min(
+                (size.into_absolute(self.width() as f32) * column_count as f32).floor() as i32,
+                self.width(),
+            ),
+            None => self.width(),
+        }
     }
 
     fn get_gutter(&self, side: &Side) -> i32 {
@@ -329,6 +368,7 @@ mod tests {
             },
             vec![],
             vec![],
+            None,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
         assert!(
@@ -349,6 +389,7 @@ mod tests {
             },
             vec![],
             vec![],
+            None,
         );
         let tag = crate::models::Tag::new("test");
         let mut tags = vec![tag.clone()];
