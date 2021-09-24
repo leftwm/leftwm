@@ -270,12 +270,12 @@ impl Xyhw {
     }
 
     pub fn scratchpad_size_position(&self, scratch_pad: &ScratchPad) -> Xyhw {
-        let x_sane = if (0..90).contains(&scratch_pad.x) {
+        let x_sane = if (10..90).contains(&scratch_pad.x) {
             scratch_pad.x
         } else {
             25
         };
-        let y_sane = if (0..90).contains(&scratch_pad.y) {
+        let y_sane = if (10..90).contains(&scratch_pad.y) {
             scratch_pad.y
         } else {
             25
