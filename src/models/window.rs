@@ -135,7 +135,7 @@ impl Window {
         self.floating = Some(new_value);
     }
 
-    pub fn toggle_fullscreen(&mut self) -> Option<DisplayAction> {
+    pub fn toggle_fullscreen<CMD>(&mut self) -> Option<DisplayAction<CMD>> {
         let fullscreen = self.is_fullscreen();
         if fullscreen {
             let index = self

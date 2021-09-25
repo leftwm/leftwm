@@ -52,7 +52,7 @@ fn build_action<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     button: Button,
     window: WindowHandle,
     modifier: ModMask,
-) -> Option<DisplayAction> {
+) -> Option<DisplayAction<CMD>> {
     match button {
         xlib::Button1 => {
             if mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask) {

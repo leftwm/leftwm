@@ -18,6 +18,13 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
                 _ => return false,
             },
 
+            DisplayEvent::KeyGrabReload => {
+                self.state.actions.push_back(DisplayAction::ReloadKeyGrabs(
+                    self.state.config.mapped_bindings(),
+                ));
+                false
+            }
+
             DisplayEvent::MoveFocusTo(x, y) => self.move_focus_to_point(x, y),
 
             //This is a request to validate focus. Double check that we are focused the correct

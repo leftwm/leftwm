@@ -33,7 +33,7 @@ pub trait DisplayServer<CMD> {
 
     fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
 
-    fn execute_action(&mut self, _act: DisplayAction) -> Option<DisplayEvent<CMD>> {
+    fn execute_action(&mut self, _act: DisplayAction<CMD>) -> Option<DisplayEvent<CMD>> {
         None
     }
 

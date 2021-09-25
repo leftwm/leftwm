@@ -131,7 +131,7 @@ impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
         events
     }
 
-    fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent<CMD>> {
+    fn execute_action(&mut self, act: DisplayAction<CMD>) -> Option<DisplayEvent<CMD>> {
         log::trace!("DisplayAction: {:?}", act);
         let event: Option<DisplayEvent<CMD>> = match act {
             DisplayAction::KillWindow(w) => {
@@ -208,6 +208,10 @@ impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
                 if let WindowHandle::XlibHandle(window) = handle {
                     self.xw.set_window_desktop(window, &tag);
                 }
+                None
+            }
+            DisplayAction::ReloadKeyGrabs(keybinds) => {
+                self.xw.reset_grabs(&keybinds);
                 None
             }
         };

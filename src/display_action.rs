@@ -1,12 +1,15 @@
+use crate::config::Keybind;
 use crate::models::Window;
 use crate::models::WindowHandle;
+use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 
 /// These are responses from the Window manager.
 /// The display server should act on these actions.
 #[allow(clippy::large_enum_variant)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum DisplayAction {
+#[derive(Serialize, Deserialize, Clone, Derivative)]
+#[derivative(Debug)]
+pub enum DisplayAction<CMD> {
     /// Nicely ask a window if it would please close at its convenience.
     KillWindow(WindowHandle),
 
@@ -57,4 +60,7 @@ pub enum DisplayAction {
     /// Tell the DM to return to normal mode if it is not (ie resize a
     /// window or moving a window).
     NormalMode,
+
+    /// Reload keygrabs, needed when keyboard changes
+    ReloadKeyGrabs(#[derivative(Debug = "ignore")] Vec<Keybind<CMD>>),
 }

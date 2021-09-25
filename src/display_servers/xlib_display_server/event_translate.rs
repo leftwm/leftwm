@@ -22,6 +22,9 @@ impl<'a, CMD> From<XEvent<'a>> for Option<DisplayEvent<CMD>> {
             // new window is created
             xlib::MapRequest => from_map_request(raw_event, xw),
 
+            // listen for keyboard changes
+            xlib::MappingNotify => from_mapping_notify(raw_event, xw),
+
             // window is deleted
             xlib::UnmapNotify | xlib::DestroyNotify => Some(from_unmap_event(raw_event)),
 
@@ -101,6 +104,20 @@ fn from_map_request<CMD>(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayE
     w.type_ = xw.get_window_type(event.window);
     let cursor = xw.get_cursor_point().unwrap_or_default();
     Some(DisplayEvent::WindowCreate(w, cursor.0, cursor.1))
+}
+
+fn from_mapping_notify<CMD>(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent<CMD>> {
+    let mut event = xlib::XMappingEvent::from(raw_event);
+    if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
+        // refresh keyboard
+        log::info!("Updating keyboard");
+        xw.refresh_keyboard(&mut event).ok()?;
+
+        // Reload keybinds
+        Some(DisplayEvent::KeyGrabReload)
+    } else {
+        None
+    }
 }
 
 fn from_unmap_event<CMD>(raw_event: xlib::XEvent) -> DisplayEvent<CMD> {

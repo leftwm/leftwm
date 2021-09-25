@@ -212,7 +212,8 @@ fn focus_tag_change<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 ) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let active_tags: Vec<(usize, TagId)> = manager
-        .state.tags
+        .state
+        .tags
         .iter()
         .enumerate()
         .filter(|(_, tag)| !tag.hidden)

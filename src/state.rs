@@ -26,7 +26,7 @@ pub struct State<C, CMD> {
     pub layouts: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<String, Option<u32>>,
-    pub actions: VecDeque<DisplayAction>,
+    pub actions: VecDeque<DisplayAction<CMD>>,
     // TODO should this really be saved in the state?
     //this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
