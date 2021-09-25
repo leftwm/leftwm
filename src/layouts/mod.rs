@@ -33,7 +33,7 @@ pub enum Layout {
     LeftWiderRightStack,
 }
 
-pub const LAYOUTS: [Layout; 12] = [
+pub const LAYOUTS: &[Layout] = &[
     Layout::MainAndVertStack,
     Layout::MainAndHorizontalStack,
     Layout::MainAndDeck,
@@ -52,7 +52,7 @@ pub const LAYOUTS: [Layout; 12] = [
 impl Layout {
     pub fn new(layouts: &[Self]) -> Self {
         if let Some(layout) = layouts.first() {
-            return layout.clone();
+            return *layout;
         }
         Self::Fibonacci
     }
@@ -112,7 +112,7 @@ impl Layout {
         if index >= layouts.len() as isize {
             index = 0;
         }
-        layouts[index as usize].clone()
+        layouts[index as usize]
     }
 
     pub fn prev_layout(&self, layouts: &[Self]) -> Self {
@@ -123,7 +123,7 @@ impl Layout {
         if index < 0 {
             index = layouts.len() as isize - 1;
         }
-        layouts[index as usize].clone()
+        layouts[index as usize]
     }
 }
 

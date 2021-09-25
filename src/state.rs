@@ -75,7 +75,7 @@ where
         // restore workspaces
         for workspace in &mut self.state.workspaces {
             if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {
-                workspace.layout = old_workspace.layout.clone();
+                workspace.layout = old_workspace.layout;
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
             }
         }
@@ -105,16 +105,17 @@ where
                 } else {
                     old.tags.iter().for_each(|t| {
                         let manager_tags = &self.state.tags.clone();
-                        let tag_index =
-                            &state.tags.clone().iter().position(|o| &o.id == t).unwrap();
-                        window.clear_tags();
-                        // if the config prior reload had more tags then the current one
-                        // we want to move windows of 'lost tags' to the 'first' tag
-                        // also we want to ignore the `NSP` tag for length check
-                        if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
-                            window.tag(&manager_tags[*tag_index].id);
-                        } else {
-                            window.tag(&manager_tags.first().unwrap().id);
+                        if let Some(tag_index) = &state.tags.clone().iter().position(|o| &o.id == t)
+                        {
+                            window.clear_tags();
+                            // if the config prior reload had more tags then the current one
+                            // we want to move windows of 'lost tags' to the 'first' tag
+                            // also we want to ignore the `NSP` tag for length check
+                            if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
+                                window.tag(&manager_tags[*tag_index].id);
+                            } else if let Some(tag) = manager_tags.first() {
+                                window.tag(&tag.id);
+                            }
                         }
                     });
                 }

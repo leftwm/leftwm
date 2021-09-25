@@ -17,7 +17,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.layouts.clone(),
             screen
                 .max_window_width
-                .or(self.state.config.max_window_width()),
+                .or_else(|| self.state.config.max_window_width()),
         );
         if workspace.id.is_none() {
             workspace.id = Some(

@@ -26,7 +26,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut event_buffer = vec![];
         loop {
             if self.state.mode == Mode::Normal {
-                state_socket.write_manager_state(&mut self).await.ok();
+                state_socket.write_manager_state(&self).await.ok();
             }
             self.display_server.flush();
 

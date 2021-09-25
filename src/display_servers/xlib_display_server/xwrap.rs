@@ -1445,9 +1445,9 @@ impl XWrap {
 
     pub fn load_colors(&mut self, config: &impl Config) {
         self.colors = Colors {
-            normal: self.get_color(&config.default_border_color()),
-            floating: self.get_color(&config.floating_border_color()),
-            active: self.get_color(&config.focused_border_color()),
+            normal: self.get_color(config.default_border_color()),
+            floating: self.get_color(config.floating_border_color()),
+            active: self.get_color(config.focused_border_color()),
         };
     }
 
@@ -1523,7 +1523,7 @@ impl XWrap {
     }
 
     /// Cleans first all old keygrabs and then reaplies them from the config
-    pub fn reset_grabs(&self, keybinds: &Vec<Keybind>) {
+    pub fn reset_grabs(&self, keybinds: &[Keybind]) {
         //cleanup grabs
         unsafe {
             (self.xlib.XUngrabKey)(
@@ -1554,7 +1554,7 @@ impl XWrap {
             Mode::Normal => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
-            self.mode = mode.clone();
+            self.mode = mode;
             //safe this point as the start of the move/resize
             if let Ok(loc) = self.get_cursor_point() {
                 self.mode_origin = loc;

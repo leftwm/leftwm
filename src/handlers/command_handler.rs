@@ -32,7 +32,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
     match command {
         Command::Execute(shell_command) => execute(manager, shell_command),
 
-        Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name.to_owned()),
+        Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
 
         Command::ToggleFullScreen => toggle_fullscreen(manager),
 
@@ -42,7 +42,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag(tag) => goto_tag(manager, *tag),
+        Command::GotoTag(tag) => Some(goto_tag(manager, *tag)),
 
         Command::CloseWindow => close_window(manager),
         Command::SwapScreens => swap_tags(manager),
@@ -79,7 +79,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::DecreaseMainWidth(delta) => change_main_width(manager, *delta, -1),
         Command::SetMarginMultiplier(multiplier) => set_margin_multiplier(manager, *multiplier),
         Command::SendWorkspaceToTag(ws_index, tag_index) => {
-            send_workspace_to_tag(manager, *ws_index, *tag_index)
+            Some(send_workspace_to_tag(manager, *ws_index, *tag_index))
         }
         Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
@@ -95,7 +95,7 @@ fn execute<C: Config, SERVER: DisplayServer>(
 
 fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
-    name: String,
+    name: &str,
 ) -> Option<bool> {
     let tag = &manager.focused_tag(0)?;
     let s = manager
@@ -192,7 +192,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
 fn goto_tag<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     input_tag: usize,
-) -> Option<bool> {
+) -> bool {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
@@ -204,7 +204,7 @@ fn goto_tag<C: Config, SERVER: DisplayServer>(
             (_, _, _) => input_tag, // go to the input tag tag
         }
     };
-    Some(manager.goto_tag_handler(destination_tag))
+    manager.goto_tag_handler(destination_tag)
 }
 
 fn focus_tag_change<C: Config, SERVER: DisplayServer>(
@@ -358,24 +358,24 @@ fn move_focus_common_vars<F, C: Config, SERVER: DisplayServer>(
     val: i32,
 ) -> Option<bool>
 where
-    F: Fn(&mut Manager<C, SERVER>, i32, WindowHandle, &Option<Layout>, Vec<Window>) -> Option<bool>,
+    F: Fn(&mut Manager<C, SERVER>, i32, WindowHandle, Option<Layout>, Vec<Window>) -> Option<bool>,
 {
     let handle = manager.focused_window()?.handle;
     let w = manager.focused_workspace()?;
-    let (tags, layout) = (w.tags.clone(), Some(w.layout.clone()));
+    let (tags, layout) = (w.tags.clone(), Some(w.layout));
 
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
 
     let to_reorder = helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
-    func(manager, val, handle, &layout, to_reorder)
+    func(manager, val, handle, layout, to_reorder)
 }
 
 fn move_window_change<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     val: i32,
     mut handle: WindowHandle,
-    layout: &Option<Layout>,
+    layout: Option<Layout>,
     mut to_reorder: Vec<Window>,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
@@ -403,7 +403,7 @@ fn move_window_top<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     _val: i32,
     handle: WindowHandle,
-    _layout: &Option<Layout>,
+    _layout: Option<Layout>,
     mut to_reorder: Vec<Window>,
 ) -> Option<bool> {
     // Moves the selected window at index 0 of the window list.
@@ -435,7 +435,7 @@ fn focus_window_change<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     val: i32,
     mut handle: WindowHandle,
-    layout: &Option<Layout>,
+    layout: Option<Layout>,
     mut to_reorder: Vec<Window>,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
@@ -560,14 +560,14 @@ fn send_workspace_to_tag<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     ws_index: usize,
     tag_index: usize,
-) -> Option<bool> {
+) -> bool {
     if ws_index < manager.state.workspaces.len() && tag_index < manager.state.tags.len() {
         let workspace = &manager.state.workspaces[ws_index].clone();
         manager.focus_workspace(workspace);
         manager.goto_tag_handler(tag_index + 1);
-        return Some(true);
+        return true;
     }
-    Some(false)
+    false
 }
 
 #[cfg(test)]

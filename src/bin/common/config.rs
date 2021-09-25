@@ -344,7 +344,7 @@ impl leftwm::Config for Config {
     }
 
     fn border_width(&self) -> i32 {
-        self.theme_setting.border_width.clone()
+        self.theme_setting.border_width
     }
 
     fn margin(&self) -> Margins {
@@ -433,8 +433,7 @@ impl leftwm::Config for Config {
 impl Config {
     fn state_file(&self) -> &Path {
         self.state
-            .as_ref()
-            .map(|x| x.as_path())
+            .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
     }
 }

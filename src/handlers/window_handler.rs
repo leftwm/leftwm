@@ -29,7 +29,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut layout,
             &mut is_first,
         );
-        insert_window(self, &mut window, is_scratchpad, &layout);
+        insert_window(self, &mut window, is_scratchpad, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             || self.state.focus_manager.behaviour == FocusBehaviour::Sloppy;
@@ -208,7 +208,7 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
             .iter()
             .any(|w| for_active_workspace(w));
         window.tags = ws.tags.clone();
-        *layout = ws.layout.clone();
+        *layout = ws.layout;
 
         if is_scratchpad {
             window.set_floating(true);
@@ -257,11 +257,12 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
 
     window.update_for_theme(&manager.state.config);
 }
+
 fn insert_window<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     window: &mut Window,
     is_scratchpad: bool,
-    layout: &Layout,
+    layout: Layout,
 ) {
     // If the tag contains a fullscreen window, minimize it
     let for_active_workspace =
@@ -279,11 +280,10 @@ fn insert_window<C: Config, SERVER: DisplayServer>(
         }
     }
 
-    if (&Layout::Monocle == layout || &Layout::MainAndDeck == layout)
-        && window.type_ == WindowType::Normal
+    if matches!(layout, Layout::Monocle | Layout::MainAndDeck) && window.type_ == WindowType::Normal
     {
         let mut to_reorder = helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
-        if &Layout::Monocle == layout || to_reorder.is_empty() {
+        if layout == Layout::Monocle || to_reorder.is_empty() {
             if was_fullscreen {
                 if let Some(act) = window.toggle_fullscreen() {
                     manager.state.actions.push_back(act);

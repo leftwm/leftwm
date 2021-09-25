@@ -100,7 +100,7 @@ fn viewport_into_display_workspace(
         w: viewport.w,
         x: viewport.x,
         y: viewport.y,
-        layout: viewport.layout.clone(),
+        layout: viewport.layout,
         index: ws_index,
     }
 }
@@ -122,7 +122,7 @@ impl<C: Config, SERVER: DisplayServer> From<&Manager<C, SERVER>> for ManagerStat
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
                 w: ws.xyhw.w() as u32,
-                layout: ws.layout.clone(),
+                layout: ws.layout,
             });
         }
         let active_desktop = match manager.focused_workspace() {

@@ -40,11 +40,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 //look through the config and build a command if its defined in the config
                 let build = CommandBuilder::<C>::new(&self.state.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
-                if let Some(cmd) = command {
-                    self.command_handler(cmd)
-                } else {
-                    false
-                }
+                command.map_or(false, |cmd| self.command_handler(cmd))
             }
 
             DisplayEvent::SendCommand(command) => self.command_handler(&command),
