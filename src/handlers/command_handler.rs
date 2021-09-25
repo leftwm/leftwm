@@ -573,10 +573,7 @@ fn send_workspace_to_tag<C: Config, SERVER: DisplayServer>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::TestConfig;
-    use crate::errors::Result;
     use crate::models::Tag;
-    use crate::state::State;
 
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {

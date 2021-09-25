@@ -2,7 +2,6 @@ use super::Config;
 use super::DisplayEvent;
 use super::DisplayServer;
 use crate::models::Screen;
-use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct MockDisplayServer {

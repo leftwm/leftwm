@@ -47,7 +47,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::TestConfig;
 
     #[test]
     fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
