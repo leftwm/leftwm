@@ -15,7 +15,7 @@ pub fn from_event<CMD>(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<D
         let value = event.data.get_long(0);
         match usize::try_from(value) {
             Ok(index) => {
-                return Some(DisplayEvent::SendCommand(Command::GotoTag(index + 1), None));
+                return Some(DisplayEvent::SendCommand(Command::GotoTag(index + 1)));
             }
             Err(err) => {
                 log::debug!(

@@ -39,7 +39,6 @@ pub use display_event::DisplayEvent;
 pub use display_servers::xlib_display_server::XWrap;
 pub use display_servers::DisplayServer;
 pub use display_servers::XlibDisplayServer;
-pub use handlers::external_command_handler;
 pub use models::Manager;
 pub use models::Mode;
 pub use models::Window;

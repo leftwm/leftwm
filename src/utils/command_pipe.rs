@@ -1,5 +1,6 @@
 //! Creates a pipe to listen for external commands.
 use crate::layouts::Layout;
+use crate::Command;
 use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -9,12 +10,12 @@ use tokio::sync::mpsc;
 
 /// Holds pipe file location and a receiver.
 #[derive(Debug)]
-pub struct CommandPipe {
+pub struct CommandPipe<CMD> {
     pipe_file: PathBuf,
-    rx: mpsc::UnboundedReceiver<ExternalCommand>,
+    rx: mpsc::UnboundedReceiver<Command<CMD>>,
 }
 
-impl Drop for CommandPipe {
+impl<CMD> Drop for CommandPipe<CMD> {
     fn drop(&mut self) {
         use std::os::unix::fs::OpenOptionsExt;
         self.rx.close();
@@ -29,7 +30,11 @@ impl Drop for CommandPipe {
     }
 }
 
-impl CommandPipe {
+impl<CMD> CommandPipe<CMD>
+where
+    // TODO remove this constraint
+    CMD: Send + 'static,
+{
     /// Create and listen to the named pipe.
     /// # Errors
     ///
@@ -53,14 +58,14 @@ impl CommandPipe {
         Ok(Self { pipe_file, rx })
     }
 
-    pub async fn read_command(&mut self) -> Option<ExternalCommand> {
+    pub async fn read_command(&mut self) -> Option<Command<CMD>> {
         self.rx.recv().await
     }
 }
 
-async fn read_from_pipe(
+async fn read_from_pipe<CMD>(
     pipe_file: &Path,
-    tx: &mpsc::UnboundedSender<ExternalCommand>,
+    tx: &mpsc::UnboundedSender<Command<CMD>>,
 ) -> Option<()> {
     let file = fs::File::open(pipe_file).await.ok()?;
     let mut lines = BufReader::new(file).lines();
@@ -73,27 +78,27 @@ async fn read_from_pipe(
     Some(())
 }
 
-fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
+fn parse_command<CMD>(s: &str) -> std::result::Result<Command<CMD>, ()> {
     let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
     match head {
-        "Reload" => Ok(ExternalCommand::Reload),
-        "ToggleFullScreen" => Ok(ExternalCommand::ToggleFullScreen),
-        "SwapScreens" => Ok(ExternalCommand::SwapScreens),
-        "MoveWindowToLastWorkspace" => Ok(ExternalCommand::MoveWindowToLastWorkspace),
-        "FloatingToTile" => Ok(ExternalCommand::FloatingToTile),
-        "MoveWindowUp" => Ok(ExternalCommand::MoveWindowUp),
-        "MoveWindowDown" => Ok(ExternalCommand::MoveWindowDown),
-        "FocusWindowUp" => Ok(ExternalCommand::FocusWindowUp),
-        "MoveWindowTop" => Ok(ExternalCommand::MoveWindowTop),
-        "FocusWindowDown" => Ok(ExternalCommand::FocusWindowDown),
-        "FocusNextTag" => Ok(ExternalCommand::FocusNextTag),
-        "FocusPreviousTag" => Ok(ExternalCommand::FocusPreviousTag),
-        "FocusWorkspaceNext" => Ok(ExternalCommand::FocusWorkspaceNext),
-        "FocusWorkspacePrevious" => Ok(ExternalCommand::FocusWorkspacePrevious),
-        "NextLayout" => Ok(ExternalCommand::NextLayout),
-        "PreviousLayout" => Ok(ExternalCommand::PreviousLayout),
-        "RotateTag" => Ok(ExternalCommand::RotateTag),
-        "CloseWindow" => Ok(ExternalCommand::CloseWindow),
+        "SoftReload" => Ok(Command::SoftReload),
+        "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
+        "SwapScreens" => Ok(Command::SwapScreens),
+        "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
+        "FloatingToTile" => Ok(Command::FloatingToTile),
+        "MoveWindowUp" => Ok(Command::MoveWindowUp),
+        "MoveWindowDown" => Ok(Command::MoveWindowDown),
+        "FocusWindowUp" => Ok(Command::FocusWindowUp),
+        "MoveWindowTop" => Ok(Command::MoveWindowTop),
+        "FocusWindowDown" => Ok(Command::FocusWindowDown),
+        "FocusNextTag" => Ok(Command::FocusNextTag),
+        "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
+        "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
+        "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
+        "NextLayout" => Ok(Command::NextLayout),
+        "PreviousLayout" => Ok(Command::PreviousLayout),
+        "RotateTag" => Ok(Command::RotateTag),
+        "CloseWindow" => Ok(Command::CloseWindow),
         "ToggleScratchPad" => build_toggle_scratchpad(s),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
         "SendWindowToTag" => build_send_window_to_tag(s),
@@ -105,40 +110,40 @@ fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
 
 // TODO
 /*
-fn build_load_theme(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+fn build_load_theme(raw: &str) -> std::result::Result<Command<CMD>, ()> {
     let headless = without_head(raw, "LoadTheme ");
     let path = Path::new(headless);
     if path.is_file() {
-        Ok(ExternalCommand::LoadTheme(path.into()))
+        Ok(Command<CMD>::LoadTheme(path.into()))
     } else {
         Err(())
     }
 }
 */
 
-fn build_toggle_scratchpad(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+fn build_toggle_scratchpad<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
     let headless = without_head(raw, "ToggleScratchPad ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let name = *parts.get(0).ok_or(())?;
-    Ok(ExternalCommand::ToggleScratchPad(name.to_string()))
+    Ok(Command::ToggleScratchPad(name.to_string()))
 }
 
-fn build_send_window_to_tag(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+fn build_send_window_to_tag<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
     let headless = without_head(raw, "SendWindowToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let tag_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
-    Ok(ExternalCommand::SendWindowToTag(tag_index))
+    Ok(Command::SendWindowToTag(tag_index))
 }
 
-fn build_send_workspace_to_tag(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+fn build_send_workspace_to_tag<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
     let headless = without_head(raw, "SendWorkspaceToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let ws_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
     let tag_index: usize = parts.get(1).ok_or(())?.parse().map_err(|_| ())?;
-    Ok(ExternalCommand::SendWorkspaceToTag(ws_index, tag_index))
+    Ok(Command::SendWorkspaceToTag(ws_index, tag_index))
 }
 
-fn build_set_layout(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+fn build_set_layout<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
     let headless = without_head(raw, "SetLayout ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let layout_name = *parts.get(0).ok_or(())?;
@@ -150,17 +155,17 @@ fn build_set_layout(raw: &str) -> std::result::Result<ExternalCommand, ()> {
             return Err(());
         }
     };
-    Ok(ExternalCommand::SetLayout(layout))
+    Ok(Command::SetLayout(layout))
 }
 
-fn build_set_margin_multiplier(raw: &str) -> std::result::Result<ExternalCommand, ()> {
+fn build_set_margin_multiplier<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
     let headless = without_head(raw, "SetMarginMultiplier ");
     let parts: Vec<&str> = headless.split(' ').collect();
     if parts.len() != 1 {
         return Err(());
     }
     let margin_multiplier = f32::from_str(parts[0]).map_err(|_| ())?;
-    Ok(ExternalCommand::SetMarginMultiplier(margin_multiplier))
+    Ok(Command::SetMarginMultiplier(margin_multiplier))
 }
 
 fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
@@ -168,33 +173,6 @@ fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
         return s;
     }
     &s[head.len()..]
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ExternalCommand {
-    Reload,
-    ToggleScratchPad(String),
-    ToggleFullScreen,
-    SendWorkspaceToTag(usize, usize),
-    SendWindowToTag(usize),
-    SwapScreens,
-    MoveWindowToLastWorkspace,
-    FloatingToTile,
-    MoveWindowUp,
-    MoveWindowDown,
-    MoveWindowTop,
-    FocusWindowUp,
-    FocusWindowDown,
-    FocusNextTag,
-    FocusPreviousTag,
-    FocusWorkspaceNext,
-    FocusWorkspacePrevious,
-    CloseWindow,
-    NextLayout,
-    PreviousLayout,
-    RotateTag,
-    SetLayout(Layout),
-    SetMarginMultiplier(f32),
 }
 
 #[cfg(test)]
@@ -234,11 +212,11 @@ mod test {
                 .open(pipe_file.clone())
                 .await
                 .unwrap();
-            pipe.write_all(b"Reload\n").await.unwrap();
+            pipe.write_all(b"SoftReload\n").await.unwrap();
             pipe.flush().await.unwrap();
 
             assert_eq!(
-                ExternalCommand::Reload,
+                Command<CMD>::SoftReload,
                 command_pipe.read_command().await.unwrap()
             );
         }

@@ -20,24 +20,23 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
      * - a new command is introduced that requires a value
      *  */
     /// Processes a command and invokes the associated function.
-    pub fn command_handler(&mut self, command: &Command<CMD>, val: Option<&str>) -> bool {
-        process_internal(self, command, val).unwrap_or(false)
+    pub fn command_handler(&mut self, command: &Command<CMD>) -> bool {
+        process_internal(self, command).unwrap_or(false)
     }
 }
 
 fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     manager: &mut Manager<C, CMD, SERVER>,
     command: &Command<CMD>,
-    val: Option<&str>,
 ) -> Option<bool> {
     match command {
-        Command::Execute => execute(manager, val),
+        Command::Execute(shell_command) => execute(manager, shell_command),
 
         Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name.to_owned()),
 
         Command::ToggleFullScreen => toggle_fullscreen(manager),
 
-        Command::MoveToTag(tag) => move_to_tag(*tag, manager),
+        Command::SendWindowToTag(tag) => move_to_tag(*tag, manager),
 
         Command::MoveWindowUp => move_focus_common_vars(move_window_change, manager, -1),
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
@@ -46,8 +45,8 @@ fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         Command::GotoTag(tag) => goto_tag(manager, *tag),
 
         Command::CloseWindow => close_window(manager),
-        Command::SwapTags => swap_tags(manager),
-        Command::MoveToLastWorkspace => move_to_last_workspace(manager),
+        Command::SwapScreens => swap_tags(manager),
+        Command::MoveWindowToLastWorkspace => move_to_last_workspace(manager),
         Command::NextLayout => next_layout(manager),
         Command::PreviousLayout => previous_layout(manager),
 
@@ -76,21 +75,21 @@ fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 
         Command::RotateTag => rotate_tag(manager),
 
-        Command::IncreaseMainWidth => change_main_width(manager, val, 1),
-        Command::DecreaseMainWidth => change_main_width(manager, val, -1),
+        Command::IncreaseMainWidth(delta) => change_main_width(manager, *delta, 1),
+        Command::DecreaseMainWidth(delta) => change_main_width(manager, *delta, -1),
         Command::SetMarginMultiplier(multiplier) => set_margin_multiplier(manager, *multiplier),
         Command::SendWorkspaceToTag(ws_index, tag_index) => {
             send_workspace_to_tag(manager, *ws_index, *tag_index)
         }
-        Command::Other(cmd) => C::command_handler(cmd, val, manager),
+        Command::Other(cmd) => C::command_handler(cmd, manager),
     }
 }
 
 fn execute<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     manager: &mut Manager<C, CMD, SERVER>,
-    val: Option<&str>,
+    shell_command: &str,
 ) -> Option<bool> {
-    let _ = exec_shell(val.as_ref()?, manager);
+    let _ = exec_shell(shell_command, manager);
     None
 }
 
@@ -513,14 +512,13 @@ fn rotate_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 
 fn change_main_width<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     manager: &mut Manager<C, CMD, SERVER>,
-    val: Option<&str>,
+    delta: i8,
     factor: i8,
 ) -> Option<bool> {
     let workspace = manager
         .state
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
-    let delta: i8 = val.as_ref()?.parse().ok()?;
     workspace.change_main_width(&mut manager.state.tags, delta * factor);
     Some(true)
 }

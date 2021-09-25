@@ -61,6 +61,6 @@ pub enum DisplayAction<CMD> {
     /// window or moving a window).
     NormalMode,
 
-    /// Reload keygrabs, needed when keyboard changes
+    /// SoftReload keygrabs, needed when keyboard changes
     ReloadKeyGrabs(#[derivative(Debug = "ignore")] Vec<Keybind<CMD>>),
 }

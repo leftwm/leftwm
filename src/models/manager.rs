@@ -182,7 +182,7 @@ where
         list.join(" ")
     }
 
-    /// Reload the worker without saving state.
+    /// SoftReload the worker without saving state.
     pub fn hard_reload(&mut self) {
         self.reload_requested = true;
     }

@@ -12,7 +12,6 @@ pub enum Command {
 impl Command {
     pub fn execute<SERVER: DisplayServer<Self>>(
         &self,
-        _value: Option<&str>,
         manager: &mut Manager<Config, Self, SERVER>,
     ) -> Option<bool> {
         match self {
@@ -38,7 +37,7 @@ impl Command {
 pub enum BaseCommand {
     Execute,
     CloseWindow,
-    SwapTags,
+    SwapScreens,
     SoftReload,
     HardReload,
     ToggleScratchPad,
@@ -54,8 +53,8 @@ pub enum BaseCommand {
     FocusWindowDown,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
-    MoveToTag,
-    MoveToLastWorkspace,
+    SendWindowToTag,
+    MoveWindowToLastWorkspace,
     MouseMoveWindow,
     NextLayout,
     PreviousLayout,

@@ -40,16 +40,14 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
                 //look through the config and build a command if its defined in the config
                 let build = CommandBuilder::<C, CMD>::new(&self.state.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
-                if let Some((cmd, val)) = command {
-                    self.command_handler(cmd, val)
+                if let Some(cmd) = command {
+                    self.command_handler(cmd)
                 } else {
                     false
                 }
             }
 
-            DisplayEvent::SendCommand(command, value) => {
-                self.command_handler(&command, value.as_deref())
-            }
+            DisplayEvent::SendCommand(command) => self.command_handler(&command),
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
                 let mouse_key = utils::xkeysym_lookup::into_mod(self.state.config.mousekey());

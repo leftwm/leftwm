@@ -33,7 +33,6 @@ pub trait Config<CMD> {
 
     fn command_handler<SERVER>(
         command: &CMD,
-        value: Option<&str>,
         manager: &mut Manager<Self, CMD, SERVER>,
     ) -> Option<bool>
     where

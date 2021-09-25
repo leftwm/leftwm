@@ -48,14 +48,10 @@ impl<C: Config<CMD>, CMD> CommandBuilder<C, CMD> {
         mask: ModMask,
         key: XKeysym,
         //event: XKeyEvent,
-    ) -> Option<(&Command<CMD>, Option<&str>)> {
+    ) -> Option<&Command<CMD>> {
         let keybind = self.find_keybind_for(mask, key);
         match keybind {
-            Some(bind) => {
-                let cmd = &bind.command;
-                let val = bind.value.as_deref();
-                Some((cmd, val))
-            }
+            Some(bind) => Some(&bind.command),
             None => None,
         }
     }

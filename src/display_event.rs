@@ -22,6 +22,6 @@ pub enum DisplayEvent<CMD> {
     MoveWindow(WindowHandle, c_ulong, i32, i32),
     ResizeWindow(WindowHandle, c_ulong, i32, i32),
     ScreenCreate(Screen),
-    SendCommand(Command<CMD>, Option<String>),
+    SendCommand(Command<CMD>),
     ChangeToNormalMode,
 }

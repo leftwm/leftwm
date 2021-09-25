@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
         Commands without arguments:
         
         UnloadTheme
-        Reload
+        SoftReload
         ToggleFullScreen
         SwapScreens
         MoveWindowToLastWorkspace

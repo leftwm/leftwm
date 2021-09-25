@@ -3,7 +3,8 @@ use crate::{CommandPipe, DisplayServer, Manager, Mode, StateSocket, Window, Work
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
+// TODO remove this constraint Send + 'static
+impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD: Send + 'static> Manager<C, CMD, SERVER> {
     pub async fn event_loop(mut self) {
         let socket_file = place_runtime_file("current_state.sock")
             .expect("ERROR: couldn't create current_state.sock");
@@ -44,7 +45,7 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
                     continue;
                 }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
-                    needs_update = self.external_command_handler(cmd) || needs_update;
+                    needs_update = self.command_handler(&cmd) || needs_update;
                     self.display_server.update_theme_settings(&self.state.config);
                 }
                 else => {
