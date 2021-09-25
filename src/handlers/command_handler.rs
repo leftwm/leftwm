@@ -81,7 +81,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SendWorkspaceToTag(ws_index, tag_index) => {
             send_workspace_to_tag(manager, *ws_index, *tag_index)
         }
-        Command::Other(cmd) => C::command_handler(cmd, manager),
+        Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
 }
 

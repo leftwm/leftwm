@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
-use crate::errors::{stream_error, Result};
+use crate::errors::{LeftError, Result};
 use crate::models::dto::ManagerState;
 use crate::models::Manager;
 use std::path::PathBuf;
@@ -71,7 +71,7 @@ impl StateSocket {
                 for peer in &mut state.peers {
                     if peer
                         .as_mut()
-                        .ok_or_else(stream_error)?
+                        .ok_or(LeftError::StreamError)?
                         .write_all(json.as_bytes())
                         .await
                         .is_err()

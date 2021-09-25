@@ -31,7 +31,7 @@ pub trait Config {
 
     fn focus_new_windows(&self) -> bool;
 
-    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> Option<bool>
+    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
     where
         Self: Sized,
         SERVER: DisplayServer;

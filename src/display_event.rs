@@ -3,11 +3,9 @@ use std::os::raw::c_ulong;
 use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask, XKeysym};
 use crate::models::WindowChange;
 use crate::Command;
-use derivative::Derivative;
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Derivative)]
-#[derivative(Debug(bound = ""))]
+#[derive(Debug)]
 pub enum DisplayEvent {
     Movement(WindowHandle, i32, i32),
     KeyCombo(ModMask, XKeysym),

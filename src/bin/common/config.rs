@@ -30,7 +30,6 @@ pub struct Keybind {
     pub key: String,
 }
 
-// TODO replace leftwm-check validation by a pass to this
 impl TryFrom<Keybind> for leftwm::Keybind {
     type Error = anyhow::Error;
 
@@ -98,7 +97,6 @@ impl TryFrom<Keybind> for leftwm::Keybind {
 
         Ok(Self {
             command,
-            value: None,
             modifier: k.modifier,
             key: k.key,
         })
@@ -318,11 +316,10 @@ impl leftwm::Config for Config {
         self.focus_new_windows
     }
 
-    // TODO replace Option<bool> to bool?
     fn command_handler<SERVER: DisplayServer>(
         command: &str,
         manager: &mut Manager<Self, SERVER>,
-    ) -> Option<bool> {
+    ) -> bool {
         let mut args = command.split_whitespace();
         let command = args.next().unwrap();
         match command {
@@ -332,15 +329,15 @@ impl leftwm::Config for Config {
                 } else {
                     log::warn!("Missing file argument to load theme");
                 }
-                Some(manager.update_for_theme())
+                manager.update_for_theme()
             }
             "UnloadTheme" => {
                 manager.state.config.theme_setting = Default::default();
-                Some(manager.update_for_theme())
+                manager.update_for_theme()
             }
             _ => {
                 log::warn!("Command not recognized: {}", command);
-                Some(false)
+                false
             }
         }
     }

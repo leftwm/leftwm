@@ -39,7 +39,6 @@ slog-envlogger = { version = "2.2.0", optional = true }
 slog-async = { version = "2.4.0", optional = true }
 slog-journald = { version = "2.1.1", optional = true }
 slog-term = { version = "2.5.0", optional = true }
-derivative = "2.2.0"
 anyhow = "1"
 thiserror = "1"
 

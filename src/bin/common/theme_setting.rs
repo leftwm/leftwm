@@ -1,4 +1,4 @@
-use leftwm::errors::Result;
+use anyhow::Result;
 use leftwm::models::{Gutter, Margins};
 use serde::{Deserialize, Serialize};
 use std::fs;
