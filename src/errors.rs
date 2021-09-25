@@ -11,6 +11,7 @@ pub enum LeftErrorKind {
     SerdeParse(serde_json::error::Error),
     IoError(std::io::Error),
     XdgBaseDirError(xdg::BaseDirectoriesError),
+    // TODO remove
     TomlParse(toml::de::Error),
     StreamError(),
 }

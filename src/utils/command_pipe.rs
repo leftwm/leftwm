@@ -75,10 +75,6 @@ async fn read_from_pipe(
 fn parse_command(s: &str) -> std::result::Result<ExternalCommand, ()> {
     let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
     match head {
-        // TODO
-        //"UnloadTheme" => Ok(ExternalCommand::UnloadTheme),
-        // These require arguments and might be more finicky
-        //"LoadTheme" => build_load_theme(s),
         "Reload" => Ok(ExternalCommand::Reload),
         "ToggleFullScreen" => Ok(ExternalCommand::ToggleFullScreen),
         "SwapScreens" => Ok(ExternalCommand::SwapScreens),

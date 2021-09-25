@@ -84,8 +84,7 @@ fn send_window_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 ) -> bool {
     if tag_index < manager.tags.len() {
         //tag number as 1 based.
-        let tag_num = format!("{}", tag_index + 1);
-        return manager.command_handler(&Command::MoveToTag, Some(&tag_num));
+        return manager.command_handler(&Command::MoveToTag(tag_index + 1), None);
     }
     false
 }

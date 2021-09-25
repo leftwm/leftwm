@@ -3,7 +3,6 @@ mod scratchpad;
 mod workspace_config;
 
 use crate::display_servers::DisplayServer;
-use crate::errors::Result;
 use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins};
 use crate::Manager;
@@ -34,6 +33,7 @@ pub trait Config<CMD> {
 
     fn command_handler<SERVER>(
         command: &CMD,
+        value: Option<&str>,
         manager: &mut Manager<Self, CMD, SERVER>,
     ) -> Option<bool>
     where
@@ -59,7 +59,7 @@ pub trait Config<CMD> {
     /// if unable to serialize the text.
     /// May be caused by inadequate permissions, not enough
     /// space on drive, or other typical filesystem issues.
-    fn save_state<SERVER>(manager: &Manager<Self, CMD, SERVER>) -> Result<()>
+    fn save_state<SERVER>(manager: &Manager<Self, CMD, SERVER>)
     where
         Self: Sized,
         SERVER: DisplayServer<CMD>;

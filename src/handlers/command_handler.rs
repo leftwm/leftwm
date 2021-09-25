@@ -37,13 +37,13 @@ fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 
         Command::ToggleFullScreen => toggle_fullscreen(manager),
 
-        Command::MoveToTag => move_to_tag(val, manager),
+        Command::MoveToTag(tag) => move_to_tag(*tag, manager),
 
         Command::MoveWindowUp => move_focus_common_vars(move_window_change, manager, -1),
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag => goto_tag(manager, val),
+        Command::GotoTag(tag) => goto_tag(manager, *tag),
 
         Command::CloseWindow => close_window(manager),
         Command::SwapTags => swap_tags(manager),
@@ -65,9 +65,7 @@ fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
-            if let Err(err) = C::save_state(manager) {
-                log::error!("Cannot save state: {}", err);
-            }
+            C::save_state(manager);
             manager.hard_reload();
             None
         }
@@ -81,7 +79,7 @@ fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         Command::IncreaseMainWidth => change_main_width(manager, val, 1),
         Command::DecreaseMainWidth => change_main_width(manager, val, -1),
         Command::SetMarginMultiplier => set_margin_multiplier(manager, val),
-        Command::Other(cmd) => C::command_handler(cmd, manager),
+        Command::Other(cmd) => C::command_handler(cmd, val, manager),
     }
 }
 
@@ -159,10 +157,9 @@ fn toggle_fullscreen<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 }
 
 fn move_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
-    val: Option<&str>,
+    tag_num: usize,
     manager: &mut Manager<C, CMD, SERVER>,
 ) -> Option<bool> {
-    let tag_num: usize = val.as_ref()?.parse().ok()?;
     let tag = manager.tags.get(tag_num - 1)?.clone();
 
     // In order to apply the correct margin multiplier we want to copy this value
@@ -193,12 +190,11 @@ fn move_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 
 fn goto_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     manager: &mut Manager<C, CMD, SERVER>,
-    val: Option<&str>,
+    input_tag: usize,
 ) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
-    let input_tag = val.as_ref()?.parse().ok()?;
     let mut destination_tag = input_tag;
     if !manager.state.config.disable_current_tag_swap() {
         destination_tag = match (current_tag, previous_tag, input_tag) {

@@ -33,7 +33,7 @@ use utils::xkeysym_lookup::ModMask;
 use utils::xkeysym_lookup::XKeysym;
 
 pub use command::Command;
-pub use config::Config;
+pub use config::{Config, Keybind};
 pub use display_action::DisplayAction;
 pub use display_event::DisplayEvent;
 pub use display_servers::xlib_display_server::XWrap;

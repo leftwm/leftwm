@@ -1,11 +1,12 @@
 mod common;
 
+use anyhow::{bail, Result};
 use clap::{App, Arg};
-use common::{Command, Config, ThemeSetting};
-use leftwm::config::{Keybind, Workspace};
-use leftwm::errors::Result;
+use common::{Config, Keybind, ThemeSetting};
+use leftwm::config::Workspace;
 use leftwm::utils;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -89,10 +90,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         }
         Ok(toml::from_str(&contents)?)
     } else {
-        Err(leftwm::errors::LeftError::from(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Configuration not found in path",
-        )))
+        bail!("Configuration not found in path");
     }
 }
 
@@ -126,7 +124,7 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
 /// Checks to see if value is provided (if required)
 /// Checks to see if keys are valid against Xkeysym
 /// Ideally, we will pass this to the command handler with a dummy config
-fn check_keybinds(keybinds: Vec<Keybind<Command>>, verbose: bool) -> bool {
+fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
     let mut returns = Vec::new();
     println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
     let mut bindings = HashMap::new();
@@ -134,22 +132,8 @@ fn check_keybinds(keybinds: Vec<Keybind<Command>>, verbose: bool) -> bool {
         if verbose {
             println!("Keybind: {:?} {}", keybind, keybind.value.is_none());
         }
-        if matches!(
-            keybind.command,
-            leftwm::Command::ToggleScratchPad
-                | leftwm::Command::MoveToTag
-                | leftwm::Command::GotoTag
-                | leftwm::Command::Execute
-                | leftwm::Command::IncreaseMainWidth
-                | leftwm::Command::DecreaseMainWidth
-                | leftwm::Command::SetLayout
-                | leftwm::Command::SetMarginMultiplier
-        ) && keybind.value.is_none()
-        {
-            returns.push((
-                Some(keybind.clone()),
-                "This keybind requres a `string`".to_owned(),
-            ));
+        if let Err(err) = leftwm::Keybind::try_from(keybind.clone()) {
+            returns.push((Some(keybind.clone()), err.to_string()));
         }
         if utils::xkeysym_lookup::into_keysym(&keybind.key).is_none() {
             returns.push((
@@ -238,10 +222,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
             }
             println!("\x1b[1;91mERROR: XDG_RUNTIME_DIR not set and elogind not found.\nSee https://github.com/leftwm/leftwm/wiki/XDG_RUNTIME_DIR for more information.\x1b[0m",);
 
-            Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Elogind not installed/operating and no alternative XDG_RUNTIME_DIR is set.",
-            )))
+            bail!("Elogind not installed/operating and no alternative XDG_RUNTIME_DIR is set.");
         }
         (Err(e), true) => {
             if verbose {
@@ -274,10 +255,7 @@ fn check_theme(verbose: bool) -> Result<()> {
 
 fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> Result<()> {
     if let Some(file) = missing_expected_file(&filepaths) {
-        Err(leftwm::errors::LeftError::from(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("File: \'{}\' not found.", file),
-        )))
+        bail!("File not found: {}", file);
     } else {
         for filepath in filepaths {
             match filepath {
@@ -322,42 +300,26 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
             }
             Ok(p)
         }
-        None => Err(leftwm::errors::LeftError::from(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m".to_string(),
-        ))),
+        None => bail!("No theme folder or symlink `current` found."),
     }
 }
 
 fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
-    let metadata = match fs::metadata(&filepath) {
-        Ok(metadata) => metadata,
-        Err(_) => {
-            return Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Couldn't read metadata.",
-            )))
-        }
-    };
+    let metadata = fs::metadata(&filepath)?;
     let permissions = metadata.permissions();
     if verbose {
         if metadata.is_file() && (permissions.mode() & 0o111 != 0) {
             println!(
-                "Found {:?} with executable permissions: {:?}",
-                &filepath,
-                permissions.mode() & 0o111 != 0
+                "Found `{}` with executable permissions: {:?}",
+                filepath.display(),
+                permissions.mode() & 0o111 != 0,
             );
             Ok(filepath)
         } else {
-            let error = format!(
-                "\x1b[1;91mERROR: Found {:?}, but missing executable permissions!\x1b[0m",
-                &filepath
+            bail!(
+                "Found `{}`, but missing executable permissions!",
+                filepath.display(),
             );
-            println!("{}", error);
-            Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                error,
-            )))
         }
     } else {
         Ok(filepath)
@@ -365,34 +327,20 @@ fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
 }
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
-    let metadata = if let Ok(metadata) = fs::metadata(&filepath) {
-        metadata
-    } else {
-        let error = "\x1b[1;91mERROR: Could not read metadata!\x1b[0m".to_string();
-        return Err(leftwm::errors::LeftError::from(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            error,
-        )));
-    };
+    let metadata = fs::metadata(&filepath)?;
     let contents = fs::read_to_string(&filepath.as_path())?;
-    let theme_parsable = toml::from_str::<ThemeSetting>(&contents).is_ok();
     if verbose {
         if metadata.is_file() {
-            println!("Found {:?}", &filepath);
-            // TODO better Errormessage for broken theme file
-            if theme_parsable {
-                println!("The theme file looks OK.");
-            } else {
-                println!("\x1b[1;91mERROR: The theme file is broken.\x1b[0m");
+            println!("Found: {}", filepath.display());
+            match toml::from_str::<ThemeSetting>(&contents) {
+                Ok(_) => {
+                    println!("The theme file looks OK.");
+                    Ok(filepath)
+                }
+                Err(err) => bail!("Could not parse theme file: {}", err),
             }
-            Ok(filepath)
         } else {
-            let error = "\x1b[1;91mERROR: No `theme.toml` found\x1b[0m".to_string();
-            println!("{}", error);
-            Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                error,
-            )))
+            bail!("No `theme.toml` found at path: {}", filepath.display());
         }
     } else {
         Ok(filepath)
