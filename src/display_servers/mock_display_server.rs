@@ -19,14 +19,14 @@ impl DisplayServer for MockDisplayServer {
     }
 
     fn wait_readable(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> {
-        todo!()
+        unimplemented!()
     }
 
     fn flush(&self) {
-        todo!()
+        unimplemented!()
     }
 
     fn verify_focused_window(&self) -> Vec<DisplayEvent> {
-        todo!()
+        unimplemented!()
     }
 }
