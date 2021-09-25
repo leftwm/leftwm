@@ -12,7 +12,6 @@ use crate::layouts::Layout;
 use crate::models::TagId;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
-use std::str::FromStr;
 
 impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     /* Please also update src/bin/leftwm-check if any of the following apply after your update:
@@ -33,7 +32,7 @@ fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     match command {
         Command::Execute => execute(manager, val),
 
-        Command::ToggleScratchPad => toggle_scratchpad(manager, val),
+        Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name.to_owned()),
 
         Command::ToggleFullScreen => toggle_fullscreen(manager),
 
@@ -51,7 +50,7 @@ fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         Command::NextLayout => next_layout(manager),
         Command::PreviousLayout => previous_layout(manager),
 
-        Command::SetLayout => set_layout(val, manager),
+        Command::SetLayout(layout) => set_layout(*layout, manager),
 
         Command::FloatingToTile => floating_to_tile(manager),
 
@@ -78,7 +77,10 @@ fn process_internal<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 
         Command::IncreaseMainWidth => change_main_width(manager, val, 1),
         Command::DecreaseMainWidth => change_main_width(manager, val, -1),
-        Command::SetMarginMultiplier => set_margin_multiplier(manager, val),
+        Command::SetMarginMultiplier(multiplier) => set_margin_multiplier(manager, *multiplier),
+        Command::SendWorkspaceToTag(ws_index, tag_index) => {
+            send_workspace_to_tag(manager, *ws_index, *tag_index)
+        }
         Command::Other(cmd) => C::command_handler(cmd, val, manager),
     }
 }
@@ -93,9 +95,8 @@ fn execute<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 
 fn toggle_scratchpad<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     manager: &mut Manager<C, CMD, SERVER>,
-    val: Option<&str>,
+    name: String,
 ) -> Option<bool> {
-    let name = val.clone()?;
     let tag = &manager.focused_tag(0)?;
     let s = manager
         .state
@@ -324,10 +325,9 @@ fn previous_layout<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 }
 
 fn set_layout<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
-    val: Option<&str>,
+    layout: Layout,
     manager: &mut Manager<C, CMD, SERVER>,
 ) -> Option<bool> {
-    let layout = Layout::from_str(val.as_ref()?).ok()?;
     let workspace = manager
         .state
         .focus_manager
@@ -524,9 +524,8 @@ fn change_main_width<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 
 fn set_margin_multiplier<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     manager: &mut Manager<C, CMD, SERVER>,
-    val: Option<&str>,
+    margin_multiplier: f32,
 ) -> Option<bool> {
-    let margin_multiplier: f32 = val.as_ref()?.parse().ok()?;
     let ws = manager.focused_workspace_mut()?;
     ws.set_margin_multiplier(margin_multiplier);
     let tags = ws.tags.clone();
@@ -566,6 +565,20 @@ fn handle_focus<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         }
         _ => manager.focus_window(&handle),
     }
+}
+
+fn send_workspace_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    manager: &mut Manager<C, CMD, SERVER>,
+    ws_index: usize,
+    tag_index: usize,
+) -> Option<bool> {
+    if ws_index < manager.state.workspaces.len() && tag_index < manager.tags.len() {
+        let workspace = &manager.state.workspaces[ws_index].clone();
+        manager.focus_workspace(workspace);
+        manager.goto_tag_handler(tag_index + 1);
+        return Some(true);
+    }
+    Some(false)
 }
 
 #[cfg(test)]

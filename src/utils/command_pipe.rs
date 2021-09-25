@@ -1,4 +1,5 @@
 //! Creates a pipe to listen for external commands.
+use crate::layouts::Layout;
 use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -141,7 +142,14 @@ fn build_set_layout(raw: &str) -> std::result::Result<ExternalCommand, ()> {
     let headless = without_head(raw, "SetLayout ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let layout_name = *parts.get(0).ok_or(())?;
-    let layout = String::from_str(layout_name).map_err(|_| ())?;
+    let layout = match Layout::from_str(layout_name) {
+        Ok(layout) => layout,
+        Err(err) => {
+            // TODO better global handling
+            log::error!("{}", err);
+            return Err(());
+        }
+    };
     Ok(ExternalCommand::SetLayout(layout))
 }
 
@@ -151,7 +159,7 @@ fn build_set_margin_multiplier(raw: &str) -> std::result::Result<ExternalCommand
     if parts.len() != 1 {
         return Err(());
     }
-    let margin_multiplier = String::from_str(parts[0]).map_err(|_| ())?;
+    let margin_multiplier = f32::from_str(parts[0]).map_err(|_| ())?;
     Ok(ExternalCommand::SetMarginMultiplier(margin_multiplier))
 }
 
@@ -185,8 +193,8 @@ pub enum ExternalCommand {
     NextLayout,
     PreviousLayout,
     RotateTag,
-    SetLayout(String),
-    SetMarginMultiplier(String),
+    SetLayout(Layout),
+    SetMarginMultiplier(f32),
 }
 
 #[cfg(test)]

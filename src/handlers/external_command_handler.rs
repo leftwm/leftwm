@@ -19,7 +19,7 @@ fn process_work<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 ) -> bool {
     match command {
         ExternalCommand::ToggleScratchPad(name) => {
-            manager.command_handler(&Command::ToggleScratchPad, Some(&name))
+            manager.command_handler(&Command::ToggleScratchPad(name), None)
         }
         ExternalCommand::ToggleFullScreen => {
             manager.command_handler(&Command::ToggleFullScreen, None)
@@ -29,10 +29,10 @@ fn process_work<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         }
         ExternalCommand::SendWindowToTag(tag_index) => send_window_to_tag(manager, tag_index),
         ExternalCommand::SetLayout(layout) => {
-            manager.command_handler(&Command::SetLayout, Some(&layout))
+            manager.command_handler(&Command::SetLayout(layout), None)
         }
-        ExternalCommand::SetMarginMultiplier(margin_multiplier) => {
-            manager.command_handler(&Command::SetMarginMultiplier, Some(&margin_multiplier))
+        ExternalCommand::SetMarginMultiplier(multiplier) => {
+            manager.command_handler(&Command::SetMarginMultiplier(multiplier), None)
         }
         ExternalCommand::SwapScreens => manager.command_handler(&Command::SwapTags, None),
         ExternalCommand::MoveWindowToLastWorkspace => {

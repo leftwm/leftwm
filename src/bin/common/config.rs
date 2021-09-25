@@ -43,7 +43,9 @@ impl TryFrom<Keybind> for leftwm::Keybind<Command> {
             SwapTags => leftwm::Command::SwapTags,
             SoftReload => leftwm::Command::SoftReload,
             HardReload => leftwm::Command::HardReload,
-            ToggleScratchPad => leftwm::Command::ToggleScratchPad,
+            ToggleScratchPad => leftwm::Command::ToggleScratchPad(
+                k.value.context("missing name for ToggleScratchPad")?,
+            ),
             ToggleFullScreen => leftwm::Command::ToggleFullScreen,
             GotoTag => leftwm::Command::GotoTag(
                 usize::from_str(&k.value.context("missing index value for GotoTag")?)
@@ -67,11 +69,20 @@ impl TryFrom<Keybind> for leftwm::Keybind<Command> {
             MouseMoveWindow => leftwm::Command::MouseMoveWindow,
             NextLayout => leftwm::Command::NextLayout,
             PreviousLayout => leftwm::Command::PreviousLayout,
-            SetLayout => leftwm::Command::SetLayout,
+            SetLayout => leftwm::Command::SetLayout(
+                Layout::from_str(&k.value.context("missing index value for SetLayout")?)
+                    .context("could not parse layout for command SetLayout")?,
+            ),
             RotateTag => leftwm::Command::RotateTag,
             IncreaseMainWidth => leftwm::Command::IncreaseMainWidth,
             DecreaseMainWidth => leftwm::Command::DecreaseMainWidth,
-            SetMarginMultiplier => leftwm::Command::SetMarginMultiplier,
+            SetMarginMultiplier => leftwm::Command::SetMarginMultiplier(
+                f32::from_str(
+                    &k.value
+                        .context("missing index value for SetMarginMultiplier")?,
+                )
+                .context("invalid index value for SetMarginMultiplier")?,
+            ),
             UnloadTheme => leftwm::Command::Other(Command::UnloadTheme),
             LoadTheme => leftwm::Command::Other(Command::LoadTheme(
                 k.value.context("missing index value for MoveToTag")?.into(),

@@ -1,9 +1,9 @@
-use crate::models::Tag;
-
 use super::models::Window;
 use super::models::Workspace;
+use crate::models::Tag;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use thiserror::Error;
 
 mod center_main;
 mod center_main_balanced;
@@ -17,7 +17,7 @@ mod main_and_vert_stack;
 mod monocle;
 mod right_main_and_vert_stack;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Layout {
     MainAndVertStack,
     MainAndHorizontalStack,
@@ -127,9 +127,14 @@ impl Layout {
     }
 }
 
+#[derive(Debug, Error)]
+#[error("Could not parse layout: {0}")]
+pub struct ParseLayoutError(String);
+
 // TODO: Perhaps there is a more efficient way to impl FromStr using serde
 impl FromStr for Layout {
-    type Err = ();
+    type Err = ParseLayoutError;
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "MainAndVertStack" => Ok(Layout::MainAndVertStack),
@@ -144,7 +149,7 @@ impl FromStr for Layout {
             "Monocle" => Ok(Layout::Monocle),
             "RightWiderLeftStack" => Ok(Layout::RightWiderLeftStack),
             "LeftWiderRightStack" => Ok(Layout::LeftWiderRightStack),
-            _ => Err(()),
+            _ => Err(ParseLayoutError(s.to_string())),
         }
     }
 }

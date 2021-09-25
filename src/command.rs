@@ -1,3 +1,4 @@
+use crate::layouts::Layout;
 use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +10,7 @@ pub enum Command<CMD> {
     SwapTags,
     SoftReload,
     HardReload,
-    ToggleScratchPad,
+    ToggleScratchPad(String),
     ToggleFullScreen,
     GotoTag(usize),
     FloatingToTile,
@@ -27,10 +28,11 @@ pub enum Command<CMD> {
     MouseMoveWindow,
     NextLayout,
     PreviousLayout,
-    SetLayout,
+    SetLayout(Layout),
     RotateTag,
     IncreaseMainWidth,
     DecreaseMainWidth,
-    SetMarginMultiplier,
+    SetMarginMultiplier(f32),
+    SendWorkspaceToTag(usize, usize),
     Other(#[derivative(Debug = "ignore")] CMD),
 }
