@@ -50,11 +50,11 @@ pub const LAYOUTS: [Layout; 12] = [
 
 // This is tedious, but simple and effective.
 impl Layout {
-    pub fn new(layouts: &[Layout]) -> Self {
+    pub fn new(layouts: &[Self]) -> Self {
         if let Some(layout) = layouts.first() {
             return layout.clone();
         }
-        Layout::Fibonacci
+        Self::Fibonacci
     }
     pub fn update_windows(
         &self,
@@ -83,7 +83,7 @@ impl Layout {
         }
     }
 
-    pub fn main_width(&self) -> u8 {
+    pub const fn main_width(&self) -> u8 {
         match self {
             Self::RightWiderLeftStack | Self::LeftWiderRightStack => 75,
             _ => 50,
@@ -104,10 +104,10 @@ impl Layout {
         }
     }
 
-    pub fn next_layout(&self, layouts: &[Layout]) -> Self {
+    pub fn next_layout(&self, layouts: &[Self]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,
-            None => return Layout::Fibonacci,
+            None => return Self::Fibonacci,
         } + 1;
         if index >= layouts.len() as isize {
             index = 0;
@@ -115,10 +115,10 @@ impl Layout {
         layouts[index as usize].clone()
     }
 
-    pub fn prev_layout(&self, layouts: &[Layout]) -> Self {
+    pub fn prev_layout(&self, layouts: &[Self]) -> Self {
         let mut index = match layouts.iter().position(|x| x == self) {
             Some(x) => x as isize,
-            None => return Layout::Fibonacci,
+            None => return Self::Fibonacci,
         } - 1;
         if index < 0 {
             index = layouts.len() as isize - 1;
@@ -137,18 +137,18 @@ impl FromStr for Layout {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "MainAndVertStack" => Ok(Layout::MainAndVertStack),
-            "MainAndHorizontalStack" => Ok(Layout::MainAndHorizontalStack),
-            "MainAndDeck" => Ok(Layout::MainAndDeck),
-            "GridHorizontal" => Ok(Layout::GridHorizontal),
-            "EvenHorizontal" => Ok(Layout::EvenHorizontal),
-            "EvenVertical" => Ok(Layout::EvenVertical),
-            "Fibonacci" => Ok(Layout::Fibonacci),
-            "CenterMain" => Ok(Layout::CenterMain),
-            "CenterMainBalanced" => Ok(Layout::CenterMainBalanced),
-            "Monocle" => Ok(Layout::Monocle),
-            "RightWiderLeftStack" => Ok(Layout::RightWiderLeftStack),
-            "LeftWiderRightStack" => Ok(Layout::LeftWiderRightStack),
+            "MainAndVertStack" => Ok(Self::MainAndVertStack),
+            "MainAndHorizontalStack" => Ok(Self::MainAndHorizontalStack),
+            "MainAndDeck" => Ok(Self::MainAndDeck),
+            "GridHorizontal" => Ok(Self::GridHorizontal),
+            "EvenHorizontal" => Ok(Self::EvenHorizontal),
+            "EvenVertical" => Ok(Self::EvenVertical),
+            "Fibonacci" => Ok(Self::Fibonacci),
+            "CenterMain" => Ok(Self::CenterMain),
+            "CenterMainBalanced" => Ok(Self::CenterMainBalanced),
+            "Monocle" => Ok(Self::Monocle),
+            "RightWiderLeftStack" => Ok(Self::RightWiderLeftStack),
+            "LeftWiderRightStack" => Ok(Self::LeftWiderRightStack),
             _ => Err(ParseLayoutError(s.to_string())),
         }
     }

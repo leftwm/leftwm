@@ -16,7 +16,7 @@ pub enum FocusBehaviour {
 
 impl Default for FocusBehaviour {
     fn default() -> Self {
-        FocusBehaviour::Sloppy
+        Self::Sloppy
     }
 }
 

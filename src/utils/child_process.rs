@@ -13,13 +13,8 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{atomic::AtomicBool, Arc};
 use xdg::BaseDirectories;
 
+#[derive(Default)]
 pub struct Nanny {}
-
-impl Default for Nanny {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl Nanny {
     #[must_use]
@@ -73,9 +68,9 @@ impl Nanny {
     /// Will error if unable to open current config directory.
     /// Could be caused by inadequate permissions.
     pub fn run_global_up_script() -> Result<Option<Child>> {
-        let mut path = Nanny::get_config_dir()?;
+        let mut path = Self::get_config_dir()?;
         path.push("up");
-        Nanny::run_script(&path)
+        Self::run_script(&path)
     }
 
     /// Runs the 'up' script of the current theme, if there is one.
@@ -85,11 +80,11 @@ impl Nanny {
     /// Will error if unable to open current theme directory.
     /// Could be caused by inadequate permissions.
     pub fn boot_current_theme() -> Result<Option<Child>> {
-        let mut path = Nanny::get_config_dir()?;
+        let mut path = Self::get_config_dir()?;
         path.push("themes");
         path.push("current");
         path.push("up");
-        Nanny::run_script(&path)
+        Self::run_script(&path)
     }
 }
 
@@ -130,7 +125,7 @@ pub struct Children {
 impl Children {
     #[must_use]
     pub fn new() -> Self {
-        Children::default()
+        Self::default()
     }
     #[must_use]
     pub fn len(&self) -> usize {

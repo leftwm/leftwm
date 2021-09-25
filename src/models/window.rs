@@ -50,8 +50,8 @@ pub struct Window {
 
 impl Window {
     #[must_use]
-    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Window {
-        Window {
+    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Self {
+        Self {
             handle: h,
             transient: None,
             visible: false,
@@ -112,7 +112,7 @@ impl Window {
     }
 
     #[must_use]
-    pub fn get_floating_offsets(&self) -> Option<Xyhw> {
+    pub const fn get_floating_offsets(&self) -> Option<Xyhw> {
         self.floating
     }
 
@@ -212,7 +212,7 @@ impl Window {
     }
 
     #[must_use]
-    pub fn margin_multiplier(&self) -> f32 {
+    pub const fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
     }
 

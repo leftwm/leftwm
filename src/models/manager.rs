@@ -215,6 +215,6 @@ impl Manager<()> {
             on_new_window_cmd: Default::default(),
         });
 
-        Manager::new(&TestConfig { tags }, theme_setting)
+        Self::new(&TestConfig { tags }, theme_setting)
     }
 }

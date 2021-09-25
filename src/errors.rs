@@ -16,7 +16,7 @@ pub enum LeftErrorKind {
     StreamError(),
 }
 
-pub(crate) fn stream_error() -> LeftError {
+pub(crate) const fn stream_error() -> LeftError {
     LeftError {
         inner: LeftErrorKind::StreamError(),
     }
@@ -41,31 +41,31 @@ impl fmt::Display for LeftErrorKind {
 }
 
 impl From<LeftErrorKind> for LeftError {
-    fn from(inner: LeftErrorKind) -> LeftError {
-        LeftError { inner }
+    fn from(inner: LeftErrorKind) -> Self {
+        Self { inner }
     }
 }
 
 impl From<serde_json::error::Error> for LeftError {
-    fn from(inner: serde_json::error::Error) -> LeftError {
+    fn from(inner: serde_json::error::Error) -> Self {
         LeftErrorKind::SerdeParse(inner).into()
     }
 }
 
 impl From<std::io::Error> for LeftError {
-    fn from(inner: std::io::Error) -> LeftError {
+    fn from(inner: std::io::Error) -> Self {
         LeftErrorKind::IoError(inner).into()
     }
 }
 
 impl From<xdg::BaseDirectoriesError> for LeftError {
-    fn from(inner: xdg::BaseDirectoriesError) -> LeftError {
+    fn from(inner: xdg::BaseDirectoriesError) -> Self {
         LeftErrorKind::XdgBaseDirError(inner).into()
     }
 }
 
 impl From<toml::de::Error> for LeftError {
-    fn from(inner: toml::de::Error) -> LeftError {
+    fn from(inner: toml::de::Error) -> Self {
         LeftErrorKind::TomlParse(inner).into()
     }
 }

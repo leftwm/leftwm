@@ -19,6 +19,7 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
      * - a command no longer requires a value
      * - a new command is introduced that requires a value
      *  */
+    /// Processes a command and invokes the associated function.
     pub fn command_handler(&mut self, command: &Command<CMD>, val: Option<&str>) -> bool {
         process_internal(self, command, val).unwrap_or(false)
     }
@@ -196,13 +197,14 @@ fn goto_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
-    let mut destination_tag = input_tag;
-    if !manager.state.config.disable_current_tag_swap() {
-        destination_tag = match (current_tag, previous_tag, input_tag) {
+    let destination_tag = if manager.state.config.disable_current_tag_swap() {
+        input_tag
+    } else {
+        match (current_tag, previous_tag, input_tag) {
             (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => prev_tag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
             (_, _, _) => input_tag, // go to the input tag tag
-        };
-    }
+        }
+    };
     Some(manager.goto_tag_handler(destination_tag))
 }
 

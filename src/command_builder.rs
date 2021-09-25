@@ -23,7 +23,7 @@ impl<C: Config<CMD>, CMD> CommandBuilder<C, CMD> {
                 lookup.insert(id, b);
             }
         }
-        CommandBuilder {
+        Self {
             keybinds: lookup,
             marker: PhantomData,
         }

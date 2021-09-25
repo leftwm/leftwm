@@ -21,8 +21,8 @@ pub struct WindowChange {
 
 impl WindowChange {
     #[must_use]
-    pub fn new(h: WindowHandle) -> WindowChange {
-        WindowChange {
+    pub const fn new(h: WindowHandle) -> Self {
+        Self {
             handle: h,
             transient: None,
             never_focus: None,
