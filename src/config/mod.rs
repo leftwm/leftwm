@@ -4,7 +4,7 @@ mod workspace_config;
 
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-pub use crate::models::{FocusBehaviour, Gutter, Margins};
+pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
 use crate::Manager;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
@@ -49,6 +49,7 @@ pub trait Config<CMD> {
     fn focused_border_color(&self) -> &str;
     fn on_new_window_cmd(&self) -> Option<String>;
     fn get_list_of_gutters(&self) -> Vec<Gutter>;
+    fn max_window_width(&self) -> Option<Size>;
 
     /// Write current state to a file.
     /// It will be used to restore the state after soft reload.

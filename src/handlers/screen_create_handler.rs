@@ -15,6 +15,9 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
             screen.bbox,
             self.state.tags.clone(),
             self.state.layouts.clone(),
+            screen
+                .max_window_width
+                .or(self.state.config.max_window_width()),
         );
         if workspace.id.is_none() {
             workspace.id = Some(

@@ -213,6 +213,7 @@ impl Manager<()> {
             floating_border_color: Default::default(),
             focused_border_color: Default::default(),
             on_new_window_cmd: Default::default(),
+            max_window_width: None,
         });
 
         Self::new(&TestConfig { tags }, theme_setting)

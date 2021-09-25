@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use leftwm::{
     config::{ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, Margins},
+    models::{FocusBehaviour, Gutter, Margins, Size},
     DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
@@ -106,6 +106,7 @@ pub struct Config {
     pub mousekey: String,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
+    pub max_window_width: Option<Size>,
     pub layouts: Vec<Layout>,
     pub scratchpad: Option<Vec<ScratchPad>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
@@ -354,6 +355,10 @@ impl leftwm::Config<Command> for Config {
         self.theme_setting.gutter.clone().unwrap_or_default()
     }
 
+    fn max_window_width(&self) -> Option<Size> {
+        self.max_window_width
+    }
+
     fn save_state<SERVER: DisplayServer<Command>>(manager: &Manager<Self, Command, SERVER>) {
         let path = manager.state.config.state_file();
         let state_file = match File::create(&path) {
@@ -600,6 +605,7 @@ impl Default for Config {
             mousekey: "Mod4".to_owned(), //win key
             keybind: commands,
             theme_setting: ThemeSetting::default(),
+            max_window_width: None,
             state: None,
         }
     }

@@ -8,8 +8,8 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
     let mut y = 0;
     for w in windows.iter_mut() {
         w.set_height(height);
-        w.set_width(workspace.width());
-        w.set_x(workspace.x());
+        w.set_width(workspace.width_limited(1));
+        w.set_x(workspace.x_limited(1));
         w.set_y(workspace.y() + y);
         y += height;
     }
