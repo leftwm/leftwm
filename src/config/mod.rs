@@ -107,7 +107,7 @@ impl Config for TestConfig {
         Self: Sized,
         SERVER: DisplayServer,
     {
-        todo!()
+        unimplemented!()
     }
     fn border_width(&self) -> i32 {
         0
@@ -119,16 +119,16 @@ impl Config for TestConfig {
         None
     }
     fn gutter(&self) -> Option<Vec<Gutter>> {
-        todo!()
+        unimplemented!()
     }
     fn default_border_color(&self) -> &str {
-        todo!()
+        unimplemented!()
     }
     fn floating_border_color(&self) -> &str {
-        todo!()
+        unimplemented!()
     }
     fn focused_border_color(&self) -> &str {
-        todo!()
+        unimplemented!()
     }
     fn on_new_window_cmd(&self) -> Option<String> {
         None
@@ -144,7 +144,7 @@ impl Config for TestConfig {
         Self: Sized,
         SERVER: DisplayServer,
     {
-        todo!()
+        unimplemented!()
     }
     /// Load saved state if it exists.
     fn load_state<SERVER>(_manager: &mut Manager<Self, SERVER>)
@@ -152,6 +152,6 @@ impl Config for TestConfig {
         Self: Sized,
         SERVER: DisplayServer,
     {
-        todo!()
+        unimplemented!()
     }
 }
