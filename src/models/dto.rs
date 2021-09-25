@@ -110,9 +110,9 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> From<&Manager<C, CMD, SERV
 {
     fn from(manager: &Manager<C, CMD, SERVER>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
-        let mut tags_len = manager.tags.len();
+        let mut tags_len = manager.state.tags.len();
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
-        let working_tags = manager.tags[0..tags_len]
+        let working_tags = manager.state.tags[0..tags_len]
             .iter()
             .filter(|tag| manager.state.windows.iter().any(|w| w.has_tag(&tag.id)))
             .map(|t| t.id.clone())
@@ -137,7 +137,7 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> From<&Manager<C, CMD, SERV
         };
         Self {
             window_title,
-            desktop_names: manager.tags[0..tags_len]
+            desktop_names: manager.state.tags[0..tags_len]
                 .iter()
                 .map(|t| t.id.clone())
                 .collect(),

@@ -14,7 +14,7 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
             .for_each(|w| w.set_visible(w.tags.is_empty()));
 
         for ws in &mut self.state.workspaces {
-            ws.update_windows(&mut self.state.windows, &mut self.tags);
+            ws.update_windows(&mut self.state.windows, &mut self.state.tags);
 
             self.state
                 .windows

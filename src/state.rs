@@ -5,6 +5,7 @@ use crate::layouts::Layout;
 use crate::models::FocusManager;
 use crate::models::Mode;
 use crate::models::Screen;
+use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 use crate::{DisplayAction, DisplayServer, Manager};
@@ -29,6 +30,7 @@ pub struct State<C, CMD> {
     // TODO should this really be saved in the state?
     //this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
+    pub tags: Vec<Tag>, //list of all known tags
     marker: PhantomData<CMD>,
 }
 
@@ -37,6 +39,17 @@ where
     C: Config<CMD>,
 {
     pub(crate) fn new(config: C) -> Self {
+        let mut tags: Vec<Tag> = config
+            .create_list_of_tags()
+            .iter()
+            .map(|s| Tag::new(s))
+            .collect();
+        tags.push(Tag {
+            id: "NSP".to_owned(),
+            hidden: true,
+            ..Tag::default()
+        });
+
         Self {
             focus_manager: FocusManager::new(&config),
             scratchpads: config.create_list_of_scratchpads(),
@@ -48,6 +61,7 @@ where
             active_scratchpads: Default::default(),
             actions: Default::default(),
             frame_rate_limitor: Default::default(),
+            tags,
             config,
             marker: PhantomData,
         }
@@ -77,22 +91,36 @@ where
             if let Some((index, window)) = self
                 .state
                 .windows
+                .clone()
                 .iter_mut()
                 .enumerate()
                 .find(|w| w.1.handle == old.handle)
             {
                 had_strut = old.strut.is_some() || had_strut;
-                if let Some(tag) = old.tags.first() {
-                    let act = DisplayAction::SetWindowTags(window.handle, tag.clone());
-                    self.state.actions.push_back(act);
-                }
 
                 window.set_floating(old.floating());
                 window.set_floating_offsets(old.get_floating_offsets());
                 window.apply_margin_multiplier(old.margin_multiplier);
                 window.pid = old.pid;
                 window.normal = old.normal;
-                window.tags = old.tags.clone();
+                if self.state.tags.eq(&state.tags) {
+                    window.tags = old.tags.clone();
+                } else {
+                    old.tags.iter().for_each(|t| {
+                        let manager_tags = &self.state.tags.clone();
+                        let tag_index =
+                            &state.tags.clone().iter().position(|o| &o.id == t).unwrap();
+                        window.clear_tags();
+                        // if the config prior reload had more tags then the current one
+                        // we want to move windows of 'lost tags' to the 'first' tag
+                        // also we want to ignore the `NSP` tag for length check
+                        if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
+                            window.tag(&manager_tags[*tag_index].id);
+                        } else {
+                            window.tag(&manager_tags.first().unwrap().id);
+                        }
+                    });
+                }
                 window.strut = old.strut;
                 window.set_states(old.states());
                 ordered.push(window.clone());

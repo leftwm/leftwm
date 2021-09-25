@@ -4,11 +4,11 @@ use crate::display_servers::DisplayServer;
 
 impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     pub fn goto_tag_handler(&mut self, tag_num: usize) -> bool {
-        if tag_num > self.tags.len() || tag_num < 1 {
+        if tag_num > self.state.tags.len() || tag_num < 1 {
             return false;
         }
 
-        let tag = self.tags[tag_num - 1].clone();
+        let tag = self.state.tags[tag_num - 1].clone();
         let new_tags = vec![tag.id.clone()];
         //no focus safety check
         let old_tags = match self.focused_workspace() {

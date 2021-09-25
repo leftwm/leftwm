@@ -13,7 +13,7 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
         let mut workspace = Workspace::new(
             screen.wsid,
             screen.bbox,
-            self.tags.clone(),
+            self.state.tags.clone(),
             self.state.layouts.clone(),
         );
         if workspace.id.is_none() {
@@ -27,19 +27,19 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
                     + 1,
             );
         }
-        if workspace.id.unwrap_or(0) as usize >= self.tags.len() {
+        if workspace.id.unwrap_or(0) as usize >= self.state.tags.len() {
             dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
         }
         workspace.update_for_theme(&self.state.config);
         //make sure are enough tags for this new screen
-        if self.tags.len() <= tag_index {
+        if self.state.tags.len() <= tag_index {
             let id = (tag_index + 1).to_string();
-            self.tags.push(Tag::new(&id));
+            self.state.tags.push(Tag::new(&id));
         }
-        let next_tag = self.tags[tag_index].clone();
+        let next_tag = self.state.tags[tag_index].clone();
         self.focus_workspace(&workspace);
         self.focus_tag(&next_tag.id);
-        workspace.show_tag(&mut self.tags, &next_tag);
+        workspace.show_tag(&mut self.state.tags, &next_tag);
         self.state.workspaces.push(workspace.clone());
         self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
         self.state.screens.push(screen);

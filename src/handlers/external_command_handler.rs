@@ -69,7 +69,7 @@ fn send_workspace_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     ws_index: usize,
     tag_index: usize,
 ) -> bool {
-    if ws_index < manager.state.workspaces.len() && tag_index < manager.tags.len() {
+    if ws_index < manager.state.workspaces.len() && tag_index < manager.state.tags.len() {
         let workspace = &manager.state.workspaces[ws_index].clone();
         manager.focus_workspace(workspace);
         manager.goto_tag_handler(tag_index + 1);
@@ -82,7 +82,7 @@ fn send_window_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     manager: &mut Manager<C, CMD, SERVER>,
     tag_index: usize,
 ) -> bool {
-    if tag_index < manager.tags.len() {
+    if tag_index < manager.state.tags.len() {
         //tag number as 1 based.
         return manager.command_handler(&Command::MoveToTag(tag_index + 1), None);
     }

@@ -161,7 +161,7 @@ fn move_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     tag_num: usize,
     manager: &mut Manager<C, CMD, SERVER>,
 ) -> Option<bool> {
-    let tag = manager.tags.get(tag_num - 1)?.clone();
+    let tag = manager.state.tags.get(tag_num - 1)?.clone();
 
     // In order to apply the correct margin multiplier we want to copy this value
     // from any window already present on the target tag
@@ -212,7 +212,7 @@ fn focus_tag_change<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 ) -> Option<bool> {
     let current = manager.focused_tag(0)?;
     let active_tags: Vec<(usize, TagId)> = manager
-        .tags
+        .state.tags
         .iter()
         .enumerate()
         .filter(|(_, tag)| !tag.hidden)
@@ -270,7 +270,7 @@ fn swap_tags<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
             .get(1)
             .map(std::string::ToString::to_string)?;
 
-        let tag_index = manager.tags.iter().position(|x| x.id == last)? + 1;
+        let tag_index = manager.state.tags.iter().position(|x| x.id == last)? + 1;
         return Some(manager.goto_tag_handler(tag_index));
     }
     None
@@ -309,7 +309,7 @@ fn next_layout<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         .state
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.next_layout(&mut manager.tags);
+    workspace.next_layout(&mut manager.state.tags);
     Some(true)
 }
 
@@ -320,7 +320,7 @@ fn previous_layout<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         .state
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.prev_layout(&mut manager.tags);
+    workspace.prev_layout(&mut manager.state.tags);
     Some(true)
 }
 
@@ -332,7 +332,7 @@ fn set_layout<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         .state
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.set_layout(&mut manager.tags, layout);
+    workspace.set_layout(&mut manager.state.tags, layout);
     Some(true)
 }
 
@@ -504,7 +504,7 @@ fn rotate_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         .state
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
-    let _ = workspace.rotate_layout(&mut manager.tags);
+    let _ = workspace.rotate_layout(&mut manager.state.tags);
     Some(true)
 }
 
@@ -518,7 +518,7 @@ fn change_main_width<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
     let delta: i8 = val.as_ref()?.parse().ok()?;
-    workspace.change_main_width(&mut manager.tags, delta * factor);
+    workspace.change_main_width(&mut manager.state.tags, delta * factor);
     Some(true)
 }
 
@@ -572,7 +572,7 @@ fn send_workspace_to_tag<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     ws_index: usize,
     tag_index: usize,
 ) -> Option<bool> {
-    if ws_index < manager.state.workspaces.len() && tag_index < manager.tags.len() {
+    if ws_index < manager.state.workspaces.len() && tag_index < manager.state.tags.len() {
         let workspace = &manager.state.workspaces[ws_index].clone();
         manager.focus_workspace(workspace);
         manager.goto_tag_handler(tag_index + 1);

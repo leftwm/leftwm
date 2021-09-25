@@ -1,7 +1,6 @@
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::models::Tag;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
@@ -14,9 +13,6 @@ use std::sync::{atomic::AtomicBool, Arc};
 #[derive(Debug)]
 pub struct Manager<C, CMD, SERVER> {
     pub state: State<C, CMD>,
-
-    // TODO not sure why this is not in the state ....
-    pub tags: Vec<Tag>, //list of all known tags
 
     pub(crate) children: Children,
     pub(crate) reap_requested: Arc<AtomicBool>,
@@ -33,19 +29,8 @@ where
 {
     pub fn new(config: C) -> Self {
         let display_server = SERVER::new(&config);
-        let mut tags: Vec<Tag> = config
-            .create_list_of_tags()
-            .iter()
-            .map(|s| Tag::new(s))
-            .collect();
-        tags.push(Tag {
-            id: "NSP".to_owned(),
-            hidden: true,
-            ..Tag::default()
-        });
 
         Self {
-            tags,
             state: State::new(config),
             children: Default::default(),
             reap_requested: Default::default(),
@@ -82,7 +67,7 @@ where
     /// Return the index of a given tag.
     #[must_use]
     pub fn tag_index(&self, tag: &str) -> Option<usize> {
-        Some(self.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
+        Some(self.state.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
     }
 
     /// Return the currently focused window.
