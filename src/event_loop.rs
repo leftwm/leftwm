@@ -3,7 +3,6 @@ use crate::{CommandPipe, DisplayServer, Manager, Mode, StateSocket, Window, Work
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
-// TODO remove this constraint Send + 'static
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub async fn event_loop(mut self) {
         let socket_file = place_runtime_file("current_state.sock")

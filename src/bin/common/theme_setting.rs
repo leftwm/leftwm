@@ -7,8 +7,8 @@ use std::path::Path;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ThemeSetting {
     pub border_width: i32,
-    pub margin: Margins,
-    pub workspace_margin: Option<Margins>,
+    pub margin: CustomMargins,
+    pub workspace_margin: Option<CustomMargins>,
     pub gutter: Option<Vec<Gutter>>,
     pub default_border_color: String,
     pub floating_border_color: String,
@@ -33,8 +33,8 @@ impl Default for ThemeSetting {
     fn default() -> Self {
         ThemeSetting {
             border_width: 1,
-            margin: Margins::new(10),
-            workspace_margin: Some(Margins::new(10)),
+            margin: CustomMargins::Int(10),
+            workspace_margin: Some(CustomMargins::Int(10)),
             gutter: None,
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
@@ -48,6 +48,41 @@ fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
     let from_file: ThemeSetting = toml::from_str(&contents)?;
     Ok(from_file)
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum CustomMargins {
+    Int(u32),
+    // format: [top, right, bottom, left] as per HTML
+    Vec(Vec<u32>),
+}
+
+impl std::convert::TryFrom<CustomMargins> for Margins {
+    type Error = &'static str;
+
+    fn try_from(c: CustomMargins) -> Result<Self, Self::Error> {
+        match c {
+            CustomMargins::Int(size) => Ok(Self {
+                top: size,
+                right: size,
+                bottom: size,
+                left: size,
+            }),
+            CustomMargins::Vec(vec) => {
+                if vec.len() > 4 {
+                    Err("too many values for margin (max is 4)")
+                } else {
+                    Ok(Self {
+                        top: *vec.get(0).unwrap_or(&0),
+                        right: *vec.get(1).unwrap_or(&0),
+                        bottom: *vec.get(2).unwrap_or(&0),
+                        left: *vec.get(3).unwrap_or(&0),
+                    })
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]

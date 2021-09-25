@@ -131,7 +131,6 @@ impl Layout {
 #[error("Could not parse layout: {0}")]
 pub struct ParseLayoutError(String);
 
-// TODO: Perhaps there is a more efficient way to impl FromStr using serde
 impl FromStr for Layout {
     type Err = ParseLayoutError;
 

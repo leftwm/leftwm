@@ -1,7 +1,6 @@
 //! Creates a pipe to listen for external commands.
 use crate::layouts::Layout;
 use crate::Command;
-use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tokio::fs;
@@ -36,7 +35,7 @@ impl CommandPipe {
     ///
     /// Will error if unable to `mkfifo`, likely a filesystem issue
     /// such as inadequate permissions.
-    pub async fn new(pipe_file: PathBuf) -> Result<Self> {
+    pub async fn new(pipe_file: PathBuf) -> Result<Self, std::io::Error> {
         fs::remove_file(pipe_file.as_path()).await.ok();
         if let Err(e) = nix::unistd::mkfifo(&pipe_file, nix::sys::stat::Mode::S_IRWXU) {
             log::error!("Failed to create new fifo {:?}", e);
@@ -64,14 +63,20 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
     let mut lines = BufReader::new(file).lines();
 
     while let Some(line) = lines.next_line().await.ok()? {
-        let cmd = parse_command(&line).ok()?;
+        let cmd = match parse_command(&line) {
+            Ok(cmd) => cmd,
+            Err(err) => {
+                log::error!("An error occurred while parsing the command: {}", err);
+                return None;
+            }
+        };
         tx.send(cmd).ok()?;
     }
 
     Some(())
 }
 
-fn parse_command(s: &str) -> std::result::Result<Command, ()> {
+fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
     match head {
         "SoftReload" => Ok(Command::SoftReload),
@@ -101,63 +106,42 @@ fn parse_command(s: &str) -> std::result::Result<Command, ()> {
     }
 }
 
-// TODO
-/*
-fn build_load_theme(raw: &str) -> std::result::Result<Command, ()> {
-    let headless = without_head(raw, "LoadTheme ");
-    let path = Path::new(headless);
-    if path.is_file() {
-        Ok(Command::LoadTheme(path.into()))
-    } else {
-        Err(())
-    }
-}
-*/
-
-fn build_toggle_scratchpad(raw: &str) -> std::result::Result<Command, ()> {
+fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "ToggleScratchPad ");
     let parts: Vec<&str> = headless.split(' ').collect();
-    let name = *parts.get(0).ok_or(())?;
+    let name = *parts.get(0).ok_or("missing argument scratchpad's name")?;
     Ok(Command::ToggleScratchPad(name.to_string()))
 }
 
-fn build_send_window_to_tag(raw: &str) -> std::result::Result<Command, ()> {
+fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "SendWindowToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
-    let tag_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
+    let tag_index: usize = parts.get(0).ok_or("missing argument tag_index")?.parse()?;
     Ok(Command::SendWindowToTag(tag_index))
 }
 
-fn build_send_workspace_to_tag(raw: &str) -> std::result::Result<Command, ()> {
+fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "SendWorkspaceToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
-    let ws_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
-    let tag_index: usize = parts.get(1).ok_or(())?.parse().map_err(|_| ())?;
+    let ws_index: usize = parts
+        .get(0)
+        .ok_or("missing argument workspace index")?
+        .parse()?;
+    let tag_index: usize = parts.get(1).ok_or("missing argument tag index")?.parse()?;
     Ok(Command::SendWorkspaceToTag(ws_index, tag_index))
 }
 
-fn build_set_layout(raw: &str) -> std::result::Result<Command, ()> {
+fn build_set_layout(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "SetLayout ");
     let parts: Vec<&str> = headless.split(' ').collect();
-    let layout_name = *parts.get(0).ok_or(())?;
-    let layout = match Layout::from_str(layout_name) {
-        Ok(layout) => layout,
-        Err(err) => {
-            // TODO better global handling
-            log::error!("{}", err);
-            return Err(());
-        }
-    };
-    Ok(Command::SetLayout(layout))
+    let layout_name = *parts.get(0).ok_or("missing layout name")?;
+    Ok(Command::SetLayout(Layout::from_str(layout_name)?))
 }
 
-fn build_set_margin_multiplier(raw: &str) -> std::result::Result<Command, ()> {
+fn build_set_margin_multiplier(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "SetMarginMultiplier ");
     let parts: Vec<&str> = headless.split(' ').collect();
-    if parts.len() != 1 {
-        return Err(());
-    }
-    let margin_multiplier = f32::from_str(parts[0]).map_err(|_| ())?;
+    let margin_multiplier = f32::from_str(parts.get(0).ok_or("missing argument multiplier")?)?;
     Ok(Command::SetMarginMultiplier(margin_multiplier))
 }
 

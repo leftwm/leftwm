@@ -10,6 +10,7 @@ use leftwm::{
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use std::convert::TryInto;
 use std::default::Default;
 use std::env;
 use std::fs;
@@ -347,11 +348,26 @@ impl leftwm::Config for Config {
     }
 
     fn margin(&self) -> Margins {
-        self.theme_setting.margin.clone()
+        match self.theme_setting.margin.clone().try_into() {
+            Ok(margins) => margins,
+            Err(err) => {
+                log::warn!("Could not read margin: {}", err);
+                Margins::new(0)
+            }
+        }
     }
 
     fn workspace_margin(&self) -> Option<Margins> {
-        self.theme_setting.workspace_margin.clone()
+        self.theme_setting
+            .workspace_margin
+            .clone()
+            .and_then(|custom_margin| match custom_margin.try_into() {
+                Ok(margins) => Some(margins),
+                Err(err) => {
+                    log::warn!("Could not read margin: {}", err);
+                    None
+                }
+            })
     }
 
     fn gutter(&self) -> Option<Vec<Gutter>> {

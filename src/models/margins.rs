@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-// TODO custom serialize/deserialize
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Margins {
     pub top: u32,
