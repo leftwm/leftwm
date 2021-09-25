@@ -217,6 +217,9 @@ mod test {
         // Let the OS close the write end of the pipe before shutting down the listener.
         time::sleep(time::Duration::from_millis(100)).await;
 
-        assert!(!pipe_file.exists());
+        // NOTE: clippy is drunk
+        {
+            assert!(!pipe_file.exists());
+        }
     }
 }

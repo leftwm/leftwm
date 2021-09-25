@@ -69,6 +69,7 @@ pub trait Config {
 }
 
 #[cfg(test)]
+#[allow(clippy::module_name_repetitions)]
 pub struct TestConfig {
     pub tags: Vec<String>,
 }
