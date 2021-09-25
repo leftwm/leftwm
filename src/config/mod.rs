@@ -74,7 +74,7 @@ pub struct TestConfig {
 }
 
 #[cfg(test)]
-impl<C: Config, SERVER: DisplayServer> Config for TestConfig {
+impl Config for TestConfig {
     fn mapped_bindings(&self) -> Vec<Keybind> {
         unimplemented!()
     }
@@ -101,5 +101,57 @@ impl<C: Config, SERVER: DisplayServer> Config for TestConfig {
     }
     fn focus_new_windows(&self) -> bool {
         false
+    }
+    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
+    where
+        Self: Sized,
+        SERVER: DisplayServer,
+    {
+        todo!()
+    }
+    fn border_width(&self) -> i32 {
+        0
+    }
+    fn margin(&self) -> Margins {
+        Margins::new(0)
+    }
+    fn workspace_margin(&self) -> Option<Margins> {
+        None
+    }
+    fn gutter(&self) -> Option<Vec<Gutter>> {
+        todo!()
+    }
+    fn default_border_color(&self) -> &str {
+        todo!()
+    }
+    fn floating_border_color(&self) -> &str {
+        todo!()
+    }
+    fn focused_border_color(&self) -> &str {
+        todo!()
+    }
+    fn on_new_window_cmd(&self) -> Option<String> {
+        None
+    }
+    fn get_list_of_gutters(&self) -> Vec<Gutter> {
+        Default::default()
+    }
+    fn max_window_width(&self) -> Option<Size> {
+        None
+    }
+    fn save_state<SERVER>(manager: &Manager<Self, SERVER>)
+    where
+        Self: Sized,
+        SERVER: DisplayServer,
+    {
+        todo!()
+    }
+    /// Load saved state if it exists.
+    fn load_state<SERVER>(manager: &mut Manager<Self, SERVER>)
+    where
+        Self: Sized,
+        SERVER: DisplayServer,
+    {
+        todo!()
     }
 }

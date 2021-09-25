@@ -159,34 +159,16 @@ mod test {
     use tokio::io::AsyncWriteExt;
     use tokio::time;
 
-    #[test]
-    fn read_command() {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(read_command_async());
-    }
-    async fn read_command_async() {
+    #[tokio::test]
+    async fn read_command() {
         let pipe_file = temp_path().await.unwrap();
         let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
-
-        // Open pipe for writing and write some garbage. Then close the pipe.
-        {
-            let mut pipe = fs::OpenOptions::new()
-                .write(true)
-                .open(pipe_file.clone())
-                .await
-                .unwrap();
-            pipe.write_all(vec![0x11, 0x22].as_ref()).await.unwrap();
-            pipe.flush().await.unwrap();
-        }
-
-        // Let the OS close the pipe.
-        time::sleep(time::Duration::from_millis(100)).await;
 
         // Write some meaningful command to the pipe and close it.
         {
             let mut pipe = fs::OpenOptions::new()
                 .write(true)
-                .open(pipe_file.clone())
+                .open(&pipe_file)
                 .await
                 .unwrap();
             pipe.write_all(b"SoftReload\n").await.unwrap();
@@ -197,14 +179,26 @@ mod test {
                 command_pipe.read_command().await.unwrap()
             );
         }
+
+        // Write some custom command and close it.
+        {
+            let mut pipe = fs::OpenOptions::new()
+                .write(true)
+                .open(&pipe_file)
+                .await
+                .unwrap();
+            pipe.write_all(b"Hello World\n").await.unwrap();
+            pipe.flush().await.unwrap();
+
+            assert_eq!(
+                Command::Other("Hello World".to_string()),
+                command_pipe.read_command().await.unwrap()
+            );
+        }
     }
 
-    #[test]
-    fn pipe_cleanup() {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        rt.block_on(pipe_cleanup_async());
-    }
-    async fn pipe_cleanup_async() {
+    #[tokio::test]
+    async fn pipe_cleanup() {
         let pipe_file = temp_path().await.unwrap();
         fs::remove_file(pipe_file.as_path()).await.unwrap();
 
@@ -213,10 +207,10 @@ mod test {
             let _command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
             let mut pipe = fs::OpenOptions::new()
                 .write(true)
-                .open(pipe_file.clone())
+                .open(&pipe_file)
                 .await
                 .unwrap();
-            pipe.write_all(b"UnloadTheme\n").await.unwrap();
+            pipe.write_all(b"ToggleFullScreen\n").await.unwrap();
             pipe.flush().await.unwrap();
         }
 

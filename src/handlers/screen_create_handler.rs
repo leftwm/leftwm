@@ -60,8 +60,8 @@ mod tests {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
-        assert!(manager.workspaces[0].has_tag("1"));
-        assert!(manager.workspaces[1].has_tag("2"));
+        assert!(manager.state.workspaces[0].has_tag("1"));
+        assert!(manager.state.workspaces[1].has_tag("2"));
     }
 
     #[test]
@@ -73,7 +73,7 @@ mod tests {
         ]);
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
-        assert!(manager.workspaces[0].has_tag("web"));
-        assert!(manager.workspaces[1].has_tag("console"));
+        assert!(manager.state.workspaces[0].has_tag("web"));
+        assert!(manager.state.workspaces[1].has_tag("console"));
     }
 }

@@ -195,23 +195,8 @@ where
 }
 
 #[cfg(test)]
-impl Manager<()> {
+impl Manager<crate::config::TestConfig, crate::display_servers::MockDisplayServer> {
     pub fn new_test(tags: Vec<String>) -> Self {
-        use crate::config::TestConfig;
-        use crate::models::Margins;
-
-        let theme_setting = Arc::new(ThemeSetting {
-            border_width: Default::default(),
-            margin: Margins::Int(0),
-            workspace_margin: None,
-            gutter: Default::default(),
-            default_border_color: Default::default(),
-            floating_border_color: Default::default(),
-            focused_border_color: Default::default(),
-            on_new_window_cmd: Default::default(),
-            max_window_width: None,
-        });
-
-        Self::new(&TestConfig { tags }, theme_setting)
+        Self::new(crate::config::TestConfig { tags })
     }
 }

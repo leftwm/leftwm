@@ -47,19 +47,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::TestConfig;
 
     #[test]
     fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
-        let mut manager = two_screen_mock_manager();
-        manager.goto_tag_handler(1);
-        assert_eq!(manager.workspaces[0].tags, ["2".to_owned()]);
-        assert_eq!(manager.workspaces[1].tags, ["1".to_owned()]);
-    }
-
-    fn two_screen_mock_manager() -> Manager<()> {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
-        manager
+        manager.goto_tag_handler(1);
+        assert_eq!(manager.state.workspaces[0].tags, ["2".to_owned()]);
+        assert_eq!(manager.state.workspaces[1].tags, ["1".to_owned()]);
     }
 }

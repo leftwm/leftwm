@@ -173,13 +173,13 @@ mod tests {
             vec![],
             None,
         );
-        ws.margin = Margins::Int(0);
+        ws.margin = Margins::new(0);
         ws.xyhw.set_minh(600);
         ws.xyhw.set_minw(800);
         ws.update_avoided_areas();
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.border = 0;
-        w.margin = Margins::Int(0);
+        w.margin = Margins::new(0);
         let mut windows = vec![&mut w];
         // let mut windows_filters: Vec<&mut Window> = windows.iter_mut().filter(|_f| true).collect();
         even_horizontal::update(&ws, &mut windows);

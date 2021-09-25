@@ -578,79 +578,32 @@ mod tests {
     use crate::models::Tag;
     use crate::state::State;
 
-    struct TestState;
-
-    impl State for TestState {
-        fn save<C: Config, SERVER: DisplayServer>(
-            &self,
-            _manager: &Manager<C, SERVER>,
-        ) -> Result<()> {
-            unimplemented!()
-        }
-        fn load<C: Config, SERVER: DisplayServer>(&self, _manager: &mut Manager<C, SERVER>) {
-            unimplemented!()
-        }
-    }
-
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::new_test(vec![]);
-        let config = TestConfig { tags: vec![] };
         // no screen creation here
-        assert!(!manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("6".to_string())
-        ));
-        assert!(!manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("2".to_string())
-        ));
-        assert!(!manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("15".to_string())
-        ),);
+        assert!(!manager.command_handler(&Command::GotoTag(6)));
+        assert!(!manager.command_handler(&Command::GotoTag(2)));
+        assert!(!manager.command_handler(&Command::GotoTag(15)));
     }
 
     #[test]
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
         let mut manager = Manager::new_test(vec![]);
-        let config = TestConfig { tags: vec![] };
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
         // no tag creation here but one tag per screen is created
-        assert!(manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("2".to_string())
-        ));
-        assert!(manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("1".to_string())
-        ));
+        assert!(manager.command_handler(&Command::GotoTag(2)));
+        assert!(manager.command_handler(&Command::GotoTag(1)));
         // we only have one tag per screen created automatically
-        assert!(!manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("3".to_string())
-        ),);
+        assert!(!manager.command_handler(&Command::GotoTag(3)));
     }
 
     #[test]
     fn go_to_tag_should_return_false_on_invalid_input() {
         let mut manager = Manager::new_test(vec![]);
-        let config = TestConfig { tags: vec![] };
         manager.screen_create_handler(Screen::default());
-        manager.tags = vec![
+        manager.state.tags = vec![
             Tag::new("A15"),
             Tag::new("B24"),
             Tag::new("C"),
@@ -658,19 +611,8 @@ mod tests {
             Tag::new("E39"),
             Tag::new("F67"),
         ];
-        assert!(!manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("abc".to_string())
-        ),);
-        assert!(!manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("ab45c".to_string())
-        ));
-        assert!(!manager.command_handler(&TestState, &config, &Command::GotoTag, &None));
+        assert!(!manager.command_handler(&Command::GotoTag(0)));
+        assert!(!manager.command_handler(&Command::GotoTag(999)));
     }
 
     #[test]
@@ -683,42 +625,21 @@ mod tests {
             "E39".to_string(),
             "F67".to_string(),
         ]);
-        let config = TestConfig { tags: vec![] };
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
 
-        assert!(manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("6".to_string())
-        ));
+        assert!(manager.command_handler(&Command::GotoTag(6)));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(5));
-        assert!(manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("2".to_string())
-        ));
+        assert!(manager.command_handler(&Command::GotoTag(2)));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(1));
 
-        assert!(manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("3".to_string())
-        ));
+        assert!(manager.command_handler(&Command::GotoTag(3)));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(2));
 
-        assert!(manager.command_handler(
-            &TestState,
-            &config,
-            &Command::GotoTag,
-            &Some("4".to_string())
-        ));
+        assert!(manager.command_handler(&Command::GotoTag(4)));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(3));
         assert_eq!(

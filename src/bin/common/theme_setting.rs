@@ -88,7 +88,7 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::Side;
+    use leftwm::models::Side;
 
     #[test]
     fn deserialize_custom_theme_config() {
@@ -111,8 +111,8 @@ value = 0
             config,
             ThemeSetting {
                 border_width: 0,
-                margin: Margins::Int(5),
-                workspace_margin: Some(Margins::Int(5)),
+                margin: CustomMargins::Int(5),
+                workspace_margin: Some(CustomMargins::Int(5)),
                 gutter: Some(vec![Gutter {
                     side: Side::Top,
                     value: 0,
