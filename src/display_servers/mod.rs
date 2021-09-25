@@ -14,18 +14,18 @@ use std::pin::Pin;
 pub use self::mock_display_server::MockDisplayServer;
 pub use self::xlib_display_server::XlibDisplayServer;
 
-pub trait DisplayServer<CMD> {
-    fn new(config: &impl Config<CMD>) -> Self;
+pub trait DisplayServer {
+    fn new(config: &impl Config) -> Self;
 
-    fn get_next_events(&mut self) -> Vec<DisplayEvent<CMD>>;
+    fn get_next_events(&mut self) -> Vec<DisplayEvent>;
 
-    fn update_theme_settings(&mut self, _config: &impl Config<CMD>) {}
+    fn update_theme_settings(&mut self, _config: &impl Config) {}
 
-    fn update_windows<C: Config<CMD>>(
+    fn update_windows<C: Config>(
         &self,
         _windows: Vec<&Window>,
         _focused: Option<&Window>,
-        _manager: &Manager<C, CMD, Self>,
+        _manager: &Manager<C, Self>,
     ) where
         Self: Sized,
     {
@@ -33,7 +33,7 @@ pub trait DisplayServer<CMD> {
 
     fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
 
-    fn execute_action(&mut self, _act: DisplayAction<CMD>) -> Option<DisplayEvent<CMD>> {
+    fn execute_action(&mut self, _act: DisplayAction) -> Option<DisplayEvent> {
         None
     }
 
@@ -41,5 +41,5 @@ pub trait DisplayServer<CMD> {
 
     fn flush(&self);
 
-    fn verify_focused_window(&self) -> Vec<DisplayEvent<CMD>>;
+    fn verify_focused_window(&self) -> Vec<DisplayEvent>;
 }

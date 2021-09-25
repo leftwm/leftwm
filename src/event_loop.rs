@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
 // TODO remove this constraint Send + 'static
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD: Send + 'static> Manager<C, CMD, SERVER> {
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub async fn event_loop(mut self) {
         let socket_file = place_runtime_file("current_state.sock")
             .expect("ERROR: couldn't create current_state.sock");

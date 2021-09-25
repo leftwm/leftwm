@@ -15,7 +15,7 @@ fn main() {
 
         let config = common::load();
 
-        let manager = Manager::<common::Config, common::Command, XlibDisplayServer<_>>::new(config);
+        let manager = Manager::<common::Config, XlibDisplayServer>::new(config);
         manager.register_child_hook();
 
         rt.block_on(manager.event_loop());

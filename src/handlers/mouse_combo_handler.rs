@@ -8,7 +8,7 @@ use crate::utils::xkeysym_lookup::ModMask;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 use x11_dl::xlib;
 
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn mouse_combo_handler(
         &mut self,
         modmask: ModMask,
@@ -46,13 +46,13 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
     }
 }
 
-fn build_action<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
-    manager: &mut Manager<C, CMD, SERVER>,
+fn build_action<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
     mod_mask: ModMask,
     button: Button,
     window: WindowHandle,
     modifier: ModMask,
-) -> Option<DisplayAction<CMD>> {
+) -> Option<DisplayAction> {
     match button {
         xlib::Button1 => {
             if mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask) {

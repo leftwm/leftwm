@@ -23,14 +23,14 @@ pub use xwrap::XWrap;
 use event_translate::XEvent;
 mod xcursor;
 
-pub struct XlibDisplayServer<CMD> {
+pub struct XlibDisplayServer {
     xw: XWrap,
     root: xlib::Window,
-    initial_events: Option<Vec<DisplayEvent<CMD>>>,
+    initial_events: Option<Vec<DisplayEvent>>,
 }
 
-impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
-    fn new(config: &impl Config<CMD>) -> Self {
+impl DisplayServer for XlibDisplayServer {
+    fn new(config: &impl Config) -> Self {
         let mut wrap = XWrap::new();
 
         wrap.focus_behaviour = config.focus_behaviour();
@@ -51,15 +51,15 @@ impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
         }
     }
 
-    fn update_theme_settings(&mut self, config: &impl Config<CMD>) {
+    fn update_theme_settings(&mut self, config: &impl Config) {
         self.xw.load_colors(config);
     }
 
-    fn update_windows<C: Config<CMD>>(
+    fn update_windows<C: Config>(
         &self,
         windows: Vec<&Window>,
         focused_window: Option<&Window>,
-        manager: &Manager<C, CMD, Self>,
+        manager: &Manager<C, Self>,
     ) {
         let tags: Vec<&String> = manager
             .state
@@ -102,7 +102,7 @@ impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
         }
     }
 
-    fn get_next_events(&mut self) -> Vec<DisplayEvent<CMD>> {
+    fn get_next_events(&mut self) -> Vec<DisplayEvent> {
         let mut events = vec![];
 
         if let Some(initial_events) = self.initial_events.take() {
@@ -131,9 +131,9 @@ impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
         events
     }
 
-    fn execute_action(&mut self, act: DisplayAction<CMD>) -> Option<DisplayEvent<CMD>> {
+    fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
         log::trace!("DisplayAction: {:?}", act);
-        let event: Option<DisplayEvent<CMD>> = match act {
+        let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(w) => {
                 self.xw.kill_window(&w);
                 None
@@ -232,14 +232,14 @@ impl<CMD> DisplayServer<CMD> for XlibDisplayServer<CMD> {
         self.xw.flush();
     }
 
-    fn verify_focused_window(&self) -> Vec<DisplayEvent<CMD>> {
+    fn verify_focused_window(&self) -> Vec<DisplayEvent> {
         self.verify_focused_window_work().unwrap_or_default()
     }
 }
 
-impl<CMD> XlibDisplayServer<CMD> {
+impl XlibDisplayServer {
     /// Return a vec of events for setting up state of WM.
-    fn initial_events(&self, config: &impl Config<CMD>) -> Vec<DisplayEvent<CMD>> {
+    fn initial_events(&self, config: &impl Config) -> Vec<DisplayEvent> {
         let mut events = vec![];
         if let Some(workspaces) = config.workspaces() {
             if workspaces.is_empty() {
@@ -268,7 +268,7 @@ impl<CMD> XlibDisplayServer<CMD> {
         events
     }
 
-    fn verify_focused_window_work(&self) -> Option<Vec<DisplayEvent<CMD>>> {
+    fn verify_focused_window_work(&self) -> Option<Vec<DisplayEvent>> {
         let point = self.xw.get_cursor_point().ok()?;
         Some(vec![DisplayEvent::VerifyFocusedAt(point.0, point.1)])
     }
@@ -301,10 +301,10 @@ impl<CMD> XlibDisplayServer<CMD> {
 }
 
 //return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+fn right_offset<C: Config, SERVER: DisplayServer>(
     max_tag_index: Option<usize>,
     max_right_screen: Option<i32>,
-    manager: &Manager<C, CMD, SERVER>,
+    manager: &Manager<C, SERVER>,
     window: &Window,
 ) -> Option<i32> {
     let max_tag_index = max_tag_index?;

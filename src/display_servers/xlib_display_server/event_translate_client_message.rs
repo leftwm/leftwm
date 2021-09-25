@@ -7,7 +7,7 @@ use std::convert::TryFrom;
 use std::os::raw::c_long;
 use x11_dl::xlib;
 
-pub fn from_event<CMD>(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent<CMD>> {
+pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
     let atom_name = xw.atoms.get_name(event.message_type);
     log::trace!("ClientMessage: {} : {:?}", event.window, atom_name);
 

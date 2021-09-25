@@ -1,6 +1,6 @@
 //! `LeftWM` general configuration
 
-use super::{BaseCommand, Command, ThemeSetting};
+use super::{BaseCommand, ThemeSetting};
 use anyhow::{Context, Result};
 use leftwm::{
     config::{ScratchPad, Workspace},
@@ -31,7 +31,7 @@ pub struct Keybind {
 }
 
 // TODO replace leftwm-check validation by a pass to this
-impl TryFrom<Keybind> for leftwm::Keybind<Command> {
+impl TryFrom<Keybind> for leftwm::Keybind {
     type Error = anyhow::Error;
 
     fn try_from(k: Keybind) -> Result<Self> {
@@ -89,11 +89,10 @@ impl TryFrom<Keybind> for leftwm::Keybind<Command> {
                 )
                 .context("invalid index value for SetMarginMultiplier")?,
             ),
-            UnloadTheme => leftwm::Command::Other(Command::UnloadTheme),
-            LoadTheme => leftwm::Command::Other(Command::LoadTheme(
-                k.value
-                    .context("missing index value for SendWindowToTag")?
-                    .into(),
+            UnloadTheme => leftwm::Command::Other("UnloadTheme".into()),
+            LoadTheme => leftwm::Command::Other(format!(
+                "LoadTheme {}",
+                k.value.context("missing index value for LoadTheme")?,
             )),
         };
 
@@ -255,8 +254,8 @@ fn exit_strategy<'s>() -> &'s str {
     "pkill leftwm"
 }
 
-impl leftwm::Config<Command> for Config {
-    fn mapped_bindings(&self) -> Vec<leftwm::Keybind<Command>> {
+impl leftwm::Config for Config {
+    fn mapped_bindings(&self) -> Vec<leftwm::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -319,11 +318,31 @@ impl leftwm::Config<Command> for Config {
         self.focus_new_windows
     }
 
-    fn command_handler<SERVER: DisplayServer<Command>>(
-        command: &Command,
-        manager: &mut Manager<Self, Command, SERVER>,
+    // TODO replace Option<bool> to bool?
+    fn command_handler<SERVER: DisplayServer>(
+        command: &str,
+        manager: &mut Manager<Self, SERVER>,
     ) -> Option<bool> {
-        command.execute(manager)
+        let mut args = command.split_whitespace();
+        let command = args.next().unwrap();
+        match command {
+            "LoadTheme" => {
+                if let Some(path) = args.next() {
+                    manager.state.config.theme_setting.load(path);
+                } else {
+                    log::warn!("Missing file argument to load theme");
+                }
+                Some(manager.update_for_theme())
+            }
+            "UnloadTheme" => {
+                manager.state.config.theme_setting = Default::default();
+                Some(manager.update_for_theme())
+            }
+            _ => {
+                log::warn!("Command not recognized: {}", command);
+                Some(false)
+            }
+        }
     }
 
     fn border_width(&self) -> i32 {
@@ -366,7 +385,7 @@ impl leftwm::Config<Command> for Config {
         self.max_window_width
     }
 
-    fn save_state<SERVER: DisplayServer<Command>>(manager: &Manager<Self, Command, SERVER>) {
+    fn save_state<SERVER: DisplayServer>(manager: &Manager<Self, SERVER>) {
         let path = manager.state.config.state_file();
         let state_file = match File::create(&path) {
             Ok(file) => file,
@@ -380,7 +399,7 @@ impl leftwm::Config<Command> for Config {
         }
     }
 
-    fn load_state<SERVER: DisplayServer<Command>>(manager: &mut Manager<Self, Command, SERVER>) {
+    fn load_state<SERVER: DisplayServer>(manager: &mut Manager<Self, SERVER>) {
         let path = manager.state.config.state_file().to_owned();
         match File::open(&path) {
             Ok(file) => {

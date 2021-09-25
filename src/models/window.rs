@@ -75,7 +75,7 @@ impl Window {
         }
     }
 
-    pub fn update_for_theme<CMD>(&mut self, config: &impl Config<CMD>) {
+    pub fn update_for_theme(&mut self, config: &impl Config) {
         if self.type_ == WindowType::Normal {
             self.margin = config.margin().clone();
             self.border = config.border_width();
@@ -135,7 +135,7 @@ impl Window {
         self.floating = Some(new_value);
     }
 
-    pub fn toggle_fullscreen<CMD>(&mut self) -> Option<DisplayAction<CMD>> {
+    pub fn toggle_fullscreen(&mut self) -> Option<DisplayAction> {
         let fullscreen = self.is_fullscreen();
         if fullscreen {
             let index = self

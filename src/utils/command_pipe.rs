@@ -10,12 +10,12 @@ use tokio::sync::mpsc;
 
 /// Holds pipe file location and a receiver.
 #[derive(Debug)]
-pub struct CommandPipe<CMD> {
+pub struct CommandPipe {
     pipe_file: PathBuf,
-    rx: mpsc::UnboundedReceiver<Command<CMD>>,
+    rx: mpsc::UnboundedReceiver<Command>,
 }
 
-impl<CMD> Drop for CommandPipe<CMD> {
+impl Drop for CommandPipe {
     fn drop(&mut self) {
         use std::os::unix::fs::OpenOptionsExt;
         self.rx.close();
@@ -30,11 +30,7 @@ impl<CMD> Drop for CommandPipe<CMD> {
     }
 }
 
-impl<CMD> CommandPipe<CMD>
-where
-    // TODO remove this constraint
-    CMD: Send + 'static,
-{
+impl CommandPipe {
     /// Create and listen to the named pipe.
     /// # Errors
     ///
@@ -58,15 +54,12 @@ where
         Ok(Self { pipe_file, rx })
     }
 
-    pub async fn read_command(&mut self) -> Option<Command<CMD>> {
+    pub async fn read_command(&mut self) -> Option<Command> {
         self.rx.recv().await
     }
 }
 
-async fn read_from_pipe<CMD>(
-    pipe_file: &Path,
-    tx: &mpsc::UnboundedSender<Command<CMD>>,
-) -> Option<()> {
+async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -> Option<()> {
     let file = fs::File::open(pipe_file).await.ok()?;
     let mut lines = BufReader::new(file).lines();
 
@@ -78,7 +71,7 @@ async fn read_from_pipe<CMD>(
     Some(())
 }
 
-fn parse_command<CMD>(s: &str) -> std::result::Result<Command<CMD>, ()> {
+fn parse_command(s: &str) -> std::result::Result<Command, ()> {
     let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
     match head {
         "SoftReload" => Ok(Command::SoftReload),
@@ -104,38 +97,38 @@ fn parse_command<CMD>(s: &str) -> std::result::Result<Command<CMD>, ()> {
         "SendWindowToTag" => build_send_window_to_tag(s),
         "SetLayout" => build_set_layout(s),
         "SetMarginMultiplier" => build_set_margin_multiplier(s),
-        _ => Err(()),
+        _ => Ok(Command::Other(s.into())),
     }
 }
 
 // TODO
 /*
-fn build_load_theme(raw: &str) -> std::result::Result<Command<CMD>, ()> {
+fn build_load_theme(raw: &str) -> std::result::Result<Command, ()> {
     let headless = without_head(raw, "LoadTheme ");
     let path = Path::new(headless);
     if path.is_file() {
-        Ok(Command<CMD>::LoadTheme(path.into()))
+        Ok(Command::LoadTheme(path.into()))
     } else {
         Err(())
     }
 }
 */
 
-fn build_toggle_scratchpad<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
+fn build_toggle_scratchpad(raw: &str) -> std::result::Result<Command, ()> {
     let headless = without_head(raw, "ToggleScratchPad ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let name = *parts.get(0).ok_or(())?;
     Ok(Command::ToggleScratchPad(name.to_string()))
 }
 
-fn build_send_window_to_tag<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
+fn build_send_window_to_tag(raw: &str) -> std::result::Result<Command, ()> {
     let headless = without_head(raw, "SendWindowToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let tag_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
     Ok(Command::SendWindowToTag(tag_index))
 }
 
-fn build_send_workspace_to_tag<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
+fn build_send_workspace_to_tag(raw: &str) -> std::result::Result<Command, ()> {
     let headless = without_head(raw, "SendWorkspaceToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let ws_index: usize = parts.get(0).ok_or(())?.parse().map_err(|_| ())?;
@@ -143,7 +136,7 @@ fn build_send_workspace_to_tag<CMD>(raw: &str) -> std::result::Result<Command<CM
     Ok(Command::SendWorkspaceToTag(ws_index, tag_index))
 }
 
-fn build_set_layout<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
+fn build_set_layout(raw: &str) -> std::result::Result<Command, ()> {
     let headless = without_head(raw, "SetLayout ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let layout_name = *parts.get(0).ok_or(())?;
@@ -158,7 +151,7 @@ fn build_set_layout<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
     Ok(Command::SetLayout(layout))
 }
 
-fn build_set_margin_multiplier<CMD>(raw: &str) -> std::result::Result<Command<CMD>, ()> {
+fn build_set_margin_multiplier(raw: &str) -> std::result::Result<Command, ()> {
     let headless = without_head(raw, "SetMarginMultiplier ");
     let parts: Vec<&str> = headless.split(' ').collect();
     if parts.len() != 1 {
@@ -216,7 +209,7 @@ mod test {
             pipe.flush().await.unwrap();
 
             assert_eq!(
-                Command<CMD>::SoftReload,
+                Command::SoftReload,
                 command_pipe.read_command().await.unwrap()
             );
         }

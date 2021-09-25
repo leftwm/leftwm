@@ -18,7 +18,8 @@ pub struct ThemeSetting {
 }
 
 impl ThemeSetting {
-    pub fn load(&mut self, path: &Path) {
+    pub fn load(&mut self, path: impl AsRef<Path>) {
+        let path = path.as_ref();
         match load_theme_file(path) {
             Ok(theme) => *self = theme,
             Err(err) => {
@@ -43,7 +44,7 @@ impl Default for ThemeSetting {
     }
 }
 
-fn load_theme_file(path: &Path) -> Result<ThemeSetting> {
+fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
     let from_file: ThemeSetting = toml::from_str(&contents)?;
     Ok(from_file)

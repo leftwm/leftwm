@@ -3,7 +3,7 @@ use crate::config::Config;
 use crate::display_servers::DisplayServer;
 use crate::models::Tag;
 
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     ///
     /// Returns `true` if changes need to be rendered.

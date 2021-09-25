@@ -1,10 +1,8 @@
 use crate::layouts::Layout;
-use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Derivative)]
-#[derivative(Debug)]
-pub enum Command<CMD> {
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub enum Command {
     Execute(String),
     CloseWindow,
     SwapScreens,
@@ -34,5 +32,5 @@ pub enum Command<CMD> {
     DecreaseMainWidth(i8),
     SetMarginMultiplier(f32),
     SendWorkspaceToTag(usize, usize),
-    Other(#[derivative(Debug = "ignore")] CMD),
+    Other(String),
 }

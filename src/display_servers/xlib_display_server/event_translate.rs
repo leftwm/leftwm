@@ -13,7 +13,7 @@ use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
 
-impl<'a, CMD> From<XEvent<'a>> for Option<DisplayEvent<CMD>> {
+impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     fn from(x_event: XEvent) -> Self {
         let xw = x_event.0;
         let raw_event = x_event.1;
@@ -73,7 +73,7 @@ impl<'a, CMD> From<XEvent<'a>> for Option<DisplayEvent<CMD>> {
     }
 }
 
-fn from_map_request<CMD>(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent<CMD>> {
+fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent> {
     let event = xlib::XMapRequestEvent::from(raw_event);
     let handle = WindowHandle::XlibHandle(event.window);
     xw.subscribe_to_window_events(&handle);
@@ -106,7 +106,7 @@ fn from_map_request<CMD>(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayE
     Some(DisplayEvent::WindowCreate(w, cursor.0, cursor.1))
 }
 
-fn from_mapping_notify<CMD>(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent<CMD>> {
+fn from_mapping_notify(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent> {
     let mut event = xlib::XMappingEvent::from(raw_event);
     if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
         // refresh keyboard
@@ -120,13 +120,13 @@ fn from_mapping_notify<CMD>(raw_event: xlib::XEvent, xw: &XWrap) -> Option<Displ
     }
 }
 
-fn from_unmap_event<CMD>(raw_event: xlib::XEvent) -> DisplayEvent<CMD> {
+fn from_unmap_event(raw_event: xlib::XEvent) -> DisplayEvent {
     let event = xlib::XUnmapEvent::from(raw_event);
     let h = WindowHandle::XlibHandle(event.window);
     DisplayEvent::WindowDestroy(h)
 }
 
-fn from_enter_notify<CMD>(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent<CMD>> {
+fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
     match &xw.mode {
         Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
         Mode::Normal => {}
@@ -142,7 +142,7 @@ fn from_enter_notify<CMD>(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
     Some(DisplayEvent::MouseEnteredWindow(h))
 }
 
-fn from_motion_notify<CMD>(raw_event: xlib::XEvent, xw: &XWrap) -> DisplayEvent<CMD> {
+fn from_motion_notify(raw_event: xlib::XEvent, xw: &XWrap) -> DisplayEvent {
     let event = xlib::XMotionEvent::from(raw_event);
     let event_h = WindowHandle::XlibHandle(event.window);
     let offset_x = event.x_root - xw.mode_origin.0;
@@ -154,7 +154,7 @@ fn from_motion_notify<CMD>(raw_event: xlib::XEvent, xw: &XWrap) -> DisplayEvent<
     }
 }
 
-fn from_configure_request<CMD>(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent<CMD>> {
+fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
     match &xw.mode {
         Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
         Mode::Normal => {}

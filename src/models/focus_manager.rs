@@ -31,7 +31,7 @@ pub struct FocusManager {
 }
 
 impl FocusManager {
-    pub fn new<CMD>(config: &impl Config<CMD>) -> Self {
+    pub fn new(config: &impl Config) -> Self {
         Self {
             behaviour: config.focus_behaviour(),
             focus_new_windows: config.focus_new_windows(),
@@ -44,9 +44,9 @@ impl FocusManager {
 
     /// Return the currently focused workspace.
     #[must_use]
-    pub fn workspace<'a, 'b, C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    pub fn workspace<'a, 'b, C: Config, SERVER: DisplayServer>(
         &self,
-        manager: &'a Manager<C, CMD, SERVER>,
+        manager: &'a Manager<C, SERVER>,
     ) -> Option<&'b Workspace>
     where
         'a: 'b,
@@ -77,9 +77,9 @@ impl FocusManager {
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn window<'a, 'b, C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    pub fn window<'a, 'b, C: Config, SERVER: DisplayServer>(
         &self,
-        manager: &'a Manager<C, CMD, SERVER>,
+        manager: &'a Manager<C, SERVER>,
     ) -> Option<&'b Window>
     where
         'a: 'b,

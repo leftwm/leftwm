@@ -105,10 +105,8 @@ fn viewport_into_display_workspace(
     }
 }
 
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> From<&Manager<C, CMD, SERVER>>
-    for ManagerState
-{
-    fn from(manager: &Manager<C, CMD, SERVER>) -> Self {
+impl<C: Config, SERVER: DisplayServer> From<&Manager<C, SERVER>> for ManagerState {
+    fn from(manager: &Manager<C, SERVER>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         let mut tags_len = manager.state.tags.len();
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };

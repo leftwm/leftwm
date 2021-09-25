@@ -11,11 +11,10 @@ use crate::models::Workspace;
 use crate::{DisplayAction, DisplayServer, Manager};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use std::marker::PhantomData;
 use std::os::raw::c_ulong;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct State<C, CMD> {
+pub struct State<C> {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
@@ -26,17 +25,16 @@ pub struct State<C, CMD> {
     pub layouts: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<String, Option<u32>>,
-    pub actions: VecDeque<DisplayAction<CMD>>,
+    pub actions: VecDeque<DisplayAction>,
     // TODO should this really be saved in the state?
     //this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
     pub tags: Vec<Tag>, //list of all known tags
-    marker: PhantomData<CMD>,
 }
 
-impl<C, CMD> State<C, CMD>
+impl<C> State<C>
 where
-    C: Config<CMD>,
+    C: Config,
 {
     pub(crate) fn new(config: C) -> Self {
         let mut tags: Vec<Tag> = config
@@ -63,18 +61,17 @@ where
             frame_rate_limitor: Default::default(),
             tags,
             config,
-            marker: PhantomData,
         }
     }
 }
 
-impl<C, CMD, SERVER> Manager<C, CMD, SERVER>
+impl<C, SERVER> Manager<C, SERVER>
 where
-    C: Config<CMD>,
-    SERVER: DisplayServer<CMD>,
+    C: Config,
+    SERVER: DisplayServer,
 {
     /// Apply saved state to a running manager.
-    pub fn restore_state(&mut self, state: &State<C, CMD>) {
+    pub fn restore_state(&mut self, state: &State<C>) {
         // restore workspaces
         for workspace in &mut self.state.workspaces {
             if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {

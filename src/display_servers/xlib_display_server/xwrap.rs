@@ -695,11 +695,11 @@ impl XWrap {
     }
 
     //this code is run once when a window is added to the managers list of windows
-    pub fn setup_managed_window<CMD>(
+    pub fn setup_managed_window(
         &mut self,
         h: WindowHandle,
         follow_mouse: bool,
-    ) -> Option<DisplayEvent<CMD>> {
+    ) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             self.managed_windows.push(handle);
@@ -1443,7 +1443,7 @@ impl XWrap {
         }
     }
 
-    pub fn load_colors<CMD>(&mut self, config: &impl Config<CMD>) {
+    pub fn load_colors(&mut self, config: &impl Config) {
         self.colors = Colors {
             normal: self.get_color(&config.default_border_color()),
             floating: self.get_color(&config.floating_border_color()),
@@ -1463,7 +1463,7 @@ impl XWrap {
     }
 
     // TODO: split into smaller functions
-    pub fn init<CMD>(&mut self, config: &impl Config<CMD>) {
+    pub fn init(&mut self, config: &impl Config) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
@@ -1523,7 +1523,7 @@ impl XWrap {
     }
 
     /// Cleans first all old keygrabs and then reaplies them from the config
-    pub fn reset_grabs<CMD>(&self, keybinds: &Vec<Keybind<CMD>>) {
+    pub fn reset_grabs(&self, keybinds: &Vec<Keybind>) {
         //cleanup grabs
         unsafe {
             (self.xlib.XUngrabKey)(

@@ -7,7 +7,7 @@ use crate::models::WindowHandle;
 use crate::utils::helpers;
 use crate::{child_process::exec_shell, models::FocusBehaviour};
 
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn window_created_handler(&mut self, mut window: Window, x: i32, y: i32) -> bool {
@@ -177,8 +177,8 @@ impl Window {
     }
 }
 
-fn setup_window<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
-    manager: &mut Manager<C, CMD, SERVER>,
+fn setup_window<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
     window: &mut Window,
     x: i32,
     y: i32,
@@ -257,8 +257,8 @@ fn setup_window<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
 
     window.update_for_theme(&manager.state.config);
 }
-fn insert_window<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
-    manager: &mut Manager<C, CMD, SERVER>,
+fn insert_window<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
     window: &mut Window,
     is_scratchpad: bool,
     layout: &Layout,
@@ -305,8 +305,8 @@ fn insert_window<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
     }
 }
 
-fn is_scratchpad<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
-    manager: &Manager<C, CMD, SERVER>,
+fn is_scratchpad<C: Config, SERVER: DisplayServer>(
+    manager: &Manager<C, SERVER>,
     window: &Window,
 ) -> bool {
     manager
@@ -316,15 +316,15 @@ fn is_scratchpad<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
         .any(|(_, &id)| window.pid == id)
 }
 
-fn find_window<'w, C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
-    manager: &'w Manager<C, CMD, SERVER>,
+fn find_window<'w, C: Config, SERVER: DisplayServer>(
+    manager: &'w Manager<C, SERVER>,
     handle: &WindowHandle,
 ) -> Option<&'w Window> {
     manager.state.windows.iter().find(|w| &w.handle == handle)
 }
 
-fn find_transient_parent<'w, C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
-    manager: &'w Manager<C, CMD, SERVER>,
+fn find_transient_parent<'w, C: Config, SERVER: DisplayServer>(
+    manager: &'w Manager<C, SERVER>,
     window: &Window,
 ) -> Option<&'w Window> {
     let handle = &window.transient?;

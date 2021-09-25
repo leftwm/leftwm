@@ -87,12 +87,12 @@ impl Workspace {
         }
     }
 
-    pub fn update_for_theme<CMD>(&mut self, config: &impl Config<CMD>) {
+    pub fn update_for_theme(&mut self, config: &impl Config) {
         self.margin = config.workspace_margin().clone().unwrap_or(Margins::new(0));
         self.gutters = self.get_gutters_for_theme(config);
     }
 
-    pub fn get_gutters_for_theme<CMD>(&mut self, config: &impl Config<CMD>) -> Vec<Gutter> {
+    pub fn get_gutters_for_theme(&mut self, config: &impl Config) -> Vec<Gutter> {
         config
             .get_list_of_gutters()
             .into_iter()

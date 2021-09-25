@@ -2,7 +2,7 @@ use super::{Manager, Window, WindowHandle};
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
 
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn window_resize_handler(
         &mut self,
         handle: &WindowHandle,

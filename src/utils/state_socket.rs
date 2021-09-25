@@ -57,9 +57,9 @@ impl StateSocket {
     /// # Errors
     /// Will return Err if a mut ref to the peer is unavailable.
     /// Will return error if state cannot be serialized
-    pub async fn write_manager_state<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+    pub async fn write_manager_state<C: Config, SERVER: DisplayServer>(
         &mut self,
-        manager: &Manager<C, CMD, SERVER>,
+        manager: &Manager<C, SERVER>,
     ) -> Result<()> {
         if self.listener.is_some() {
             let state: ManagerState = manager.into();

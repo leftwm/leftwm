@@ -8,13 +8,13 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use x11_dl::xlib;
 
-pub struct CommandBuilder<C, CMD> {
-    keybinds: HashMap<(ModMask, XKeysym), Keybind<CMD>>,
+pub struct CommandBuilder<C> {
+    keybinds: HashMap<(ModMask, XKeysym), Keybind>,
     marker: PhantomData<C>,
 }
 
-impl<C: Config<CMD>, CMD> CommandBuilder<C, CMD> {
-    pub fn new(config: &impl Config<CMD>) -> Self {
+impl<C: Config> CommandBuilder<C> {
+    pub fn new(config: &impl Config) -> Self {
         let binds = config.mapped_bindings();
         let mut lookup = HashMap::new();
         for b in binds {
@@ -29,7 +29,7 @@ impl<C: Config<CMD>, CMD> CommandBuilder<C, CMD> {
         }
     }
 
-    pub fn find_keybind_for(&self, m: ModMask, key: XKeysym) -> Option<&Keybind<CMD>> {
+    pub fn find_keybind_for(&self, m: ModMask, key: XKeysym) -> Option<&Keybind> {
         let mut mask = m;
         mask &= !(xlib::Mod2Mask | xlib::LockMask);
         mask &= xlib::ShiftMask
@@ -48,7 +48,7 @@ impl<C: Config<CMD>, CMD> CommandBuilder<C, CMD> {
         mask: ModMask,
         key: XKeysym,
         //event: XKeyEvent,
-    ) -> Option<&Command<CMD>> {
+    ) -> Option<&Command> {
         let keybind = self.find_keybind_for(mask, key);
         match keybind {
             Some(bind) => Some(&bind.command),

@@ -8,7 +8,7 @@ use derivative::Derivative;
 #[allow(clippy::large_enum_variant)]
 #[derive(Derivative)]
 #[derivative(Debug(bound = ""))]
-pub enum DisplayEvent<CMD> {
+pub enum DisplayEvent {
     Movement(WindowHandle, i32, i32),
     KeyCombo(ModMask, XKeysym),
     KeyGrabReload, // Reloads keys for when keyboard changes
@@ -22,6 +22,6 @@ pub enum DisplayEvent<CMD> {
     MoveWindow(WindowHandle, c_ulong, i32, i32),
     ResizeWindow(WindowHandle, c_ulong, i32, i32),
     ScreenCreate(Screen),
-    SendCommand(Command<CMD>),
+    SendCommand(Command),
     ChangeToNormalMode,
 }

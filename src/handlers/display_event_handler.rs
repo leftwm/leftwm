@@ -3,10 +3,10 @@ use crate::display_servers::DisplayServer;
 use crate::utils;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
-    pub fn display_event_handler(&mut self, event: DisplayEvent<CMD>) -> bool {
+    pub fn display_event_handler(&mut self, event: DisplayEvent) -> bool {
         let update_needed = match event {
             DisplayEvent::ScreenCreate(s) => self.screen_create_handler(s),
             DisplayEvent::WindowCreate(w, x, y) => self.window_created_handler(w, x, y),
@@ -38,7 +38,7 @@ impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
 
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
-                let build = CommandBuilder::<C, CMD>::new(&self.state.config);
+                let build = CommandBuilder::<C>::new(&self.state.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 if let Some(cmd) = command {
                     self.command_handler(cmd)

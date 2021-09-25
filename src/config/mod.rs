@@ -10,9 +10,9 @@ pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use workspace_config::Workspace;
 
-pub trait Config<CMD> {
+pub trait Config {
     /// Returns a collection of bindings with the mod key mapped.
-    fn mapped_bindings(&self) -> Vec<Keybind<CMD>>;
+    fn mapped_bindings(&self) -> Vec<Keybind>;
 
     fn create_list_of_tags(&self) -> Vec<String>;
 
@@ -31,13 +31,10 @@ pub trait Config<CMD> {
 
     fn focus_new_windows(&self) -> bool;
 
-    fn command_handler<SERVER>(
-        command: &CMD,
-        manager: &mut Manager<Self, CMD, SERVER>,
-    ) -> Option<bool>
+    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> Option<bool>
     where
         Self: Sized,
-        SERVER: DisplayServer<CMD>;
+        SERVER: DisplayServer;
 
     fn border_width(&self) -> i32;
     fn margin(&self) -> Margins;
@@ -59,16 +56,16 @@ pub trait Config<CMD> {
     /// if unable to serialize the text.
     /// May be caused by inadequate permissions, not enough
     /// space on drive, or other typical filesystem issues.
-    fn save_state<SERVER>(manager: &Manager<Self, CMD, SERVER>)
+    fn save_state<SERVER>(manager: &Manager<Self, SERVER>)
     where
         Self: Sized,
-        SERVER: DisplayServer<CMD>;
+        SERVER: DisplayServer;
 
     /// Load saved state if it exists.
-    fn load_state<SERVER>(manager: &mut Manager<Self, CMD, SERVER>)
+    fn load_state<SERVER>(manager: &mut Manager<Self, SERVER>)
     where
         Self: Sized,
-        SERVER: DisplayServer<CMD>;
+        SERVER: DisplayServer;
 }
 
 #[cfg(test)]
@@ -77,8 +74,8 @@ pub struct TestConfig {
 }
 
 #[cfg(test)]
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Config<CMD> for TestConfig {
-    fn mapped_bindings(&self) -> Vec<Keybind<CMD>> {
+impl<C: Config, SERVER: DisplayServer> Config for TestConfig {
+    fn mapped_bindings(&self) -> Vec<Keybind> {
         unimplemented!()
     }
     fn create_list_of_tags(&self) -> Vec<String> {

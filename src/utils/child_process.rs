@@ -182,9 +182,9 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 
 /// Sends command to shell for execution
 /// Assumes STDIN/STDOUT unwanted.
-pub fn exec_shell<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD>(
+pub fn exec_shell<C: Config, SERVER: DisplayServer>(
     command: &str,
-    manager: &mut Manager<C, CMD, SERVER>,
+    manager: &mut Manager<C, SERVER>,
 ) -> Option<u32> {
     let child = Command::new("sh")
         .arg("-c")

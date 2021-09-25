@@ -2,7 +2,7 @@
 use super::*;
 use crate::display_servers::DisplayServer;
 
-impl<C: Config<CMD>, SERVER: DisplayServer<CMD>, CMD> Manager<C, CMD, SERVER> {
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn goto_tag_handler(&mut self, tag_num: usize) -> bool {
         if tag_num > self.state.tags.len() || tag_num < 1 {
             return false;

@@ -6,26 +6,23 @@ use crate::models::WindowHandle;
 use crate::models::Workspace;
 use crate::state::State;
 use crate::utils::child_process::Children;
-use std::marker::PhantomData;
 use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
 #[derive(Debug)]
-pub struct Manager<C, CMD, SERVER> {
-    pub state: State<C, CMD>,
+pub struct Manager<C, SERVER> {
+    pub state: State<C>,
 
     pub(crate) children: Children,
     pub(crate) reap_requested: Arc<AtomicBool>,
     pub(crate) reload_requested: bool,
     pub display_server: SERVER,
-
-    marker: PhantomData<CMD>,
 }
 
-impl<C, CMD, SERVER> Manager<C, CMD, SERVER>
+impl<C, SERVER> Manager<C, SERVER>
 where
-    C: Config<CMD>,
-    SERVER: DisplayServer<CMD>,
+    C: Config,
+    SERVER: DisplayServer,
 {
     pub fn new(config: C) -> Self {
         let display_server = SERVER::new(&config);
@@ -36,7 +33,6 @@ where
             reap_requested: Default::default(),
             reload_requested: false,
             display_server,
-            marker: PhantomData,
         }
     }
 

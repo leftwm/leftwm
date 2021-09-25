@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Clone, Derivative)]
 #[derivative(Debug)]
-pub enum DisplayAction<CMD> {
+pub enum DisplayAction {
     /// Nicely ask a window if it would please close at its convenience.
     KillWindow(WindowHandle),
 
@@ -62,5 +62,5 @@ pub enum DisplayAction<CMD> {
     NormalMode,
 
     /// SoftReload keygrabs, needed when keyboard changes
-    ReloadKeyGrabs(#[derivative(Debug = "ignore")] Vec<Keybind<CMD>>),
+    ReloadKeyGrabs(#[derivative(Debug = "ignore")] Vec<Keybind>),
 }

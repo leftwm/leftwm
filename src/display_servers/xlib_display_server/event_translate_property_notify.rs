@@ -6,7 +6,7 @@ use crate::models::WindowType;
 use crate::models::Xyhw;
 use x11_dl::xlib;
 
-pub fn from_event<CMD>(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent<CMD>> {
+pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
     if event.window == xw.get_default_root() || event.state == xlib::PropertyDelete {
         return None;
     }
@@ -100,7 +100,7 @@ fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<Windo
     Some(change)
 }
 
-fn update_title<CMD>(xw: &XWrap, window: xlib::Window) -> DisplayEvent<CMD> {
+fn update_title(xw: &XWrap, window: xlib::Window) -> DisplayEvent {
     let title = xw.get_window_name(window);
     let handle = WindowHandle::XlibHandle(window);
     let mut change = WindowChange::new(handle);
