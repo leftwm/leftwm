@@ -270,23 +270,28 @@ impl Xyhw {
     }
 
     pub fn scratchpad_size_position(&self, scratch_pad: &ScratchPad) -> Xyhw {
-        let x_sane = if (10..90).contains(&scratch_pad.x) {
-            scratch_pad.x
+        let scratch_pad_x = scratch_pad.x.unwrap_or(25);
+        let scratch_pad_y = scratch_pad.y.unwrap_or(25);
+        let scratch_pad_width = scratch_pad.width.unwrap_or(50);
+        let scratch_pad_height = scratch_pad.height.unwrap_or(50);
+
+        let x_sane = if (10..90).contains(&scratch_pad_x) {
+            scratch_pad_x
         } else {
             25
         };
-        let y_sane = if (10..90).contains(&scratch_pad.y) {
-            scratch_pad.y
+        let y_sane = if (10..90).contains(&scratch_pad_y) {
+            scratch_pad_y
         } else {
             25
         };
-        let height_sane = if (10..90).contains(&scratch_pad.height) {
-            scratch_pad.height
+        let height_sane = if (10..90).contains(&scratch_pad_height) {
+            scratch_pad_height
         } else {
             50
         };
-        let width_sane = if (10..90).contains(&scratch_pad.width) {
-            scratch_pad.width
+        let width_sane = if (10..90).contains(&scratch_pad_width) {
+            scratch_pad_width
         } else {
             50
         };
