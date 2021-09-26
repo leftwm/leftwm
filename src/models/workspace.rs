@@ -1,6 +1,5 @@
 use super::Size;
 use super::{layouts::Layout, Margins};
-use crate::config::ScratchPad;
 use crate::models::Gutter;
 use crate::models::Side;
 use crate::models::Tag;
@@ -330,10 +329,6 @@ impl Workspace {
     #[must_use]
     pub fn center_halfed(&self) -> Xyhw {
         self.xyhw_avoided.center_halfed()
-    }
-
-    pub fn scratchpad_xyhw(&self, scratch_pad: &ScratchPad) -> Xyhw {
-        self.xyhw_avoided.scratchpad_size_position(scratch_pad)
     }
 
     pub fn update_avoided_areas(&mut self) {

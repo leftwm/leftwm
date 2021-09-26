@@ -1,7 +1,8 @@
 use super::{focus_handler, Manager, Window, WindowChange, WindowType, Workspace};
+use crate::config::ScratchPad;
 use crate::display_action::DisplayAction;
 use crate::layouts::Layout;
-use crate::models::WindowHandle;
+use crate::models::{WindowHandle, Xyhw, XyhwBuilder};
 use crate::utils::helpers;
 use crate::{child_process::exec_shell, models::FocusBehaviour};
 
@@ -93,7 +94,7 @@ fn setup_window(
                     .unwrap()
                     .clone();
 
-                let new_float_exact = ws.scratchpad_xyhw(&s);
+                let new_float_exact = scratchpad_xyhw(&ws.xyhw, &s);
                 window.normal = ws.xyhw;
                 window.set_floating_exact(new_float_exact);
             }
@@ -315,4 +316,42 @@ pub fn get_next_or_previous(manager: &mut Manager, handle: &WindowHandle) -> Opt
         return new_handle;
     }
     None
+}
+
+// Get size and position of scratchpad from config and workspace size
+pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
+    let scratch_pad_x = scratch_pad.x.unwrap_or(25);
+    let scratch_pad_y = scratch_pad.y.unwrap_or(25);
+    let scratch_pad_height = scratch_pad.height.unwrap_or(50);
+    let scratch_pad_width = scratch_pad.width.unwrap_or(50);
+
+    let x_sane = if (10..90).contains(&scratch_pad_x) {
+        scratch_pad_x
+    } else {
+        25
+    };
+    let y_sane = if (10..90).contains(&scratch_pad_y) {
+        scratch_pad_y
+    } else {
+        25
+    };
+    let height_sane = if (10..90).contains(&scratch_pad_height) {
+        scratch_pad_height
+    } else {
+        50
+    };
+    let width_sane = if (10..90).contains(&scratch_pad_width) {
+        scratch_pad_width
+    } else {
+        50
+    };
+
+    XyhwBuilder {
+        x: xyhw.x() + xyhw.w() * x_sane / 100,
+        y: xyhw.y() + xyhw.h() * y_sane / 100,
+        h: xyhw.h() * height_sane / 100,
+        w: xyhw.w() * width_sane / 100,
+        ..XyhwBuilder::default()
+    }
+    .into()
 }
