@@ -766,8 +766,26 @@ impl XWrap {
             //make sure there is at least an empty list of _NET_WM_STATE
             let states = self.get_window_states_atoms(handle);
             self.set_window_states_atoms(handle, &states);
+            self.set_wm_states(handle, &[1]);
         }
         None
+    }
+
+    pub fn set_wm_states(&self, window: xlib::Window, states: &[c_long]) {
+        let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                self.atoms.WMState,
+                self.atoms.WMState,
+                32,
+                xlib::PropModeReplace,
+                data.as_ptr().cast::<u8>(),
+                data.len() as i32,
+            );
+            std::mem::forget(data);
+        }
     }
 
     fn grab_mouse_clicks(&self, handle: xlib::Window) {
