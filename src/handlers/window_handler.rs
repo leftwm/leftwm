@@ -320,31 +320,10 @@ pub fn get_next_or_previous(manager: &mut Manager, handle: &WindowHandle) -> Opt
 
 // Get size and position of scratchpad from config and workspace size
 pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
-    let scratch_pad_x = scratch_pad.x.unwrap_or(25);
-    let scratch_pad_y = scratch_pad.y.unwrap_or(25);
-    let scratch_pad_height = scratch_pad.height.unwrap_or(50);
-    let scratch_pad_width = scratch_pad.width.unwrap_or(50);
-
-    let x_sane = if (10..90).contains(&scratch_pad_x) {
-        scratch_pad_x
-    } else {
-        25
-    };
-    let y_sane = if (10..90).contains(&scratch_pad_y) {
-        scratch_pad_y
-    } else {
-        25
-    };
-    let height_sane = if (10..90).contains(&scratch_pad_height) {
-        scratch_pad_height
-    } else {
-        50
-    };
-    let width_sane = if (10..90).contains(&scratch_pad_width) {
-        scratch_pad_width
-    } else {
-        50
-    };
+    let x_sane = sane_dimension(scratch_pad.x, 25);
+    let y_sane = sane_dimension(scratch_pad.y, 25);
+    let height_sane = sane_dimension(scratch_pad.height, 50);
+    let width_sane = sane_dimension(scratch_pad.width, 50);
 
     XyhwBuilder {
         x: xyhw.x() + xyhw.w() * x_sane / 100,
@@ -354,4 +333,11 @@ pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
         ..XyhwBuilder::default()
     }
     .into()
+}
+
+fn sane_dimension(config_value: Option<i32>, default_value: i32) -> i32 {
+    match config_value {
+        Some(dim) if (10..90).contains(&dim) => dim,
+        _ => default_value,
+    }
 }
