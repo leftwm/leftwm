@@ -247,7 +247,7 @@ git pull origin master
 # Without systemd logging
 cargo build --release
 
-# With systemd logging
+# With systemd logging which can be used with `journalctl -f` for debug purpose
 cargo build --release --features=journald
 ```
 
