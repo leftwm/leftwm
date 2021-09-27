@@ -316,21 +316,22 @@ fn is_scratchpad<C: Config, SERVER: DisplayServer>(
         .any(|(_, &id)| window.pid == id)
 }
 
-fn find_window<'w, C: Config, SERVER: DisplayServer>(
-    manager: &'w Manager<C, SERVER>,
-    handle: &WindowHandle,
-) -> Option<&'w Window> {
-    manager.state.windows.iter().find(|w| &w.handle == handle)
-}
-
 fn find_transient_parent<'w, C: Config, SERVER: DisplayServer>(
     manager: &'w Manager<C, SERVER>,
     window: &Window,
 ) -> Option<&'w Window> {
-    let handle = &window.transient?;
-    let mut w: &Window = find_window(manager, handle)?;
-    while let Some(tran) = w.transient {
-        w = find_window(manager, &tran)?;
+    let mut transient = window.transient?;
+    loop {
+        transient = if let Some(found) = manager
+            .state
+            .windows
+            .iter()
+            .find(|x| x.handle == transient)
+            .and_then(|x| x.transient)
+        {
+            found
+        } else {
+            return manager.state.windows.iter().find(|x| x.handle == transient);
+        };
     }
-    Some(w)
 }
