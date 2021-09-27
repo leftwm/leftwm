@@ -35,62 +35,62 @@ impl TryFrom<Keybind> for leftwm::Keybind {
     type Error = anyhow::Error;
 
     fn try_from(k: Keybind) -> Result<Self> {
-        use BaseCommand::*;
-
         let command = match k.command {
-            Execute => leftwm::Command::Execute(k.value.context("missing command for Execute")?),
-            CloseWindow => leftwm::Command::CloseWindow,
-            SwapScreens => leftwm::Command::SwapScreens,
-            SoftReload => leftwm::Command::SoftReload,
-            HardReload => leftwm::Command::HardReload,
-            ToggleScratchPad => leftwm::Command::ToggleScratchPad(
+            BaseCommand::Execute => {
+                leftwm::Command::Execute(k.value.context("missing command for Execute")?)
+            }
+            BaseCommand::CloseWindow => leftwm::Command::CloseWindow,
+            BaseCommand::SwapTags => leftwm::Command::SwapScreens,
+            BaseCommand::SoftReload => leftwm::Command::SoftReload,
+            BaseCommand::HardReload => leftwm::Command::HardReload,
+            BaseCommand::ToggleScratchPad => leftwm::Command::ToggleScratchPad(
                 k.value.context("missing name for ToggleScratchPad")?,
             ),
-            ToggleFullScreen => leftwm::Command::ToggleFullScreen,
-            GotoTag => leftwm::Command::GotoTag(
+            BaseCommand::ToggleFullScreen => leftwm::Command::ToggleFullScreen,
+            BaseCommand::GotoTag => leftwm::Command::GotoTag(
                 usize::from_str(&k.value.context("missing index value for GotoTag")?)
                     .context("invalid index value for GotoTag")?,
             ),
-            FloatingToTile => leftwm::Command::FloatingToTile,
-            MoveWindowUp => leftwm::Command::MoveWindowUp,
-            MoveWindowDown => leftwm::Command::MoveWindowDown,
-            MoveWindowTop => leftwm::Command::MoveWindowTop,
-            FocusNextTag => leftwm::Command::FocusNextTag,
-            FocusPreviousTag => leftwm::Command::FocusPreviousTag,
-            FocusWindowUp => leftwm::Command::FocusWindowUp,
-            FocusWindowDown => leftwm::Command::FocusWindowDown,
-            FocusWorkspaceNext => leftwm::Command::FocusWorkspaceNext,
-            FocusWorkspacePrevious => leftwm::Command::FocusWorkspacePrevious,
-            SendWindowToTag => leftwm::Command::SendWindowToTag(
+            BaseCommand::FloatingToTile => leftwm::Command::FloatingToTile,
+            BaseCommand::MoveWindowUp => leftwm::Command::MoveWindowUp,
+            BaseCommand::MoveWindowDown => leftwm::Command::MoveWindowDown,
+            BaseCommand::MoveWindowTop => leftwm::Command::MoveWindowTop,
+            BaseCommand::FocusNextTag => leftwm::Command::FocusNextTag,
+            BaseCommand::FocusPreviousTag => leftwm::Command::FocusPreviousTag,
+            BaseCommand::FocusWindowUp => leftwm::Command::FocusWindowUp,
+            BaseCommand::FocusWindowDown => leftwm::Command::FocusWindowDown,
+            BaseCommand::FocusWorkspaceNext => leftwm::Command::FocusWorkspaceNext,
+            BaseCommand::FocusWorkspacePrevious => leftwm::Command::FocusWorkspacePrevious,
+            BaseCommand::MoveToTag => leftwm::Command::SendWindowToTag(
                 usize::from_str(&k.value.context("missing index value for SendWindowToTag")?)
                     .context("invalid index value for SendWindowToTag")?,
             ),
-            MoveWindowToLastWorkspace => leftwm::Command::MoveWindowToLastWorkspace,
-            MouseMoveWindow => leftwm::Command::MouseMoveWindow,
-            NextLayout => leftwm::Command::NextLayout,
-            PreviousLayout => leftwm::Command::PreviousLayout,
-            SetLayout => leftwm::Command::SetLayout(
+            BaseCommand::MoveToLastWorkspace => leftwm::Command::MoveWindowToLastWorkspace,
+            BaseCommand::MouseMoveWindow => leftwm::Command::MouseMoveWindow,
+            BaseCommand::NextLayout => leftwm::Command::NextLayout,
+            BaseCommand::PreviousLayout => leftwm::Command::PreviousLayout,
+            BaseCommand::SetLayout => leftwm::Command::SetLayout(
                 Layout::from_str(&k.value.context("missing layout for SetLayout")?)
                     .context("could not parse layout for command SetLayout")?,
             ),
-            RotateTag => leftwm::Command::RotateTag,
-            IncreaseMainWidth => leftwm::Command::IncreaseMainWidth(
+            BaseCommand::RotateTag => leftwm::Command::RotateTag,
+            BaseCommand::IncreaseMainWidth => leftwm::Command::IncreaseMainWidth(
                 i8::from_str(&k.value.context("missing value for IncreaseMainWidth")?)
                     .context("invalid value for IncreaseMainWidth")?,
             ),
-            DecreaseMainWidth => leftwm::Command::DecreaseMainWidth(
+            BaseCommand::DecreaseMainWidth => leftwm::Command::DecreaseMainWidth(
                 i8::from_str(&k.value.context("missing value for DecreaseMainWidth")?)
                     .context("invalid value for DecreaseMainWidth")?,
             ),
-            SetMarginMultiplier => leftwm::Command::SetMarginMultiplier(
+            BaseCommand::SetMarginMultiplier => leftwm::Command::SetMarginMultiplier(
                 f32::from_str(
                     &k.value
                         .context("missing index value for SetMarginMultiplier")?,
                 )
                 .context("invalid index value for SetMarginMultiplier")?,
             ),
-            UnloadTheme => leftwm::Command::Other("UnloadTheme".into()),
-            LoadTheme => leftwm::Command::Other(format!(
+            BaseCommand::UnloadTheme => leftwm::Command::Other("UnloadTheme".into()),
+            BaseCommand::LoadTheme => leftwm::Command::Other(format!(
                 "LoadTheme {}",
                 k.value.context("missing index value for LoadTheme")?,
             )),
@@ -490,14 +490,14 @@ impl Default for Config {
             },
             // Mod + Shift + w => swap the tags on the last to active workspaces
             Keybind {
-                command: BaseCommand::MoveWindowToLastWorkspace,
+                command: BaseCommand::MoveToLastWorkspace,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "w".to_owned(),
             },
             // Mod + w => move the active window to the previous workspace
             Keybind {
-                command: BaseCommand::SwapScreens,
+                command: BaseCommand::SwapTags,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "w".to_owned(),
@@ -619,7 +619,7 @@ impl Default for Config {
         // and "move to workspace"
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
-                command: BaseCommand::SendWindowToTag,
+                command: BaseCommand::MoveToTag,
                 value: Some(i.to_string()),
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: i.to_string(),
