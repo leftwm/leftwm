@@ -320,10 +320,10 @@ pub fn get_next_or_previous(manager: &mut Manager, handle: &WindowHandle) -> Opt
 
 // Get size and position of scratchpad from config and workspace size
 pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
-    let x_sane = sane_dimension(scratch_pad.x, 0.25);
-    let y_sane = sane_dimension(scratch_pad.y, 0.25);
-    let height_sane = sane_dimension(scratch_pad.height, 0.50);
-    let width_sane = sane_dimension(scratch_pad.width, 0.50);
+    let x_sane = sane_dimension(scratch_pad.x, 0.25, xyhw.x());
+    let y_sane = sane_dimension(scratch_pad.y, 0.25, xyhw.y());
+    let height_sane = sane_dimension(scratch_pad.height, 0.50, xyhw.h());
+    let width_sane = sane_dimension(scratch_pad.width, 0.50, xyhw.w());
 
     XyhwBuilder {
         x: xyhw.x() + xyhw.w() * x_sane / 100,
@@ -335,16 +335,17 @@ pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
     .into()
 }
 
-fn sane_dimension(config_value: Option<Size>, default_value: f32) -> i32 {
+fn sane_dimension(config_value: Option<Size>, default_percent: f32, max_pixel: i32) -> i32 {
     match config_value {
         Some(size) => match size {
-            Size::Percentage(percentage) if (0.1..0.9).contains(&percentage) => {
+            Size::Percentage(percentage) if (0.0..0.9).contains(&percentage) => {
                 size.into_absolute(100.0) as i32
             }
-            Size::Percentage(_) => (default_value * 100.0) as i32,
-            Size::Pixel(dim) if (10..90).contains(&dim) => dim,
-            Size::Pixel(_) => (default_value * 100.0) as i32,
+            Size::Pixel(pixel) if (0..(max_pixel as f32 * 0.9) as i32).contains(&pixel) => {
+                ((pixel as f32) / (max_pixel as f32) * 100.0) as i32
+            }
+            _ => (default_percent * 100.0) as i32,
         },
-        _ => (default_value * 100.0) as i32,
+        _ => (default_percent * 100.0) as i32,
     }
 }
