@@ -83,15 +83,11 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     if verbose {
         dbg!(&config_filename);
     }
-    if Path::new(&config_filename).exists() {
-        let contents = fs::read_to_string(config_filename)?;
-        if verbose {
-            dbg!(&contents);
-        }
-        Ok(toml::from_str(&contents)?)
-    } else {
-        bail!("Configuration not found in path");
+    let contents = fs::read_to_string(config_filename)?;
+    if verbose {
+        dbg!(&contents);
     }
+    Ok(toml::from_str(&contents)?)
 }
 
 /// Checks defined workspaces to ensure no ID collisions occur.
