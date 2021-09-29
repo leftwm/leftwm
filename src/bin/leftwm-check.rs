@@ -220,9 +220,11 @@ fn check_elogind(verbose: bool) -> Result<()> {
             if verbose {
                 println!(":: XDG_RUNTIME_DIR_ERROR: {:?}, LOGINCTL BAD", e);
             }
-            println!("\x1b[1;91mERROR: XDG_RUNTIME_DIR not set and elogind not found.\nSee https://github.com/leftwm/leftwm/wiki/XDG_RUNTIME_DIR for more information.\x1b[0m",);
 
-            bail!("Elogind not installed/operating and no alternative XDG_RUNTIME_DIR is set.");
+            bail!(
+                "Elogind not installed/operating and no alternative XDG_RUNTIME_DIR is set. \
+                See https://github.com/leftwm/leftwm/wiki/XDG_RUNTIME_DIR for more information."
+            );
         }
         (Err(e), true) => {
             if verbose {
