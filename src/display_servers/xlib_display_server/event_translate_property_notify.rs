@@ -16,15 +16,18 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
 
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {
+            let window_type = xw.get_window_type(event.window);
             let handle = WindowHandle::XlibHandle(event.window);
             let mut change = WindowChange::new(handle);
-            let trans = xw.get_transient_for(event.window);
-
-            match trans {
-                Some(trans) => change.transient = Some(Some(WindowHandle::XlibHandle(trans))),
-                None => change.transient = Some(None),
+            if window_type != WindowType::Normal {
+                let trans = xw.get_transient_for(event.window);
+                match trans {
+                    Some(trans) => {
+                        change.transient = Some(Some(WindowHandle::XlibHandle(trans)));
+                    }
+                    None => change.transient = Some(None),
+                }
             }
-
             Some(DisplayEvent::WindowChange(change))
         }
         xlib::XA_WM_NORMAL_HINTS => {
