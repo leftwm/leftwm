@@ -650,7 +650,7 @@ impl XWrap {
             if window.visible() {
                 // If type dock we only need to move it
                 // Also fixes issues with eww
-                if window.type_ == WindowType::Dock {
+                if window.is_unmanaged() {
                     unsafe {
                         (self.xlib.XMoveWindow)(self.display, h, window.x(), window.y());
                     }
