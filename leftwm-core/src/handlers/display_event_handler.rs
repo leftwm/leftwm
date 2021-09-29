@@ -8,7 +8,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Returns true if changes need to be rendered.
     pub fn display_event_handler(&mut self, event: DisplayEvent) -> bool {
         let update_needed = match event {
-            DisplayEvent::ScreenCreate(s) => self.state.screen_create_handler(s),
+            DisplayEvent::ScreenCreate(s) => self.screen_create_handler(s),
             DisplayEvent::WindowCreate(w, x, y) => self.window_created_handler(w, x, y),
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
 
@@ -19,9 +19,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             },
 
             DisplayEvent::KeyGrabReload => {
-                self.state.actions.push_back(DisplayAction::ReloadKeyGrabs(
-                    self.state.config.mapped_bindings(),
-                ));
+                self.state
+                    .actions
+                    .push_back(DisplayAction::ReloadKeyGrabs(self.config.mapped_bindings()));
                 false
             }
 
@@ -38,7 +38,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
                 //look through the config and build a command if its defined in the config
-                let build = CommandBuilder::<C>::new(&self.state.config);
+                let build = CommandBuilder::<C>::new(&self.config);
                 let command = build.xkeyevent(mod_mask, xkeysym);
                 command.map_or(false, |cmd| self.command_handler(cmd))
             }
@@ -46,7 +46,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             DisplayEvent::SendCommand(command) => self.command_handler(&command),
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
-                let mouse_key = utils::xkeysym_lookup::into_mod(self.state.config.mousekey());
+                // TODO looks like this should be entirely in state
+                let mouse_key = utils::xkeysym_lookup::into_mod(&self.state.mousekey);
                 self.state
                     .mouse_combo_handler(mod_mask, button, handle, mouse_key)
             }

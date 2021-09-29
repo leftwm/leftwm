@@ -74,7 +74,7 @@ impl Window {
         }
     }
 
-    pub fn update_for_theme(&mut self, config: &impl Config) {
+    pub(crate) fn reload_config(&mut self, config: &impl Config) {
         if self.type_ == WindowType::Normal {
             self.margin = config.margin();
             self.border = config.border_width();

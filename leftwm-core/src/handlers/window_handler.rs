@@ -23,15 +23,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut on_same_tag = true;
         //Random value
         let mut layout: Layout = Layout::MainAndVertStack;
-        setup_window(
-            &mut self.state,
+        self.state.setup_window(
             &mut window,
             (x, y),
             &mut layout,
             &mut is_first,
             &mut on_same_tag,
         );
-        insert_window(&mut self.state, &mut window, layout);
+        window.reload_config(&self.config);
+        self.state.insert_window(&mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
@@ -54,7 +54,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.focus_window(&window.handle);
         }
 
-        if let Some(cmd) = &self.state.config.on_new_window_cmd() {
+        if let Some(cmd) = &self.config.on_new_window_cmd() {
             exec_shell(cmd, &mut self.children);
         }
 
@@ -180,197 +180,190 @@ impl Window {
     }
 }
 
-fn setup_window<C: Config>(
-    state: &mut State<C>,
-    window: &mut Window,
-    xy: (i32, i32),
-    layout: &mut Layout,
-    is_first: &mut bool,
-    on_same_tag: &mut bool,
-) {
-    //When adding a window we add to the workspace under the cursor, This isn't necessarily the
-    //focused workspace. If the workspace is empty, it might not have received focus. This is so
-    //the workspace that has windows on its is still active not the empty workspace.
-    let ws: Option<&Workspace> = state
-        .workspaces
-        .iter()
-        .find(|ws| {
-            ws.xyhw.contains_point(xy.0, xy.1)
-                && state.focus_manager.behaviour == FocusBehaviour::Sloppy
-        })
-        .or_else(|| state.focus_manager.workspace(&state.workspaces)); //backup plan
+impl State {
+    fn setup_window(
+        &mut self,
+        window: &mut Window,
+        xy: (i32, i32),
+        layout: &mut Layout,
+        is_first: &mut bool,
+        on_same_tag: &mut bool,
+    ) {
+        //When adding a window we add to the workspace under the cursor, This isn't necessarily the
+        //focused workspace. If the workspace is empty, it might not have received focus. This is so
+        //the workspace that has windows on its is still active not the empty workspace.
+        let ws: Option<&Workspace> = self
+            .workspaces
+            .iter()
+            .find(|ws| {
+                ws.xyhw.contains_point(xy.0, xy.1)
+                    && self.focus_manager.behaviour == FocusBehaviour::Sloppy
+            })
+            .or_else(|| self.focus_manager.workspace(&self.workspaces)); //backup plan
 
-    if let Some(ws) = ws {
-        let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
-        *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
-        window.tags = find_terminal(state, window.pid).map_or_else(
-            || ws.tags.clone(),
-            |terminal| {
-                *on_same_tag = ws.tags == terminal.tags;
-                terminal.tags.clone()
-            },
-        );
-        *layout = ws.layout;
+        if let Some(ws) = ws {
+            let for_active_workspace =
+                |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
+            *is_first = !self.windows.iter().any(|w| for_active_workspace(w));
+            window.tags = self.find_terminal(window.pid).map_or_else(
+                || ws.tags.clone(),
+                |terminal| {
+                    *on_same_tag = ws.tags == terminal.tags;
+                    terminal.tags.clone()
+                },
+            );
+            *layout = ws.layout;
 
-        if is_scratchpad(state, window) {
-            window.set_floating(true);
-            if let Some((scratchpad_name, _)) = state
-                .active_scratchpads
-                .iter()
-                .find(|(_, &id)| id == window.pid)
-            {
-                if let Some(s) = state
-                    .scratchpads
+            if self.is_scratchpad(window) {
+                window.set_floating(true);
+                if let Some((scratchpad_name, _)) = self
+                    .active_scratchpads
                     .iter()
-                    .find(|s| *scratchpad_name == s.name)
+                    .find(|(_, &id)| id == window.pid)
                 {
-                    let new_float_exact = scratchpad_xyhw(&ws.xyhw, s);
-                    window.normal = ws.xyhw;
-                    window.set_floating_exact(new_float_exact);
+                    if let Some(s) = self.scratchpads.iter().find(|s| *scratchpad_name == s.name) {
+                        let new_float_exact = scratchpad_xyhw(&ws.xyhw, s);
+                        window.normal = ws.xyhw;
+                        window.set_floating_exact(new_float_exact);
+                    }
                 }
             }
-        }
-        if window.type_ == WindowType::Normal {
-            window.apply_margin_multiplier(ws.margin_multiplier);
-        }
-        //if dialog, center in workspace
-        if window.type_ == WindowType::Dialog {
-            window.set_floating(true);
-            let new_float_exact = ws.center_halfed();
-            window.normal = ws.xyhw;
-            window.set_floating_exact(new_float_exact);
-        }
-        if window.type_ == WindowType::Splash {
-            if let Some(requested) = window.requested {
-                window.normal = ws.xyhw;
-                requested.update_window_floating(window);
-                let mut xhyw = window.get_floating_offsets().unwrap_or_default();
-                xhyw.center_relative(ws.xyhw, window.border, window.requested);
-                window.set_floating_offsets(Some(xhyw));
-            } else {
+            if window.type_ == WindowType::Normal {
+                window.apply_margin_multiplier(ws.margin_multiplier);
+            }
+            //if dialog, center in workspace
+            if window.type_ == WindowType::Dialog {
                 window.set_floating(true);
                 let new_float_exact = ws.center_halfed();
                 window.normal = ws.xyhw;
                 window.set_floating_exact(new_float_exact);
             }
-        }
-    } else {
-        window.tags = vec![state.tags[0].id.clone()];
-        if is_scratchpad(state, window) {
-            window.tag("NSP");
-            window.set_floating(true);
-        }
-    }
-
-    if let Some(parent) = find_transient_parent(state, window) {
-        window.set_floating(true);
-        let new_float_exact = parent.calculated_xyhw().center_halfed();
-        window.normal = parent.normal;
-        window.set_floating_exact(new_float_exact);
-    }
-
-    window.update_for_theme(&state.config);
-}
-
-fn insert_window<C: Config>(state: &mut State<C>, window: &mut Window, layout: Layout) {
-    // If the tag contains a fullscreen window, minimize it
-    let for_active_workspace =
-        |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
-    let mut was_fullscreen = false;
-    if let Some(fsw) = state
-        .windows
-        .iter_mut()
-        .find(|w| for_active_workspace(w) && w.is_fullscreen())
-    {
-        let act =
-            DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
-        state.actions.push_back(act);
-        was_fullscreen = true;
-    }
-
-    if matches!(layout, Layout::Monocle | Layout::MainAndDeck) && window.type_ == WindowType::Normal
-    {
-        let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
-        if layout == Layout::Monocle || to_reorder.is_empty() {
-            if was_fullscreen {
-                let act = DisplayAction::SetState(
-                    window.handle,
-                    !window.is_fullscreen(),
-                    WindowState::Fullscreen,
-                );
-                state.actions.push_back(act);
+            if window.type_ == WindowType::Splash {
+                if let Some(requested) = window.requested {
+                    window.normal = ws.xyhw;
+                    requested.update_window_floating(window);
+                    let mut xhyw = window.get_floating_offsets().unwrap_or_default();
+                    xhyw.center_relative(ws.xyhw, window.border, window.requested);
+                    window.set_floating_offsets(Some(xhyw));
+                } else {
+                    window.set_floating(true);
+                    let new_float_exact = ws.center_halfed();
+                    window.normal = ws.xyhw;
+                    window.set_floating_exact(new_float_exact);
+                }
             }
-            to_reorder.insert(0, window.clone());
         } else {
-            to_reorder.insert(1, window.clone());
+            window.tags = vec![self.tags[0].id.clone()];
+            if self.is_scratchpad(window) {
+                window.tag("NSP");
+                window.set_floating(true);
+            }
         }
-        state.windows.append(&mut to_reorder);
-    } else if window.type_ == WindowType::Dialog
-        || window.type_ == WindowType::Splash
-        || is_scratchpad(state, window)
-    {
-        //Slow
-        state.windows.insert(0, window.clone());
-    } else {
-        state.windows.push(window.clone());
-    }
-}
 
-fn is_scratchpad<C: Config>(state: &State<C>, window: &Window) -> bool {
-    state
-        .active_scratchpads
-        .iter()
-        .any(|(_, &id)| window.pid == id)
-}
-
-fn find_terminal<C: Config>(state: &State<C>, pid: Option<u32>) -> Option<&Window> {
-    // Get $SHELL, e.g. /bin/zsh
-    let shell_path = env::var("SHELL").ok()?;
-    // Remove /bin/
-    let shell = shell_path.split('/').last()?;
-    // Try and find the shell that launched this app, if such a thing exists.
-    let is_terminal = |pid: u32| -> Option<bool> {
-        let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
-        let parent_bytes = parent.split(|&c| c == b' ').next()?;
-        let parent_str = std::str::from_utf8(parent_bytes).ok()?.strip_suffix('\n')?;
-        Some(parent_str == shell)
-    };
-
-    let get_parent = |pid: u32| -> Option<u32> {
-        let stat = std::fs::read(format!("/proc/{}/stat", pid)).ok()?;
-        let ppid_bytes = stat.split(|&c| c == b' ').nth(3)?;
-        let ppid_str = std::str::from_utf8(ppid_bytes).ok()?;
-        let ppid_u32 = u32::from_str(ppid_str).ok()?;
-        Some(ppid_u32)
-    };
-
-    let pid = pid?;
-    let shell_id = get_parent(pid)?;
-    if is_terminal(shell_id)? {
-        let terminal = get_parent(shell_id)?;
-        return state.windows.iter().find(|w| w.pid == Some(terminal));
+        if let Some(parent) = self.find_transient_parent(window) {
+            window.set_floating(true);
+            let new_float_exact = parent.calculated_xyhw().center_halfed();
+            window.normal = parent.normal;
+            window.set_floating_exact(new_float_exact);
+        }
     }
 
-    None
-}
-
-fn find_transient_parent<'w, C: Config>(
-    state: &'w State<C>,
-    window: &Window,
-) -> Option<&'w Window> {
-    let mut transient = window.transient?;
-    loop {
-        transient = if let Some(found) = state
+    fn insert_window(&mut self, window: &mut Window, layout: Layout) {
+        // If the tag contains a fullscreen window, minimize it
+        let for_active_workspace =
+            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
+        let mut was_fullscreen = false;
+        if let Some(fsw) = self
             .windows
-            .iter()
-            .find(|x| x.handle == transient)
-            .and_then(|x| x.transient)
+            .iter_mut()
+            .find(|w| for_active_workspace(w) && w.is_fullscreen())
         {
-            found
+            let act =
+                DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
+            self.actions.push_back(act);
+            was_fullscreen = true;
+        }
+
+        if matches!(layout, Layout::Monocle | Layout::MainAndDeck)
+            && window.type_ == WindowType::Normal
+        {
+            let mut to_reorder = helpers::vec_extract(&mut self.windows, for_active_workspace);
+            if layout == Layout::Monocle || to_reorder.is_empty() {
+                if was_fullscreen {
+                    let act = DisplayAction::SetState(
+                        window.handle,
+                        !window.is_fullscreen(),
+                        WindowState::Fullscreen,
+                    );
+                    self.actions.push_back(act);
+                }
+                to_reorder.insert(0, window.clone());
+            } else {
+                to_reorder.insert(1, window.clone());
+            }
+            self.windows.append(&mut to_reorder);
+        } else if window.type_ == WindowType::Dialog
+            || window.type_ == WindowType::Splash
+            || self.is_scratchpad(window)
+        {
+            //Slow
+            self.windows.insert(0, window.clone());
         } else {
-            return state.windows.iter().find(|x| x.handle == transient);
+            self.windows.push(window.clone());
+        }
+    }
+
+    fn is_scratchpad(&self, window: &Window) -> bool {
+        self.active_scratchpads
+            .iter()
+            .any(|(_, &id)| window.pid == id)
+    }
+
+    fn find_terminal(&self, pid: Option<u32>) -> Option<&Window> {
+        // Get $SHELL, e.g. /bin/zsh
+        let shell_path = env::var("SHELL").ok()?;
+        // Remove /bin/
+        let shell = shell_path.split('/').last()?;
+        // Try and find the shell that launched this app, if such a thing exists.
+        let is_terminal = |pid: u32| -> Option<bool> {
+            let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
+            let parent_bytes = parent.split(|&c| c == b' ').next()?;
+            let parent_str = std::str::from_utf8(parent_bytes).ok()?.strip_suffix('\n')?;
+            Some(parent_str == shell)
         };
+
+        let get_parent = |pid: u32| -> Option<u32> {
+            let stat = std::fs::read(format!("/proc/{}/stat", pid)).ok()?;
+            let ppid_bytes = stat.split(|&c| c == b' ').nth(3)?;
+            let ppid_str = std::str::from_utf8(ppid_bytes).ok()?;
+            let ppid_u32 = u32::from_str(ppid_str).ok()?;
+            Some(ppid_u32)
+        };
+
+        let pid = pid?;
+        let shell_id = get_parent(pid)?;
+        if is_terminal(shell_id)? {
+            let terminal = get_parent(shell_id)?;
+            return self.windows.iter().find(|w| w.pid == Some(terminal));
+        }
+
+        None
+    }
+
+    fn find_transient_parent<'w>(&'w self, window: &Window) -> Option<&'w Window> {
+        let mut transient = window.transient?;
+        loop {
+            transient = if let Some(found) = self
+                .windows
+                .iter()
+                .find(|x| x.handle == transient)
+                .and_then(|x| x.transient)
+            {
+                found
+            } else {
+                return self.windows.iter().find(|x| x.handle == transient);
+            };
+        }
     }
 }
 

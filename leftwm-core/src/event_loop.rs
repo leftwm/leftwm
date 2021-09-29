@@ -45,7 +45,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
                     needs_update = self.command_handler(&cmd) || needs_update;
-                    self.display_server.update_theme_settings(&self.state.config);
+                    self.display_server.reload_config(&self.config);
                 }
                 else => {
                     event_buffer.drain(..).for_each(|event| needs_update = self.display_event_handler(event) || needs_update);
@@ -104,7 +104,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     Err(err) => log::error!("Theme loading failed: {}", err),
                 }
 
-                C::load_state(&mut self.state);
+                self.config.load_state(&mut self.state);
             });
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {

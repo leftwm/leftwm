@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::layouts::Layout;
 use crate::state::State;
 use serde::{Deserialize, Serialize};
@@ -104,8 +103,8 @@ fn viewport_into_display_workspace(
     }
 }
 
-impl<C: Config> From<&State<C>> for ManagerState {
-    fn from(state: &State<C>) -> Self {
+impl From<&State> for ManagerState {
+    fn from(state: &State) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         let mut tags_len = state.tags.len();
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };

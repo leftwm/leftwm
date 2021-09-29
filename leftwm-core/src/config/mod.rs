@@ -3,8 +3,8 @@ mod scratchpad;
 mod workspace_config;
 
 use crate::layouts::Layout;
-use crate::models::LayoutMode;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
+use crate::models::{LayoutMode, Manager};
 use crate::state::State;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
@@ -16,11 +16,11 @@ pub trait Config {
 
     fn create_list_of_tags(&self) -> Vec<String>;
 
-    fn workspaces(&self) -> Option<&[Workspace]>;
+    fn workspaces(&self) -> Option<Vec<Workspace>>;
 
     fn focus_behaviour(&self) -> FocusBehaviour;
 
-    fn mousekey(&self) -> &str;
+    fn mousekey(&self) -> String;
 
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     fn disable_current_tag_swap(&self) -> bool;
@@ -33,7 +33,7 @@ pub trait Config {
 
     fn focus_new_windows(&self) -> bool;
 
-    fn command_handler(command: &str, state: &mut State<Self>) -> bool
+    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
     where
         Self: Sized;
 
@@ -41,30 +41,22 @@ pub trait Config {
     fn margin(&self) -> Margins;
     fn workspace_margin(&self) -> Option<Margins>;
     fn gutter(&self) -> Option<Vec<Gutter>>;
-    fn default_border_color(&self) -> &str;
-    fn floating_border_color(&self) -> &str;
-    fn focused_border_color(&self) -> &str;
+    fn default_border_color(&self) -> String;
+    fn floating_border_color(&self) -> String;
+    fn focused_border_color(&self) -> String;
     fn on_new_window_cmd(&self) -> Option<String>;
     fn get_list_of_gutters(&self) -> Vec<Gutter>;
     fn max_window_width(&self) -> Option<Size>;
 
-    /// Write current state to a file.
+    /// Attempt to write current state to a file.
+    ///
     /// It will be used to restore the state after soft reload.
     ///
-    /// # Errors
-    ///
-    /// Will return error if unable to create `state_file` or
-    /// if unable to serialize the text.
-    /// May be caused by inadequate permissions, not enough
-    /// space on drive, or other typical filesystem issues.
-    fn save_state(state: &State<Self>)
-    where
-        Self: Sized;
+    /// **Note:** this function cannot fail.
+    fn save_state(&self, state: &State);
 
     /// Load saved state if it exists.
-    fn load_state(state: &mut State<Self>)
-    where
-        Self: Sized;
+    fn load_state(&self, state: &mut State);
 }
 
 #[cfg(test)]
@@ -81,14 +73,14 @@ impl Config for TestConfig {
     fn create_list_of_tags(&self) -> Vec<String> {
         self.tags.clone()
     }
-    fn workspaces(&self) -> Option<&[Workspace]> {
+    fn workspaces(&self) -> Option<Vec<Workspace>> {
         unimplemented!()
     }
     fn focus_behaviour(&self) -> FocusBehaviour {
         FocusBehaviour::Sloppy
     }
-    fn mousekey(&self) -> &str {
-        unimplemented!()
+    fn mousekey(&self) -> String {
+        "Mod4".to_string()
     }
     fn disable_current_tag_swap(&self) -> bool {
         false
@@ -105,10 +97,7 @@ impl Config for TestConfig {
     fn focus_new_windows(&self) -> bool {
         false
     }
-    fn command_handler(_command: &str, _state: &mut State<Self>) -> bool
-    where
-        Self: Sized,
-    {
+    fn command_handler<SERVER>(_command: &str, _manager: &mut Manager<Self, SERVER>) -> bool {
         unimplemented!()
     }
     fn border_width(&self) -> i32 {
@@ -123,13 +112,13 @@ impl Config for TestConfig {
     fn gutter(&self) -> Option<Vec<Gutter>> {
         unimplemented!()
     }
-    fn default_border_color(&self) -> &str {
+    fn default_border_color(&self) -> String {
         unimplemented!()
     }
-    fn floating_border_color(&self) -> &str {
+    fn floating_border_color(&self) -> String {
         unimplemented!()
     }
-    fn focused_border_color(&self) -> &str {
+    fn focused_border_color(&self) -> String {
         unimplemented!()
     }
     fn on_new_window_cmd(&self) -> Option<String> {
@@ -141,17 +130,10 @@ impl Config for TestConfig {
     fn max_window_width(&self) -> Option<Size> {
         None
     }
-    fn save_state(_state: &State<Self>)
-    where
-        Self: Sized,
-    {
+    fn save_state(&self, _state: &State) {
         unimplemented!()
     }
-    /// Load saved state if it exists.
-    fn load_state(_state: &mut State<Self>)
-    where
-        Self: Sized,
-    {
+    fn load_state(&self, _state: &mut State) {
         unimplemented!()
     }
 }
