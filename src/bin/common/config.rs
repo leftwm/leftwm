@@ -410,6 +410,8 @@ impl Default for Config {
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
+            // TODO: add sane default for scratchpad config.
+            // Currently default values are set in sane_dimension fn.
             scratchpad: Some(vec![]),
             disable_current_tag_swap: false,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
