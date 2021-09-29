@@ -1,9 +1,9 @@
 use super::{Manager, Window, WindowChange, WindowType, Workspace};
-use crate::config::Config;
+use crate::config::{Config, ScratchPad};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::WindowHandle;
+use crate::models::{Size, WindowHandle, Xyhw, XyhwBuilder};
 use crate::utils::helpers;
 use crate::{child_process::exec_shell, models::FocusBehaviour};
 
@@ -212,9 +212,19 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
 
         if is_scratchpad {
             window.set_floating(true);
-            let new_float_exact = ws.center_halfed();
-            window.normal = ws.xyhw;
-            window.set_floating_exact(new_float_exact);
+            for (scratchpad_name, _id) in manager.state.active_scratchpads.clone() {
+                let s = manager
+                    .state
+                    .scratchpads
+                    .iter()
+                    .find(|s| scratchpad_name == s.name.clone())
+                    .unwrap()
+                    .clone();
+
+                let new_float_exact = scratchpad_xyhw(&ws.xyhw, &s);
+                window.normal = ws.xyhw;
+                window.set_floating_exact(new_float_exact);
+            }
         }
         if window.type_ == WindowType::Normal {
             window.apply_margin_multiplier(ws.margin_multiplier);
@@ -333,5 +343,35 @@ fn find_transient_parent<'w, C: Config, SERVER: DisplayServer>(
         } else {
             return manager.state.windows.iter().find(|x| x.handle == transient);
         };
+    }
+}
+
+// Get size and position of scratchpad from config and workspace size
+pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
+    let x_sane = sane_dimension(scratch_pad.x, 0.25, xyhw.w());
+    let y_sane = sane_dimension(scratch_pad.y, 0.25, xyhw.h());
+    let height_sane = sane_dimension(scratch_pad.height, 0.50, xyhw.h());
+    let width_sane = sane_dimension(scratch_pad.width, 0.50, xyhw.w());
+
+    XyhwBuilder {
+        x: xyhw.x() + x_sane,
+        y: xyhw.y() + y_sane,
+        h: height_sane,
+        w: width_sane,
+        ..XyhwBuilder::default()
+    }
+    .into()
+}
+
+fn sane_dimension(config_value: Option<Size>, default_percent: f32, max_pixel: i32) -> i32 {
+    match config_value {
+        Some(size) => match size {
+            Size::Percentage(percentage) if (0.0..0.9).contains(&percentage) => {
+                size.into_absolute(100.0) as i32 * max_pixel / 100
+            }
+            Size::Pixel(pixel) if (0..(max_pixel as f32 * 0.9) as i32).contains(&pixel) => pixel,
+            _ => (default_percent * max_pixel as f32) as i32,
+        },
+        _ => (default_percent * max_pixel as f32) as i32,
     }
 }
