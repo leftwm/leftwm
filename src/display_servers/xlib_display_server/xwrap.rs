@@ -648,6 +648,14 @@ impl XWrap {
     pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
         if let WindowHandle::XlibHandle(h) = window.handle {
             if window.visible() {
+                // If type dock we only need to move it
+                // Also fixes issues with eww
+                if window.type_ == WindowType::Dock {
+                    unsafe {
+                        (self.xlib.XMoveWindow)(self.display, h, window.x(), window.y());
+                    }
+                    return;
+                }
                 let mut changes = xlib::XWindowChanges {
                     x: window.x(),
                     y: window.y(),
@@ -688,7 +696,6 @@ impl XWrap {
             } else {
                 unsafe {
                     //if not visible x is <---- way over there <----
-                    //(self.xlib.XMoveWindow)(self.display, h, window.width() * -2, window.y());
                     (self.xlib.XMoveWindow)(self.display, h, hide_offset, window.y());
                 }
             }
