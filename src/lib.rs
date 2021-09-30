@@ -21,10 +21,11 @@ mod display_action;
 mod display_event;
 pub mod display_servers;
 pub mod errors;
+mod event_loop;
 mod handlers;
 pub mod layouts;
 pub mod models;
-pub mod state;
+mod state;
 pub mod utils;
 
 use utils::xkeysym_lookup::Button;
@@ -32,13 +33,12 @@ use utils::xkeysym_lookup::ModMask;
 use utils::xkeysym_lookup::XKeysym;
 
 pub use command::Command;
+pub use config::{Config, Keybind};
 pub use display_action::DisplayAction;
 pub use display_event::DisplayEvent;
 pub use display_servers::xlib_display_server::XWrap;
 pub use display_servers::DisplayServer;
 pub use display_servers::XlibDisplayServer;
-pub use handlers::display_event_handler::DisplayEventHandler;
-pub use handlers::external_command_handler;
 pub use models::Manager;
 pub use models::Mode;
 pub use models::Window;

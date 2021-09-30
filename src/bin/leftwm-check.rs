@@ -1,17 +1,16 @@
 mod common;
 
+use anyhow::{bail, Result};
 use clap::{App, Arg};
-use leftwm::config::{Keybind, ThemeSetting, Workspace};
-use leftwm::errors::Result;
+use common::{Config, Keybind, ThemeSetting};
+use leftwm::config::Workspace;
 use leftwm::utils;
-use leftwm::Command;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use xdg::BaseDirectories;
-
-use common::config::Config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -48,9 +47,6 @@ async fn main() -> Result<()> {
     match load_from_file(config_file, verbose) {
         Ok(config) => {
             println!("\x1b[0;92m    -> Configuration loaded OK \x1b[0m");
-            if config == Config::default() {
-                println!("\x1b[1;93mWARN: The file loaded was the default. Your configuration is likely invalid \x1b[0m");
-            }
             if verbose {
                 dbg!(&config);
             }
@@ -87,18 +83,11 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     if verbose {
         dbg!(&config_filename);
     }
-    if Path::new(&config_filename).exists() {
-        let contents = fs::read_to_string(config_filename)?;
-        if verbose {
-            dbg!(&contents);
-        }
-        Ok(toml::from_str(&contents)?)
-    } else {
-        Err(leftwm::errors::LeftError::from(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Configuration not found in path",
-        )))
+    let contents = fs::read_to_string(config_filename)?;
+    if verbose {
+        dbg!(&contents);
     }
+    Ok(toml::from_str(&contents)?)
 }
 
 /// Checks defined workspaces to ensure no ID collisions occur.
@@ -108,13 +97,13 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
         if verbose {
             println!("Checking config for valid workspace definitions.");
         }
-        let ids = common::config::get_workspace_ids(&wss);
+        let ids = common::get_workspace_ids(&wss);
         if ids.iter().any(std::option::Option::is_some) {
-            if !common::config::all_ids_some(&ids)
+            if !common::all_ids_some(&ids)
             {
                 println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
                 false
-            } else if common::config::all_ids_unique(&ids) {
+            } else if common::all_ids_unique(&ids) {
                 true
             } else {
                 println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
@@ -133,31 +122,14 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
 /// Ideally, we will pass this to the command handler with a dummy config
 fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
     let mut returns = Vec::new();
-    let value_required_commands = vec![
-        Command::ToggleScratchPad,
-        Command::MoveToTag,
-        Command::GotoTag,
-        Command::Execute,
-        Command::IncreaseMainWidth,
-        Command::DecreaseMainWidth,
-        Command::SetLayout,
-        Command::SetMarginMultiplier,
-    ];
     println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
     let mut bindings = HashMap::new();
     for keybind in keybinds {
         if verbose {
             println!("Keybind: {:?} {}", keybind, keybind.value.is_none());
         }
-        if value_required_commands
-            .iter()
-            .any(|i| i.clone() == keybind.command)
-            && keybind.value.is_none()
-        {
-            returns.push((
-                Some(keybind.clone()),
-                "This keybind requres a `string`".to_owned(),
-            ));
+        if let Err(err) = leftwm::Keybind::try_from(keybind.clone()) {
+            returns.push((Some(keybind.clone()), err.to_string()));
         }
         if utils::xkeysym_lookup::into_keysym(&keybind.key).is_none() {
             returns.push((
@@ -220,7 +192,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
     // We also cross-reference the ENV variable
     match (
         std::env::var("XDG_RUNTIME_DIR"),
-        common::config::is_program_in_path("loginctl"),
+        common::is_program_in_path("loginctl"),
     ) {
         (Ok(val), true) => {
             if verbose {
@@ -244,12 +216,11 @@ fn check_elogind(verbose: bool) -> Result<()> {
             if verbose {
                 println!(":: XDG_RUNTIME_DIR_ERROR: {:?}, LOGINCTL BAD", e);
             }
-            println!("\x1b[1;91mERROR: XDG_RUNTIME_DIR not set and elogind not found.\nSee https://github.com/leftwm/leftwm/wiki/XDG_RUNTIME_DIR for more information.\x1b[0m",);
 
-            Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Elogind not installed/operating and no alternative XDG_RUNTIME_DIR is set.",
-            )))
+            bail!(
+                "Elogind not installed/operating and no alternative XDG_RUNTIME_DIR is set. \
+                See https://github.com/leftwm/leftwm/wiki/XDG_RUNTIME_DIR for more information."
+            );
         }
         (Err(e), true) => {
             if verbose {
@@ -282,10 +253,7 @@ fn check_theme(verbose: bool) -> Result<()> {
 
 fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> Result<()> {
     if let Some(file) = missing_expected_file(&filepaths) {
-        Err(leftwm::errors::LeftError::from(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("File: \'{}\' not found.", file),
-        )))
+        bail!("File not found: {}", file);
     } else {
         for filepath in filepaths {
             match filepath {
@@ -330,42 +298,26 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
             }
             Ok(p)
         }
-        None => Err(leftwm::errors::LeftError::from(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "\x1b[1;91mERROR: No theme folder or symlink `current` found.\x1b[0m".to_string(),
-        ))),
+        None => bail!("No theme folder or symlink `current` found."),
     }
 }
 
 fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
-    let metadata = match fs::metadata(&filepath) {
-        Ok(metadata) => metadata,
-        Err(_) => {
-            return Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Couldn't read metadata.",
-            )))
-        }
-    };
+    let metadata = fs::metadata(&filepath)?;
     let permissions = metadata.permissions();
     if verbose {
         if metadata.is_file() && (permissions.mode() & 0o111 != 0) {
             println!(
-                "Found {:?} with executable permissions: {:?}",
-                &filepath,
-                permissions.mode() & 0o111 != 0
+                "Found `{}` with executable permissions: {:?}",
+                filepath.display(),
+                permissions.mode() & 0o111 != 0,
             );
             Ok(filepath)
         } else {
-            let error = format!(
-                "\x1b[1;91mERROR: Found {:?}, but missing executable permissions!\x1b[0m",
-                &filepath
+            bail!(
+                "Found `{}`, but missing executable permissions!",
+                filepath.display(),
             );
-            println!("{}", error);
-            Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                error,
-            )))
         }
     } else {
         Ok(filepath)
@@ -373,34 +325,20 @@ fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
 }
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
-    let metadata = if let Ok(metadata) = fs::metadata(&filepath) {
-        metadata
-    } else {
-        let error = "\x1b[1;91mERROR: Could not read metadata!\x1b[0m".to_string();
-        return Err(leftwm::errors::LeftError::from(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            error,
-        )));
-    };
+    let metadata = fs::metadata(&filepath)?;
     let contents = fs::read_to_string(&filepath.as_path())?;
-    let theme_parsable = toml::from_str::<ThemeSetting>(&contents).is_ok();
     if verbose {
         if metadata.is_file() {
-            println!("Found {:?}", &filepath);
-            // TODO better Errormessage for broken theme file
-            if theme_parsable {
-                println!("The theme file looks OK.");
-            } else {
-                println!("\x1b[1;91mERROR: The theme file is broken.\x1b[0m");
+            println!("Found: {}", filepath.display());
+            match toml::from_str::<ThemeSetting>(&contents) {
+                Ok(_) => {
+                    println!("The theme file looks OK.");
+                    Ok(filepath)
+                }
+                Err(err) => bail!("Could not parse theme file: {}", err),
             }
-            Ok(filepath)
         } else {
-            let error = "\x1b[1;91mERROR: No `theme.toml` found\x1b[0m".to_string();
-            println!("{}", error);
-            Err(leftwm::errors::LeftError::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                error,
-            )))
+            bail!("No `theme.toml` found at path: {}", filepath.display());
         }
     } else {
         Ok(filepath)

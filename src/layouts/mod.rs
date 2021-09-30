@@ -1,9 +1,9 @@
-use crate::models::Tag;
-
 use super::models::Window;
 use super::models::Workspace;
+use crate::models::Tag;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use thiserror::Error;
 
 mod center_main;
 mod center_main_balanced;
@@ -17,7 +17,7 @@ mod main_and_vert_stack;
 mod monocle;
 mod right_main_and_vert_stack;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Layout {
     MainAndVertStack,
     MainAndHorizontalStack,
@@ -33,7 +33,7 @@ pub enum Layout {
     LeftWiderRightStack,
 }
 
-pub const LAYOUTS: [Layout; 12] = [
+pub const LAYOUTS: &[Layout] = &[
     Layout::MainAndVertStack,
     Layout::MainAndHorizontalStack,
     Layout::MainAndDeck,
@@ -52,7 +52,7 @@ pub const LAYOUTS: [Layout; 12] = [
 impl Layout {
     pub fn new(layouts: &[Self]) -> Self {
         if let Some(layout) = layouts.first() {
-            return layout.clone();
+            return *layout;
         }
         Self::Fibonacci
     }
@@ -112,7 +112,7 @@ impl Layout {
         if index >= layouts.len() as isize {
             index = 0;
         }
-        layouts[index as usize].clone()
+        layouts[index as usize]
     }
 
     pub fn prev_layout(&self, layouts: &[Self]) -> Self {
@@ -123,13 +123,17 @@ impl Layout {
         if index < 0 {
             index = layouts.len() as isize - 1;
         }
-        layouts[index as usize].clone()
+        layouts[index as usize]
     }
 }
 
-// TODO: Perhaps there is a more efficient way to impl FromStr using serde
+#[derive(Debug, Error)]
+#[error("Could not parse layout: {0}")]
+pub struct ParseLayoutError(String);
+
 impl FromStr for Layout {
-    type Err = ();
+    type Err = ParseLayoutError;
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "MainAndVertStack" => Ok(Self::MainAndVertStack),
@@ -144,7 +148,7 @@ impl FromStr for Layout {
             "Monocle" => Ok(Self::Monocle),
             "RightWiderLeftStack" => Ok(Self::RightWiderLeftStack),
             "LeftWiderRightStack" => Ok(Self::LeftWiderRightStack),
-            _ => Err(()),
+            _ => Err(ParseLayoutError(s.to_string())),
         }
     }
 }
@@ -169,13 +173,13 @@ mod tests {
             vec![],
             None,
         );
-        ws.margin = Margins::Int(0);
+        ws.margin = Margins::new(0);
         ws.xyhw.set_minh(600);
         ws.xyhw.set_minw(800);
         ws.update_avoided_areas();
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.border = 0;
-        w.margin = Margins::Int(0);
+        w.margin = Margins::new(0);
         let mut windows = vec![&mut w];
         // let mut windows_filters: Vec<&mut Window> = windows.iter_mut().filter(|_f| true).collect();
         even_horizontal::update(&ws, &mut windows);

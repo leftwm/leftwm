@@ -1,4 +1,6 @@
-use crate::errors::{stream_error, Result};
+use crate::config::Config;
+use crate::display_servers::DisplayServer;
+use crate::errors::{LeftError, Result};
 use crate::models::dto::ManagerState;
 use crate::models::Manager;
 use std::path::PathBuf;
@@ -55,7 +57,10 @@ impl StateSocket {
     /// # Errors
     /// Will return Err if a mut ref to the peer is unavailable.
     /// Will return error if state cannot be serialized
-    pub async fn write_manager_state(&mut self, manager: &Manager) -> Result<()> {
+    pub async fn write_manager_state<C: Config, SERVER: DisplayServer>(
+        &mut self,
+        manager: &Manager<C, SERVER>,
+    ) -> Result<()> {
         if self.listener.is_some() {
             let state: ManagerState = manager.into();
             let mut json = serde_json::to_string(&state)?;
@@ -66,7 +71,7 @@ impl StateSocket {
                 for peer in &mut state.peers {
                     if peer
                         .as_mut()
-                        .ok_or_else(stream_error)?
+                        .ok_or(LeftError::StreamError)?
                         .write_all(json.as_bytes())
                         .await
                         .is_err()
@@ -116,7 +121,7 @@ mod test {
         rt.block_on(multiple_peers_async());
     }
     async fn multiple_peers_async() {
-        let manager = Manager::new_test();
+        let manager = Manager::new_test(vec![]);
 
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();
@@ -162,7 +167,7 @@ mod test {
         rt.block_on(get_update_async());
     }
     async fn get_update_async() {
-        let manager = Manager::new_test();
+        let manager = Manager::new_test(vec![]);
 
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();

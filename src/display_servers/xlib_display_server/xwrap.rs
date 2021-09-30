@@ -9,7 +9,6 @@
 use super::utils;
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
-use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
@@ -23,7 +22,7 @@ use crate::models::Xyhw;
 use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
-use crate::{config::ThemeSetting, models::FocusBehaviour};
+use crate::{config::Config, models::FocusBehaviour};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
@@ -70,7 +69,7 @@ pub struct XWrap {
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
-    task_notify: Arc<Notify>,
+    pub task_notify: Arc<Notify>,
 }
 
 impl Default for XWrap {
@@ -1469,11 +1468,11 @@ impl XWrap {
         }
     }
 
-    pub fn load_colors(&mut self, theme: &ThemeSetting) {
+    pub fn load_colors(&mut self, config: &impl Config) {
         self.colors = Colors {
-            normal: self.get_color(&theme.default_border_color),
-            floating: self.get_color(&theme.floating_border_color),
-            active: self.get_color(&theme.focused_border_color),
+            normal: self.get_color(config.default_border_color()),
+            floating: self.get_color(config.floating_border_color()),
+            active: self.get_color(config.focused_border_color()),
         };
     }
 
@@ -1489,7 +1488,7 @@ impl XWrap {
     }
 
     // TODO: split into smaller functions
-    pub fn init(&mut self, config: &impl Config, theme: &ThemeSetting) {
+    pub fn init(&mut self, config: &impl Config) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
@@ -1500,7 +1499,7 @@ impl XWrap {
             | xlib::PropertyChangeMask;
 
         let root = self.get_default_root();
-        self.load_colors(theme);
+        self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
@@ -1580,7 +1579,7 @@ impl XWrap {
             Mode::Normal => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
-            self.mode = mode.clone();
+            self.mode = mode;
             //safe this point as the start of the move/resize
             if let Ok(loc) = self.get_cursor_point() {
                 self.mode_origin = loc;

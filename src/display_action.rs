@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /// These are responses from the Window manager.
 /// The display server should act on these actions.
 #[allow(clippy::large_enum_variant)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum DisplayAction {
     /// Nicely ask a window if it would please close at its convenience.
     KillWindow(WindowHandle),
@@ -59,6 +59,6 @@ pub enum DisplayAction {
     /// window or moving a window).
     NormalMode,
 
-    /// Reload keygrabs, needed when keyboard changes
+    /// SoftReload keygrabs, needed when keyboard changes
     ReloadKeyGrabs(Vec<Keybind>),
 }

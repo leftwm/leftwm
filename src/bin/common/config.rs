@@ -1,23 +1,111 @@
 //! `LeftWM` general configuration
 
+use super::{BaseCommand, ThemeSetting};
+use anyhow::{Context, Result};
 use leftwm::{
-    config::{Keybind, ScratchPad, Workspace},
-    errors::Result,
+    config::{ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Size},
-    Command,
+    models::{FocusBehaviour, Gutter, Margins, Size},
+    DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
+use std::convert::TryInto;
 use std::default::Default;
 use std::env;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use xdg::BaseDirectories;
 
+/// Path to file where state will be dumper upon soft reload.
+const STATE_FILE: &str = "/tmp/leftwm.state";
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Keybind {
+    pub command: BaseCommand,
+    pub value: Option<String>,
+    pub modifier: Vec<String>,
+    pub key: String,
+}
+
+impl TryFrom<Keybind> for leftwm::Keybind {
+    type Error = anyhow::Error;
+
+    fn try_from(k: Keybind) -> Result<Self> {
+        let command = match k.command {
+            BaseCommand::Execute => {
+                leftwm::Command::Execute(k.value.context("missing command for Execute")?)
+            }
+            BaseCommand::CloseWindow => leftwm::Command::CloseWindow,
+            BaseCommand::SwapTags => leftwm::Command::SwapScreens,
+            BaseCommand::SoftReload => leftwm::Command::SoftReload,
+            BaseCommand::HardReload => leftwm::Command::HardReload,
+            BaseCommand::ToggleScratchPad => leftwm::Command::ToggleScratchPad(
+                k.value.context("missing name for ToggleScratchPad")?,
+            ),
+            BaseCommand::ToggleFullScreen => leftwm::Command::ToggleFullScreen,
+            BaseCommand::GotoTag => leftwm::Command::GotoTag(
+                usize::from_str(&k.value.context("missing index value for GotoTag")?)
+                    .context("invalid index value for GotoTag")?,
+            ),
+            BaseCommand::FloatingToTile => leftwm::Command::FloatingToTile,
+            BaseCommand::MoveWindowUp => leftwm::Command::MoveWindowUp,
+            BaseCommand::MoveWindowDown => leftwm::Command::MoveWindowDown,
+            BaseCommand::MoveWindowTop => leftwm::Command::MoveWindowTop,
+            BaseCommand::FocusNextTag => leftwm::Command::FocusNextTag,
+            BaseCommand::FocusPreviousTag => leftwm::Command::FocusPreviousTag,
+            BaseCommand::FocusWindowUp => leftwm::Command::FocusWindowUp,
+            BaseCommand::FocusWindowDown => leftwm::Command::FocusWindowDown,
+            BaseCommand::FocusWorkspaceNext => leftwm::Command::FocusWorkspaceNext,
+            BaseCommand::FocusWorkspacePrevious => leftwm::Command::FocusWorkspacePrevious,
+            BaseCommand::MoveToTag => leftwm::Command::SendWindowToTag(
+                usize::from_str(&k.value.context("missing index value for SendWindowToTag")?)
+                    .context("invalid index value for SendWindowToTag")?,
+            ),
+            BaseCommand::MoveToLastWorkspace => leftwm::Command::MoveWindowToLastWorkspace,
+            BaseCommand::MouseMoveWindow => leftwm::Command::MouseMoveWindow,
+            BaseCommand::NextLayout => leftwm::Command::NextLayout,
+            BaseCommand::PreviousLayout => leftwm::Command::PreviousLayout,
+            BaseCommand::SetLayout => leftwm::Command::SetLayout(
+                Layout::from_str(&k.value.context("missing layout for SetLayout")?)
+                    .context("could not parse layout for command SetLayout")?,
+            ),
+            BaseCommand::RotateTag => leftwm::Command::RotateTag,
+            BaseCommand::IncreaseMainWidth => leftwm::Command::IncreaseMainWidth(
+                i8::from_str(&k.value.context("missing value for IncreaseMainWidth")?)
+                    .context("invalid value for IncreaseMainWidth")?,
+            ),
+            BaseCommand::DecreaseMainWidth => leftwm::Command::DecreaseMainWidth(
+                i8::from_str(&k.value.context("missing value for DecreaseMainWidth")?)
+                    .context("invalid value for DecreaseMainWidth")?,
+            ),
+            BaseCommand::SetMarginMultiplier => leftwm::Command::SetMarginMultiplier(
+                f32::from_str(
+                    &k.value
+                        .context("missing index value for SetMarginMultiplier")?,
+                )
+                .context("invalid index value for SetMarginMultiplier")?,
+            ),
+            BaseCommand::UnloadTheme => leftwm::Command::Other("UnloadTheme".into()),
+            BaseCommand::LoadTheme => leftwm::Command::Other(format!(
+                "LoadTheme {}",
+                k.value.context("missing index value for LoadTheme")?,
+            )),
+        };
+
+        Ok(Self {
+            command,
+            modifier: k.modifier,
+            key: k.key,
+        })
+    }
+}
+
 /// General configuration
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
@@ -32,6 +120,10 @@ pub struct Config {
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
+    pub state: Option<PathBuf>,
+
+    #[serde(skip)]
+    pub theme_setting: ThemeSetting,
 }
 
 #[must_use]
@@ -161,8 +253,8 @@ fn exit_strategy<'s>() -> &'s str {
     "pkill leftwm"
 }
 
-impl leftwm::config::Config for Config {
-    fn mapped_bindings(&self) -> Vec<Keybind> {
+impl leftwm::Config for Config {
+    fn mapped_bindings(&self) -> Vec<leftwm::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -174,6 +266,13 @@ impl leftwm::config::Config for Config {
                     }
                 }
                 keybind
+            })
+            .filter_map(|keybind| match TryFrom::try_from(keybind.clone()) {
+                Ok(internal_keybind) => Some(internal_keybind),
+                Err(err) => {
+                    log::error!("Invalid key binding: {}\n{:?}", err, keybind);
+                    None
+                }
             })
             .collect()
     }
@@ -202,14 +301,140 @@ impl leftwm::config::Config for Config {
     fn disable_current_tag_swap(&self) -> bool {
         self.disable_current_tag_swap
     }
-}
 
-impl Config {
-    pub fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+    fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
         if let Some(scratchpads) = &self.scratchpad {
             return scratchpads.clone();
         }
         return vec![];
+    }
+
+    fn layouts(&self) -> Vec<Layout> {
+        self.layouts.clone()
+    }
+
+    fn focus_new_windows(&self) -> bool {
+        self.focus_new_windows
+    }
+
+    fn command_handler<SERVER: DisplayServer>(
+        command: &str,
+        manager: &mut Manager<Self, SERVER>,
+    ) -> bool {
+        let mut args = command.split_whitespace();
+        let command = args.next().unwrap();
+        match command {
+            "LoadTheme" => {
+                if let Some(path) = args.next() {
+                    manager.state.config.theme_setting.load(path);
+                } else {
+                    log::warn!("Missing file argument to load theme");
+                }
+                manager.update_for_theme()
+            }
+            "UnloadTheme" => {
+                manager.state.config.theme_setting = Default::default();
+                manager.update_for_theme()
+            }
+            _ => {
+                log::warn!("Command not recognized: {}", command);
+                false
+            }
+        }
+    }
+
+    fn border_width(&self) -> i32 {
+        self.theme_setting.border_width
+    }
+
+    fn margin(&self) -> Margins {
+        match self.theme_setting.margin.clone().try_into() {
+            Ok(margins) => margins,
+            Err(err) => {
+                log::warn!("Could not read margin: {}", err);
+                Margins::new(0)
+            }
+        }
+    }
+
+    fn workspace_margin(&self) -> Option<Margins> {
+        self.theme_setting
+            .workspace_margin
+            .clone()
+            .and_then(|custom_margin| match custom_margin.try_into() {
+                Ok(margins) => Some(margins),
+                Err(err) => {
+                    log::warn!("Could not read margin: {}", err);
+                    None
+                }
+            })
+    }
+
+    fn gutter(&self) -> Option<Vec<Gutter>> {
+        self.theme_setting.gutter.clone()
+    }
+
+    fn default_border_color(&self) -> &str {
+        &self.theme_setting.default_border_color
+    }
+
+    fn floating_border_color(&self) -> &str {
+        &self.theme_setting.floating_border_color
+    }
+
+    fn focused_border_color(&self) -> &str {
+        &self.theme_setting.focused_border_color
+    }
+
+    fn on_new_window_cmd(&self) -> Option<String> {
+        self.theme_setting.on_new_window_cmd.clone()
+    }
+
+    fn get_list_of_gutters(&self) -> Vec<Gutter> {
+        self.theme_setting.gutter.clone().unwrap_or_default()
+    }
+
+    fn max_window_width(&self) -> Option<Size> {
+        self.max_window_width
+    }
+
+    fn save_state<SERVER: DisplayServer>(manager: &Manager<Self, SERVER>) {
+        let path = manager.state.config.state_file();
+        let state_file = match File::create(&path) {
+            Ok(file) => file,
+            Err(err) => {
+                log::error!("Cannot create file at path {}: {}", path.display(), err);
+                return;
+            }
+        };
+        if let Err(err) = serde_json::to_writer(state_file, &manager.state) {
+            log::error!("Cannot save state: {}", err);
+        }
+    }
+
+    fn load_state<SERVER: DisplayServer>(manager: &mut Manager<Self, SERVER>) {
+        let path = manager.state.config.state_file().to_owned();
+        match File::open(&path) {
+            Ok(file) => {
+                match serde_json::from_reader(file) {
+                    Ok(state) => manager.restore_state(&state),
+                    Err(err) => log::error!("Cannot load old state: {}", err),
+                }
+                // Clean old state.
+                if let Err(err) = std::fs::remove_file(&path) {
+                    log::error!("Cannot remove old state file: {}", err);
+                }
+            }
+            Err(err) => log::error!("Cannot open old state: {}", err),
+        }
+    }
+}
+
+impl Config {
+    fn state_file(&self) -> &Path {
+        self.state
+            .as_deref()
+            .unwrap_or_else(|| Path::new(STATE_FILE))
     }
 }
 
@@ -223,158 +448,158 @@ impl Default for Config {
         let mut commands = vec![
             // Mod + p => Open dmenu
             Keybind {
-                command: Command::Execute,
+                command: BaseCommand::Execute,
                 value: Some("dmenu_run".to_owned()),
                 modifier: vec!["modkey".to_owned()],
                 key: "p".to_owned(),
             },
             // Mod + Shift + Enter => Open A Shell
             Keybind {
-                command: Command::Execute,
+                command: BaseCommand::Execute,
                 value: Some(default_terminal().to_owned()),
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "Return".to_owned(),
             },
             // Mod + Shift + q => kill focused window
             Keybind {
-                command: Command::CloseWindow,
+                command: BaseCommand::CloseWindow,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "q".to_owned(),
             },
             // Mod + Shift + r => soft reload leftwm
             Keybind {
-                command: Command::SoftReload,
+                command: BaseCommand::SoftReload,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "r".to_owned(),
             },
             // Mod + Shift + x => exit leftwm
             Keybind {
-                command: Command::Execute,
+                command: BaseCommand::Execute,
                 value: Some(exit_strategy().to_owned()),
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "x".to_owned(),
             },
             // Mod + Ctrl + l => lock the screen
             Keybind {
-                command: Command::Execute,
+                command: BaseCommand::Execute,
                 value: Some("slock".to_owned()),
                 modifier: vec!["modkey".to_owned(), "Control".to_owned()],
                 key: "l".to_owned(),
             },
             // Mod + Shift + w => swap the tags on the last to active workspaces
             Keybind {
-                command: Command::MoveToLastWorkspace,
+                command: BaseCommand::MoveToLastWorkspace,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "w".to_owned(),
             },
             // Mod + w => move the active window to the previous workspace
             Keybind {
-                command: Command::SwapTags,
+                command: BaseCommand::SwapTags,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "w".to_owned(),
             },
             Keybind {
-                command: Command::MoveWindowUp,
+                command: BaseCommand::MoveWindowUp,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "k".to_owned(),
             },
             Keybind {
-                command: Command::MoveWindowDown,
+                command: BaseCommand::MoveWindowDown,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "j".to_owned(),
             },
             Keybind {
-                command: Command::MoveWindowTop,
+                command: BaseCommand::MoveWindowTop,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "Return".to_owned(),
             },
             Keybind {
-                command: Command::FocusWindowUp,
+                command: BaseCommand::FocusWindowUp,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "k".to_owned(),
             },
             Keybind {
-                command: Command::FocusWindowDown,
+                command: BaseCommand::FocusWindowDown,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "j".to_owned(),
             },
             Keybind {
-                command: Command::NextLayout,
+                command: BaseCommand::NextLayout,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Control".to_owned()],
                 key: "k".to_owned(),
             },
             Keybind {
-                command: Command::PreviousLayout,
+                command: BaseCommand::PreviousLayout,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Control".to_owned()],
                 key: "j".to_owned(),
             },
             Keybind {
-                command: Command::FocusWorkspaceNext,
+                command: BaseCommand::FocusWorkspaceNext,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "l".to_owned(),
             },
             Keybind {
-                command: Command::FocusWorkspacePrevious,
+                command: BaseCommand::FocusWorkspacePrevious,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "h".to_owned(),
             },
             Keybind {
-                command: Command::MoveWindowUp,
+                command: BaseCommand::MoveWindowUp,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "Up".to_owned(),
             },
             Keybind {
-                command: Command::MoveWindowDown,
+                command: BaseCommand::MoveWindowDown,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: "Down".to_owned(),
             },
             Keybind {
-                command: Command::FocusWindowUp,
+                command: BaseCommand::FocusWindowUp,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "Up".to_owned(),
             },
             Keybind {
-                command: Command::FocusWindowDown,
+                command: BaseCommand::FocusWindowDown,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "Down".to_owned(),
             },
             Keybind {
-                command: Command::NextLayout,
+                command: BaseCommand::NextLayout,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Control".to_owned()],
                 key: "Up".to_owned(),
             },
             Keybind {
-                command: Command::PreviousLayout,
+                command: BaseCommand::PreviousLayout,
                 value: None,
                 modifier: vec!["modkey".to_owned(), "Control".to_owned()],
                 key: "Down".to_owned(),
             },
             Keybind {
-                command: Command::FocusWorkspaceNext,
+                command: BaseCommand::FocusWorkspaceNext,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "Right".to_owned(),
             },
             Keybind {
-                command: Command::FocusWorkspacePrevious,
+                command: BaseCommand::FocusWorkspacePrevious,
                 value: None,
                 modifier: vec!["modkey".to_owned()],
                 key: "Left".to_owned(),
@@ -384,7 +609,7 @@ impl Default for Config {
         // add "goto workspace"
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
-                command: Command::GotoTag,
+                command: BaseCommand::GotoTag,
                 value: Some(i.to_string()),
                 modifier: vec!["modkey".to_owned()],
                 key: i.to_string(),
@@ -394,7 +619,7 @@ impl Default for Config {
         // and "move to workspace"
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
-                command: Command::MoveToTag,
+                command: BaseCommand::MoveToTag,
                 value: Some(i.to_string()),
                 modifier: vec!["modkey".to_owned(), "Shift".to_owned()],
                 key: i.to_string(),
@@ -419,7 +644,9 @@ impl Default for Config {
             modkey: "Mod4".to_owned(), //win key
             mousekey: "Mod4".to_owned(), //win key
             keybind: commands,
+            theme_setting: ThemeSetting::default(),
             max_window_width: None,
+            state: None,
         }
     }
 }

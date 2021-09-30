@@ -1,87 +1,86 @@
-use crate::config::ScratchPad;
+use crate::config::Config;
 use crate::display_action::DisplayAction;
-use crate::models::FocusManager;
-use crate::models::Mode;
-use crate::models::Screen;
-use crate::models::Tag;
+use crate::display_servers::DisplayServer;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
+use crate::state::State;
 use crate::utils::child_process::Children;
-use crate::{config::ThemeSetting, layouts::Layout};
-
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, VecDeque};
-use std::os::raw::c_ulong;
 use std::sync::{atomic::AtomicBool, Arc};
 
-use super::Size;
-
 /// Maintains current program state.
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Manager {
-    pub screens: Vec<Screen>,
-    pub windows: Vec<Window>,
-    pub workspaces: Vec<Workspace>,
-    pub focus_manager: FocusManager,
-    pub mode: Mode,
-    pub theme_setting: Arc<ThemeSetting>,
-    pub tags: Vec<Tag>, //list of all known tags
-    pub layouts: Vec<Layout>,
-    pub scratchpads: Vec<ScratchPad>,
-    pub active_scratchpads: HashMap<String, Option<u32>>,
-    pub actions: VecDeque<DisplayAction>,
-    pub max_window_width: Option<Size>,
+#[derive(Debug)]
+pub struct Manager<C, SERVER> {
+    pub state: State<C>,
 
-    //this is used to limit framerate when resizing/moving windows
-    pub frame_rate_limitor: c_ulong,
-    #[serde(skip)]
-    pub children: Children,
-    #[serde(skip)]
-    pub reap_requested: Arc<AtomicBool>,
-    #[serde(skip)]
-    pub reload_requested: bool,
+    pub(crate) children: Children,
+    pub(crate) reap_requested: Arc<AtomicBool>,
+    pub(crate) reload_requested: bool,
+    pub display_server: SERVER,
 }
 
-impl Manager {
+impl<C, SERVER> Manager<C, SERVER>
+where
+    C: Config,
+    SERVER: DisplayServer,
+{
+    pub fn new(config: C) -> Self {
+        let display_server = SERVER::new(&config);
+
+        Self {
+            state: State::new(config),
+            children: Default::default(),
+            reap_requested: Default::default(),
+            reload_requested: false,
+            display_server,
+        }
+    }
+
+    pub fn register_child_hook(&self) {
+        crate::child_process::register_child_hook(self.reap_requested.clone());
+    }
+
     /// Return the currently focused workspace.
     #[must_use]
     pub fn focused_workspace(&self) -> Option<&Workspace> {
-        self.focus_manager.workspace(self)
+        self.state.focus_manager.workspace(self)
     }
 
     /// Return the currently focused workspace.
     pub fn focused_workspace_mut(&mut self) -> Option<&mut Workspace> {
-        self.focus_manager.workspace_mut(&mut self.workspaces)
+        self.state
+            .focus_manager
+            .workspace_mut(&mut self.state.workspaces)
     }
 
     /// Return the currently focused tag if the offset is 0.
     /// Offset is used to reach further down the history.
     #[must_use]
     pub fn focused_tag(&self, offset: usize) -> Option<String> {
-        self.focus_manager.tag(offset)
+        self.state.focus_manager.tag(offset)
     }
 
     /// Return the index of a given tag.
     #[must_use]
     pub fn tag_index(&self, tag: &str) -> Option<usize> {
-        Some(self.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
+        Some(self.state.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
     }
 
     /// Return the currently focused window.
     #[must_use]
     pub fn focused_window(&self) -> Option<&Window> {
-        self.focus_manager.window(self)
+        self.state.focus_manager.window(self)
     }
 
     /// Return the currently focused window.
     pub fn focused_window_mut(&mut self) -> Option<&mut Window> {
-        self.focus_manager.window_mut(&mut self.windows)
+        self.state.focus_manager.window_mut(&mut self.state.windows)
     }
 
     pub fn update_docks(&mut self) {
-        let workspaces = self.workspaces.clone();
-        self.windows
+        let workspaces = self.state.workspaces.clone();
+        self.state
+            .windows
             .iter_mut()
             .filter(|w| w.strut.is_some())
             .for_each(|w| {
@@ -97,12 +96,13 @@ impl Manager {
     pub fn sort_windows(&mut self) {
         use crate::models::WindowType;
         //first dialogs and modals
-        let (level1, other): (Vec<&Window>, Vec<&Window>) = self.windows.iter().partition(|w| {
-            w.type_ == WindowType::Dialog
-                || w.type_ == WindowType::Splash
-                || w.type_ == WindowType::Utility
-                || w.type_ == WindowType::Menu
-        });
+        let (level1, other): (Vec<&Window>, Vec<&Window>) =
+            self.state.windows.iter().partition(|w| {
+                w.type_ == WindowType::Dialog
+                    || w.type_ == WindowType::Splash
+                    || w.type_ == WindowType::Utility
+                    || w.type_ == WindowType::Menu
+            });
 
         //next floating
         let (level2, other): (Vec<&Window>, Vec<&Window>) = other
@@ -124,16 +124,20 @@ impl Manager {
             .chain(other.iter())
             .map(|&w| w.clone())
             .collect();
-        self.windows = windows;
-        let order: Vec<_> = self.windows.iter().map(|w| w.handle).collect();
+        self.state.windows = windows;
+        let order: Vec<_> = self.state.windows.iter().map(|w| w.handle).collect();
         let act = DisplayAction::SetWindowOrder(order);
-        self.actions.push_back(act);
+        self.state.actions.push_back(act);
     }
 
     pub fn move_to_top(&mut self, handle: &WindowHandle) -> Option<()> {
-        let index = self.windows.iter().position(|w| &w.handle == handle)?;
-        let window = self.windows.remove(index);
-        self.windows.insert(0, window);
+        let index = self
+            .state
+            .windows
+            .iter()
+            .position(|w| &w.handle == handle)?;
+        let window = self.state.windows.remove(index);
+        self.state.windows.insert(0, window);
         self.sort_windows();
         Some(())
     }
@@ -145,6 +149,7 @@ impl Manager {
             focused_id = f.id;
         }
         let list: Vec<String> = self
+            .state
             .workspaces
             .iter()
             .map(|w| {
@@ -162,6 +167,7 @@ impl Manager {
     #[must_use]
     pub fn windows_display(&self) -> String {
         let list: Vec<String> = self
+            .state
             .windows
             .iter()
             .map(|w| {
@@ -172,43 +178,25 @@ impl Manager {
         list.join(" ")
     }
 
-    /// Reload the worker without saving state.
+    /// Soft reload the worker without saving state.
     pub fn hard_reload(&mut self) {
         self.reload_requested = true;
+    }
+
+    pub fn update_for_theme(&mut self) -> bool {
+        for win in &mut self.state.windows {
+            win.update_for_theme(&self.state.config);
+        }
+        for ws in &mut self.state.workspaces {
+            ws.update_for_theme(&self.state.config);
+        }
+        true
     }
 }
 
 #[cfg(test)]
-impl Manager {
-    pub fn new_test() -> Self {
-        use crate::models::Margins;
-
-        Self {
-            screens: Default::default(),
-            windows: Default::default(),
-            workspaces: Default::default(),
-            focus_manager: Default::default(),
-            mode: Default::default(),
-            theme_setting: Arc::new(ThemeSetting {
-                border_width: Default::default(),
-                margin: Margins::Int(0),
-                workspace_margin: None,
-                gutter: Default::default(),
-                default_border_color: Default::default(),
-                floating_border_color: Default::default(),
-                focused_border_color: Default::default(),
-                on_new_window_cmd: Default::default(),
-            }),
-            tags: Default::default(),
-            layouts: Default::default(),
-            scratchpads: Default::default(),
-            active_scratchpads: Default::default(),
-            actions: Default::default(),
-            frame_rate_limitor: Default::default(),
-            children: Default::default(),
-            reap_requested: Default::default(),
-            reload_requested: Default::default(),
-            max_window_width: None,
-        }
+impl Manager<crate::config::TestConfig, crate::display_servers::MockDisplayServer> {
+    pub fn new_test(tags: Vec<String>) -> Self {
+        Self::new(crate::config::TestConfig { tags })
     }
 }

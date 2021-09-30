@@ -1,6 +1,9 @@
 use std::ffi::CString;
 use x11_dl::xlib;
 
+// Specifications can be found here:
+// https://specifications.freedesktop.org/wm-spec/1.3/ar01s03.html
+
 //#![allow(non_snake_case)]
 #[derive(Clone, Debug)]
 #[allow(non_snake_case)]

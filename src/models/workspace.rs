@@ -1,13 +1,7 @@
-use super::Size;
-use super::{layouts::Layout, Margins};
-use crate::models::Gutter;
-use crate::models::Side;
-use crate::models::Tag;
-use crate::models::TagId;
-use crate::models::Window;
-use crate::models::Xyhw;
-use crate::models::XyhwBuilder;
-use crate::{config::ThemeSetting, models::BBox};
+use crate::config::Config;
+use crate::models::{
+    layouts::Layout, BBox, Gutter, Margins, Side, Size, Tag, TagId, Window, Xyhw, XyhwBuilder,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -67,7 +61,7 @@ impl Workspace {
             layout: Layout::new(&layouts),
             layout_rotation: 0,
             tags: vec![],
-            margin: Margins::Int(10),
+            margin: Margins::new(10),
             margin_multiplier: 1.0,
             gutters: vec![],
             avoid: vec![],
@@ -93,13 +87,13 @@ impl Workspace {
         }
     }
 
-    pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
-        self.margin = theme.workspace_margin.clone().unwrap_or(Margins::Int(0));
-        self.gutters = self.get_gutters_for_theme(theme);
+    pub fn update_for_theme(&mut self, config: &impl Config) {
+        self.margin = config.workspace_margin().unwrap_or_else(|| Margins::new(0));
+        self.gutters = self.get_gutters_for_theme(config);
     }
 
-    pub fn get_gutters_for_theme(&mut self, theme: &ThemeSetting) -> Vec<Gutter> {
-        theme
+    pub fn get_gutters_for_theme(&mut self, config: &impl Config) -> Vec<Gutter> {
+        config
             .get_list_of_gutters()
             .into_iter()
             .filter(|gutter| gutter.wsid == self.id || gutter.wsid == None)
@@ -207,7 +201,7 @@ impl Workspace {
     /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn x(&self) -> i32 {
-        let left = self.margin.clone().left() as f32;
+        let left = self.margin.left as f32;
         let gutter = self.get_gutter(&Side::Left);
         self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
@@ -224,15 +218,15 @@ impl Workspace {
 
     #[must_use]
     pub fn y(&self) -> i32 {
-        let top = self.margin.clone().top() as f32;
+        let top = self.margin.top as f32;
         let gutter = self.get_gutter(&Side::Top);
         self.xyhw_avoided.y() + (self.margin_multiplier * top) as i32 + gutter
     }
 
     #[must_use]
     pub fn height(&self) -> i32 {
-        let top = self.margin.clone().top() as f32;
-        let bottom = self.margin.clone().bottom() as f32;
+        let top = self.margin.top as f32;
+        let bottom = self.margin.bottom as f32;
         //Only one side
         let gutter = self.get_gutter(&Side::Top) + self.get_gutter(&Side::Bottom);
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
@@ -242,8 +236,8 @@ impl Workspace {
     /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn width(&self) -> i32 {
-        let left = self.margin.clone().left() as f32;
-        let right = self.margin.clone().right() as f32;
+        let left = self.margin.left as f32;
+        let right = self.margin.right as f32;
         //Only one side
         let gutter = self.get_gutter(&Side::Left) + self.get_gutter(&Side::Right);
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter

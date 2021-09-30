@@ -31,7 +31,7 @@ clap = { version = "2.33.0", optional = true }
 libc = "0.2"
 liquid = "0.23"
 chrono = { version = "0.4.19", optional = true }
-futures = { version = "0.3.12", optional = true }
+futures = "0.3.12"
 slog = { version = "2.5.2", optional = true }
 slog-stdlog = { version = "4.0.0", optional = true }
 slog-scope = { version = "4.3.0", optional = true }
@@ -39,6 +39,8 @@ slog-envlogger = { version = "2.2.0", optional = true }
 slog-async = { version = "2.4.0", optional = true }
 slog-journald = { version = "2.1.1", optional = true }
 slog-term = { version = "2.5.0", optional = true }
+anyhow = "1"
+thiserror = "1"
 
 [dev-dependencies]
 tempfile = "3.2.0"

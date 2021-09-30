@@ -1,5 +1,4 @@
 use crate::config::Config;
-use crate::config::ThemeSetting;
 use crate::display_action::DisplayAction;
 use crate::models::Manager;
 use crate::models::Mode;
@@ -10,8 +9,8 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
-use std::sync::Arc;
-use std::sync::Once;
+use futures::prelude::*;
+use std::pin::Pin;
 use x11_dl::xlib;
 
 mod event_translate;
@@ -24,56 +23,59 @@ pub use xwrap::XWrap;
 use event_translate::XEvent;
 mod xcursor;
 
-static SETUP: Once = Once::new();
-
-pub struct XlibDisplayServer<C> {
+pub struct XlibDisplayServer {
     xw: XWrap,
     root: xlib::Window,
-    config: C,
-    theme: Arc<ThemeSetting>,
+    initial_events: Option<Vec<DisplayEvent>>,
 }
 
-impl<C> DisplayServer<C> for XlibDisplayServer<C>
-where
-    C: Config,
-{
-    fn new(config: C, theme: Arc<ThemeSetting>) -> Self {
+impl DisplayServer for XlibDisplayServer {
+    fn new(config: &impl Config) -> Self {
         let mut wrap = XWrap::new();
 
         wrap.focus_behaviour = config.focus_behaviour();
         wrap.mouse_key_mask = utils::xkeysym_lookup::into_mod(config.mousekey());
-        wrap.init(&config, &theme); //setup events masks
+        wrap.init(config); //setup events masks
 
         let root = wrap.get_default_root();
-
-        Self {
+        let instance = Self {
             xw: wrap,
             root,
-            theme,
-            config,
+            initial_events: None,
+        };
+        let initial_events = instance.initial_events(config);
+
+        Self {
+            initial_events: Some(initial_events),
+            ..instance
         }
     }
 
-    fn update_theme_settings(&mut self, settings: Arc<ThemeSetting>) {
-        self.theme = settings;
-        self.xw.load_colors(&self.theme);
+    fn update_theme_settings(&mut self, config: &impl Config) {
+        self.xw.load_colors(config);
     }
 
-    fn update_windows(
+    fn update_windows<C: Config>(
         &self,
         windows: Vec<&Window>,
         focused_window: Option<&Window>,
-        manager: &Manager,
+        manager: &Manager<C, Self>,
     ) {
-        let tags: Vec<&String> = manager.workspaces.iter().flat_map(|w| &w.tags).collect();
+        let tags: Vec<&String> = manager
+            .state
+            .workspaces
+            .iter()
+            .flat_map(|w| &w.tags)
+            .collect();
 
         let max_tag_index: Option<usize> = tags.iter().filter_map(|&t| manager.tag_index(t)).max();
         let to_the_right = manager
+            .state
             .screens
             .iter()
             .map(|s| s.bbox.width + s.bbox.x + 100)
             .max();
-        let max_screen_width = manager.screens.iter().map(|s| s.bbox.width).max();
+        let max_screen_width = manager.state.screens.iter().map(|s| s.bbox.width).max();
 
         for window in windows {
             let is_focused = match focused_window {
@@ -102,11 +104,12 @@ where
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent> {
         let mut events = vec![];
-        SETUP.call_once(|| {
-            for e in self.initial_events() {
+
+        if let Some(initial_events) = self.initial_events.take() {
+            for e in initial_events {
                 (&mut events).push(e);
             }
-        });
+        }
 
         let event_in_queue = self.xw.queue_len();
 
@@ -217,16 +220,28 @@ where
         }
         event
     }
+
+    fn wait_readable(&self) -> Pin<Box<dyn Future<Output = ()>>> {
+        let task_notify = self.xw.task_notify.clone();
+        Box::pin(async move {
+            task_notify.notified().await;
+        })
+    }
+
+    fn flush(&self) {
+        self.xw.flush();
+    }
+
+    fn verify_focused_window(&self) -> Vec<DisplayEvent> {
+        self.verify_focused_window_work().unwrap_or_default()
+    }
 }
 
-impl<C> XlibDisplayServer<C>
-where
-    C: Config,
-{
+impl XlibDisplayServer {
     /// Return a vec of events for setting up state of WM.
-    fn initial_events(&self) -> Vec<DisplayEvent> {
+    fn initial_events(&self, config: &impl Config) -> Vec<DisplayEvent> {
         let mut events = vec![];
-        if let Some(workspaces) = self.config.workspaces() {
+        if let Some(workspaces) = config.workspaces() {
             if workspaces.is_empty() {
                 // tell manager about existing screens
                 self.xw.get_screens().into_iter().for_each(|screen| {
@@ -253,11 +268,7 @@ where
         events
     }
 
-    pub fn verify_focused_window(&mut self) -> Vec<DisplayEvent> {
-        self.verify_focused_window_work().unwrap_or_default()
-    }
-
-    fn verify_focused_window_work(&mut self) -> Option<Vec<DisplayEvent>> {
+    fn verify_focused_window_work(&self) -> Option<Vec<DisplayEvent>> {
         let point = self.xw.get_cursor_point().ok()?;
         Some(vec![DisplayEvent::VerifyFocusedAt(point.0, point.1)])
     }
@@ -287,21 +298,13 @@ where
         }
         all
     }
-
-    pub async fn wait_readable(&mut self) {
-        self.xw.wait_readable().await;
-    }
-
-    pub fn flush(&self) {
-        self.xw.flush();
-    }
 }
 
 //return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset(
+fn right_offset<C: Config, SERVER: DisplayServer>(
     max_tag_index: Option<usize>,
     max_right_screen: Option<i32>,
-    manager: &Manager,
+    manager: &Manager<C, SERVER>,
     window: &Window,
 ) -> Option<i32> {
     let max_tag_index = max_tag_index?;

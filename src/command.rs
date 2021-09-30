@@ -1,15 +1,16 @@
+use crate::layouts::Layout;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum Command {
-    Execute,
+    Execute(String),
     CloseWindow,
-    SwapTags,
+    SwapScreens,
     SoftReload,
     HardReload,
-    ToggleScratchPad,
+    ToggleScratchPad(String),
     ToggleFullScreen,
-    GotoTag,
+    GotoTag(usize),
     FloatingToTile,
     MoveWindowUp,
     MoveWindowDown,
@@ -20,14 +21,16 @@ pub enum Command {
     FocusWindowDown,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
-    MoveToTag,
-    MoveToLastWorkspace,
+    SendWindowToTag(usize),
+    MoveWindowToLastWorkspace,
     MouseMoveWindow,
     NextLayout,
     PreviousLayout,
-    SetLayout,
+    SetLayout(Layout),
     RotateTag,
-    IncreaseMainWidth,
-    DecreaseMainWidth,
-    SetMarginMultiplier,
+    IncreaseMainWidth(i8),
+    DecreaseMainWidth(i8),
+    SetMarginMultiplier(f32),
+    SendWorkspaceToTag(usize, usize),
+    Other(String),
 }

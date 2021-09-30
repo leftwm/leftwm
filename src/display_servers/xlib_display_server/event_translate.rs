@@ -113,7 +113,7 @@ fn from_mapping_notify(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEve
         log::info!("Updating keyboard");
         xw.refresh_keyboard(&mut event).ok()?;
 
-        // Reload keybinds
+        // SoftReload keybinds
         Some(DisplayEvent::KeyGrabReload)
     } else {
         None
