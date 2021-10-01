@@ -2,12 +2,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::layouts::Layout;
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
     pub id: String,
     pub hidden: bool,
     pub layout: Layout,
-    pub layouts: Vec<Layout>,
     pub main_width_percentage: u8,
     pub flipped_horizontal: bool,
     pub flipped_vertical: bool,
@@ -15,12 +14,11 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(id: &str, layouts: Vec<Layout>) -> Tag {
+    pub fn new(id: &str, layout: Layout) -> Tag {
         Tag {
             id: id.to_owned(),
             hidden: false,
-            layout: Layout::new(&layouts),
-            layouts,
+            layout,
             main_width_percentage: 50,
             flipped_horizontal: false,
             flipped_vertical: false,

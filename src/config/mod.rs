@@ -2,10 +2,10 @@ mod keybind;
 mod scratchpad;
 mod workspace_config;
 
-use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
 use crate::Manager;
+use crate::{display_servers::DisplayServer, models::LayoutMode};
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use workspace_config::Workspace;
@@ -28,6 +28,8 @@ pub trait Config {
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
 
     fn layouts(&self) -> Vec<Layout>;
+
+    fn layout_mode(&self) -> LayoutMode;
 
     fn focus_new_windows(&self) -> bool;
 

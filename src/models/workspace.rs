@@ -21,7 +21,6 @@ pub struct Workspace {
     #[allow(dead_code)]
     #[serde(skip)]
     all_tags: Vec<Tag>,
-    layouts: Vec<Layout>,
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
@@ -53,12 +52,12 @@ impl Workspace {
         id: Option<i32>,
         bbox: BBox,
         all_tags: Vec<Tag>,
-        layouts: Vec<Layout>,
+        layout: Layout,
         max_window_width: Option<Size>,
     ) -> Self {
         Self {
             id,
-            layout: Layout::new(&layouts),
+            layout,
             layout_rotation: 0,
             tags: vec![],
             margin: Margins::new(10),
@@ -66,7 +65,6 @@ impl Workspace {
             gutters: vec![],
             avoid: vec![],
             all_tags,
-            layouts,
             xyhw: XyhwBuilder {
                 h: bbox.height,
                 w: bbox.width,
@@ -128,24 +126,6 @@ impl Workspace {
             }
         }
         false
-    }
-
-    pub fn next_layout(&mut self, tags: &mut Vec<Tag>) {
-        self.layout = self.layout.next_layout(&self.layouts);
-        self.set_main_width(tags, self.layout.main_width());
-        self.layout_rotation = 0;
-    }
-
-    pub fn prev_layout(&mut self, tags: &mut Vec<Tag>) {
-        self.layout = self.layout.prev_layout(&self.layouts);
-        self.set_main_width(tags, self.layout.main_width());
-        self.layout_rotation = 0;
-    }
-
-    pub fn set_layout(&mut self, tags: &mut Vec<Tag>, layout: Layout) {
-        self.layout = layout;
-        self.set_main_width(tags, self.layout.main_width());
-        self.layout_rotation = 0;
     }
 
     /// Returns true if the workspace is displays a given window.
@@ -302,6 +282,12 @@ impl Workspace {
         tag.flipped_horizontal = *horz;
         tag.flipped_vertical = *vert;
         Some(())
+    }
+
+    pub fn set_layout(&mut self, tags: &mut Vec<Tag>, layout: Layout) {
+        self.layout = layout;
+        self.set_main_width(tags, self.layout.main_width());
+        self.layout_rotation = 0;
     }
 
     #[must_use]

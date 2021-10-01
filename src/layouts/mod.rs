@@ -17,7 +17,7 @@ mod main_and_vert_stack;
 mod monocle;
 mod right_main_and_vert_stack;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum Layout {
     MainAndVertStack,
     MainAndHorizontalStack,
@@ -56,12 +56,6 @@ impl Default for Layout {
 
 // This is tedious, but simple and effective.
 impl Layout {
-    pub fn new(layouts: &[Self]) -> Self {
-        if let Some(layout) = layouts.first() {
-            return *layout;
-        }
-        Self::Fibonacci
-    }
     pub fn update_windows(
         &self,
         workspace: &Workspace,
@@ -108,28 +102,6 @@ impl Layout {
             //Layouts that can be flipped horizontally
             _ => [(false, false), (true, false)].to_vec(),
         }
-    }
-
-    pub fn next_layout(&self, layouts: &[Self]) -> Self {
-        let mut index = match layouts.iter().position(|x| x == self) {
-            Some(x) => x as isize,
-            None => return Self::Fibonacci,
-        } + 1;
-        if index >= layouts.len() as isize {
-            index = 0;
-        }
-        layouts[index as usize]
-    }
-
-    pub fn prev_layout(&self, layouts: &[Self]) -> Self {
-        let mut index = match layouts.iter().position(|x| x == self) {
-            Some(x) => x as isize,
-            None => return Self::Fibonacci,
-        } - 1;
-        if index < 0 {
-            index = layouts.len() as isize - 1;
-        }
-        layouts[index as usize]
     }
 }
 
