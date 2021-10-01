@@ -2,7 +2,7 @@
 #![allow(clippy::module_name_repetitions)]
 use super::WindowState;
 use super::WindowType;
-use crate::config::ThemeSetting;
+use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::xyhw_change::XyhwChange;
 use crate::models::Margins;
@@ -50,8 +50,8 @@ pub struct Window {
 
 impl Window {
     #[must_use]
-    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Window {
-        Window {
+    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Self {
+        Self {
             handle: h,
             transient: None,
             visible: false,
@@ -63,7 +63,7 @@ impl Window {
             type_: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
-            margin: Margins::Int(10),
+            margin: Margins::new(10),
             margin_multiplier: 1.0,
             states: vec![],
             normal: XyhwBuilder::default().into(),
@@ -75,12 +75,12 @@ impl Window {
         }
     }
 
-    pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
+    pub fn update_for_theme(&mut self, config: &impl Config) {
         if self.type_ == WindowType::Normal {
-            self.margin = theme.margin.clone();
-            self.border = theme.border_width;
+            self.margin = config.margin();
+            self.border = config.border_width();
         } else {
-            self.margin = Margins::Int(0);
+            self.margin = Margins::new(0);
             self.border = 0;
         }
     }
@@ -112,7 +112,7 @@ impl Window {
     }
 
     #[must_use]
-    pub fn get_floating_offsets(&self) -> Option<Xyhw> {
+    pub const fn get_floating_offsets(&self) -> Option<Xyhw> {
         self.floating
     }
 
@@ -212,7 +212,7 @@ impl Window {
     }
 
     #[must_use]
-    pub fn margin_multiplier(&self) -> f32 {
+    pub const fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
     }
 
@@ -226,8 +226,7 @@ impl Window {
             value = relative.w() - (self.border * 2);
         } else {
             value = self.normal.w()
-                - (((self.margin.clone().left() + self.margin.clone().right()) as f32)
-                    * self.margin_multiplier) as i32
+                - (((self.margin.left + self.margin.right) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
         if value < 100 && !self.is_unmanaged() {
@@ -246,8 +245,7 @@ impl Window {
             value = relative.h() - (self.border * 2);
         } else {
             value = self.normal.h()
-                - (((self.margin.clone().top() + self.margin.clone().bottom()) as f32)
-                    * self.margin_multiplier) as i32
+                - (((self.margin.top + self.margin.bottom) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
         if value < 100 && !self.is_unmanaged() {
@@ -281,7 +279,7 @@ impl Window {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.x()
         } else {
-            self.normal.x() + (self.margin.clone().left() as f32 * self.margin_multiplier) as i32
+            self.normal.x() + (self.margin.left as f32 * self.margin_multiplier) as i32
         }
     }
 
@@ -294,7 +292,7 @@ impl Window {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.y()
         } else {
-            self.normal.y() + (self.margin.clone().top() as f32 * self.margin_multiplier) as i32
+            self.normal.y() + (self.margin.top as f32 * self.margin_multiplier) as i32
         }
     }
 

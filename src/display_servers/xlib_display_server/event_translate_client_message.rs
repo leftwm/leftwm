@@ -1,10 +1,10 @@
-use std::os::raw::c_long;
-
 use super::DisplayEvent;
 use super::XWrap;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::Command;
+use std::convert::TryFrom;
+use std::os::raw::c_long;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
@@ -12,7 +12,20 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
     log::trace!("ClientMessage: {} : {:?}", event.window, atom_name);
 
     if event.message_type == xw.atoms.NetCurrentDesktop {
-        return goto_tag_by_index(xw, event.data.get_long(0));
+        let value = event.data.get_long(0);
+        match usize::try_from(value) {
+            Ok(index) => {
+                return Some(DisplayEvent::SendCommand(Command::GotoTag(index + 1)));
+            }
+            Err(err) => {
+                log::debug!(
+                    "Received invalid value for current desktop new index ({}): {}",
+                    value,
+                    err,
+                );
+                return None;
+            }
+        }
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too
@@ -51,16 +64,4 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
     }
 
     None
-}
-
-fn goto_tag_by_index(xw: &XWrap, index: c_long) -> Option<DisplayEvent> {
-    if index >= 0 && index < xw.tags.len() as c_long {
-        let tag_num = index + 1;
-        Some(DisplayEvent::SendCommand(
-            Command::GotoTag,
-            Some(tag_num.to_string()),
-        ))
-    } else {
-        None
-    }
 }

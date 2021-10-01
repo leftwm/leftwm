@@ -1,3 +1,5 @@
+use crate::config::Config;
+use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::Manager;
 use serde::{Deserialize, Serialize};
@@ -98,29 +100,29 @@ fn viewport_into_display_workspace(
         w: viewport.w,
         x: viewport.x,
         y: viewport.y,
-        layout: viewport.layout.clone(),
+        layout: viewport.layout,
         index: ws_index,
     }
 }
 
-impl From<&Manager> for ManagerState {
-    fn from(manager: &Manager) -> Self {
+impl<C: Config, SERVER: DisplayServer> From<&Manager<C, SERVER>> for ManagerState {
+    fn from(manager: &Manager<C, SERVER>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
-        let mut tags_len = manager.tags.len();
+        let mut tags_len = manager.state.tags.len();
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
-        let working_tags = manager.tags[0..tags_len]
+        let working_tags = manager.state.tags[0..tags_len]
             .iter()
-            .filter(|tag| manager.windows.iter().any(|w| w.has_tag(&tag.id)))
+            .filter(|tag| manager.state.windows.iter().any(|w| w.has_tag(&tag.id)))
             .map(|t| t.id.clone())
             .collect();
-        for ws in &manager.workspaces {
+        for ws in &manager.state.workspaces {
             viewports.push(Viewport {
                 tags: ws.tags.clone(),
                 x: ws.xyhw.x(),
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
                 w: ws.xyhw.w() as u32,
-                layout: ws.layout.clone(),
+                layout: ws.layout,
             });
         }
         let active_desktop = match manager.focused_workspace() {
@@ -133,7 +135,7 @@ impl From<&Manager> for ManagerState {
         };
         Self {
             window_title,
-            desktop_names: manager.tags[0..tags_len]
+            desktop_names: manager.state.tags[0..tags_len]
                 .iter()
                 .map(|t| t.id.clone())
                 .collect(),

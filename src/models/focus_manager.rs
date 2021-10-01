@@ -1,3 +1,5 @@
+use crate::config::Config;
+use crate::display_servers::DisplayServer;
 use crate::{models::TagId, models::WindowHandle, Manager, Window, Workspace};
 
 use serde::{Deserialize, Serialize};
@@ -5,7 +7,7 @@ use std::collections::{HashMap, VecDeque};
 
 use super::MaybeWindowHandle;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum FocusBehaviour {
     Sloppy,
     ClickTo,
@@ -14,11 +16,11 @@ pub enum FocusBehaviour {
 
 impl Default for FocusBehaviour {
     fn default() -> Self {
-        FocusBehaviour::Sloppy
+        Self::Sloppy
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FocusManager {
     pub behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
@@ -29,14 +31,28 @@ pub struct FocusManager {
 }
 
 impl FocusManager {
+    pub fn new(config: &impl Config) -> Self {
+        Self {
+            behaviour: config.focus_behaviour(),
+            focus_new_windows: config.focus_new_windows(),
+            workspace_history: Default::default(),
+            window_history: Default::default(),
+            tag_history: Default::default(),
+            tags_last_window: Default::default(),
+        }
+    }
+
     /// Return the currently focused workspace.
     #[must_use]
-    pub fn workspace<'a, 'b>(&self, manager: &'a Manager) -> Option<&'b Workspace>
+    pub fn workspace<'a, 'b, C: Config, SERVER: DisplayServer>(
+        &self,
+        manager: &'a Manager<C, SERVER>,
+    ) -> Option<&'b Workspace>
     where
         'a: 'b,
     {
         let index = *self.workspace_history.get(0)?;
-        manager.workspaces.get(index)
+        manager.state.workspaces.get(index)
     }
 
     /// Return the currently focused workspace.
@@ -61,13 +77,16 @@ impl FocusManager {
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn window<'a, 'b>(&self, manager: &'a Manager) -> Option<&'b Window>
+    pub fn window<'a, 'b, C: Config, SERVER: DisplayServer>(
+        &self,
+        manager: &'a Manager<C, SERVER>,
+    ) -> Option<&'b Window>
     where
         'a: 'b,
     {
         let handle = *self.window_history.get(0)?;
         if let Some(handle) = handle {
-            return manager.windows.iter().find(|w| w.handle == handle);
+            return manager.state.windows.iter().find(|w| w.handle == handle);
         }
         None
     }

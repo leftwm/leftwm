@@ -21,8 +21,8 @@ pub struct WindowChange {
 
 impl WindowChange {
     #[must_use]
-    pub fn new(h: WindowHandle) -> WindowChange {
-        WindowChange {
+    pub const fn new(h: WindowHandle) -> Self {
+        Self {
             handle: h,
             transient: None,
             never_focus: None,
@@ -83,7 +83,7 @@ impl WindowChange {
             window.type_ = type_.clone();
             if window.is_unmanaged() {
                 window.border = 0;
-                window.margin = Margins::Int(0);
+                window.margin = Margins::new(0);
             }
         }
         if let Some(states) = self.states {

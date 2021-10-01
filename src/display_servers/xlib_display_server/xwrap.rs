@@ -9,10 +9,10 @@
 use super::utils;
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
-use super::Config;
 use super::Screen;
 use super::Window;
 use super::WindowHandle;
+use crate::config::Keybind;
 use crate::models::DockArea;
 use crate::models::Mode;
 use crate::models::WindowChange;
@@ -22,7 +22,7 @@ use crate::models::Xyhw;
 use crate::models::XyhwChange;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::DisplayEvent;
-use crate::{config::ThemeSetting, models::FocusBehaviour};
+use crate::{config::Config, models::FocusBehaviour};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::ptr;
@@ -69,7 +69,7 @@ pub struct XWrap {
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
-    task_notify: Arc<Notify>,
+    pub task_notify: Arc<Notify>,
 }
 
 impl Default for XWrap {
@@ -83,7 +83,7 @@ impl XWrap {
     ///
     /// Can panic if unable to contact xorg.
     #[must_use]
-    pub fn new() -> XWrap {
+    pub fn new() -> Self {
         const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().expect("Couldn't not connect to Xorg Server");
         let display = unsafe { (xlib.XOpenDisplay)(ptr::null()) };
@@ -131,7 +131,7 @@ impl XWrap {
             active: 0,
         };
 
-        let xw = XWrap {
+        let xw = Self {
             xlib,
             display,
             root,
@@ -162,6 +162,10 @@ impl XWrap {
             (xw.xlib.XSync)(xw.display, xlib::False);
         };
 
+        // This is allowed for now as const extern fns
+        // are not yet stable (1.56.0, 16 Sept 2021)
+        // see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information
+        #[allow(clippy::missing_const_for_fn)]
         extern "C" fn on_error_from_xlib(
             _: *mut xlib::Display,
             er: *mut xlib::XErrorEvent,
@@ -173,6 +177,11 @@ impl XWrap {
             }
             1
         }
+
+        // setup cached keymap/modifier information, otherwise MappingNotify might never be called
+        // from:
+        // https://stackoverflow.com/questions/35569562/how-to-catch-keyboard-layout-change-event-and-get-current-new-keyboard-layout-on
+        xw.keysym_to_keycode(x11_dl::keysym::XK_F1);
 
         unsafe {
             (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
@@ -234,12 +243,12 @@ impl XWrap {
 
     //returns all the screens the display
     #[must_use]
-    pub fn get_default_root_handle(&self) -> WindowHandle {
+    pub const fn get_default_root_handle(&self) -> WindowHandle {
         WindowHandle::XlibHandle(self.get_default_root())
     }
 
     #[must_use]
-    pub fn get_default_root(&self) -> xlib::Window {
+    pub const fn get_default_root(&self) -> xlib::Window {
         self.root
     }
 
@@ -254,8 +263,25 @@ impl XWrap {
 
     #[must_use]
     pub fn keycode_to_keysym(&self, keycode: u32) -> utils::xkeysym_lookup::XKeysym {
-        let sym = unsafe { (self.xlib.XKeycodeToKeysym)(self.display, keycode as u8, 0) };
+        // Not using XKeysymToKeycode because deprecated
+        let sym = unsafe { (self.xlib.XkbKeycodeToKeysym)(self.display, keycode as u8, 0, 0) };
         sym as u32
+    }
+
+    pub fn keysym_to_keycode(&self, keysym: utils::xkeysym_lookup::XKeysym) -> u32 {
+        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, keysym.into()) };
+        u32::from(code)
+    }
+
+    /// # Errors
+    /// Will error if updating the keyboard failed
+    pub fn refresh_keyboard(&self, evt: &mut xlib::XMappingEvent) -> Result<(), XlibError> {
+        let status = unsafe { (self.xlib.XRefreshKeyboardMapping)(evt) };
+        if status == 0 {
+            Err(XlibError::FailedStatus)
+        } else {
+            Ok(())
+        }
     }
 
     /// # Errors
@@ -618,9 +644,17 @@ impl XWrap {
         }
     }
 
-    pub fn update_window(&self, window: &Window, is_focused: bool) {
+    pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
         if let WindowHandle::XlibHandle(h) = window.handle {
             if window.visible() {
+                // If type dock we only need to move it
+                // Also fixes issues with eww
+                if window.is_unmanaged() {
+                    unsafe {
+                        (self.xlib.XMoveWindow)(self.display, h, window.x(), window.y());
+                    }
+                    return;
+                }
                 let mut changes = xlib::XWindowChanges {
                     x: window.x(),
                     y: window.y(),
@@ -661,7 +695,7 @@ impl XWrap {
             } else {
                 unsafe {
                     //if not visible x is <---- way over there <----
-                    (self.xlib.XMoveWindow)(self.display, h, window.width() * -2, window.y());
+                    (self.xlib.XMoveWindow)(self.display, h, hide_offset, window.y());
                 }
             }
         }
@@ -738,8 +772,26 @@ impl XWrap {
             //make sure there is at least an empty list of _NET_WM_STATE
             let states = self.get_window_states_atoms(handle);
             self.set_window_states_atoms(handle, &states);
+            self.set_wm_states(handle, &[1]);
         }
         None
+    }
+
+    pub fn set_wm_states(&self, window: xlib::Window, states: &[c_long]) {
+        let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                self.atoms.WMState,
+                self.atoms.WMState,
+                32,
+                xlib::PropModeReplace,
+                data.as_ptr().cast::<u8>(),
+                data.len() as i32,
+            );
+            std::mem::forget(data);
+        }
     }
 
     fn grab_mouse_clicks(&self, handle: xlib::Window) {
@@ -1416,11 +1468,11 @@ impl XWrap {
         }
     }
 
-    pub fn load_colors(&mut self, theme: &ThemeSetting) {
+    pub fn load_colors(&mut self, config: &impl Config) {
         self.colors = Colors {
-            normal: self.get_color(&theme.default_border_color),
-            floating: self.get_color(&theme.floating_border_color),
-            active: self.get_color(&theme.focused_border_color),
+            normal: self.get_color(config.default_border_color()),
+            floating: self.get_color(config.floating_border_color()),
+            active: self.get_color(config.focused_border_color()),
         };
     }
 
@@ -1436,7 +1488,7 @@ impl XWrap {
     }
 
     // TODO: split into smaller functions
-    pub fn init(&mut self, config: &Config, theme: &ThemeSetting) {
+    pub fn init(&mut self, config: &impl Config) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
@@ -1447,7 +1499,7 @@ impl XWrap {
             | xlib::PropertyChangeMask;
 
         let root = self.get_default_root();
-        self.load_colors(theme);
+        self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
@@ -1485,24 +1537,34 @@ impl XWrap {
         }
 
         //EWMH stuff for desktops
-        self.tags = config.get_list_of_tags();
+        self.tags = config.create_list_of_tags();
         self.init_desktops_hints();
 
-        //cleanup grabs
-        unsafe {
-            (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, root);
-        }
-
-        //grab all the key combos from the config file
-        config.mapped_bindings().iter().for_each(|kb| {
-            if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
-                let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
-                self.grab_keys(root, keysym, modmask);
-            }
-        });
+        self.reset_grabs(&config.mapped_bindings());
 
         unsafe {
             (self.xlib.XSync)(self.display, 0);
+        }
+    }
+
+    /// Cleans first all old keygrabs and then reaplies them from the config
+    pub fn reset_grabs(&self, keybinds: &[Keybind]) {
+        //cleanup grabs
+        unsafe {
+            (self.xlib.XUngrabKey)(
+                self.display,
+                xlib::AnyKey,
+                xlib::AnyModifier,
+                self.get_default_root(),
+            );
+        }
+
+        //grab all the key combos from the config file
+        for kb in keybinds {
+            if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
+                let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
+                self.grab_keys(self.get_default_root(), keysym, modmask);
+            }
         }
     }
 
@@ -1517,7 +1579,7 @@ impl XWrap {
             Mode::Normal => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
-            self.mode = mode.clone();
+            self.mode = mode;
             //safe this point as the start of the move/resize
             if let Ok(loc) = self.get_cursor_point() {
                 self.mode_origin = loc;

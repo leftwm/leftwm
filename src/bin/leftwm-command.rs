@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
         Commands without arguments:
         
         UnloadTheme
-        Reload (currently non-funct)
+        SoftReload
         ToggleFullScreen
         SwapScreens
         MoveWindowToLastWorkspace
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
         MoveWindowUp
         MoveWindowDown
         FocusWindowUp
-        MoveWindowTop (currently non-funct)
+        MoveWindowTop
         FocusWindowDown
         FocusNextTag
         FocusPreviousTag
@@ -69,6 +69,8 @@ async fn main() -> Result<()> {
         CloseWindow
 
         Commands with arguments:
+            Use quotations for the command and arguments, like this:
+            leftwm-command \"<command> <args>\"
 
         LoadTheme              Args: <Path_to/theme.toml> 
         ToggleScratchPad       Args: <ScratchpadName>
@@ -80,7 +82,7 @@ async fn main() -> Result<()> {
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands
          "
-        )
+        );
     }
     Ok(())
 }

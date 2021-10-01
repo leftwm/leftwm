@@ -1,21 +1,8 @@
-use leftwm::{
-    child_process::{self, Nanny},
-    models::{FocusBehaviour, FocusManager, Tag},
-};
+mod common;
 
-use leftwm::{
-    config, external_command_handler, CommandPipe, DisplayEvent, DisplayEventHandler,
-    DisplayServer, Manager, Mode, StateSocket, Window, Workspace, XlibDisplayServer,
-};
-use std::panic;
-use std::path::{Path, PathBuf};
-use std::sync::{atomic::Ordering, Once};
-
-fn get_events<T: DisplayServer>(ds: &mut T) -> Vec<DisplayEvent> {
-    ds.get_next_events()
-}
-
+use leftwm::{Manager, XlibDisplayServer};
 use slog::{o, Drain};
+use std::panic;
 
 fn main() {
     //let _log_guard = setup_logfile();
@@ -26,177 +13,17 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        let config = config::load();
+        let config = common::load();
 
-        let focus_manager = FocusManager {
-            behaviour: config.focus_behaviour.clone(),
-            focus_new_windows: config.focus_new_windows,
-            ..FocusManager::default()
-        };
+        let manager = Manager::<common::Config, XlibDisplayServer>::new(config);
+        manager.register_child_hook();
 
-        let mut tags: Vec<Tag> = config
-            .get_list_of_tags()
-            .iter()
-            .map(|s| Tag::new(s, config.layouts.clone()))
-            .collect();
-        tags.push(Tag {
-            id: "NSP".to_owned(),
-            hidden: true,
-            ..Tag::default()
-        });
-        let mut manager = Manager {
-            focus_manager,
-            tags,
-            scratchpads: config.get_list_of_scratchpads(),
-            layouts: config.layouts.clone(),
-            ..Manager::default()
-        };
-
-        child_process::register_child_hook(manager.reap_requested.clone());
-
-        let mut display_server = XlibDisplayServer::new(&config);
-        let handler = DisplayEventHandler {
-            config: config.clone(),
-        };
-
-        rt.block_on(event_loop(
-            &mut manager,
-            &mut display_server,
-            &handler,
-            config,
-        ));
+        rt.block_on(manager.event_loop());
     });
 
     match completed {
         Ok(_) => log::info!("Completed"),
         Err(err) => log::error!("Completed with error: {:?}", err),
-    }
-}
-
-fn place_runtime_file<P>(path: P) -> std::io::Result<PathBuf>
-where
-    P: AsRef<Path>,
-{
-    xdg::BaseDirectories::with_prefix("leftwm")?.place_runtime_file(path)
-}
-
-async fn timeout(mills: u64) {
-    use tokio::time::{sleep, Duration};
-    sleep(Duration::from_millis(mills)).await;
-}
-
-async fn event_loop(
-    manager: &mut Manager,
-    display_server: &mut XlibDisplayServer,
-    handler: &DisplayEventHandler,
-    config: crate::config::Config,
-) {
-    let socket_file = place_runtime_file("current_state.sock")
-        .expect("ERROR: couldn't create current_state.sock");
-    let mut state_socket = StateSocket::default();
-    state_socket
-        .listen(socket_file)
-        .await
-        .expect("ERROR: couldn't connect to current_state.sock");
-
-    let pipe_file =
-        place_runtime_file("commands.pipe").expect("ERROR: couldn't create commands.pipe");
-    let mut command_pipe = CommandPipe::new(pipe_file)
-        .await
-        .expect("ERROR: couldn't connect to commands.pipe");
-
-    //start the current theme
-    let after_first_loop: Once = Once::new();
-
-    //main event loop
-    let mut event_buffer = vec![];
-    loop {
-        if manager.mode == Mode::Normal {
-            state_socket.write_manager_state(manager).await.ok();
-        }
-        display_server.flush();
-
-        let mut needs_update = false;
-        tokio::select! {
-            _ = display_server.wait_readable(), if event_buffer.is_empty() => {
-                event_buffer.append(&mut get_events(display_server));
-                continue;
-            }
-            //Once in a blue moon we miss the focus event,
-            //This is to double check that we know which window is currently focused
-            _ = timeout(100), if event_buffer.is_empty() && manager.focus_manager.behaviour == FocusBehaviour::Sloppy => {
-                let mut focus_event = display_server.verify_focused_window();
-                event_buffer.append(&mut focus_event);
-                continue;
-            }
-            Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
-                needs_update = external_command_handler::process(manager, &config, cmd) || needs_update;
-                display_server.update_theme_settings(manager.theme_setting.clone());
-            }
-            else => {
-                event_buffer.drain(..).for_each(|event| needs_update = handler.process(manager, event) || needs_update)
-            }
-        }
-
-        //if we need to update the displayed state
-        if needs_update {
-            match &manager.mode {
-                Mode::Normal => {
-                    let windows: Vec<&Window> = manager.windows.iter().collect();
-                    let focused = manager.focused_window();
-                    display_server.update_windows(windows, focused);
-                    let workspaces: Vec<&Workspace> = manager.workspaces.iter().collect();
-                    let focused = manager.focused_workspace();
-                    display_server.update_workspaces(workspaces, focused);
-                }
-                //when (resizing / moving) only deal with the single window
-                Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
-                    let focused = manager.focused_window();
-                    let windows: Vec<&Window> = (&manager.windows)
-                        .iter()
-                        .filter(|w| &w.handle == h)
-                        .collect();
-                    display_server.update_windows(windows, focused);
-                }
-            }
-        }
-
-        //preform any actions requested by the handler
-        while !manager.actions.is_empty() {
-            if let Some(act) = manager.actions.pop_front() {
-                if let Some(event) = display_server.execute_action(act) {
-                    event_buffer.push(event);
-                }
-            }
-        }
-
-        //after the very first loop run the 'up' scripts (global and theme). we need the unix
-        //socket to already exist.
-        after_first_loop.call_once(|| {
-            match Nanny::run_global_up_script() {
-                Ok(child) => {
-                    child.map(|child| manager.children.insert(child));
-                }
-                Err(err) => log::error!("Global up script faild: {}", err),
-            }
-            match Nanny::boot_current_theme() {
-                Ok(child) => {
-                    child.map(|child| manager.children.insert(child));
-                }
-                Err(err) => log::error!("Theme loading failed: {}", err),
-            }
-
-            leftwm::state::load(manager);
-        });
-
-        if manager.reap_requested.swap(false, Ordering::SeqCst) {
-            manager.children.reap();
-        }
-
-        if manager.reload_requested {
-            state_socket.shutdown().await;
-            break;
-        }
     }
 }
 

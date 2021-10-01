@@ -1,105 +1,140 @@
 //! Save and restore manager state.
 
-use crate::display_action::DisplayAction;
-use crate::errors::Result;
-use crate::Manager;
-use std::fs::File;
-use std::path::Path;
+use crate::config::{Config, ScratchPad};
+use crate::layouts::Layout;
+use crate::models::FocusManager;
+use crate::models::Mode;
+use crate::models::Screen;
+use crate::models::Tag;
+use crate::models::Window;
+use crate::models::Workspace;
+use crate::{DisplayAction, DisplayServer, Manager};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, VecDeque};
+use std::os::raw::c_ulong;
 
-// TODO: make configurable
-/// Path to file where state will be dumper upon soft reload.
-const STATE_FILE: &str = "/tmp/leftwm.state";
-
-/// Write current state to a file.
-/// It will be used to restore the state after soft reload.
-/// # Errors
-///
-/// Will return error if unable to create `state_file` or
-/// if unable to serialize the text.
-/// May be caused by inadequate permissions, not enough
-/// space on drive, or other typical filesystem issues.
-pub fn save(manager: &Manager) -> Result<()> {
-    let state_file = File::create(STATE_FILE)?;
-    serde_json::to_writer(state_file, &manager)?;
-    Ok(())
+#[derive(Serialize, Deserialize, Debug)]
+pub struct State<C> {
+    pub screens: Vec<Screen>,
+    pub windows: Vec<Window>,
+    pub workspaces: Vec<Workspace>,
+    pub focus_manager: FocusManager,
+    pub mode: Mode,
+    // TODO should this really be saved in the state?
+    pub config: C,
+    pub layouts: Vec<Layout>,
+    pub scratchpads: Vec<ScratchPad>,
+    pub active_scratchpads: HashMap<String, Option<u32>>,
+    pub actions: VecDeque<DisplayAction>,
+    // TODO should this really be saved in the state?
+    //this is used to limit framerate when resizing/moving windows
+    pub frame_rate_limitor: c_ulong,
+    pub tags: Vec<Tag>, //list of all known tags
 }
 
-/// Load saved state if it exists.
-pub fn load(manager: &mut Manager) {
-    if Path::new(STATE_FILE).exists() {
-        match load_old_state() {
-            Ok(old_manager) => restore_state(manager, &old_manager),
-            Err(err) => log::error!("Cannot load old state: {}", err),
-        }
-        // Clean old state.
-        if let Err(err) = std::fs::remove_file(STATE_FILE) {
-            log::error!("Cannot remove old state file: {}", err);
+impl<C> State<C>
+where
+    C: Config,
+{
+    pub(crate) fn new(config: C) -> Self {
+        let mut tags: Vec<Tag> = config
+            .create_list_of_tags()
+            .iter()
+            .map(|s| Tag::new(s))
+            .collect();
+        tags.push(Tag {
+            id: "NSP".to_owned(),
+            hidden: true,
+            ..Tag::default()
+        });
+
+        Self {
+            focus_manager: FocusManager::new(&config),
+            scratchpads: config.create_list_of_scratchpads(),
+            layouts: config.layouts(),
+            screens: Default::default(),
+            windows: Default::default(),
+            workspaces: Default::default(),
+            mode: Default::default(),
+            active_scratchpads: Default::default(),
+            actions: Default::default(),
+            frame_rate_limitor: Default::default(),
+            tags,
+            config,
         }
     }
 }
 
-/// Read old state from a state file.
-fn load_old_state() -> Result<Manager> {
-    let file = File::open(STATE_FILE)?;
-    let old_manager = serde_json::from_reader(file)?;
-    Ok(old_manager)
-}
-
-/// Apply saved state to a running manager.
-fn restore_state(manager: &mut Manager, old_manager: &Manager) {
-    restore_workspaces(manager, old_manager);
-    restore_windows(manager, old_manager);
-    restore_scratchpads(manager, old_manager);
-}
-
-/// Restore workspaces layout.
-fn restore_workspaces(manager: &mut Manager, old_manager: &Manager) {
-    for workspace in &mut manager.workspaces {
-        if let Some(old_workspace) = old_manager.workspaces.iter().find(|w| w.id == workspace.id) {
-            workspace.layout = old_workspace.layout.clone();
-            workspace.margin_multiplier = old_workspace.margin_multiplier;
-        }
-    }
-}
-
-/// Copy windows state.
-fn restore_windows(manager: &mut Manager, old_manager: &Manager) {
-    let mut ordered = vec![];
-    let mut had_strut = false;
-
-    old_manager.windows.iter().for_each(|old| {
-        if let Some((index, window)) = manager
-            .windows
-            .iter_mut()
-            .enumerate()
-            .find(|w| w.1.handle == old.handle)
-        {
-            had_strut = old.strut.is_some() || had_strut;
-            if let Some(tag) = old.tags.first() {
-                let act = DisplayAction::SetWindowTags(window.handle, tag.clone());
-                manager.actions.push_back(act);
+impl<C, SERVER> Manager<C, SERVER>
+where
+    C: Config,
+    SERVER: DisplayServer,
+{
+    /// Apply saved state to a running manager.
+    pub fn restore_state(&mut self, state: &State<C>) {
+        // restore workspaces
+        for workspace in &mut self.state.workspaces {
+            if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {
+                workspace.layout = old_workspace.layout;
+                workspace.margin_multiplier = old_workspace.margin_multiplier;
             }
-
-            window.set_floating(old.floating());
-            window.set_floating_offsets(old.get_floating_offsets());
-            window.apply_margin_multiplier(old.margin_multiplier);
-            window.pid = old.pid;
-            window.normal = old.normal;
-            window.tags = old.tags.clone();
-            window.strut = old.strut;
-            window.set_states(old.states());
-            ordered.push(window.clone());
-            manager.windows.remove(index);
         }
-    });
-    if had_strut {
-        manager.update_docks();
-    }
-    manager.windows.append(&mut ordered);
-}
 
-fn restore_scratchpads(manager: &mut Manager, old_manager: &Manager) {
-    for (scratchpad, id) in &old_manager.active_scratchpads {
-        manager.active_scratchpads.insert(scratchpad.clone(), *id);
+        // restore windows
+        let mut ordered = vec![];
+        let mut had_strut = false;
+
+        state.windows.iter().for_each(|old| {
+            if let Some((index, window)) = self
+                .state
+                .windows
+                .clone()
+                .iter_mut()
+                .enumerate()
+                .find(|w| w.1.handle == old.handle)
+            {
+                had_strut = old.strut.is_some() || had_strut;
+
+                window.set_floating(old.floating());
+                window.set_floating_offsets(old.get_floating_offsets());
+                window.apply_margin_multiplier(old.margin_multiplier);
+                window.pid = old.pid;
+                window.normal = old.normal;
+                if self.state.tags.eq(&state.tags) {
+                    window.tags = old.tags.clone();
+                } else {
+                    old.tags.iter().for_each(|t| {
+                        let manager_tags = &self.state.tags.clone();
+                        if let Some(tag_index) = &state.tags.clone().iter().position(|o| &o.id == t)
+                        {
+                            window.clear_tags();
+                            // if the config prior reload had more tags then the current one
+                            // we want to move windows of 'lost tags' to the 'first' tag
+                            // also we want to ignore the `NSP` tag for length check
+                            if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
+                                window.tag(&manager_tags[*tag_index].id);
+                            } else if let Some(tag) = manager_tags.first() {
+                                window.tag(&tag.id);
+                            }
+                        }
+                    });
+                }
+                window.strut = old.strut;
+                window.set_states(old.states());
+                ordered.push(window.clone());
+                self.state.windows.remove(index);
+            }
+        });
+        if had_strut {
+            self.update_docks();
+        }
+        self.state.windows.append(&mut ordered);
+
+        // restore scratchpads
+        for (scratchpad, id) in &state.active_scratchpads {
+            self.state
+                .active_scratchpads
+                .insert(scratchpad.clone(), *id);
+        }
     }
 }

@@ -1,4 +1,4 @@
-use super::{DockArea, WindowHandle};
+use super::{DockArea, Size, WindowHandle};
 use crate::config::Workspace;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
@@ -10,6 +10,7 @@ pub struct Screen {
     #[serde(flatten)]
     pub bbox: BBox,
     pub wsid: Option<i32>,
+    pub max_window_width: Option<Size>,
 }
 
 /// Screen Bounding Box
@@ -23,16 +24,17 @@ pub struct BBox {
 
 impl Screen {
     #[must_use]
-    pub fn new(bbox: BBox) -> Screen {
-        Screen {
+    pub const fn new(bbox: BBox) -> Self {
+        Self {
             root: WindowHandle::MockHandle(0),
             bbox,
             wsid: None,
+            max_window_width: None,
         }
     }
 
     #[must_use]
-    pub fn contains_point(&self, x: i32, y: i32) -> bool {
+    pub const fn contains_point(&self, x: i32, y: i32) -> bool {
         let bbox = &self.bbox;
         let max_x = bbox.x + bbox.width;
         let max_y = bbox.y + bbox.height;
@@ -40,7 +42,7 @@ impl Screen {
     }
 
     #[must_use]
-    pub fn contains_dock_area(&self, dock_area: DockArea, screens_area: (i32, i32)) -> bool {
+    pub const fn contains_dock_area(&self, dock_area: DockArea, screens_area: (i32, i32)) -> bool {
         if dock_area.top > 0 {
             return self.contains_point(dock_area.top_start_x, dock_area.top);
         }
@@ -60,7 +62,7 @@ impl Screen {
 
 impl From<&Workspace> for Screen {
     fn from(wsc: &Workspace) -> Self {
-        Screen {
+        Self {
             root: WindowHandle::MockHandle(0),
             bbox: BBox {
                 height: wsc.height,
@@ -69,13 +71,14 @@ impl From<&Workspace> for Screen {
                 y: wsc.y,
             },
             wsid: wsc.id,
+            max_window_width: wsc.max_window_width,
         }
     }
 }
 
 impl From<&xlib::XWindowAttributes> for Screen {
     fn from(root: &xlib::XWindowAttributes) -> Self {
-        Screen {
+        Self {
             root: WindowHandle::XlibHandle(root.root),
             bbox: BBox {
                 height: root.height,
@@ -84,13 +87,14 @@ impl From<&xlib::XWindowAttributes> for Screen {
                 y: root.y,
             },
             wsid: None,
+            max_window_width: None,
         }
     }
 }
 
 impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
     fn from(root: &x11_dl::xinerama::XineramaScreenInfo) -> Self {
-        Screen {
+        Self {
             root: WindowHandle::MockHandle(0),
             bbox: BBox {
                 height: root.height.into(),
@@ -99,13 +103,14 @@ impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
                 y: root.y_org.into(),
             },
             wsid: None,
+            max_window_width: None,
         }
     }
 }
 
 impl Default for Screen {
     fn default() -> Self {
-        Screen {
+        Self {
             root: WindowHandle::MockHandle(0),
             bbox: BBox {
                 height: 600,
@@ -114,6 +119,7 @@ impl Default for Screen {
                 y: 0,
             },
             wsid: None,
+            max_window_width: None,
         }
     }
 }

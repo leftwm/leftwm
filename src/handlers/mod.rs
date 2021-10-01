@@ -1,6 +1,5 @@
 mod command_handler;
 pub mod display_event_handler;
-pub mod external_command_handler;
 mod focus_handler;
 mod goto_tag_handler;
 mod mouse_combo_handler;

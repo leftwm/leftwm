@@ -10,7 +10,9 @@
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    clippy::must_use_candidate,
+    clippy::default_trait_access
 )]
 mod command;
 mod command_builder;
@@ -19,10 +21,11 @@ mod display_action;
 mod display_event;
 pub mod display_servers;
 pub mod errors;
+mod event_loop;
 mod handlers;
-mod layouts;
+pub mod layouts;
 pub mod models;
-pub mod state;
+mod state;
 pub mod utils;
 
 use utils::xkeysym_lookup::Button;
@@ -30,16 +33,17 @@ use utils::xkeysym_lookup::ModMask;
 use utils::xkeysym_lookup::XKeysym;
 
 pub use command::Command;
+pub use config::{Config, Keybind};
+pub use display_action::DisplayAction;
 pub use display_event::DisplayEvent;
 pub use display_servers::xlib_display_server::XWrap;
 pub use display_servers::DisplayServer;
 pub use display_servers::XlibDisplayServer;
-pub use handlers::display_event_handler::DisplayEventHandler;
-pub use handlers::external_command_handler;
 pub use models::Manager;
 pub use models::Mode;
 pub use models::Window;
 pub use models::Workspace;
+pub use state::State;
 pub use utils::child_process;
 pub use utils::command_pipe::CommandPipe;
 pub use utils::state_socket::StateSocket;

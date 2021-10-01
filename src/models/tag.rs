@@ -8,11 +8,8 @@ pub struct Tag {
     pub hidden: bool,
     pub layout: Layout,
     pub layouts: Vec<Layout>,
-    #[serde(skip)]
     pub main_width_percentage: u8,
-    #[serde(skip)]
     pub flipped_horizontal: bool,
-    #[serde(skip)]
     pub flipped_vertical: bool,
 }
 

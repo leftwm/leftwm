@@ -1,12 +1,7 @@
-use super::{layouts::Layout, Margins};
-use crate::models::Gutter;
-use crate::models::Side;
-use crate::models::Tag;
-use crate::models::TagId;
-use crate::models::Window;
-use crate::models::Xyhw;
-use crate::models::XyhwBuilder;
-use crate::{config::ThemeSetting, models::BBox};
+use crate::config::Config;
+use crate::models::{
+    layouts::Layout, BBox, Gutter, Margins, Side, Size, Tag, TagId, Window, Xyhw, XyhwBuilder,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -21,12 +16,16 @@ pub struct Workspace {
     pub margin: Margins,
     pub margin_multiplier: f32,
     pub gutters: Vec<Gutter>,
+    // We allow dead code here, as >1.56.0 complains
+    // This should be investigated further.
+    #[allow(dead_code)]
     #[serde(skip)]
     all_tags: Vec<Tag>,
     layouts: Vec<Layout>,
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
+    pub max_window_width: Option<Size>,
 }
 
 impl fmt::Debug for Workspace {
@@ -43,20 +42,26 @@ impl fmt::Debug for Workspace {
 }
 
 impl PartialEq for Workspace {
-    fn eq(&self, other: &Workspace) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.id != None && self.id == other.id
     }
 }
 
 impl Workspace {
     #[must_use]
-    pub fn new(id: Option<i32>, bbox: BBox, all_tags: Vec<Tag>, layouts: Vec<Layout>) -> Workspace {
-        Workspace {
+    pub fn new(
+        id: Option<i32>,
+        bbox: BBox,
+        all_tags: Vec<Tag>,
+        layouts: Vec<Layout>,
+        max_window_width: Option<Size>,
+    ) -> Self {
+        Self {
             id,
             layout: Layout::new(&layouts),
             layout_rotation: 0,
             tags: vec![],
-            margin: Margins::Int(10),
+            margin: Margins::new(10),
             margin_multiplier: 1.0,
             gutters: vec![],
             avoid: vec![],
@@ -78,16 +83,17 @@ impl Workspace {
                 ..XyhwBuilder::default()
             }
             .into(),
+            max_window_width,
         }
     }
 
-    pub fn update_for_theme(&mut self, theme: &ThemeSetting) {
-        self.margin = theme.workspace_margin.clone();
-        self.gutters = self.get_gutters_for_theme(theme);
+    pub fn update_for_theme(&mut self, config: &impl Config) {
+        self.margin = config.workspace_margin().unwrap_or_else(|| Margins::new(0));
+        self.gutters = self.get_gutters_for_theme(config);
     }
 
-    pub fn get_gutters_for_theme(&mut self, theme: &ThemeSetting) -> Vec<Gutter> {
-        theme
+    pub fn get_gutters_for_theme(&mut self, config: &impl Config) -> Vec<Gutter> {
+        config
             .get_list_of_gutters()
             .into_iter()
             .filter(|gutter| gutter.wsid == self.id || gutter.wsid == None)
@@ -110,7 +116,7 @@ impl Workspace {
     }
 
     #[must_use]
-    pub fn contains_point(&self, x: i32, y: i32) -> bool {
+    pub const fn contains_point(&self, x: i32, y: i32) -> bool {
         self.xyhw.contains_point(x, y)
     }
 
@@ -191,33 +197,63 @@ impl Workspace {
         }
     }
 
+    /// Returns the original x position of the workspace,
+    /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn x(&self) -> i32 {
-        let left = self.margin.clone().left() as f32;
+        let left = self.margin.left as f32;
         let gutter = self.get_gutter(&Side::Left);
         self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
+
+    /// Returns the x position for the workspace,
+    /// while accounting for the optional `max_window_width` configuration
+    #[must_use]
+    pub fn x_limited(&self, column_count: usize) -> i32 {
+        match self.width() - self.width_limited(column_count) {
+            0 => self.x(),
+            remainder => self.x() + (remainder / 2),
+        }
+    }
+
     #[must_use]
     pub fn y(&self) -> i32 {
-        let top = self.margin.clone().top() as f32;
+        let top = self.margin.top as f32;
         let gutter = self.get_gutter(&Side::Top);
         self.xyhw_avoided.y() + (self.margin_multiplier * top) as i32 + gutter
     }
+
     #[must_use]
     pub fn height(&self) -> i32 {
-        let top = self.margin.clone().top() as f32;
-        let bottom = self.margin.clone().bottom() as f32;
+        let top = self.margin.top as f32;
+        let bottom = self.margin.bottom as f32;
         //Only one side
         let gutter = self.get_gutter(&Side::Top) + self.get_gutter(&Side::Bottom);
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
+
+    /// Returns the original width for the workspace,
+    /// disregarding the optional `max_window_width` configuration
     #[must_use]
     pub fn width(&self) -> i32 {
-        let left = self.margin.clone().left() as f32;
-        let right = self.margin.clone().right() as f32;
+        let left = self.margin.left as f32;
+        let right = self.margin.right as f32;
         //Only one side
         let gutter = self.get_gutter(&Side::Left) + self.get_gutter(&Side::Right);
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
+    }
+
+    /// Returns the width of the workspace,
+    /// while accounting for the optional `max_window_width` configuration
+    #[must_use]
+    pub fn width_limited(&self, column_count: usize) -> i32 {
+        match self.max_window_width {
+            Some(size) => std::cmp::min(
+                (size.into_absolute(self.width() as f32) * column_count as f32).floor() as i32,
+                self.width(),
+            ),
+            None => self.width(),
+        }
     }
 
     fn get_gutter(&self, side: &Side) -> i32 {
@@ -304,7 +340,7 @@ impl Workspace {
 
     /// Get a reference to the tag model's margin multiplier.
     #[must_use]
-    pub fn margin_multiplier(&self) -> f32 {
+    pub const fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
     }
 }
@@ -326,6 +362,7 @@ mod tests {
             },
             vec![],
             vec![],
+            None,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
         assert!(
@@ -346,6 +383,7 @@ mod tests {
             },
             vec![],
             vec![],
+            None,
         );
         let tag = crate::models::Tag::new("test");
         let mut tags = vec![tag.clone()];
