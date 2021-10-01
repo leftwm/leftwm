@@ -308,14 +308,16 @@ fn next_layout<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER
             let workspace = manager
                 .state
                 .focus_manager
-                .workspace_mut(&mut manager.state.workspaces)?;
+                .workspace(manager.state.workspaces)?;
             let layout = manager.state.layout_manager.next_layout(workspace.layout);
-            workspace.set_layout(&mut manager.state.tags, layout);
+            let tag_id = manager.state.focus_manager.tag(0)?;
+            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+            tag.set_layout(layout);
         }
         LayoutMode::Tag => {
             let tag_id = manager.state.focus_manager.tag(0)?;
             let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
-            tag.layout = manager.state.layout_manager.next_layout(tag.layout);
+            tag.set_layout(manager.state.layout_manager.next_layout(tag.layout));
         }
     }
     Some(true)

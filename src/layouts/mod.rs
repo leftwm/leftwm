@@ -56,34 +56,29 @@ impl Default for Layout {
 
 // This is tedious, but simple and effective.
 impl Layout {
-    pub fn update_windows(
-        &self,
-        workspace: &Workspace,
-        windows: &mut Vec<&mut Window>,
-        tags: &mut Vec<Tag>,
-    ) {
+    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>, tag: &Tag) {
         match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
-                main_and_vert_stack::update(workspace, windows, tags);
+                main_and_vert_stack::update(workspace, windows, tag);
             }
             Self::MainAndHorizontalStack => {
-                main_and_horizontal_stack::update(workspace, windows, tags);
+                main_and_horizontal_stack::update(workspace, windows, tag);
             }
-            Self::MainAndDeck => main_and_deck::update(workspace, windows, tags),
+            Self::MainAndDeck => main_and_deck::update(workspace, windows, tag),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),
-            Self::Fibonacci => fibonacci::update(workspace, windows, tags),
-            Self::CenterMain => center_main::update(workspace, windows, tags),
-            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows, tags),
+            Self::Fibonacci => fibonacci::update(workspace, windows, tag),
+            Self::CenterMain => center_main::update(workspace, windows, tag),
+            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows, tag),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => {
-                right_main_and_vert_stack::update(workspace, windows, tags);
+                right_main_and_vert_stack::update(workspace, windows, tag);
             }
         }
     }
 
-    pub const fn main_width(&self) -> u8 {
+    pub const fn main_width(&self, tag: &Tag) -> u8 {
         match self {
             Self::RightWiderLeftStack | Self::LeftWiderRightStack => 75,
             _ => 50,

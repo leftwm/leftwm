@@ -2,6 +2,8 @@ use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 
+use super::Layout;
+
 /// Layout which splits the workspace into two columns.
 /// Gives first column 2/3 workspace width on the right side, 1/3 for second column on left side.
 /// Divides second column height for other windows.
@@ -53,7 +55,7 @@ use crate::models::Workspace;
 /// |      4      |                           |
 /// +--------------------+--------------------+
 
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
+pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len();
 
     if window_count == 0 {
@@ -69,7 +71,7 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
 
     let primary_width = match window_count {
         1 => workspace_width,
-        _ => (workspace_width as f32 / 100.0 * workspace.main_width(tags)).floor() as i32,
+        _ => (workspace_width as f32 / 100.0 * tag.main_width_percentage().floor()) as i32,
     };
 
     let third_part = workspace_width - primary_width;

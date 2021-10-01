@@ -145,38 +145,6 @@ impl Workspace {
         self.is_displaying(window) && !window.is_unmanaged()
     }
 
-    pub fn update_windows(&self, windows: &mut Vec<Window>, tags: &mut Vec<Tag>) {
-        if let Some(w) = windows
-            .iter_mut()
-            .find(|w| self.is_displaying(w) && w.is_fullscreen())
-        {
-            w.set_visible(true);
-        } else {
-            //Don't bother updating the other windows
-            //mark all windows for this workspace as visible
-            let mut all_mine: Vec<&mut Window> = windows
-                .iter_mut()
-                .filter(|w| self.is_displaying(w))
-                .collect();
-            all_mine.iter_mut().for_each(|w| w.set_visible(true));
-            //update the location of all non-floating windows
-            let mut managed_nonfloat: Vec<&mut Window> = windows
-                .iter_mut()
-                .filter(|w| self.is_managed(w) && !w.floating())
-                .collect();
-            self.layout
-                .update_windows(self, &mut managed_nonfloat, tags);
-            for w in &mut managed_nonfloat {
-                w.container_size = Some(self.xyhw);
-            }
-            //update the location of all floating windows
-            windows
-                .iter_mut()
-                .filter(|w| self.is_managed(w) && w.floating())
-                .for_each(|w| w.normal = self.xyhw);
-        }
-    }
-
     /// Returns the original x position of the workspace,
     /// disregarding the optional `max_window_width` configuration
     #[must_use]
@@ -260,14 +228,6 @@ impl Workspace {
         if let Some(tag) = self.current_tags(tags).get_mut(0) {
             tag.set_main_width(val);
         }
-    }
-
-    #[must_use]
-    pub fn main_width(&self, tags: &mut Vec<Tag>) -> f32 {
-        if let Some(tag) = self.current_tags(tags).get(0) {
-            return tag.main_width_percentage();
-        }
-        f32::from(self.layout.main_width())
     }
 
     pub fn rotate_layout(&mut self, tags: &mut Vec<Tag>) -> Option<()> {

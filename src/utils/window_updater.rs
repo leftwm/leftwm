@@ -13,8 +13,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .iter_mut()
             .for_each(|w| w.set_visible(w.tags.is_empty()));
 
-        for ws in &mut self.state.workspaces {
-            ws.update_windows(&mut self.state.windows, &mut self.state.tags);
+        for ws in &self.state.workspaces {
+            let tag = ws
+                .current_tags(&mut self.state.tags)
+                .get(0)
+                .expect("Workspace has no tags.");
+            tag.update_windows(&mut self.state.windows, ws);
 
             self.state
                 .windows
