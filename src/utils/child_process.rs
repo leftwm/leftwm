@@ -44,7 +44,7 @@ impl Nanny {
     fn get_config_dir() -> Result<PathBuf> {
         BaseDirectories::with_prefix("leftwm")?
             .create_config_directory("")
-            .map_err(|e| e.into())
+            .map_err(Into::into)
     }
 
     /// Runs a script if it exits
@@ -55,7 +55,7 @@ impl Nanny {
                 .stdout(Stdio::null())
                 .spawn()
                 .map(Some)
-                .map_err(|e| e.into())
+                .map_err(Into::into)
         } else {
             Ok(None)
         }
