@@ -244,7 +244,7 @@ mod tests {
                 y: 0,
             },
             vec![],
-            vec![],
+            Layout::default(),
             None,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
@@ -265,12 +265,11 @@ mod tests {
                 y: 0,
             },
             vec![],
-            vec![],
+            Layout::default(),
             None,
         );
-        let tag = crate::models::Tag::new("test");
-        let mut tags = vec![tag.clone()];
-        subject.show_tag(&mut tags, &tag);
+        let tag = crate::models::Tag::new("test", Layout::default());
+        subject.show_tag(&tag);
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.tag("test");
         assert!(subject.is_displaying(&w), "workspace should include window");

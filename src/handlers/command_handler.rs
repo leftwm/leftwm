@@ -638,12 +638,12 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.screen_create_handler(Screen::default());
         manager.state.tags = vec![
-            Tag::new("A15"),
-            Tag::new("B24"),
-            Tag::new("C"),
-            Tag::new("6D4"),
-            Tag::new("E39"),
-            Tag::new("F67"),
+            Tag::new("A15", Layout::default()),
+            Tag::new("B24", Layout::default()),
+            Tag::new("C", Layout::default()),
+            Tag::new("6D4", Layout::default()),
+            Tag::new("E39", Layout::default()),
+            Tag::new("F67", Layout::default()),
         ];
         assert!(!manager.command_handler(&Command::GotoTag(0)));
         assert!(!manager.command_handler(&Command::GotoTag(999)));

@@ -102,6 +102,9 @@ impl Config for TestConfig {
     fn layouts(&self) -> Vec<Layout> {
         vec![]
     }
+    fn layout_mode(&self) -> LayoutMode {
+        LayoutMode::Workspace
+    }
     fn focus_new_windows(&self) -> bool {
         false
     }
