@@ -67,18 +67,8 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
             CustomMargins::Vec(vec) => {
                 match vec.len() {
                     1 => Ok(Self::new(vec[0])),
-                    2 => Ok(Self {
-                        top: vec[0],
-                        right: vec[0],
-                        bottom: vec[1],
-                        left: vec[1],
-                    }),
-                    3 => Ok(Self {
-                        top: vec[0],
-                        right: vec[1],
-                        bottom: vec[2],
-                        left: vec[2],
-                    }),
+                    2 => Ok(Self::new_from_pair(vec[0], vec[1])),
+                    3 => Ok(Self::new_from_triple(vec[0], vec[1], vec[2])),
                     4 => Ok(Self {
                         top: vec[0],
                         right: vec[1],

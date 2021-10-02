@@ -9,11 +9,6 @@ pub struct Margins {
 }
 
 impl Margins {
-    #[must_use]
-    pub fn into_vec(self) -> Vec<u32> {
-        vec![self.top, self.right, self.bottom, self.left]
-    }
-
     pub fn new(size: u32) -> Self {
         Self {
             top: size,
@@ -28,6 +23,15 @@ impl Margins {
             top: top_and_bottom,
             right: left_and_right,
             bottom: top_and_bottom,
+            left: left_and_right,
+        }
+    }
+
+    pub fn new_from_triple(top: u32, left_and_right: u32, bottom: u32) -> Self {
+        Self {
+            top,
+            right: left_and_right,
+            bottom,
             left: left_and_right,
         }
     }
