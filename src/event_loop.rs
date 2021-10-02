@@ -54,6 +54,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             //if we need to update the displayed state
             if needs_update {
+                self.update_windows();
+
                 match self.state.mode {
                     Mode::Normal => {
                         let windows: Vec<&Window> = self.state.windows.iter().collect();
