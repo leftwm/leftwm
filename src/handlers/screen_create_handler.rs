@@ -44,7 +44,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let next_tag = self.state.tags[tag_index].clone();
         self.focus_workspace(&workspace);
         self.focus_tag(&next_tag.id);
-        workspace.show_tag(&mut self.state.tags, &next_tag);
+        workspace.show_tag(&next_tag);
         self.state.workspaces.push(workspace.clone());
         self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
         self.state.screens.push(screen);

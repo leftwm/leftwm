@@ -1,6 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::display_servers::DisplayServer;
+use crate::{display_servers::DisplayServer, models::LayoutMode};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn goto_tag_handler(&mut self, tag_num: usize) -> bool {
@@ -8,11 +8,11 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             return false;
         }
 
-        let tag = self.state.tags[tag_num - 1].clone();
-        let new_tags = vec![tag.id.clone()];
+        let tag_id = self.state.tags[tag_num - 1].id.clone();
+        let new_tags = vec![tag_id.clone()];
         //no focus safety check
-        let old_tags = match self.focused_workspace() {
-            Some(ws) => ws.tags.clone(),
+        let (old_tags, ws_layout) = match self.focused_workspace() {
+            Some(ws) => (ws.tags.clone(), ws.layout),
             None => return false,
         };
         let handle = self.focused_window().map(|w| w.handle);
@@ -35,10 +35,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
 
         match self.focused_workspace_mut() {
-            Some(aws) => aws.tags = new_tags,
+            Some(aws) => aws.tags = new_tags.clone(),
             None => return false,
         }
-        self.focus_tag(&tag.id);
+        if self.state.layout_manager.mode == LayoutMode::Workspace {
+            if let Some(tag) = self.state.tags.iter_mut().find(|t| t.id == new_tags[0]) {
+                tag.layout = ws_layout;
+            }
+        }
+        self.focus_tag(&tag_id);
         self.update_docks();
         true
     }

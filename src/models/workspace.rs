@@ -11,7 +11,6 @@ pub struct Workspace {
     pub id: Option<i32>,
     /// Active layout
     pub layout: Layout,
-    layout_rotation: usize,
     pub tags: Vec<TagId>,
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -58,7 +57,6 @@ impl Workspace {
         Self {
             id,
             layout,
-            layout_rotation: 0,
             tags: vec![],
             margin: Margins::new(10),
             margin_multiplier: 1.0,
@@ -108,9 +106,8 @@ impl Workspace {
             })
     }
 
-    pub fn show_tag(&mut self, tags: &mut Vec<Tag>, tag: &Tag) {
+    pub fn show_tag(&mut self, tag: &Tag) {
         self.tags = vec![tag.id.clone()];
-        self.set_main_width(tags, self.layout.main_width());
     }
 
     #[must_use]
@@ -120,12 +117,7 @@ impl Workspace {
 
     #[must_use]
     pub fn has_tag(&self, tag: &str) -> bool {
-        for t in &self.tags {
-            if tag == t {
-                return true;
-            }
-        }
-        false
+        self.tags.contains(&tag.to_owned())
     }
 
     /// Returns true if the workspace is displays a given window.
@@ -209,61 +201,6 @@ impl Workspace {
             Some(g) => g.value,
             None => 0,
         }
-    }
-
-    #[must_use]
-    pub fn current_tags<'a>(&self, tags: &'a mut Vec<Tag>) -> Vec<&'a mut Tag> {
-        tags.iter_mut()
-            .filter(|tag| self.tags.contains(&tag.id))
-            .collect()
-    }
-
-    pub fn change_main_width(&self, tags: &mut Vec<Tag>, delta: i8) {
-        self.current_tags(tags)
-            .iter_mut()
-            .for_each(|t| t.change_main_width(delta));
-    }
-
-    pub fn set_main_width(&self, tags: &mut Vec<Tag>, val: u8) {
-        if let Some(tag) = self.current_tags(tags).get_mut(0) {
-            tag.set_main_width(val);
-        }
-    }
-
-    pub fn rotate_layout(&mut self, tags: &mut Vec<Tag>) -> Option<()> {
-        let rotations = self.layout.rotations();
-        self.layout_rotation += 1;
-        if self.layout_rotation >= rotations.len() {
-            self.layout_rotation = 0;
-        }
-        let (horz, vert) = rotations.get(self.layout_rotation)?;
-        let tags = &mut self.current_tags(tags);
-        let tag = tags.get_mut(0)?;
-        tag.flipped_horizontal = *horz;
-        tag.flipped_vertical = *vert;
-        Some(())
-    }
-
-    pub fn set_layout(&mut self, tags: &mut Vec<Tag>, layout: Layout) {
-        self.layout = layout;
-        self.set_main_width(tags, self.layout.main_width());
-        self.layout_rotation = 0;
-    }
-
-    #[must_use]
-    pub fn flipped_horizontal(&self, tags: &mut Vec<Tag>) -> bool {
-        if let Some(tag) = self.current_tags(tags).get(0) {
-            return tag.flipped_horizontal;
-        }
-        false
-    }
-
-    #[must_use]
-    pub fn flipped_vertical(&self, tags: &mut Vec<Tag>) -> bool {
-        if let Some(tag) = self.current_tags(tags).get(0) {
-            return tag.flipped_vertical;
-        }
-        false
     }
 
     #[must_use]

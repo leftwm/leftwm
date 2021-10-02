@@ -308,8 +308,9 @@ fn next_layout<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER
             let workspace = manager
                 .state
                 .focus_manager
-                .workspace(manager.state.workspaces)?;
+                .workspace_mut(&mut manager.state.workspaces)?;
             let layout = manager.state.layout_manager.next_layout(workspace.layout);
+            workspace.layout = layout;
             let tag_id = manager.state.focus_manager.tag(0)?;
             let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
             tag.set_layout(layout);
@@ -336,12 +337,15 @@ fn previous_layout<C: Config, SERVER: DisplayServer>(
                 .state
                 .layout_manager
                 .previous_layout(workspace.layout);
-            workspace.set_layout(&mut manager.state.tags, layout);
+            workspace.layout = layout;
+            let tag_id = manager.state.focus_manager.tag(0)?;
+            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+            tag.set_layout(layout);
         }
         LayoutMode::Tag => {
             let tag_id = manager.state.focus_manager.tag(0)?;
             let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
-            tag.layout = manager.state.layout_manager.previous_layout(tag.layout);
+            tag.set_layout(manager.state.layout_manager.previous_layout(tag.layout));
         }
     }
     Some(true)
@@ -351,11 +355,23 @@ fn set_layout<C: Config, SERVER: DisplayServer>(
     layout: Layout,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    let workspace = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.set_layout(&mut manager.state.tags, layout);
+    match manager.state.layout_manager.mode {
+        LayoutMode::Workspace => {
+            let workspace = manager
+                .state
+                .focus_manager
+                .workspace_mut(&mut manager.state.workspaces)?;
+            workspace.layout = layout;
+            let tag_id = manager.state.focus_manager.tag(0)?;
+            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+            tag.set_layout(layout);
+        }
+        LayoutMode::Tag => {
+            let tag_id = manager.state.focus_manager.tag(0)?;
+            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+            tag.set_layout(layout);
+        }
+    }
     Some(true)
 }
 
@@ -515,11 +531,9 @@ fn focus_workspace_change<C: Config, SERVER: DisplayServer>(
 }
 
 fn rotate_tag<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>) -> Option<bool> {
-    let workspace = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
-    let _ = workspace.rotate_layout(&mut manager.state.tags);
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.rotate_layout()?;
     Some(true)
 }
 
@@ -528,11 +542,9 @@ fn change_main_width<C: Config, SERVER: DisplayServer>(
     delta: i8,
     factor: i8,
 ) -> Option<bool> {
-    let workspace = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.change_main_width(&mut manager.state.tags, delta * factor);
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.change_main_width(delta * factor);
     Some(true)
 }
 

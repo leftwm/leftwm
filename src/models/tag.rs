@@ -10,7 +10,7 @@ pub struct Tag {
     pub main_width_percentage: u8,
     pub flipped_horizontal: bool,
     pub flipped_vertical: bool,
-    layout_rotation: usize,
+    pub layout_rotation: usize,
 }
 
 impl Tag {
@@ -92,5 +92,17 @@ impl Tag {
         self.layout = layout;
         self.set_main_width(layout.main_width());
         self.layout_rotation = 0;
+    }
+
+    pub fn rotate_layout(&mut self) -> Option<()> {
+        let rotations = self.layout.rotations();
+        self.layout_rotation += 1;
+        if self.layout_rotation >= rotations.len() {
+            self.layout_rotation = 0;
+        }
+        let (horz, vert) = rotations.get(self.layout_rotation)?;
+        self.flipped_horizontal = *horz;
+        self.flipped_vertical = *vert;
+        Some(())
     }
 }

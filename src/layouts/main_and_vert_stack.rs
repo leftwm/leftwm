@@ -4,7 +4,7 @@ use crate::models::Workspace;
 
 /// Layout which splits the workspace into two columns, gives one window all of the left column,
 /// and divides the right column among all the other windows.
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
+pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len();
 
     if window_count == 0 {
@@ -20,11 +20,11 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
 
     let primary_width = match window_count {
         1 => workspace_width as i32,
-        _ => (workspace_width as f32 / 100.0 * workspace.main_width(tags)).floor() as i32,
+        _ => (workspace_width as f32 / 100.0 * tag.main_width_percentage()).floor() as i32,
     };
 
     let mut main_x = workspace_x;
-    let stack_x = if workspace.flipped_horizontal(tags) {
+    let stack_x = if tag.flipped_horizontal {
         main_x = match window_count {
             1 => main_x,
             _ => main_x + workspace_width - primary_width,

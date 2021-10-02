@@ -4,7 +4,7 @@ use crate::models::Workspace;
 
 /// Layout which splits the workspace into two rows, gives one window all of the upper row,
 /// and divides the lower row among all the other windows.
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut Vec<Tag>) {
+pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len();
     if window_count == 0 {
         return;
@@ -19,12 +19,12 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
 
     let height = match window_count {
         1 => workspace.height() as i32,
-        _ => (workspace.height() as f32 / 100.0 * workspace.main_width(tags)).floor() as i32,
+        _ => (workspace.height() as f32 / 100.0 * tag.main_width_percentage()).floor() as i32,
     };
 
     let mut main_y = workspace.y();
     let mut stack_y = workspace.y() + height;
-    if workspace.flipped_vertical(tags) {
+    if tag.flipped_vertical {
         main_y = match window_count {
             1 => main_y,
             _ => main_y + height,

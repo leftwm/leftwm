@@ -59,26 +59,26 @@ impl Layout {
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>, tag: &Tag) {
         match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
-                main_and_vert_stack::update(workspace, windows, tag);
+                main_and_vert_stack::update(workspace, tag, windows);
             }
             Self::MainAndHorizontalStack => {
-                main_and_horizontal_stack::update(workspace, windows, tag);
+                main_and_horizontal_stack::update(workspace, tag, windows);
             }
-            Self::MainAndDeck => main_and_deck::update(workspace, windows, tag),
+            Self::MainAndDeck => main_and_deck::update(workspace, tag, windows),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),
-            Self::Fibonacci => fibonacci::update(workspace, windows, tag),
-            Self::CenterMain => center_main::update(workspace, windows, tag),
-            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows, tag),
+            Self::Fibonacci => fibonacci::update(workspace, tag, windows),
+            Self::CenterMain => center_main::update(workspace, tag, windows),
+            Self::CenterMainBalanced => center_main_balanced::update(workspace, tag, windows),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => {
-                right_main_and_vert_stack::update(workspace, windows, tag);
+                right_main_and_vert_stack::update(workspace, tag, windows);
             }
         }
     }
 
-    pub const fn main_width(&self, tag: &Tag) -> u8 {
+    pub const fn main_width(&self) -> u8 {
         match self {
             Self::RightWiderLeftStack | Self::LeftWiderRightStack => 75,
             _ => 50,
