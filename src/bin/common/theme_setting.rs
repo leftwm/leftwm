@@ -63,12 +63,7 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
 
     fn try_from(c: CustomMargins) -> Result<Self, Self::Error> {
         match c {
-            CustomMargins::Int(size) => Ok(Self {
-                top: size,
-                right: size,
-                bottom: size,
-                left: size,
-            }),
+            CustomMargins::Int(size) => Ok(Self::new(size)),
             CustomMargins::Vec(vec) => {
                 match vec.len() {
                     1 => Ok(Self::new(vec[0])),
