@@ -28,7 +28,7 @@ impl Drop for StateSocket {
         assert!(
             std::thread::panicking() || !self.listener.is_some(),
             "StateSocket has to be shutdown explicitly before drop"
-        )
+        );
     }
 }
 
