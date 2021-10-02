@@ -68,34 +68,34 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
                 match vec.len() {
                     1 => Ok(Self::new(vec[0])),
                     2 => Ok(Self {
-                        top: *vec[0],
-                        right: *vec[0],
-                        bottom: *vec[1],
-                        left: *vec[1],
+                        top: vec[0],
+                        right: vec[0],
+                        bottom: vec[1],
+                        left: vec[1],
                     }),
                     3 => Ok(Self {
-                        top: *vec[0],
-                        right: *vec[1],
-                        bottom: *vec[2],
-                        left: *vec[2],
+                        top: vec[0],
+                        right: vec[1],
+                        bottom: vec[2],
+                        left: vec[2],
                     }),
                     4 => Ok(Self {
-                        top: *vec[0],
-                        right: *vec[1],
-                        bottom: *vec[2],
-                        left: *vec[3],
+                        top: vec[0],
+                        right: vec[1],
+                        bottom: vec[2],
+                        left: vec[3],
                     }),
                     0 => {
                         log::error!("Empty margin or border array");
-                        Self::new(10) //assume 10 px borders for now
+                        Ok(Self::new(10)) //assume 10 px borders for now
                     }
                     _ => {
                         log::error!("Too many entries in margin or border array");
                         Ok(Self {
-                            top: *vec[0],
-                            right: *vec[1],
-                            bottom: *vec[2],
-                            left: *vec[3],
+                            top: vec[0],
+                            right: vec[1],
+                            bottom: vec[2],
+                            left: vec[3],
                         })
                     }
                 }
