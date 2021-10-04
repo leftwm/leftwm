@@ -212,18 +212,22 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
 
         if is_scratchpad {
             window.set_floating(true);
-            for (scratchpad_name, _id) in manager.state.active_scratchpads.clone() {
-                let s = manager
+            if let Some((scratchpad_name, _)) = manager
+                .state
+                .active_scratchpads
+                .iter()
+                .find(|(_, &id)| id == window.pid)
+            {
+                if let Some(s) = manager
                     .state
                     .scratchpads
                     .iter()
-                    .find(|s| scratchpad_name == s.name.clone())
-                    .unwrap()
-                    .clone();
-
-                let new_float_exact = scratchpad_xyhw(&ws.xyhw, &s);
-                window.normal = ws.xyhw;
-                window.set_floating_exact(new_float_exact);
+                    .find(|s| *scratchpad_name == s.name)
+                {
+                    let new_float_exact = scratchpad_xyhw(&ws.xyhw, &s);
+                    window.normal = ws.xyhw;
+                    window.set_floating_exact(new_float_exact);
+                }
             }
         }
         if window.type_ == WindowType::Normal {
