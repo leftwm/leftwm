@@ -63,24 +63,20 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
 
     fn try_from(c: CustomMargins) -> Result<Self, Self::Error> {
         match c {
-            CustomMargins::Int(size) => Ok(Self {
-                top: size,
-                right: size,
-                bottom: size,
-                left: size,
-            }),
-            CustomMargins::Vec(vec) => {
-                if vec.len() > 4 {
-                    Err("too many values for margin (max is 4)")
-                } else {
-                    Ok(Self {
-                        top: *vec.get(0).unwrap_or(&0),
-                        right: *vec.get(1).unwrap_or(&0),
-                        bottom: *vec.get(2).unwrap_or(&0),
-                        left: *vec.get(3).unwrap_or(&0),
-                    })
-                }
-            }
+            CustomMargins::Int(size) => Ok(Self::new(size)),
+            CustomMargins::Vec(vec) => match vec.len() {
+                1 => Ok(Self::new(vec[0])),
+                2 => Ok(Self::new_from_pair(vec[0], vec[1])),
+                3 => Ok(Self::new_from_triple(vec[0], vec[1], vec[2])),
+                4 => Ok(Self {
+                    top: vec[0],
+                    right: vec[1],
+                    bottom: vec[2],
+                    left: vec[3],
+                }),
+                0 => Err("Empty margin or border array"),
+                _ => Err("Too many entries in margin or border array"),
+            },
         }
     }
 }
