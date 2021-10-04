@@ -25,9 +25,10 @@ pub struct StateSocket {
 
 impl Drop for StateSocket {
     fn drop(&mut self) {
-        if !std::thread::panicking() && self.listener.is_some() {
-            panic!("StateSocket has to be shutdown explicitly before drop");
-        }
+        assert!(
+            std::thread::panicking() || !self.listener.is_some(),
+            "StateSocket has to be shutdown explicitly before drop"
+        );
     }
 }
 

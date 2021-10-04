@@ -49,14 +49,14 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>, tags: &mut 
             alt_y = y;
         }
         match window_count - i {
-            1 => setter(&mut windows[i], height, width, x, y),
+            1 => setter(windows[i], height, width, x, y),
             2 => {
-                setter(&mut windows[i], height, half_width, main_x, y);
-                setter(&mut windows[i + 1], height, half_width, alt_x, y);
+                setter(windows[i], height, half_width, main_x, y);
+                setter(windows[i + 1], height, half_width, alt_x, y);
             }
             _ => {
-                setter(&mut windows[i], height, half_width, main_x, y);
-                setter(&mut windows[i + 1], half_height, half_width, alt_x, alt_y);
+                setter(windows[i], height, half_width, main_x, y);
+                setter(windows[i + 1], half_height, half_width, alt_x, alt_y);
 
                 x = alt_x;
                 y = new_y;
