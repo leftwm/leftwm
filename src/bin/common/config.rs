@@ -321,26 +321,28 @@ impl leftwm::Config for Config {
         command: &str,
         manager: &mut Manager<Self, SERVER>,
     ) -> bool {
-        let mut args = command.split_whitespace();
-        let command = args.next().unwrap();
-        match command {
-            "LoadTheme" => {
-                if let Some(path) = args.next() {
-                    manager.state.config.theme_setting.load(path);
-                } else {
-                    log::warn!("Missing file argument to load theme");
+        if let Some((command, mut path)) = command.split_once(' ') {
+            match command {
+                "LoadTheme" => {
+                    path = path.trim();
+                    if !path.is_empty() {
+                        manager.state.config.theme_setting.load(path);
+                    } else {
+                        log::warn!("Missing file argument to load theme");
+                    }
+                    return manager.update_for_theme();
                 }
-                manager.update_for_theme()
-            }
-            "UnloadTheme" => {
-                manager.state.config.theme_setting = Default::default();
-                manager.update_for_theme()
-            }
-            _ => {
-                log::warn!("Command not recognized: {}", command);
-                false
+                "UnloadTheme" => {
+                    manager.state.config.theme_setting = Default::default();
+                    return manager.update_for_theme();
+                }
+                _ => {
+                    log::warn!("Command not recognized: {}", command);
+                    return false;
+                }
             }
         }
+        false
     }
 
     fn border_width(&self) -> i32 {
