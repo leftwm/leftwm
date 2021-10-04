@@ -224,7 +224,7 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
                     .iter()
                     .find(|s| *scratchpad_name == s.name)
                 {
-                    let new_float_exact = scratchpad_xyhw(&ws.xyhw, &s);
+                    let new_float_exact = scratchpad_xyhw(&ws.xyhw, s);
                     window.normal = ws.xyhw;
                     window.set_floating_exact(new_float_exact);
                 }
