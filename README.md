@@ -207,11 +207,11 @@ cd leftwm
 3. Build leftwm
 
 ```bash
-# Without systemd logging
+# With systemd logging
 cargo build --release
 
-# OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
-cargo build --release --features=journald
+# OR without systemd logging (view with 'journalctl -f -t leftwm-worker')
+cargo build --release --no-default-features --features=cli
 ```
 
 4. Create the symlinks
