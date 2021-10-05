@@ -253,6 +253,11 @@ fn exit_strategy<'s>() -> &'s str {
     "pkill leftwm"
 }
 
+fn absolute_path(path: &str) -> Option<PathBuf> {
+    let exp_path = shellexpand::full(path).ok()?;
+    std::fs::canonicalize(exp_path.as_ref()).ok()
+}
+
 impl leftwm::Config for Config {
     fn mapped_bindings(&self) -> Vec<leftwm::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
@@ -324,9 +329,8 @@ impl leftwm::Config for Config {
         if let Some((command, value)) = command.split_once(' ') {
             match command {
                 "LoadTheme" => {
-                    let path = Path::new(value.trim());
-                    if path.is_file() {
-                        manager.state.config.theme_setting.load(path);
+                    if let Some(absolute) = absolute_path(value.trim()) {
+                        manager.state.config.theme_setting.load(absolute);
                     } else {
                         log::warn!("Path submitted does not exist.");
                     }
