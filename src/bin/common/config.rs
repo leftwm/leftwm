@@ -321,14 +321,14 @@ impl leftwm::Config for Config {
         command: &str,
         manager: &mut Manager<Self, SERVER>,
     ) -> bool {
-        if let Some((command, mut path)) = command.split_once(' ') {
+        if let Some((command, value)) = command.split_once(' ') {
             match command {
                 "LoadTheme" => {
-                    path = path.trim();
-                    if !path.is_empty() {
+                    let path = Path::new(value.trim());
+                    if path.is_file() {
                         manager.state.config.theme_setting.load(path);
                     } else {
-                        log::warn!("Missing file argument to load theme");
+                        log::warn!("Path submitted does not exist.");
                     }
                     return manager.update_for_theme();
                 }
