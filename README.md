@@ -207,7 +207,7 @@ cd leftwm
 3. Build leftwm
 
 ```bash
-# With systemd logging
+# With systemd logging, you can use 'journalctl -xfet leftwm-worker' to track the log-messages of leftwm
 cargo build --release
 
 # OR without systemd logging (view with 'journalctl -f -t leftwm-worker')
