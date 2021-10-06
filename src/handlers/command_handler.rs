@@ -9,7 +9,7 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{LayoutMode, TagId};
+use crate::models::TagId;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
@@ -303,51 +303,33 @@ fn move_to_last_workspace<C: Config, SERVER: DisplayServer>(
 }
 
 fn next_layout<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>) -> Option<bool> {
-    match manager.state.layout_manager.mode {
-        LayoutMode::Workspace => {
-            let workspace = manager
-                .state
-                .focus_manager
-                .workspace_mut(&mut manager.state.workspaces)?;
-            let layout = manager.state.layout_manager.next_layout(workspace.layout);
-            workspace.layout = layout;
-            let tag_id = manager.state.focus_manager.tag(0)?;
-            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
-            tag.set_layout(layout);
-        }
-        LayoutMode::Tag => {
-            let tag_id = manager.state.focus_manager.tag(0)?;
-            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
-            tag.set_layout(manager.state.layout_manager.next_layout(tag.layout));
-        }
-    }
+    let workspace = manager
+        .state
+        .focus_manager
+        .workspace_mut(&mut manager.state.workspaces)?;
+    let layout = manager.state.layout_manager.next_layout(workspace.layout);
+    workspace.layout = layout;
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.set_layout(layout);
     Some(true)
 }
 
 fn previous_layout<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    match manager.state.layout_manager.mode {
-        LayoutMode::Workspace => {
-            let workspace = manager
-                .state
-                .focus_manager
-                .workspace_mut(&mut manager.state.workspaces)?;
-            let layout = manager
-                .state
-                .layout_manager
-                .previous_layout(workspace.layout);
-            workspace.layout = layout;
-            let tag_id = manager.state.focus_manager.tag(0)?;
-            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
-            tag.set_layout(layout);
-        }
-        LayoutMode::Tag => {
-            let tag_id = manager.state.focus_manager.tag(0)?;
-            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
-            tag.set_layout(manager.state.layout_manager.previous_layout(tag.layout));
-        }
-    }
+    let workspace = manager
+        .state
+        .focus_manager
+        .workspace_mut(&mut manager.state.workspaces)?;
+    let layout = manager
+        .state
+        .layout_manager
+        .previous_layout(workspace.layout);
+    workspace.layout = layout;
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.set_layout(layout);
     Some(true)
 }
 
@@ -355,23 +337,14 @@ fn set_layout<C: Config, SERVER: DisplayServer>(
     layout: Layout,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    match manager.state.layout_manager.mode {
-        LayoutMode::Workspace => {
-            let workspace = manager
-                .state
-                .focus_manager
-                .workspace_mut(&mut manager.state.workspaces)?;
-            workspace.layout = layout;
-            let tag_id = manager.state.focus_manager.tag(0)?;
-            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
-            tag.set_layout(layout);
-        }
-        LayoutMode::Tag => {
-            let tag_id = manager.state.focus_manager.tag(0)?;
-            let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
-            tag.set_layout(layout);
-        }
-    }
+    let workspace = manager
+        .state
+        .focus_manager
+        .workspace_mut(&mut manager.state.workspaces)?;
+    workspace.layout = layout;
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.set_layout(layout);
     Some(true)
 }
 

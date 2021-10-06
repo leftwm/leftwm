@@ -15,6 +15,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Some(ws) => (ws.tags.clone(), ws.layout),
             None => return false,
         };
+        let mut tag_layout = ws_layout;
+        if self.state.layout_manager.mode == LayoutMode::Tag {
+            if let Some(tag) = self.state.tags.iter().find(|t| t.id == new_tags[0]) {
+                tag_layout = tag.layout;
+            }
+        }
+
         let handle = self.focused_window().map(|w| w.handle);
         if let Some(handle) = handle {
             let old_handle = self
@@ -35,7 +42,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
 
         match self.focused_workspace_mut() {
-            Some(aws) => aws.tags = new_tags.clone(),
+            Some(aws) => {
+                aws.tags = new_tags.clone();
+                aws.layout = tag_layout;
+            }
             None => return false,
         }
         if self.state.layout_manager.mode == LayoutMode::Workspace {
