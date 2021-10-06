@@ -5,6 +5,7 @@ use crate::display_servers::DisplayServer;
 use crate::errors::Result;
 use crate::models::Manager;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::iter::{Extend, FromIterator};
@@ -17,6 +18,7 @@ use xdg::BaseDirectories;
 pub struct Nanny {}
 
 impl Nanny {
+    /// [Desktop Application Autostart Specification](https://specifications.freedesktop.org/autostart-spec/autostart-spec-latest.html)
     #[must_use]
     pub fn autostart() -> Children {
         dirs_next::home_dir()
@@ -88,9 +90,130 @@ impl Nanny {
     }
 }
 
-fn boot_desktop_file(path: &Path) -> std::io::Result<Child> {
-    let args = format!( "`if [ \"$(grep '^X-GNOME-Autostart-enabled' {:?} | tail -1 | sed 's/^X-GNOME-Autostart-enabled=//' | tr '[A-Z]' '[a-z]')\" != 'false' ]; then grep '^Exec' {:?} | tail -1 | sed 's/^Exec=//' | sed 's/%.//' | sed 's/^\"//g' | sed 's/\" *$//g'; else echo 'exit'; fi`", path , path);
-    Command::new("sh").arg("-c").arg(args).spawn()
+#[derive(Debug, thiserror::Error)]
+enum EntryBootError {
+    #[error("execute failed: {0}")]
+    Execute(#[from] std::io::Error),
+
+    #[error("invalid desktop (current {current:?})")]
+    NotForThisDesktop { current: String },
+
+    #[error("entry hidden")]
+    Hidden,
+
+    #[error("no exec")]
+    NoExec,
+}
+
+fn boot_desktop_file(path: &Path) -> std::result::Result<Child, EntryBootError> {
+    let entry = DesktopEntry::parse_file(path)?;
+    let env_curr_desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+
+    if let Some(only_show_in) = entry.only_show_in {
+        if !only_show_in.contains(&env_curr_desktop) {
+            return Err(EntryBootError::NotForThisDesktop {
+                current: env_curr_desktop,
+            });
+        }
+    }
+    if let Some(not_show_in) = entry.not_show_in {
+        if not_show_in.contains(&env_curr_desktop) {
+            return Err(EntryBootError::NotForThisDesktop {
+                current: env_curr_desktop,
+            });
+        }
+    }
+
+    if entry.hidden {
+        return Err(EntryBootError::Hidden);
+    }
+
+    if entry.exec.is_none() {
+        return Err(EntryBootError::NoExec);
+    }
+    let wd = entry
+        .path
+        .unwrap_or_else(|| dirs_next::home_dir().unwrap_or_else(|| PathBuf::from(".")));
+
+    Command::new("sh")
+        .current_dir(wd)
+        .arg("-c")
+        .arg(entry.exec.unwrap())
+        .spawn()
+        .map_err(EntryBootError::Execute)
+}
+
+/// Refer to [Recognized desktop entry keys](https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s06.html)
+#[derive(Debug, Default)]
+struct DesktopEntry {
+    // TryExec: Option<String>,
+    exec: Option<String>,
+    path: Option<PathBuf>,
+    only_show_in: Option<HashSet<String>>,
+    not_show_in: Option<HashSet<String>>,
+    hidden: bool,
+}
+
+impl DesktopEntry {
+    fn parse_file(path: &Path) -> std::io::Result<Self> {
+        let content = fs::read_to_string(path)?;
+        Ok(Self::parse(content.as_str()))
+    }
+    fn parse(content: &str) -> Self {
+        let mut in_main_section = false;
+        let mut entry: Self = Default::default();
+        for mut line in content.lines() {
+            line = line.trim();
+
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+
+            if line.starts_with('[') {
+                if line == "[Desktop Entry]" {
+                    in_main_section = true;
+                    continue;
+                }
+                in_main_section = false;
+            }
+
+            if !in_main_section {
+                continue;
+            }
+
+            if let Some((key, value)) = Self::split_line(line) {
+                match key {
+                    "Exec" => entry.exec = Some(value.to_string()),
+                    "Path" => entry.path = Some(PathBuf::from(value)),
+                    "OnlyShowIn" => entry.only_show_in = Some(Self::split_to_set(value)),
+                    "NotShowIn" => entry.not_show_in = Some(Self::split_to_set(value)),
+                    "Hidden" => entry.hidden = Self::str_bool(value).unwrap_or_default(),
+                    _ => {}
+                }
+            }
+        }
+        entry
+    }
+
+    fn split_line(line: &str) -> Option<(&str, &str)> {
+        line.find('=')?; //Check we have an equals, if we don't return None
+        line.split_once('=')
+    }
+    fn split_to_set(value: &str) -> HashSet<String> {
+        value
+            .split(';')
+            .filter_map(|s| {
+                let s = s.trim();
+                if s.is_empty() {
+                    return None;
+                }
+                Some(s.to_string())
+            })
+            .collect::<HashSet<String>>()
+    }
+    fn str_bool(value: &str) -> Option<bool> {
+        value.to_lowercase().parse::<bool>().ok()
+    }
 }
 
 // get all the .desktop files in a folder
@@ -196,4 +319,63 @@ pub fn exec_shell<C: Config, SERVER: DisplayServer>(
     let pid = child.id();
     manager.children.insert(child);
     Some(pid)
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::DesktopEntry;
+
+    #[test]
+    fn test_parse() {
+        let content = r###"
+            [Desktop Action Gallery]
+        Exec=fooview --gallery
+        Name=Browse Gallery
+                [Desktop Entry]
+        #comment
+        Name=Optimus Manager
+        Name[zh_CN]=Optimus \u{7ba1}\u{7406}\u{5668}
+        Comment=A program to handle GPU switching on Optimus laptops
+        Comment[ru]=\u{41f}\u{440}\u{43e}\u{433}\u{440}\u{430}\u{43c}\u{43c}\u{430} \u{434}\u{43b}\u{44f} \u{443}\u{43f}\u{440}\u{430}\u{432}\u{43b}\u{435}\u{43d}\u{438}\u{44f} \u{43f}\u{435}\u{440}\u{435}\u{43a}\u{43b}\u{44e}\u{447}\u{435}\u{43d}\u{438}\u{435}\u{43c} \u{433}\u{440}\u{430}\u{444}\u{438}\u{447}\u{435}\u{441}\u{43a}\u{438}\u{445} \u{43f}\u{440}\u{43e}\u{446}\u{435}\u{441}\u{441}\u{43e}\u{440}\u{43e}\u{432} \u{43d}\u{430} \u{43d}\u{43e}\u{443}\u{442}\u{431}\u{443}\u{43a}\u{430}\u{445} c Optimus
+        Comment[zh_CN]=\u{5904}\u{7406}\u{53cc}\u{663e}\u{5361}\u{7b14}\u{8bb0}\u{672c}\u{7535}\u{8111} GPU \u{5207}\u{6362}\u{7684}\u{7a0b}\u{5e8f}
+        Keywords=nvidia;optimus;settings;switch;GPU;
+        Keywords[ru]=nvidia;optimus;settings;switch;GPU;\u{43d}\u{430}\u{441}\u{442}\u{440}\u{43e}\u{439}\u{43a}\u{438};\u{432}\u{438}\u{434}\u{435}\u{43e}\u{43a}\u{430}\u{440}\u{442}\u{430};
+        Exec=optimus-manager-qt
+        Icon=optimus-manager-qt
+        Terminal=false
+        StartupNotify=false
+        Type=Application
+        Categories=System;Settings;Qt;
+        Actions=Gallery;Create;
+        Hidden=true
+        OnlyShowIn=XFCE;
+
+        [Desktop Action Create]
+        Exec=fooview --create-new
+        Name=Create a new Foo!
+        Icon=fooview-new
+                "###;
+
+        let entry = DesktopEntry::parse(content);
+
+        assert_eq!(
+            entry.exec,
+            Some("optimus-manager-qt".to_string()),
+            "exec failed"
+        );
+        assert!(entry.path.is_none(), "expect path none");
+        assert!(entry.hidden, "expect hidden true");
+        assert!(entry.only_show_in.is_some(), "expect only_show_in defined");
+
+        assert!(
+            entry.only_show_in.clone().unwrap().contains("XFCE"),
+            "expect only_show_in contains XFCE"
+        );
+        assert!(
+            !entry.only_show_in.clone().unwrap().contains(""),
+            "expect only show in not contains empty-str"
+        );
+        assert!(entry.not_show_in.is_none(), "expect not_show_in none");
+    }
 }
