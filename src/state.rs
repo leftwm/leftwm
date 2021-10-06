@@ -83,6 +83,18 @@ where
             }
         }
 
+        // restore tags
+        for tag in &mut self.state.tags {
+            if let Some(old_tag) = state.tags.iter().find(|t| t.id == tag.id) {
+                tag.hidden = old_tag.hidden;
+                tag.layout = old_tag.layout;
+                tag.layout_rotation = old_tag.layout_rotation;
+                tag.flipped_vertical = old_tag.flipped_vertical;
+                tag.flipped_horizontal = old_tag.flipped_horizontal;
+                tag.main_width_percentage = old_tag.main_width_percentage;
+            }
+        }
+
         // restore windows
         let mut ordered = vec![];
         let mut had_strut = false;

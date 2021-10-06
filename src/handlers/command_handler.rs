@@ -402,8 +402,9 @@ where
     F: Fn(&mut Manager<C, SERVER>, i32, WindowHandle, Option<Layout>, Vec<Window>) -> Option<bool>,
 {
     let handle = manager.focused_window()?.handle;
-    let w = manager.focused_workspace()?;
-    let (tags, layout) = (w.tags.clone(), Some(w.layout));
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter().find(|t| t.id == tag_id)?;
+    let (tags, layout) = (vec![tag_id], Some(tag.layout));
 
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
