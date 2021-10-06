@@ -11,17 +11,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let tag_id = self.state.tags[tag_num - 1].id.clone();
         let new_tags = vec![tag_id.clone()];
         //no focus safety check
-        let (old_tags, ws_layout) = match self.focused_workspace() {
+        let (old_tags, mut layout) = match self.focused_workspace() {
             Some(ws) => (ws.tags.clone(), ws.layout),
             None => return false,
         };
-        let mut tag_layout = ws_layout;
-        if self.state.layout_manager.mode == LayoutMode::Tag {
-            if let Some(tag) = self.state.tags.iter().find(|t| t.id == new_tags[0]) {
-                tag_layout = tag.layout;
+        match self.state.layout_manager.mode {
+            LayoutMode::Tag => {
+                if let Some(tag) = self.state.tags.iter().find(|t| t.id == new_tags[0]) {
+                    layout = tag.layout;
+                }
+            }
+            LayoutMode::Workspace => {
+                if let Some(tag) = self.state.tags.iter_mut().find(|t| t.id == new_tags[0]) {
+                    tag.layout = layout;
+                }
             }
         }
-
         let handle = self.focused_window().map(|w| w.handle);
         if let Some(handle) = handle {
             let old_handle = self
@@ -43,15 +48,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         match self.focused_workspace_mut() {
             Some(aws) => {
-                aws.tags = new_tags.clone();
-                aws.layout = tag_layout;
+                aws.tags = new_tags;
+                aws.layout = layout;
             }
             None => return false,
-        }
-        if self.state.layout_manager.mode == LayoutMode::Workspace {
-            if let Some(tag) = self.state.tags.iter_mut().find(|t| t.id == new_tags[0]) {
-                tag.layout = ws_layout;
-            }
         }
         self.focus_tag(&tag_id);
         self.update_docks();
