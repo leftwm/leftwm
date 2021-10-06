@@ -28,6 +28,8 @@ pub enum BaseCommand {
     FocusWorkspacePrevious,
     MoveToTag,
     MoveToLastWorkspace,
+    MoveWindowToNextWorkspace,
+    MoveWindowToPreviousWorkspace,
     MouseMoveWindow,
     NextLayout,
     PreviousLayout,

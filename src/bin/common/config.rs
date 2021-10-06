@@ -66,6 +66,10 @@ impl TryFrom<Keybind> for leftwm::Keybind {
                     .context("invalid index value for SendWindowToTag")?,
             ),
             BaseCommand::MoveToLastWorkspace => leftwm::Command::MoveWindowToLastWorkspace,
+            BaseCommand::MoveWindowToNextWorkspace => leftwm::Command::MoveWindowToNextWorkspace,
+            BaseCommand::MoveWindowToPreviousWorkspace => {
+                leftwm::Command::MoveWindowToPreviousWorkspace
+            }
             BaseCommand::MouseMoveWindow => leftwm::Command::MouseMoveWindow,
             BaseCommand::NextLayout => leftwm::Command::NextLayout,
             BaseCommand::PreviousLayout => leftwm::Command::PreviousLayout,

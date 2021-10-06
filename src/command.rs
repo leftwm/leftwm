@@ -23,6 +23,8 @@ pub enum Command {
     FocusWorkspacePrevious,
     SendWindowToTag(usize),
     MoveWindowToLastWorkspace,
+    MoveWindowToNextWorkspace,
+    MoveWindowToPreviousWorkspace,
     MouseMoveWindow,
     NextLayout,
     PreviousLayout,

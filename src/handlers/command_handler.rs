@@ -37,7 +37,8 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::ToggleFullScreen => toggle_fullscreen(manager),
 
         Command::SendWindowToTag(tag) => move_to_tag(*tag, manager),
-
+        Command::MoveWindowToNextWorkspace => move_window_to_workspace_change(manager, 1),
+        Command::MoveWindowToPreviousWorkspace => move_window_to_workspace_change(manager, -1),
         Command::MoveWindowUp => move_focus_common_vars(move_window_change, manager, -1),
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
@@ -187,6 +188,21 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         manager.focus_window(&new_handle);
     }
     Some(true)
+}
+
+fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
+    delta: i32,
+) -> Option<bool> {
+    let current = manager.focused_workspace()?;
+    let workspace =
+        helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
+    let tag_num = manager
+        .state
+        .tags
+        .iter()
+        .position(|t| workspace.has_tag(&t.id))?;
+    move_to_tag(tag_num + 1, manager)
 }
 
 fn goto_tag<C: Config, SERVER: DisplayServer>(
