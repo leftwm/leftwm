@@ -52,7 +52,7 @@ fn main() {
 
         // Fix for Java apps so they repaint correctly
         env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
-        env::set_var("XDG_CURRENT_DESKTOP", "leftwm");
+        env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
 
         let worker_path = current_exe.with_file_name("leftwm-worker");
 
