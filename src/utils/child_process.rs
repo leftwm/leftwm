@@ -7,7 +7,6 @@ use crate::models::Manager;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
-use std::io;
 use std::iter::{Extend, FromIterator};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -18,19 +17,36 @@ use xdg::BaseDirectories;
 pub struct Nanny {}
 
 impl Nanny {
-    /// [Desktop Application Autostart Specification](https://specifications.freedesktop.org/autostart-spec/autostart-spec-latest.html)
+    /// As [Desktop Application Autostart Specification](https://specifications.freedesktop.org/autostart-spec/autostart-spec-latest.html) describe,
+    /// some applications placing an application's `.desktop` file in one of the *Autostart Directories*
+    /// could be automatically launched during startup of the user's desktop environment after the user has logged in.
+    ///
+    /// The *Autostart Directories* are `$XDG_CONFIG_DIRS/autostart` and `$XDG_CONFIG_HOME/autostart`.
+    /// `$XDG_CONFIG_DIRS` and `$XDG_CONFIG_HOME` can be found in
+    /// [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/).
+    ///
+    ///
+    /// There are some principles about autostart file:
+    /// 1. An application `.desktop` file must have the format as defined in the [Desktop Entry Specification](http://standards.freedesktop.org/desktop-entry-spec/)
+    /// 2. If two files have the same filename in `$XDG_CONFIG_DIRS/autostart` and `$XDG_CONFIG_HOME/autostart`,
+    /// e.g. `foo.desktop`, `$XDG_CONFIG_DIRS/autostart/foo.desktop` will be ignored.
+    ///
+    /// `Autostart Entry` will be ignored when:
+    /// 1. the `.desktop` file has the `Hidden` key set to true.
+    /// 2. string identifying the desktop environments not in `OnlyShowIn`
+    /// 3. string identifying the desktop environments in `NotShowIn`
+    ///
+    /// The string identifying the desktop environments means `$XDG_CURRENT_DESKTOP`,
+    /// you can find some from [Registered `OnlyShowIn` Environments](https://specifications.freedesktop.org/menu-spec/latest/apb.html).  
+    /// `LeftWM` use **`LeftWM`** as identification (case-sensitive).
     #[must_use]
     pub fn autostart() -> Children {
-        dirs_next::home_dir()
-            .map(|mut path| {
-                path.push(".config");
-                path.push("autostart");
-                path
-            })
-            .and_then(|path| list_desktop_files(&path).ok())
-            .map(|files| {
-                files
+        BaseDirectories::new()
+            .map(|xdg_dir| {
+                xdg_dir
+                    .list_config_files_once("autostart")
                     .iter()
+                    .filter(|path| path.extension() == Some(std::ffi::OsStr::new("desktop")))
                     .filter_map(|file| boot_desktop_file(file).ok())
                     .collect::<Children>()
             })
@@ -214,25 +230,6 @@ impl DesktopEntry {
     fn str_bool(value: &str) -> Option<bool> {
         value.to_lowercase().parse::<bool>().ok()
     }
-}
-
-// get all the .desktop files in a folder
-fn list_desktop_files(dir: &Path) -> io::Result<Vec<PathBuf>> {
-    let mut list = vec![];
-    if dir.is_dir() {
-        for entry in fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            if path.is_file() {
-                if let Some(ext) = path.extension() {
-                    if ext == "desktop" {
-                        list.push(path);
-                    }
-                }
-            }
-        }
-    }
-    Ok(list)
 }
 
 /// A struct managing children processes.

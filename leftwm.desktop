@@ -4,3 +4,4 @@ Name=LeftWM
 Comment=A window manager for the adventurer
 Exec=leftwm
 Type=Application
+DesktopNames=LeftWM
