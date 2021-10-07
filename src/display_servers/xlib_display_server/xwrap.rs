@@ -171,7 +171,7 @@ impl XWrap {
             er: *mut xlib::XErrorEvent,
         ) -> c_int {
             let err = unsafe { *er };
-            // Ignore bad window errors
+            // Ignore bad window errors.
             if err.error_code == xlib::BadWindow {
                 return 0;
             }
@@ -188,51 +188,6 @@ impl XWrap {
             (xw.xlib.XSync)(xw.display, xlib::False);
         };
         xw
-    }
-
-    /// Converts a keycode to a keysym.
-    #[must_use]
-    pub fn keycode_to_keysym(&self, keycode: u32) -> utils::xkeysym_lookup::XKeysym {
-        // Not using XKeysymToKeycode because deprecated
-        let sym = unsafe { (self.xlib.XkbKeycodeToKeysym)(self.display, keycode as u8, 0, 0) };
-        sym as u32
-    }
-
-    /// Converts a keysym to a keycode.
-    pub fn keysym_to_keycode(&self, keysym: utils::xkeysym_lookup::XKeysym) -> u32 {
-        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, keysym.into()) };
-        u32::from(code)
-    }
-
-    /// Updates the keyboard mapping.
-    /// # Errors
-    ///
-    /// Will error if updating the keyboard failed
-    pub fn refresh_keyboard(&self, evt: &mut xlib::XMappingEvent) -> Result<(), XlibError> {
-        let status = unsafe { (self.xlib.XRefreshKeyboardMapping)(evt) };
-        if status == 0 {
-            Err(XlibError::FailedStatus)
-        } else {
-            Ok(())
-        }
-    }
-
-    /// Sets the atom states of a window.
-    pub fn set_window_states_atoms(&self, window: xlib::Window, states: &[xlib::Atom]) {
-        let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                window,
-                self.atoms.NetWMState,
-                xlib::XA_ATOM,
-                32,
-                xlib::PropModeReplace,
-                data.as_ptr().cast::<u8>(),
-                data.len() as i32,
-            );
-            std::mem::forget(data);
-        }
     }
 
     /// EWMH support used for bars such as polybar.
@@ -284,386 +239,6 @@ impl XWrap {
         // Set a viewport.
         let data = vec![0_u32, 0_u32];
         self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
-    }
-
-    /// Sets a desktop property with type c_ulong.
-    fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, type_: c_ulong) {
-        let data = vec![value as u32];
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                self.root,
-                atom,
-                type_,
-                32,
-                xlib::PropModeReplace,
-                data.as_ptr().cast::<u8>(),
-                1_i32,
-            );
-            std::mem::forget(data);
-        }
-    }
-
-    /// Sets a desktop property with type string.
-    fn set_desktop_prop_string(&self, value: &str, atom: c_ulong) {
-        if let Ok(cstring) = CString::new(value) {
-            unsafe {
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    self.root,
-                    atom,
-                    xlib::XA_CARDINAL,
-                    8,
-                    xlib::PropModeReplace,
-                    cstring.as_ptr().cast::<u8>(),
-                    value.len() as i32,
-                );
-                std::mem::forget(cstring);
-            }
-        }
-    }
-
-    /// Sets a desktop property.
-    fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
-        let x_data = data.to_owned();
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                self.root,
-                atom,
-                xlib::XA_CARDINAL,
-                32,
-                xlib::PropModeReplace,
-                x_data.as_ptr().cast::<u8>(),
-                data.len() as i32,
-            );
-            std::mem::forget(x_data);
-        }
-    }
-
-    /// Sets the current viewport.
-    pub fn set_current_viewport(&self, tags: Vec<&String>) {
-        let mut indexes: Vec<u32> = vec![];
-        for tag in tags {
-            for (i, mytag) in self.tags.iter().enumerate() {
-                if tag.contains(mytag) {
-                    indexes.push(i as u32);
-                }
-            }
-        }
-        if indexes.is_empty() {
-            indexes.push(0);
-        }
-        self.set_desktop_prop(&indexes, self.atoms.NetDesktopViewport);
-    }
-
-    /// Sets what desktop a window is on.
-    pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &str) {
-        let mut indexes: Vec<u32> = vec![];
-        for (i, tag) in self.tags.iter().enumerate() {
-            if current_tags.contains(tag) {
-                let tag = i as u32;
-                indexes.push(tag);
-            }
-        }
-        if indexes.is_empty() {
-            indexes.push(0);
-        }
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                window,
-                self.atoms.NetWMDesktop,
-                xlib::XA_CARDINAL,
-                32,
-                xlib::PropModeReplace,
-                indexes.as_ptr().cast::<u8>(),
-                indexes.len() as i32,
-            );
-            std::mem::forget(indexes);
-        }
-    }
-
-    /// Sets the current desktop.
-    pub fn set_current_desktop(&self, current_tags: &str) {
-        let mut indexes: Vec<u32> = vec![];
-        for (i, tag) in self.tags.iter().enumerate() {
-            if current_tags.contains(tag) {
-                indexes.push(i as u32);
-            }
-        }
-        if indexes.is_empty() {
-            indexes.push(0);
-        }
-        self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
-    }
-
-    /// Sets a windows fullscreen state.
-    pub fn set_fullscreen(&self, window: &Window, fullscreen: bool) {
-        if let WindowHandle::XlibHandle(h) = window.handle {
-            let atom = self.atoms.NetWMStateFullscreen;
-            let mut states = self.get_window_states_atoms(h);
-            if fullscreen {
-                if states.contains(&atom) {
-                    return;
-                }
-                states.push(atom);
-            } else if !fullscreen {
-                let index = match states.iter().position(|s| s == &atom) {
-                    Some(i) => i,
-                    None => return,
-                };
-                states.remove(index);
-            }
-            self.set_window_states_atoms(h, &states);
-        }
-    }
-
-    /// Updates a window.
-    pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
-        if let WindowHandle::XlibHandle(h) = window.handle {
-            if window.visible() {
-                // If type dock we only need to move it.
-                // Also fixes issues with eww.
-                if window.is_unmanaged() {
-                    unsafe {
-                        (self.xlib.XMoveWindow)(self.display, h, window.x(), window.y());
-                    }
-                    return;
-                }
-                let mut changes = xlib::XWindowChanges {
-                    x: window.x(),
-                    y: window.y(),
-                    width: window.width(),
-                    height: window.height(),
-                    border_width: window.border(),
-                    sibling: 0,    // Not unlocked.
-                    stack_mode: 0, // Not unlocked.
-                };
-                let unlock =
-                    xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
-                unsafe {
-                    (self.xlib.XConfigureWindow)(self.display, h, u32::from(unlock), &mut changes);
-                    (self.xlib.XSync)(self.display, 0);
-                    let rw: u32 = window.width() as u32;
-                    let rh: u32 = window.height() as u32;
-                    (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
-
-                    let mut color: c_ulong = if is_focused {
-                        self.colors.active
-                    } else if window.floating() {
-                        self.colors.floating
-                    } else {
-                        self.colors.normal
-                    };
-                    // Force border opacity to 0xff.
-                    let mut bytes = color.to_le_bytes();
-                    bytes[3] = 0xff;
-                    color = c_ulong::from_le_bytes(bytes);
-
-                    (self.xlib.XSetWindowBorder)(self.display, h, color);
-                }
-                if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.ungrab_buttons(h);
-                    self.grab_buttons(h, xlib::Button1, xlib::AnyModifier);
-                }
-                self.send_config(window);
-            } else {
-                unsafe {
-                    // If not visible window is placed of screen.
-                    (self.xlib.XMoveWindow)(self.display, h, hide_offset, window.y());
-                }
-            }
-        }
-    }
-
-    /// Sets up a window that we want to manage.
-    pub fn setup_managed_window(
-        &mut self,
-        h: WindowHandle,
-        follow_mouse: bool,
-    ) -> Option<DisplayEvent> {
-        self.subscribe_to_window_events(&h);
-        if let WindowHandle::XlibHandle(handle) = h {
-            self.managed_windows.push(handle);
-            unsafe {
-                // Make sure the window is mapped.
-                (self.xlib.XMapWindow)(self.display, handle);
-
-                // Let Xlib know we are managing this window.
-                let list = vec![handle];
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    self.root,
-                    self.atoms.NetClientList,
-                    xlib::XA_WINDOW,
-                    32,
-                    xlib::PropModeAppend,
-                    list.as_ptr().cast::<u8>(),
-                    1,
-                );
-                std::mem::forget(list);
-
-                (self.xlib.XSync)(self.display, 0);
-            }
-
-            let type_ = self.get_window_type(handle);
-            if type_ == WindowType::Dock || type_ == WindowType::Desktop {
-                if let Some(dock_area) = self.get_window_strut_array(handle) {
-                    let dems = self.screens_area_dimensions();
-                    let screen = self
-                        .get_screens()
-                        .iter()
-                        .find(|s| s.contains_dock_area(dock_area, dems))?
-                        .clone();
-
-                    if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
-                        let mut change = WindowChange::new(h);
-                        change.strut = Some(xyhw.into());
-                        change.type_ = Some(type_);
-                        return Some(DisplayEvent::WindowChange(change));
-                    }
-                } else if let Ok(geo) = self.get_window_geometry(handle) {
-                    let mut xyhw = Xyhw::default();
-                    geo.update(&mut xyhw);
-                    let mut change = WindowChange::new(h);
-                    change.strut = Some(xyhw.into());
-                    change.type_ = Some(type_);
-                    return Some(DisplayEvent::WindowChange(change));
-                }
-            } else {
-                if follow_mouse {
-                    let _ = self.move_cursor_to_window(handle);
-                }
-                if self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.ungrab_buttons(handle);
-                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
-                }
-            }
-            // Make sure there is at least an empty list of _NET_WM_STATE.
-            let states = self.get_window_states_atoms(handle);
-            self.set_window_states_atoms(handle, &states);
-            // Set WM_STATE to normal state to allow window sharing.
-            self.set_wm_states(handle, &[NORMAL_STATE]);
-        }
-        None
-    }
-
-    /// Sets the `WM_STATE` of a window.
-    pub fn set_wm_states(&self, window: xlib::Window, states: &[u8]) {
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                window,
-                self.atoms.WMState,
-                self.atoms.WMState,
-                32,
-                xlib::PropModeReplace,
-                states.as_ptr().cast::<u8>(),
-                states.len() as i32,
-            );
-        }
-    }
-
-    /// Grabs the mouse clicks of a window.
-    fn grab_mouse_clicks(&self, handle: xlib::Window) {
-        self.ungrab_buttons(handle);
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
-    }
-
-    /// Cleans all currently grabbed buttons of a window.
-    fn ungrab_buttons(&self, handle: xlib::Window) {
-        unsafe {
-            (self.xlib.XUngrabButton)(
-                self.display,
-                xlib::AnyButton as u32,
-                xlib::AnyModifier,
-                handle,
-            );
-        }
-    }
-
-    /// Move the cursor to a window.
-    /// # Errors
-    ///
-    /// Will error if unable to obtain window attributes. See `get_window_attrs`.
-    pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), XlibError> {
-        let attrs = self.get_window_attrs(window)?;
-        let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
-        self.move_cursor_to_point(point)
-    }
-
-    /// Move the cursor to a point.
-    /// # Errors
-    ///
-    /// Error indicates `XlibError`.
-    // TODO: Verify that Error is unreachable or specify conditions that may result
-    // in an error.
-    pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), XlibError> {
-        if point.0 >= 0 && point.1 >= 0 {
-            let none: c_int = 0;
-            unsafe {
-                (self.xlib.XWarpPointer)(
-                    self.display,
-                    none as c_ulong,
-                    self.root,
-                    none,
-                    none,
-                    none as u32,
-                    none as u32,
-                    point.0,
-                    point.1,
-                );
-            }
-        }
-        Ok(())
-    }
-
-    /// Teardown a managed window when it is destroyed.
-    pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
-        if let WindowHandle::XlibHandle(handle) = h {
-            unsafe {
-                (self.xlib.XGrabServer)(self.display);
-                self.managed_windows.retain(|x| *x != *handle);
-                self.update_client_list();
-                self.ungrab_buttons(*handle);
-                (self.xlib.XSync)(self.display, 0);
-                (self.xlib.XUngrabServer)(self.display);
-            }
-        }
-    }
-
-    /// Forcibly unmap a window.
-    pub fn force_unmapped(&mut self, window: xlib::Window) {
-        let managed = self.managed_windows.contains(&window);
-        if managed {
-            self.managed_windows.retain(|x| *x != window);
-            self.update_client_list();
-        }
-    }
-
-    /// Updates the client list to the currently managed windows.
-    fn update_client_list(&self) {
-        unsafe {
-            (self.xlib.XDeleteProperty)(self.display, self.root, self.atoms.NetClientList);
-            for w in &self.managed_windows {
-                let list = vec![*w];
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    self.root,
-                    self.atoms.NetClientList,
-                    xlib::XA_WINDOW,
-                    32,
-                    xlib::PropModeAppend,
-                    list.as_ptr().cast::<u8>(),
-                    1,
-                );
-                std::mem::forget(list);
-            }
-        }
     }
 
     /// Send a `XConfigureEvent` for a window to X.
@@ -723,167 +298,6 @@ impl XWrap {
                 (self.xlib.XGetWMProtocols)(self.display, window, &mut array, &mut length);
             let protocols: &[xlib::Atom] = slice::from_raw_parts(array, length as usize);
             status > 0 && protocols.contains(&atom)
-        }
-    }
-
-    /// Restacks the windows to the order of the vec.
-    pub fn restack(&self, handles: Vec<WindowHandle>) {
-        let mut windows = vec![];
-        for handle in handles {
-            if let WindowHandle::XlibHandle(window) = handle {
-                windows.push(window);
-            }
-        }
-        let size = windows.len();
-        let ptr = windows.as_mut_ptr();
-        unsafe {
-            (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
-        }
-    }
-
-    /// Raise a window.
-    pub fn move_to_top(&self, handle: &WindowHandle) {
-        if let WindowHandle::XlibHandle(window) = handle {
-            unsafe {
-                (self.xlib.XRaiseWindow)(self.display, *window);
-            }
-        }
-    }
-
-    /// Makes a window take focus.
-    pub fn window_take_focus(&self, window: &Window) {
-        if let WindowHandle::XlibHandle(handle) = window.handle {
-            self.grab_mouse_clicks(handle);
-
-            if !window.never_focus {
-                // Mark this window as the `_NET_ACTIVE_WINDOW`
-                unsafe {
-                    (self.xlib.XSetInputFocus)(
-                        self.display,
-                        handle,
-                        xlib::RevertToPointerRoot,
-                        xlib::CurrentTime,
-                    );
-                    let list = vec![handle];
-                    (self.xlib.XChangeProperty)(
-                        self.display,
-                        self.root,
-                        self.atoms.NetActiveWindow,
-                        xlib::XA_WINDOW,
-                        32,
-                        xlib::PropModeReplace,
-                        list.as_ptr().cast::<u8>(),
-                        1,
-                    );
-                    std::mem::forget(list);
-                }
-            }
-
-            // Tell the window to take focus
-            self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
-        }
-    }
-
-    /// Unfocuses all windows.
-    pub fn unfocus(&self) {
-        let handle = self.root;
-        unsafe {
-            (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
-            (self.xlib.XChangeProperty)(
-                self.display,
-                self.root,
-                self.atoms.NetActiveWindow,
-                xlib::XA_WINDOW,
-                32,
-                xlib::PropModeReplace,
-                vec![c_ulong::MAX].as_ptr().cast::<u8>(),
-                1,
-            );
-        }
-    }
-
-    /// Kills a window.
-    pub fn kill_window(&self, h: &WindowHandle) {
-        if let WindowHandle::XlibHandle(handle) = h {
-            //nicely ask the window to close
-            if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
-                //force kill the app
-                unsafe {
-                    (self.xlib.XGrabServer)(self.display);
-                    (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
-                    (self.xlib.XKillClient)(self.display, *handle);
-                    (self.xlib.XSync)(self.display, xlib::False);
-                    (self.xlib.XUngrabServer)(self.display);
-                }
-            }
-        }
-    }
-
-    /// Subscribe to an event of a window.
-    pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long) {
-        unsafe {
-            (self.xlib.XSelectInput)(self.display, window, mask);
-        }
-    }
-
-    /// Subscribe to the wanted events of a window.
-    pub fn subscribe_to_window_events(&self, handle: &WindowHandle) {
-        if let WindowHandle::XlibHandle(handle) = handle {
-            let mask = xlib::EnterWindowMask
-                | xlib::FocusChangeMask
-                | xlib::PropertyChangeMask
-                | xlib::StructureNotifyMask;
-            self.subscribe_to_event(*handle, mask);
-        }
-    }
-
-    /// Grabs the button with the modifier for a window.
-    pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
-        // Grab the buttons with and without numlock (Mod2).
-        let mods: Vec<u32> = vec![
-            modifiers,
-            modifiers | xlib::Mod2Mask,
-            modifiers | xlib::LockMask,
-        ];
-        for m in mods {
-            unsafe {
-                (self.xlib.XGrabButton)(
-                    self.display,
-                    button,
-                    m,
-                    window,
-                    0,
-                    BUTTONMASK as u32,
-                    xlib::GrabModeSync,
-                    xlib::GrabModeAsync,
-                    0,
-                    0,
-                );
-            }
-        }
-    }
-
-    /// Grabs the keysym with the modifier for a window.
-    pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
-        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, c_ulong::from(keysym)) };
-        // Grab the keys with and without numlock (Mod2).
-        let mods: Vec<u32> = vec![
-            modifiers,
-            modifiers | xlib::Mod2Mask,
-            modifiers | xlib::LockMask,
-        ];
-        for m in mods {
-            unsafe {
-                (self.xlib.XGrabKey)(
-                    self.display,
-                    i32::from(code),
-                    m,
-                    root,
-                    1,
-                    xlib::GrabModeAsync,
-                    xlib::GrabModeAsync,
-                );
-            }
         }
     }
 
@@ -957,22 +371,6 @@ impl XWrap {
         }
     }
 
-    /// Resets the keybindings to a list of keybindings.
-    pub fn reset_grabs(&self, keybinds: &[Keybind]) {
-        // Cleanup key grabs.
-        unsafe {
-            (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, self.root);
-        }
-
-        // Grab all the key combos from the config file.
-        for kb in keybinds {
-            if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
-                let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
-                self.grab_keys(self.root, keysym, modmask);
-            }
-        }
-    }
-
     /// Sets the mode within our xwrapper.
     pub fn set_mode(&mut self, mode: Mode) {
         // Prevent resizing and moving of root.
@@ -1003,47 +401,6 @@ impl XWrap {
         }
     }
 
-    /// Grabs the cursor and sets its visual.
-    pub fn grab_pointer(&self, cursor: c_ulong) {
-        unsafe {
-            //grab the mouse
-            (self.xlib.XGrabPointer)(
-                self.display,
-                self.root,
-                0,
-                MOUSEMASK as u32,
-                xlib::GrabModeAsync,
-                xlib::GrabModeAsync,
-                0,
-                cursor,
-                xlib::CurrentTime,
-            );
-        }
-    }
-
-    /// Ungrab the cursor.
-    pub fn ungrab_pointer(&self) {
-        unsafe {
-            //release the mouse grab
-            (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
-        }
-    }
-
-    /// Replay a click on a window.
-    pub fn replay_click(&self, mod_mask: ModMask) {
-        // Only replay the click when in ClickToFocus and we are not trying to move/resize the
-        // window.
-        if self.focus_behaviour == FocusBehaviour::ClickTo
-            && !(mod_mask == self.mouse_key_mask
-                || mod_mask == (self.mouse_key_mask | xlib::ShiftMask))
-        {
-            unsafe {
-                (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
-                (self.xlib.XSync)(self.display, 0);
-            }
-        }
-    }
-
     /// Wait until readable.
     pub async fn wait_readable(&mut self) {
         self.task_notify.notified().await;
@@ -1059,7 +416,8 @@ impl XWrap {
     pub fn queue_len(&self) -> i32 {
         unsafe { (self.xlib.XPending)(self.display) }
     }
-    /// Getters
+
+    // Getters
 
     /// Returns all the screens of the display.
     /// # Panics
@@ -1100,7 +458,7 @@ impl XWrap {
         }
     }
 
-    /// Returns all the xscreens of the display
+    /// Returns all the xscreens of the display.
     #[must_use]
     pub fn get_xscreens(&self) -> Vec<xlib::Screen> {
         let mut screens = Vec::new();
@@ -1688,5 +1046,656 @@ impl XWrap {
             (self.xlib.XNextEvent)(self.display, &mut event);
         };
         event
+    }
+
+    // Setters
+
+    /// Sets the atom states of a window.
+    pub fn set_window_states_atoms(&self, window: xlib::Window, states: &[xlib::Atom]) {
+        let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMState,
+                xlib::XA_ATOM,
+                32,
+                xlib::PropModeReplace,
+                data.as_ptr().cast::<u8>(),
+                data.len() as i32,
+            );
+            std::mem::forget(data);
+        }
+    }
+
+    /// Sets a desktop property with type `c_ulong`.
+    fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, type_: c_ulong) {
+        let data = vec![value as u32];
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                self.root,
+                atom,
+                type_,
+                32,
+                xlib::PropModeReplace,
+                data.as_ptr().cast::<u8>(),
+                1_i32,
+            );
+            std::mem::forget(data);
+        }
+    }
+
+    /// Sets a desktop property with type string.
+    fn set_desktop_prop_string(&self, value: &str, atom: c_ulong) {
+        if let Ok(cstring) = CString::new(value) {
+            unsafe {
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    self.root,
+                    atom,
+                    xlib::XA_CARDINAL,
+                    8,
+                    xlib::PropModeReplace,
+                    cstring.as_ptr().cast::<u8>(),
+                    value.len() as i32,
+                );
+                std::mem::forget(cstring);
+            }
+        }
+    }
+
+    /// Sets a desktop property.
+    fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
+        let x_data = data.to_owned();
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                self.root,
+                atom,
+                xlib::XA_CARDINAL,
+                32,
+                xlib::PropModeReplace,
+                x_data.as_ptr().cast::<u8>(),
+                data.len() as i32,
+            );
+            std::mem::forget(x_data);
+        }
+    }
+
+    /// Sets the current viewport.
+    pub fn set_current_viewport(&self, tags: Vec<&String>) {
+        let mut indexes: Vec<u32> = vec![];
+        for tag in tags {
+            for (i, mytag) in self.tags.iter().enumerate() {
+                if tag.contains(mytag) {
+                    indexes.push(i as u32);
+                }
+            }
+        }
+        if indexes.is_empty() {
+            indexes.push(0);
+        }
+        self.set_desktop_prop(&indexes, self.atoms.NetDesktopViewport);
+    }
+
+    /// Sets what desktop a window is on.
+    pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &str) {
+        let mut indexes: Vec<u32> = vec![];
+        for (i, tag) in self.tags.iter().enumerate() {
+            if current_tags.contains(tag) {
+                let tag = i as u32;
+                indexes.push(tag);
+            }
+        }
+        if indexes.is_empty() {
+            indexes.push(0);
+        }
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMDesktop,
+                xlib::XA_CARDINAL,
+                32,
+                xlib::PropModeReplace,
+                indexes.as_ptr().cast::<u8>(),
+                indexes.len() as i32,
+            );
+            std::mem::forget(indexes);
+        }
+    }
+
+    /// Sets the current desktop.
+    pub fn set_current_desktop(&self, current_tags: &str) {
+        let mut indexes: Vec<u32> = vec![];
+        for (i, tag) in self.tags.iter().enumerate() {
+            if current_tags.contains(tag) {
+                indexes.push(i as u32);
+            }
+        }
+        if indexes.is_empty() {
+            indexes.push(0);
+        }
+        self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
+    }
+
+    /// Sets a windows fullscreen state.
+    pub fn set_fullscreen(&self, window: &Window, fullscreen: bool) {
+        if let WindowHandle::XlibHandle(h) = window.handle {
+            let atom = self.atoms.NetWMStateFullscreen;
+            let mut states = self.get_window_states_atoms(h);
+            if fullscreen {
+                if states.contains(&atom) {
+                    return;
+                }
+                states.push(atom);
+            } else if !fullscreen {
+                let index = match states.iter().position(|s| s == &atom) {
+                    Some(i) => i,
+                    None => return,
+                };
+                states.remove(index);
+            }
+            self.set_window_states_atoms(h, &states);
+        }
+    }
+
+    /// Sets the `WM_STATE` of a window.
+    pub fn set_wm_states(&self, window: xlib::Window, states: &[u8]) {
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                self.atoms.WMState,
+                self.atoms.WMState,
+                32,
+                xlib::PropModeReplace,
+                states.as_ptr().cast::<u8>(),
+                states.len() as i32,
+            );
+        }
+    }
+
+    /// Sets the client list to the currently managed windows.
+    fn update_client_list(&self) {
+        unsafe {
+            (self.xlib.XDeleteProperty)(self.display, self.root, self.atoms.NetClientList);
+            for w in &self.managed_windows {
+                let list = vec![*w];
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    self.root,
+                    self.atoms.NetClientList,
+                    xlib::XA_WINDOW,
+                    32,
+                    xlib::PropModeAppend,
+                    list.as_ptr().cast::<u8>(),
+                    1,
+                );
+                std::mem::forget(list);
+            }
+        }
+    }
+
+    // Window
+
+    /// Updates a window.
+    pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
+        if let WindowHandle::XlibHandle(h) = window.handle {
+            if window.visible() {
+                // If type dock we only need to move it.
+                // Also fixes issues with eww.
+                if window.is_unmanaged() {
+                    unsafe {
+                        (self.xlib.XMoveWindow)(self.display, h, window.x(), window.y());
+                    }
+                    return;
+                }
+                let mut changes = xlib::XWindowChanges {
+                    x: window.x(),
+                    y: window.y(),
+                    width: window.width(),
+                    height: window.height(),
+                    border_width: window.border(),
+                    sibling: 0,    // Not unlocked.
+                    stack_mode: 0, // Not unlocked.
+                };
+                let unlock =
+                    xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
+                unsafe {
+                    (self.xlib.XConfigureWindow)(self.display, h, u32::from(unlock), &mut changes);
+                    (self.xlib.XSync)(self.display, 0);
+                    let rw: u32 = window.width() as u32;
+                    let rh: u32 = window.height() as u32;
+                    (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
+
+                    let mut color: c_ulong = if is_focused {
+                        self.colors.active
+                    } else if window.floating() {
+                        self.colors.floating
+                    } else {
+                        self.colors.normal
+                    };
+                    // Force border opacity to 0xff.
+                    let mut bytes = color.to_le_bytes();
+                    bytes[3] = 0xff;
+                    color = c_ulong::from_le_bytes(bytes);
+
+                    (self.xlib.XSetWindowBorder)(self.display, h, color);
+                }
+                if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.ungrab_buttons(h);
+                    self.grab_buttons(h, xlib::Button1, xlib::AnyModifier);
+                }
+                self.send_config(window);
+            } else {
+                unsafe {
+                    // If not visible window is placed of screen.
+                    (self.xlib.XMoveWindow)(self.display, h, hide_offset, window.y());
+                }
+            }
+        }
+    }
+
+    /// Sets up a window that we want to manage.
+    pub fn setup_managed_window(
+        &mut self,
+        h: WindowHandle,
+        follow_mouse: bool,
+    ) -> Option<DisplayEvent> {
+        self.subscribe_to_window_events(&h);
+        if let WindowHandle::XlibHandle(handle) = h {
+            self.managed_windows.push(handle);
+            unsafe {
+                // Make sure the window is mapped.
+                (self.xlib.XMapWindow)(self.display, handle);
+
+                // Let Xlib know we are managing this window.
+                let list = vec![handle];
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    self.root,
+                    self.atoms.NetClientList,
+                    xlib::XA_WINDOW,
+                    32,
+                    xlib::PropModeAppend,
+                    list.as_ptr().cast::<u8>(),
+                    1,
+                );
+                std::mem::forget(list);
+
+                (self.xlib.XSync)(self.display, 0);
+            }
+
+            let type_ = self.get_window_type(handle);
+            if type_ == WindowType::Dock || type_ == WindowType::Desktop {
+                if let Some(dock_area) = self.get_window_strut_array(handle) {
+                    let dems = self.screens_area_dimensions();
+                    let screen = self
+                        .get_screens()
+                        .iter()
+                        .find(|s| s.contains_dock_area(dock_area, dems))?
+                        .clone();
+
+                    if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
+                        let mut change = WindowChange::new(h);
+                        change.strut = Some(xyhw.into());
+                        change.type_ = Some(type_);
+                        return Some(DisplayEvent::WindowChange(change));
+                    }
+                } else if let Ok(geo) = self.get_window_geometry(handle) {
+                    let mut xyhw = Xyhw::default();
+                    geo.update(&mut xyhw);
+                    let mut change = WindowChange::new(h);
+                    change.strut = Some(xyhw.into());
+                    change.type_ = Some(type_);
+                    return Some(DisplayEvent::WindowChange(change));
+                }
+            } else {
+                if follow_mouse {
+                    let _ = self.move_cursor_to_window(handle);
+                }
+                if self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.ungrab_buttons(handle);
+                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
+                }
+            }
+            // Make sure there is at least an empty list of _NET_WM_STATE.
+            let states = self.get_window_states_atoms(handle);
+            self.set_window_states_atoms(handle, &states);
+            // Set WM_STATE to normal state to allow window sharing.
+            self.set_wm_states(handle, &[NORMAL_STATE]);
+        }
+        None
+    }
+
+    /// Teardown a managed window when it is destroyed.
+    pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
+        if let WindowHandle::XlibHandle(handle) = h {
+            unsafe {
+                (self.xlib.XGrabServer)(self.display);
+                self.managed_windows.retain(|x| *x != *handle);
+                self.update_client_list();
+                self.ungrab_buttons(*handle);
+                (self.xlib.XSync)(self.display, 0);
+                (self.xlib.XUngrabServer)(self.display);
+            }
+        }
+    }
+
+    /// Forcibly unmap a window.
+    pub fn force_unmapped(&mut self, window: xlib::Window) {
+        let managed = self.managed_windows.contains(&window);
+        if managed {
+            self.managed_windows.retain(|x| *x != window);
+            self.update_client_list();
+        }
+    }
+
+    /// Restacks the windows to the order of the vec.
+    pub fn restack(&self, handles: Vec<WindowHandle>) {
+        let mut windows = vec![];
+        for handle in handles {
+            if let WindowHandle::XlibHandle(window) = handle {
+                windows.push(window);
+            }
+        }
+        let size = windows.len();
+        let ptr = windows.as_mut_ptr();
+        unsafe {
+            (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
+        }
+    }
+
+    /// Raise a window.
+    pub fn move_to_top(&self, handle: &WindowHandle) {
+        if let WindowHandle::XlibHandle(window) = handle {
+            unsafe {
+                (self.xlib.XRaiseWindow)(self.display, *window);
+            }
+        }
+    }
+
+    /// Makes a window take focus.
+    pub fn window_take_focus(&self, window: &Window) {
+        if let WindowHandle::XlibHandle(handle) = window.handle {
+            self.grab_mouse_clicks(handle);
+
+            if !window.never_focus {
+                // Mark this window as the `_NET_ACTIVE_WINDOW`
+                unsafe {
+                    (self.xlib.XSetInputFocus)(
+                        self.display,
+                        handle,
+                        xlib::RevertToPointerRoot,
+                        xlib::CurrentTime,
+                    );
+                    let list = vec![handle];
+                    (self.xlib.XChangeProperty)(
+                        self.display,
+                        self.root,
+                        self.atoms.NetActiveWindow,
+                        xlib::XA_WINDOW,
+                        32,
+                        xlib::PropModeReplace,
+                        list.as_ptr().cast::<u8>(),
+                        1,
+                    );
+                    std::mem::forget(list);
+                }
+            }
+
+            // Tell the window to take focus
+            self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
+        }
+    }
+
+    /// Unfocuses all windows.
+    pub fn unfocus(&self) {
+        let handle = self.root;
+        unsafe {
+            (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
+            (self.xlib.XChangeProperty)(
+                self.display,
+                self.root,
+                self.atoms.NetActiveWindow,
+                xlib::XA_WINDOW,
+                32,
+                xlib::PropModeReplace,
+                vec![c_ulong::MAX].as_ptr().cast::<u8>(),
+                1,
+            );
+        }
+    }
+
+    /// Kills a window.
+    pub fn kill_window(&self, h: &WindowHandle) {
+        if let WindowHandle::XlibHandle(handle) = h {
+            //nicely ask the window to close
+            if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
+                //force kill the app
+                unsafe {
+                    (self.xlib.XGrabServer)(self.display);
+                    (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
+                    (self.xlib.XKillClient)(self.display, *handle);
+                    (self.xlib.XSync)(self.display, xlib::False);
+                    (self.xlib.XUngrabServer)(self.display);
+                }
+            }
+        }
+    }
+
+    /// Subscribe to an event of a window.
+    pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long) {
+        unsafe {
+            (self.xlib.XSelectInput)(self.display, window, mask);
+        }
+    }
+
+    /// Subscribe to the wanted events of a window.
+    pub fn subscribe_to_window_events(&self, handle: &WindowHandle) {
+        if let WindowHandle::XlibHandle(handle) = handle {
+            let mask = xlib::EnterWindowMask
+                | xlib::FocusChangeMask
+                | xlib::PropertyChangeMask
+                | xlib::StructureNotifyMask;
+            self.subscribe_to_event(*handle, mask);
+        }
+    }
+
+    // Keyboard
+
+    /// Converts a keycode to a keysym.
+    #[must_use]
+    pub fn keycode_to_keysym(&self, keycode: u32) -> utils::xkeysym_lookup::XKeysym {
+        // Not using XKeysymToKeycode because deprecated.
+        let sym = unsafe { (self.xlib.XkbKeycodeToKeysym)(self.display, keycode as u8, 0, 0) };
+        sym as u32
+    }
+
+    /// Converts a keysym to a keycode.
+    pub fn keysym_to_keycode(&self, keysym: utils::xkeysym_lookup::XKeysym) -> u32 {
+        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, keysym.into()) };
+        u32::from(code)
+    }
+
+    /// Updates the keyboard mapping.
+    /// # Errors
+    ///
+    /// Will error if updating the keyboard failed.
+    pub fn refresh_keyboard(&self, evt: &mut xlib::XMappingEvent) -> Result<(), XlibError> {
+        let status = unsafe { (self.xlib.XRefreshKeyboardMapping)(evt) };
+        if status == 0 {
+            Err(XlibError::FailedStatus)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Grabs the keysym with the modifier for a window.
+    pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
+        let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, c_ulong::from(keysym)) };
+        // Grab the keys with and without numlock (Mod2).
+        let mods: Vec<u32> = vec![
+            modifiers,
+            modifiers | xlib::Mod2Mask,
+            modifiers | xlib::LockMask,
+        ];
+        for m in mods {
+            unsafe {
+                (self.xlib.XGrabKey)(
+                    self.display,
+                    i32::from(code),
+                    m,
+                    root,
+                    1,
+                    xlib::GrabModeAsync,
+                    xlib::GrabModeAsync,
+                );
+            }
+        }
+    }
+
+    /// Resets the keybindings to a list of keybindings.
+    pub fn reset_grabs(&self, keybinds: &[Keybind]) {
+        // Cleanup key grabs.
+        unsafe {
+            (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, self.root);
+        }
+
+        // Grab all the key combos from the config file.
+        for kb in keybinds {
+            if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
+                let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
+                self.grab_keys(self.root, keysym, modmask);
+            }
+        }
+    }
+
+    // Mouse
+
+    /// Grabs the mouse clicks of a window.
+    fn grab_mouse_clicks(&self, handle: xlib::Window) {
+        self.ungrab_buttons(handle);
+        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
+        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
+        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
+        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
+    }
+
+    /// Cleans all currently grabbed buttons of a window.
+    fn ungrab_buttons(&self, handle: xlib::Window) {
+        unsafe {
+            (self.xlib.XUngrabButton)(
+                self.display,
+                xlib::AnyButton as u32,
+                xlib::AnyModifier,
+                handle,
+            );
+        }
+    }
+
+    /// Move the cursor to a window.
+    /// # Errors
+    ///
+    /// Will error if unable to obtain window attributes. See `get_window_attrs`.
+    pub fn move_cursor_to_window(&self, window: xlib::Window) -> Result<(), XlibError> {
+        let attrs = self.get_window_attrs(window)?;
+        let point = (attrs.x + (attrs.width / 2), attrs.y + (attrs.height / 2));
+        self.move_cursor_to_point(point)
+    }
+
+    /// Move the cursor to a point.
+    /// # Errors
+    ///
+    /// Error indicates `XlibError`.
+    // TODO: Verify that Error is unreachable or specify conditions that may result
+    // in an error.
+    pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), XlibError> {
+        if point.0 >= 0 && point.1 >= 0 {
+            let none: c_int = 0;
+            unsafe {
+                (self.xlib.XWarpPointer)(
+                    self.display,
+                    none as c_ulong,
+                    self.root,
+                    none,
+                    none,
+                    none as u32,
+                    none as u32,
+                    point.0,
+                    point.1,
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// Grabs the button with the modifier for a window.
+    pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
+        // Grab the buttons with and without numlock (Mod2).
+        let mods: Vec<u32> = vec![
+            modifiers,
+            modifiers | xlib::Mod2Mask,
+            modifiers | xlib::LockMask,
+        ];
+        for m in mods {
+            unsafe {
+                (self.xlib.XGrabButton)(
+                    self.display,
+                    button,
+                    m,
+                    window,
+                    0,
+                    BUTTONMASK as u32,
+                    xlib::GrabModeSync,
+                    xlib::GrabModeAsync,
+                    0,
+                    0,
+                );
+            }
+        }
+    }
+
+    /// Grabs the cursor and sets its visual.
+    pub fn grab_pointer(&self, cursor: c_ulong) {
+        unsafe {
+            //grab the mouse
+            (self.xlib.XGrabPointer)(
+                self.display,
+                self.root,
+                0,
+                MOUSEMASK as u32,
+                xlib::GrabModeAsync,
+                xlib::GrabModeAsync,
+                0,
+                cursor,
+                xlib::CurrentTime,
+            );
+        }
+    }
+
+    /// Ungrab the cursor.
+    pub fn ungrab_pointer(&self) {
+        unsafe {
+            //release the mouse grab
+            (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
+        }
+    }
+
+    /// Replay a click on a window.
+    pub fn replay_click(&self, mod_mask: ModMask) {
+        // Only replay the click when in ClickToFocus and we are not trying to move/resize the
+        // window.
+        if self.focus_behaviour == FocusBehaviour::ClickTo
+            && !(mod_mask == self.mouse_key_mask
+                || mod_mask == (self.mouse_key_mask | xlib::ShiftMask))
+        {
+            unsafe {
+                (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
+                (self.xlib.XSync)(self.display, 0);
+            }
+        }
     }
 }
