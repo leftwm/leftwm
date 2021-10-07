@@ -1,10 +1,10 @@
-//! A wrapper around many WM features
-//We allow this _ because if we don't we'll receive an error that it isn't read on _task_guard.
+//! A wrapper around calls xlib and X related functions.
+// We allow this _ because if we don't we'll receive an error that it isn't read on _task_guard.
 #![allow(clippy::used_underscore_binding)]
-//We allow this so that extern "C" functions are not flagged as confusing. The current placement
-//allows for easy reading.
+// We allow this so that extern "C" functions are not flagged as confusing. The current placement
+// allows for easy reading.
 #![allow(clippy::items_after_statements)]
-//We allow this because _y_ and _x_ are intentionally similar. Changing it makes the code noisy.
+// We allow this because _y_ and _x_ are intentionally similar. Changing it makes the code noisy.
 #![allow(clippy::similar_names)]
 use super::utils;
 use super::xatom::XAtom;
@@ -32,10 +32,10 @@ use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
 use x11_dl::xlib;
 
-//type WindowStateConst = u8;
-//const WITHDRAWN_STATE: WindowStateConst = 0;
-//const NORMAL_STATE: WindowStateConst = 1;
-//const ICONIC_STATE: WindowStateConst = 2;
+type WindowStateConst = u8;
+// const WITHDRAWN_STATE: WindowStateConst = 0;
+const NORMAL_STATE: WindowStateConst = 1;
+// const ICONIC_STATE: WindowStateConst = 2;
 const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
 
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
@@ -148,7 +148,7 @@ impl XWrap {
             task_notify,
         };
 
-        //check that another WM is not running
+        // Check that another WM is not running.
         extern "C" fn startup_check_for_other_wm(
             _: *mut xlib::Display,
             _: *mut xlib::XErrorEvent,
@@ -164,21 +164,21 @@ impl XWrap {
 
         // This is allowed for now as const extern fns
         // are not yet stable (1.56.0, 16 Sept 2021)
-        // see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information
+        // see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
         #[allow(clippy::missing_const_for_fn)]
         extern "C" fn on_error_from_xlib(
             _: *mut xlib::Display,
             er: *mut xlib::XErrorEvent,
         ) -> c_int {
             let err = unsafe { *er };
-            //ignore bad window errors
+            // Ignore bad window errors
             if err.error_code == xlib::BadWindow {
                 return 0;
             }
             1
         }
 
-        // setup cached keymap/modifier information, otherwise MappingNotify might never be called
+        // Setup cached keymap/modifier information, otherwise MappingNotify might never be called
         // from:
         // https://stackoverflow.com/questions/35569562/how-to-catch-keyboard-layout-change-event-and-get-current-new-keyboard-layout-on
         xw.keysym_to_keycode(x11_dl::keysym::XK_F1);
@@ -190,7 +190,7 @@ impl XWrap {
         xw
     }
 
-    //returns all the screens the display
+    /// Returns all the screens of the display.
     /// # Panics
     ///
     /// Panics if xorg cannot be contacted (xlib missing, not started, etc.)
@@ -206,7 +206,7 @@ impl XWrap {
             let mut screen_count = 0;
             let info_array_raw =
                 unsafe { (xlib.XineramaQueryScreens)(self.display, &mut screen_count) };
-            //take ownership of the array
+            // Take ownership of the array.
             let xinerama_infos: &[XineramaScreenInfo] =
                 unsafe { slice::from_raw_parts(info_array_raw, screen_count as usize) };
             xinerama_infos
@@ -218,7 +218,7 @@ impl XWrap {
                 })
                 .collect()
         } else {
-            //NON-XINERAMA
+            // NON-XINERAMA
             let roots: Result<Vec<xlib::XWindowAttributes>, _> = self
                 .get_roots()
                 .iter()
@@ -229,7 +229,7 @@ impl XWrap {
         }
     }
 
-    //returns all the screens the display
+    /// Returns all the xscreens of the display
     #[must_use]
     pub fn get_xscreens(&self) -> Vec<xlib::Screen> {
         let mut screens = Vec::new();
@@ -241,18 +241,19 @@ impl XWrap {
         screens
     }
 
-    //returns all the screens the display
+    /// Returns the handle of the default root.
     #[must_use]
     pub const fn get_default_root_handle(&self) -> WindowHandle {
-        WindowHandle::XlibHandle(self.get_default_root())
+        WindowHandle::XlibHandle(self.root)
     }
 
+    /// Returns the default root.
     #[must_use]
     pub const fn get_default_root(&self) -> xlib::Window {
         self.root
     }
 
-    //returns all the roots the display
+    /// Returns all the roots of the display.
     #[must_use]
     pub fn get_roots(&self) -> Vec<xlib::Window> {
         self.get_xscreens()
@@ -261,6 +262,7 @@ impl XWrap {
             .collect()
     }
 
+    /// Converts a keycode to a keysym.
     #[must_use]
     pub fn keycode_to_keysym(&self, keycode: u32) -> utils::xkeysym_lookup::XKeysym {
         // Not using XKeysymToKeycode because deprecated
@@ -268,12 +270,15 @@ impl XWrap {
         sym as u32
     }
 
+    /// Converts a keysym to a keycode.
     pub fn keysym_to_keycode(&self, keysym: utils::xkeysym_lookup::XKeysym) -> u32 {
         let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, keysym.into()) };
         u32::from(code)
     }
 
+    /// Updates the keyboard mapping.
     /// # Errors
+    ///
     /// Will error if updating the keyboard failed
     pub fn refresh_keyboard(&self, evt: &mut xlib::XMappingEvent) -> Result<(), XlibError> {
         let status = unsafe { (self.xlib.XRefreshKeyboardMapping)(evt) };
@@ -284,10 +289,10 @@ impl XWrap {
         }
     }
 
+    /// Returns the child windows of a root.
     /// # Errors
     ///
     /// Will error if unknown window status is returned.
-    //returns all the windows under a root windows
     pub fn get_windows_for_root<'w>(
         &self,
         root: xlib::Window,
@@ -314,6 +319,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the child windows of all roots.
     /// # Errors
     ///
     /// Will error if root has no windows or there is an error
@@ -333,6 +339,7 @@ impl XWrap {
         Ok(all)
     }
 
+    /// Returns the attributes of a window.
     /// # Errors
     ///
     /// Will error if window status is 0 (no attributes).
@@ -348,6 +355,7 @@ impl XWrap {
         Ok(attrs)
     }
 
+    /// Returns the value of a window property.
     #[must_use]
     pub fn get_atom_prop_value(
         &self,
@@ -382,6 +390,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the type of a window.
     #[must_use]
     pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
         match self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
@@ -396,6 +405,7 @@ impl XWrap {
         }
     }
 
+    /// Sets the atom states of a window.
     pub fn set_window_states_atoms(&self, window: xlib::Window, states: &[xlib::Atom]) {
         let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
         unsafe {
@@ -413,6 +423,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the atom states of a window.
     #[must_use]
     pub fn get_window_states_atoms(&self, window: xlib::Window) -> Vec<xlib::Atom> {
         let mut format_return: i32 = 0;
@@ -437,7 +448,6 @@ impl XWrap {
             );
             if status == i32::from(xlib::Success) && !prop_return.is_null() {
                 #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
-                //let result = *(prop_return as *const u32);
                 let ptr = prop_return as *const c_ulong;
                 let results: &[xlib::Atom] = slice::from_raw_parts(ptr, nitems_return as usize);
                 return results.to_vec();
@@ -446,6 +456,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the states of a window.
     #[must_use]
     pub fn get_window_states(&self, window: xlib::Window) -> Vec<WindowState> {
         self.get_window_states_atoms(window)
@@ -474,13 +485,13 @@ impl XWrap {
     pub fn init_desktops_hints(&self) {
         let tags = &self.tags;
         let tag_length = tags.len();
-        //set the number of desktop
+        // Set the number of desktop.
         let data = vec![tag_length as u32];
         self.set_desktop_prop(&data, self.atoms.NetNumberOfDesktops);
-        //set a current desktop
+        // Set a current desktop.
         let data = vec![0_u32, xlib::CurrentTime as u32];
         self.set_desktop_prop(&data, self.atoms.NetCurrentDesktop);
-        //set desktop names
+        // Set desktop names.
         let mut text: xlib::XTextProperty = unsafe { std::mem::zeroed() };
         unsafe {
             let mut clist_tags: Vec<*mut c_char> = tags
@@ -498,32 +509,33 @@ impl XWrap {
             std::mem::forget(clist_tags);
             (self.xlib.XSetTextProperty)(
                 self.display,
-                self.get_default_root(),
+                self.root,
                 &mut text,
                 self.atoms.NetDesktopNames,
             );
         }
 
-        //set the WM NAME
+        // Set the WM NAME.
         self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName);
 
         self.set_desktop_prop_c_ulong(
-            self.get_default_root() as c_ulong,
+            self.root as c_ulong,
             self.atoms.NetSupportingWmCheck,
             xlib::XA_WINDOW,
         );
 
-        //set a viewport
+        // Set a viewport.
         let data = vec![0_u32, 0_u32];
         self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
     }
 
+    /// Sets a desktop property with type c_ulong.
     fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, type_: c_ulong) {
         let data = vec![value as u32];
         unsafe {
             (self.xlib.XChangeProperty)(
                 self.display,
-                self.get_default_root(),
+                self.root,
                 atom,
                 type_,
                 32,
@@ -535,12 +547,13 @@ impl XWrap {
         }
     }
 
+    /// Sets a desktop property with type string.
     fn set_desktop_prop_string(&self, value: &str, atom: c_ulong) {
         if let Ok(cstring) = CString::new(value) {
             unsafe {
                 (self.xlib.XChangeProperty)(
                     self.display,
-                    self.get_default_root(),
+                    self.root,
                     atom,
                     xlib::XA_CARDINAL,
                     8,
@@ -553,12 +566,13 @@ impl XWrap {
         }
     }
 
+    /// Sets a desktop property.
     fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
         let x_data = data.to_owned();
         unsafe {
             (self.xlib.XChangeProperty)(
                 self.display,
-                self.get_default_root(),
+                self.root,
                 atom,
                 xlib::XA_CARDINAL,
                 32,
@@ -570,6 +584,7 @@ impl XWrap {
         }
     }
 
+    /// Sets the current viewport.
     pub fn set_current_viewport(&self, tags: Vec<&String>) {
         let mut indexes: Vec<u32> = vec![];
         for tag in tags {
@@ -585,6 +600,7 @@ impl XWrap {
         self.set_desktop_prop(&indexes, self.atoms.NetDesktopViewport);
     }
 
+    /// Sets what desktop a window is on.
     pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &str) {
         let mut indexes: Vec<u32> = vec![];
         for (i, tag) in self.tags.iter().enumerate() {
@@ -611,6 +627,7 @@ impl XWrap {
         }
     }
 
+    /// Sets the current desktop.
     pub fn set_current_desktop(&self, current_tags: &str) {
         let mut indexes: Vec<u32> = vec![];
         for (i, tag) in self.tags.iter().enumerate() {
@@ -624,6 +641,7 @@ impl XWrap {
         self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
     }
 
+    /// Sets a windows fullscreen state.
     pub fn set_fullscreen(&self, window: &Window, fullscreen: bool) {
         if let WindowHandle::XlibHandle(h) = window.handle {
             let atom = self.atoms.NetWMStateFullscreen;
@@ -644,11 +662,12 @@ impl XWrap {
         }
     }
 
+    /// Updates a window.
     pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
         if let WindowHandle::XlibHandle(h) = window.handle {
             if window.visible() {
-                // If type dock we only need to move it
-                // Also fixes issues with eww
+                // If type dock we only need to move it.
+                // Also fixes issues with eww.
                 if window.is_unmanaged() {
                     unsafe {
                         (self.xlib.XMoveWindow)(self.display, h, window.x(), window.y());
@@ -661,8 +680,8 @@ impl XWrap {
                     width: window.width(),
                     height: window.height(),
                     border_width: window.border(),
-                    sibling: 0,    //not unlocked
-                    stack_mode: 0, //not unlocked
+                    sibling: 0,    // Not unlocked.
+                    stack_mode: 0, // Not unlocked.
                 };
                 let unlock =
                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
@@ -680,7 +699,7 @@ impl XWrap {
                     } else {
                         self.colors.normal
                     };
-                    //Force border opacity to 0xff
+                    // Force border opacity to 0xff.
                     let mut bytes = color.to_le_bytes();
                     bytes[3] = 0xff;
                     color = c_ulong::from_le_bytes(bytes);
@@ -694,14 +713,14 @@ impl XWrap {
                 self.send_config(window);
             } else {
                 unsafe {
-                    //if not visible x is <---- way over there <----
+                    // If not visible window is placed of screen.
                     (self.xlib.XMoveWindow)(self.display, h, hide_offset, window.y());
                 }
             }
         }
     }
 
-    //this code is run once when a window is added to the managers list of windows
+    /// Sets up a window that we want to manage.
     pub fn setup_managed_window(
         &mut self,
         h: WindowHandle,
@@ -710,18 +729,15 @@ impl XWrap {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             self.managed_windows.push(handle);
-
-            //make sure the window is mapped
             unsafe {
+                // Make sure the window is mapped.
                 (self.xlib.XMapWindow)(self.display, handle);
-            }
 
-            unsafe {
-                //let Xlib know we are managing this window
+                // Let Xlib know we are managing this window.
                 let list = vec![handle];
                 (self.xlib.XChangeProperty)(
                     self.display,
-                    self.get_default_root(),
+                    self.root,
                     self.atoms.NetClientList,
                     xlib::XA_WINDOW,
                     32,
@@ -730,9 +746,7 @@ impl XWrap {
                     1,
                 );
                 std::mem::forget(list);
-            }
 
-            unsafe {
                 (self.xlib.XSync)(self.display, 0);
             }
 
@@ -769,16 +783,17 @@ impl XWrap {
                     self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
                 }
             }
-            //make sure there is at least an empty list of _NET_WM_STATE
+            // Make sure there is at least an empty list of _NET_WM_STATE.
             let states = self.get_window_states_atoms(handle);
             self.set_window_states_atoms(handle, &states);
-            self.set_wm_states(handle, &[1]);
+            // Set WM_STATE to normal state to allow window sharing.
+            self.set_wm_states(handle, &[NORMAL_STATE]);
         }
         None
     }
 
-    pub fn set_wm_states(&self, window: xlib::Window, states: &[c_long]) {
-        let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
+    /// Sets the `WM_STATE` of a window.
+    pub fn set_wm_states(&self, window: xlib::Window, states: &[u8]) {
         unsafe {
             (self.xlib.XChangeProperty)(
                 self.display,
@@ -787,24 +802,23 @@ impl XWrap {
                 self.atoms.WMState,
                 32,
                 xlib::PropModeReplace,
-                data.as_ptr().cast::<u8>(),
-                data.len() as i32,
+                states.as_ptr().cast::<u8>(),
+                states.len() as i32,
             );
-            std::mem::forget(data);
         }
     }
 
+    /// Grabs the mouse clicks of a window.
     fn grab_mouse_clicks(&self, handle: xlib::Window) {
         self.ungrab_buttons(handle);
-        //just watchout for these mouse combos so we can act on them
         self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
         self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
         self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
         self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
     }
 
+    /// Cleans all currently grabbed buttons of a window.
     fn ungrab_buttons(&self, handle: xlib::Window) {
-        //cleanup all old watches
         unsafe {
             (self.xlib.XUngrabButton)(
                 self.display,
@@ -815,6 +829,7 @@ impl XWrap {
         }
     }
 
+    /// Move the cursor to a window.
     /// # Errors
     ///
     /// Will error if unable to obtain window attributes. See `get_window_attrs`.
@@ -824,6 +839,7 @@ impl XWrap {
         self.move_cursor_to_point(point)
     }
 
+    /// Move the cursor to a point.
     /// # Errors
     ///
     /// Error indicates `XlibError`.
@@ -836,7 +852,7 @@ impl XWrap {
                 (self.xlib.XWarpPointer)(
                     self.display,
                     none as c_ulong,
-                    self.get_default_root(),
+                    self.root,
                     none,
                     none,
                     none as u32,
@@ -849,11 +865,12 @@ impl XWrap {
         Ok(())
     }
 
+    /// Returns the current position of the cursor.
     /// # Errors
     ///
     /// Will error if root window cannot be found.
     pub fn get_cursor_point(&self) -> Result<(i32, i32), XlibError> {
-        let roots = self.get_roots(); //each screen
+        let roots = self.get_roots();
         for w in roots {
             let mut root_return: xlib::Window = 0;
             let mut child_return: xlib::Window = 0;
@@ -882,6 +899,7 @@ impl XWrap {
         Err(XlibError::RootWindowNotFound)
     }
 
+    /// Returns the dimensions of the screens.
     #[must_use]
     pub fn screens_area_dimensions(&self) -> (i32, i32) {
         let mut height = 0;
@@ -893,12 +911,15 @@ impl XWrap {
         (height, width)
     }
 
+    /// Returns structure of a window as a `DockArea`.
     #[must_use]
     pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
+        // More modern structure.
         if let Some(d) = self.get_window_strut_array_strut_partial(window) {
             log::debug!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
+        // Older structure.
         if let Some(d) = self.get_window_strut_array_strut(window) {
             log::debug!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
@@ -906,7 +927,7 @@ impl XWrap {
         None
     }
 
-    //new way to get strut
+    /// Returns the `_NET_WM_STRUT_PARTIAL` as a `DockArea`.
     fn get_window_strut_array_strut_partial(&self, window: xlib::Window) -> Option<DockArea> {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
@@ -942,7 +963,7 @@ impl XWrap {
         }
     }
 
-    //old way to get strut
+    /// Returns the `_NET_WM_STRUT` as a `DockArea`.
     fn get_window_strut_array_strut(&self, window: xlib::Window) -> Option<DockArea> {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
@@ -978,29 +999,21 @@ impl XWrap {
         }
     }
 
-    //this code is run once when a window is destroyed
+    /// Teardown a managed window when it is destroyed.
     pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             unsafe {
                 (self.xlib.XGrabServer)(self.display);
-
-                //remove this window from the list of managed windows
                 self.managed_windows.retain(|x| *x != *handle);
                 self.update_client_list();
-
-                //ungrab all buttons for this window
-                (self.xlib.XUngrabButton)(
-                    self.display,
-                    xlib::AnyButton as u32,
-                    xlib::AnyModifier,
-                    *handle,
-                );
+                self.ungrab_buttons(*handle);
                 (self.xlib.XSync)(self.display, 0);
                 (self.xlib.XUngrabServer)(self.display);
             }
         }
     }
 
+    /// Forcibly unmap a window.
     pub fn force_unmapped(&mut self, window: xlib::Window) {
         let managed = self.managed_windows.contains(&window);
         if managed {
@@ -1009,18 +1022,15 @@ impl XWrap {
         }
     }
 
+    /// Updates the client list to the currently managed windows.
     fn update_client_list(&self) {
         unsafe {
-            (self.xlib.XDeleteProperty)(
-                self.display,
-                self.get_default_root(),
-                self.atoms.NetClientList,
-            );
+            (self.xlib.XDeleteProperty)(self.display, self.root, self.atoms.NetClientList);
             for w in &self.managed_windows {
                 let list = vec![*w];
                 (self.xlib.XChangeProperty)(
                     self.display,
-                    self.get_default_root(),
+                    self.root,
                     self.atoms.NetClientList,
                     xlib::XA_WINDOW,
                     32,
@@ -1033,7 +1043,7 @@ impl XWrap {
         }
     }
 
-    /// Used to send and `XConfigureEvent` for a changed window to the xserver .
+    /// Send a `XConfigureEvent` for a window to X.
     pub fn send_config(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let config = xlib::XConfigureEvent {
@@ -1064,6 +1074,7 @@ impl XWrap {
         }
     }
 
+    /// Send a xevent atom for a window to X.
     fn send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
         if self.can_send_xevent_atom(window, atom) {
             let mut msg: xlib::XClientMessageEvent = unsafe { std::mem::zeroed() };
@@ -1080,7 +1091,7 @@ impl XWrap {
         false
     }
 
-    //return true if the underlying window exsepts this type of atom:protocal
+    /// Returns whether a window can recieve a xevent atom.
     fn can_send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
         unsafe {
             let mut array: *mut xlib::Atom = std::mem::zeroed();
@@ -1092,6 +1103,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the transient parent of a window.
     #[must_use]
     pub fn get_transient_for(&self, window: xlib::Window) -> Option<xlib::Window> {
         unsafe {
@@ -1106,6 +1118,7 @@ impl XWrap {
         }
     }
 
+    /// Returns a windows `_NET_WM_PID`.
     #[must_use]
     pub fn get_window_pid(&self, window: xlib::Window) -> Option<u32> {
         if let Ok(id) = self.get_cardinal_prop(window, self.atoms.NetWMPid) {
@@ -1114,7 +1127,7 @@ impl XWrap {
         None
     }
 
-    /// Get the `WMPid` of a window
+    /// Returns a cardinal property of a window.
     /// # Errors
     ///
     /// Errors if window status = 0.
@@ -1161,7 +1174,8 @@ impl XWrap {
         }
         None
     }
-    /// Get the `WMName` of a window
+
+    /// Returns a text property for a window.
     /// # Errors
     ///
     /// Errors if window status = 0.
@@ -1198,7 +1212,7 @@ impl XWrap {
         Err(XlibError::FailedStatus)
     }
 
-    /// Get the `XAtom` name
+    /// Returns the name of a `XAtom`.
     /// # Errors
     ///
     /// Errors if `XAtom` is not valid.
@@ -1212,6 +1226,7 @@ impl XWrap {
         Err(XlibError::InvalidXAtom)
     }
 
+    /// Restacks the windows to the order of the vec.
     pub fn restack(&self, handles: Vec<WindowHandle>) {
         let mut windows = vec![];
         for handle in handles {
@@ -1234,7 +1249,7 @@ impl XWrap {
         }
     }
 
-    /// Obtains window geometry in an `XyhwChange`struct from `Xlib`.
+    /// Returns the geometry of a window as a `XyhwChange` struct.
     /// # Errors
     ///
     /// Errors if Xlib returns a status of 0.
@@ -1271,12 +1286,13 @@ impl XWrap {
         })
     }
 
+    /// Makes a window take focus.
     pub fn window_take_focus(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             self.grab_mouse_clicks(handle);
 
             if !window.never_focus {
-                //mark this window as the NetActiveWindow
+                // Mark this window as the `_NET_ACTIVE_WINDOW`
                 unsafe {
                     (self.xlib.XSetInputFocus)(
                         self.display,
@@ -1287,7 +1303,7 @@ impl XWrap {
                     let list = vec![handle];
                     (self.xlib.XChangeProperty)(
                         self.display,
-                        self.get_default_root(),
+                        self.root,
                         self.atoms.NetActiveWindow,
                         xlib::XA_WINDOW,
                         32,
@@ -1299,18 +1315,19 @@ impl XWrap {
                 }
             }
 
-            //tell the window to take focus
+            // Tell the window to take focus
             self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
         }
     }
 
+    /// Unfocuses all windows.
     pub fn unfocus(&self) {
-        let handle = self.get_default_root();
+        let handle = self.root;
         unsafe {
             (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
             (self.xlib.XChangeProperty)(
                 self.display,
-                self.get_default_root(),
+                self.root,
                 self.atoms.NetActiveWindow,
                 xlib::XA_WINDOW,
                 32,
@@ -1321,6 +1338,7 @@ impl XWrap {
         }
     }
 
+    /// Kills a window.
     pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             //nicely ask the window to close
@@ -1337,12 +1355,14 @@ impl XWrap {
         }
     }
 
+    /// Subscribe to an event of a window.
     pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long) {
         unsafe {
             (self.xlib.XSelectInput)(self.display, window, mask);
         }
     }
 
+    /// Subscribe to the wanted events of a window.
     pub fn subscribe_to_window_events(&self, handle: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = handle {
             let mask = xlib::EnterWindowMask
@@ -1353,6 +1373,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the `WM_HINTS` of a window.
     #[must_use]
     pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
         unsafe {
@@ -1365,6 +1386,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the `WM_SIZE_HINTS`/`WM_NORMAL_HINTS` of a window.
     #[must_use]
     pub fn get_hint_sizing(&self, window: xlib::Window) -> Option<xlib::XSizeHints> {
         let mut xsize: xlib::XSizeHints = unsafe { std::mem::zeroed() };
@@ -1377,6 +1399,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the `WM_SIZE_HINTS`/`WM_NORMAL_HINTS` of a window as a `XyhwChange`.
     #[must_use]
     pub fn get_hint_sizing_as_xyhw(&self, window: xlib::Window) -> Option<XyhwChange> {
         let hint = self.get_hint_sizing(window);
@@ -1420,8 +1443,9 @@ impl XWrap {
         None
     }
 
+    /// Grabs the button with the modifier for a window.
     pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
-        //grab the buttons with and without numlock (Mod2)
+        // Grab the buttons with and without numlock (Mod2).
         let mods: Vec<u32> = vec![
             modifiers,
             modifiers | xlib::Mod2Mask,
@@ -1445,9 +1469,10 @@ impl XWrap {
         }
     }
 
+    /// Grabs the keysym with the modifier for a window.
     pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
         let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, c_ulong::from(keysym)) };
-        //grab the keys with and without numlock (Mod2)
+        // Grab the keys with and without numlock (Mod2).
         let mods: Vec<u32> = vec![
             modifiers,
             modifiers | xlib::Mod2Mask,
@@ -1468,6 +1493,7 @@ impl XWrap {
         }
     }
 
+    /// Load the colors of our theme.
     pub fn load_colors(&mut self, config: &impl Config) {
         self.colors = Colors {
             normal: self.get_color(config.default_border_color()),
@@ -1476,6 +1502,7 @@ impl XWrap {
         };
     }
 
+    /// Returns a `XColor` for a color.
     fn get_color(&self, color: &str) -> c_ulong {
         let screen = unsafe { (self.xlib.XDefaultScreen)(self.display) };
         let cmap: xlib::Colormap = unsafe { (self.xlib.XDefaultColormap)(self.display, screen) };
@@ -1487,7 +1514,8 @@ impl XWrap {
         color.pixel
     }
 
-    // TODO: split into smaller functions
+    /// Initialize the xwrapper.
+    /// TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
@@ -1498,7 +1526,7 @@ impl XWrap {
             | xlib::StructureNotifyMask
             | xlib::PropertyChangeMask;
 
-        let root = self.get_default_root();
+        let root = self.root;
         self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
@@ -1508,7 +1536,7 @@ impl XWrap {
         unsafe {
             (self.xlib.XChangeWindowAttributes)(
                 self.display,
-                self.get_default_root(),
+                self.root,
                 xlib::CWEventMask | xlib::CWCursor,
                 &mut attrs,
             );
@@ -1516,7 +1544,7 @@ impl XWrap {
 
         self.subscribe_to_event(root, root_event_mask);
 
-        //EWMH junk
+        // EWMH compliance.
         unsafe {
             let supported = self.atoms.net_supported();
             let supported_ptr: *const xlib::Atom = supported.as_ptr();
@@ -1532,11 +1560,11 @@ impl XWrap {
                 size,
             );
             std::mem::forget(supported);
-            //cleanup the client list
+            // Cleanup the client list.
             (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
         }
 
-        //EWMH stuff for desktops
+        // EWMH compliance for desktops.
         self.tags = config.create_list_of_tags();
         self.init_desktops_hints();
 
@@ -1547,23 +1575,18 @@ impl XWrap {
         }
     }
 
-    /// Cleans first all old keygrabs and then reaplies them from the config
+    /// Resets the keybindings to a list of keybindings.
     pub fn reset_grabs(&self, keybinds: &[Keybind]) {
-        //cleanup grabs
+        // Cleanup key grabs.
         unsafe {
-            (self.xlib.XUngrabKey)(
-                self.display,
-                xlib::AnyKey,
-                xlib::AnyModifier,
-                self.get_default_root(),
-            );
+            (self.xlib.XUngrabKey)(self.display, xlib::AnyKey, xlib::AnyModifier, self.root);
         }
 
-        //grab all the key combos from the config file
+        // Grab all the key combos from the config file.
         for kb in keybinds {
             if let Some(keysym) = utils::xkeysym_lookup::into_keysym(&kb.key) {
                 let modmask = utils::xkeysym_lookup::into_modmask(&kb.modifier);
-                self.grab_keys(self.get_default_root(), keysym, modmask);
+                self.grab_keys(self.root, keysym, modmask);
             }
         }
     }
