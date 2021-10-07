@@ -266,13 +266,13 @@ fn update_fibonacci(
 
         match window_count - 1 - i {
             0 => {
-                setter(&mut windows[i as usize], height, width, x, y);
+                setter(windows[i as usize], height, width, x, y);
             }
             1 => {
-                setter(&mut windows[i as usize], half_height, width, x, y);
+                setter(windows[i as usize], half_height, width, x, y);
 
                 setter(
-                    &mut windows[(i + 1) as usize],
+                    windows[(i + 1) as usize],
                     half_height,
                     width,
                     x,
@@ -280,10 +280,10 @@ fn update_fibonacci(
                 );
             }
             _ => {
-                setter(&mut windows[i as usize], half_height, width, x, y);
+                setter(windows[i as usize], half_height, width, x, y);
 
                 setter(
-                    &mut windows[(i + 1) as usize],
+                    windows[(i + 1) as usize],
                     half_height,
                     half_width,
                     x,

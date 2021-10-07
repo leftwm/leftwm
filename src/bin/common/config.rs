@@ -66,6 +66,10 @@ impl TryFrom<Keybind> for leftwm::Keybind {
                     .context("invalid index value for SendWindowToTag")?,
             ),
             BaseCommand::MoveToLastWorkspace => leftwm::Command::MoveWindowToLastWorkspace,
+            BaseCommand::MoveWindowToNextWorkspace => leftwm::Command::MoveWindowToNextWorkspace,
+            BaseCommand::MoveWindowToPreviousWorkspace => {
+                leftwm::Command::MoveWindowToPreviousWorkspace
+            }
             BaseCommand::MouseMoveWindow => leftwm::Command::MouseMoveWindow,
             BaseCommand::NextLayout => leftwm::Command::NextLayout,
             BaseCommand::PreviousLayout => leftwm::Command::PreviousLayout,
@@ -254,6 +258,11 @@ fn exit_strategy<'s>() -> &'s str {
     "pkill leftwm"
 }
 
+fn absolute_path(path: &str) -> Option<PathBuf> {
+    let exp_path = shellexpand::full(path).ok()?;
+    std::fs::canonicalize(exp_path.as_ref()).ok()
+}
+
 impl leftwm::Config for Config {
     fn mapped_bindings(&self) -> Vec<leftwm::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
@@ -326,26 +335,27 @@ impl leftwm::Config for Config {
         command: &str,
         manager: &mut Manager<Self, SERVER>,
     ) -> bool {
-        let mut args = command.split_whitespace();
-        let command = args.next().unwrap();
-        match command {
-            "LoadTheme" => {
-                if let Some(path) = args.next() {
-                    manager.state.config.theme_setting.load(path);
-                } else {
-                    log::warn!("Missing file argument to load theme");
+        if let Some((command, value)) = command.split_once(' ') {
+            match command {
+                "LoadTheme" => {
+                    if let Some(absolute) = absolute_path(value.trim()) {
+                        manager.state.config.theme_setting.load(absolute);
+                    } else {
+                        log::warn!("Path submitted does not exist.");
+                    }
+                    return manager.update_for_theme();
                 }
-                manager.update_for_theme()
-            }
-            "UnloadTheme" => {
-                manager.state.config.theme_setting = Default::default();
-                manager.update_for_theme()
-            }
-            _ => {
-                log::warn!("Command not recognized: {}", command);
-                false
+                "UnloadTheme" => {
+                    manager.state.config.theme_setting = Default::default();
+                    return manager.update_for_theme();
+                }
+                _ => {
+                    log::warn!("Command not recognized: {}", command);
+                    return false;
+                }
             }
         }
+        false
     }
 
     fn border_width(&self) -> i32 {

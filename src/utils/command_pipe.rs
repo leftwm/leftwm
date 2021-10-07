@@ -83,6 +83,8 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
         "SwapScreens" => Ok(Command::SwapScreens),
         "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
+        "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),
+        "MoveWindowToPreviousWorkspace" => Ok(Command::MoveWindowToPreviousWorkspace),
         "FloatingToTile" => Ok(Command::FloatingToTile),
         "MoveWindowUp" => Ok(Command::MoveWindowUp),
         "MoveWindowDown" => Ok(Command::MoveWindowDown),

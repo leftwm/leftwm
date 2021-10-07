@@ -66,7 +66,7 @@ where
     if len < 2 {
         return None;
     }
-    let index = list.iter().position(|x| test(x))?;
+    let index = list.iter().position(test)?;
     let item = list.get(index)?.clone();
 
     let mut new_index = index as i32 + shift;
@@ -89,7 +89,7 @@ where
     F: Fn(&T) -> bool,
     T: Clone,
 {
-    let index = list.iter().position(|x| test(x))?;
+    let index = list.iter().position(test)?;
     let len = list.len() as i32;
     if len == 1 {
         return list.get(index as usize);
