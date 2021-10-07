@@ -1,4 +1,4 @@
-//! A wrapper around calls xlib and X related functions.
+//! A wrapper around calls to xlib and X related functions.
 // We allow this _ because if we don't we'll receive an error that it isn't read on _task_guard.
 #![allow(clippy::used_underscore_binding)]
 // We allow this so that extern "C" functions are not flagged as confusing. The current placement
@@ -6,20 +6,16 @@
 #![allow(clippy::items_after_statements)]
 // We allow this because _y_ and _x_ are intentionally similar. Changing it makes the code noisy.
 #![allow(clippy::similar_names)]
-use super::utils;
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
-use super::Screen;
-use super::Window;
-use super::WindowHandle;
-use crate::models::Mode;
+use super::{utils, Screen, Window, WindowHandle};
+use crate::config::Config;
+use crate::models::{FocusBehaviour, Mode};
 use crate::utils::xkeysym_lookup::ModMask;
-use crate::{config::Config, models::FocusBehaviour};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_ulong};
-use std::ptr;
-use std::slice;
 use std::sync::Arc;
+use std::{ptr, slice};
 use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
 use x11_dl::xlib;
@@ -79,7 +75,7 @@ impl Default for XWrap {
 impl XWrap {
     /// # Panics
     ///
-    /// Can panic if unable to contact xorg.
+    /// Panics if unable to contact xorg.
     #[must_use]
     pub fn new() -> Self {
         const SERVER: mio::Token = mio::Token(0);
@@ -186,6 +182,67 @@ impl XWrap {
             (xw.xlib.XSync)(xw.display, xlib::False);
         };
         xw
+    }
+
+    /// Initialize the xwrapper.
+    /// TODO: split into smaller functions
+    pub fn init(&mut self, config: &impl Config) {
+        let root_event_mask: c_long = xlib::SubstructureRedirectMask
+            | xlib::SubstructureNotifyMask
+            | xlib::ButtonPressMask
+            | xlib::PointerMotionMask
+            | xlib::EnterWindowMask
+            | xlib::LeaveWindowMask
+            | xlib::StructureNotifyMask
+            | xlib::PropertyChangeMask;
+
+        let root = self.root;
+        self.load_colors(config);
+
+        let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
+        attrs.cursor = self.cursors.normal;
+        attrs.event_mask = root_event_mask;
+
+        unsafe {
+            (self.xlib.XChangeWindowAttributes)(
+                self.display,
+                self.root,
+                xlib::CWEventMask | xlib::CWCursor,
+                &mut attrs,
+            );
+        }
+
+        self.subscribe_to_event(root, root_event_mask);
+
+        // EWMH compliance.
+        unsafe {
+            let supported = self.atoms.net_supported();
+            let supported_ptr: *const xlib::Atom = supported.as_ptr();
+            let size = supported.len() as i32;
+            (self.xlib.XChangeProperty)(
+                self.display,
+                root,
+                self.atoms.NetSupported,
+                xlib::XA_ATOM,
+                32,
+                xlib::PropModeReplace,
+                supported_ptr.cast::<u8>(),
+                size,
+            );
+            std::mem::forget(supported);
+            // Cleanup the client list.
+            (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
+        }
+
+        // EWMH compliance for desktops.
+        self.tags = config.create_list_of_tags();
+        self.init_desktops_hints();
+
+        self.reset_grabs(&config.mapped_bindings());
+
+        unsafe {
+            (self.xlib.XSync)(self.display, 0);
+        }
     }
 
     /// EWMH support used for bars such as polybar.
@@ -306,67 +363,6 @@ impl XWrap {
             floating: self.get_color(config.floating_border_color()),
             active: self.get_color(config.focused_border_color()),
         };
-    }
-
-    /// Initialize the xwrapper.
-    /// TODO: split into smaller functions
-    pub fn init(&mut self, config: &impl Config) {
-        let root_event_mask: c_long = xlib::SubstructureRedirectMask
-            | xlib::SubstructureNotifyMask
-            | xlib::ButtonPressMask
-            | xlib::PointerMotionMask
-            | xlib::EnterWindowMask
-            | xlib::LeaveWindowMask
-            | xlib::StructureNotifyMask
-            | xlib::PropertyChangeMask;
-
-        let root = self.root;
-        self.load_colors(config);
-
-        let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
-        attrs.cursor = self.cursors.normal;
-        attrs.event_mask = root_event_mask;
-
-        unsafe {
-            (self.xlib.XChangeWindowAttributes)(
-                self.display,
-                self.root,
-                xlib::CWEventMask | xlib::CWCursor,
-                &mut attrs,
-            );
-        }
-
-        self.subscribe_to_event(root, root_event_mask);
-
-        // EWMH compliance.
-        unsafe {
-            let supported = self.atoms.net_supported();
-            let supported_ptr: *const xlib::Atom = supported.as_ptr();
-            let size = supported.len() as i32;
-            (self.xlib.XChangeProperty)(
-                self.display,
-                root,
-                self.atoms.NetSupported,
-                xlib::XA_ATOM,
-                32,
-                xlib::PropModeReplace,
-                supported_ptr.cast::<u8>(),
-                size,
-            );
-            std::mem::forget(supported);
-            // Cleanup the client list.
-            (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
-        }
-
-        // EWMH compliance for desktops.
-        self.tags = config.create_list_of_tags();
-        self.init_desktops_hints();
-
-        self.reset_grabs(&config.mapped_bindings());
-
-        unsafe {
-            (self.xlib.XSync)(self.display, 0);
-        }
     }
 
     /// Sets the mode within our xwrapper.

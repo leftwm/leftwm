@@ -1,16 +1,97 @@
-use super::Window;
-use super::WindowHandle;
-use super::NORMAL_STATE;
-use crate::models::FocusBehaviour;
-use crate::models::WindowChange;
-use crate::models::WindowType;
-use crate::models::Xyhw;
-use crate::DisplayEvent;
-use crate::XWrap;
+//! Xlib calls related to a window.
+use super::{Window, WindowHandle, NORMAL_STATE};
+use crate::models::{FocusBehaviour, WindowChange, WindowType, Xyhw};
+use crate::{DisplayEvent, XWrap};
 use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
 
 impl XWrap {
+    /// Sets up a window that we want to manage.
+    pub fn setup_managed_window(
+        &mut self,
+        h: WindowHandle,
+        follow_mouse: bool,
+    ) -> Option<DisplayEvent> {
+        self.subscribe_to_window_events(&h);
+        if let WindowHandle::XlibHandle(handle) = h {
+            self.managed_windows.push(handle);
+            unsafe {
+                // Make sure the window is mapped.
+                (self.xlib.XMapWindow)(self.display, handle);
+
+                // Let Xlib know we are managing this window.
+                let list = vec![handle];
+                (self.xlib.XChangeProperty)(
+                    self.display,
+                    self.root,
+                    self.atoms.NetClientList,
+                    xlib::XA_WINDOW,
+                    32,
+                    xlib::PropModeAppend,
+                    list.as_ptr().cast::<u8>(),
+                    1,
+                );
+                std::mem::forget(list);
+
+                (self.xlib.XSync)(self.display, 0);
+            }
+
+            let type_ = self.get_window_type(handle);
+            if type_ == WindowType::Dock || type_ == WindowType::Desktop {
+                if let Some(dock_area) = self.get_window_strut_array(handle) {
+                    let dems = self.get_screens_area_dimensions();
+                    let screen = self
+                        .get_screens()
+                        .iter()
+                        .find(|s| s.contains_dock_area(dock_area, dems))?
+                        .clone();
+
+                    if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
+                        let mut change = WindowChange::new(h);
+                        change.strut = Some(xyhw.into());
+                        change.type_ = Some(type_);
+                        return Some(DisplayEvent::WindowChange(change));
+                    }
+                } else if let Ok(geo) = self.get_window_geometry(handle) {
+                    let mut xyhw = Xyhw::default();
+                    geo.update(&mut xyhw);
+                    let mut change = WindowChange::new(h);
+                    change.strut = Some(xyhw.into());
+                    change.type_ = Some(type_);
+                    return Some(DisplayEvent::WindowChange(change));
+                }
+            } else {
+                if follow_mouse {
+                    let _ = self.move_cursor_to_window(handle);
+                }
+                if self.focus_behaviour == FocusBehaviour::ClickTo {
+                    self.ungrab_buttons(handle);
+                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
+                }
+            }
+            // Make sure there is at least an empty list of _NET_WM_STATE.
+            let states = self.get_window_states_atoms(handle);
+            self.set_window_states_atoms(handle, &states);
+            // Set WM_STATE to normal state to allow window sharing.
+            self.set_wm_states(handle, &[NORMAL_STATE]);
+        }
+        None
+    }
+
+    /// Teardown a managed window when it is destroyed.
+    pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
+        if let WindowHandle::XlibHandle(handle) = h {
+            unsafe {
+                (self.xlib.XGrabServer)(self.display);
+                self.managed_windows.retain(|x| *x != *handle);
+                self.set_client_list();
+                self.ungrab_buttons(*handle);
+                (self.xlib.XSync)(self.display, 0);
+                (self.xlib.XUngrabServer)(self.display);
+            }
+        }
+    }
+
     /// Updates a window.
     pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
         if let WindowHandle::XlibHandle(h) = window.handle {
@@ -69,125 +150,6 @@ impl XWrap {
         }
     }
 
-    /// Sets up a window that we want to manage.
-    pub fn setup_managed_window(
-        &mut self,
-        h: WindowHandle,
-        follow_mouse: bool,
-    ) -> Option<DisplayEvent> {
-        self.subscribe_to_window_events(&h);
-        if let WindowHandle::XlibHandle(handle) = h {
-            self.managed_windows.push(handle);
-            unsafe {
-                // Make sure the window is mapped.
-                (self.xlib.XMapWindow)(self.display, handle);
-
-                // Let Xlib know we are managing this window.
-                let list = vec![handle];
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    self.root,
-                    self.atoms.NetClientList,
-                    xlib::XA_WINDOW,
-                    32,
-                    xlib::PropModeAppend,
-                    list.as_ptr().cast::<u8>(),
-                    1,
-                );
-                std::mem::forget(list);
-
-                (self.xlib.XSync)(self.display, 0);
-            }
-
-            let type_ = self.get_window_type(handle);
-            if type_ == WindowType::Dock || type_ == WindowType::Desktop {
-                if let Some(dock_area) = self.get_window_strut_array(handle) {
-                    let dems = self.screens_area_dimensions();
-                    let screen = self
-                        .get_screens()
-                        .iter()
-                        .find(|s| s.contains_dock_area(dock_area, dems))?
-                        .clone();
-
-                    if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
-                        let mut change = WindowChange::new(h);
-                        change.strut = Some(xyhw.into());
-                        change.type_ = Some(type_);
-                        return Some(DisplayEvent::WindowChange(change));
-                    }
-                } else if let Ok(geo) = self.get_window_geometry(handle) {
-                    let mut xyhw = Xyhw::default();
-                    geo.update(&mut xyhw);
-                    let mut change = WindowChange::new(h);
-                    change.strut = Some(xyhw.into());
-                    change.type_ = Some(type_);
-                    return Some(DisplayEvent::WindowChange(change));
-                }
-            } else {
-                if follow_mouse {
-                    let _ = self.move_cursor_to_window(handle);
-                }
-                if self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.ungrab_buttons(handle);
-                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
-                }
-            }
-            // Make sure there is at least an empty list of _NET_WM_STATE.
-            let states = self.get_window_states_atoms(handle);
-            self.set_window_states_atoms(handle, &states);
-            // Set WM_STATE to normal state to allow window sharing.
-            self.set_wm_states(handle, &[NORMAL_STATE]);
-        }
-        None
-    }
-
-    /// Teardown a managed window when it is destroyed.
-    pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
-        if let WindowHandle::XlibHandle(handle) = h {
-            unsafe {
-                (self.xlib.XGrabServer)(self.display);
-                self.managed_windows.retain(|x| *x != *handle);
-                self.update_client_list();
-                self.ungrab_buttons(*handle);
-                (self.xlib.XSync)(self.display, 0);
-                (self.xlib.XUngrabServer)(self.display);
-            }
-        }
-    }
-
-    /// Forcibly unmap a window.
-    pub fn force_unmapped(&mut self, window: xlib::Window) {
-        let managed = self.managed_windows.contains(&window);
-        if managed {
-            self.managed_windows.retain(|x| *x != window);
-            self.update_client_list();
-        }
-    }
-
-    /// Restacks the windows to the order of the vec.
-    pub fn restack(&self, handles: Vec<WindowHandle>) {
-        let mut windows = vec![];
-        for handle in handles {
-            if let WindowHandle::XlibHandle(window) = handle {
-                windows.push(window);
-            }
-        }
-        let size = windows.len();
-        let ptr = windows.as_mut_ptr();
-        unsafe {
-            (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
-        }
-    }
-
-    /// Raise a window.
-    pub fn move_to_top(&self, handle: &WindowHandle) {
-        if let WindowHandle::XlibHandle(window) = handle {
-            unsafe {
-                (self.xlib.XRaiseWindow)(self.display, *window);
-            }
-        }
-    }
-
     /// Makes a window take focus.
     pub fn window_take_focus(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
@@ -240,6 +202,30 @@ impl XWrap {
         }
     }
 
+    /// Restacks the windows to the order of the vec.
+    pub fn restack(&self, handles: Vec<WindowHandle>) {
+        let mut windows = vec![];
+        for handle in handles {
+            if let WindowHandle::XlibHandle(window) = handle {
+                windows.push(window);
+            }
+        }
+        let size = windows.len();
+        let ptr = windows.as_mut_ptr();
+        unsafe {
+            (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
+        }
+    }
+
+    /// Raise a window.
+    pub fn move_to_top(&self, handle: &WindowHandle) {
+        if let WindowHandle::XlibHandle(window) = handle {
+            unsafe {
+                (self.xlib.XRaiseWindow)(self.display, *window);
+            }
+        }
+    }
+
     /// Kills a window.
     pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
@@ -254,6 +240,15 @@ impl XWrap {
                     (self.xlib.XUngrabServer)(self.display);
                 }
             }
+        }
+    }
+
+    /// Forcibly unmap a window.
+    pub fn force_unmapped(&mut self, window: xlib::Window) {
+        let managed = self.managed_windows.contains(&window);
+        if managed {
+            self.managed_windows.retain(|x| *x != window);
+            self.set_client_list();
         }
     }
 

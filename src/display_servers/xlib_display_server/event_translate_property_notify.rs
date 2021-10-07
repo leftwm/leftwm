@@ -69,7 +69,7 @@ fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Opti
     let type_ = xw.get_window_type(window);
 
     if let Some(dock_area) = xw.get_window_strut_array(window) {
-        let dems = xw.screens_area_dimensions();
+        let dems = xw.get_screens_area_dimensions();
         let screen = xw
             .get_screens()
             .iter()

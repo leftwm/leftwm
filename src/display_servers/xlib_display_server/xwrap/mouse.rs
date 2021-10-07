@@ -1,7 +1,9 @@
+//! Xlib calls related to a mouse.
 use super::{XlibError, MOUSEMASK};
+use crate::display_servers::xlib_display_server::xwrap::BUTTONMASK;
+use crate::models::FocusBehaviour;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::XWrap;
-use crate::{display_servers::xlib_display_server::xwrap::BUTTONMASK, models::FocusBehaviour};
 use std::os::raw::{c_int, c_ulong};
 use x11_dl::xlib;
 
@@ -15,6 +17,32 @@ impl XWrap {
         self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
     }
 
+    /// Grabs the button with the modifier for a window.
+    pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
+        // Grab the buttons with and without numlock (Mod2).
+        let mods: Vec<u32> = vec![
+            modifiers,
+            modifiers | xlib::Mod2Mask,
+            modifiers | xlib::LockMask,
+        ];
+        for m in mods {
+            unsafe {
+                (self.xlib.XGrabButton)(
+                    self.display,
+                    button,
+                    m,
+                    window,
+                    0,
+                    BUTTONMASK as u32,
+                    xlib::GrabModeSync,
+                    xlib::GrabModeAsync,
+                    0,
+                    0,
+                );
+            }
+        }
+    }
+
     /// Cleans all currently grabbed buttons of a window.
     pub fn ungrab_buttons(&self, handle: xlib::Window) {
         unsafe {
@@ -24,6 +52,32 @@ impl XWrap {
                 xlib::AnyModifier,
                 handle,
             );
+        }
+    }
+
+    /// Grabs the cursor and sets its visual.
+    pub fn grab_pointer(&self, cursor: c_ulong) {
+        unsafe {
+            //grab the mouse
+            (self.xlib.XGrabPointer)(
+                self.display,
+                self.root,
+                0,
+                MOUSEMASK as u32,
+                xlib::GrabModeAsync,
+                xlib::GrabModeAsync,
+                0,
+                cursor,
+                xlib::CurrentTime,
+            );
+        }
+    }
+
+    /// Ungrab the cursor.
+    pub fn ungrab_pointer(&self) {
+        unsafe {
+            //release the mouse grab
+            (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
         }
     }
 
@@ -61,58 +115,6 @@ impl XWrap {
             }
         }
         Ok(())
-    }
-
-    /// Grabs the button with the modifier for a window.
-    pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
-        // Grab the buttons with and without numlock (Mod2).
-        let mods: Vec<u32> = vec![
-            modifiers,
-            modifiers | xlib::Mod2Mask,
-            modifiers | xlib::LockMask,
-        ];
-        for m in mods {
-            unsafe {
-                (self.xlib.XGrabButton)(
-                    self.display,
-                    button,
-                    m,
-                    window,
-                    0,
-                    BUTTONMASK as u32,
-                    xlib::GrabModeSync,
-                    xlib::GrabModeAsync,
-                    0,
-                    0,
-                );
-            }
-        }
-    }
-
-    /// Grabs the cursor and sets its visual.
-    pub fn grab_pointer(&self, cursor: c_ulong) {
-        unsafe {
-            //grab the mouse
-            (self.xlib.XGrabPointer)(
-                self.display,
-                self.root,
-                0,
-                MOUSEMASK as u32,
-                xlib::GrabModeAsync,
-                xlib::GrabModeAsync,
-                0,
-                cursor,
-                xlib::CurrentTime,
-            );
-        }
-    }
-
-    /// Ungrab the cursor.
-    pub fn ungrab_pointer(&self) {
-        unsafe {
-            //release the mouse grab
-            (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
-        }
     }
 
     /// Replay a click on a window.
