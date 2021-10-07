@@ -8,6 +8,8 @@ use std::slice;
 use x11_dl::xlib;
 
 impl XWrap {
+    // Public functions.
+
     /// Returns the child windows of all roots.
     /// # Errors
     ///
@@ -512,6 +514,62 @@ impl XWrap {
         None
     }
 
+    /// Returns the type of a window.
+    #[must_use]
+    pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
+        match self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
+            x if x == Some(self.atoms.NetWMWindowTypeDesktop) => WindowType::Desktop,
+            x if x == Some(self.atoms.NetWMWindowTypeDock) => WindowType::Dock,
+            x if x == Some(self.atoms.NetWMWindowTypeToolbar) => WindowType::Toolbar,
+            x if x == Some(self.atoms.NetWMWindowTypeMenu) => WindowType::Menu,
+            x if x == Some(self.atoms.NetWMWindowTypeUtility) => WindowType::Utility,
+            x if x == Some(self.atoms.NetWMWindowTypeSplash) => WindowType::Splash,
+            x if x == Some(self.atoms.NetWMWindowTypeDialog) => WindowType::Dialog,
+            _ => WindowType::Normal,
+        }
+    }
+
+    /// Returns the `WM_HINTS` of a window.
+    #[must_use]
+    pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
+        unsafe {
+            let hints_ptr: *const xlib::XWMHints = (self.xlib.XGetWMHints)(self.display, window);
+            if hints_ptr.is_null() {
+                return None;
+            }
+            let hints: xlib::XWMHints = *hints_ptr;
+            Some(hints)
+        }
+    }
+
+    /// Returns the name of a `XAtom`.
+    /// # Errors
+    ///
+    /// Errors if `XAtom` is not valid.
+    pub fn get_xatom_name(&self, atom: xlib::Atom) -> Result<String, XlibError> {
+        unsafe {
+            let cstring = (self.xlib.XGetAtomName)(self.display, atom);
+            if let Ok(s) = CString::from_raw(cstring).into_string() {
+                return Ok(s);
+            }
+        };
+        Err(XlibError::InvalidXAtom)
+    }
+
+    /// Returns all the xscreens of the display.
+    #[must_use]
+    pub fn get_xscreens(&self) -> Vec<xlib::Screen> {
+        let mut screens = Vec::new();
+        let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
+        for screen_num in 0..(screen_count) {
+            let screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_num) };
+            screens.push(screen);
+        }
+        screens
+    }
+
+    // Internal functions.
+
     /// Returns the `_NET_WM_STRUT` as a `DockArea`.
     fn get_window_strut_array_strut(&self, window: xlib::Window) -> Option<DockArea> {
         let mut format_return: i32 = 0;
@@ -582,59 +640,5 @@ impl XWrap {
                 None
             }
         }
-    }
-
-    /// Returns the type of a window.
-    #[must_use]
-    pub fn get_window_type(&self, window: xlib::Window) -> WindowType {
-        match self.get_atom_prop_value(window, self.atoms.NetWMWindowType) {
-            x if x == Some(self.atoms.NetWMWindowTypeDesktop) => WindowType::Desktop,
-            x if x == Some(self.atoms.NetWMWindowTypeDock) => WindowType::Dock,
-            x if x == Some(self.atoms.NetWMWindowTypeToolbar) => WindowType::Toolbar,
-            x if x == Some(self.atoms.NetWMWindowTypeMenu) => WindowType::Menu,
-            x if x == Some(self.atoms.NetWMWindowTypeUtility) => WindowType::Utility,
-            x if x == Some(self.atoms.NetWMWindowTypeSplash) => WindowType::Splash,
-            x if x == Some(self.atoms.NetWMWindowTypeDialog) => WindowType::Dialog,
-            _ => WindowType::Normal,
-        }
-    }
-
-    /// Returns the `WM_HINTS` of a window.
-    #[must_use]
-    pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
-        unsafe {
-            let hints_ptr: *const xlib::XWMHints = (self.xlib.XGetWMHints)(self.display, window);
-            if hints_ptr.is_null() {
-                return None;
-            }
-            let hints: xlib::XWMHints = *hints_ptr;
-            Some(hints)
-        }
-    }
-
-    /// Returns the name of a `XAtom`.
-    /// # Errors
-    ///
-    /// Errors if `XAtom` is not valid.
-    pub fn get_xatom_name(&self, atom: xlib::Atom) -> Result<String, XlibError> {
-        unsafe {
-            let cstring = (self.xlib.XGetAtomName)(self.display, atom);
-            if let Ok(s) = CString::from_raw(cstring).into_string() {
-                return Ok(s);
-            }
-        };
-        Err(XlibError::InvalidXAtom)
-    }
-
-    /// Returns all the xscreens of the display.
-    #[must_use]
-    pub fn get_xscreens(&self) -> Vec<xlib::Screen> {
-        let mut screens = Vec::new();
-        let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
-        for screen_num in 0..(screen_count) {
-            let screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_num) };
-            screens.push(screen);
-        }
-        screens
     }
 }

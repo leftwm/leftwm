@@ -6,24 +6,17 @@ use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
 impl XWrap {
+    // Public functions.
+
     /// Sets the client list to the currently managed windows.
     pub fn set_client_list(&self) {
+        // `XDeleteProperty`: https://tronche.com/gui/x/xlib/window-information/XDeleteProperty.html
         unsafe {
             (self.xlib.XDeleteProperty)(self.display, self.root, self.atoms.NetClientList);
-            for w in &self.managed_windows {
-                let list = vec![*w];
-                (self.xlib.XChangeProperty)(
-                    self.display,
-                    self.root,
-                    self.atoms.NetClientList,
-                    xlib::XA_WINDOW,
-                    32,
-                    xlib::PropModeAppend,
-                    list.as_ptr().cast::<u8>(),
-                    1,
-                );
-                std::mem::forget(list);
-            }
+        }
+        for w in &self.managed_windows {
+            let list = vec![*w as u8];
+            self.set_property_long(self.root, self.atoms.NetClientList, xlib::XA_WINDOW, &list);
         }
     }
 
@@ -59,38 +52,14 @@ impl XWrap {
 
     /// Sets a desktop property.
     pub fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
-        let x_data = data.to_owned();
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                self.root,
-                atom,
-                xlib::XA_CARDINAL,
-                32,
-                xlib::PropModeReplace,
-                x_data.as_ptr().cast::<u8>(),
-                data.len() as i32,
-            );
-            std::mem::forget(x_data);
-        }
+        let x_data: Vec<u8> = data.iter().map(|x| *x as u8).collect();
+        self.set_property_long(self.root, atom, xlib::XA_CARDINAL, &x_data);
     }
 
     /// Sets a desktop property with type `c_ulong`.
     pub fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, type_: c_ulong) {
-        let data = vec![value as u32];
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                self.root,
-                atom,
-                type_,
-                32,
-                xlib::PropModeReplace,
-                data.as_ptr().cast::<u8>(),
-                1_i32,
-            );
-            std::mem::forget(data);
-        }
+        let data = vec![value as u8];
+        self.set_property_long(self.root, atom, type_, &data);
     }
 
     /// Sets a desktop property with type string.
@@ -135,61 +104,51 @@ impl XWrap {
 
     /// Sets what desktop a window is on.
     pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &str) {
-        let mut indexes: Vec<u32> = vec![];
+        let mut indexes: Vec<u8> = vec![];
         for (i, tag) in self.tags.iter().enumerate() {
             if current_tags.contains(tag) {
-                let tag = i as u32;
+                let tag = i as u8;
                 indexes.push(tag);
             }
         }
         if indexes.is_empty() {
             indexes.push(0);
         }
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                window,
-                self.atoms.NetWMDesktop,
-                xlib::XA_CARDINAL,
-                32,
-                xlib::PropModeReplace,
-                indexes.as_ptr().cast::<u8>(),
-                indexes.len() as i32,
-            );
-            std::mem::forget(indexes);
-        }
+        self.set_property_long(window, self.atoms.NetWMDesktop, xlib::XA_CARDINAL, &indexes);
     }
 
     /// Sets the atom states of a window.
     pub fn set_window_states_atoms(&self, window: xlib::Window, states: &[xlib::Atom]) {
-        let data: Vec<u32> = states.iter().map(|x| *x as u32).collect();
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                window,
-                self.atoms.NetWMState,
-                xlib::XA_ATOM,
-                32,
-                xlib::PropModeReplace,
-                data.as_ptr().cast::<u8>(),
-                data.len() as i32,
-            );
-            std::mem::forget(data);
-        }
+        let data: Vec<u8> = states.iter().map(|x| *x as u8).collect();
+        self.set_property_long(window, self.atoms.NetWMState, xlib::XA_ATOM, &data);
     }
 
     /// Sets the `WM_STATE` of a window.
     pub fn set_wm_states(&self, window: xlib::Window, states: &[u8]) {
+        self.set_property_long(window, self.atoms.WMState, self.atoms.WMState, states);
+    }
+
+    // Internal functions.
+
+    /// Sets a window property.
+    fn set_property_long(
+        &self,
+        window: xlib::Window,
+        property: xlib::Atom,
+        type_: xlib::Atom,
+        data: &[u8],
+    ) {
+        // `XChangeProperty`: https://tronche.com/gui/x/xlib/window-information/XChangeProperty.html
         unsafe {
             (self.xlib.XChangeProperty)(
                 self.display,
                 window,
-                self.atoms.WMState,
-                self.atoms.WMState,
+                property,
+                type_,
                 32,
                 xlib::PropModeReplace,
-                states.as_ptr().cast::<u8>(),
-                states.len() as i32,
+                data.as_ptr().cast::<u8>(),
+                data.len() as i32,
             );
         }
     }
