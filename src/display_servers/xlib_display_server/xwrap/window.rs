@@ -7,6 +7,8 @@ use x11_dl::xlib;
 
 impl XWrap {
     /// Sets up a window that we want to manage.
+    // `XMapWindow`: https://tronche.com/gui/x/xlib/window/XMapWindow.html
+    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     pub fn setup_managed_window(
         &mut self,
         h: WindowHandle,
@@ -20,7 +22,7 @@ impl XWrap {
                 (self.xlib.XMapWindow)(self.display, handle);
 
                 // Let Xlib know we are managing this window.
-                let list = vec![handle];
+                let list = vec![handle as c_long];
                 (self.xlib.XChangeProperty)(
                     self.display,
                     self.root,
@@ -79,6 +81,9 @@ impl XWrap {
     }
 
     /// Teardown a managed window when it is destroyed.
+    // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
+    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
+    // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             unsafe {
@@ -93,6 +98,11 @@ impl XWrap {
     }
 
     /// Updates a window.
+    // `XMoveWindow`: https://tronche.com/gui/x/xlib/window/XMoveWindow.html
+    // `XConfigureWindow`: https://tronche.com/gui/x/xlib/window/XConfigureWindow.html
+    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
+    // `XMoveResizeWindow`: https://tronche.com/gui/x/xlib/window/XMoveResizeWindow.html
+    // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
     pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
         if let WindowHandle::XlibHandle(h) = window.handle {
             if window.visible() {
@@ -151,6 +161,7 @@ impl XWrap {
     }
 
     /// Makes a window take focus.
+    // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn window_take_focus(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             self.grab_mouse_clicks(handle);
@@ -164,16 +175,12 @@ impl XWrap {
                         xlib::RevertToPointerRoot,
                         xlib::CurrentTime,
                     );
-                    let list = vec![handle];
-                    (self.xlib.XChangeProperty)(
-                        self.display,
+                    let list = vec![handle as c_long];
+                    self.set_property_long(
                         self.root,
                         self.atoms.NetActiveWindow,
                         xlib::XA_WINDOW,
-                        32,
-                        xlib::PropModeReplace,
-                        list.as_ptr().cast::<u8>(),
-                        1,
+                        &list,
                     );
                     std::mem::forget(list);
                 }
@@ -185,24 +192,22 @@ impl XWrap {
     }
 
     /// Unfocuses all windows.
+    // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn unfocus(&self) {
         let handle = self.root;
         unsafe {
             (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
-            (self.xlib.XChangeProperty)(
-                self.display,
+            self.set_property_long(
                 self.root,
                 self.atoms.NetActiveWindow,
                 xlib::XA_WINDOW,
-                32,
-                xlib::PropModeReplace,
-                vec![c_ulong::MAX].as_ptr().cast::<u8>(),
-                1,
+                &[c_long::MAX],
             );
         }
     }
 
     /// Restacks the windows to the order of the vec.
+    // `XRestackWindows`: https://tronche.com/gui/x/xlib/window/XRestackWindows.html
     pub fn restack(&self, handles: Vec<WindowHandle>) {
         let mut windows = vec![];
         for handle in handles {
@@ -218,6 +223,7 @@ impl XWrap {
     }
 
     /// Raise a window.
+    // `XRaiseWindow`: https://tronche.com/gui/x/xlib/window/XRaiseWindow.html
     pub fn move_to_top(&self, handle: &WindowHandle) {
         if let WindowHandle::XlibHandle(window) = handle {
             unsafe {
@@ -227,6 +233,11 @@ impl XWrap {
     }
 
     /// Kills a window.
+    // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
+    // `XSetCloseDownMode`: https://tronche.com/gui/x/xlib/display/XSetCloseDownMode.html
+    // `XKillClient`: https://tronche.com/gui/x/xlib/window-and-session-manager/XKillClient.html
+    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
+    // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
             //nicely ask the window to close
@@ -253,6 +264,7 @@ impl XWrap {
     }
 
     /// Subscribe to an event of a window.
+    // `XSelectInput`: https://tronche.com/gui/x/xlib/event-handling/XSelectInput.html
     pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long) {
         unsafe {
             (self.xlib.XSelectInput)(self.display, window, mask);

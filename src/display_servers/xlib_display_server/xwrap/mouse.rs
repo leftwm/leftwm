@@ -18,6 +18,7 @@ impl XWrap {
     }
 
     /// Grabs the button with the modifier for a window.
+    // `XGrabButton`: https://tronche.com/gui/x/xlib/input/XGrabButton.html
     pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
         // Grab the buttons with and without numlock (Mod2).
         let mods: Vec<u32> = vec![
@@ -44,6 +45,7 @@ impl XWrap {
     }
 
     /// Cleans all currently grabbed buttons of a window.
+    // `XUngrabButton`: https://tronche.com/gui/x/xlib/input/XUngrabButton.html
     pub fn ungrab_buttons(&self, handle: xlib::Window) {
         unsafe {
             (self.xlib.XUngrabButton)(
@@ -56,6 +58,7 @@ impl XWrap {
     }
 
     /// Grabs the cursor and sets its visual.
+    // `XGrabPointer`: https://tronche.com/gui/x/xlib/input/XGrabPointer.html
     pub fn grab_pointer(&self, cursor: c_ulong) {
         unsafe {
             //grab the mouse
@@ -74,6 +77,7 @@ impl XWrap {
     }
 
     /// Ungrab the cursor.
+    // `XUngrabPointer`: https://tronche.com/gui/x/xlib/input/XUngrabPointer.html
     pub fn ungrab_pointer(&self) {
         unsafe {
             //release the mouse grab
@@ -95,6 +99,7 @@ impl XWrap {
     /// # Errors
     ///
     /// Error indicates `XlibError`.
+    // `XWarpPointer`: https://tronche.com/gui/x/xlib/input/XWarpPointer.html
     // TODO: Verify that Error is unreachable or specify conditions that may result
     // in an error.
     pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<(), XlibError> {
@@ -118,6 +123,8 @@ impl XWrap {
     }
 
     /// Replay a click on a window.
+    // `XAllowEvents`: https://linux.die.net/man/3/xallowevents
+    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     pub fn replay_click(&self, mod_mask: ModMask) {
         // Only replay the click when in ClickToFocus and we are not trying to move/resize the
         // window.

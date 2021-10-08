@@ -31,6 +31,9 @@ impl XWrap {
     }
 
     /// Returns a `XColor` for a color.
+    // `XDefaultScreen`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultScreen
+    // `XDefaultColormap`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultColormap
+    // `XAllocNamedColor`: https://tronche.com/gui/x/xlib/color/XAllocNamedColor.html
     pub fn get_color(&self, color: &str) -> c_ulong {
         unsafe {
             let screen = (self.xlib.XDefaultScreen)(self.display);
@@ -46,6 +49,7 @@ impl XWrap {
     /// # Errors
     ///
     /// Will error if root window cannot be found.
+    // `XQueryPointer`: https://tronche.com/gui/x/xlib/window-information/XQueryPointer.html
     pub fn get_cursor_point(&self) -> Result<(i32, i32), XlibError> {
         let roots = self.get_roots();
         for w in roots {
@@ -121,11 +125,11 @@ impl XWrap {
                 xyhw.h = Some(size.base_height);
             }
 
-            //TODO: support min/max aspect
-            //if size.flags & xlib::PAspect != 0 {
-            //    //c->mina = (float)size.min_aspect.y / size.min_aspect.x;
-            //    //c->maxa = (float)size.max_aspect.x / size.max_aspect.y;
-            //}
+            // TODO: support min/max aspect
+            // if size.flags & xlib::PAspect != 0 {
+            //     //c->mina = (float)size.min_aspect.y / size.min_aspect.x;
+            //     //c->maxa = (float)size.max_aspect.x / size.max_aspect.y;
+            // }
 
             return Some(xyhw);
         }
@@ -133,6 +137,7 @@ impl XWrap {
     }
 
     /// Returns the next `Xevent` of the xserver.
+    // `XNextEvent`: https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XNextEvent.html
     #[must_use]
     pub fn get_next_event(&self) -> xlib::XEvent {
         unsafe {
@@ -194,6 +199,7 @@ impl XWrap {
     }
 
     /// Returns the transient parent of a window.
+    // `XGetTransientForHint`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetTransientForHint.html
     #[must_use]
     pub fn get_transient_for(&self, window: xlib::Window) -> Option<xlib::Window> {
         unsafe {
@@ -212,6 +218,7 @@ impl XWrap {
     /// # Errors
     ///
     /// Will error if window status is 0 (no attributes).
+    // `XGetWindowAttributes`: https://tronche.com/gui/x/xlib/window-information/XGetWindowAttributes.html
     pub fn get_window_attrs(
         &self,
         window: xlib::Window,
@@ -228,6 +235,7 @@ impl XWrap {
     /// # Errors
     ///
     /// Errors if Xlib returns a status of 0.
+    // `XGetGeometry`: https://tronche.com/gui/x/xlib/window-information/XGetGeometry.html
     pub fn get_window_geometry(&self, window: xlib::Window) -> Result<XyhwChange, XlibError> {
         let mut root_return: xlib::Window = 0;
         let mut x_return: c_int = 0;
@@ -309,6 +317,7 @@ impl XWrap {
     }
 
     /// Returns the atom states of a window.
+    // `XGetWindowProperty`: https://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
     #[must_use]
     pub fn get_window_states_atoms(&self, window: xlib::Window) -> Vec<xlib::Atom> {
         let mut format_return: i32 = 0;
@@ -381,6 +390,7 @@ impl XWrap {
     }
 
     /// Returns the `WM_HINTS` of a window.
+    // `XGetWMHints`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMHints.html
     #[must_use]
     pub fn get_wmhints(&self, window: xlib::Window) -> Option<xlib::XWMHints> {
         unsafe {
@@ -397,6 +407,7 @@ impl XWrap {
     /// # Errors
     ///
     /// Errors if `XAtom` is not valid.
+    // `XGetAtomName`: https://tronche.com/gui/x/xlib/window-information/XGetAtomName.html
     pub fn get_xatom_name(&self, atom: xlib::Atom) -> Result<String, XlibError> {
         unsafe {
             let cstring = (self.xlib.XGetAtomName)(self.display, atom);
@@ -410,6 +421,7 @@ impl XWrap {
     // Internal functions.
 
     /// Returns the `WM_SIZE_HINTS`/`WM_NORMAL_HINTS` of a window.
+    // `XGetWMNormalHints`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMNormalHints.html
     #[must_use]
     fn get_hint_sizing(&self, window: xlib::Window) -> Option<xlib::XSizeHints> {
         let mut xsize: xlib::XSizeHints = unsafe { std::mem::zeroed() };
@@ -426,6 +438,7 @@ impl XWrap {
     /// # Errors
     ///
     /// Errors if window status = 0.
+    // `XGetWindowProperty`: https://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
     fn get_property(
         &self,
         window: xlib::Window,
@@ -460,6 +473,7 @@ impl XWrap {
     }
 
     /// Returns all the roots of the display.
+    // `XRootWindowOfScreen`: https://tronche.com/gui/x/xlib/display/screen-information.html#RootWindowOfScreen
     #[must_use]
     fn get_roots(&self) -> Vec<xlib::Window> {
         self.get_xscreens()
@@ -472,6 +486,9 @@ impl XWrap {
     /// # Errors
     ///
     /// Errors if window status = 0.
+    // `XGetTextProperty`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetTextProperty.html
+    // `XTextPropertyToStringList`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XTextPropertyToStringList.html
+    // `XmbTextPropertyToTextList`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XmbTextPropertyToTextList.html
     fn get_text_prop(&self, window: xlib::Window, atom: xlib::Atom) -> Result<String, XlibError> {
         unsafe {
             let mut ptr: *mut *mut c_char = std::mem::zeroed();
@@ -505,6 +522,7 @@ impl XWrap {
     /// # Errors
     ///
     /// Will error if unknown window status is returned.
+    // `XQueryTree`: https://tronche.com/gui/x/xlib/window-information/XQueryTree.html
     fn get_windows_for_root<'w>(&self, root: xlib::Window) -> Result<&'w [xlib::Window], String> {
         unsafe {
             let mut root_return: xlib::Window = std::mem::zeroed();
@@ -561,6 +579,8 @@ impl XWrap {
     }
 
     /// Returns all the xscreens of the display.
+    // `XScreenCount`: https://tronche.com/gui/x/xlib/display/display-macros.html#ScreenCount
+    // `XScreenOfDisplay`: https://tronche.com/gui/x/xlib/display/display-macros.html#ScreensOfDisplay
     #[must_use]
     fn get_xscreens(&self) -> Vec<xlib::Screen> {
         let mut screens = Vec::new();

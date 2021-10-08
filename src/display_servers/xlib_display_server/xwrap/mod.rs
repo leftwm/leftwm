@@ -76,6 +76,12 @@ impl XWrap {
     /// # Panics
     ///
     /// Panics if unable to contact xorg.
+    // `XOpenDisplay`: https://tronche.com/gui/x/xlib/display/opening.html
+    // `XConnectionNumber`: https://tronche.com/gui/x/xlib/display/display-macros.html#ConnectionNumber
+    // `XDefaultRootWindow`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultRootWindow
+    // `XSetErrorHandler`: https://tronche.com/gui/x/xlib/event-handling/protocol-errors/XSetErrorHandler.html
+    // `XSelectInput`: https://tronche.com/gui/x/xlib/event-handling/XSelectInput.html
+    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     #[must_use]
     pub fn new() -> Self {
         const SERVER: mio::Token = mio::Token(0);
@@ -185,7 +191,10 @@ impl XWrap {
     }
 
     /// Initialize the xwrapper.
-    /// TODO: split into smaller functions
+    // `XChangeWindowAttributes`: https://tronche.com/gui/x/xlib/window/XChangeWindowAttributes.html
+    // `XDeleteProperty`: https://tronche.com/gui/x/xlib/window-information/XDeleteProperty.html
+    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
+    // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
@@ -216,19 +225,13 @@ impl XWrap {
 
         // EWMH compliance.
         unsafe {
-            let supported = self.atoms.net_supported();
-            let supported_ptr: *const xlib::Atom = supported.as_ptr();
-            let size = supported.len() as i32;
-            (self.xlib.XChangeProperty)(
-                self.display,
-                root,
-                self.atoms.NetSupported,
-                xlib::XA_ATOM,
-                32,
-                xlib::PropModeReplace,
-                supported_ptr.cast::<u8>(),
-                size,
-            );
+            let supported: Vec<c_long> = self
+                .atoms
+                .net_supported()
+                .iter()
+                .map(|&atom| atom as c_long)
+                .collect();
+            self.set_property_long(root, self.atoms.NetSupported, xlib::XA_ATOM, &supported);
             std::mem::forget(supported);
             // Cleanup the client list.
             (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
@@ -249,6 +252,8 @@ impl XWrap {
     ///  # Panics
     ///
     ///  Panics if a new Cstring cannot be formed
+    // `Xutf8TextListToTextProperty`: https://linux.die.net/man/3/xutf8textlisttotextproperty
+    // `XSetTextProperty`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XSetTextProperty.html
     pub fn init_desktops_hints(&self) {
         let tags = &self.tags;
         let tag_length = tags.len();
@@ -297,6 +302,7 @@ impl XWrap {
     }
 
     /// Send a `XConfigureEvent` for a window to X.
+    // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
     pub fn send_config(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             let config = xlib::XConfigureEvent {
@@ -328,6 +334,7 @@ impl XWrap {
     }
 
     /// Send a xevent atom for a window to X.
+    // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
     fn send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
         if self.can_send_xevent_atom(window, atom) {
             let mut msg: xlib::XClientMessageEvent = unsafe { std::mem::zeroed() };
@@ -345,6 +352,7 @@ impl XWrap {
     }
 
     /// Returns whether a window can recieve a xevent atom.
+    // `XGetWMProtocols`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMProtocols.html
     fn can_send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
         unsafe {
             let mut array: *mut xlib::Atom = std::mem::zeroed();
@@ -401,11 +409,13 @@ impl XWrap {
     }
 
     /// Flush the xserver.
+    // `XFlush`: https://tronche.com/gui/x/xlib/event-handling/XFlush.html
     pub fn flush(&self) {
         unsafe { (self.xlib.XFlush)(self.display) };
     }
 
     /// Returns how many events are waiting.
+    // `XPending`: https://tronche.com/gui/x/xlib/event-handling/XPending.html
     #[must_use]
     pub fn queue_len(&self) -> i32 {
         unsafe { (self.xlib.XPending)(self.display) }
