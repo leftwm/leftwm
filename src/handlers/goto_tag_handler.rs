@@ -43,8 +43,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .iter_mut()
             .find(|ws| ws.tags == new_tags)
         {
-            if let Some(tag) = self.state.tags.iter_mut().find(|t| t.id == old_tags[0]) {
-                tag.layout = ws.layout;
+            if self.state.layout_manager.mode == LayoutMode::Workspace {
+                if let Some(tag) = self.state.tags.iter_mut().find(|t| t.id == old_tags[0]) {
+                    tag.layout = ws.layout;
+                }
             }
             ws.tags = old_tags;
         }

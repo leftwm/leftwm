@@ -9,6 +9,7 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
+use crate::models::LayoutMode;
 use crate::models::TagId;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
@@ -274,8 +275,21 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
             &mut manager.state.workspaces.get_mut(hist_a)?.tags,
             &mut temp,
         );
-        //Update dock tags
+        // Update dock tags.
         manager.update_docks();
+
+        for ws in &[hist_a, hist_b] {
+            let workspace = manager.state.workspaces.get_mut(*ws)?;
+            let tag = manager
+                .state
+                .tags
+                .iter_mut()
+                .find(|t| t.id == workspace.tags[0])?;
+            match manager.state.layout_manager.mode {
+                LayoutMode::Workspace => tag.set_layout(workspace.layout),
+                LayoutMode::Tag => workspace.layout = tag.layout,
+            }
+        }
         return Some(true);
     }
     if manager.state.workspaces.len() == 1 {
