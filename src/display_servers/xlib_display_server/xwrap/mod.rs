@@ -26,7 +26,7 @@ mod mouse;
 mod setters;
 mod window;
 
-type WindowStateConst = u8;
+type WindowStateConst = c_long;
 // const WITHDRAWN_STATE: WindowStateConst = 0;
 const NORMAL_STATE: WindowStateConst = 1;
 // const ICONIC_STATE: WindowStateConst = 2;

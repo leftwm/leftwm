@@ -2,7 +2,7 @@
 use super::{Window, WindowHandle};
 use crate::XWrap;
 use std::ffi::CString;
-use std::os::raw::c_ulong;
+use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
 
 impl XWrap {
@@ -15,7 +15,7 @@ impl XWrap {
             (self.xlib.XDeleteProperty)(self.display, self.root, self.atoms.NetClientList);
         }
         for w in &self.managed_windows {
-            let list = vec![*w as u8];
+            let list = vec![*w as c_long];
             self.set_property_long(self.root, self.atoms.NetClientList, xlib::XA_WINDOW, &list);
         }
     }
@@ -35,7 +35,7 @@ impl XWrap {
     }
 
     /// Sets the current viewport.
-    pub fn set_current_viewport(&self, tags: Vec<&String>) {
+    fn set_current_viewport(&self, tags: Vec<&String>) {
         let mut indexes: Vec<u32> = vec![];
         for tag in tags {
             for (i, mytag) in self.tags.iter().enumerate() {
@@ -52,13 +52,13 @@ impl XWrap {
 
     /// Sets a desktop property.
     pub fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
-        let x_data: Vec<u8> = data.iter().map(|x| *x as u8).collect();
+        let x_data: Vec<c_long> = data.iter().map(|x| *x as c_long).collect();
         self.set_property_long(self.root, atom, xlib::XA_CARDINAL, &x_data);
     }
 
     /// Sets a desktop property with type `c_ulong`.
     pub fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, type_: c_ulong) {
-        let data = vec![value as u8];
+        let data = vec![value as c_long];
         self.set_property_long(self.root, atom, type_, &data);
     }
 
@@ -104,10 +104,10 @@ impl XWrap {
 
     /// Sets what desktop a window is on.
     pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &str) {
-        let mut indexes: Vec<u8> = vec![];
+        let mut indexes: Vec<c_long> = vec![];
         for (i, tag) in self.tags.iter().enumerate() {
             if current_tags.contains(tag) {
-                let tag = i as u8;
+                let tag = i as c_long;
                 indexes.push(tag);
             }
         }
@@ -119,12 +119,12 @@ impl XWrap {
 
     /// Sets the atom states of a window.
     pub fn set_window_states_atoms(&self, window: xlib::Window, states: &[xlib::Atom]) {
-        let data: Vec<u8> = states.iter().map(|x| *x as u8).collect();
+        let data: Vec<c_long> = states.iter().map(|x| *x as c_long).collect();
         self.set_property_long(window, self.atoms.NetWMState, xlib::XA_ATOM, &data);
     }
 
     /// Sets the `WM_STATE` of a window.
-    pub fn set_wm_states(&self, window: xlib::Window, states: &[u8]) {
+    pub fn set_wm_states(&self, window: xlib::Window, states: &[c_long]) {
         self.set_property_long(window, self.atoms.WMState, self.atoms.WMState, states);
     }
 
@@ -136,7 +136,7 @@ impl XWrap {
         window: xlib::Window,
         property: xlib::Atom,
         type_: xlib::Atom,
-        data: &[u8],
+        data: &[c_long],
     ) {
         // `XChangeProperty`: https://tronche.com/gui/x/xlib/window-information/XChangeProperty.html
         unsafe {
