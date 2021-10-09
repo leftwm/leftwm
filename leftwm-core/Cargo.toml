@@ -22,10 +22,8 @@ log = "0.4.8"
 dirs-next = "2.0.0"
 tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 libc = "0.2"
-liquid = "0.23"
 futures = "0.3.12"
 thiserror = "1"
-shellexpand = "2.1"
 
 [dev-dependencies]
 tempfile = "3.2.0"
