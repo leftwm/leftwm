@@ -15,9 +15,6 @@ pub struct Workspace {
     pub margin: Margins,
     pub margin_multiplier: f32,
     pub gutters: Vec<Gutter>,
-    // We allow dead code here, as >1.56.0 complains
-    // This should be investigated further.
-    #[allow(dead_code)]
     #[serde(skip)]
     all_tags: Vec<Tag>,
     pub avoid: Vec<Xyhw>,
