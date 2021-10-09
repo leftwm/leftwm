@@ -422,7 +422,6 @@ dependencies = [
 name = "leftwm-core"
 version = "0.2.9"
 dependencies = [
- "anyhow",
  "dirs-next",
  "futures",
  "libc",
@@ -437,7 +436,6 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "toml",
  "x11-dl",
  "xdg",
 ]
