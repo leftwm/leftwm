@@ -210,7 +210,7 @@ cd leftwm
 # Without systemd logging
 cargo build --release
 
-# OR with systemd logging
+# OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
 cargo build --release --features=journald
 ```
 
@@ -247,7 +247,7 @@ git pull origin master
 # Without systemd logging
 cargo build --release
 
-# With systemd logging which can be used with `journalctl -f` for debug purpose
+# OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
 cargo build --release --features=journald
 ```
 
