@@ -24,6 +24,7 @@ pub mod errors;
 mod event_loop;
 mod handlers;
 pub mod layouts;
+pub mod logging;
 pub mod models;
 mod state;
 pub mod utils;
