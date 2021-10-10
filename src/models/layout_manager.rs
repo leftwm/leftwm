@@ -1,9 +1,7 @@
-use crate::layouts::Layout;
-use crate::{config::Config, Workspace};
+use super::Tag;
+use crate::{config::Config, layouts::Layout, Workspace};
 
 use serde::{Deserialize, Serialize};
-
-use super::{manager, workspace, Tag};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum LayoutMode {

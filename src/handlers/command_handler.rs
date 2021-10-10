@@ -9,7 +9,6 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::LayoutMode;
 use crate::models::TagId;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
@@ -44,7 +43,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag(tag) => Some(goto_tag(manager, *tag)),
+        Command::GotoTag(tag) => goto_tag(manager, *tag),
 
         Command::CloseWindow => close_window(manager),
         Command::SwapScreens => swap_tags(manager),
@@ -209,7 +208,7 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
 fn goto_tag<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     input_tag: usize,
-) -> bool {
+) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
@@ -252,7 +251,7 @@ fn focus_tag_change<C: Config, SERVER: DisplayServer>(
         }
     }
     let (next, _) = *active_tags.get(index)?;
-    Some(manager.goto_tag_handler(next))
+    manager.goto_tag_handler(next)
 }
 
 fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>) -> Option<bool> {
@@ -293,7 +292,7 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
             .map(std::string::ToString::to_string)?;
 
         let tag_index = manager.state.tags.iter().position(|x| x.id == last)? + 1;
-        return Some(manager.goto_tag_handler(tag_index));
+        return manager.goto_tag_handler(tag_index);
     }
     None
 }
