@@ -34,8 +34,8 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
 
-        Command::ToggleFullScreen => toggle_fullscreen(manager),
-        Command::ToggleSticky => toggle_sticky(manager),
+        Command::ToggleFullScreen => toggle_state(manager, WindowState::Fullscreen),
+        Command::ToggleSticky => toggle_state(manager, WindowState::Sticky),
 
         Command::SendWindowToTag(tag) => move_to_tag(*tag, manager),
         Command::MoveWindowToNextWorkspace => move_window_to_workspace_change(manager, 1),
@@ -149,24 +149,18 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     None
 }
 
-fn toggle_fullscreen<C: Config, SERVER: DisplayServer>(
+fn toggle_state<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
+    state: WindowState,
 ) -> Option<bool> {
     let window = manager.focused_window()?;
     let handle = window.handle;
-    let act = DisplayAction::SetState(handle, !window.is_fullscreen(), WindowState::Fullscreen);
+    let act = DisplayAction::SetState(handle, !window.has_state(&state), state);
     manager.state.actions.push_back(act);
-    Some(handle_focus(manager, handle))
-}
-
-fn toggle_sticky<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-) -> Option<bool> {
-    let window = manager.focused_window()?;
-    let handle = window.handle;
-    let act = DisplayAction::SetState(handle, !window.is_sticky(), WindowState::Sticky);
-    manager.state.actions.push_back(act);
-    Some(true)
+    match state {
+        WindowState::Fullscreen => Some(handle_focus(manager, handle)),
+        _ => Some(true),
+    }
 }
 
 fn move_to_tag<C: Config, SERVER: DisplayServer>(
