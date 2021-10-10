@@ -82,9 +82,12 @@ where
         self.state
             .windows
             .iter_mut()
-            .filter(|w| w.strut.is_some())
+            .filter(|w| w.strut.is_some() || w.is_sticky())
             .for_each(|w| {
-                let (x, y) = w.strut.unwrap_or_default().center();
+                let (x, y) = match w.strut {
+                    Some(strut) => strut.center(),
+                    None => w.calculated_xyhw().center(),
+                };
                 if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
                     w.tags = ws.tags.clone();
                 }

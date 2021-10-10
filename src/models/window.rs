@@ -139,6 +139,10 @@ impl Window {
         self.states.contains(&WindowState::Fullscreen)
     }
     #[must_use]
+    pub fn is_sticky(&self) -> bool {
+        self.states.contains(&WindowState::Sticky)
+    }
+    #[must_use]
     pub fn must_float(&self) -> bool {
         self.transient.is_some() || self.is_unmanaged() || self.type_ == WindowType::Splash
     }

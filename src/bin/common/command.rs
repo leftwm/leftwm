@@ -15,6 +15,7 @@ pub enum BaseCommand {
     HardReload,
     ToggleScratchPad,
     ToggleFullScreen,
+    ToggleSticky,
     GotoTag,
     FloatingToTile,
     MoveWindowUp,

@@ -81,6 +81,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
     match head {
         "SoftReload" => Ok(Command::SoftReload),
         "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
+        "ToggleSticky" => Ok(Command::ToggleSticky),
         "SwapScreens" => Ok(Command::SwapScreens),
         "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
         "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),

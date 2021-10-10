@@ -167,6 +167,10 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.set_fullscreen(h, fullscreen);
                 None
             }
+            DisplayAction::SetSticky(h, sticky) => {
+                self.xw.set_sticky(h, sticky);
+                None
+            }
             DisplayAction::SetWindowOrder(wins) => {
                 // get all the windows are aren't managing.
                 // They should be in front of our windows.

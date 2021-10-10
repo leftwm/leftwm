@@ -21,8 +21,11 @@ pub enum DisplayAction {
     /// Makes sure the mouse is over a given point.
     MoveMouseOverPoint((i32, i32)),
 
-    /// Change a windows fullscreen state
+    /// Change a windows fullscreen state.
     SetFullScreen(WindowHandle, bool),
+
+    /// Change a windows sticky state.
+    SetSticky(WindowHandle, bool),
 
     /// Sets the "z-index" order of the windows
     /// first in the array is top most

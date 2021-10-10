@@ -47,6 +47,7 @@ impl TryFrom<Keybind> for leftwm::Keybind {
                 k.value.context("missing name for ToggleScratchPad")?,
             ),
             BaseCommand::ToggleFullScreen => leftwm::Command::ToggleFullScreen,
+            BaseCommand::ToggleSticky => leftwm::Command::ToggleSticky,
             BaseCommand::GotoTag => leftwm::Command::GotoTag(
                 usize::from_str(&k.value.context("missing index value for GotoTag")?)
                     .context("invalid index value for GotoTag")?,

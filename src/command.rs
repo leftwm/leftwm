@@ -10,6 +10,7 @@ pub enum Command {
     HardReload,
     ToggleScratchPad(String),
     ToggleFullScreen,
+    ToggleSticky,
     GotoTag(usize),
     FloatingToTile,
     MoveWindowUp,

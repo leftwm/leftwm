@@ -126,6 +126,27 @@ impl XWrap {
         }
     }
 
+    /// Sets a windows sticky state.
+    pub fn set_sticky(&self, handle: WindowHandle, sticky: bool) {
+        if let WindowHandle::XlibHandle(h) = handle {
+            let atom = self.atoms.NetWMStateSticky;
+            let mut states = self.get_window_states_atoms(h);
+            if sticky {
+                if states.contains(&atom) {
+                    return;
+                }
+                states.push(atom);
+            } else if !sticky {
+                let index = match states.iter().position(|s| s == &atom) {
+                    Some(i) => i,
+                    None => return,
+                };
+                states.remove(index);
+            }
+            self.set_window_states_atoms(h, &states);
+        }
+    }
+
     /// Sets what desktop a window is on.
     pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &str) {
         let mut indexes: Vec<c_long> = vec![];
