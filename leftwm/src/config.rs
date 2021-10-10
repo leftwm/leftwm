@@ -132,6 +132,7 @@ pub struct Config {
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
+    pub loglevel: String,
     pub state: Option<PathBuf>,
 
     #[serde(skip)]
@@ -668,6 +669,7 @@ impl Default for Config {
             keybind: commands,
             theme_setting: ThemeSetting::default(),
             max_window_width: None,
+            loglevel: String::from("Off"),
             state: None,
         }
     }

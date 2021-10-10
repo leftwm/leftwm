@@ -608,8 +608,12 @@ fn send_workspace_to_tag<C: Config, SERVER: DisplayServer>(
     false
 }
 
-fn set_log_level(loglevel: &String) -> Option<bool> {
-    unimplemented!()
+fn set_log_level<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
+    loglevel: &String,
+) -> Option<bool> {
+    Config.loglevel = logleve;
+    true
 }
 
 #[cfg(test)]
