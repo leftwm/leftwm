@@ -176,7 +176,7 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
     change.floating = Some(xyhw);
     if window_type == WindowType::Dock || window_type == WindowType::Desktop {
         if let Some(dock_area) = xw.get_window_strut_array(event.window) {
-            let dems = xw.screens_area_dimensions();
+            let dems = xw.get_screens_area_dimensions();
             let screen = xw
                 .get_screens()
                 .iter()
