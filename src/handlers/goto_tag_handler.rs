@@ -3,20 +3,16 @@ use super::*;
 use crate::display_servers::DisplayServer;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
-    pub fn goto_tag_handler(&mut self, tag_num: usize) -> bool {
+    pub fn goto_tag_handler(&mut self, tag_num: usize) -> Option<bool> {
         if tag_num > self.state.tags.len() || tag_num < 1 {
-            return false;
+            return Some(false);
         }
 
-        let tag = self.state.tags[tag_num - 1].clone();
-        let new_tags = vec![tag.id.clone()];
+        let tag_id = self.state.tags[tag_num - 1].id.clone();
+        let new_tags = vec![tag_id.clone()];
         //no focus safety check
-        let old_tags = match self.focused_workspace() {
-            Some(ws) => ws.tags.clone(),
-            None => return false,
-        };
-        let handle = self.focused_window().map(|w| w.handle);
-        if let Some(handle) = handle {
+        let old_tags = self.focused_workspace()?.tags.clone();
+        if let Some(handle) = self.focused_window().map(|w| w.handle) {
             let old_handle = self
                 .state
                 .focus_manager
@@ -34,13 +30,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             ws.tags = old_tags;
         }
 
-        match self.focused_workspace_mut() {
-            Some(aws) => aws.tags = new_tags,
-            None => return false,
-        }
-        self.focus_tag(&tag.id);
+        self.focused_workspace_mut()?.tags = new_tags;
+        self.focus_tag(&tag_id);
         self.update_docks();
-        true
+        self.state
+            .layout_manager
+            .update_layouts(&mut self.state.workspaces, &mut self.state.tags);
+        Some(true)
     }
 }
 

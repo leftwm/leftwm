@@ -17,7 +17,7 @@ mod main_and_vert_stack;
 mod monocle;
 mod right_main_and_vert_stack;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum Layout {
     MainAndVertStack,
     MainAndHorizontalStack,
@@ -48,37 +48,32 @@ pub const LAYOUTS: &[Layout] = &[
     Layout::LeftWiderRightStack,
 ];
 
+impl Default for Layout {
+    fn default() -> Self {
+        Layout::MainAndVertStack
+    }
+}
+
 // This is tedious, but simple and effective.
 impl Layout {
-    pub fn new(layouts: &[Self]) -> Self {
-        if let Some(layout) = layouts.first() {
-            return *layout;
-        }
-        Self::Fibonacci
-    }
-    pub fn update_windows(
-        &self,
-        workspace: &Workspace,
-        windows: &mut Vec<&mut Window>,
-        tags: &mut Vec<Tag>,
-    ) {
+    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>, tag: &Tag) {
         match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
-                main_and_vert_stack::update(workspace, windows, tags);
+                main_and_vert_stack::update(workspace, tag, windows);
             }
             Self::MainAndHorizontalStack => {
-                main_and_horizontal_stack::update(workspace, windows, tags);
+                main_and_horizontal_stack::update(workspace, tag, windows);
             }
-            Self::MainAndDeck => main_and_deck::update(workspace, windows, tags),
+            Self::MainAndDeck => main_and_deck::update(workspace, tag, windows),
             Self::GridHorizontal => grid_horizontal::update(workspace, windows),
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),
-            Self::Fibonacci => fibonacci::update(workspace, windows, tags),
-            Self::CenterMain => center_main::update(workspace, windows, tags),
-            Self::CenterMainBalanced => center_main_balanced::update(workspace, windows, tags),
+            Self::Fibonacci => fibonacci::update(workspace, tag, windows),
+            Self::CenterMain => center_main::update(workspace, tag, windows),
+            Self::CenterMainBalanced => center_main_balanced::update(workspace, tag, windows),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => {
-                right_main_and_vert_stack::update(workspace, windows, tags);
+                right_main_and_vert_stack::update(workspace, tag, windows);
             }
         }
     }
@@ -102,28 +97,6 @@ impl Layout {
             //Layouts that can be flipped horizontally
             _ => [(false, false), (true, false)].to_vec(),
         }
-    }
-
-    pub fn next_layout(&self, layouts: &[Self]) -> Self {
-        let mut index = match layouts.iter().position(|x| x == self) {
-            Some(x) => x as isize,
-            None => return Self::Fibonacci,
-        } + 1;
-        if index >= layouts.len() as isize {
-            index = 0;
-        }
-        layouts[index as usize]
-    }
-
-    pub fn prev_layout(&self, layouts: &[Self]) -> Self {
-        let mut index = match layouts.iter().position(|x| x == self) {
-            Some(x) => x as isize,
-            None => return Self::Fibonacci,
-        } - 1;
-        if index < 0 {
-            index = layouts.len() as isize - 1;
-        }
-        layouts[index as usize]
     }
 }
 
@@ -170,7 +143,7 @@ mod tests {
                 y: 0,
             },
             vec![],
-            vec![],
+            Layout::default(),
             None,
         );
         ws.margin = Margins::new(0);

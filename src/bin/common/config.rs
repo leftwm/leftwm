@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use leftwm::{
     config::{ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, Margins, Size},
+    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size},
     DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
@@ -118,6 +118,7 @@ pub struct Config {
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
     pub layouts: Vec<Layout>,
+    pub layout_mode: LayoutMode,
     pub scratchpad: Option<Vec<ScratchPad>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
@@ -320,6 +321,10 @@ impl leftwm::Config for Config {
 
     fn layouts(&self) -> Vec<Layout> {
         self.layouts.clone()
+    }
+
+    fn layout_mode(&self) -> LayoutMode {
+        self.layout_mode
     }
 
     fn focus_new_windows(&self) -> bool {
@@ -645,6 +650,7 @@ impl Default for Config {
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: LAYOUTS.to_vec(),
+            layout_mode: LayoutMode::Workspace,
             // TODO: add sane default for scratchpad config.
             // Currently default values are set in sane_dimension fn.
             scratchpad: Some(vec![]),

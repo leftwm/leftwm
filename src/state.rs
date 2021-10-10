@@ -2,12 +2,12 @@
 
 use crate::config::{Config, ScratchPad};
 use crate::layouts::Layout;
-use crate::models::FocusManager;
 use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
+use crate::models::{FocusManager, LayoutManager};
 use crate::{DisplayAction, DisplayServer, Manager};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -19,6 +19,7 @@ pub struct State<C> {
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
+    pub layout_manager: LayoutManager,
     pub mode: Mode,
     // TODO should this really be saved in the state?
     pub config: C,
@@ -37,10 +38,11 @@ where
     C: Config,
 {
     pub(crate) fn new(config: C) -> Self {
+        let layout_manager = LayoutManager::new(&config);
         let mut tags: Vec<Tag> = config
             .create_list_of_tags()
             .iter()
-            .map(|s| Tag::new(s))
+            .map(|s| Tag::new(s, layout_manager.new_layout()))
             .collect();
         tags.push(Tag {
             id: "NSP".to_owned(),
@@ -50,6 +52,7 @@ where
 
         Self {
             focus_manager: FocusManager::new(&config),
+            layout_manager,
             scratchpads: config.create_list_of_scratchpads(),
             layouts: config.layouts(),
             screens: Default::default(),
@@ -77,6 +80,18 @@ where
             if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {
                 workspace.layout = old_workspace.layout;
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
+            }
+        }
+
+        // restore tags
+        for tag in &mut self.state.tags {
+            if let Some(old_tag) = state.tags.iter().find(|t| t.id == tag.id) {
+                tag.hidden = old_tag.hidden;
+                tag.layout = old_tag.layout;
+                tag.layout_rotation = old_tag.layout_rotation;
+                tag.flipped_vertical = old_tag.flipped_vertical;
+                tag.flipped_horizontal = old_tag.flipped_horizontal;
+                tag.main_width_percentage = old_tag.main_width_percentage;
             }
         }
 

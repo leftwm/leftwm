@@ -43,7 +43,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag(tag) => Some(goto_tag(manager, *tag)),
+        Command::GotoTag(tag) => goto_tag(manager, *tag),
 
         Command::CloseWindow => close_window(manager),
         Command::SwapScreens => swap_tags(manager),
@@ -208,7 +208,7 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
 fn goto_tag<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     input_tag: usize,
-) -> bool {
+) -> Option<bool> {
     let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
     let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
 
@@ -251,7 +251,7 @@ fn focus_tag_change<C: Config, SERVER: DisplayServer>(
         }
     }
     let (next, _) = *active_tags.get(index)?;
-    Some(manager.goto_tag_handler(next))
+    manager.goto_tag_handler(next)
 }
 
 fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>) -> Option<bool> {
@@ -274,8 +274,13 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
             &mut manager.state.workspaces.get_mut(hist_a)?.tags,
             &mut temp,
         );
-        //Update dock tags
+        // Update dock tags and layouts.
         manager.update_docks();
+        manager
+            .state
+            .layout_manager
+            .update_layouts(&mut manager.state.workspaces, &mut manager.state.tags);
+
         return Some(true);
     }
     if manager.state.workspaces.len() == 1 {
@@ -287,7 +292,7 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
             .map(std::string::ToString::to_string)?;
 
         let tag_index = manager.state.tags.iter().position(|x| x.id == last)? + 1;
-        return Some(manager.goto_tag_handler(tag_index));
+        return manager.goto_tag_handler(tag_index);
     }
     None
 }
@@ -323,7 +328,11 @@ fn next_layout<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER
         .state
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.next_layout(&mut manager.state.tags);
+    let layout = manager.state.layout_manager.next_layout(workspace.layout);
+    workspace.layout = layout;
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.set_layout(layout);
     Some(true)
 }
 
@@ -334,7 +343,14 @@ fn previous_layout<C: Config, SERVER: DisplayServer>(
         .state
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.prev_layout(&mut manager.state.tags);
+    let layout = manager
+        .state
+        .layout_manager
+        .previous_layout(workspace.layout);
+    workspace.layout = layout;
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.set_layout(layout);
     Some(true)
 }
 
@@ -346,7 +362,10 @@ fn set_layout<C: Config, SERVER: DisplayServer>(
         .state
         .focus_manager
         .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.set_layout(&mut manager.state.tags, layout);
+    workspace.layout = layout;
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.set_layout(layout);
     Some(true)
 }
 
@@ -377,8 +396,9 @@ where
     F: Fn(&mut Manager<C, SERVER>, i32, WindowHandle, Option<Layout>, Vec<Window>) -> Option<bool>,
 {
     let handle = manager.focused_window()?.handle;
-    let w = manager.focused_workspace()?;
-    let (tags, layout) = (w.tags.clone(), Some(w.layout));
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter().find(|t| t.id == tag_id)?;
+    let (tags, layout) = (vec![tag_id], Some(tag.layout));
 
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
@@ -506,11 +526,9 @@ fn focus_workspace_change<C: Config, SERVER: DisplayServer>(
 }
 
 fn rotate_tag<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>) -> Option<bool> {
-    let workspace = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
-    let _ = workspace.rotate_layout(&mut manager.state.tags);
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.rotate_layout()?;
     Some(true)
 }
 
@@ -519,11 +537,9 @@ fn change_main_width<C: Config, SERVER: DisplayServer>(
     delta: i8,
     factor: i8,
 ) -> Option<bool> {
-    let workspace = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
-    workspace.change_main_width(&mut manager.state.tags, delta * factor);
+    let tag_id = manager.state.focus_manager.tag(0)?;
+    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    tag.change_main_width(delta * factor);
     Some(true)
 }
 
@@ -617,12 +633,12 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.screen_create_handler(Screen::default());
         manager.state.tags = vec![
-            Tag::new("A15"),
-            Tag::new("B24"),
-            Tag::new("C"),
-            Tag::new("6D4"),
-            Tag::new("E39"),
-            Tag::new("F67"),
+            Tag::new("A15", Layout::default()),
+            Tag::new("B24", Layout::default()),
+            Tag::new("C", Layout::default()),
+            Tag::new("6D4", Layout::default()),
+            Tag::new("E39", Layout::default()),
+            Tag::new("F67", Layout::default()),
         ];
         assert!(!manager.command_handler(&Command::GotoTag(0)));
         assert!(!manager.command_handler(&Command::GotoTag(999)));

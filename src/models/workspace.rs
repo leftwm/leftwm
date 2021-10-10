@@ -11,7 +11,6 @@ pub struct Workspace {
     pub id: Option<i32>,
     /// Active layout
     pub layout: Layout,
-    layout_rotation: usize,
     pub tags: Vec<TagId>,
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -21,7 +20,6 @@ pub struct Workspace {
     #[allow(dead_code)]
     #[serde(skip)]
     all_tags: Vec<Tag>,
-    layouts: Vec<Layout>,
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
@@ -53,20 +51,18 @@ impl Workspace {
         id: Option<i32>,
         bbox: BBox,
         all_tags: Vec<Tag>,
-        layouts: Vec<Layout>,
+        layout: Layout,
         max_window_width: Option<Size>,
     ) -> Self {
         Self {
             id,
-            layout: Layout::new(&layouts),
-            layout_rotation: 0,
+            layout,
             tags: vec![],
             margin: Margins::new(10),
             margin_multiplier: 1.0,
             gutters: vec![],
             avoid: vec![],
             all_tags,
-            layouts,
             xyhw: XyhwBuilder {
                 h: bbox.height,
                 w: bbox.width,
@@ -110,9 +106,8 @@ impl Workspace {
             })
     }
 
-    pub fn show_tag(&mut self, tags: &mut Vec<Tag>, tag: &Tag) {
+    pub fn show_tag(&mut self, tag: &Tag) {
         self.tags = vec![tag.id.clone()];
-        self.set_main_width(tags, self.layout.main_width());
     }
 
     #[must_use]
@@ -122,30 +117,7 @@ impl Workspace {
 
     #[must_use]
     pub fn has_tag(&self, tag: &str) -> bool {
-        for t in &self.tags {
-            if tag == t {
-                return true;
-            }
-        }
-        false
-    }
-
-    pub fn next_layout(&mut self, tags: &mut Vec<Tag>) {
-        self.layout = self.layout.next_layout(&self.layouts);
-        self.set_main_width(tags, self.layout.main_width());
-        self.layout_rotation = 0;
-    }
-
-    pub fn prev_layout(&mut self, tags: &mut Vec<Tag>) {
-        self.layout = self.layout.prev_layout(&self.layouts);
-        self.set_main_width(tags, self.layout.main_width());
-        self.layout_rotation = 0;
-    }
-
-    pub fn set_layout(&mut self, tags: &mut Vec<Tag>, layout: Layout) {
-        self.layout = layout;
-        self.set_main_width(tags, self.layout.main_width());
-        self.layout_rotation = 0;
+        self.tags.contains(&tag.to_owned())
     }
 
     /// Returns true if the workspace is displays a given window.
@@ -163,38 +135,6 @@ impl Workspace {
     #[must_use]
     pub fn is_managed(&self, window: &Window) -> bool {
         self.is_displaying(window) && !window.is_unmanaged()
-    }
-
-    pub fn update_windows(&self, windows: &mut Vec<Window>, tags: &mut Vec<Tag>) {
-        if let Some(w) = windows
-            .iter_mut()
-            .find(|w| self.is_displaying(w) && w.is_fullscreen())
-        {
-            w.set_visible(true);
-        } else {
-            //Don't bother updating the other windows
-            //mark all windows for this workspace as visible
-            let mut all_mine: Vec<&mut Window> = windows
-                .iter_mut()
-                .filter(|w| self.is_displaying(w))
-                .collect();
-            all_mine.iter_mut().for_each(|w| w.set_visible(true));
-            //update the location of all non-floating windows
-            let mut managed_nonfloat: Vec<&mut Window> = windows
-                .iter_mut()
-                .filter(|w| self.is_managed(w) && !w.floating())
-                .collect();
-            self.layout
-                .update_windows(self, &mut managed_nonfloat, tags);
-            for w in &mut managed_nonfloat {
-                w.container_size = Some(self.xyhw);
-            }
-            //update the location of all floating windows
-            windows
-                .iter_mut()
-                .filter(|w| self.is_managed(w) && w.floating())
-                .for_each(|w| w.normal = self.xyhw);
-        }
     }
 
     /// Returns the original x position of the workspace,
@@ -264,63 +204,6 @@ impl Workspace {
     }
 
     #[must_use]
-    pub fn current_tags<'a>(&self, tags: &'a mut Vec<Tag>) -> Vec<&'a mut Tag> {
-        tags.iter_mut()
-            .filter(|tag| self.tags.contains(&tag.id))
-            .collect()
-    }
-
-    pub fn change_main_width(&self, tags: &mut Vec<Tag>, delta: i8) {
-        self.current_tags(tags)
-            .iter_mut()
-            .for_each(|t| t.change_main_width(delta));
-    }
-
-    pub fn set_main_width(&self, tags: &mut Vec<Tag>, val: u8) {
-        if let Some(tag) = self.current_tags(tags).get_mut(0) {
-            tag.set_main_width(val);
-        }
-    }
-
-    #[must_use]
-    pub fn main_width(&self, tags: &mut Vec<Tag>) -> f32 {
-        if let Some(tag) = self.current_tags(tags).get(0) {
-            return tag.main_width_percentage();
-        }
-        f32::from(self.layout.main_width())
-    }
-
-    pub fn rotate_layout(&mut self, tags: &mut Vec<Tag>) -> Option<()> {
-        let rotations = self.layout.rotations();
-        self.layout_rotation += 1;
-        if self.layout_rotation >= rotations.len() {
-            self.layout_rotation = 0;
-        }
-        let (horz, vert) = rotations.get(self.layout_rotation)?;
-        let tags = &mut self.current_tags(tags);
-        let tag = tags.get_mut(0)?;
-        tag.flipped_horizontal = *horz;
-        tag.flipped_vertical = *vert;
-        Some(())
-    }
-
-    #[must_use]
-    pub fn flipped_horizontal(&self, tags: &mut Vec<Tag>) -> bool {
-        if let Some(tag) = self.current_tags(tags).get(0) {
-            return tag.flipped_horizontal;
-        }
-        false
-    }
-
-    #[must_use]
-    pub fn flipped_vertical(&self, tags: &mut Vec<Tag>) -> bool {
-        if let Some(tag) = self.current_tags(tags).get(0) {
-            return tag.flipped_vertical;
-        }
-        false
-    }
-
-    #[must_use]
     pub fn center_halfed(&self) -> Xyhw {
         self.xyhw_avoided.center_halfed()
     }
@@ -361,7 +244,7 @@ mod tests {
                 y: 0,
             },
             vec![],
-            vec![],
+            Layout::default(),
             None,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
@@ -382,12 +265,11 @@ mod tests {
                 y: 0,
             },
             vec![],
-            vec![],
+            Layout::default(),
             None,
         );
-        let tag = crate::models::Tag::new("test");
-        let mut tags = vec![tag.clone()];
-        subject.show_tag(&mut tags, &tag);
+        let tag = crate::models::Tag::new("test", Layout::default());
+        subject.show_tag(&tag);
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.tag("test");
         assert!(subject.is_displaying(&w), "workspace should include window");

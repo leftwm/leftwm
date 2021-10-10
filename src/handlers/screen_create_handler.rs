@@ -14,7 +14,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             screen.wsid,
             screen.bbox,
             self.state.tags.clone(),
-            self.state.layouts.clone(),
+            self.state.layout_manager.new_layout(),
             screen
                 .max_window_width
                 .or_else(|| self.state.config.max_window_width()),
@@ -37,12 +37,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         //make sure are enough tags for this new screen
         if self.state.tags.len() <= tag_index {
             let id = (tag_index + 1).to_string();
-            self.state.tags.push(Tag::new(&id));
+            self.state
+                .tags
+                .push(Tag::new(&id, self.state.layout_manager.new_layout()));
         }
         let next_tag = self.state.tags[tag_index].clone();
         self.focus_workspace(&workspace);
         self.focus_tag(&next_tag.id);
-        workspace.show_tag(&mut self.state.tags, &next_tag);
+        workspace.show_tag(&next_tag);
         self.state.workspaces.push(workspace.clone());
         self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
         self.state.screens.push(screen);
