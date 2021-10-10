@@ -280,7 +280,7 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
             &mut temp,
         );
         // Update dock tags and layouts.
-        manager.update_staticc();
+        manager.update_static();
         manager
             .state
             .layout_manager

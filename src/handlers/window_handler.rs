@@ -104,7 +104,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
         }
         if strut_changed {
-            self.update_staticc();
+            self.update_static();
         }
         changed
     }
