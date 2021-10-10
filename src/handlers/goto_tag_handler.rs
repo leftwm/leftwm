@@ -1,6 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::{display_servers::DisplayServer, models::LayoutMode};
+use crate::display_servers::DisplayServer;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn goto_tag_handler(&mut self, tag_num: usize) -> bool {
@@ -11,22 +11,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let tag_id = self.state.tags[tag_num - 1].id.clone();
         let new_tags = vec![tag_id.clone()];
         //no focus safety check
-        let (old_tags, mut layout) = match self.focused_workspace() {
-            Some(ws) => (ws.tags.clone(), ws.layout),
+        let old_tags = match self.focused_workspace() {
+            Some(ws) => ws.tags.clone(),
             None => return false,
         };
-        match self.state.layout_manager.mode {
-            LayoutMode::Tag => {
-                if let Some(tag) = self.state.tags.iter().find(|t| t.id == new_tags[0]) {
-                    layout = tag.layout;
-                }
-            }
-            LayoutMode::Workspace => {
-                if let Some(tag) = self.state.tags.iter_mut().find(|t| t.id == new_tags[0]) {
-                    tag.layout = layout;
-                }
-            }
-        }
         let handle = self.focused_window().map(|w| w.handle);
         if let Some(handle) = handle {
             let old_handle = self
@@ -43,23 +31,18 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .iter_mut()
             .find(|ws| ws.tags == new_tags)
         {
-            if self.state.layout_manager.mode == LayoutMode::Workspace {
-                if let Some(tag) = self.state.tags.iter_mut().find(|t| t.id == old_tags[0]) {
-                    tag.layout = ws.layout;
-                }
-            }
             ws.tags = old_tags;
         }
 
         match self.focused_workspace_mut() {
-            Some(aws) => {
-                aws.tags = new_tags;
-                aws.layout = layout;
-            }
+            Some(aws) => aws.tags = new_tags,
             None => return false,
         }
         self.focus_tag(&tag_id);
         self.update_docks();
+        self.state
+            .layout_manager
+            .update_layouts(&mut self.state.workspaces, &mut self.state.tags);
         true
     }
 }

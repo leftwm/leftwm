@@ -1,7 +1,9 @@
-use crate::config::Config;
 use crate::layouts::Layout;
+use crate::{config::Config, Workspace};
 
 use serde::{Deserialize, Serialize};
+
+use super::{manager, workspace, Tag};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum LayoutMode {
@@ -53,5 +55,20 @@ impl LayoutManager {
             index = self.layouts.len() as isize - 1;
         }
         self.layouts[index as usize]
+    }
+
+    pub fn update_layouts(
+        &self,
+        workspaces: &mut Vec<Workspace>,
+        tags: &mut Vec<Tag>,
+    ) -> Option<bool> {
+        for workspace in workspaces {
+            let tag = tags.iter_mut().find(|t| t.id == workspace.tags[0])?;
+            match self.mode {
+                LayoutMode::Workspace => tag.set_layout(workspace.layout),
+                LayoutMode::Tag => workspace.layout = tag.layout,
+            }
+        }
+        Some(true)
     }
 }
