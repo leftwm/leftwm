@@ -35,5 +35,6 @@ pub enum Command {
     DecreaseMainWidth(i8),
     SetMarginMultiplier(f32),
     SendWorkspaceToTag(usize, usize),
+    SetLogLevel(String),
     Other(String),
 }
