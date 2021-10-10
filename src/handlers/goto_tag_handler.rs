@@ -32,7 +32,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         self.focused_workspace_mut()?.tags = new_tags;
         self.focus_tag(&tag_id);
-        self.update_docks();
+        self.update_staticc();
         self.state
             .layout_manager
             .update_layouts(&mut self.state.workspaces, &mut self.state.tags);

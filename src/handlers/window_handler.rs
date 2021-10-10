@@ -3,7 +3,7 @@ use crate::config::{Config, ScratchPad};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{Size, WindowHandle, Xyhw, XyhwBuilder};
+use crate::models::{Size, WindowHandle, WindowState, Xyhw, XyhwBuilder};
 use crate::utils::helpers;
 use crate::{child_process::exec_shell, models::FocusBehaviour};
 
@@ -104,7 +104,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
         }
         if strut_changed {
-            self.update_docks();
+            self.update_staticc();
         }
         changed
     }
@@ -288,7 +288,8 @@ fn insert_window<C: Config, SERVER: DisplayServer>(
         .iter_mut()
         .find(|w| for_active_workspace(w) && w.is_fullscreen())
     {
-        let act = DisplayAction::SetFullScreen(fsw.handle, !fsw.is_fullscreen());
+        let act =
+            DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
         manager.state.actions.push_back(act);
         was_fullscreen = true;
     }
@@ -298,7 +299,11 @@ fn insert_window<C: Config, SERVER: DisplayServer>(
         let mut to_reorder = helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
         if layout == Layout::Monocle || to_reorder.is_empty() {
             if was_fullscreen {
-                let act = DisplayAction::SetFullScreen(window.handle, !window.is_fullscreen());
+                let act = DisplayAction::SetState(
+                    window.handle,
+                    !window.is_fullscreen(),
+                    WindowState::Fullscreen,
+                );
                 manager.state.actions.push_back(act);
             }
             to_reorder.insert(0, window.clone());

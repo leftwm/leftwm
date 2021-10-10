@@ -82,27 +82,6 @@ impl XWrap {
         }
     }
 
-    /// Sets a windows fullscreen state.
-    pub fn set_fullscreen(&self, handle: WindowHandle, fullscreen: bool) {
-        if let WindowHandle::XlibHandle(h) = handle {
-            let atom = self.atoms.NetWMStateFullscreen;
-            let mut states = self.get_window_states_atoms(h);
-            if fullscreen {
-                if states.contains(&atom) {
-                    return;
-                }
-                states.push(atom);
-            } else if !fullscreen {
-                let index = match states.iter().position(|s| s == &atom) {
-                    Some(i) => i,
-                    None => return,
-                };
-                states.remove(index);
-            }
-            self.set_window_states_atoms(h, &states);
-        }
-    }
-
     /// Sets a window property.
     // `XChangeProperty`: https://tronche.com/gui/x/xlib/window-information/XChangeProperty.html
     pub fn set_property_long(
@@ -126,17 +105,16 @@ impl XWrap {
         }
     }
 
-    /// Sets a windows sticky state.
-    pub fn set_sticky(&self, handle: WindowHandle, sticky: bool) {
+    /// Sets a windows state.
+    pub fn set_state(&self, handle: WindowHandle, toggle_to: bool, atom: xlib::Atom) {
         if let WindowHandle::XlibHandle(h) = handle {
-            let atom = self.atoms.NetWMStateSticky;
             let mut states = self.get_window_states_atoms(h);
-            if sticky {
+            if toggle_to {
                 if states.contains(&atom) {
                     return;
                 }
                 states.push(atom);
-            } else if !sticky {
+            } else {
                 let index = match states.iter().position(|s| s == &atom) {
                     Some(i) => i,
                     None => return,

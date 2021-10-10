@@ -9,7 +9,7 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::TagId;
+use crate::models::{TagId, WindowState};
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
@@ -154,7 +154,7 @@ fn toggle_fullscreen<C: Config, SERVER: DisplayServer>(
 ) -> Option<bool> {
     let window = manager.focused_window()?;
     let handle = window.handle;
-    let act = DisplayAction::SetFullScreen(handle, !window.is_fullscreen());
+    let act = DisplayAction::SetState(handle, !window.is_fullscreen(), WindowState::Fullscreen);
     manager.state.actions.push_back(act);
     Some(handle_focus(manager, handle))
 }
@@ -164,7 +164,7 @@ fn toggle_sticky<C: Config, SERVER: DisplayServer>(
 ) -> Option<bool> {
     let window = manager.focused_window()?;
     let handle = window.handle;
-    let act = DisplayAction::SetSticky(handle, !window.is_sticky());
+    let act = DisplayAction::SetState(handle, !window.is_sticky(), WindowState::Sticky);
     manager.state.actions.push_back(act);
     Some(true)
 }
@@ -286,7 +286,7 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
             &mut temp,
         );
         // Update dock tags and layouts.
-        manager.update_docks();
+        manager.update_staticc();
         manager
             .state
             .layout_manager

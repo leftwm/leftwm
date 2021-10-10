@@ -5,6 +5,7 @@ use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::Window;
 use crate::models::WindowHandle;
+use crate::models::WindowState;
 use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
@@ -163,12 +164,22 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.unfocus();
                 None
             }
-            DisplayAction::SetFullScreen(h, fullscreen) => {
-                self.xw.set_fullscreen(h, fullscreen);
-                None
-            }
-            DisplayAction::SetSticky(h, sticky) => {
-                self.xw.set_sticky(h, sticky);
+            DisplayAction::SetState(h, toggle_to, window_state) => {
+                // TODO: impl from for windowstate and xlib::Atom
+                let state = match window_state {
+                    WindowState::Modal => self.xw.atoms.NetWMStateModal,
+                    WindowState::Sticky => self.xw.atoms.NetWMStateSticky,
+                    WindowState::MaximizedVert => self.xw.atoms.NetWMStateMaximizedVert,
+                    WindowState::MaximizedHorz => self.xw.atoms.NetWMStateMaximizedHorz,
+                    WindowState::Shaded => self.xw.atoms.NetWMStateShaded,
+                    WindowState::SkipTaskbar => self.xw.atoms.NetWMStateSkipTaskbar,
+                    WindowState::SkipPager => self.xw.atoms.NetWMStateSkipPager,
+                    WindowState::Hidden => self.xw.atoms.NetWMStateHidden,
+                    WindowState::Fullscreen => self.xw.atoms.NetWMStateFullscreen,
+                    WindowState::Above => self.xw.atoms.NetWMStateAbove,
+                    WindowState::Below => self.xw.atoms.NetWMStateBelow,
+                };
+                self.xw.set_state(h, toggle_to, state);
                 None
             }
             DisplayAction::SetWindowOrder(wins) => {

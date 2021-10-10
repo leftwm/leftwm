@@ -77,7 +77,7 @@ where
         self.state.focus_manager.window_mut(&mut self.state.windows)
     }
 
-    pub fn update_docks(&mut self) {
+    pub fn update_staticc(&mut self) {
         let workspaces = self.state.workspaces.clone();
         self.state
             .windows
