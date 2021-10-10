@@ -21,11 +21,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 .or_insert(handle);
             *old_handle = handle;
         }
-        self.state
+        if let Some(ws) = self
+            .state
             .workspaces
             .iter_mut()
-            .find(|ws| ws.tags == new_tags)?
-            .tags = old_tags;
+            .find(|ws| ws.tags == new_tags)
+        {
+            ws.tags = old_tags;
+        }
 
         self.focused_workspace_mut()?.tags = new_tags;
         self.focus_tag(&tag_id);

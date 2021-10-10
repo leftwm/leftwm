@@ -162,7 +162,7 @@ mod test {
     use tokio::time;
 
     #[tokio::test]
-    async fn read_command() {
+    async fn read_good_command() {
         let pipe_file = temp_path().await.unwrap();
         let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
 
@@ -181,6 +181,12 @@ mod test {
                 command_pipe.read_command().await.unwrap()
             );
         }
+    }
+
+    #[tokio::test]
+    async fn read_bad_command() {
+        let pipe_file = temp_path().await.unwrap();
+        let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
 
         // Write some custom command and close it.
         {
