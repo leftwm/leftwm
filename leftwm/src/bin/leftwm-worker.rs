@@ -1,5 +1,4 @@
 use leftwm_core::{Manager, XlibDisplayServer};
-use slog::{o, Drain};
 
 use leftwm_core::logging::{setup_logfile, setup_logging};
 use std::panic;

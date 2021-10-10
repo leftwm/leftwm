@@ -39,6 +39,7 @@ pub enum BaseCommand {
     IncreaseMainWidth,
     DecreaseMainWidth,
     SetMarginMultiplier,
+    SetLogLevel,
     // Custom commands
     UnloadTheme,
     LoadTheme,

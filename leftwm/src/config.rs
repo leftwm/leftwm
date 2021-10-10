@@ -96,6 +96,10 @@ impl TryFrom<Keybind> for leftwm_core::Keybind {
                 )
                 .context("invalid index value for SetMarginMultiplier")?,
             ),
+            BaseCommand::SetLogLevel => leftwm_core::Command::SetLogLevel(format!(
+                "SetLogLevel {}",
+                k.value.context("missing index value for SetLogLevel")?,
+            )),
             BaseCommand::UnloadTheme => leftwm_core::Command::Other("UnloadTheme".into()),
             BaseCommand::LoadTheme => leftwm_core::Command::Other(format!(
                 "LoadTheme {}",

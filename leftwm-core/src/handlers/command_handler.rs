@@ -83,6 +83,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SendWorkspaceToTag(ws_index, tag_index) => {
             Some(send_workspace_to_tag(manager, *ws_index, *tag_index))
         }
+        Command::SetLogLevel(loglevel) => set_log_level(loglevel),
         Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
 }
@@ -605,6 +606,10 @@ fn send_workspace_to_tag<C: Config, SERVER: DisplayServer>(
         return true;
     }
     false
+}
+
+fn set_log_level(loglevel: &String) -> Option<bool> {
+    unimplemented!()
 }
 
 #[cfg(test)]

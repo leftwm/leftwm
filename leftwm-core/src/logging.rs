@@ -1,9 +1,8 @@
-// pub mod logging {
 use slog::{o, Drain};
 
 // Very basic logging used when developing.
 // outputs to /tmp/leftwm/leftwm-XXXXXXXXXXXX.log
-#[allow(dead_code)]
+#[allow(dead_code, clippy::module_name_repetitions)]
 pub fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
     use chrono::Local;
     use std::fs;
@@ -33,7 +32,7 @@ pub fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
 }
 
 /// Log to both stdout and journald.
-#[allow(dead_code)]
+#[allow(dead_code, clippy::module_name_repetitions)]
 pub fn setup_logging() -> slog_scope::GlobalLoggerGuard {
     #[cfg(feature = "slog-journald")]
     let journald = slog_journald::JournaldDrain.ignore_res();
@@ -64,4 +63,3 @@ pub fn setup_logging() -> slog_scope::GlobalLoggerGuard {
 
     slog_scope::set_global_logger(logger)
 }
-// }
