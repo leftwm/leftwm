@@ -22,7 +22,7 @@ pub enum DisplayAction {
     MoveMouseOverPoint((i32, i32)),
 
     /// Change a windows fullscreen state
-    SetFullScreen(Window, bool),
+    SetFullScreen(WindowHandle, bool),
 
     /// Sets the "z-index" order of the windows
     /// first in the array is top most

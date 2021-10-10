@@ -1,5 +1,5 @@
 //! `XWrap` setters.
-use super::{Window, WindowHandle};
+use super::WindowHandle;
 use crate::XWrap;
 use std::ffi::CString;
 use std::os::raw::{c_long, c_ulong};
@@ -83,8 +83,8 @@ impl XWrap {
     }
 
     /// Sets a windows fullscreen state.
-    pub fn set_fullscreen(&self, window: &Window, fullscreen: bool) {
-        if let WindowHandle::XlibHandle(h) = window.handle {
+    pub fn set_fullscreen(&self, handle: WindowHandle, fullscreen: bool) {
+        if let WindowHandle::XlibHandle(h) = handle {
             let atom = self.atoms.NetWMStateFullscreen;
             let mut states = self.get_window_states_atoms(h);
             if fullscreen {

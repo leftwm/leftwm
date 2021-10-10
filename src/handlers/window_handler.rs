@@ -288,10 +288,9 @@ fn insert_window<C: Config, SERVER: DisplayServer>(
         .iter_mut()
         .find(|w| for_active_workspace(w) && w.is_fullscreen())
     {
-        if let Some(act) = fsw.toggle_fullscreen() {
-            manager.state.actions.push_back(act);
-            was_fullscreen = true;
-        }
+        let act = DisplayAction::SetFullScreen(fsw.handle, !fsw.is_fullscreen());
+        manager.state.actions.push_back(act);
+        was_fullscreen = true;
     }
 
     if matches!(layout, Layout::Monocle | Layout::MainAndDeck) && window.type_ == WindowType::Normal
@@ -299,9 +298,8 @@ fn insert_window<C: Config, SERVER: DisplayServer>(
         let mut to_reorder = helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
         if layout == Layout::Monocle || to_reorder.is_empty() {
             if was_fullscreen {
-                if let Some(act) = window.toggle_fullscreen() {
-                    manager.state.actions.push_back(act);
-                }
+                let act = DisplayAction::SetFullScreen(window.handle, !window.is_fullscreen());
+                manager.state.actions.push_back(act);
             }
             to_reorder.insert(0, window.clone());
         } else {

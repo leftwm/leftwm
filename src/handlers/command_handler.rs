@@ -153,7 +153,7 @@ fn toggle_fullscreen<C: Config, SERVER: DisplayServer>(
 ) -> Option<bool> {
     let window = manager.focused_window_mut()?;
     let handle = window.handle;
-    let act = window.toggle_fullscreen()?;
+    let act = DisplayAction::SetFullScreen(handle, !window.is_fullscreen());
     manager.state.actions.push_back(act);
     Some(handle_focus(manager, handle))
 }

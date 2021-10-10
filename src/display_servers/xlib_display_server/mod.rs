@@ -163,8 +163,8 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.unfocus();
                 None
             }
-            DisplayAction::SetFullScreen(w, fullscreen) => {
-                self.xw.set_fullscreen(&w, fullscreen);
+            DisplayAction::SetFullScreen(h, fullscreen) => {
+                self.xw.set_fullscreen(h, fullscreen);
                 None
             }
             DisplayAction::SetWindowOrder(wins) => {
