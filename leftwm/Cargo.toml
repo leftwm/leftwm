@@ -11,7 +11,7 @@ repository = "https://github.com/leftwm/leftwm"
 readme = "README.md"
 
 [dependencies]
-leftwm-core = { path = "../leftwm-core", version='0.2.9' }
+leftwm-core = { path = "../leftwm-core", version='0.2.10' }
 git-version = "0.3.4"
 signal-hook = "0.3.4"
 mio = "0.7.7"
