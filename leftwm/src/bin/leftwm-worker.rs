@@ -1,6 +1,4 @@
-mod common;
-
-use leftwm::{Manager, XlibDisplayServer};
+use leftwm_core::{Manager, XlibDisplayServer};
 use slog::{o, Drain};
 use std::panic;
 
@@ -13,9 +11,9 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        let config = common::load();
+        let config = leftwm::load();
 
-        let manager = Manager::<common::Config, XlibDisplayServer>::new(config);
+        let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
         manager.register_child_hook();
 
         rt.block_on(manager.event_loop());

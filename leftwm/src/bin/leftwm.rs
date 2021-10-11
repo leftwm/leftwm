@@ -4,7 +4,7 @@
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
 use clap::{crate_version, App, AppSettings, SubCommand};
-use leftwm::child_process::{self, Nanny};
+use leftwm_core::child_process::{self, Nanny};
 use std::collections::BTreeMap;
 use std::env;
 use std::process::{exit, Command};
