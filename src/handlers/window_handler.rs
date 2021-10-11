@@ -339,16 +339,16 @@ fn is_scratchpad<C: Config, SERVER: DisplayServer>(
         .any(|(_, &id)| window.pid == id)
 }
 
-fn find_terminal<'a, C: Config, SERVER: DisplayServer>(
-    manager: &'a Manager<C, SERVER>,
+fn find_terminal<C: Config, SERVER: DisplayServer>(
+    manager: &Manager<C, SERVER>,
     pid: Option<u32>,
-) -> Option<&'a Window> {
+) -> Option<&Window> {
     let shell_path = env::var("SHELL").ok()?;
     let shell = shell_path.split('/').last()?;
     // Try and find the terminal that launched this app, if such a thing exists.
     let is_terminal = |pid: u32| -> Option<bool> {
         let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
-        let parent_bytes = parent.split(|&c| c == b' ').nth(0)?;
+        let parent_bytes = parent.split(|&c| c == b' ').next()?;
         let parent_str = std::str::from_utf8(parent_bytes).ok()?.strip_suffix('\n')?;
         log::info!("{:?} and Shell:{:?}", parent_str, shell);
         Some(parent_str == shell)
@@ -363,9 +363,9 @@ fn find_terminal<'a, C: Config, SERVER: DisplayServer>(
     };
 
     let pid = pid?;
-    let shell = get_parent(pid)?;
-    if is_terminal(shell)? {
-        let terminal = get_parent(shell)?;
+    let shell_id = get_parent(pid)?;
+    if is_terminal(shell_id)? {
+        let terminal = get_parent(shell_id)?;
         return manager
             .state
             .windows
