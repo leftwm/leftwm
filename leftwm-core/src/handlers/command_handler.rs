@@ -612,11 +612,7 @@ fn set_log_level<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     loglevel: &String,
 ) -> Option<bool> {
-<<<<<<< Updated upstream
-    Config.loglevel = logleve;
-=======
     manager.state.config.loglevel = logleve;
->>>>>>> Stashed changes
     true
 }
 
