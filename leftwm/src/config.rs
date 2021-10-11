@@ -2,7 +2,7 @@
 
 use super::{BaseCommand, ThemeSetting};
 use anyhow::{Context, Result};
-use leftwm::{
+use leftwm_core::{
     config::{ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size},
@@ -31,71 +31,73 @@ pub struct Keybind {
     pub key: String,
 }
 
-impl TryFrom<Keybind> for leftwm::Keybind {
+impl TryFrom<Keybind> for leftwm_core::Keybind {
     type Error = anyhow::Error;
 
     fn try_from(k: Keybind) -> Result<Self> {
         let command = match k.command {
             BaseCommand::Execute => {
-                leftwm::Command::Execute(k.value.context("missing command for Execute")?)
+                leftwm_core::Command::Execute(k.value.context("missing command for Execute")?)
             }
-            BaseCommand::CloseWindow => leftwm::Command::CloseWindow,
-            BaseCommand::SwapTags => leftwm::Command::SwapScreens,
-            BaseCommand::SoftReload => leftwm::Command::SoftReload,
-            BaseCommand::HardReload => leftwm::Command::HardReload,
-            BaseCommand::ToggleScratchPad => leftwm::Command::ToggleScratchPad(
+            BaseCommand::CloseWindow => leftwm_core::Command::CloseWindow,
+            BaseCommand::SwapTags => leftwm_core::Command::SwapScreens,
+            BaseCommand::SoftReload => leftwm_core::Command::SoftReload,
+            BaseCommand::HardReload => leftwm_core::Command::HardReload,
+            BaseCommand::ToggleScratchPad => leftwm_core::Command::ToggleScratchPad(
                 k.value.context("missing name for ToggleScratchPad")?,
             ),
-            BaseCommand::ToggleFullScreen => leftwm::Command::ToggleFullScreen,
-            BaseCommand::ToggleSticky => leftwm::Command::ToggleSticky,
-            BaseCommand::GotoTag => leftwm::Command::GotoTag(
+            BaseCommand::ToggleFullScreen => leftwm_core::Command::ToggleFullScreen,
+            BaseCommand::ToggleSticky => leftwm_core::Command::ToggleSticky,
+            BaseCommand::GotoTag => leftwm_core::Command::GotoTag(
                 usize::from_str(&k.value.context("missing index value for GotoTag")?)
                     .context("invalid index value for GotoTag")?,
             ),
-            BaseCommand::FloatingToTile => leftwm::Command::FloatingToTile,
-            BaseCommand::MoveWindowUp => leftwm::Command::MoveWindowUp,
-            BaseCommand::MoveWindowDown => leftwm::Command::MoveWindowDown,
-            BaseCommand::MoveWindowTop => leftwm::Command::MoveWindowTop,
-            BaseCommand::FocusNextTag => leftwm::Command::FocusNextTag,
-            BaseCommand::FocusPreviousTag => leftwm::Command::FocusPreviousTag,
-            BaseCommand::FocusWindowUp => leftwm::Command::FocusWindowUp,
-            BaseCommand::FocusWindowDown => leftwm::Command::FocusWindowDown,
-            BaseCommand::FocusWorkspaceNext => leftwm::Command::FocusWorkspaceNext,
-            BaseCommand::FocusWorkspacePrevious => leftwm::Command::FocusWorkspacePrevious,
-            BaseCommand::MoveToTag => leftwm::Command::SendWindowToTag(
+            BaseCommand::FloatingToTile => leftwm_core::Command::FloatingToTile,
+            BaseCommand::MoveWindowUp => leftwm_core::Command::MoveWindowUp,
+            BaseCommand::MoveWindowDown => leftwm_core::Command::MoveWindowDown,
+            BaseCommand::MoveWindowTop => leftwm_core::Command::MoveWindowTop,
+            BaseCommand::FocusNextTag => leftwm_core::Command::FocusNextTag,
+            BaseCommand::FocusPreviousTag => leftwm_core::Command::FocusPreviousTag,
+            BaseCommand::FocusWindowUp => leftwm_core::Command::FocusWindowUp,
+            BaseCommand::FocusWindowDown => leftwm_core::Command::FocusWindowDown,
+            BaseCommand::FocusWorkspaceNext => leftwm_core::Command::FocusWorkspaceNext,
+            BaseCommand::FocusWorkspacePrevious => leftwm_core::Command::FocusWorkspacePrevious,
+            BaseCommand::MoveToTag => leftwm_core::Command::SendWindowToTag(
                 usize::from_str(&k.value.context("missing index value for SendWindowToTag")?)
                     .context("invalid index value for SendWindowToTag")?,
             ),
-            BaseCommand::MoveToLastWorkspace => leftwm::Command::MoveWindowToLastWorkspace,
-            BaseCommand::MoveWindowToNextWorkspace => leftwm::Command::MoveWindowToNextWorkspace,
-            BaseCommand::MoveWindowToPreviousWorkspace => {
-                leftwm::Command::MoveWindowToPreviousWorkspace
+            BaseCommand::MoveToLastWorkspace => leftwm_core::Command::MoveWindowToLastWorkspace,
+            BaseCommand::MoveWindowToNextWorkspace => {
+                leftwm_core::Command::MoveWindowToNextWorkspace
             }
-            BaseCommand::MouseMoveWindow => leftwm::Command::MouseMoveWindow,
-            BaseCommand::NextLayout => leftwm::Command::NextLayout,
-            BaseCommand::PreviousLayout => leftwm::Command::PreviousLayout,
-            BaseCommand::SetLayout => leftwm::Command::SetLayout(
+            BaseCommand::MoveWindowToPreviousWorkspace => {
+                leftwm_core::Command::MoveWindowToPreviousWorkspace
+            }
+            BaseCommand::MouseMoveWindow => leftwm_core::Command::MouseMoveWindow,
+            BaseCommand::NextLayout => leftwm_core::Command::NextLayout,
+            BaseCommand::PreviousLayout => leftwm_core::Command::PreviousLayout,
+            BaseCommand::SetLayout => leftwm_core::Command::SetLayout(
                 Layout::from_str(&k.value.context("missing layout for SetLayout")?)
                     .context("could not parse layout for command SetLayout")?,
             ),
-            BaseCommand::RotateTag => leftwm::Command::RotateTag,
-            BaseCommand::IncreaseMainWidth => leftwm::Command::IncreaseMainWidth(
+            BaseCommand::RotateTag => leftwm_core::Command::RotateTag,
+            BaseCommand::IncreaseMainWidth => leftwm_core::Command::IncreaseMainWidth(
                 i8::from_str(&k.value.context("missing value for IncreaseMainWidth")?)
                     .context("invalid value for IncreaseMainWidth")?,
             ),
-            BaseCommand::DecreaseMainWidth => leftwm::Command::DecreaseMainWidth(
+            BaseCommand::DecreaseMainWidth => leftwm_core::Command::DecreaseMainWidth(
                 i8::from_str(&k.value.context("missing value for DecreaseMainWidth")?)
                     .context("invalid value for DecreaseMainWidth")?,
             ),
-            BaseCommand::SetMarginMultiplier => leftwm::Command::SetMarginMultiplier(
+            BaseCommand::SetMarginMultiplier => leftwm_core::Command::SetMarginMultiplier(
                 f32::from_str(
                     &k.value
                         .context("missing index value for SetMarginMultiplier")?,
                 )
                 .context("invalid index value for SetMarginMultiplier")?,
             ),
-            BaseCommand::UnloadTheme => leftwm::Command::Other("UnloadTheme".into()),
-            BaseCommand::LoadTheme => leftwm::Command::Other(format!(
+            BaseCommand::UnloadTheme => leftwm_core::Command::Other("UnloadTheme".into()),
+            BaseCommand::LoadTheme => leftwm_core::Command::Other(format!(
                 "LoadTheme {}",
                 k.value.context("missing index value for LoadTheme")?,
             )),
@@ -133,7 +135,6 @@ pub struct Config {
 }
 
 #[must_use]
-#[allow(dead_code)]
 pub fn load() -> Config {
     load_from_file()
         .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))
@@ -264,8 +265,8 @@ fn absolute_path(path: &str) -> Option<PathBuf> {
     std::fs::canonicalize(exp_path.as_ref()).ok()
 }
 
-impl leftwm::Config for Config {
-    fn mapped_bindings(&self) -> Vec<leftwm::Keybind> {
+impl leftwm_core::Config for Config {
+    fn mapped_bindings(&self) -> Vec<leftwm_core::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()

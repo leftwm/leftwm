@@ -1,10 +1,8 @@
-mod common;
-
 use anyhow::{bail, Result};
 use clap::{App, Arg};
-use common::{Config, Keybind, ThemeSetting};
-use leftwm::config::Workspace;
-use leftwm::utils;
+use leftwm::{Config, Keybind, ThemeSetting};
+use leftwm_core::config::Workspace;
+use leftwm_core::utils;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fs;
@@ -97,13 +95,13 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
         if verbose {
             println!("Checking config for valid workspace definitions.");
         }
-        let ids = common::get_workspace_ids(&wss);
+        let ids = leftwm::get_workspace_ids(&wss);
         if ids.iter().any(std::option::Option::is_some) {
-            if !common::all_ids_some(&ids)
+            if !leftwm::all_ids_some(&ids)
             {
                 println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
                 false
-            } else if common::all_ids_unique(&ids) {
+            } else if leftwm::all_ids_unique(&ids) {
                 true
             } else {
                 println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
@@ -128,7 +126,7 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
         if verbose {
             println!("Keybind: {:?} {}", keybind, keybind.value.is_none());
         }
-        if let Err(err) = leftwm::Keybind::try_from(keybind.clone()) {
+        if let Err(err) = leftwm_core::Keybind::try_from(keybind.clone()) {
             returns.push((Some(keybind.clone()), err.to_string()));
         }
         if utils::xkeysym_lookup::into_keysym(&keybind.key).is_none() {
@@ -192,7 +190,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
     // We also cross-reference the ENV variable
     match (
         std::env::var("XDG_RUNTIME_DIR"),
-        common::is_program_in_path("loginctl"),
+        leftwm::is_program_in_path("loginctl"),
     ) {
         (Ok(val), true) => {
             if verbose {
