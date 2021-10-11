@@ -209,11 +209,8 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
             .windows
             .iter()
             .any(|w| for_active_workspace(w));
-        window.tags = if let Some(terminal) = find_terminal(manager, window.pid) {
-            terminal.tags.clone()
-        } else {
-            ws.tags.clone()
-        };
+        window.tags = find_terminal(manager, window.pid)
+            .map_or_else(|| ws.tags.clone(), |terminal| terminal.tags.clone());
         *layout = ws.layout;
 
         if is_scratchpad {
@@ -343,9 +340,11 @@ fn find_terminal<C: Config, SERVER: DisplayServer>(
     manager: &Manager<C, SERVER>,
     pid: Option<u32>,
 ) -> Option<&Window> {
+    // Get $SHELL, e.g. /bin/zsh
     let shell_path = env::var("SHELL").ok()?;
+    // Remove /bin/
     let shell = shell_path.split('/').last()?;
-    // Try and find the terminal that launched this app, if such a thing exists.
+    // Try and find the shell that launched this app, if such a thing exists.
     let is_terminal = |pid: u32| -> Option<bool> {
         let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
         let parent_bytes = parent.split(|&c| c == b' ').next()?;
