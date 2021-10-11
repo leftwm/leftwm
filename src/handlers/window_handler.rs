@@ -6,6 +6,8 @@ use crate::layouts::Layout;
 use crate::models::{Size, WindowHandle, WindowState, Xyhw, XyhwBuilder};
 use crate::utils::helpers;
 use crate::{child_process::exec_shell, models::FocusBehaviour};
+use std::env;
+use std::str::FromStr;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
@@ -207,7 +209,11 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
             .windows
             .iter()
             .any(|w| for_active_workspace(w));
-        window.tags = ws.tags.clone();
+        window.tags = if let Some(terminal) = find_terminal(manager, window.pid) {
+            terminal.tags.clone()
+        } else {
+            ws.tags.clone()
+        };
         *layout = ws.layout;
 
         if is_scratchpad {
@@ -331,6 +337,43 @@ fn is_scratchpad<C: Config, SERVER: DisplayServer>(
         .active_scratchpads
         .iter()
         .any(|(_, &id)| window.pid == id)
+}
+
+fn find_terminal<'a, C: Config, SERVER: DisplayServer>(
+    manager: &'a Manager<C, SERVER>,
+    pid: Option<u32>,
+) -> Option<&'a Window> {
+    let shell_path = env::var("SHELL").ok()?;
+    let shell = shell_path.split('/').last()?;
+    // Try and find the terminal that launched this app, if such a thing exists.
+    let is_terminal = |pid: u32| -> Option<bool> {
+        let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
+        let parent_bytes = parent.split(|&c| c == b' ').nth(0)?;
+        let parent_str = std::str::from_utf8(parent_bytes).ok()?.strip_suffix('\n')?;
+        log::info!("{:?} and Shell:{:?}", parent_str, shell);
+        Some(parent_str == shell)
+    };
+
+    let get_parent = |pid: u32| -> Option<u32> {
+        let stat = std::fs::read(format!("/proc/{}/stat", pid)).ok()?;
+        let ppid_bytes = stat.split(|&c| c == b' ').nth(3)?;
+        let ppid_str = std::str::from_utf8(ppid_bytes).ok()?;
+        let ppid_u32 = u32::from_str(ppid_str).ok()?;
+        Some(ppid_u32)
+    };
+
+    let pid = pid?;
+    let shell = get_parent(pid)?;
+    if is_terminal(shell)? {
+        let terminal = get_parent(shell)?;
+        return manager
+            .state
+            .windows
+            .iter()
+            .find(|w| w.pid == Some(terminal));
+    }
+
+    None
 }
 
 fn find_transient_parent<'w, C: Config, SERVER: DisplayServer>(
