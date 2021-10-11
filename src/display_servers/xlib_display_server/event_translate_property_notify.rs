@@ -58,6 +58,14 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
                 }
             }
 
+            if event.atom == xw.atoms.NetWMState {
+                let handle = WindowHandle::XlibHandle(event.window);
+                let mut change = WindowChange::new(handle);
+                let states = xw.get_window_states(event.window);
+                change.states = Some(states);
+                return Some(DisplayEvent::WindowChange(change));
+            }
+
             None
         }
     }

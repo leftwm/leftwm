@@ -9,7 +9,7 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::TagId;
+use crate::models::{TagId, WindowState};
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
@@ -34,7 +34,8 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
 
-        Command::ToggleFullScreen => toggle_fullscreen(manager),
+        Command::ToggleFullScreen => toggle_state(manager, WindowState::Fullscreen),
+        Command::ToggleSticky => toggle_state(manager, WindowState::Sticky),
 
         Command::SendWindowToTag(tag) => move_to_tag(*tag, manager),
         Command::MoveWindowToNextWorkspace => move_window_to_workspace_change(manager, 1),
@@ -148,14 +149,18 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     None
 }
 
-fn toggle_fullscreen<C: Config, SERVER: DisplayServer>(
+fn toggle_state<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
+    state: WindowState,
 ) -> Option<bool> {
-    let window = manager.focused_window_mut()?;
+    let window = manager.focused_window()?;
     let handle = window.handle;
-    let act = window.toggle_fullscreen()?;
+    let act = DisplayAction::SetState(handle, !window.has_state(&state), state);
     manager.state.actions.push_back(act);
-    Some(handle_focus(manager, handle))
+    match state {
+        WindowState::Fullscreen => Some(handle_focus(manager, handle)),
+        _ => Some(true),
+    }
 }
 
 fn move_to_tag<C: Config, SERVER: DisplayServer>(
@@ -275,7 +280,7 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
             &mut temp,
         );
         // Update dock tags and layouts.
-        manager.update_docks();
+        manager.update_static();
         manager
             .state
             .layout_manager

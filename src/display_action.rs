@@ -1,6 +1,7 @@
 use crate::config::Keybind;
 use crate::models::Window;
 use crate::models::WindowHandle;
+use crate::models::WindowState;
 use serde::{Deserialize, Serialize};
 
 /// These are responses from the Window manager.
@@ -21,8 +22,8 @@ pub enum DisplayAction {
     /// Makes sure the mouse is over a given point.
     MoveMouseOverPoint((i32, i32)),
 
-    /// Change a windows fullscreen state
-    SetFullScreen(Window, bool),
+    /// Change a windows state.
+    SetState(WindowHandle, bool, WindowState),
 
     /// Sets the "z-index" order of the windows
     /// first in the array is top most

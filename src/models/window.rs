@@ -3,7 +3,6 @@
 use super::WindowState;
 use super::WindowType;
 use crate::config::Config;
-use crate::display_action::DisplayAction;
 use crate::models::xyhw_change::XyhwChange;
 use crate::models::Margins;
 use crate::models::TagId;
@@ -135,23 +134,13 @@ impl Window {
         self.floating = Some(new_value);
     }
 
-    pub fn toggle_fullscreen(&mut self) -> Option<DisplayAction> {
-        let fullscreen = self.is_fullscreen();
-        if fullscreen {
-            let index = self
-                .states
-                .iter()
-                .position(|s| *s == WindowState::Fullscreen)?;
-            self.states.remove(index);
-        } else {
-            self.states.push(WindowState::Fullscreen);
-        }
-        Some(DisplayAction::SetFullScreen(self.clone(), !fullscreen))
-    }
-
     #[must_use]
     pub fn is_fullscreen(&self) -> bool {
         self.states.contains(&WindowState::Fullscreen)
+    }
+    #[must_use]
+    pub fn is_sticky(&self) -> bool {
+        self.states.contains(&WindowState::Sticky)
     }
     #[must_use]
     pub fn must_float(&self) -> bool {

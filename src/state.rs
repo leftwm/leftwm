@@ -141,7 +141,7 @@ where
             }
         });
         if had_strut {
-            self.update_docks();
+            self.update_static();
         }
         self.state.windows.append(&mut ordered);
 
