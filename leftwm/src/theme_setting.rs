@@ -1,5 +1,5 @@
 use anyhow::Result;
-use leftwm::models::{Gutter, Margins};
+use leftwm_core::models::{Gutter, Margins};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -84,7 +84,7 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use leftwm::models::Side;
+    use leftwm_core::models::Side;
 
     #[test]
     fn deserialize_custom_theme_config() {

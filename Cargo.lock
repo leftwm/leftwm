@@ -393,6 +393,7 @@ dependencies = [
  "dirs-next",
  "futures",
  "git-version",
+ "leftwm-core",
  "libc",
  "liquid",
  "log",
@@ -409,6 +410,30 @@ dependencies = [
  "slog-scope",
  "slog-stdlog",
  "slog-term",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "toml",
+ "x11-dl",
+ "xdg",
+]
+
+[[package]]
+name = "leftwm-core"
+version = "0.2.9"
+dependencies = [
+ "anyhow",
+ "dirs-next",
+ "futures",
+ "libc",
+ "liquid",
+ "log",
+ "mio",
+ "nix",
+ "serde",
+ "serde_json",
+ "shellexpand",
+ "signal-hook",
  "tempfile",
  "thiserror",
  "tokio",

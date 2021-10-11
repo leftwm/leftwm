@@ -1,6 +1,6 @@
 use clap::{value_t, App, Arg};
-use leftwm::errors::Result;
-use leftwm::models::dto::{DisplayState, ManagerState};
+use leftwm_core::errors::Result;
+use leftwm_core::models::dto::{DisplayState, ManagerState};
 use std::ffi::OsStr;
 use std::path::Path;
 use std::str;
