@@ -19,22 +19,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
 
         let mut is_first = false;
+        let mut on_same_tag = false;
         //Random value
         let mut layout: Layout = Layout::MainAndVertStack;
-        let is_scratchpad = is_scratchpad(self, &window);
         setup_window(
             self,
             &mut window,
-            x,
-            y,
-            is_scratchpad,
+            (x, y),
             &mut layout,
             &mut is_first,
+            &mut on_same_tag,
         );
-        insert_window(self, &mut window, is_scratchpad, layout);
+        insert_window(self, &mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
-            || self.state.focus_manager.behaviour == FocusBehaviour::Sloppy;
+            && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
+            && on_same_tag;
         //let the DS know we are managing this window
         let act = DisplayAction::AddedWindow(window.handle, follow_mouse);
         self.state.actions.push_back(act);
@@ -49,7 +49,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         //new windows should be on the top of the stack
         self.sort_windows();
 
-        if self.state.focus_manager.focus_new_windows || is_first {
+        if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.focus_window(&window.handle);
         }
 
@@ -182,11 +182,10 @@ impl Window {
 fn setup_window<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     window: &mut Window,
-    x: i32,
-    y: i32,
-    is_scratchpad: bool,
+    xy: (i32, i32),
     layout: &mut Layout,
     is_first: &mut bool,
+    on_same_tag: &mut bool,
 ) {
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
@@ -196,7 +195,7 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
         .workspaces
         .iter()
         .find(|ws| {
-            ws.xyhw.contains_point(x, y)
+            ws.xyhw.contains_point(xy.0, xy.1)
                 && manager.state.focus_manager.behaviour == FocusBehaviour::Sloppy
         })
         .or_else(|| manager.focused_workspace()); //backup plan
@@ -209,11 +208,16 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
             .windows
             .iter()
             .any(|w| for_active_workspace(w));
-        window.tags = find_terminal(manager, window.pid)
-            .map_or_else(|| ws.tags.clone(), |terminal| terminal.tags.clone());
+        window.tags = find_terminal(manager, window.pid).map_or_else(
+            || ws.tags.clone(),
+            |terminal| {
+                *on_same_tag = ws.tags == terminal.tags;
+                terminal.tags.clone()
+            },
+        );
         *layout = ws.layout;
 
-        if is_scratchpad {
+        if is_scratchpad(manager, window) {
             window.set_floating(true);
             if let Some((scratchpad_name, _)) = manager
                 .state
@@ -259,7 +263,7 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
         }
     } else {
         window.tags = vec![manager.state.tags[0].id.clone()];
-        if is_scratchpad {
+        if is_scratchpad(manager, window) {
             window.tag("NSP");
             window.set_floating(true);
         }
@@ -278,7 +282,6 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
 fn insert_window<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     window: &mut Window,
-    is_scratchpad: bool,
     layout: Layout,
 ) {
     // If the tag contains a fullscreen window, minimize it
@@ -316,7 +319,7 @@ fn insert_window<C: Config, SERVER: DisplayServer>(
         manager.state.windows.append(&mut to_reorder);
     } else if window.type_ == WindowType::Dialog
         || window.type_ == WindowType::Splash
-        || is_scratchpad
+        || is_scratchpad(manager, window)
     {
         //Slow
         manager.state.windows.insert(0, window.clone());
@@ -349,7 +352,6 @@ fn find_terminal<C: Config, SERVER: DisplayServer>(
         let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
         let parent_bytes = parent.split(|&c| c == b' ').next()?;
         let parent_str = std::str::from_utf8(parent_bytes).ok()?.strip_suffix('\n')?;
-        log::info!("{:?} and Shell:{:?}", parent_str, shell);
         Some(parent_str == shell)
     };
 
