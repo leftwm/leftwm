@@ -54,6 +54,8 @@ async fn main() -> Result<()> {
         SwapScreens
         MoveWindowToLastWorkspace
         FloatingToTile
+        TileToFloating
+        ToggleFloating
         MoveWindowUp
         MoveWindowDown
         FocusWindowUp

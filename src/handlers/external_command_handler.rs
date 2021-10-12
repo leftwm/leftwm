@@ -60,6 +60,12 @@ fn process_work(manager: &mut Manager, config: &Config, command: ExternalCommand
         ExternalCommand::FloatingToTile => {
             return command_handler::process(manager, config, &Command::FloatingToTile, &None);
         }
+        ExternalCommand::TileToFloating => {
+            return command_handler::process(manager, config, &Command::TileToFloating, &None);
+        }
+        ExternalCommand::ToggleFloating => {
+            return command_handler::process(manager, config, &Command::ToggleFloating, &None);
+        }
         ExternalCommand::MoveWindowUp => {
             return command_handler::process(manager, config, &Command::MoveWindowUp, &None);
         }
