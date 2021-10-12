@@ -80,8 +80,8 @@ impl Manager {
     
     /// Return the current used theme.
     #[must_use]
-    pub fn get_current_theme(&self) -> ThemeSetting {
-        self.theme_setting.clone()
+    pub fn get_current_theme(&self) -> Option<ThemeSetting> {
+        Some(self.theme_setting.clone())
     }
 
     pub fn update_docks(&mut self) {

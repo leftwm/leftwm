@@ -295,7 +295,7 @@ fn floating_to_tile(manager: &mut Manager) -> Option<bool> {
 }
 
 fn tile_to_floating(manager: &mut Manager) -> Option<bool> {
-    let theme = manager.get_current_theme();
+    let theme = manager.get_current_theme().unwrap_or_default();
     let window = manager.focused_window_mut()?;
 
     if window.must_float() {
