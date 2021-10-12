@@ -48,8 +48,8 @@ impl Default for ThemeSetting {
     fn default() -> Self {
         ThemeSetting {
             border_width: 1,
-            default_width: 800,
-            default_height: 600,
+            default_width: 1000,
+            default_height: 800,
             always_float: false,
             margin: Margins::Int(10),
             workspace_margin: Margins::Int(10),

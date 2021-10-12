@@ -295,7 +295,9 @@ fn floating_to_tile(manager: &mut Manager) -> Option<bool> {
 }
 
 fn tile_to_floating(manager: &mut Manager) -> Option<bool> {
+    let theme = manager.get_current_theme();
     let window = manager.focused_window_mut()?;
+
     if window.must_float() {
         return None;
     }
@@ -305,6 +307,15 @@ fn tile_to_floating(manager: &mut Manager) -> Option<bool> {
         return None;
     }
     window.set_floating(true);
+    let mut offset = window.get_floating_offsets().unwrap_or_default();
+    let start = window.start_loc.unwrap_or_default();
+    
+    offset.set_x(start.x() + window.margin.clone().left());
+    offset.set_y(start.y() + window.margin.clone().top());
+    offset.set_w(-theme.default_width);
+    offset.set_h(-theme.default_height);
+    
+    window.set_floating_offsets(Some(offset));
     Some(true)
 }
 

@@ -77,6 +77,12 @@ impl Manager {
     pub fn focused_window_mut(&mut self) -> Option<&mut Window> {
         self.focus_manager.window_mut(&mut self.windows)
     }
+    
+    /// Return the current used theme.
+    #[must_use]
+    pub fn get_current_theme(&self) -> ThemeSetting {
+        self.theme_setting.clone()
+    }
 
     pub fn update_docks(&mut self) {
         let workspaces = self.workspaces.clone();
