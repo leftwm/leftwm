@@ -142,7 +142,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            vec![],
             Layout::default(),
             None,
         );

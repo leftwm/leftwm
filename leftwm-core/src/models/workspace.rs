@@ -16,7 +16,6 @@ pub struct Workspace {
     pub margin_multiplier: f32,
     pub gutters: Vec<Gutter>,
     #[serde(skip)]
-    all_tags: Vec<Tag>,
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
@@ -47,7 +46,6 @@ impl Workspace {
     pub fn new(
         id: Option<i32>,
         bbox: BBox,
-        all_tags: Vec<Tag>,
         layout: Layout,
         max_window_width: Option<Size>,
     ) -> Self {
@@ -59,7 +57,6 @@ impl Workspace {
             margin_multiplier: 1.0,
             gutters: vec![],
             avoid: vec![],
-            all_tags,
             xyhw: XyhwBuilder {
                 h: bbox.height,
                 w: bbox.width,
@@ -240,7 +237,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            vec![],
             Layout::default(),
             None,
         );
@@ -261,7 +257,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            vec![],
             Layout::default(),
             None,
         );
