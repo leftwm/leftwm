@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 //      thus making a breaking change.
 //
 //      https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=59232ae3a6f902fc3a3a7a09d1d48c80
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum BaseCommand {
     Execute,
