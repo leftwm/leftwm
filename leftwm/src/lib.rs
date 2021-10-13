@@ -1,5 +1,6 @@
 mod command;
 mod config;
+pub mod logging;
 mod theme_setting;
 
 pub use command::*;

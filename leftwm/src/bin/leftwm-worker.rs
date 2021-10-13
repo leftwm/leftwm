@@ -1,10 +1,14 @@
 use leftwm_core::{Manager, XlibDisplayServer};
 
-use leftwm_core::logging::{setup_logfile, setup_logging};
+#[cfg(feature = "log-to-file")]
+use leftwm::logging::setup_logfile;
+
+use leftwm::logging::setup_logging;
 use std::panic;
 
 fn main() {
-    // let _log_guard = setup_logfile();
+    #[cfg(feature = "log-to-file")]
+    let _log_guard = setup_logfile();
     let _log_guard = setup_logging();
     log::info!("leftwm-worker booted!");
 
