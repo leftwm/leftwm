@@ -28,9 +28,10 @@ pub struct State<C> {
     pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
     // TODO should this really be saved in the state?
-    //this is used to limit framerate when resizing/moving windows
+    // this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
     pub tags: Vec<Tag>, //list of all known tags
+    pub loglevel: String,
 }
 
 impl<C> State<C>
@@ -64,6 +65,7 @@ where
             frame_rate_limitor: Default::default(),
             tags,
             config,
+            loglevel: String::from("info"),
         }
     }
 }

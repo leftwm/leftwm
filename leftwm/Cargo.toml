@@ -44,7 +44,9 @@ shellexpand = "2.1"
 tempfile = "3.2.0"
 
 [features]
-default = ["slog-term"]
+default = ["journald"]
+log-to-terminal = ["slog-term"]
+log-to-file = ["log-to-terminal"]
 journald = ["slog-journald", "slow-dm-fix"]
 
 # Sleep on restart
