@@ -17,21 +17,22 @@
             :onchange "")
     time))
 
+; Preview on how the workspaces widget will render:
 ; (defwidget workspaces []
     ; (box :class "workspaces"
          ; :orientation "h"
          ; :space-evenly true
          ; :halign "start"
          ; :spacing 10
-            ; (button :class "ws-button-mine" :onclick "wmctrl -s 0" `1`)
-            ; (button :class "ws-button-busy" :onclick "wmctrl -s 1" `2`)
-            ; (button :class "ws-button-busy" :onclick "wmctrl -s 2" `3`)
-            ; (button :class "ws-button" :onclick "wmctrl -s 3" `·`)
-            ; (button :class "ws-button" :onclick "wmctrl -s 4" `·`)
-            ; (button :class "ws-button" :onclick "wmctrl -s 5" `·`)
-            ; (button :class "ws-button" :onclick "wmctrl -s 6" `·`)
-            ; (button :class "ws-button" :onclick "wmctrl -s 7" `·`)
-            ; (button :class "ws-button" :onclick "wmctrl -s 8" `·`)))
+            ; (button :class "ws-button-mine" :onclick "leftwm-command \"SendWorkspaceToTag 0 0\"" `1`)
+            ; (button :class "ws-button-busy" :onclick "leftwm-command \"SendWorkspaceToTag 0 1\"" `2`)
+            ; (button :class "ws-button-busy" :onclick "leftwm-command \"SendWorkspaceToTag 0 2\"" `3`)
+            ; (button :class "ws-button" :onclick "leftwm-command \"SendWorkspaceToTag 0 3\"" `·`)
+            ; (button :class "ws-button" :onclick "leftwm-command \"SendWorkspaceToTag 0 4\"" `·`)
+            ; (button :class "ws-button" :onclick "leftwm-command \"SendWorkspaceToTag 0 5\"" `·`)
+            ; (button :class "ws-button" :onclick "leftwm-command \"SendWorkspaceToTag 0 6\"" `·`)
+            ; (button :class "ws-button" :onclick "leftwm-command \"SendWorkspaceToTag 0 7\"" `·`)
+            ; (button :class "ws-button" :onclick "leftwm-command \"SendWorkspaceToTag 0 8\"" `·`)))
 
 (defwidget workspaces []
   (box :class "workspaces"

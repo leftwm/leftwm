@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-leftwm-command "SendWorkspaceToTag $1 $2"
