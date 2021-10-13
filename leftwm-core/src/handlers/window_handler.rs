@@ -19,7 +19,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
 
         let mut is_first = false;
-        let mut on_same_tag = false;
+        let mut on_same_tag = true;
         //Random value
         let mut layout: Layout = Layout::MainAndVertStack;
         setup_window(
