@@ -338,6 +338,7 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
+    #[allow(clippy::default_trait_access)]
     fn command_handler<SERVER: DisplayServer>(
         command: &str,
         manager: &mut Manager<Self, SERVER>,

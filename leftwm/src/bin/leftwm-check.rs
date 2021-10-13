@@ -252,27 +252,26 @@ fn check_theme(verbose: bool) -> Result<()> {
 fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> Result<()> {
     if let Some(file) = missing_expected_file(&filepaths) {
         bail!("File not found: {}", file);
-    } else {
-        for filepath in filepaths {
-            match filepath {
-                f if f.ends_with("up") => match check_permissions(f, verbose) {
-                    Ok(_fp) => continue,
-                    Err(e) => return Err(e),
-                },
-                f if f.ends_with("down") => match check_permissions(f, verbose) {
-                    Ok(_fp) => continue,
-                    Err(e) => return Err(e),
-                },
-                f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
-                    Ok(_fp) => continue,
-                    Err(e) => return Err(e),
-                },
-                _ => (),
-            }
-        }
-        println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
-        Ok(())
     }
+    for filepath in filepaths {
+        match filepath {
+            f if f.ends_with("up") => match check_permissions(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => return Err(e),
+            },
+            f if f.ends_with("down") => match check_permissions(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => return Err(e),
+            },
+            f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => return Err(e),
+            },
+            _ => (),
+        }
+    }
+    println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
+    Ok(())
 }
 
 fn missing_expected_file<'a>(filepaths: &[PathBuf]) -> Option<&'a str> {
