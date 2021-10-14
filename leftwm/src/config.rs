@@ -6,6 +6,7 @@ use leftwm_core::{
     config::{ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size},
+    state::State,
     DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
@@ -415,8 +416,8 @@ impl leftwm_core::Config for Config {
         self.max_window_width
     }
 
-    fn save_state<SERVER: DisplayServer>(manager: &Manager<Self, SERVER>) {
-        let path = manager.state.config.state_file();
+    fn save_state(state: &State<Self>) {
+        let path = state.config.state_file();
         let state_file = match File::create(&path) {
             Ok(file) => file,
             Err(err) => {
@@ -424,7 +425,7 @@ impl leftwm_core::Config for Config {
                 return;
             }
         };
-        if let Err(err) = serde_json::to_writer(state_file, &manager.state) {
+        if let Err(err) = serde_json::to_writer(state_file, state) {
             log::error!("Cannot save state: {}", err);
         }
     }

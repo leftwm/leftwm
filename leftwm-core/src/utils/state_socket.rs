@@ -1,8 +1,6 @@
 use crate::config::Config;
-use crate::display_servers::DisplayServer;
 use crate::errors::{LeftError, Result};
 use crate::models::dto::ManagerState;
-use crate::models::Manager;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::fs;
@@ -58,12 +56,12 @@ impl StateSocket {
     /// # Errors
     /// Will return Err if a mut ref to the peer is unavailable.
     /// Will return error if state cannot be serialized
-    pub async fn write_manager_state<C: Config, SERVER: DisplayServer>(
+    pub async fn write_manager_state<C: Config>(
         &mut self,
-        manager: &Manager<C, SERVER>,
+        raw_state: &crate::state::State<C>,
     ) -> Result<()> {
         if self.listener.is_some() {
-            let state: ManagerState = manager.into();
+            let state: ManagerState = raw_state.into();
             let mut json = serde_json::to_string(&state)?;
             json.push('\n');
             let mut state = self.state.lock().await;

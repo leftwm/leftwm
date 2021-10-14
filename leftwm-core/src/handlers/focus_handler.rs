@@ -2,16 +2,17 @@
 
 use super::*;
 use crate::display_servers::DisplayServer;
+use crate::state::State;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Marks a workspace as the focused workspace.
     //NOTE: should only be called externally from this file
     pub fn focus_workspace(&mut self, workspace: &Workspace) -> bool {
-        if focus_workspace_work(self, workspace.id).is_some() {
+        if focus_workspace_work(&mut self.state, workspace.id).is_some() {
             //make sure this workspaces tag is focused
             workspace.tags.iter().for_each(|t| {
-                focus_tag_work(self, t);
+                focus_tag_work(&mut self.state, t);
             });
             // create an action to inform the DM
             self.update_current_tags();
@@ -22,7 +23,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
     /// Create a `DisplayAction` to cause this window to become focused
     pub fn focus_window(&mut self, handle: &WindowHandle) -> bool {
-        let window = match focus_window_by_handle_work(self, handle) {
+        let window = match focus_window_by_handle_work(&mut self.state, handle) {
             Some(w) => w,
             None => return false,
         };
@@ -41,12 +42,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             None => (None, None),
         };
         if let Some(workspace_id) = workspace_id {
-            let _ = focus_workspace_work(self, workspace_id);
+            let _ = focus_workspace_work(&mut self.state, workspace_id);
         }
 
         //make sure the focused window's tag is focused
         if let Some(tag) = focused_window_tag {
-            let _ = focus_tag_work(self, &tag);
+            let _ = focus_tag_work(&mut self.state, &tag);
         }
         true
     }
@@ -71,7 +72,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// marks a tag as the focused tag
     //NOTE: should only be called externally from this file
     pub fn focus_tag(&mut self, tag: &str) -> bool {
-        if focus_tag_work(self, tag).is_none() {
+        if focus_tag_work(&mut self.state, tag).is_none() {
             return false;
         }
         // check each workspace, if its displaying this tag it should be focused too
@@ -83,14 +84,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .cloned()
             .collect();
         for ws in &to_focus {
-            focus_workspace_work(self, ws.id);
+            focus_workspace_work(&mut self.state, ws.id);
         }
         //make sure the focused window is on this workspace
         if self.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             self.state.actions.push_back(act);
         } else if let Some(handle) = self.state.focus_manager.tags_last_window.get(tag).copied() {
-            focus_window_by_handle_work(self, &handle);
+            focus_window_by_handle_work(&mut self.state, &handle);
         } else if let Some(ws) = to_focus.first() {
             let handle = self
                 .state
@@ -99,7 +100,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 .find(|w| ws.is_managed(w))
                 .map(|w| w.handle);
             if let Some(h) = handle {
-                focus_window_by_handle_work(self, &h);
+                focus_window_by_handle_work(&mut self.state, &h);
             }
         }
 
@@ -166,65 +167,46 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 }
 
-fn focus_workspace_work<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    workspace_id: Option<i32>,
-) -> Option<()> {
+fn focus_workspace_work<C: Config>(state: &mut State<C>, workspace_id: Option<i32>) -> Option<()> {
     //no new history if no change
-    if let Some(fws) = manager
-        .state
-        .focus_manager
-        .workspace(&manager.state.workspaces)
-    {
+    if let Some(fws) = state.focus_manager.workspace(&state.workspaces) {
         if fws.id == workspace_id {
             return None;
         }
     }
     //clean old ones
-    manager.state.focus_manager.workspace_history.truncate(10);
+    state.focus_manager.workspace_history.truncate(10);
     //add this focus to the history
-    let index = manager
-        .state
-        .workspaces
-        .iter()
-        .position(|x| x.id == workspace_id)?;
-    manager
-        .state
-        .focus_manager
-        .workspace_history
-        .push_front(index);
+    let index = state.workspaces.iter().position(|x| x.id == workspace_id)?;
+    state.focus_manager.workspace_history.push_front(index);
     Some(())
 }
-fn focus_window_by_handle_work<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
+fn focus_window_by_handle_work<C: Config>(
+    state: &mut State<C>,
     handle: &WindowHandle,
 ) -> Option<Window> {
     //Docks don't want to get focus. If they do weird things happen. They don't get events...
     //Do the focus, Add the action to the list of action
-    let found: &Window = manager.state.windows.iter().find(|w| &w.handle == handle)?;
+    let found: &Window = state.windows.iter().find(|w| &w.handle == handle)?;
     if found.is_unmanaged() {
         return None;
     }
     //NOTE: we are intentionally creating the focus event even if we think this window
     //is already in focus. This is to force the DM to update its knowledge of the focused window
     let act = DisplayAction::WindowTakeFocus(found.clone());
-    manager.state.actions.push_back(act);
+    state.actions.push_back(act);
 
     //no new history if no change
-    if let Some(fw) = manager.state.focus_manager.window(&manager.state.windows) {
+    if let Some(fw) = state.focus_manager.window(&state.windows) {
         if &fw.handle == handle {
             //NOTE: we still made the action so return some
             return Some(found.clone());
         }
     }
     //clean old ones
-    manager.state.focus_manager.window_history.truncate(10);
+    state.focus_manager.window_history.truncate(10);
     //add this focus to the history
-    manager
-        .state
-        .focus_manager
-        .window_history
-        .push_front(Some(*handle));
+    state.focus_manager.window_history.push_front(Some(*handle));
 
     Some(found.clone())
 }
@@ -266,24 +248,17 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
     (xs + ys).sqrt().abs().floor() as i32
 }
 
-fn focus_tag_work<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    tag: &str,
-) -> Option<()> {
+fn focus_tag_work<C: Config>(state: &mut State<C>, tag: &str) -> Option<()> {
     //no new history if no change
-    if let Some(t) = manager.state.focus_manager.tag(0) {
+    if let Some(t) = state.focus_manager.tag(0) {
         if t == tag {
             return None;
         }
     }
     //clean old ones
-    manager.state.focus_manager.tag_history.truncate(10);
+    state.focus_manager.tag_history.truncate(10);
     //add this focus to the history
-    manager
-        .state
-        .focus_manager
-        .tag_history
-        .push_front(tag.to_string());
+    state.focus_manager.tag_history.push_front(tag.to_string());
 
     Some(())
 }

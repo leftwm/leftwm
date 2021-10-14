@@ -6,10 +6,12 @@
 // https://github.com/rust-lang/rust-clippy/issues/6563
 
 use super::*;
+use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::{TagId, WindowState};
+use crate::state::State;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
@@ -30,7 +32,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
     command: &Command,
 ) -> Option<bool> {
     match command {
-        Command::Execute(shell_command) => execute(manager, shell_command),
+        Command::Execute(shell_command) => execute(&mut manager.children, shell_command),
 
         Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
 
@@ -46,13 +48,13 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::GotoTag(tag) => goto_tag(manager, *tag),
 
-        Command::CloseWindow => close_window(manager),
+        Command::CloseWindow => close_window(&mut manager.state),
         Command::SwapScreens => swap_tags(manager),
-        Command::MoveWindowToLastWorkspace => move_to_last_workspace(manager),
-        Command::NextLayout => next_layout(manager),
-        Command::PreviousLayout => previous_layout(manager),
+        Command::MoveWindowToLastWorkspace => move_to_last_workspace(&mut manager.state),
+        Command::NextLayout => next_layout(&mut manager.state),
+        Command::PreviousLayout => previous_layout(&mut manager.state),
 
-        Command::SetLayout(layout) => set_layout(*layout, manager),
+        Command::SetLayout(layout) => set_layout(*layout, &mut manager.state),
 
         Command::FloatingToTile => floating_to_tile(manager),
 
@@ -66,7 +68,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
-            C::save_state(manager);
+            C::save_state(&manager.state);
             manager.hard_reload();
             None
         }
@@ -75,11 +77,13 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
             None
         }
 
-        Command::RotateTag => rotate_tag(manager),
+        Command::RotateTag => rotate_tag(&mut manager.state),
 
-        Command::IncreaseMainWidth(delta) => change_main_width(manager, *delta, 1),
-        Command::DecreaseMainWidth(delta) => change_main_width(manager, *delta, -1),
-        Command::SetMarginMultiplier(multiplier) => set_margin_multiplier(manager, *multiplier),
+        Command::IncreaseMainWidth(delta) => change_main_width(&mut manager.state, *delta, 1),
+        Command::DecreaseMainWidth(delta) => change_main_width(&mut manager.state, *delta, -1),
+        Command::SetMarginMultiplier(multiplier) => {
+            set_margin_multiplier(&mut manager.state, *multiplier)
+        }
         Command::SendWorkspaceToTag(ws_index, tag_index) => {
             Some(send_workspace_to_tag(manager, *ws_index, *tag_index))
         }
@@ -87,11 +91,8 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
     }
 }
 
-fn execute<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    shell_command: &str,
-) -> Option<bool> {
-    let _ = exec_shell(shell_command, manager);
+fn execute(children: &mut Children, shell_command: &str) -> Option<bool> {
+    let _ = exec_shell(shell_command, children);
     None
 }
 
@@ -148,7 +149,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         }
     }
     let name = s.name.clone();
-    let pid = exec_shell(&s.value, manager);
+    let pid = exec_shell(&s.value, &mut manager.children);
     manager.state.active_scratchpads.insert(name, pid);
     None
 }
@@ -316,77 +317,51 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
     None
 }
 
-fn close_window<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-) -> Option<bool> {
-    let window = manager.state.focus_manager.window(&manager.state.windows)?;
+fn close_window<C: Config>(state: &mut State<C>) -> Option<bool> {
+    let window = state.focus_manager.window(&state.windows)?;
     if !window.is_unmanaged() {
         let act = DisplayAction::KillWindow(window.handle);
-        manager.state.actions.push_back(act);
+        state.actions.push_back(act);
     }
     None
 }
 
-fn move_to_last_workspace<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-) -> Option<bool> {
-    if manager.state.workspaces.len() >= 2
-        && manager.state.focus_manager.workspace_history.len() >= 2
-    {
-        let index = *manager.state.focus_manager.workspace_history.get(1)?;
-        let wp_tags = &manager.state.workspaces.get(index)?.tags.clone();
-        let window = manager
-            .state
-            .focus_manager
-            .window_mut(&mut manager.state.windows)?;
+fn move_to_last_workspace<C: Config>(state: &mut State<C>) -> Option<bool> {
+    if state.workspaces.len() >= 2 && state.focus_manager.workspace_history.len() >= 2 {
+        let index = *state.focus_manager.workspace_history.get(1)?;
+        let wp_tags = &state.workspaces.get(index)?.tags.clone();
+        let window = state.focus_manager.window_mut(&mut state.windows)?;
         window.tags = vec![wp_tags.get(0)?.clone()];
         return Some(true);
     }
     None
 }
 
-fn next_layout<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>) -> Option<bool> {
-    let workspace = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
-    let layout = manager.state.layout_manager.next_layout(workspace.layout);
+fn next_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
+    let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
+    let layout = state.layout_manager.next_layout(workspace.layout);
     workspace.layout = layout;
-    let tag_id = manager.state.focus_manager.tag(0)?;
-    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    let tag_id = state.focus_manager.tag(0)?;
+    let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.set_layout(layout);
     Some(true)
 }
 
-fn previous_layout<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-) -> Option<bool> {
-    let workspace = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
-    let layout = manager
-        .state
-        .layout_manager
-        .previous_layout(workspace.layout);
+fn previous_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
+    let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
+    let layout = state.layout_manager.previous_layout(workspace.layout);
     workspace.layout = layout;
-    let tag_id = manager.state.focus_manager.tag(0)?;
-    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    let tag_id = state.focus_manager.tag(0)?;
+    let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.set_layout(layout);
     Some(true)
 }
 
-fn set_layout<C: Config, SERVER: DisplayServer>(
-    layout: Layout,
-    manager: &mut Manager<C, SERVER>,
-) -> Option<bool> {
-    let workspace = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
+fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
+    let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
-    let tag_id = manager.state.focus_manager.tag(0)?;
-    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+    let tag_id = state.focus_manager.tag(0)?;
+    let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.set_layout(layout);
     Some(true)
 }
@@ -560,58 +535,36 @@ fn focus_workspace_change<C: Config, SERVER: DisplayServer>(
     Some(handle_focus(manager, window.handle))
 }
 
-fn rotate_tag<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>) -> Option<bool> {
-    let tag_id = manager.state.focus_manager.tag(0)?;
-    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+fn rotate_tag<C: Config>(state: &mut State<C>) -> Option<bool> {
+    let tag_id = state.focus_manager.tag(0)?;
+    let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.rotate_layout()?;
     Some(true)
 }
 
-fn change_main_width<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    delta: i8,
-    factor: i8,
-) -> Option<bool> {
-    let tag_id = manager.state.focus_manager.tag(0)?;
-    let tag = manager.state.tags.iter_mut().find(|t| t.id == tag_id)?;
+fn change_main_width<C: Config>(state: &mut State<C>, delta: i8, factor: i8) -> Option<bool> {
+    let tag_id = state.focus_manager.tag(0)?;
+    let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.change_main_width(delta * factor);
     Some(true)
 }
 
-fn set_margin_multiplier<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    margin_multiplier: f32,
-) -> Option<bool> {
-    let ws = manager
-        .state
-        .focus_manager
-        .workspace_mut(&mut manager.state.workspaces)?;
+fn set_margin_multiplier<C: Config>(state: &mut State<C>, margin_multiplier: f32) -> Option<bool> {
+    let ws = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     ws.set_margin_multiplier(margin_multiplier);
     let tags = ws.tags.clone();
-    if manager
-        .state
-        .windows
-        .iter()
-        .any(|w| w.type_ == WindowType::Normal)
-    {
+    if state.windows.iter().any(|w| w.type_ == WindowType::Normal) {
         let for_active_workspace = |x: &Window| -> bool {
             helpers::intersect(&tags, &x.tags) && x.type_ == WindowType::Normal
         };
         let mut to_apply_margin_multiplier =
-            helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
+            helpers::vec_extract(&mut state.windows, for_active_workspace);
         for w in &mut to_apply_margin_multiplier {
-            if let Some(ws) = manager
-                .state
-                .focus_manager
-                .workspace(&manager.state.workspaces)
-            {
+            if let Some(ws) = state.focus_manager.workspace(&state.workspaces) {
                 w.apply_margin_multiplier(ws.margin_multiplier());
             }
         }
-        manager
-            .state
-            .windows
-            .append(&mut to_apply_margin_multiplier);
+        state.windows.append(&mut to_apply_margin_multiplier);
     }
     Some(true)
 }
