@@ -52,7 +52,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 
     pub fn focus_workspace_under_cursor(&mut self, x: i32, y: i32) -> bool {
-        let focused_id = match self.focused_workspace() {
+        let focused_id = match self.state.focus_manager.workspace(&self.state.workspaces) {
             Some(fws) => fws.id,
             None => None,
         };
@@ -104,7 +104,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
 
         // Unfocus last window if the target tag is empty
-        if let Some(window) = self.focused_window().cloned() {
+        if let Some(window) = self.state.focus_manager.window(&self.state.windows) {
             if !window.tags.contains(&tag.to_owned()) {
                 self.state.actions.push_back(DisplayAction::Unfocus);
                 self.state.focus_manager.window_history.push_front(None);
@@ -114,7 +114,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 
     pub fn validate_focus_at(&mut self, x: i32, y: i32) -> bool {
-        let current = match self.focused_window() {
+        let current = match self.state.focus_manager.window(&self.state.windows) {
             Some(w) => w,
             None => return false,
         };
@@ -156,7 +156,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
     /// Create an action to inform the DM of the new current tags.
     pub fn update_current_tags(&mut self) {
-        if let Some(workspace) = self.focused_workspace() {
+        if let Some(workspace) = self.state.focus_manager.workspace(&self.state.workspaces) {
             if let Some(tag) = workspace.tags.first().cloned() {
                 self.state
                     .actions
@@ -171,7 +171,11 @@ fn focus_workspace_work<C: Config, SERVER: DisplayServer>(
     workspace_id: Option<i32>,
 ) -> Option<()> {
     //no new history if no change
-    if let Some(fws) = manager.focused_workspace() {
+    if let Some(fws) = manager
+        .state
+        .focus_manager
+        .workspace(&manager.state.workspaces)
+    {
         if fws.id == workspace_id {
             return None;
         }
@@ -207,7 +211,7 @@ fn focus_window_by_handle_work<C: Config, SERVER: DisplayServer>(
     manager.state.actions.push_back(act);
 
     //no new history if no change
-    if let Some(fw) = manager.focused_window() {
+    if let Some(fw) = manager.state.focus_manager.window(&manager.state.windows) {
         if &fw.handle == handle {
             //NOTE: we still made the action so return some
             return Some(found.clone());

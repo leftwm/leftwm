@@ -11,8 +11,18 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let tag_id = self.state.tags[tag_num - 1].id.clone();
         let new_tags = vec![tag_id.clone()];
         //no focus safety check
-        let old_tags = self.focused_workspace()?.tags.clone();
-        if let Some(handle) = self.focused_window().map(|w| w.handle) {
+        let old_tags = self
+            .state
+            .focus_manager
+            .workspace(&self.state.workspaces)?
+            .tags
+            .clone();
+        if let Some(handle) = self
+            .state
+            .focus_manager
+            .window(&self.state.windows)
+            .map(|w| w.handle)
+        {
             let old_handle = self
                 .state
                 .focus_manager
@@ -30,7 +40,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             ws.tags = old_tags;
         }
 
-        self.focused_workspace_mut()?.tags = new_tags;
+        self.state
+            .focus_manager
+            .workspace_mut(&mut self.state.workspaces)?
+            .tags = new_tags;
         self.focus_tag(&tag_id);
         self.update_static();
         self.state

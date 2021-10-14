@@ -139,7 +139,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     //Find the next or previous window on the workspace
     pub fn get_next_or_previous(&mut self, handle: &WindowHandle) -> Option<WindowHandle> {
         if self.state.focus_manager.behaviour != FocusBehaviour::Sloppy {
-            let ws = self.focused_workspace().cloned()?;
+            let ws = self.state.focus_manager.workspace(&self.state.workspaces)?;
             let for_active_workspace = |x: &Window| -> bool { ws.is_managed(x) };
             let mut windows = helpers::vec_extract(&mut self.state.windows, for_active_workspace);
             let is_handle = |x: &Window| -> bool { &x.handle == handle };
@@ -198,7 +198,12 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
             ws.xyhw.contains_point(xy.0, xy.1)
                 && manager.state.focus_manager.behaviour == FocusBehaviour::Sloppy
         })
-        .or_else(|| manager.focused_workspace()); //backup plan
+        .or_else(|| {
+            manager
+                .state
+                .focus_manager
+                .workspace(&manager.state.workspaces)
+        }); //backup plan
 
     if let Some(ws) = ws {
         let for_active_workspace =

@@ -59,15 +59,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 match self.state.mode {
                     Mode::Normal => {
                         let windows: Vec<&Window> = self.state.windows.iter().collect();
-                        let focused = self.focused_window();
+                        let focused = self.state.focus_manager.window(&self.state.windows);
                         self.display_server.update_windows(windows, focused, &self);
                         let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
-                        let focused = self.focused_workspace();
+                        let focused = self.state.focus_manager.workspace(&self.state.workspaces);
                         self.display_server.update_workspaces(workspaces, focused);
                     }
                     //when (resizing / moving) only deal with the single window
                     Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
-                        let focused = self.focused_window();
+                        let focused = self.state.focus_manager.window(&self.state.windows);
                         let windows: Vec<&Window> = (&self.state.windows)
                             .iter()
                             .filter(|w| w.handle == h)

@@ -3,7 +3,6 @@ use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::models::Window;
 use crate::models::WindowHandle;
-use crate::models::Workspace;
 use crate::state::State;
 use crate::utils::child_process::Children;
 use std::sync::{atomic::AtomicBool, Arc};
@@ -40,41 +39,10 @@ where
         crate::child_process::register_child_hook(self.reap_requested.clone());
     }
 
-    /// Return the currently focused workspace.
-    #[must_use]
-    pub fn focused_workspace(&self) -> Option<&Workspace> {
-        self.state.focus_manager.workspace(self)
-    }
-
-    /// Return the currently focused workspace.
-    pub fn focused_workspace_mut(&mut self) -> Option<&mut Workspace> {
-        self.state
-            .focus_manager
-            .workspace_mut(&mut self.state.workspaces)
-    }
-
-    /// Return the currently focused tag if the offset is 0.
-    /// Offset is used to reach further down the history.
-    #[must_use]
-    pub fn focused_tag(&self, offset: usize) -> Option<String> {
-        self.state.focus_manager.tag(offset)
-    }
-
     /// Return the index of a given tag.
     #[must_use]
     pub fn tag_index(&self, tag: &str) -> Option<usize> {
         Some(self.state.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
-    }
-
-    /// Return the currently focused window.
-    #[must_use]
-    pub fn focused_window(&self) -> Option<&Window> {
-        self.state.focus_manager.window(self)
-    }
-
-    /// Return the currently focused window.
-    pub fn focused_window_mut(&mut self) -> Option<&mut Window> {
-        self.state.focus_manager.window_mut(&mut self.state.windows)
     }
 
     pub fn update_static(&mut self) {
@@ -148,7 +116,7 @@ where
     #[must_use]
     pub fn workspaces_display(&self) -> String {
         let mut focused_id = None;
-        if let Some(f) = self.focused_workspace() {
+        if let Some(f) = self.state.focus_manager.workspace(&self.state.workspaces) {
             focused_id = f.id;
         }
         let list: Vec<String> = self

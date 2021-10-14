@@ -125,11 +125,15 @@ impl<C: Config, SERVER: DisplayServer> From<&Manager<C, SERVER>> for ManagerStat
                 layout: ws.layout,
             });
         }
-        let active_desktop = match manager.focused_workspace() {
+        let active_desktop = match manager
+            .state
+            .focus_manager
+            .workspace(&manager.state.workspaces)
+        {
             Some(ws) => ws.tags.clone(),
             None => vec!["".to_owned()],
         };
-        let window_title = match manager.focused_window() {
+        let window_title = match manager.state.focus_manager.window(&manager.state.windows) {
             Some(win) => win.name.clone(),
             None => None,
         };

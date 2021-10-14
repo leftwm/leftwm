@@ -99,7 +99,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     name: &str,
 ) -> Option<bool> {
-    let tag = &manager.focused_tag(0)?;
+    let tag = &manager.state.focus_manager.tag(0)?;
     let s = manager
         .state
         .scratchpads
@@ -108,7 +108,11 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         .clone();
 
     let mut handle = None;
-    if let Some(ws) = manager.focused_workspace() {
+    if let Some(ws) = manager
+        .state
+        .focus_manager
+        .workspace(&manager.state.workspaces)
+    {
         handle = manager
             .state
             .windows
@@ -153,7 +157,7 @@ fn toggle_state<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     state: WindowState,
 ) -> Option<bool> {
-    let window = manager.focused_window()?;
+    let window = manager.state.focus_manager.window(&manager.state.windows)?;
     let handle = window.handle;
     let act = DisplayAction::SetState(handle, !window.has_state(&state), state);
     manager.state.actions.push_back(act);
@@ -176,11 +180,18 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         None => 1.0,
     };
 
-    let handle = manager.focused_window()?.handle;
+    let handle = manager
+        .state
+        .focus_manager
+        .window(&manager.state.windows)?
+        .handle;
     //Focus the next or previous window on the workspace
     let new_handle = manager.get_next_or_previous(&handle);
 
-    let window = manager.focused_window_mut()?;
+    let window = manager
+        .state
+        .focus_manager
+        .window_mut(&mut manager.state.windows)?;
     window.clear_tags();
     window.set_floating(false);
     window.tag(&tag.id);
@@ -199,7 +210,10 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     delta: i32,
 ) -> Option<bool> {
-    let current = manager.focused_workspace()?;
+    let current = manager
+        .state
+        .focus_manager
+        .workspace(&manager.state.workspaces)?;
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
     let tag_num = manager
@@ -214,8 +228,8 @@ fn goto_tag<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     input_tag: usize,
 ) -> Option<bool> {
-    let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
-    let previous_tag = manager.tag_index(&manager.focused_tag(1).unwrap_or_default());
+    let current_tag = manager.tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
+    let previous_tag = manager.tag_index(&manager.state.focus_manager.tag(1).unwrap_or_default());
 
     let destination_tag = if manager.state.config.disable_current_tag_swap() {
         input_tag
@@ -232,7 +246,7 @@ fn focus_tag_change<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     delta: i8,
 ) -> Option<bool> {
-    let current = manager.focused_tag(0)?;
+    let current = manager.state.focus_manager.tag(0)?;
     let active_tags: Vec<(usize, TagId)> = manager
         .state
         .tags
@@ -305,7 +319,7 @@ fn swap_tags<C: Config, SERVER: DisplayServer>(manager: &mut Manager<C, SERVER>)
 fn close_window<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    let window = manager.focused_window()?;
+    let window = manager.state.focus_manager.window(&manager.state.windows)?;
     if !window.is_unmanaged() {
         let act = DisplayAction::KillWindow(window.handle);
         manager.state.actions.push_back(act);
@@ -321,7 +335,10 @@ fn move_to_last_workspace<C: Config, SERVER: DisplayServer>(
     {
         let index = *manager.state.focus_manager.workspace_history.get(1)?;
         let wp_tags = &manager.state.workspaces.get(index)?.tags.clone();
-        let window = manager.focused_window_mut()?;
+        let window = manager
+            .state
+            .focus_manager
+            .window_mut(&mut manager.state.windows)?;
         window.tags = vec![wp_tags.get(0)?.clone()];
         return Some(true);
     }
@@ -377,8 +394,14 @@ fn set_layout<C: Config, SERVER: DisplayServer>(
 fn floating_to_tile<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    let workspace = manager.focused_workspace()?.clone();
-    let window = manager.focused_window_mut()?;
+    let workspace = manager
+        .state
+        .focus_manager
+        .workspace(&manager.state.workspaces)?;
+    let window = manager
+        .state
+        .focus_manager
+        .window_mut(&mut manager.state.windows)?;
     if window.must_float() {
         return None;
     }
@@ -387,7 +410,7 @@ fn floating_to_tile<C: Config, SERVER: DisplayServer>(
     if !window.floating() {
         return None;
     }
-    window.snap_to_workspace(&workspace);
+    window.snap_to_workspace(workspace);
     let handle = window.handle;
     Some(handle_focus(manager, handle))
 }
@@ -400,7 +423,11 @@ fn move_focus_common_vars<F, C: Config, SERVER: DisplayServer>(
 where
     F: Fn(&mut Manager<C, SERVER>, i32, WindowHandle, Option<Layout>, Vec<Window>) -> Option<bool>,
 {
-    let handle = manager.focused_window()?.handle;
+    let handle = manager
+        .state
+        .focus_manager
+        .window(&manager.state.windows)?
+        .handle;
     let tag_id = manager.state.focus_manager.tag(0)?;
     let tag = manager.state.tags.iter().find(|t| t.id == tag_id)?;
     let (tags, layout) = (vec![tag_id], Some(tag.layout));
@@ -513,7 +540,10 @@ fn focus_workspace_change<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     val: i32,
 ) -> Option<bool> {
-    let current = manager.focused_workspace()?;
+    let current = manager
+        .state
+        .focus_manager
+        .workspace(&manager.state.workspaces)?;
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, val, true)?.clone();
     manager.focus_workspace(&workspace);
@@ -552,7 +582,10 @@ fn set_margin_multiplier<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     margin_multiplier: f32,
 ) -> Option<bool> {
-    let ws = manager.focused_workspace_mut()?;
+    let ws = manager
+        .state
+        .focus_manager
+        .workspace_mut(&mut manager.state.workspaces)?;
     ws.set_margin_multiplier(margin_multiplier);
     let tags = ws.tags.clone();
     if manager
@@ -567,7 +600,11 @@ fn set_margin_multiplier<C: Config, SERVER: DisplayServer>(
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
         for w in &mut to_apply_margin_multiplier {
-            if let Some(ws) = manager.focused_workspace() {
+            if let Some(ws) = manager
+                .state
+                .focus_manager
+                .workspace(&manager.state.workspaces)
+            {
                 w.apply_margin_multiplier(ws.margin_multiplier());
             }
         }
