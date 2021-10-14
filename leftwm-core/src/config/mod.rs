@@ -3,9 +3,9 @@ mod scratchpad;
 mod workspace_config;
 
 use crate::layouts::Layout;
+use crate::models::LayoutMode;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
-use crate::{display_servers::DisplayServer, models::LayoutMode};
-use crate::{state::State, Manager};
+use crate::state::State;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use workspace_config::Workspace;
@@ -33,10 +33,9 @@ pub trait Config {
 
     fn focus_new_windows(&self) -> bool;
 
-    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
+    fn command_handler(command: &str, state: &mut State<Self>) -> bool
     where
-        Self: Sized,
-        SERVER: DisplayServer;
+        Self: Sized;
 
     fn border_width(&self) -> i32;
     fn margin(&self) -> Margins;

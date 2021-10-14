@@ -7,7 +7,6 @@ use leftwm_core::{
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size},
     state::State,
-    DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -334,23 +333,20 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
-    fn command_handler<SERVER: DisplayServer>(
-        command: &str,
-        manager: &mut Manager<Self, SERVER>,
-    ) -> bool {
+    fn command_handler(command: &str, state: &mut State<Self>) -> bool {
         if let Some((command, value)) = command.split_once(' ') {
             match command {
                 "LoadTheme" => {
                     if let Some(absolute) = absolute_path(value.trim()) {
-                        manager.state.config.theme_setting.load(absolute);
+                        state.config.theme_setting.load(absolute);
                     } else {
                         log::warn!("Path submitted does not exist.");
                     }
-                    return manager.state.update_for_theme();
+                    return state.update_for_theme();
                 }
                 "UnloadTheme" => {
-                    manager.state.config.theme_setting = Default::default();
-                    return manager.state.update_for_theme();
+                    state.config.theme_setting = Default::default();
+                    return state.update_for_theme();
                 }
                 _ => {
                     log::warn!("Command not recognized: {}", command);
