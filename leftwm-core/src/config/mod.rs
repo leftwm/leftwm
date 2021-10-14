@@ -105,10 +105,9 @@ impl Config for TestConfig {
     fn focus_new_windows(&self) -> bool {
         false
     }
-    fn command_handler<SERVER>(_command: &str, _manager: &mut Manager<Self, SERVER>) -> bool
+    fn command_handler(_command: &str, _state: &mut State<Self>) -> bool
     where
         Self: Sized,
-        SERVER: DisplayServer,
     {
         unimplemented!()
     }
@@ -142,18 +141,16 @@ impl Config for TestConfig {
     fn max_window_width(&self) -> Option<Size> {
         None
     }
-    fn save_state<SERVER>(_manager: &Manager<Self, SERVER>)
+    fn save_state(_state: &State<Self>)
     where
         Self: Sized,
-        SERVER: DisplayServer,
     {
         unimplemented!()
     }
     /// Load saved state if it exists.
-    fn load_state<SERVER>(_manager: &mut Manager<Self, SERVER>)
+    fn load_state(_state: &mut State<Self>)
     where
         Self: Sized,
-        SERVER: DisplayServer,
     {
         unimplemented!()
     }

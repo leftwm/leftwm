@@ -112,6 +112,7 @@ impl StateSocket {
 mod test {
     use super::*;
     use crate::utils::helpers::test::temp_path;
+    use crate::Manager;
     use tokio::io::{AsyncBufReadExt, BufReader};
 
     #[test]
@@ -121,14 +122,15 @@ mod test {
     }
     async fn multiple_peers_async() {
         let manager = Manager::new_test(vec![]);
+        let state = &manager.state;
 
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();
         state_socket.listen(socket_file.clone()).await.unwrap();
-        state_socket.write_manager_state(&manager).await.unwrap();
+        state_socket.write_manager_state(state).await.unwrap();
 
         assert_eq!(
-            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            serde_json::to_string(&Into::<ManagerState>::into(state)).unwrap(),
             BufReader::new(UnixStream::connect(socket_file.clone()).await.unwrap())
                 .lines()
                 .next_line()
@@ -138,7 +140,7 @@ mod test {
         );
 
         assert_eq!(
-            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            serde_json::to_string(&Into::<ManagerState>::into(state)).unwrap(),
             BufReader::new(UnixStream::connect(socket_file.clone()).await.unwrap())
                 .lines()
                 .next_line()
@@ -148,7 +150,7 @@ mod test {
         );
 
         assert_eq!(
-            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            serde_json::to_string(&Into::<ManagerState>::into(state)).unwrap(),
             BufReader::new(UnixStream::connect(socket_file).await.unwrap())
                 .lines()
                 .next_line()
@@ -167,25 +169,26 @@ mod test {
     }
     async fn get_update_async() {
         let manager = Manager::new_test(vec![]);
+        let state = &manager.state;
 
         let socket_file = temp_path().await.unwrap();
         let mut state_socket = StateSocket::default();
         state_socket.listen(socket_file.clone()).await.unwrap();
-        state_socket.write_manager_state(&manager).await.unwrap();
+        state_socket.write_manager_state(state).await.unwrap();
 
         let mut lines = BufReader::new(UnixStream::connect(socket_file).await.unwrap()).lines();
 
         assert_eq!(
-            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            serde_json::to_string(&Into::<ManagerState>::into(state)).unwrap(),
             lines.next_line().await.expect("Read next line").unwrap()
         );
 
         // Fake state update.
         state_socket.state.lock().await.last_state = String::default();
-        state_socket.write_manager_state(&manager).await.unwrap();
+        state_socket.write_manager_state(state).await.unwrap();
 
         assert_eq!(
-            serde_json::to_string(&Into::<ManagerState>::into(&manager)).unwrap(),
+            serde_json::to_string(&Into::<ManagerState>::into(state)).unwrap(),
             lines.next_line().await.expect("Read next line").unwrap()
         );
 

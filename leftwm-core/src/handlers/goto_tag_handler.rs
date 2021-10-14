@@ -36,14 +36,16 @@ impl<C: Config> State<C> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Manager;
 
     #[test]
     fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
-        manager.goto_tag_handler(1);
-        assert_eq!(manager.state.workspaces[0].tags, ["2".to_owned()]);
-        assert_eq!(manager.state.workspaces[1].tags, ["1".to_owned()]);
+        let state = &mut manager.state;
+        state.screen_create_handler(Screen::default());
+        state.screen_create_handler(Screen::default());
+        state.goto_tag_handler(1);
+        assert_eq!(state.workspaces[0].tags, ["2".to_owned()]);
+        assert_eq!(state.workspaces[1].tags, ["1".to_owned()]);
     }
 }

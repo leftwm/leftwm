@@ -563,8 +563,9 @@ mod tests {
     #[test]
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        let state = &mut manager.state;
+        state.screen_create_handler(Screen::default());
+        state.screen_create_handler(Screen::default());
         // no tag creation here but one tag per screen is created
         assert!(manager.command_handler(&Command::GotoTag(2)));
         assert!(manager.command_handler(&Command::GotoTag(1)));
@@ -575,8 +576,9 @@ mod tests {
     #[test]
     fn go_to_tag_should_return_false_on_invalid_input() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
-        manager.state.tags = vec![
+        let state = &mut manager.state;
+        state.screen_create_handler(Screen::default());
+        state.tags = vec![
             Tag::new("A15", Layout::default()),
             Tag::new("B24", Layout::default()),
             Tag::new("C", Layout::default()),
@@ -598,33 +600,47 @@ mod tests {
             "E39".to_string(),
             "F67".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.state.screen_create_handler(Screen::default());
+        manager.state.screen_create_handler(Screen::default());
 
         assert!(manager.command_handler(&Command::GotoTag(6)));
-        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager
+            .state
+            .tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(5));
         assert!(manager.command_handler(&Command::GotoTag(2)));
-        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager
+            .state
+            .tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(1));
 
         assert!(manager.command_handler(&Command::GotoTag(3)));
-        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager
+            .state
+            .tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(2));
 
         assert!(manager.command_handler(&Command::GotoTag(4)));
-        let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
+        let current_tag = manager
+            .state
+            .tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
         assert_eq!(current_tag, Some(3));
         assert_eq!(
-            manager.tag_index(&manager.focused_tag(1).unwrap_or_default()),
+            manager
+                .state
+                .tag_index(&manager.state.focus_manager.tag(1).unwrap_or_default()),
             Some(2)
         );
         assert_eq!(
-            manager.tag_index(&manager.focused_tag(2).unwrap_or_default()),
+            manager
+                .state
+                .tag_index(&manager.state.focus_manager.tag(2).unwrap_or_default()),
             Some(1)
         );
         assert_eq!(
-            manager.tag_index(&manager.focused_tag(3).unwrap_or_default()),
+            manager
+                .state
+                .tag_index(&manager.state.focus_manager.tag(3).unwrap_or_default()),
             Some(5)
         );
     }

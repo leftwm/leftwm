@@ -53,14 +53,16 @@ impl<C: Config> State<C> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Manager;
 
     #[test]
     fn creating_two_screens_should_tag_them_with_first_and_second_tags() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
-        assert!(manager.state.workspaces[0].has_tag("1"));
-        assert!(manager.state.workspaces[1].has_tag("2"));
+        let state = &mut manager.state;
+        state.screen_create_handler(Screen::default());
+        state.screen_create_handler(Screen::default());
+        assert!(state.workspaces[0].has_tag("1"));
+        assert!(state.workspaces[1].has_tag("2"));
     }
 
     #[test]
@@ -70,9 +72,10 @@ mod tests {
             "console".to_string(),
             "code".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
-        assert!(manager.state.workspaces[0].has_tag("web"));
-        assert!(manager.state.workspaces[1].has_tag("console"));
+        let state = &mut manager.state;
+        state.screen_create_handler(Screen::default());
+        state.screen_create_handler(Screen::default());
+        assert!(state.workspaces[0].has_tag("web"));
+        assert!(state.workspaces[1].has_tag("console"));
     }
 }
