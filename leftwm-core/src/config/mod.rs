@@ -63,10 +63,9 @@ pub trait Config {
         Self: Sized;
 
     /// Load saved state if it exists.
-    fn load_state<SERVER>(manager: &mut Manager<Self, SERVER>)
+    fn load_state(state: &mut State<Self>)
     where
-        Self: Sized,
-        SERVER: DisplayServer;
+        Self: Sized;
 }
 
 #[cfg(test)]

@@ -48,10 +48,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         // tell the WM the new display order of the windows
         //new windows should be on the top of the stack
-        self.sort_windows();
+        self.state.sort_windows();
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
-            self.focus_window(&window.handle);
+            self.state.focus_window(&window.handle);
         }
 
         if let Some(cmd) = &self.state.config.on_new_window_cmd() {
@@ -82,7 +82,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
             } else if let Some(h) = new_handle {
-                self.focus_window(&h);
+                self.state.focus_window(&h);
             }
         }
 
@@ -107,7 +107,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
         }
         if strut_changed {
-            self.update_static();
+            self.state.update_static();
         }
         changed
     }

@@ -346,11 +346,11 @@ impl leftwm_core::Config for Config {
                     } else {
                         log::warn!("Path submitted does not exist.");
                     }
-                    return manager.update_for_theme();
+                    return manager.state.update_for_theme();
                 }
                 "UnloadTheme" => {
                     manager.state.config.theme_setting = Default::default();
-                    return manager.update_for_theme();
+                    return manager.state.update_for_theme();
                 }
                 _ => {
                     log::warn!("Command not recognized: {}", command);
@@ -430,12 +430,12 @@ impl leftwm_core::Config for Config {
         }
     }
 
-    fn load_state<SERVER: DisplayServer>(manager: &mut Manager<Self, SERVER>) {
-        let path = manager.state.config.state_file().to_owned();
+    fn load_state(state: &mut State<Self>) {
+        let path = state.config.state_file().to_owned();
         match File::open(&path) {
             Ok(file) => {
                 match serde_json::from_reader(file) {
-                    Ok(state) => manager.restore_state(&state),
+                    Ok(old_state) => state.restore_state(&old_state),
                     Err(err) => log::error!("Cannot load old state: {}", err),
                 }
                 // Clean old state.

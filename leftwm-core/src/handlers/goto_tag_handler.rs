@@ -1,54 +1,34 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::display_servers::DisplayServer;
+use crate::state::State;
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<C: Config> State<C> {
     pub fn goto_tag_handler(&mut self, tag_num: usize) -> Option<bool> {
-        if tag_num > self.state.tags.len() || tag_num < 1 {
+        if tag_num > self.tags.len() || tag_num < 1 {
             return Some(false);
         }
 
-        let tag_id = self.state.tags[tag_num - 1].id.clone();
+        let tag_id = self.tags[tag_num - 1].id.clone();
         let new_tags = vec![tag_id.clone()];
         //no focus safety check
-        let old_tags = self
-            .state
-            .focus_manager
-            .workspace(&self.state.workspaces)?
-            .tags
-            .clone();
-        if let Some(handle) = self
-            .state
-            .focus_manager
-            .window(&self.state.windows)
-            .map(|w| w.handle)
-        {
+        let old_tags = self.focus_manager.workspace(&self.workspaces)?.tags.clone();
+        if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
             let old_handle = self
-                .state
                 .focus_manager
                 .tags_last_window
                 .entry(old_tags[0].clone())
                 .or_insert(handle);
             *old_handle = handle;
         }
-        if let Some(ws) = self
-            .state
-            .workspaces
-            .iter_mut()
-            .find(|ws| ws.tags == new_tags)
-        {
+        if let Some(ws) = self.workspaces.iter_mut().find(|ws| ws.tags == new_tags) {
             ws.tags = old_tags;
         }
 
-        self.state
-            .focus_manager
-            .workspace_mut(&mut self.state.workspaces)?
-            .tags = new_tags;
+        self.focus_manager.workspace_mut(&mut self.workspaces)?.tags = new_tags;
         self.focus_tag(&tag_id);
         self.update_static();
-        self.state
-            .layout_manager
-            .update_layouts(&mut self.state.workspaces, &mut self.state.tags);
+        self.layout_manager
+            .update_layouts(&mut self.workspaces, &mut self.tags);
         Some(true)
     }
 }

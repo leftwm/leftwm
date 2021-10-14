@@ -1,27 +1,26 @@
-use super::{Manager, Screen, Workspace};
+use super::{Screen, Workspace};
 use crate::config::Config;
-use crate::display_servers::DisplayServer;
 use crate::models::Tag;
+use crate::state::State;
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<C: Config> State<C> {
     /// Process a collection of events, and apply them changes to a manager.
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
-        let tag_index = self.state.workspaces.len();
+        let tag_index = self.workspaces.len();
 
         let mut workspace = Workspace::new(
             screen.wsid,
             screen.bbox,
-            self.state.layout_manager.new_layout(),
+            self.layout_manager.new_layout(),
             screen
                 .max_window_width
-                .or_else(|| self.state.config.max_window_width()),
+                .or_else(|| self.config.max_window_width()),
         );
         if workspace.id.is_none() {
             workspace.id = Some(
-                self.state
-                    .workspaces
+                self.workspaces
                     .iter()
                     .map(|ws| ws.id.unwrap_or(-1))
                     .max()
@@ -29,24 +28,23 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     + 1,
             );
         }
-        if workspace.id.unwrap_or(0) as usize >= self.state.tags.len() {
+        if workspace.id.unwrap_or(0) as usize >= self.tags.len() {
             dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
         }
-        workspace.update_for_theme(&self.state.config);
+        workspace.update_for_theme(&self.config);
         //make sure are enough tags for this new screen
-        if self.state.tags.len() <= tag_index {
+        if self.tags.len() <= tag_index {
             let id = (tag_index + 1).to_string();
-            self.state
-                .tags
-                .push(Tag::new(&id, self.state.layout_manager.new_layout()));
+            self.tags
+                .push(Tag::new(&id, self.layout_manager.new_layout()));
         }
-        let next_tag = self.state.tags[tag_index].clone();
+        let next_tag = self.tags[tag_index].clone();
         self.focus_workspace(&workspace);
         self.focus_tag(&next_tag.id);
         workspace.show_tag(&next_tag);
-        self.state.workspaces.push(workspace.clone());
-        self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
-        self.state.screens.push(screen);
+        self.workspaces.push(workspace.clone());
+        self.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
+        self.screens.push(screen);
         self.focus_workspace(&workspace);
         false
     }
