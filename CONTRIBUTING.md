@@ -54,6 +54,12 @@ cargo clippy --release
 ```
 Again these are checked with CI, but it is always easier to check them before creating a pull request.
 
+*Note: if you want to further improe style you alsocould use these additional flags:*
+```
+cargo clippy -- -W clippy::pedantic -A clippy::must_use_candidate -A clippy::cast_precision_loss -A clippy::cast_possible_truncation -A clippy::cast_possible_wrap -A clippy::cast_sign_loss -A clippy::mut_mut
+
+```
+
 ### User Documentation
 
 When introducing new commands or config options it is helpfull to provide some user level documentation and keep the initial PR message body updated with this documentation.
