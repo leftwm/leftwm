@@ -1,8 +1,8 @@
 use crate::config::Config;
 use crate::display_action::DisplayAction;
-use crate::models::Manager;
 use crate::models::Window;
 use crate::models::Workspace;
+use crate::state::State;
 use crate::DisplayEvent;
 #[cfg(test)]
 mod mock_display_server;
@@ -25,7 +25,7 @@ pub trait DisplayServer {
         &self,
         _windows: Vec<&Window>,
         _focused: Option<&Window>,
-        _manager: &Manager<C, Self>,
+        _state: &State<C>,
     ) where
         Self: Sized,
     {
