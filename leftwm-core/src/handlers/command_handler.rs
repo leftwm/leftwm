@@ -389,11 +389,11 @@ fn tile_to_floating<C: Config>(state: &mut State<C>) -> Option<bool> {
 }
 
 fn toggle_floating<C: Config>(state: &mut State<C>) -> Option<bool> {
-    let window = state.focus_manager.window_mut(&mut state.windows)?;
+    let window = state.focus_manager.window(&state.windows)?;
     if window.floating() {
-        return floating_to_tile(state);
+        floating_to_tile(state)
     } else {
-        return tile_to_floating(state);
+        tile_to_floating(state)
     }
 }
 

@@ -178,7 +178,6 @@ impl Window {
         }
         true
     }
-
 }
 
 fn setup_window<C: Config>(
