@@ -1,14 +1,13 @@
 use crate::config::Config;
-use crate::display_servers::DisplayServer;
-use crate::models::Manager;
 use crate::models::Mode;
 use crate::models::WindowHandle;
+use crate::state::State;
 use crate::utils::xkeysym_lookup::Button;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 use x11_dl::xlib;
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<C: Config> State<C> {
     pub fn mouse_combo_handler(
         &mut self,
         modmask: ModMask,
@@ -20,8 +19,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let act = build_action(self, modmask, button, handle, modifier);
         if let Some(act) = act {
             //save off the info about position of the window when we started to move/resize
-            self.state
-                .windows
+            self.windows
                 .iter_mut()
                 .filter(|w| w.handle == handle)
                 .for_each(|w| {
@@ -38,7 +36,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     }
                 });
             self.move_to_top(&handle);
-            self.state.actions.push_back(act);
+            self.actions.push_back(act);
             return false;
         }
 
@@ -46,8 +44,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 }
 
-fn build_action<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
+fn build_action<C: Config>(
+    state: &mut State<C>,
     mod_mask: ModMask,
     button: Button,
     window: WindowHandle,
@@ -56,26 +54,24 @@ fn build_action<C: Config, SERVER: DisplayServer>(
     match button {
         xlib::Button1 => {
             if mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask) {
-                let _ = manager
-                    .state
+                let _ = state
                     .windows
                     .iter()
                     .find(|w| w.handle == window && w.can_move())?;
-                manager.state.mode = Mode::MovingWindow(window);
+                state.mode = Mode::MovingWindow(window);
                 return Some(DisplayAction::StartMovingWindow(window));
             }
-            if manager.state.focus_manager.behaviour == FocusBehaviour::ClickTo {
-                manager.focus_window(&window);
+            if state.focus_manager.behaviour == FocusBehaviour::ClickTo {
+                state.focus_window(&window);
             }
             None
         }
         xlib::Button3 => {
-            let _ = manager
-                .state
+            let _ = state
                 .windows
                 .iter()
                 .find(|w| w.handle == window && w.can_resize())?;
-            manager.state.mode = Mode::ResizingWindow(window);
+            state.mode = Mode::ResizingWindow(window);
             Some(DisplayAction::StartResizingWindow(window))
         }
         _ => None,
