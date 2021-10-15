@@ -13,7 +13,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .state
             .windows
             .iter()
-            .find(|other| other.has_tag(&self.focused_tag(0).unwrap_or_default()))
+            .find(|other| other.has_tag(&self.state.focus_manager.tag(0).unwrap_or_default()))
         {
             Some(w) => w.margin_multiplier(),
             None => 1.0,

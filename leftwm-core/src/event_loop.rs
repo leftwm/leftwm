@@ -26,7 +26,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut event_buffer = vec![];
         loop {
             if self.state.mode == Mode::Normal {
-                state_socket.write_manager_state(&self).await.ok();
+                state_socket.write_manager_state(&self.state).await.ok();
             }
             self.display_server.flush();
 
@@ -59,20 +59,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 match self.state.mode {
                     Mode::Normal => {
                         let windows: Vec<&Window> = self.state.windows.iter().collect();
-                        let focused = self.focused_window();
-                        self.display_server.update_windows(windows, focused, &self);
+                        let focused = self.state.focus_manager.window(&self.state.windows);
+                        self.display_server
+                            .update_windows(windows, focused, &self.state);
                         let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
-                        let focused = self.focused_workspace();
+                        let focused = self.state.focus_manager.workspace(&self.state.workspaces);
                         self.display_server.update_workspaces(workspaces, focused);
                     }
                     //when (resizing / moving) only deal with the single window
                     Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
-                        let focused = self.focused_window();
+                        let focused = self.state.focus_manager.window(&self.state.windows);
                         let windows: Vec<&Window> = (&self.state.windows)
                             .iter()
                             .filter(|w| w.handle == h)
                             .collect();
-                        self.display_server.update_windows(windows, focused, &self);
+                        self.display_server
+                            .update_windows(windows, focused, &self.state);
                     }
                 }
             }
@@ -102,7 +104,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     Err(err) => log::error!("Theme loading failed: {}", err),
                 }
 
-                C::load_state(&mut self);
+                C::load_state(&mut self.state);
             });
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {

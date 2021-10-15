@@ -8,13 +8,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Returns true if changes need to be rendered.
     pub fn display_event_handler(&mut self, event: DisplayEvent) -> bool {
         let update_needed = match event {
-            DisplayEvent::ScreenCreate(s) => self.screen_create_handler(s),
+            DisplayEvent::ScreenCreate(s) => self.state.screen_create_handler(s),
             DisplayEvent::WindowCreate(w, x, y) => self.window_created_handler(w, x, y),
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
 
             //The window has been focused, do we want to do anything about it?
             DisplayEvent::MouseEnteredWindow(handle) => match self.state.focus_manager.behaviour {
-                FocusBehaviour::Sloppy => return self.focus_window(&handle),
+                FocusBehaviour::Sloppy => return self.state.focus_window(&handle),
                 _ => return false,
             },
 
@@ -25,12 +25,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 false
             }
 
-            DisplayEvent::MoveFocusTo(x, y) => self.move_focus_to_point(x, y),
+            DisplayEvent::MoveFocusTo(x, y) => self.state.move_focus_to_point(x, y),
 
             //This is a request to validate focus. Double check that we are focused the correct
             //thing under this point.
             DisplayEvent::VerifyFocusedAt(x, y) => match self.state.focus_manager.behaviour {
-                FocusBehaviour::Sloppy => return self.validate_focus_at(x, y),
+                FocusBehaviour::Sloppy => return self.state.validate_focus_at(x, y),
                 _ => return false,
             },
 
@@ -47,7 +47,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
                 let mouse_key = utils::xkeysym_lookup::into_mod(self.state.config.mousekey());
-                self.mouse_combo_handler(mod_mask, button, handle, mouse_key)
+                self.state
+                    .mouse_combo_handler(mod_mask, button, handle, mouse_key)
             }
 
             DisplayEvent::ChangeToNormalMode => {
@@ -62,7 +63,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 if self.state.screens.iter().any(|s| s.root == handle)
                     && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
                 {
-                    return self.focus_workspace_under_cursor(x, y);
+                    return self.state.focus_workspace_under_cursor(x, y);
                 }
                 false
             }

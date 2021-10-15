@@ -4,6 +4,7 @@ use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::{Size, WindowHandle, WindowState, Xyhw, XyhwBuilder};
+use crate::state::State;
 use crate::utils::helpers;
 use crate::{child_process::exec_shell, models::FocusBehaviour};
 use std::env;
@@ -19,18 +20,18 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
 
         let mut is_first = false;
-        let mut on_same_tag = false;
+        let mut on_same_tag = true;
         //Random value
         let mut layout: Layout = Layout::MainAndVertStack;
         setup_window(
-            self,
+            &mut self.state,
             &mut window,
             (x, y),
             &mut layout,
             &mut is_first,
             &mut on_same_tag,
         );
-        insert_window(self, &mut window, layout);
+        insert_window(&mut self.state, &mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
@@ -47,14 +48,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         // tell the WM the new display order of the windows
         //new windows should be on the top of the stack
-        self.sort_windows();
+        self.state.sort_windows();
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
-            self.focus_window(&window.handle);
+            self.state.focus_window(&window.handle);
         }
 
         if let Some(cmd) = &self.state.config.on_new_window_cmd() {
-            exec_shell(cmd, self);
+            exec_shell(cmd, &mut self.children);
         }
 
         true
@@ -81,7 +82,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
             } else if let Some(h) = new_handle {
-                self.focus_window(&h);
+                self.state.focus_window(&h);
             }
         }
 
@@ -106,7 +107,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
         }
         if strut_changed {
-            self.update_static();
+            self.state.update_static();
         }
         changed
     }
@@ -139,7 +140,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     //Find the next or previous window on the workspace
     pub fn get_next_or_previous(&mut self, handle: &WindowHandle) -> Option<WindowHandle> {
         if self.state.focus_manager.behaviour != FocusBehaviour::Sloppy {
-            let ws = self.focused_workspace().cloned()?;
+            let ws = self.state.focus_manager.workspace(&self.state.workspaces)?;
             let for_active_workspace = |x: &Window| -> bool { ws.is_managed(x) };
             let mut windows = helpers::vec_extract(&mut self.state.windows, for_active_workspace);
             let is_handle = |x: &Window| -> bool { &x.handle == handle };
@@ -179,8 +180,8 @@ impl Window {
     }
 }
 
-fn setup_window<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
+fn setup_window<C: Config>(
+    state: &mut State<C>,
     window: &mut Window,
     xy: (i32, i32),
     layout: &mut Layout,
@@ -190,25 +191,20 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
     //the workspace that has windows on its is still active not the empty workspace.
-    let ws: Option<&Workspace> = manager
-        .state
+    let ws: Option<&Workspace> = state
         .workspaces
         .iter()
         .find(|ws| {
             ws.xyhw.contains_point(xy.0, xy.1)
-                && manager.state.focus_manager.behaviour == FocusBehaviour::Sloppy
+                && state.focus_manager.behaviour == FocusBehaviour::Sloppy
         })
-        .or_else(|| manager.focused_workspace()); //backup plan
+        .or_else(|| state.focus_manager.workspace(&state.workspaces)); //backup plan
 
     if let Some(ws) = ws {
         let for_active_workspace =
             |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
-        *is_first = !manager
-            .state
-            .windows
-            .iter()
-            .any(|w| for_active_workspace(w));
-        window.tags = find_terminal(manager, window.pid).map_or_else(
+        *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
+        window.tags = find_terminal(state, window.pid).map_or_else(
             || ws.tags.clone(),
             |terminal| {
                 *on_same_tag = ws.tags == terminal.tags;
@@ -217,16 +213,14 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
         );
         *layout = ws.layout;
 
-        if is_scratchpad(manager, window) {
+        if is_scratchpad(state, window) {
             window.set_floating(true);
-            if let Some((scratchpad_name, _)) = manager
-                .state
+            if let Some((scratchpad_name, _)) = state
                 .active_scratchpads
                 .iter()
                 .find(|(_, &id)| id == window.pid)
             {
-                if let Some(s) = manager
-                    .state
+                if let Some(s) = state
                     .scratchpads
                     .iter()
                     .find(|s| *scratchpad_name == s.name)
@@ -262,47 +256,42 @@ fn setup_window<C: Config, SERVER: DisplayServer>(
             }
         }
     } else {
-        window.tags = vec![manager.state.tags[0].id.clone()];
-        if is_scratchpad(manager, window) {
+        window.tags = vec![state.tags[0].id.clone()];
+        if is_scratchpad(state, window) {
             window.tag("NSP");
             window.set_floating(true);
         }
     }
 
-    if let Some(parent) = find_transient_parent(manager, window) {
+    if let Some(parent) = find_transient_parent(state, window) {
         window.set_floating(true);
         let new_float_exact = parent.calculated_xyhw().center_halfed();
         window.normal = parent.normal;
         window.set_floating_exact(new_float_exact);
     }
 
-    window.update_for_theme(&manager.state.config);
+    window.update_for_theme(&state.config);
 }
 
-fn insert_window<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    window: &mut Window,
-    layout: Layout,
-) {
+fn insert_window<C: Config>(state: &mut State<C>, window: &mut Window, layout: Layout) {
     // If the tag contains a fullscreen window, minimize it
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
     let mut was_fullscreen = false;
-    if let Some(fsw) = manager
-        .state
+    if let Some(fsw) = state
         .windows
         .iter_mut()
         .find(|w| for_active_workspace(w) && w.is_fullscreen())
     {
         let act =
             DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
-        manager.state.actions.push_back(act);
+        state.actions.push_back(act);
         was_fullscreen = true;
     }
 
     if matches!(layout, Layout::Monocle | Layout::MainAndDeck) && window.type_ == WindowType::Normal
     {
-        let mut to_reorder = helpers::vec_extract(&mut manager.state.windows, for_active_workspace);
+        let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
         if layout == Layout::Monocle || to_reorder.is_empty() {
             if was_fullscreen {
                 let act = DisplayAction::SetState(
@@ -310,39 +299,32 @@ fn insert_window<C: Config, SERVER: DisplayServer>(
                     !window.is_fullscreen(),
                     WindowState::Fullscreen,
                 );
-                manager.state.actions.push_back(act);
+                state.actions.push_back(act);
             }
             to_reorder.insert(0, window.clone());
         } else {
             to_reorder.insert(1, window.clone());
         }
-        manager.state.windows.append(&mut to_reorder);
+        state.windows.append(&mut to_reorder);
     } else if window.type_ == WindowType::Dialog
         || window.type_ == WindowType::Splash
-        || is_scratchpad(manager, window)
+        || is_scratchpad(state, window)
     {
         //Slow
-        manager.state.windows.insert(0, window.clone());
+        state.windows.insert(0, window.clone());
     } else {
-        manager.state.windows.push(window.clone());
+        state.windows.push(window.clone());
     }
 }
 
-fn is_scratchpad<C: Config, SERVER: DisplayServer>(
-    manager: &Manager<C, SERVER>,
-    window: &Window,
-) -> bool {
-    manager
-        .state
+fn is_scratchpad<C: Config>(state: &State<C>, window: &Window) -> bool {
+    state
         .active_scratchpads
         .iter()
         .any(|(_, &id)| window.pid == id)
 }
 
-fn find_terminal<C: Config, SERVER: DisplayServer>(
-    manager: &Manager<C, SERVER>,
-    pid: Option<u32>,
-) -> Option<&Window> {
+fn find_terminal<C: Config>(state: &State<C>, pid: Option<u32>) -> Option<&Window> {
     // Get $SHELL, e.g. /bin/zsh
     let shell_path = env::var("SHELL").ok()?;
     // Remove /bin/
@@ -367,24 +349,19 @@ fn find_terminal<C: Config, SERVER: DisplayServer>(
     let shell_id = get_parent(pid)?;
     if is_terminal(shell_id)? {
         let terminal = get_parent(shell_id)?;
-        return manager
-            .state
-            .windows
-            .iter()
-            .find(|w| w.pid == Some(terminal));
+        return state.windows.iter().find(|w| w.pid == Some(terminal));
     }
 
     None
 }
 
-fn find_transient_parent<'w, C: Config, SERVER: DisplayServer>(
-    manager: &'w Manager<C, SERVER>,
+fn find_transient_parent<'w, C: Config>(
+    state: &'w State<C>,
     window: &Window,
 ) -> Option<&'w Window> {
     let mut transient = window.transient?;
     loop {
-        transient = if let Some(found) = manager
-            .state
+        transient = if let Some(found) = state
             .windows
             .iter()
             .find(|x| x.handle == transient)
@@ -392,7 +369,7 @@ fn find_transient_parent<'w, C: Config, SERVER: DisplayServer>(
         {
             found
         } else {
-            return manager.state.windows.iter().find(|x| x.handle == transient);
+            return state.windows.iter().find(|x| x.handle == transient);
         };
     }
 }
