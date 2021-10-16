@@ -409,17 +409,18 @@ fn tile_to_floating<C: Config, SERVER: DisplayServer>(
         return None;
     }
 
+    let mut normal = window.normal;
+    let offset = window.container_size.unwrap_or_default();
+    
+    normal.set_x(normal.x() + window.margin.left as i32);
+    normal.set_y(normal.y() + window.margin.top as i32);
+    normal.set_w(width);
+    normal.set_h(height);
+    let floating = normal - offset;
+
+    window.set_floating_offsets(Some(floating));
+    window.start_loc = Some(floating);
     window.set_floating(true);
-
-    let mut offset = window.get_floating_offsets().unwrap_or_default();
-    let start = window.start_loc.unwrap_or_default();
-
-    offset.set_x(start.x() + window.margin.left as i32);
-    offset.set_y(start.y() + window.margin.top as i32);
-    offset.set_w(width);
-    offset.set_h(height);
-
-    window.set_floating_exact(offset);
 
     Some(true)
 
