@@ -1,7 +1,6 @@
 use crate::config::Config;
-use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::Manager;
+use crate::state::State;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -105,17 +104,17 @@ fn viewport_into_display_workspace(
     }
 }
 
-impl<C: Config, SERVER: DisplayServer> From<&Manager<C, SERVER>> for ManagerState {
-    fn from(manager: &Manager<C, SERVER>) -> Self {
+impl<C: Config> From<&State<C>> for ManagerState {
+    fn from(state: &State<C>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
-        let mut tags_len = manager.state.tags.len();
+        let mut tags_len = state.tags.len();
         tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
-        let working_tags = manager.state.tags[0..tags_len]
+        let working_tags = state.tags[0..tags_len]
             .iter()
-            .filter(|tag| manager.state.windows.iter().any(|w| w.has_tag(&tag.id)))
+            .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id)))
             .map(|t| t.id.clone())
             .collect();
-        for ws in &manager.state.workspaces {
+        for ws in &state.workspaces {
             viewports.push(Viewport {
                 tags: ws.tags.clone(),
                 x: ws.xyhw.x(),
@@ -125,17 +124,17 @@ impl<C: Config, SERVER: DisplayServer> From<&Manager<C, SERVER>> for ManagerStat
                 layout: ws.layout,
             });
         }
-        let active_desktop = match manager.focused_workspace() {
+        let active_desktop = match state.focus_manager.workspace(&state.workspaces) {
             Some(ws) => ws.tags.clone(),
             None => vec!["".to_owned()],
         };
-        let window_title = match manager.focused_window() {
+        let window_title = match state.focus_manager.window(&state.windows) {
             Some(win) => win.name.clone(),
             None => None,
         };
         Self {
             window_title,
-            desktop_names: manager.state.tags[0..tags_len]
+            desktop_names: state.tags[0..tags_len]
                 .iter()
                 .map(|t| t.id.clone())
                 .collect(),

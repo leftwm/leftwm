@@ -1,19 +1,19 @@
-{% assign mine_open = ' (button :class "ws-button-mine" :onclick "wmctrl -s ' %}
-{% assign visible_open = ' (button :class "ws-button-visible" :onclick "wmctrl -s ' %}
-{% assign busy_open = ' (button :class "ws-button-busy" :onclick "wmctrl -s ' %}
+{% assign mine_open = ' (button :class "ws-button-mine" :onclick "leftwm-command \"SendWorkspaceToTag ' %}
+{% assign visible_open = ' (button :class "ws-button-visible" :onclick "leftwm-command \"SendWorkspaceToTag ' %}
+{% assign busy_open = ' (button :class "ws-button-busy" :onclick "leftwm-command \"SendWorkspaceToTag ' %}
 {% assign close = '`)' %}
-{% assign unoccupied = ' (button :class "ws-button" :onclick "wmctrl -s ' %}
+{% assign unoccupied = ' (button :class "ws-button" :onclick "leftwm-command \"SendWorkspaceToTag ' %}
 
 {{'(box :class "workspaces" :orientation "h" :space-evenly true :halign "start" :spacing 10'}}
 {% for tag in workspace.tags %}
 {% if tag.mine %}
-{{mine_open}}{{tag.index | append: '" `'}}{{ tag.name }}{{close}}
+{{mine_open}}{{workspace.index | append: ' ' | append: tag.index | append: '\"" `'}}{{ tag.name }}{{close}}
 {% elsif tag.visible  %}
-{{visible_open}}{{tag.index | append: '" `'}}{{ tag.name }}{{close}}
+{{visible_open}}{{workspace.index | append: ' ' | append: tag.index | append: '\"" `'}}{{ tag.name }}{{close}}
 {% elsif tag.busy  %}
-{{busy_open}}{{tag.index | append: '" `'}}{{ tag.name }}{{close}}
+{{busy_open}}{{workspace.index | append: ' ' | append: tag.index | append: '\"" `'}}{{ tag.name }}{{close}}
 {% else tag.visible  %}
-{{unoccupied}}{{tag.index | append: '" `'}}{{ "·" }}{{close}}
+{{unoccupied}}{{workspace.index | append: ' ' | append: tag.index | append: '\"" `'}}{{ "·" }}{{close}}
 {% endif %}
 {% endfor %}
 {{")"}}

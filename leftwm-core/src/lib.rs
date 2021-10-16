@@ -25,7 +25,7 @@ mod event_loop;
 mod handlers;
 pub mod layouts;
 pub mod models;
-mod state;
+pub mod state;
 pub mod utils;
 
 use utils::xkeysym_lookup::Button;
