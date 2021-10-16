@@ -375,7 +375,7 @@ fn tile_to_floating<C: Config>(state: &mut State<C>) -> Option<bool> {
 
     let mut normal = window.normal;
     let offset = window.container_size.unwrap_or_default();
-    
+
     normal.set_x(normal.x() + window.margin.left as i32);
     normal.set_y(normal.y() + window.margin.top as i32);
     normal.set_w(width);
@@ -385,6 +385,7 @@ fn tile_to_floating<C: Config>(state: &mut State<C>) -> Option<bool> {
     window.set_floating_offsets(Some(floating));
     window.start_loc = Some(floating);
     window.set_floating(true);
+    state.sort_windows();
 
     Some(true)
 }
