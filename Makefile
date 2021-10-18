@@ -1,5 +1,5 @@
 # The flags to pass to the `cargo build` command
-BUILDFLAGS := --release --features=journald
+BUILDFLAGS := --release
 
 # Absolute path to project directory, required for symbolic links
 # or when 'make' is run from another directory.
