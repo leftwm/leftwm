@@ -14,9 +14,9 @@ all: build test
 
 # runs tests and linters
 test: 
-	cargo test --all-targets --all-features
-	cargo fmt -- --check
-	cargo clippy --release
+	cd $(ROOT_DIR) && cargo test --all-targets --all-features
+	cd $(ROOT_DIR) && cargo fmt -- --check
+	cd $(ROOT_DIR) && cargo clippy --release
 
 # builds the project
 build:
@@ -37,11 +37,11 @@ install: build
 # build the project and links the binaries, will also install the .desktop file
 install-dev: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
-	sudo ln -s $(ROOT_DIR)/target/release/leftwm $(TARGET_DIR)/leftwm
-	sudo ln -s $(ROOT_DIR)/target/release/leftwm-worker $(TARGET_DIR)/leftwm-worker
-	sudo ln -s $(ROOT_DIR)/target/release/leftwm-state $(TARGET_DIR)/leftwm-state
-	sudo ln -s $(ROOT_DIR)/target/release/leftwm-check $(TARGET_DIR)/leftwm-check
-	sudo ln -s $(ROOT_DIR)/target/release/leftwm-command $(TARGET_DIR)/leftwm-command
+	sudo ln -sf $(ROOT_DIR)/target/release/leftwm $(TARGET_DIR)/leftwm
+	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-worker $(TARGET_DIR)/leftwm-worker
+	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-state $(TARGET_DIR)/leftwm-state
+	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-check $(TARGET_DIR)/leftwm-check
+	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-command $(TARGET_DIR)/leftwm-command
 	@echo "binaries have been linked and '.desktop' file installed"
 
 # uninstalls leftwm from the system, no matter if installed via 'install' or 'install-dev'
