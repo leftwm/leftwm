@@ -53,6 +53,9 @@ fn build_action<C: Config>(
 ) -> Option<DisplayAction> {
     match button {
         xlib::Button1 => {
+            if state.focus_manager.behaviour == FocusBehaviour::ClickTo {
+                state.focus_window(&window);
+            }
             if mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask) {
                 let _ = state
                     .windows
@@ -60,9 +63,6 @@ fn build_action<C: Config>(
                     .find(|w| w.handle == window && w.can_move())?;
                 state.mode = Mode::MovingWindow(window);
                 return Some(DisplayAction::StartMovingWindow(window));
-            }
-            if state.focus_manager.behaviour == FocusBehaviour::ClickTo {
-                state.focus_window(&window);
             }
             None
         }
