@@ -1,6 +1,7 @@
-use crate::config::Config;
+use crate::config::{Config, FocusBehaviour};
 use crate::display_servers::DisplayServer;
-use crate::models::Manager;
+use crate::layouts::Layout;
+use crate::models::{Manager, WindowHandle};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /*
@@ -12,6 +13,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .windows
             .iter_mut()
             .for_each(|w| w.set_visible(w.tags.is_empty()));
+
+        let mut main_monocle_to_focus: Option<WindowHandle> = None;
 
         for ws in &self.state.workspaces {
             let tag = self
@@ -27,6 +30,26 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 .iter_mut()
                 .filter(|w| ws.is_displaying(w) && w.is_fullscreen())
                 .for_each(|w| w.normal = ws.xyhw);
+
+            // When switching to Monocle layout while in Driven focus mode,
+            // we give focus to the main window, which will be the window 
+            // which will apear when switching.
+            if ws.layout == Layout::Monocle
+                && self.state.focus_manager.behaviour == FocusBehaviour::Driven
+            {
+                let window = self
+                    .state
+                    .windows
+                    .iter()
+                    .filter(|w| w.has_tag(tag.id.as_str()) && !w.is_unmanaged())
+                    .next();
+                if let Some(w) = window {
+                    main_monocle_to_focus = Some(w.handle.clone());
+                }
+            }
+        }
+        if let Some(h) = main_monocle_to_focus {
+            self.state.focus_window(&h);
         }
         self.state
             .windows
