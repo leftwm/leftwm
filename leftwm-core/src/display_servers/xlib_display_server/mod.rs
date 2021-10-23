@@ -50,8 +50,8 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn reload_config(&mut self, config: &impl Config) {
-        self.xw.reload_config(config);
+    fn load_config(&mut self, config: &impl Config) {
+        self.xw.load_config(config);
     }
 
     fn update_windows(

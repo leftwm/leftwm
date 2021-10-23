@@ -30,7 +30,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut is_first,
             &mut on_same_tag,
         );
-        window.reload_config(&self.config);
+        window.load_config(&self.config);
         self.state.insert_window(&mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows

@@ -170,14 +170,14 @@ impl State {
             });
     }
 
-    pub(crate) fn reload_config(&mut self, config: &impl Config) {
+    pub(crate) fn load_config(&mut self, config: &impl Config) {
         self.mousekey = config.mousekey();
         self.max_window_width = config.max_window_width();
         for win in &mut self.windows {
-            win.reload_config(config);
+            win.load_config(config);
         }
         for ws in &mut self.workspaces {
-            ws.reload_config(config);
+            ws.load_config(config);
         }
     }
 

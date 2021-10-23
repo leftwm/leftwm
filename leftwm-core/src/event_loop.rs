@@ -45,7 +45,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
                     needs_update = self.command_handler(&cmd) || needs_update;
-                    self.display_server.reload_config(&self.config);
+                    self.display_server.load_config(&self.config);
                 }
                 else => {
                     event_buffer.drain(..).for_each(|event| needs_update = self.display_event_handler(event) || needs_update);

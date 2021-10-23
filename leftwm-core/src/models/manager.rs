@@ -48,8 +48,9 @@ impl<C, SERVER> Manager<C, SERVER>
 where
     C: Config,
 {
+    /// Reload the configuration of the running [`Manager`].
     pub fn reload_config(&mut self) -> bool {
-        self.state.reload_config(&self.config);
+        self.state.load_config(&self.config);
         true
     }
 }

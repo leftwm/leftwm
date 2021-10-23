@@ -32,7 +32,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         if workspace.id.unwrap_or(0) as usize >= self.state.tags.len() {
             dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
         }
-        workspace.reload_config(&self.config);
+        workspace.load_config(&self.config);
         //make sure are enough tags for this new screen
         if self.state.tags.len() <= tag_index {
             let id = (tag_index + 1).to_string();

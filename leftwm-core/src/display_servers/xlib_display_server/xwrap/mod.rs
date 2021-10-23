@@ -190,7 +190,7 @@ impl XWrap {
         xw
     }
 
-    pub fn reload_config(&mut self, config: &impl Config) {
+    pub fn load_config(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
         self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
         self.load_colors(config);
