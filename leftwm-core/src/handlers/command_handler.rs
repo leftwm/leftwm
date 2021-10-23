@@ -318,6 +318,7 @@ fn next_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     let layout = state.layout_manager.next_layout(workspace.layout);
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
+    fix_monocle_focus(layout, state, &tag_id);
     let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.set_layout(layout);
     Some(true)
@@ -328,6 +329,7 @@ fn previous_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     let layout = state.layout_manager.previous_layout(workspace.layout);
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
+    fix_monocle_focus(layout, state, &tag_id);
     let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.set_layout(layout);
     Some(true)
@@ -337,9 +339,33 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
+    fix_monocle_focus(layout, state, &tag_id);
     let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.set_layout(layout);
     Some(true)
+}
+
+fn fix_monocle_focus<C: Config>(layout: Layout, state: &mut State<C>, tag_id: &str) {
+    if layout == Layout::Monocle && state.focus_manager.behaviour != FocusBehaviour::Sloppy {
+        let is_focused_floating = match state
+            .windows
+            .iter()
+            .find(|w| Some(&Some(w.handle)) == state.focus_manager.window_history.get(0))
+        {
+            Some(w) => w.floating(),
+            None => false,
+        };
+        if !is_focused_floating {
+            let window = state
+                .windows
+                .iter()
+                .find(|w| w.has_tag(tag_id) && !w.is_unmanaged() && !w.floating())
+                .cloned();
+            if let Some(w) = window {
+                state.focus_window(&w.handle);
+            }
+        }
+    }
 }
 
 fn floating_to_tile<C: Config>(state: &mut State<C>) -> Option<bool> {
