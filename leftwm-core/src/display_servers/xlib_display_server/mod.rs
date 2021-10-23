@@ -256,7 +256,7 @@ impl XlibDisplayServer {
                     events.push(e);
                 });
             } else {
-                for wsc in workspaces.iter() {
+                for wsc in &workspaces {
                     let mut screen = Screen::from(wsc);
                     screen.root = WindowHandle::XlibHandle(self.root);
                     let e = DisplayEvent::ScreenCreate(screen);

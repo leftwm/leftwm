@@ -14,9 +14,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             screen.wsid,
             screen.bbox,
             self.state.layout_manager.new_layout(),
-            screen
-                .max_window_width
-                .or_else(|| self.state.max_window_width),
+            screen.max_window_width.or(self.state.max_window_width),
         );
         if workspace.id.is_none() {
             workspace.id = Some(
