@@ -113,6 +113,7 @@ fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<Windo
 
 fn update_title(xw: &XWrap, window: xlib::Window) -> DisplayEvent {
     let title = xw.get_window_name(window);
+    log::info!("{:?}", title);
     let handle = WindowHandle::XlibHandle(window);
     let mut change = WindowChange::new(handle);
     change.name = Some(title);
