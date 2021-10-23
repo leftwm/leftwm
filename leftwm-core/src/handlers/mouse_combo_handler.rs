@@ -1,6 +1,7 @@
 use crate::models::Mode;
 use crate::models::WindowHandle;
 use crate::state::State;
+use crate::utils;
 use crate::utils::xkeysym_lookup::Button;
 use crate::utils::xkeysym_lookup::ModMask;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
@@ -12,8 +13,8 @@ impl State {
         modmask: ModMask,
         button: Button,
         handle: WindowHandle,
-        modifier: ModMask,
     ) -> bool {
+        let modifier = utils::xkeysym_lookup::into_mod(&self.mousekey);
         //look through the config and build a command if its defined in the config
         let act = self.build_action(modmask, button, handle, modifier);
         if let Some(act) = act {

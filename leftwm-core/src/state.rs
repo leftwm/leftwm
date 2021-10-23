@@ -181,7 +181,6 @@ impl State {
         }
     }
 
-    // TODO probably the state should be replace immutably instead of mutated
     /// Apply saved state to a running manager.
     pub fn restore_state(&mut self, state: &State) {
         // restore workspaces

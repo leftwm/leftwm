@@ -204,6 +204,9 @@ impl XWrap {
     // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
+        self.focus_behaviour = config.focus_behaviour();
+        self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
+
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask

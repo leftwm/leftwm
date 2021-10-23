@@ -1,6 +1,5 @@
 use super::{CommandBuilder, Config, DisplayEvent, Manager, Mode};
 use crate::display_servers::DisplayServer;
-use crate::utils;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
@@ -46,10 +45,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             DisplayEvent::SendCommand(command) => self.command_handler(&command),
 
             DisplayEvent::MouseCombo(mod_mask, button, handle) => {
-                // TODO looks like this should be entirely in state
-                let mouse_key = utils::xkeysym_lookup::into_mod(&self.state.mousekey);
-                self.state
-                    .mouse_combo_handler(mod_mask, button, handle, mouse_key)
+                self.state.mouse_combo_handler(mod_mask, button, handle)
             }
 
             DisplayEvent::ChangeToNormalMode => {
