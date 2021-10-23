@@ -2,11 +2,9 @@
 use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN};
 use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
-use libc::wchar_t;
 use std::ffi::CString;
 use std::os::raw::{c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
-use widestring::{UCString, WideChar};
 use x11_dl::xlib;
 
 impl XWrap {
@@ -493,24 +491,13 @@ impl XWrap {
     // `XmbTextPropertyToTextList`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XmbTextPropertyToTextList.html
     fn get_text_prop(&self, window: xlib::Window, atom: xlib::Atom) -> Result<String, XlibError> {
         unsafe {
-            let mut ptr: *mut *mut wchar_t = std::mem::zeroed();
-            let mut ptr_len: c_int = 0;
             let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
             let status: c_int =
                 (self.xlib.XGetTextProperty)(self.display, window, &mut text_prop, atom);
             if status == 0 {
                 return Err(XlibError::FailedStatus);
             }
-            (self.xlib.XwcTextPropertyToTextList)(
-                self.display,
-                &mut text_prop,
-                &mut ptr,
-                &mut ptr_len,
-            );
-            let wptr = *ptr.cast::<*const WideChar>();
-
-            if let Ok(s) = UCString::from_ptr_str(wptr).to_string() {
-                log::info!("s: {:?}", s);
+            if let Ok(s) = CString::from_raw(text_prop.value.cast::<i8>()).into_string() {
                 return Ok(s);
             }
         };
