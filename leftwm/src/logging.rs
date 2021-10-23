@@ -68,59 +68,21 @@ pub fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
 }
 
 /// Log to both stdout and journald depending on build flags.
-#[cfg(all(feature = "slog-journald", feature = "slog-term"))]
 #[allow(dead_code, clippy::module_name_repetitions)]
 pub fn setup_logging() -> slog_scope::GlobalLoggerGuard {
+    #[cfg(feature = "slog-journald")]
     let journald = slog_journald::JournaldDrain.ignore_res();
 
+    #[cfg(feature = "slog-term")]
     let stdout = slog_term::CompactFormat::new(slog_term::TermDecorator::new().stdout().build())
         .build()
         .ignore_res();
 
+    #[cfg(all(feature = "slog-journald", feature = "slog-term"))]
     let drain = slog::Duplicate(journald, stdout).ignore_res();
-
-    // Set level filters from RUST_LOG. Defaults to `info`.
-    let envlogger = slog_envlogger::LogBuilder::new(drain)
-        .parse(&std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))
-        .build()
-        .ignore_res();
-
-    let logger = slog::Logger::root(slog_async::Async::default(envlogger).ignore_res(), o!());
-
-    slog_stdlog::init().unwrap_or_else(|err| {
-        eprintln!("failed to setup logging: {}", err);
-    });
-
-    slog_scope::set_global_logger(logger)
-}
-
-#[cfg(all(feature = "slog-journald", not(feature = "slog-term")))]
-#[allow(dead_code, clippy::module_name_repetitions)]
-pub fn setup_logging() -> slog_scope::GlobalLoggerGuard {
-    let journald = slog_journald::JournaldDrain.ignore_res();
+    #[cfg(all(feature = "slog-journald", not(feature = "slog-term")))]
     let drain = journald;
-
-    // Set level filters from RUST_LOG. Defaults to `info`.
-    let envlogger = slog_envlogger::LogBuilder::new(drain)
-        .parse(&std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))
-        .build()
-        .ignore_res();
-
-    let logger = slog::Logger::root(slog_async::Async::default(envlogger).ignore_res(), o!());
-
-    slog_stdlog::init().unwrap_or_else(|err| {
-        eprintln!("failed to setup logging: {}", err);
-    });
-
-    slog_scope::set_global_logger(logger)
-}
-
-#[cfg(all(not(feature = "slog-journald"), feature = "slog-term"))]
-#[allow(dead_code, clippy::module_name_repetitions)]
-pub fn setup_logging() -> slog_scope::GlobalLoggerGuard {
-    let stdout = slog_term::CompactFormat::new(slog_term::TermDecorator::new().stdout().build())
-        .build()
-        .ignore_res();
+    #[cfg(all(not(feature = "slog-journald"), feature = "slog-term"))]
     let drain = stdout;
 
     // Set level filters from RUST_LOG. Defaults to `info`.
@@ -136,4 +98,24 @@ pub fn setup_logging() -> slog_scope::GlobalLoggerGuard {
     });
 
     slog_scope::set_global_logger(logger)
+}
+
+#[cfg(feature = "slog-term")]
+fn dyn_logger() {
+    // atomic variable controlling logging level
+    let on = Arc::new(atomic::AtomicBool::new(false));
+
+    let decorator = slog_term::TermDecorator::new().build();
+    let drain = slog_term::FullFormat::new(decorator).build();
+    let drain = RuntimeLevelFilter {
+        drain,
+        on: on.clone(),
+    }
+    .fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
+
+    let _log = slog::Logger::root(drain, o!());
+
+    // switch level in your code
+    on.store(true, Ordering::Relaxed);
 }

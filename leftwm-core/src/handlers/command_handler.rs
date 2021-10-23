@@ -547,11 +547,9 @@ fn send_workspace_to_tag<C: Config>(
     false
 }
 
-fn set_log_level<C: Config, SERVER: DisplayServer>(
-    state: &mut State<C>,
-    loglevel: &str,
-) -> bool {
+fn set_log_level<C: Config>(state: &mut State<C>, loglevel: &str) -> bool {
     state.loglevel = loglevel.to_string();
+    log::info!("Loglevel set to: {:?}", state.loglevel);
     true
 }
 

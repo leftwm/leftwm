@@ -103,6 +103,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleScratchPad" => build_toggle_scratchpad(s),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
         "SendWindowToTag" => build_send_window_to_tag(s),
+        "SetLogLevel" => build_set_log_level(s),
         "SetLayout" => build_set_layout(s),
         "SetMarginMultiplier" => build_set_margin_multiplier(s),
         _ => Ok(Command::Other(s.into())),
@@ -132,6 +133,13 @@ fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error:
         .parse()?;
     let tag_index: usize = parts.get(1).ok_or("missing argument tag index")?.parse()?;
     Ok(Command::SendWorkspaceToTag(ws_index, tag_index))
+}
+
+fn build_set_log_level(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "SetLogLevel ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let log_level = *parts.get(0).ok_or("missing log level")?;
+    Ok(Command::SetLogLevel(log_level.to_string()))
 }
 
 fn build_set_layout(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
