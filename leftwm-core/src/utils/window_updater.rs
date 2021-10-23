@@ -31,11 +31,11 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 .filter(|w| ws.is_displaying(w) && w.is_fullscreen())
                 .for_each(|w| w.normal = ws.xyhw);
 
-            // When switching to Monocle layout while in Driven focus mode,
-            // we give focus to the main window, which will be the window
-            // which will apear when switching.
+            // When switching to Monocle layout while in Driven and ClickTo
+            // focus mode, we give focus to the main window, which will be
+            // the window which will apear when switching.
             if ws.layout == Layout::Monocle
-                && self.state.focus_manager.behaviour == FocusBehaviour::Driven
+                && self.state.focus_manager.behaviour != FocusBehaviour::Sloppy
             {
                 let window = self
                     .state
