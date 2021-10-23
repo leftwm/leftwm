@@ -34,12 +34,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             // When switching to Monocle layout while in Driven and ClickTo
             // focus mode, we give focus to the main window, which will be
             // the window which will apear when switching.
-            let focused_window = self.state.focus_manager.window_history[0];
+            let focused_window = self.state.focus_manager.window_history.get(0);
             let is_focused_floating = match self
                 .state
                 .windows
                 .iter()
-                .find(|w| Some(w.handle) == focused_window)
+                .find(|w| Some(&Some(w.handle)) == focused_window)
             {
                 Some(w) => w.floating(),
                 None => false,
