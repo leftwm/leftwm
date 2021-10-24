@@ -329,10 +329,11 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
-    // When switching to Monocle layout while in Driven and ClickTo
-    // focus mode, we give focus to the main window, which will be
-    // the window which will apear when switching.
-    if layout == Layout::Monocle && state.focus_manager.behaviour != FocusBehaviour::Sloppy {
+
+    // When switching to Monocle or MainAndDeck layout while in Driven
+    // or ClickTo focus mode, we check if the focus is given to a visible window.
+    if state.focus_manager.behaviour != FocusBehaviour::Sloppy {
+        //if the currently focused window is floatin, nothing will be done
         let is_focused_floating = match state
             .windows
             .iter()
@@ -342,55 +343,39 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
             None => false,
         };
         if !is_focused_floating {
-            let window = state
-                .windows
-                .iter()
-                .find(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
-                .cloned();
-            if let Some(w) = window {
-                state.focus_window(&w.handle);
-            }
-        }
-    }
-    //Same thing with MainAndDeck
-    if layout == Layout::MainAndDeck && state.focus_manager.behaviour != FocusBehaviour::Sloppy {
-        let is_focused_floating = match state
-            .windows
-            .iter()
-            .find(|w| Some(&Some(w.handle)) == state.focus_manager.window_history.get(0))
-        {
-            Some(w) => w.floating(),
-            None => false,
-        };
-        if !is_focused_floating {
-            let mut main_and_top_deck_windows = state
-                .windows
-                .iter()
-                .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
-                .collect::<Vec<&Window>>();
-            main_and_top_deck_windows.truncate(2);
-            let (main, top_deck) = (
-                main_and_top_deck_windows.get(0),
-                main_and_top_deck_windows.get(1),
-            );
-            if let (Some(mw), Some(tdw)) = (main, top_deck) {
-                let (main_handle, top_deck_handle) = (mw.handle, tdw.handle);
-                let main_or_top_deck_focused = match state.focus_manager.window_history.get(0) {
-                    Some(&Some(h)) => main_handle == h || top_deck_handle == h,
-                    _ => false,
-                };
-                if !main_or_top_deck_focused {
-                    let windows = state.windows.clone();
-                    let window = windows
-                        .iter()
-                        .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
-                        .collect::<Vec<&Window>>()
-                        .get(1)
-                        .copied();
-                    if let Some(w) = window {
-                        state.focus_window(&w.handle);
-                    }
+            let mut to_focus: Option<Window> = None;
+
+            if layout == Layout::Monocle {
+                to_focus = state
+                    .windows
+                    .iter()
+                    .find(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .cloned();
+            } else if layout == Layout::MainAndDeck {
+                let tags_windows = state
+                    .windows
+                    .iter()
+                    .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .collect::<Vec<&Window>>();
+                if let (Some(mw), Some(tdw)) = (tags_windows.get(0), tags_windows.get(1)) {
+                    // If the focused window is the main or the top of the deck, we don't do
+                    // anything.
+                    match state.focus_manager.window_history.get(0) {
+                        Some(&Some(h)) => {
+                            if mw.handle != h && tdw.handle != h {
+                                to_focus = match tags_windows.get(1).copied() {
+                                    Some(w) => Some(w.to_owned()),
+                                    None => None,
+                                };
+                            }
+                        }
+                        _ => (),
+                    };
                 }
+            }
+
+            if let Some(w) = to_focus {
+                state.focus_window(&w.handle);
             }
         }
     }
