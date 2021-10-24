@@ -385,6 +385,7 @@ fn tile_to_floating<C: Config>(state: &mut State<C>) -> Option<bool> {
     window.set_floating_offsets(Some(floating));
     window.start_loc = Some(floating);
     window.set_floating(true);
+    state.sort_windows();
 
     Some(true)
 }
