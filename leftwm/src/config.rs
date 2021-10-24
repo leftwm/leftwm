@@ -398,15 +398,15 @@ impl leftwm_core::Config for Config {
         &self.theme_setting.floating_border_color
     }
 
-    fn always_float(&self) -> bool {
+    fn always_float(&self) -> Option<bool> {
         self.theme_setting.always_float
     }
 
-    fn default_width(&self) -> i32 {
+    fn default_width(&self) -> Option<i32> {
         self.theme_setting.default_width
     }
 
-    fn default_height(&self) -> i32 {
+    fn default_height(&self) -> Option<i32> {
         self.theme_setting.default_height
     }
 
