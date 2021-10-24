@@ -352,6 +352,48 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
             }
         }
     }
+    //Same thing with MainAndDeck
+    if layout == Layout::MainAndDeck && state.focus_manager.behaviour != FocusBehaviour::Sloppy {
+        let is_focused_floating = match state
+            .windows
+            .iter()
+            .find(|w| Some(&Some(w.handle)) == state.focus_manager.window_history.get(0))
+        {
+            Some(w) => w.floating(),
+            None => false,
+        };
+        if !is_focused_floating {
+            let mut main_and_top_deck_windows = state
+                .windows
+                .iter()
+                .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                .collect::<Vec<&Window>>();
+            main_and_top_deck_windows.truncate(2);
+            let (main, top_deck) = (
+                main_and_top_deck_windows.get(0),
+                main_and_top_deck_windows.get(1),
+            );
+            if let (Some(mw), Some(tdw)) = (main, top_deck) {
+                let (main_handle, top_deck_handle) = (mw.handle, tdw.handle);
+                let main_or_top_deck_focused = match state.focus_manager.window_history.get(0) {
+                    Some(&Some(h)) => main_handle == h || top_deck_handle == h,
+                    _ => false,
+                };
+                if !main_or_top_deck_focused {
+                    let windows = state.windows.clone();
+                    let window = windows
+                        .iter()
+                        .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                        .collect::<Vec<&Window>>()
+                        .get(1)
+                        .copied();
+                    if let Some(w) = window {
+                        state.focus_window(&w.handle);
+                    }
+                }
+            }
+        }
+    }
     let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.set_layout(layout);
     Some(true)
