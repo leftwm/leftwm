@@ -319,7 +319,7 @@ fn next_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
     let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
-    tag.set_layout(layout);
+    tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
 
@@ -329,7 +329,7 @@ fn previous_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
     let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
-    tag.set_layout(layout);
+    tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
 
@@ -338,7 +338,7 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
     let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
-    tag.set_layout(layout);
+    tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
 
@@ -495,6 +495,8 @@ fn rotate_tag<C: Config>(state: &mut State<C>) -> Option<bool> {
 }
 
 fn change_main_width<C: Config>(state: &mut State<C>, delta: i8, factor: i8) -> Option<bool> {
+    let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
+    workspace.change_main_width(delta * factor);
     let tag_id = state.focus_manager.tag(0)?;
     let tag = state.tags.iter_mut().find(|t| t.id == tag_id)?;
     tag.change_main_width(delta * factor);
