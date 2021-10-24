@@ -20,7 +20,7 @@ impl Tag {
             id: id.to_owned(),
             hidden: false,
             layout,
-            main_width_percentage: layout.main_width(),
+            main_width_percentage: 50,
             flipped_horizontal: false,
             flipped_vertical: false,
             layout_rotation: 0,
@@ -88,9 +88,9 @@ impl Tag {
         f32::from(self.main_width_percentage)
     }
 
-    pub fn set_layout(&mut self, layout: Layout, main_width_percentage: u8) {
+    pub fn set_layout(&mut self, layout: Layout) {
         self.layout = layout;
-        self.set_main_width(main_width_percentage);
+        self.set_main_width(layout.main_width());
         self.layout_rotation = 0;
     }
 
