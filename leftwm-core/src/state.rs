@@ -185,6 +185,7 @@ where
         for workspace in &mut self.workspaces {
             if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {
                 workspace.layout = old_workspace.layout;
+                workspace.main_width_percentage = old_workspace.main_width_percentage;
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
             }
         }

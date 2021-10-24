@@ -63,8 +63,13 @@ impl LayoutManager {
         for workspace in workspaces {
             let tag = tags.iter_mut().find(|t| t.id == workspace.tags[0])?;
             match self.mode {
-                LayoutMode::Workspace => tag.set_layout(workspace.layout),
-                LayoutMode::Tag => workspace.layout = tag.layout,
+                LayoutMode::Workspace => {
+                    tag.set_layout(workspace.layout, workspace.main_width_percentage);
+                }
+                LayoutMode::Tag => {
+                    workspace.layout = tag.layout;
+                    workspace.main_width_percentage = tag.main_width_percentage;
+                }
             }
         }
         Some(true)
