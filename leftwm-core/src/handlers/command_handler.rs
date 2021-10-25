@@ -334,10 +334,11 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
     // or ClickTo focus mode, we check if the focus is given to a visible window.
     if state.focus_manager.behaviour != FocusBehaviour::Sloppy {
         //if the currently focused window is floatin, nothing will be done
+        let focused_window = state.focus_manager.window_history.get(0);
         let is_focused_floating = match state
             .windows
             .iter()
-            .find(|w| Some(&Some(w.handle)) == state.focus_manager.window_history.get(0))
+            .find(|w| Some(&Some(w.handle)) == focused_window)
         {
             Some(w) => w.floating(),
             None => false,
@@ -360,17 +361,13 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
                 if let (Some(mw), Some(tdw)) = (tags_windows.get(0), tags_windows.get(1)) {
                     // If the focused window is the main or the top of the deck, we don't do
                     // anything.
-                    match state.focus_manager.window_history.get(0) {
-                        Some(&Some(h)) => {
-                            if mw.handle != h && tdw.handle != h {
-                                to_focus = match tags_windows.get(1).copied() {
-                                    Some(w) => Some(w.to_owned()),
-                                    None => None,
-                                };
+                    if let Some(&Some(h)) = focused_window {
+                        if mw.handle != h && tdw.handle != h {
+                            if let Some(w) = tags_windows.get(1).copied() {
+                                to_focus = Some(w.clone());
                             }
                         }
-                        _ => (),
-                    };
+                    }
                 }
             }
 
