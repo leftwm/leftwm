@@ -361,8 +361,8 @@ fn floating_to_tile<C: Config>(state: &mut State<C>) -> Option<bool> {
 }
 
 fn tile_to_floating<C: Config>(state: &mut State<C>) -> Option<bool> {
-    let width = state.config.default_width().unwrap_or_default();
-    let height = state.config.default_height().unwrap_or_default();
+    let width = state.config.default_width().unwrap_or(800);
+    let height = state.config.default_height().unwrap_or(600);
     let window = state.focus_manager.window_mut(&mut state.windows)?;
     if window.must_float() {
         return None;
