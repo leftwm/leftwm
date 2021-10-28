@@ -103,7 +103,7 @@ impl Workspace {
     }
 
     pub fn show_tag(&mut self, tag: &Tag) {
-        self.tags = vec![tag.id.clone()];
+        self.tags = vec![tag.label.clone()];
     }
 
     #[must_use]

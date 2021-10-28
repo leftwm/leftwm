@@ -256,7 +256,7 @@ fn setup_window<C: Config>(
             }
         }
     } else {
-        window.tags = vec![state.tags[0].id.clone()];
+        window.tags = vec![state.tags[0].label.clone()];
         if is_scratchpad(state, window) {
             window.tag("NSP");
             window.set_floating(true);

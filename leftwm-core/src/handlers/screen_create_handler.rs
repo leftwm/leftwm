@@ -40,7 +40,7 @@ impl<C: Config> State<C> {
         }
         let next_tag = self.tags[tag_index].clone();
         self.focus_workspace(&workspace);
-        self.focus_tag(&next_tag.id);
+        self.focus_tag(&next_tag.label);
         workspace.show_tag(&next_tag);
         self.workspaces.push(workspace.clone());
         self.workspaces.sort_by(|a, b| a.id.cmp(&b.id));

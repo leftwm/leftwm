@@ -4,7 +4,7 @@ use crate::{layouts::Layout, Window, Workspace};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
-    pub id: String,
+    pub label: String,
     pub hidden: bool,
     pub layout: Layout,
     pub main_width_percentage: u8,
@@ -15,9 +15,9 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(id: &str, layout: Layout) -> Tag {
+    pub fn new(label: &str, layout: Layout) -> Tag {
         Tag {
-            id: id.to_owned(),
+            label: label.to_owned(),
             hidden: false,
             layout,
             main_width_percentage: layout.main_width(),
@@ -30,19 +30,19 @@ impl Tag {
     pub fn update_windows(&self, windows: &mut Vec<Window>, workspace: &Workspace) {
         if let Some(w) = windows
             .iter_mut()
-            .find(|w| w.has_tag(&self.id) && w.is_fullscreen())
+            .find(|w| w.has_tag(&self.label) && w.is_fullscreen())
         {
             w.set_visible(true);
         } else {
             //Don't bother updating the other windows
             //mark all windows for this workspace as visible
             let mut all_mine: Vec<&mut Window> =
-                windows.iter_mut().filter(|w| w.has_tag(&self.id)).collect();
+                windows.iter_mut().filter(|w| w.has_tag(&self.label)).collect();
             all_mine.iter_mut().for_each(|w| w.set_visible(true));
             //update the location of all non-floating windows
             let mut managed_nonfloat: Vec<&mut Window> = windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.id) && !w.is_unmanaged() && !w.floating())
+                .filter(|w| w.has_tag(&self.label) && !w.is_unmanaged() && !w.floating())
                 .collect();
             self.layout
                 .update_windows(workspace, &mut managed_nonfloat, self);
@@ -52,7 +52,7 @@ impl Tag {
             //update the location of all floating windows
             windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.id) && !w.is_unmanaged() && w.floating())
+                .filter(|w| w.has_tag(&self.label) && !w.is_unmanaged() && w.floating())
                 .for_each(|w| w.normal = workspace.xyhw);
         }
     }

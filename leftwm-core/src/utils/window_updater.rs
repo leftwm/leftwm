@@ -18,7 +18,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 .state
                 .tags
                 .iter_mut()
-                .find(|t| ws.has_tag(&t.id))
+                .find(|t| ws.has_tag(&t.label))
                 .expect("Workspace has no tag.");
             tag.update_windows(&mut self.state.windows, ws);
 
