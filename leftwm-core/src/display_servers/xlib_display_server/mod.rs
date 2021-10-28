@@ -62,9 +62,12 @@ impl DisplayServer for XlibDisplayServer {
         focused_window: Option<&Window>,
         state: &State<C>,
     ) {
-        let tags: Vec<&String> = state.workspaces.iter().flat_map(|w| &w.tags).collect();
+        let workspace_tags: Vec<String> = state.workspaces.iter()
+            .flat_map(|w| &w.tags)
+            .map(|t| t.to_string())
+            .collect();
 
-        let max_tag_index: Option<usize> = tags.iter().filter_map(|&t| state.tag_index(t)).max();
+        let max_workspace_tag_index: Option<usize> = workspace_tags.iter().filter_map(|&t| state.tag_index(t.as_str())).max();
         let to_the_right = state
             .screens
             .iter()
@@ -78,7 +81,7 @@ impl DisplayServer for XlibDisplayServer {
                 None => false,
             };
 
-            let hide_offset = right_offset(max_tag_index, to_the_right, state, window)
+            let hide_offset = right_offset(max_workspace_tag_index, to_the_right, state, window)
                 .unwrap_or_else(|| left_offset(max_screen_width, window));
 
             self.xw.update_window(window, is_focused, hide_offset);
@@ -93,7 +96,7 @@ impl DisplayServer for XlibDisplayServer {
             focused
                 .tags
                 .iter()
-                .for_each(|tag| self.xw.set_current_desktop(tag));
+                .for_each(|tag| self.xw.set_current_desktop(tag.to_string().as_str())); // todo: should this be the id or label?
         }
     }
 

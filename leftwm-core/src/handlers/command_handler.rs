@@ -218,6 +218,7 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     let tag_num = manager
         .state
         .tags
+        .vec
         .iter()
         .position(|t| workspace.has_tag(&t.label))?;
     move_to_tag(tag_num + 1, manager)
@@ -592,7 +593,7 @@ fn send_workspace_to_tag<C: Config>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::Tag;
+    use crate::models::{Tag, Tags};
 
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
@@ -621,14 +622,13 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
-        state.tags = vec![
-            Tag::new("A15", Layout::default()),
-            Tag::new("B24", Layout::default()),
-            Tag::new("C", Layout::default()),
-            Tag::new("6D4", Layout::default()),
-            Tag::new("E39", Layout::default()),
-            Tag::new("F67", Layout::default()),
-        ];
+        state.tags = Tags::new();
+        state.tags.add_new("A15", Layout::default());
+        state.tags.add_new("B24", Layout::default());
+        state.tags.add_new("C", Layout::default());
+        state.tags.add_new("6D4", Layout::default());
+        state.tags.add_new("E39", Layout::default());
+        state.tags.add_new("F67", Layout::default());
         assert!(!manager.command_handler(&Command::GotoTag(0)));
         assert!(!manager.command_handler(&Command::GotoTag(999)));
     }

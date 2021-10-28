@@ -2,8 +2,60 @@ use serde::{Deserialize, Serialize};
 
 use crate::{layouts::Layout, Window, Workspace};
 
+/// Wrapper struct holding all the tags.
+/// This wrapper provides convenience methods to change the tag-list
+/// during its lifetime, while ensuring that all tags are numbered correctly.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Tags {
+    // holds all the 'normal' tags
+    pub vec: Vec<Tag>,
+
+    // holds the 'hidden' tags, which aren't accessible by ID
+    pub hidden: Vec<Tag>,
+}
+
+impl Tags {
+    pub fn new() -> Self {
+        Tags { 
+            vec: vec!(),
+            hidden: vec!()
+        }
+    }
+
+    pub fn add_new<'a>(&'a self, label: &str, layout: Layout) -> &'a Tag {
+        let next_index = self.vec.len() + 1;
+        let tag = Tag::new(Some(next_index), label, layout);
+        self.vec.push(tag);
+        &tag
+    }
+
+    // todo: add_new_at(position, label, layout) -> shifting all one to the right (vec.insert)
+
+    pub fn add_new_hidden<'a>(&'a self, label: &str) -> &'a Tag {
+        &Tag {
+            id: None,
+            label: label.to_string(),
+            hidden: true,
+            ..Tag::default()
+        }
+    }
+
+    pub fn get(&self, id: usize) -> Option<&Tag> {
+        self.vec.get(id - 1)
+    }
+}
+
+/*impl Iterator for Tags {
+    type Tag;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}*/
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
+    pub id: Option<usize>,
     pub label: String,
     pub hidden: bool,
     pub layout: Layout,
@@ -15,8 +67,9 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(label: &str, layout: Layout) -> Tag {
+    pub fn new(id: Option<usize>, label: &str, layout: Layout) -> Tag {
         Tag {
+            id,
             label: label.to_owned(),
             hidden: false,
             layout,

@@ -102,8 +102,9 @@ impl Workspace {
             })
     }
 
-    pub fn show_tag(&mut self, tag: &Tag) {
-        self.tags = vec![tag.label.clone()];
+    pub fn show_tag(&mut self, tag: TagId) {
+        // todo: display multiple tags?
+        self.tags = vec![tag];
     }
 
     #[must_use]
@@ -112,14 +113,14 @@ impl Workspace {
     }
 
     #[must_use]
-    pub fn has_tag(&self, tag: &str) -> bool {
-        self.tags.contains(&tag.to_owned())
+    pub fn has_tag(&self, tag: TagId) -> bool {
+        self.tags.contains(&tag)
     }
 
     /// Returns true if the workspace is displays a given window.
     #[must_use]
     pub fn is_displaying(&self, window: &Window) -> bool {
-        for wd_t in &window.tags {
+        for wd_t in window.tags {
             if self.has_tag(wd_t) {
                 return true;
             }
@@ -279,8 +280,8 @@ mod tests {
             Layout::default(),
             None,
         );
-        let tag = crate::models::Tag::new("test", Layout::default());
-        subject.show_tag(&tag);
+        let tag = crate::models::Tag::new(Some(1), "test", Layout::default());
+        subject.show_tag(tag.id.unwrap());
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.tag("test");
         assert!(subject.is_displaying(&w), "workspace should include window");

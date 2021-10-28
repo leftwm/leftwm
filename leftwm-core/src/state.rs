@@ -2,7 +2,7 @@
 
 use crate::config::{Config, ScratchPad};
 use crate::layouts::Layout;
-use crate::models::Screen;
+use crate::models::{Screen, Tags};
 use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
@@ -30,7 +30,7 @@ pub struct State<C> {
     // TODO should this really be saved in the state?
     //this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
-    pub tags: Vec<Tag>, //list of all known tags
+    pub tags: Tags, //list of all known tags
 }
 
 impl<C> State<C>
@@ -39,11 +39,16 @@ where
 {
     pub(crate) fn new(config: C) -> Self {
         let layout_manager = LayoutManager::new(&config);
-        let mut tags: Vec<Tag> = config
-            .create_list_of_tags()
+
+        let tags = Tags::new();
+        config.create_list_of_tags()
             .iter()
-            .map(|s| Tag::new(s, layout_manager.new_layout()))
-            .collect();
+            .for_each(|label| {
+                tags.add_new(label.as_str(), layout_manager.new_layout());
+            });
+
+        tags.add_new_hidden("NSP");
+
         tags.push(Tag {
             label: "NSP".to_owned(),
             hidden: true,
