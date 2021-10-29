@@ -305,14 +305,15 @@ fn insert_window<C: Config>(state: &mut State<C>, window: &mut Window, layout: L
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.set_floating(true);
     window.normal = ws.xyhw;
-    let xyhw = if let Some(requested) = window.requested {
-        let mut xyhw = Xyhw::default();
-        requested.update(&mut xyhw);
-        xyhw.center_relative(outer, window.border, requested);
-        xyhw
-    } else {
-        ws.center_halfed()
-    };
+    let xyhw = window.requested.map_or_else(
+        || ws.center_halfed(),
+        |requested| {
+            let mut xyhw = Xyhw::default();
+            requested.update(&mut xyhw);
+            xyhw.center_relative(outer, window.border, requested);
+            xyhw
+        },
+    );
     window.set_floating_exact(xyhw);
 }
 
