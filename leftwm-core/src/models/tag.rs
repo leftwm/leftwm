@@ -23,8 +23,8 @@ impl Tags {
     }
 
     pub fn add_new<'a>(&'a self, label: &str, layout: Layout) -> &'a Tag {
-        let next_index = self.vec.len() + 1;
-        let tag = Tag::new(Some(next_index), label, layout);
+        let next_id = self.vec.len() + 1; // tag id starts at 1
+        let tag = Tag::new(Some(next_id), label, layout);
         self.vec.push(tag);
         &tag
     }
@@ -41,7 +41,12 @@ impl Tags {
     }
 
     pub fn get(&self, id: usize) -> Option<&Tag> {
-        self.vec.get(id - 1)
+        self.vec.get(id - 1) // tag id starts at 1, arrays at 0
+    }
+
+    /// Get the amount of 'normal' tags
+    pub fn len(&self) -> usize {
+        self.vec.len()
     }
 }
 

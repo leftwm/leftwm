@@ -46,14 +46,7 @@ where
             .for_each(|label| {
                 tags.add_new(label.as_str(), layout_manager.new_layout());
             });
-
         tags.add_new_hidden("NSP");
-
-        tags.push(Tag {
-            label: "NSP".to_owned(),
-            hidden: true,
-            ..Tag::default()
-        });
 
         Self {
             focus_manager: FocusManager::new(&config),

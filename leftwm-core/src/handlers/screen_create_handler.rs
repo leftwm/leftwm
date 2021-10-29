@@ -35,8 +35,7 @@ impl<C: Config> State<C> {
         //make sure are enough tags for this new screen
         if self.tags.len() <= tag_index {
             let id = (tag_index + 1).to_string();
-            self.tags
-                .push(Tag::new(&id, self.layout_manager.new_layout()));
+            self.tags.add_new(id.as_str(), self.layout_manager.new_layout());
         }
         let next_tag = self.tags[tag_index].clone();
         self.focus_workspace(&workspace);
