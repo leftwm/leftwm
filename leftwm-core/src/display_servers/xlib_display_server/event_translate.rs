@@ -161,7 +161,7 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
     };
     let event = xlib::XConfigureRequestEvent::from(raw_event);
     let window_type = xw.get_window_type(event.window);
-    if window_type == WindowType::Normal {
+    if window_type == WindowType::Normal || window_type == WindowType::Dialog {
         return None;
     }
     let handle = WindowHandle::XlibHandle(event.window);
