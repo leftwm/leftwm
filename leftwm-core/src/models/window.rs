@@ -29,6 +29,7 @@ pub struct Window {
     pub transient: Option<WindowHandle>,
     visible: bool,
     is_floating: bool,
+    must_float: bool,
     floating: Option<Xyhw>,
     pub never_focus: bool,
     pub debugging: bool,
@@ -55,6 +56,7 @@ impl Window {
             transient: None,
             visible: false,
             is_floating: false,
+            must_float: false,
             debugging: false,
             never_focus: false,
             name,
@@ -78,7 +80,7 @@ impl Window {
         if self.type_ == WindowType::Normal {
             self.margin = config.margin();
             self.border = config.border_width();
-            self.is_floating = config.always_float().unwrap_or_default();
+            self.must_float = config.always_float().unwrap_or_default();
         } else {
             self.margin = Margins::new(0);
             self.border = 0;
@@ -145,7 +147,10 @@ impl Window {
     }
     #[must_use]
     pub fn must_float(&self) -> bool {
-        self.transient.is_some() || self.is_unmanaged() || self.type_ == WindowType::Splash
+        self.must_float
+            || self.transient.is_some()
+            || self.is_unmanaged()
+            || self.type_ == WindowType::Splash
     }
     #[must_use]
     pub fn can_move(&self) -> bool {
