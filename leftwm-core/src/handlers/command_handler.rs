@@ -58,6 +58,8 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SetLayout(layout) => set_layout(*layout, state),
 
         Command::FloatingToTile => floating_to_tile(state),
+        Command::TileToFloating => tile_to_floating(state),
+        Command::ToggleFloating => toggle_floating(state),
 
         Command::FocusNextTag => focus_tag_change(state, 1),
         Command::FocusPreviousTag => focus_tag_change(state, -1),
@@ -395,6 +397,45 @@ fn floating_to_tile<C: Config>(state: &mut State<C>) -> Option<bool> {
     window.snap_to_workspace(workspace);
     let handle = window.handle;
     Some(handle_focus(state, handle))
+}
+
+fn tile_to_floating<C: Config>(state: &mut State<C>) -> Option<bool> {
+    let width = state.config.default_width().unwrap_or(800);
+    let height = state.config.default_height().unwrap_or(600);
+    let window = state.focus_manager.window_mut(&mut state.windows)?;
+    if window.must_float() {
+        return None;
+    }
+    //Not ideal as is_floating and must_float are connected so have to check
+    //them separately
+    if window.floating() {
+        return None;
+    }
+
+    let mut normal = window.normal;
+    let offset = window.container_size.unwrap_or_default();
+
+    normal.set_x(normal.x() + window.margin.left as i32);
+    normal.set_y(normal.y() + window.margin.top as i32);
+    normal.set_w(width);
+    normal.set_h(height);
+    let floating = normal - offset;
+
+    window.set_floating_offsets(Some(floating));
+    window.start_loc = Some(floating);
+    window.set_floating(true);
+    state.sort_windows();
+
+    Some(true)
+}
+
+fn toggle_floating<C: Config>(state: &mut State<C>) -> Option<bool> {
+    let window = state.focus_manager.window(&state.windows)?;
+    if window.floating() {
+        floating_to_tile(state)
+    } else {
+        tile_to_floating(state)
+    }
 }
 
 fn move_focus_common_vars<F, C: Config>(func: F, state: &mut State<C>, val: i32) -> Option<bool>
