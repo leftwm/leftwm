@@ -123,36 +123,46 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             .map(|w| w.handle);
     }
 
-    if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
-        if let Some(w) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
-            let is_tagged = w.has_tag(current_tag);
-            w.clear_tags();
-            if is_tagged {
-                w.tag("NSP");
-                if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
-                    handle = Some(*prev);
+    if let Some(nsp_tag) = manager.state.tags.get_hidden("NSP") {
+        if let Some(Some(window)) = manager.state.active_scratchpads
+            .get(&scratchpad.name)
+            .map(|opt_pid| manager.state.windows.iter_mut().find(|w| w.pid == *opt_pid))
+        {
+                let is_visible = window.has_tag(current_tag);
+                window.clear_tags();
+                if is_visible {
+                    // hide the scratchpad
+                    window.tag(nsp_tag.id);
+                    if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
+                        handle = Some(*prev);
+                    }
+                } else {
+                    // show the scratchpad
+                    window.tag(current_tag);
+                    handle = Some(window.handle);
                 }
-            } else {
-                w.tag(current_tag);
-                handle = Some(w.handle);
-            }
-            let act = DisplayAction::SetWindowTags(w.handle, w.tags);
-            manager.state.actions.push_back(act);
-
-            manager.state.sort_windows();
-            if let Some(h) = handle {
-                handle_focus(&mut manager.state, h);
-                if !is_tagged {
-                    manager.state.move_to_top(&h);
+                let act = DisplayAction::SetWindowTags(window.handle, window.tags);
+                manager.state.actions.push_back(act);
+                manager.state.sort_windows();
+                if let Some(h) = handle {
+                    handle_focus(&mut manager.state, h);
+                    if !is_visible {
+                        manager.state.move_to_top(&h);
+                    }
                 }
-            }
-            return Some(true);
+                
+                Some(true)
+        } else {
+            log::debug!("no active scratchpad found for name {:?}. creating a new one", scratchpad.name);
+            let name = scratchpad.name.clone();
+            let pid = exec_shell(&scratchpad.value, &mut manager.children);
+            manager.state.active_scratchpads.insert(name, pid);
+            None
         }
+    } else {
+        log::warn!("unable to find NSP tag");
+        None
     }
-    let name = scratchpad.name.clone();
-    let pid = exec_shell(&scratchpad.value, &mut manager.children);
-    manager.state.active_scratchpads.insert(name, pid);
-    None
 }
 
 fn toggle_state<C: Config>(state: &mut State<C>, window_state: WindowState) -> Option<bool> {

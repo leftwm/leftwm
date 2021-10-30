@@ -111,7 +111,7 @@ where
         Some(())
     }
 
-    #[must_use]
+    /*#[must_use]
     pub fn workspaces_display(&self) -> String {
         let mut focused_id = None;
         if let Some(f) = self.focus_manager.workspace(&self.workspaces) {
@@ -130,9 +130,9 @@ where
             })
             .collect();
         list.join(" ")
-    }
+    }*/
 
-    #[must_use]
+    /*#[must_use]
     pub fn windows_display(&self) -> String {
         let list: Vec<String> = self
             .windows
@@ -143,7 +143,7 @@ where
             })
             .collect();
         list.join(" ")
-    }
+    }*/
 
     pub fn update_static(&mut self) {
         let workspaces = self.workspaces.clone();
@@ -182,9 +182,8 @@ where
             }
         }
 
-        // restore tags
-        for tag in &mut self.tags {
-            if let Some(old_tag) = state.tags.iter().find(|t| t.label == tag.label) {
+        for tag in &mut self.tags.all() {
+            if let Some(old_tag) = state.tags.get(tag.id) {
                 tag.hidden = old_tag.hidden;
                 tag.layout = old_tag.layout;
                 tag.layout_rotation = old_tag.layout_rotation;
@@ -213,7 +212,7 @@ where
                 window.apply_margin_multiplier(old.margin_multiplier);
                 window.pid = old.pid;
                 window.normal = old.normal;
-                if self.tags.eq(&state.tags) {
+                if self.tags.all().eq(&state.tags.all()) {
                     window.tags = old.tags.clone();
                 } else {
                     old.tags.iter().for_each(|t| {

@@ -10,10 +10,10 @@ use super::TagId;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Tags {
     // holds all the 'normal' tags
-    pub vec: Vec<Tag>,
+    vec: Vec<Tag>,
 
     // holds the 'hidden' tags
-    pub hidden: Vec<Tag>,
+    hidden: Vec<Tag>,
 }
 
 impl Tags {
@@ -44,6 +44,13 @@ impl Tags {
         }
     }
 
+    pub fn all(&self) -> Vec<Tag> {
+        let mut result: Vec<Tag> = vec![];
+        result.append(&mut self.vec);
+        result.append(&mut self.hidden);
+        result
+    }
+
     /// Get a tag by its ID
     pub fn get(&self, id: usize) -> Option<&Tag> {
         self.vec.get(id - 1) // tag id starts at 1, arrays at 0
@@ -59,14 +66,6 @@ impl Tags {
         self.vec.len()
     }
 }
-
-/*impl Iterator for Tags {
-    type Tag;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-    }
-}*/
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
@@ -98,19 +97,19 @@ impl Tag {
     pub fn update_windows(&self, windows: &mut Vec<Window>, workspace: &Workspace) {
         if let Some(w) = windows
             .iter_mut()
-            .find(|w| w.has_tag(&self.label) && w.is_fullscreen())
+            .find(|w| w.has_tag(self.id) && w.is_fullscreen())
         {
             w.set_visible(true);
         } else {
             //Don't bother updating the other windows
             //mark all windows for this workspace as visible
             let mut all_mine: Vec<&mut Window> =
-                windows.iter_mut().filter(|w| w.has_tag(&self.label)).collect();
+                windows.iter_mut().filter(|w| w.has_tag(self.id)).collect();
             all_mine.iter_mut().for_each(|w| w.set_visible(true));
             //update the location of all non-floating windows
             let mut managed_nonfloat: Vec<&mut Window> = windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.label) && !w.is_unmanaged() && !w.floating())
+                .filter(|w| w.has_tag(self.id) && !w.is_unmanaged() && !w.floating())
                 .collect();
             self.layout
                 .update_windows(workspace, &mut managed_nonfloat, self);
@@ -120,7 +119,7 @@ impl Tag {
             //update the location of all floating windows
             windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.label) && !w.is_unmanaged() && w.floating())
+                .filter(|w| w.has_tag(self.id) && !w.is_unmanaged() && w.floating())
                 .for_each(|w| w.normal = workspace.xyhw);
         }
     }

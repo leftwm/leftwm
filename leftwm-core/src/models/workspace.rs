@@ -281,8 +281,8 @@ mod tests {
             Layout::default(),
             None,
         );
-        let tag = crate::models::Tag::new(Some(tag_id), "test", Layout::default());
-        subject.show_tag(tag.id.unwrap());
+        let tag = crate::models::Tag::new(tag_id, "test", Layout::default());
+        subject.show_tag(tag.id);
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.tag(tag_id);
         assert!(subject.is_displaying(&w), "workspace should include window");
