@@ -3,7 +3,7 @@ use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN};
 use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
+use std::os::raw::{c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
 use x11_dl::xlib;
 
@@ -491,28 +491,14 @@ impl XWrap {
     // `XmbTextPropertyToTextList`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XmbTextPropertyToTextList.html
     fn get_text_prop(&self, window: xlib::Window, atom: xlib::Atom) -> Result<String, XlibError> {
         unsafe {
-            let mut ptr: *mut *mut c_char = std::mem::zeroed();
-            let mut ptr_len: c_int = 0;
             let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
             let status: c_int =
                 (self.xlib.XGetTextProperty)(self.display, window, &mut text_prop, atom);
             if status == 0 {
                 return Err(XlibError::FailedStatus);
             }
-            if text_prop.encoding == xlib::XA_STRING {
-                (self.xlib.XTextPropertyToStringList)(&mut text_prop, &mut ptr, &mut ptr_len);
-            } else {
-                (self.xlib.XmbTextPropertyToTextList)(
-                    self.display,
-                    &mut text_prop,
-                    &mut ptr,
-                    &mut ptr_len,
-                );
-            }
-            for _i in 0..ptr_len {
-                if let Ok(s) = CString::from_raw(*ptr).into_string() {
-                    return Ok(s);
-                }
+            if let Ok(s) = CString::from_raw(text_prop.value.cast::<i8>()).into_string() {
+                return Ok(s);
             }
         };
         Err(XlibError::FailedStatus)
