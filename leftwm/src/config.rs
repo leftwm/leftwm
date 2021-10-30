@@ -54,6 +54,8 @@ impl TryFrom<Keybind> for leftwm_core::Keybind {
                     .context("invalid index value for GotoTag")?,
             ),
             BaseCommand::FloatingToTile => leftwm_core::Command::FloatingToTile,
+            BaseCommand::TileToFloating => leftwm_core::Command::TileToFloating,
+            BaseCommand::ToggleFloating => leftwm_core::Command::ToggleFloating,
             BaseCommand::MoveWindowUp => leftwm_core::Command::MoveWindowUp,
             BaseCommand::MoveWindowDown => leftwm_core::Command::MoveWindowDown,
             BaseCommand::MoveWindowTop => leftwm_core::Command::MoveWindowTop,
@@ -395,6 +397,18 @@ impl leftwm_core::Config for Config {
 
     fn floating_border_color(&self) -> String {
         self.theme_setting.floating_border_color.clone()
+    }
+
+    fn always_float(&self) -> bool {
+        self.theme_setting.always_float.unwrap_or(false)
+    }
+
+    fn default_width(&self) -> i32 {
+        self.theme_setting.default_width.unwrap_or(800)
+    }
+
+    fn default_height(&self) -> i32 {
+        self.theme_setting.default_height.unwrap_or(600)
     }
 
     fn focused_border_color(&self) -> String {

@@ -78,6 +78,7 @@ impl Window {
         if self.type_ == WindowType::Normal {
             self.margin = config.margin();
             self.border = config.border_width();
+            self.is_floating = config.always_float();
         } else {
             self.margin = Margins::new(0);
             self.border = 0;

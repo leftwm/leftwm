@@ -37,6 +37,9 @@ pub trait Config {
     where
         Self: Sized;
 
+    fn always_float(&self) -> bool;
+    fn default_width(&self) -> i32;
+    fn default_height(&self) -> i32;
     fn border_width(&self) -> i32;
     fn margin(&self) -> Margins;
     fn workspace_margin(&self) -> Option<Margins>;
@@ -99,6 +102,15 @@ impl Config for TestConfig {
     }
     fn command_handler<SERVER>(_command: &str, _manager: &mut Manager<Self, SERVER>) -> bool {
         unimplemented!()
+    }
+    fn always_float(&self) -> bool {
+        false
+    }
+    fn default_width(&self) -> i32 {
+        1000
+    }
+    fn default_height(&self) -> i32 {
+        800
     }
     fn border_width(&self) -> i32 {
         0

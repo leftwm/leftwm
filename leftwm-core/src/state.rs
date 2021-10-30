@@ -33,6 +33,8 @@ pub struct State {
     pub disable_current_tag_swap: bool,
     pub mousekey: String,
     pub max_window_width: Option<Size>,
+    pub default_width: i32,
+    pub default_height: i32,
 }
 
 impl State {
@@ -65,6 +67,8 @@ impl State {
             disable_current_tag_swap: config.disable_current_tag_swap(),
             max_window_width: config.max_window_width(),
             mousekey: config.mousekey(),
+            default_width: config.default_width(),
+            default_height: config.default_height(),
         }
     }
 
