@@ -41,7 +41,7 @@ where
         let layout_manager = LayoutManager::new(&config);
 
         let tags = Tags::new();
-        config.create_list_of_tags()
+        config.create_list_of_tag_labels()
             .iter()
             .for_each(|label| {
                 tags.add_new(label.as_str(), layout_manager.new_layout());
@@ -143,12 +143,6 @@ where
             })
             .collect();
         list.join(" ")
-    }
-
-    /// Return the index of a given tag.
-    #[must_use]
-    pub fn tag_index(&self, tag: &str) -> Option<usize> {
-        Some(self.tags.iter().position(|t| t.label == tag)).unwrap_or(None)
     }
 
     pub fn update_static(&mut self) {

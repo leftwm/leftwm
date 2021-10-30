@@ -14,7 +14,7 @@ pub trait Config {
     /// Returns a collection of bindings with the mod key mapped.
     fn mapped_bindings(&self) -> Vec<Keybind>;
 
-    fn create_list_of_tags(&self) -> Vec<String>;
+    fn create_list_of_tag_labels(&self) -> Vec<String>;
 
     fn workspaces(&self) -> Option<&[Workspace]>;
 
@@ -81,7 +81,7 @@ impl Config for TestConfig {
     fn mapped_bindings(&self) -> Vec<Keybind> {
         unimplemented!()
     }
-    fn create_list_of_tags(&self) -> Vec<String> {
+    fn create_list_of_tag_labels(&self) -> Vec<String> {
         self.tags.clone()
     }
     fn workspaces(&self) -> Option<&[Workspace]> {

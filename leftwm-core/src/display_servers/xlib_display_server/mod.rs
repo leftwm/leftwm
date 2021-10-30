@@ -62,19 +62,18 @@ impl DisplayServer for XlibDisplayServer {
         focused_window: Option<&Window>,
         state: &State<C>,
     ) {
+        let max_tag_index = state.workspaces.iter()
+            .flat_map(|w| &w.tags)
+            .max()
+            .map(|tag| tag.to_owned())
+            .unwrap_or(0);
 
-        // The largest (id-wise) tag being displayed on the workspace(s)
-        //let max_workspace_tag_index: Option<usize> = state.workspaces.iter()
-        //    .flat_map(|w| &w.tags)
-        //    .map(|t| t.to_owned())
-        //    .max();
-
-        //let to_the_right = state
-        //    .screens
-        //    .iter()
-        //    .map(|s| s.bbox.width + s.bbox.x + 100)
-        //    .max();
-        //let max_screen_width = state.screens.iter().map(|s| s.bbox.width).max();
+        let to_the_right = state
+            .screens
+            .iter()
+            .map(|s| s.bbox.width + s.bbox.x + 100)
+            .max();
+        let max_screen_width = state.screens.iter().map(|s| s.bbox.width).max();
 
         for window in windows {
             let is_focused = match focused_window {
@@ -82,9 +81,8 @@ impl DisplayServer for XlibDisplayServer {
                 None => false,
             };
 
-            let hide_offset = hide_offset_y(state, window);
-            //let hide_offset = right_offset(max_workspace_tag_index, to_the_right, state, window)
-            //    .unwrap_or_else(|| left_offset(max_screen_width, window));
+            let hide_offset = right_offset(max_tag_index, to_the_right, state, window)
+                .unwrap_or_else(|| left_offset(max_screen_width, window));
 
             self.xw.update_window(window, is_focused, hide_offset);
             if window.is_fullscreen() {
@@ -95,10 +93,7 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            focused
-                .tags
-                .iter()
-                .for_each(|tag| self.xw.set_current_desktop(tag.to_string().as_str())); // todo: should this be the id or label?
+            self.xw.set_current_desktop(focused.tags);
         }
     }
 
@@ -215,7 +210,7 @@ impl DisplayServer for XlibDisplayServer {
                 None
             }
             DisplayAction::SetCurrentTags(tags) => {
-                self.xw.set_current_desktop(&tags);
+                self.xw.set_current_desktop(tags);
                 None
             }
             DisplayAction::SetWindowTags(handle, tag) => {
@@ -314,70 +309,28 @@ impl XlibDisplayServer {
     }
 }
 
-/// Get the Y offset to use when hiding windows.
-/// Hidden windows are moved either to the left or to the right,
-/// depending on which side is nearer. This makes picom animations 
-/// look better, if the window movement is animated.
-/// See https://github.com/leftwm/leftwm/pull/462 for more details.
-fn hide_offset_y<C: Config>(
+//return an offset to hide the window in the right, if it should be hidden on the right
+fn right_offset<C: Config>(
+    max_tag_index: usize,
+    max_right_screen: Option<i32>,
     state: &State<C>,
     window: &Window,
-) -> i32 {
-
-    const buffer_space: i32 = 100;
-
-    // calculate the X coordinate for the center of the window
-    let window_center_x = window.x() + window.width() / 2;
-
-    // this is the right most X coordinate
-    let right_most_x = state
-        .screens
-        .iter()
-        .map(|s| s.bbox.width + s.bbox.x)
-        .max()
-        .unwrap_or(0);
-
-    let left_most_x = state
-        .screens
-        .iter()
-        .map(|s| s.bbox.x)
-        .min()
-        .unwrap_or(0);
-
-    if right_most_x / 2 < window_center_x {
-        // window is nearer to the right
-        return right_most_x - window.x() + buffer_space;
-    } else {
-        // window is nearer to the left
-        return left_most_x - (window.x() + window.width()) - buffer_space;
+) -> Option<i32> {
+    let max_right_screen = max_right_screen?;
+    for tag in window.tags {
+        if tag > max_tag_index {
+            return Some(max_right_screen + window.x());
+        }
     }
+    None
 }
 
-//return an offset to hide the window in the right, if it should be hidden on the right
-//fn right_offset<C: Config>(
-//    max_tag_index: Option<usize>,
-//    max_right_screen: Option<i32>,
-//    state: &State<C>,
-//    window: &Window,
-//) -> Option<i32> {
-//    let max_tag_index = max_tag_index?;
-//    let max_right_screen = max_right_screen?;
-//
-//    for tag in &window.tags {
-//        // if the window has a tag larger than the largest on any workspace -> move it to the right?
-//        if tag > &max_tag_index {
-//            return Some(max_right_screen + window.x());
-//        }
-//    }
-//    None
-//}
-//
-////return an offset to hide the window on the left
-//fn left_offset(max_screen_width: Option<i32>, window: &Window) -> i32 {
-//    let mut left = -(window.width());
-//    if let Some(screen_width) = max_screen_width {
-//        let best_left = window.x() - screen_width;
-//        left = std::cmp::min(best_left, left);
-//    }
-//    left
-//}
+//return an offset to hide the window on the left
+fn left_offset(max_screen_width: Option<i32>, window: &Window) -> i32 {
+    let mut left = -(window.width());
+    if let Some(screen_width) = max_screen_width {
+        let best_left = window.x() - screen_width;
+        left = std::cmp::min(best_left, left);
+    }
+    left
+}

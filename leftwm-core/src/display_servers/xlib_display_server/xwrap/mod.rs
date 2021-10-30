@@ -10,7 +10,7 @@ use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
 use crate::config::Config;
-use crate::models::{FocusBehaviour, Mode};
+use crate::models::{FocusBehaviour, Mode, TagId};
 use crate::utils::xkeysym_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_ulong};
@@ -57,7 +57,7 @@ pub struct XWrap {
     cursors: XCursor,
     colors: Colors,
     managed_windows: Vec<xlib::Window>,
-    pub tags: Vec<String>,
+    pub tag_labels: Vec<String>,
     pub mode: Mode,
     pub focus_behaviour: FocusBehaviour,
     pub mouse_key_mask: ModMask,
@@ -139,7 +139,7 @@ impl XWrap {
             cursors,
             colors,
             managed_windows: vec![],
-            tags: vec![],
+            tag_labels: vec![],
             mode: Mode::Normal,
             focus_behaviour: FocusBehaviour::Sloppy,
             mouse_key_mask: 0,
@@ -238,7 +238,7 @@ impl XWrap {
         }
 
         // EWMH compliance for desktops.
-        self.tags = config.create_list_of_tags();
+        self.tag_labels = config.create_list_of_tag_labels();
         self.init_desktops_hints();
 
         self.reset_grabs(&config.mapped_bindings());
@@ -255,8 +255,8 @@ impl XWrap {
     // `Xutf8TextListToTextProperty`: https://linux.die.net/man/3/xutf8textlisttotextproperty
     // `XSetTextProperty`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XSetTextProperty.html
     pub fn init_desktops_hints(&self) {
-        let tags = &self.tags;
-        let tag_length = tags.len();
+        let tag_labels = &self.tag_labels;
+        let tag_length = tag_labels.len();
         // Set the number of desktop.
         let data = vec![tag_length as u32];
         self.set_desktop_prop(&data, self.atoms.NetNumberOfDesktops);
@@ -266,7 +266,7 @@ impl XWrap {
         // Set desktop names.
         let mut text: xlib::XTextProperty = unsafe { std::mem::zeroed() };
         unsafe {
-            let mut clist_tags: Vec<*mut c_char> = tags
+            let mut clist_tags: Vec<*mut c_char> = tag_labels
                 .iter()
                 .map(|x| CString::new(x.clone()).unwrap_or_default().into_raw())
                 .collect();

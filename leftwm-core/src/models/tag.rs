@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{layouts::Layout, Window, Workspace};
 
+use super::TagId;
+
 /// Wrapper struct holding all the tags.
 /// This wrapper provides convenience methods to change the tag-list
 /// during its lifetime, while ensuring that all tags are numbered correctly.
@@ -10,7 +12,7 @@ pub struct Tags {
     // holds all the 'normal' tags
     pub vec: Vec<Tag>,
 
-    // holds the 'hidden' tags, which aren't accessible by ID
+    // holds the 'hidden' tags
     pub hidden: Vec<Tag>,
 }
 
@@ -24,7 +26,7 @@ impl Tags {
 
     pub fn add_new<'a>(&'a self, label: &str, layout: Layout) -> &'a Tag {
         let next_id = self.vec.len() + 1; // tag id starts at 1
-        let tag = Tag::new(Some(next_id), label, layout);
+        let tag = Tag::new(next_id, label, layout);
         self.vec.push(tag);
         &tag
     }
@@ -32,16 +34,24 @@ impl Tags {
     // todo: add_new_at(position, label, layout) -> shifting all one to the right (vec.insert)
 
     pub fn add_new_hidden<'a>(&'a self, label: &str) -> &'a Tag {
+        // hidden tags are numbered descending from the highest possible number
+        let next_id = usize::MAX - self.hidden.len();
         &Tag {
-            id: None,
+            id: next_id,
             label: label.to_string(),
             hidden: true,
             ..Tag::default()
         }
     }
 
+    /// Get a tag by its ID
     pub fn get(&self, id: usize) -> Option<&Tag> {
         self.vec.get(id - 1) // tag id starts at 1, arrays at 0
+    }
+
+    /// Get a hidden tag by its label
+    pub fn get_hidden(&self, label: &str) -> Option<&Tag> {
+        self.hidden.iter().find(|tag| tag.label.eq(label))
     }
 
     /// Get the amount of 'normal' tags
@@ -60,7 +70,7 @@ impl Tags {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
-    pub id: Option<usize>,
+    pub id: TagId,
     pub label: String,
     pub hidden: bool,
     pub layout: Layout,
@@ -72,7 +82,7 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(id: Option<usize>, label: &str, layout: Layout) -> Tag {
+    pub fn new(id: TagId, label: &str, layout: Layout) -> Tag {
         Tag {
             id,
             label: label.to_owned(),

@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::models::{
-    layouts::Layout, BBox, Gutter, Margins, Side, Size, Tag, TagId, Window, Xyhw, XyhwBuilder,
+    layouts::Layout, BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -269,6 +269,7 @@ mod tests {
 
     #[test]
     fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
+        const tag_id: TagId = 1;
         let mut subject = Workspace::new(
             None,
             BBox {
@@ -280,10 +281,10 @@ mod tests {
             Layout::default(),
             None,
         );
-        let tag = crate::models::Tag::new(Some(1), "test", Layout::default());
+        let tag = crate::models::Tag::new(Some(tag_id), "test", Layout::default());
         subject.show_tag(tag.id.unwrap());
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
-        w.tag("test");
+        w.tag(tag_id);
         assert!(subject.is_displaying(&w), "workspace should include window");
     }
 }
