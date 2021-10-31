@@ -190,12 +190,23 @@ impl XWrap {
         xw
     }
 
+    pub fn load_config(&mut self, config: &impl Config) {
+        self.focus_behaviour = config.focus_behaviour();
+        self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
+        self.load_colors(config);
+        self.tags = config.create_list_of_tags();
+        self.reset_grabs(&config.mapped_bindings());
+    }
+
     /// Initialize the xwrapper.
     // `XChangeWindowAttributes`: https://tronche.com/gui/x/xlib/window/XChangeWindowAttributes.html
     // `XDeleteProperty`: https://tronche.com/gui/x/xlib/window-information/XDeleteProperty.html
     // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
+        self.focus_behaviour = config.focus_behaviour();
+        self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
+
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask

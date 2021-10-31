@@ -34,7 +34,7 @@ impl XWrap {
     // `XDefaultScreen`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultScreen
     // `XDefaultColormap`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultColormap
     // `XAllocNamedColor`: https://tronche.com/gui/x/xlib/color/XAllocNamedColor.html
-    pub fn get_color(&self, color: &str) -> c_ulong {
+    pub fn get_color(&self, color: String) -> c_ulong {
         unsafe {
             let screen = (self.xlib.XDefaultScreen)(self.display);
             let cmap: xlib::Colormap = (self.xlib.XDefaultColormap)(self.display, screen);

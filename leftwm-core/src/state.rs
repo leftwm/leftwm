@@ -3,6 +3,7 @@
 use crate::config::{Config, ScratchPad};
 use crate::layouts::Layout;
 use crate::models::Screen;
+use crate::models::Size;
 use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
@@ -14,15 +15,13 @@ use std::collections::{HashMap, VecDeque};
 use std::os::raw::c_ulong;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct State<C> {
+pub struct State {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
     pub layout_manager: LayoutManager,
     pub mode: Mode,
-    // TODO should this really be saved in the state?
-    pub config: C,
     pub layouts: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<String, Option<u32>>,
@@ -31,14 +30,16 @@ pub struct State<C> {
     //this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
     pub tags: Vec<Tag>, //list of all known tags
+    pub disable_current_tag_swap: bool,
+    pub mousekey: String,
+    pub max_window_width: Option<Size>,
+    pub default_width: i32,
+    pub default_height: i32,
 }
 
-impl<C> State<C>
-where
-    C: Config,
-{
-    pub(crate) fn new(config: C) -> Self {
-        let layout_manager = LayoutManager::new(&config);
+impl State {
+    pub(crate) fn new(config: &impl Config) -> Self {
+        let layout_manager = LayoutManager::new(config);
         let mut tags: Vec<Tag> = config
             .create_list_of_tags()
             .iter()
@@ -51,7 +52,7 @@ where
         });
 
         Self {
-            focus_manager: FocusManager::new(&config),
+            focus_manager: FocusManager::new(config),
             layout_manager,
             scratchpads: config.create_list_of_scratchpads(),
             layouts: config.layouts(),
@@ -63,7 +64,11 @@ where
             actions: Default::default(),
             frame_rate_limitor: Default::default(),
             tags,
-            config,
+            disable_current_tag_swap: config.disable_current_tag_swap(),
+            max_window_width: config.max_window_width(),
+            mousekey: config.mousekey(),
+            default_width: config.default_width(),
+            default_height: config.default_height(),
         }
     }
 
@@ -169,18 +174,19 @@ where
             });
     }
 
-    pub fn update_for_theme(&mut self) -> bool {
+    pub(crate) fn load_config(&mut self, config: &impl Config) {
+        self.mousekey = config.mousekey();
+        self.max_window_width = config.max_window_width();
         for win in &mut self.windows {
-            win.update_for_theme(&self.config);
+            win.load_config(config);
         }
         for ws in &mut self.workspaces {
-            ws.update_for_theme(&self.config);
+            ws.load_config(config);
         }
-        true
     }
 
     /// Apply saved state to a running manager.
-    pub fn restore_state(&mut self, state: &State<C>) {
+    pub fn restore_state(&mut self, state: &State) {
         // restore workspaces
         for workspace in &mut self.workspaces {
             if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {

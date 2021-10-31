@@ -76,11 +76,11 @@ impl Window {
         }
     }
 
-    pub fn update_for_theme(&mut self, config: &impl Config) {
+    pub(crate) fn load_config(&mut self, config: &impl Config) {
         if self.type_ == WindowType::Normal {
             self.margin = config.margin();
             self.border = config.border_width();
-            self.must_float = config.always_float().unwrap_or_default();
+            self.must_float = config.always_float();
         } else {
             self.margin = Margins::new(0);
             self.border = 0;
