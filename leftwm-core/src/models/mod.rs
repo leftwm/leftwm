@@ -43,6 +43,7 @@ pub use xyhw::XyhwBuilder;
 pub use xyhw_change::XyhwChange;
 
 pub use tag::Tag;
+pub use tag::Tags;
 
-pub type TagId = String;
+pub type TagId = usize;
 type MaybeWindowHandle = Option<WindowHandle>;

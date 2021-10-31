@@ -2,8 +2,7 @@
 
 use crate::config::{Config, ScratchPad};
 use crate::layouts::Layout;
-use crate::models::Screen;
-use crate::models::Tag;
+use crate::models::{Screen, Tags};
 use crate::models::Window;
 use crate::models::Workspace;
 use crate::models::{FocusManager, LayoutManager};
@@ -30,7 +29,7 @@ pub struct State<C> {
     // TODO should this really be saved in the state?
     //this is used to limit framerate when resizing/moving windows
     pub frame_rate_limitor: c_ulong,
-    pub tags: Vec<Tag>, //list of all known tags
+    pub tags: Tags, //list of all known tags
 }
 
 impl<C> State<C>
@@ -39,16 +38,14 @@ where
 {
     pub(crate) fn new(config: C) -> Self {
         let layout_manager = LayoutManager::new(&config);
-        let mut tags: Vec<Tag> = config
-            .create_list_of_tags()
+
+        let mut tags = Tags::new();
+        config.create_list_of_tag_labels()
             .iter()
-            .map(|s| Tag::new(s, layout_manager.new_layout()))
-            .collect();
-        tags.push(Tag {
-            label: "NSP".to_owned(),
-            hidden: true,
-            ..Tag::default()
-        });
+            .for_each(|label| {
+                tags.add_new(label.as_str(), layout_manager.new_layout());
+            });
+        tags.add_new_hidden("NSP");
 
         Self {
             focus_manager: FocusManager::new(&config),
@@ -113,7 +110,7 @@ where
         Some(())
     }
 
-    #[must_use]
+    /*#[must_use]
     pub fn workspaces_display(&self) -> String {
         let mut focused_id = None;
         if let Some(f) = self.focus_manager.workspace(&self.workspaces) {
@@ -132,9 +129,9 @@ where
             })
             .collect();
         list.join(" ")
-    }
+    }*/
 
-    #[must_use]
+    /*#[must_use]
     pub fn windows_display(&self) -> String {
         let list: Vec<String> = self
             .windows
@@ -145,13 +142,7 @@ where
             })
             .collect();
         list.join(" ")
-    }
-
-    /// Return the index of a given tag.
-    #[must_use]
-    pub fn tag_index(&self, tag: &str) -> Option<usize> {
-        Some(self.tags.iter().position(|t| t.label == tag)).unwrap_or(None)
-    }
+    }*/
 
     pub fn update_static(&mut self) {
         let workspaces = self.workspaces.clone();
@@ -190,9 +181,8 @@ where
             }
         }
 
-        // restore tags
-        for tag in &mut self.tags {
-            if let Some(old_tag) = state.tags.iter().find(|t| t.label == tag.label) {
+        for tag in &mut self.tags.all() {
+            if let Some(old_tag) = state.tags.get(tag.id) {
                 tag.hidden = old_tag.hidden;
                 tag.layout = old_tag.layout;
                 tag.layout_rotation = old_tag.layout_rotation;
@@ -206,43 +196,37 @@ where
         let mut ordered = vec![];
         let mut had_strut = false;
 
-        state.windows.iter().for_each(|old| {
-            if let Some((index, window)) = self
+        state.windows.iter().for_each(|old_window| {
+            if let Some((index, new_window)) = self
                 .windows
                 .clone()
                 .iter_mut()
                 .enumerate()
-                .find(|w| w.1.handle == old.handle)
+                .find(|w| w.1.handle == old_window.handle)
             {
-                had_strut = old.strut.is_some() || had_strut;
+                had_strut = old_window.strut.is_some() || had_strut;
 
-                window.set_floating(old.floating());
-                window.set_floating_offsets(old.get_floating_offsets());
-                window.apply_margin_multiplier(old.margin_multiplier);
-                window.pid = old.pid;
-                window.normal = old.normal;
-                if self.tags.eq(&state.tags) {
-                    window.tags = old.tags.clone();
+                new_window.set_floating(old_window.floating());
+                new_window.set_floating_offsets(old_window.get_floating_offsets());
+                new_window.apply_margin_multiplier(old_window.margin_multiplier);
+                new_window.pid = old_window.pid;
+                new_window.normal = old_window.normal;
+                if self.tags.all().eq(&state.tags.all()) {
+                    new_window.tags = old_window.tags.clone();
                 } else {
-                    old.tags.iter().for_each(|t| {
-                        let manager_tags = &self.tags.clone();
-                        if let Some(tag_index) = &state.tags.clone().iter().position(|o| &o.label == t)
-                        {
-                            window.clear_tags();
-                            // if the config prior reload had more tags then the current one
-                            // we want to move windows of 'lost tags' to the 'first' tag
-                            // also we want to ignore the `NSP` tag for length check
-                            if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
-                                window.tag(&manager_tags[*tag_index].label);
-                            } else if let Some(tag) = manager_tags.first() {
-                                window.tag(&tag.label);
-                            }
-                        }
-                    });
+                    let mut new_tags = old_window.tags.clone();
+                    // only retain the tags, that still exist
+                    new_tags.retain(|&tag_id| self.tags.get(tag_id).is_some());
+                    // if there are no tags, add tag '1', so the window will not be lost
+                    if new_tags.len() < 1 {
+                        new_tags.push(1);
+                    }
+                    new_window.clear_tags();
+                    new_tags.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
-                window.strut = old.strut;
-                window.set_states(old.states());
-                ordered.push(window.clone());
+                new_window.strut = old_window.strut;
+                new_window.set_states(old_window.states());
+                ordered.push(new_window.clone());
                 self.windows.remove(index);
             }
         });

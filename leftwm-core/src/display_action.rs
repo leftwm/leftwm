@@ -1,4 +1,5 @@
 use crate::config::Keybind;
+use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
@@ -51,10 +52,10 @@ pub enum DisplayAction {
     StartMovingWindow(WindowHandle),
 
     /// Used to let the WM know of the current displayed tag changes.
-    SetCurrentTags(String),
+    SetCurrentTags(Vec<TagId>),
 
     /// Used to let the WM know of the tag for a given window.
-    SetWindowTags(WindowHandle, String),
+    SetWindowTags(WindowHandle, Vec<TagId>),
 
     /// Tell the DM to return to normal mode if it is not (ie resize a
     /// window or moving a window).

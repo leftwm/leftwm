@@ -10,7 +10,7 @@ use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{TagId, WindowState};
+use crate::models::{Tag, WindowState};
 use crate::state::State;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
@@ -101,8 +101,8 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     name: &str,
 ) -> Option<bool> {
-    let tag = &manager.state.focus_manager.tag(0)?;
-    let s = manager
+    let current_tag = &manager.state.focus_manager.tag(0)?;
+    let scratchpad = manager
         .state
         .scratchpads
         .iter()
@@ -123,36 +123,47 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             .map(|w| w.handle);
     }
 
-    if let Some(id) = manager.state.active_scratchpads.get(&s.name) {
-        if let Some(w) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
-            let is_tagged = w.has_tag(tag);
-            w.clear_tags();
-            if is_tagged {
-                w.tag("NSP");
-                if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
-                    handle = Some(*prev);
-                }
-            } else {
-                w.tag(tag);
-                handle = Some(w.handle);
-            }
-            let act = DisplayAction::SetWindowTags(w.handle, w.tags.get(0)?.to_string());
-            manager.state.actions.push_back(act);
 
-            manager.state.sort_windows();
-            if let Some(h) = handle {
-                handle_focus(&mut manager.state, h);
-                if !is_tagged {
-                    manager.state.move_to_top(&h);
+
+    if let Some(nsp_tag) = manager.state.tags.get_hidden("NSP") {
+        if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
+            if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
+                let is_visible = window.has_tag(current_tag);
+                window.clear_tags();
+                if is_visible {
+                    // hide the scratchpad
+                    window.tag(&nsp_tag.id);
+                    if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
+                        handle = Some(*prev);
+                    }
+                } else {
+                    // show the scratchpad
+                    window.tag(current_tag);
+                    handle = Some(window.handle);
                 }
+                let act = DisplayAction::SetWindowTags(window.handle, window.tags.clone());
+                manager.state.actions.push_back(act);
+                manager.state.sort_windows();
+                if let Some(h) = handle {
+                    handle_focus(&mut manager.state, h);
+                    if !is_visible {
+                        manager.state.move_to_top(&h);
+                    }
+                }
+                
+                return Some(true);
             }
-            return Some(true);
         }
+
+        log::debug!("no active scratchpad found for name {:?}. creating a new one", scratchpad.name);
+        let name = scratchpad.name.clone();
+        let pid = exec_shell(&scratchpad.value, &mut manager.children);
+        manager.state.active_scratchpads.insert(name, pid);
+        return None;
+    } else {
+        log::warn!("unable to find NSP tag");
+        None
     }
-    let name = s.name.clone();
-    let pid = exec_shell(&s.value, &mut manager.children);
-    manager.state.active_scratchpads.insert(name, pid);
-    None
 }
 
 fn toggle_state<C: Config>(state: &mut State<C>, window_state: WindowState) -> Option<bool> {
@@ -170,11 +181,11 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     tag_num: usize,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    let tag = manager.state.tags.get(tag_num - 1)?.clone();
+    let tag = manager.state.tags.get(tag_num)?.clone();
 
     // In order to apply the correct margin multiplier we want to copy this value
     // from any window already present on the target tag
-    let margin_multiplier = match manager.state.windows.iter().find(|w| w.has_tag(&tag.label)) {
+    let margin_multiplier = match manager.state.windows.iter().find(|w| w.has_tag(&tag.id)) {
         Some(w) => w.margin_multiplier(),
         None => 1.0,
     };
@@ -193,9 +204,9 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         .window_mut(&mut manager.state.windows)?;
     window.clear_tags();
     window.set_floating(false);
-    window.tag(&tag.label);
+    window.tag(&tag.id);
     window.apply_margin_multiplier(margin_multiplier);
-    let act = DisplayAction::SetWindowTags(window.handle, tag.label);
+    let act = DisplayAction::SetWindowTags(window.handle, vec![tag.id]);
     manager.state.actions.push_back(act);
 
     manager.state.sort_windows();
@@ -215,54 +226,48 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
         .workspace(&manager.state.workspaces)?;
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
-    let tag_num = manager
-        .state
-        .tags
-        .iter()
-        .position(|t| workspace.has_tag(&t.label))?;
-    move_to_tag(tag_num + 1, manager)
+    
+    let tag_num = workspace.tags.first()?;
+    move_to_tag(*tag_num, manager)
 }
 
 fn goto_tag<C: Config>(state: &mut State<C>, input_tag: usize) -> Option<bool> {
-    let current_tag = state.tag_index(&state.focus_manager.tag(0).unwrap_or_default());
-    let previous_tag = state.tag_index(&state.focus_manager.tag(1).unwrap_or_default());
-
-    let destination_tag = if state.config.disable_current_tag_swap() {
-        input_tag
+    let current_tag = state.focus_manager.tag(0).unwrap_or_default();
+    let previous_tag = state.focus_manager.tag(1).unwrap_or_default();
+    let destination_tag = if !state.config.disable_current_tag_swap() && current_tag == input_tag {
+        previous_tag
     } else {
-        match (current_tag, previous_tag, input_tag) {
-            (Some(curr_tag), Some(prev_tag), inp_tag) if curr_tag + 1 == inp_tag => prev_tag + 1, // if current tag is the same as the destination tag, go to the previous tag instead
-            (_, _, _) => input_tag, // go to the input tag tag
-        }
+        input_tag
     };
     state.goto_tag_handler(destination_tag)
 }
 
+/// Focus the adjacent tags, depending on the delta.
+/// A delta of 1 means "next tag", a delta of -1 means "previous tag".
 fn focus_tag_change<C: Config>(state: &mut State<C>, delta: i8) -> Option<bool> {
-    let current = state.focus_manager.tag(0)?;
-    let active_tags: Vec<(usize, TagId)> = state
-        .tags
-        .iter()
-        .enumerate()
-        .filter(|(_, tag)| !tag.hidden)
-        .map(|(i, tag)| (i + 1, tag.label.clone()))
-        .collect();
-    let mut index = active_tags
-        .iter()
-        .position(|(_, tag_id)| *tag_id == current)?;
-    if delta.is_negative() {
-        index = match index.checked_sub(delta.abs() as usize) {
-            Some(i) => i,
-            None => active_tags.len() - 1,
+    let current_tag = state.focus_manager.tag(0)?;
+    let visible_tags: &Vec<Tag> = state.tags.visible();
+
+    // if delta is larger than the amount of tags, just use the remainder
+    let delta = delta % visible_tags.len() as i8;
+
+    let new_tag = if delta.is_negative() {
+        let tags_on_the_left = current_tag - 1;
+        // if there are enough tags on the left
+        match tags_on_the_left >= delta.abs() as usize {
+            true => current_tag - delta.abs() as usize,
+            false => visible_tags.len() - (delta.abs() as usize - current_tag),
         }
     } else {
-        index += delta as usize;
-        if index >= active_tags.len() {
-            index = 0;
+        let tags_on_the_right = visible_tags.len() - current_tag;
+        // if there are enough tags on the right
+        match tags_on_the_right >= delta as usize {
+            true => current_tag + delta as usize,
+            false => delta as usize - tags_on_the_right,
         }
-    }
-    let (next, _) = *active_tags.get(index)?;
-    state.goto_tag_handler(next)
+    };
+
+    state.goto_tag_handler(new_tag)
 }
 
 fn swap_tags<C: Config>(state: &mut State<C>) -> Option<bool> {
@@ -278,7 +283,7 @@ fn swap_tags<C: Config>(state: &mut State<C>) -> Option<bool> {
         state.update_static();
         state
             .layout_manager
-            .update_layouts(&mut state.workspaces, &mut state.tags);
+            .update_layouts(&mut state.workspaces, &mut state.tags.all());
 
         return Some(true);
     }
@@ -287,10 +292,9 @@ fn swap_tags<C: Config>(state: &mut State<C>) -> Option<bool> {
             .focus_manager
             .tag_history
             .get(1)
-            .map(std::string::ToString::to_string)?;
-
-        let tag_index = state.tags.iter().position(|x| x.label == last)? + 1;
-        return state.goto_tag_handler(tag_index);
+            .unwrap()
+            .clone();
+        return state.goto_tag_handler(last);
     }
     None
 }
@@ -320,7 +324,7 @@ fn next_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     let layout = state.layout_manager.next_layout(workspace.layout);
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.iter_mut().find(|t| t.label == tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
@@ -330,7 +334,7 @@ fn previous_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     let layout = state.layout_manager.previous_layout(workspace.layout);
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.iter_mut().find(|t| t.label == tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
@@ -339,7 +343,7 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.iter_mut().find(|t| t.label == tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
@@ -405,7 +409,7 @@ where
 {
     let handle = state.focus_manager.window(&state.windows)?.handle;
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.iter().find(|t| t.label == tag_id)?;
+    let tag = state.tags.get(tag_id)?;
     let (tags, layout) = (vec![tag_id], Some(tag.layout));
 
     let for_active_workspace =
@@ -530,7 +534,7 @@ fn focus_workspace_change<C: Config>(state: &mut State<C>, val: i32) -> Option<b
 
 fn rotate_tag<C: Config>(state: &mut State<C>) -> Option<bool> {
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.iter_mut().find(|t| t.label == tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.rotate_layout()?;
     Some(true)
 }
@@ -539,7 +543,7 @@ fn change_main_width<C: Config>(state: &mut State<C>, delta: i8, factor: i8) -> 
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.change_main_width(delta * factor);
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.iter_mut().find(|t| t.label == tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.change_main_width(delta * factor);
     Some(true)
 }
@@ -592,7 +596,7 @@ fn send_workspace_to_tag<C: Config>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::Tag;
+    use crate::models::Tags;
 
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
@@ -621,14 +625,13 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
-        state.tags = vec![
-            Tag::new("A15", Layout::default()),
-            Tag::new("B24", Layout::default()),
-            Tag::new("C", Layout::default()),
-            Tag::new("6D4", Layout::default()),
-            Tag::new("E39", Layout::default()),
-            Tag::new("F67", Layout::default()),
-        ];
+        state.tags = Tags::new();
+        state.tags.add_new("A15", Layout::default());
+        state.tags.add_new("B24", Layout::default());
+        state.tags.add_new("C", Layout::default());
+        state.tags.add_new("6D4", Layout::default());
+        state.tags.add_new("E39", Layout::default());
+        state.tags.add_new("F67", Layout::default());
         assert!(!manager.command_handler(&Command::GotoTag(0)));
         assert!(!manager.command_handler(&Command::GotoTag(999)));
     }
@@ -647,44 +650,59 @@ mod tests {
         manager.state.screen_create_handler(Screen::default());
 
         assert!(manager.command_handler(&Command::GotoTag(6)));
-        let current_tag = manager
-            .state
-            .tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
-        assert_eq!(current_tag, Some(5));
+        let current_tag = manager.state.focus_manager.tag(0).unwrap();
+        assert_eq!(current_tag, 6);
+
         assert!(manager.command_handler(&Command::GotoTag(2)));
-        let current_tag = manager
-            .state
-            .tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
-        assert_eq!(current_tag, Some(1));
+        let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
+        assert_eq!(current_tag, 2);
 
         assert!(manager.command_handler(&Command::GotoTag(3)));
-        let current_tag = manager
-            .state
-            .tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
-        assert_eq!(current_tag, Some(2));
+        let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
+        assert_eq!(current_tag, 3);
 
         assert!(manager.command_handler(&Command::GotoTag(4)));
-        let current_tag = manager
-            .state
-            .tag_index(&manager.state.focus_manager.tag(0).unwrap_or_default());
-        assert_eq!(current_tag, Some(3));
-        assert_eq!(
-            manager
-                .state
-                .tag_index(&manager.state.focus_manager.tag(1).unwrap_or_default()),
-            Some(2)
-        );
-        assert_eq!(
-            manager
-                .state
-                .tag_index(&manager.state.focus_manager.tag(2).unwrap_or_default()),
-            Some(1)
-        );
-        assert_eq!(
-            manager
-                .state
-                .tag_index(&manager.state.focus_manager.tag(3).unwrap_or_default()),
-            Some(5)
-        );
+        let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
+        assert_eq!(current_tag, 4);
+
+        // test tag history
+        assert_eq!(manager.state.focus_manager.tag(1).unwrap_or_default(), 3);
+        assert_eq!(manager.state.focus_manager.tag(2).unwrap_or_default(), 2);
+        assert_eq!(manager.state.focus_manager.tag(3).unwrap_or_default(), 6);
+    }
+
+    #[test]
+    fn focus_tag_change_should_go_to_previous_and_next_tag() {
+        let mut manager = Manager::new_test(vec![
+            "A15".to_string(),
+            "B24".to_string(),
+            "C".to_string(),
+            "6D4".to_string(),
+            "E39".to_string(),
+            "F67".to_string(),
+        ]);
+        let state = &mut manager.state;
+        state.screen_create_handler(Screen::default());
+
+        state.focus_tag(&2);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
+
+        focus_tag_change(state, 1);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
+
+        focus_tag_change(state, -1);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
+
+        focus_tag_change(state, 2);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 4);
+
+        focus_tag_change(state, -5);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 5);
+
+        focus_tag_change(state, 3);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
+
+        focus_tag_change(state, 13);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
     }
 }

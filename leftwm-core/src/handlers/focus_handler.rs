@@ -1,6 +1,7 @@
 #![allow(clippy::wildcard_imports)]
 
 use super::*;
+use crate::models::TagId;
 use crate::state::State;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
@@ -65,7 +66,7 @@ impl<C: Config> State<C> {
 
     /// marks a tag as the focused tag
     //NOTE: should only be called externally from this file
-    pub fn focus_tag(&mut self, tag: &str) -> bool {
+    pub fn focus_tag(&mut self, tag: &TagId) -> bool {
         if focus_tag_work(self, tag).is_none() {
             return false;
         }
@@ -83,7 +84,7 @@ impl<C: Config> State<C> {
         if self.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             self.actions.push_back(act);
-        } else if let Some(handle) = self.focus_manager.tags_last_window.get(tag).copied() {
+        } else if let Some(handle) = self.focus_manager.tags_last_window.get(&tag).copied() {
             focus_window_by_handle_work(self, &handle);
         } else if let Some(ws) = to_focus.first() {
             let handle = self
@@ -149,7 +150,7 @@ impl<C: Config> State<C> {
     pub fn update_current_tags(&mut self) {
         if let Some(workspace) = self.focus_manager.workspace(&self.workspaces) {
             if let Some(tag) = workspace.tags.first().cloned() {
-                self.actions.push_back(DisplayAction::SetCurrentTags(tag));
+                self.actions.push_back(DisplayAction::SetCurrentTags(vec![tag]));
             }
         }
     }
@@ -226,18 +227,16 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
     (xs + ys).sqrt().abs().floor() as i32
 }
 
-fn focus_tag_work<C: Config>(state: &mut State<C>, tag: &str) -> Option<()> {
-    //no new history if no change
-    if let Some(t) = state.focus_manager.tag(0) {
-        if t == tag {
+fn focus_tag_work<C: Config>(state: &mut State<C>, tag: &TagId) -> Option<()> {
+    if let Some(current_tag) = state.focus_manager.tag(0) {
+        if current_tag == *tag {
             return None;
         }
-    }
+    };
     //clean old ones
     state.focus_manager.tag_history.truncate(10);
     //add this focus to the history
-    state.focus_manager.tag_history.push_front(tag.to_string());
-
+    state.focus_manager.tag_history.push_front(tag.clone());
     Some(())
 }
 
@@ -316,7 +315,7 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
-        let expected = "Bla".to_owned();
+        let expected: usize = 1;
         state.focus_tag(&expected);
         let actual = state.focus_manager.tag(0).unwrap();
         assert_eq!(actual, expected);
@@ -327,7 +326,7 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
-        let tag = "Bla".to_owned();
+        let tag: usize = 1;
         state.focus_tag(&tag);
         let start_length = state.focus_manager.tag_history.len();
         state.focus_tag(&tag);
@@ -341,10 +340,9 @@ mod tests {
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
         state.screen_create_handler(Screen::default());
-        state.focus_tag(&"1".to_owned());
+        state.focus_tag(&1);
         let actual = state.focus_manager.workspace(&state.workspaces).unwrap();
-        let expected = Some(0);
-        assert_eq!(actual.id, expected);
+        assert_eq!(actual.id, Some(0));
     }
 
     #[test]
@@ -357,7 +355,7 @@ mod tests {
         let ws = state.workspaces[1].clone();
         state.focus_workspace(&ws);
         let actual = state.focus_manager.tag(0).unwrap();
-        assert_eq!("2", actual);
+        assert_eq!(2, actual);
     }
 
     #[test]
@@ -368,11 +366,11 @@ mod tests {
         state.screen_create_handler(Screen::default());
         state.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
-        window.tag("2");
+        window.tag(&2);
         state.windows.push(window.clone());
         state.focus_window(&window.handle);
         let actual = state.focus_manager.tag(0).unwrap();
-        assert_eq!("2", actual);
+        assert_eq!(2, actual);
     }
 
     #[test]
@@ -383,7 +381,7 @@ mod tests {
         state.screen_create_handler(Screen::default());
         state.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
-        window.tag("2");
+        window.tag(&2);
         state.windows.push(window.clone());
         state.focus_window(&window.handle);
         let actual = state.focus_manager.workspace(&state.workspaces).unwrap().id;
@@ -397,10 +395,10 @@ mod tests {
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
-        window.tag("1");
+        window.tag(&1);
         state.windows.push(window.clone());
         state.focus_window(&window.handle);
-        state.focus_tag("2");
+        state.focus_tag(&2);
         let focused = state.focus_manager.window(&state.windows);
         assert!(focused.is_none());
     }

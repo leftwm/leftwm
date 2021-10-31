@@ -2,8 +2,94 @@ use serde::{Deserialize, Serialize};
 
 use crate::{layouts::Layout, Window, Workspace};
 
+use super::TagId;
+
+/// Wrapper struct holding all the tags.
+/// This wrapper provides convenience methods to change the tag-list
+/// during its lifetime, while ensuring that all tags are numbered correctly.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Tags {
+    // holds all the 'normal' tags
+    vec: Vec<Tag>,
+
+    // holds the 'hidden' tags
+    hidden: Vec<Tag>,
+}
+
+impl Tags {
+    pub fn new() -> Self {
+        Tags { 
+            vec: vec!(),
+            hidden: vec!()
+        }
+    }
+
+    pub fn add_new<'a>(&'a mut self, label: &str, layout: Layout) -> &'a Tag {
+        let next_id = self.vec.len() + 1; // tag id starts at 1
+        let tag = Tag::new(next_id, label, layout);
+        self.vec.push(tag);
+        self.get(next_id).unwrap()
+    }
+
+    pub fn add_new_unlabeled<'a>(&'a mut self, layout: Layout) -> &'a Tag {
+        let next_id = self.vec.len() + 1; // tag id starts at 1
+        self.add_new(next_id.to_string().as_str(), layout)
+    }
+
+    // todo: add_new_at(position, label, layout) -> shifting all one to the right (vec.insert)
+
+    pub fn add_new_hidden<'a>(&'a mut self, label: &str) -> &'a Tag {
+        // hidden tags are numbered descending from the highest possible number
+        let next_id = usize::MAX - self.hidden.len();
+        let tag = Tag {
+            id: next_id,
+            label: label.to_string(),
+            hidden: true,
+            ..Tag::default()
+        };
+        self.hidden.push(tag);
+        self.get_hidden(label).unwrap()
+    }
+
+    /// Get all the visible (non-hidden) tags
+    pub fn visible(&self) -> &Vec<Tag> {
+        &self.vec
+    }
+
+    /// Get all tags, including hidden ones.
+    /// The hidden tags are appended at the end of the list.
+    pub fn all(&self) -> Vec<Tag> {
+        let mut result: Vec<Tag> = vec![];
+        result.append(&mut self.vec.clone());
+        result.append(&mut self.hidden.clone());
+        result
+    }
+
+    /// Get a tag by its ID
+    pub fn get(&self, id: TagId) -> Option<&Tag> {
+        self.vec.get(id - 1) // tag id starts at 1, arrays at 0
+            .or(self.hidden.iter().find(|&hidden_tag| hidden_tag.id == id))
+    }
+
+    pub fn get_mut(&mut self, id: TagId) -> Option<&mut Tag> {
+        self.vec.get_mut(id - 1)
+            .or(self.hidden.iter_mut().find(|hidden_tag| hidden_tag.id == id))
+    }
+
+    /// Get a hidden tag by its label
+    pub fn get_hidden(&self, label: &str) -> Option<&Tag> {
+        self.hidden.iter().find(|tag| tag.label.eq(label))
+    }
+
+    /// Get the amount of 'normal' tags
+    pub fn len(&self) -> usize {
+        self.vec.len()
+    }
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
+    pub id: TagId,
     pub label: String,
     pub hidden: bool,
     pub layout: Layout,
@@ -15,8 +101,9 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(label: &str, layout: Layout) -> Tag {
+    pub fn new(id: TagId, label: &str, layout: Layout) -> Tag {
         Tag {
+            id,
             label: label.to_owned(),
             hidden: false,
             layout,
@@ -30,19 +117,19 @@ impl Tag {
     pub fn update_windows(&self, windows: &mut Vec<Window>, workspace: &Workspace) {
         if let Some(w) = windows
             .iter_mut()
-            .find(|w| w.has_tag(&self.label) && w.is_fullscreen())
+            .find(|w| w.has_tag(&self.id) && w.is_fullscreen())
         {
             w.set_visible(true);
         } else {
             //Don't bother updating the other windows
             //mark all windows for this workspace as visible
             let mut all_mine: Vec<&mut Window> =
-                windows.iter_mut().filter(|w| w.has_tag(&self.label)).collect();
+                windows.iter_mut().filter(|w| w.has_tag(&self.id)).collect();
             all_mine.iter_mut().for_each(|w| w.set_visible(true));
             //update the location of all non-floating windows
             let mut managed_nonfloat: Vec<&mut Window> = windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.label) && !w.is_unmanaged() && !w.floating())
+                .filter(|w| w.has_tag(&self.id) && !w.is_unmanaged() && !w.floating())
                 .collect();
             self.layout
                 .update_windows(workspace, &mut managed_nonfloat, self);
@@ -52,7 +139,7 @@ impl Tag {
             //update the location of all floating windows
             windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.label) && !w.is_unmanaged() && w.floating())
+                .filter(|w| w.has_tag(&self.id) && !w.is_unmanaged() && w.floating())
                 .for_each(|w| w.normal = workspace.xyhw);
         }
     }
