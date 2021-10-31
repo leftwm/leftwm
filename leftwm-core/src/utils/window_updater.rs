@@ -20,10 +20,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             let tags: Vec<&Tag> = ws
                 .tags
                 .iter()
-                .flat_map(|tag_id| all_tags.get(tag_id.clone()))
+                .filter_map(|tag_id| all_tags.get(*tag_id))
                 .collect();
             for tag in &tags {
-                tag.update_windows(windows, ws)
+                tag.update_windows(windows, ws);
             }
 
             // resize all windows marked as fullscreen to the workspace size

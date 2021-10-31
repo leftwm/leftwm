@@ -104,7 +104,7 @@ impl Workspace {
 
     pub fn show_tag(&mut self, tag: &TagId) {
         // todo: display multiple tags?
-        self.tags = vec![tag.clone()];
+        self.tags = vec![*tag];
     }
 
     #[must_use]
@@ -114,7 +114,7 @@ impl Workspace {
 
     #[must_use]
     pub fn has_tag(&self, tag: &TagId) -> bool {
-        self.tags.contains(&tag)
+        self.tags.contains(tag)
     }
 
     /// Returns true if the workspace is displays a given window.

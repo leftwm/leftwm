@@ -119,7 +119,7 @@ impl From<&State> for ManagerState {
                 .tags
                 .iter()
                 .map(|&tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
-                .map(|opt| opt.unwrap())
+                .map(std::option::Option::unwrap)
                 .collect();
 
             viewports.push(Viewport {

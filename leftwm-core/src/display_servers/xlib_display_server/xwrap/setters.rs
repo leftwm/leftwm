@@ -22,7 +22,7 @@ impl XWrap {
     }
 
     /// Sets the current desktop.
-    pub fn set_current_desktop(&self, current_tags: Vec<usize>) {
+    pub fn set_current_desktop(&self, current_tags: &[TagId]) {
         let mut indexes: Vec<u32> = current_tags
             .iter()
             .map(|tag| tag.to_owned() as u32)
@@ -125,7 +125,7 @@ impl XWrap {
     }
 
     /// Sets what desktop a window is on.
-    pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &Vec<TagId>) {
+    pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &[TagId]) {
         let mut indexes: Vec<c_long> = current_tags.iter().map(|tag| (tag - 1) as c_long).collect();
         if indexes.is_empty() {
             indexes.push(0);

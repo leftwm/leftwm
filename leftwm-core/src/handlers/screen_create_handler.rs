@@ -32,18 +32,18 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         workspace.load_config(&self.config);
 
         //make sure are enough tags for this new screen
-        let next_id = tag_index + 1;
-        if self.state.tags.len() < next_id {
-            let id = next_id.to_string();
+        let next_id = if self.state.tags.len() > tag_index {
+            tag_index + 1
+        } else {
+            // add a new tag for the workspace
             self.state
                 .tags
-                .add_new(id.as_str(), self.state.layout_manager.new_layout());
-        }
-        let next_tag = self.state.tags.get(next_id).unwrap().clone();
-        self.state.focus_workspace(&workspace);
-        self.state.focus_tag(&next_tag.id);
-        workspace.show_tag(&next_tag.id);
+                .add_new_unlabeled(self.state.layout_manager.new_layout())
+        };
 
+        self.state.focus_workspace(&workspace);
+        self.state.focus_tag(&next_id);
+        workspace.show_tag(&next_id);
         self.state.workspaces.push(workspace.clone());
         self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
         self.state.screens.push(screen);

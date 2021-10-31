@@ -14,7 +14,7 @@ impl State {
             let old_handle = self
                 .focus_manager
                 .tags_last_window
-                .entry(old_tags[0].clone())
+                .entry(old_tags[0])
                 .or_insert(handle);
             *old_handle = handle;
         }

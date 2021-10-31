@@ -161,10 +161,9 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         let pid = exec_shell(&scratchpad.value, &mut manager.children);
         manager.state.active_scratchpads.insert(name, pid);
         return None;
-    } else {
-        log::warn!("unable to find NSP tag");
-        None
     }
+    log::warn!("unable to find NSP tag");
+    None
 }
 
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
@@ -255,16 +254,18 @@ fn focus_tag_change(state: &mut State, delta: i8) -> Option<bool> {
     let new_tag = if delta.is_negative() {
         let tags_on_the_left = current_tag - 1;
         // if there are enough tags on the left
-        match tags_on_the_left >= delta.abs() as usize {
-            true => current_tag - delta.abs() as usize,
-            false => visible_tags.len() - (delta.abs() as usize - current_tag),
+        if tags_on_the_left >= delta.abs() as usize {
+            current_tag - delta.abs() as usize
+        } else {
+            visible_tags.len() - (delta.abs() as usize - current_tag)
         }
     } else {
         let tags_on_the_right = visible_tags.len() - current_tag;
         // if there are enough tags on the right
-        match tags_on_the_right >= delta as usize {
-            true => current_tag + delta as usize,
-            false => delta as usize - tags_on_the_right,
+        if tags_on_the_right >= delta as usize {
+            current_tag + delta as usize
+        } else {
+            delta as usize - tags_on_the_right
         }
     };
 
@@ -289,7 +290,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         return Some(true);
     }
     if state.workspaces.len() == 1 {
-        let last = state.focus_manager.tag_history.get(1).unwrap().clone();
+        let last = *state.focus_manager.tag_history.get(1).unwrap();
         return state.goto_tag_handler(last);
     }
     None
@@ -309,7 +310,7 @@ fn move_to_last_workspace(state: &mut State) -> Option<bool> {
         let index = *state.focus_manager.workspace_history.get(1)?;
         let wp_tags = &state.workspaces.get(index)?.tags.clone();
         let window = state.focus_manager.window_mut(&mut state.windows)?;
-        window.tags = vec![wp_tags.get(0)?.clone()];
+        window.tags = vec![*wp_tags.get(0)?];
         return Some(true);
     }
     None

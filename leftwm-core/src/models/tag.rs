@@ -24,21 +24,22 @@ impl Tags {
         }
     }
 
-    pub fn add_new<'a>(&'a mut self, label: &str, layout: Layout) -> &'a Tag {
+    pub fn add_new(&mut self, label: &str, layout: Layout) -> TagId {
         let next_id = self.vec.len() + 1; // tag id starts at 1
         let tag = Tag::new(next_id, label, layout);
+        let id = tag.id;
         self.vec.push(tag);
-        self.get(next_id).unwrap()
+        id
     }
 
-    pub fn add_new_unlabeled<'a>(&'a mut self, layout: Layout) -> &'a Tag {
+    pub fn add_new_unlabeled(&mut self, layout: Layout) -> TagId {
         let next_id = self.vec.len() + 1; // tag id starts at 1
         self.add_new(next_id.to_string().as_str(), layout)
     }
 
     // todo: add_new_at(position, label, layout) -> shifting all one to the right (vec.insert)
 
-    pub fn add_new_hidden<'a>(&'a mut self, label: &str) -> &'a Tag {
+    pub fn add_new_hidden(&mut self, label: &str) -> TagId {
         // hidden tags are numbered descending from the highest possible number
         let next_id = usize::MAX - self.hidden.len();
         let tag = Tag {
@@ -47,8 +48,9 @@ impl Tags {
             hidden: true,
             ..Tag::default()
         };
+        let id = tag.id;
         self.hidden.push(tag);
-        self.get_hidden(label).unwrap()
+        id
     }
 
     /// Get all the visible (non-hidden) tags
@@ -69,14 +71,17 @@ impl Tags {
     pub fn get(&self, id: TagId) -> Option<&Tag> {
         self.vec
             .get(id - 1) // tag id starts at 1, arrays at 0
-            .or(self.hidden.iter().find(|&hidden_tag| hidden_tag.id == id))
+            .or_else(|| self.hidden.iter().find(|&hidden_tag| hidden_tag.id == id))
     }
 
     pub fn get_mut(&mut self, id: TagId) -> Option<&mut Tag> {
-        self.vec.get_mut(id - 1).or(self
+        if let Some(normal) = self.vec.get_mut(id - 1) {
+            return Some(normal);
+        }
+        return self
             .hidden
             .iter_mut()
-            .find(|hidden_tag| hidden_tag.id == id))
+            .find(|hidden_tag| hidden_tag.id == id);
     }
 
     /// Get a hidden tag by its label
@@ -87,6 +92,16 @@ impl Tags {
     /// Get the amount of 'normal' tags
     pub fn len(&self) -> usize {
         self.vec.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.vec.is_empty()
+    }
+}
+
+impl Default for Tags {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

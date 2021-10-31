@@ -310,7 +310,7 @@ impl Window {
 
     pub fn tag(&mut self, tag: &TagId) {
         if !self.tags.contains(tag) {
-            self.tags.push(tag.clone());
+            self.tags.push(*tag);
         }
     }
 
@@ -324,7 +324,7 @@ impl Window {
     }
 
     pub fn untag(&mut self, tag: &TagId) {
-        self.tags.retain(|t| t != tag) // todo: test
+        self.tags.retain(|t| t != tag);
     }
 
     #[must_use]

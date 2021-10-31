@@ -12,7 +12,7 @@ impl State {
         if focus_workspace_work(self, workspace.id).is_some() {
             //make sure this workspaces tag is focused
             workspace.tags.iter().for_each(|t| {
-                focus_tag_work(self, t);
+                focus_tag_work(self, *t);
             });
             // create an action to inform the DM
             self.update_current_tags();
@@ -32,7 +32,7 @@ impl State {
         let (focused_window_tag, workspace_id) =
             match self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
                 Some(ws) => (
-                    ws.tags.iter().find(|t| window.has_tag(t)).cloned(),
+                    ws.tags.iter().find(|t| window.has_tag(t)).copied(),
                     Some(ws.id),
                 ),
                 None => (None, None),
@@ -43,7 +43,7 @@ impl State {
 
         //make sure the focused window's tag is focused
         if let Some(tag) = focused_window_tag {
-            let _ = focus_tag_work(self, &tag);
+            let _ = focus_tag_work(self, tag);
         }
         true
     }
@@ -67,7 +67,7 @@ impl State {
     /// marks a tag as the focused tag
     //NOTE: should only be called externally from this file
     pub fn focus_tag(&mut self, tag: &TagId) -> bool {
-        if focus_tag_work(self, tag).is_none() {
+        if focus_tag_work(self, *tag).is_none() {
             return false;
         }
         // check each workspace, if its displaying this tag it should be focused too
@@ -84,7 +84,7 @@ impl State {
         if self.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             self.actions.push_back(act);
-        } else if let Some(handle) = self.focus_manager.tags_last_window.get(&tag).copied() {
+        } else if let Some(handle) = self.focus_manager.tags_last_window.get(tag).copied() {
             focus_window_by_handle_work(self, &handle);
         } else if let Some(ws) = to_focus.first() {
             let handle = self
@@ -149,7 +149,7 @@ impl State {
     /// Create an action to inform the DM of the new current tags.
     pub fn update_current_tags(&mut self) {
         if let Some(workspace) = self.focus_manager.workspace(&self.workspaces) {
-            if let Some(tag) = workspace.tags.first().cloned() {
+            if let Some(tag) = workspace.tags.first().copied() {
                 self.actions
                     .push_back(DisplayAction::SetCurrentTags(vec![tag]));
             }
@@ -225,16 +225,16 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
     (xs + ys).sqrt().abs().floor() as i32
 }
 
-fn focus_tag_work(state: &mut State, tag: &TagId) -> Option<()> {
+fn focus_tag_work(state: &mut State, tag: TagId) -> Option<()> {
     if let Some(current_tag) = state.focus_manager.tag(0) {
-        if current_tag == *tag {
+        if current_tag == tag {
             return None;
         }
     };
     //clean old ones
     state.focus_manager.tag_history.truncate(10);
     //add this focus to the history
-    state.focus_manager.tag_history.push_front(tag.clone());
+    state.focus_manager.tag_history.push_front(tag);
     Some(())
 }
 

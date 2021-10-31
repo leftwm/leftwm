@@ -222,7 +222,7 @@ impl State {
                     // only retain the tags, that still exist
                     new_tags.retain(|&tag_id| self.tags.get(tag_id).is_some());
                     // if there are no tags, add tag '1', so the window will not be lost
-                    if new_tags.len() < 1 {
+                    if new_tags.is_empty() {
                         new_tags.push(1);
                     }
                     new_window.clear_tags();

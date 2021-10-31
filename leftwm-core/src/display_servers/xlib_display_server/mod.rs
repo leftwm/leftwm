@@ -65,8 +65,7 @@ impl DisplayServer for XlibDisplayServer {
             .iter()
             .flat_map(|w| &w.tags)
             .max()
-            .map(|tag| tag.to_owned())
-            .unwrap_or(0);
+            .map_or(0, std::borrow::ToOwned::to_owned);
 
         let to_the_right = state
             .screens
@@ -93,7 +92,7 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            self.xw.set_current_desktop(focused.tags.clone());
+            self.xw.set_current_desktop(&focused.tags);
         }
     }
 
@@ -210,7 +209,7 @@ impl DisplayServer for XlibDisplayServer {
                 None
             }
             DisplayAction::SetCurrentTags(tags) => {
-                self.xw.set_current_desktop(tags);
+                self.xw.set_current_desktop(&tags);
                 None
             }
             DisplayAction::SetWindowTags(handle, tag) => {
