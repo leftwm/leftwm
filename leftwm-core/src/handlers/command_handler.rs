@@ -322,27 +322,65 @@ fn move_to_last_workspace<C: Config>(state: &mut State<C>) -> Option<bool> {
 fn next_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     let layout = state.layout_manager.next_layout(workspace.layout);
-    workspace.layout = layout;
-    let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get_mut(tag_id)?;
-    tag.set_layout(layout, workspace.main_width_percentage);
-    Some(true)
+    set_layout(layout, state)
 }
 
 fn previous_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     let layout = state.layout_manager.previous_layout(workspace.layout);
-    workspace.layout = layout;
-    let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get_mut(tag_id)?;
-    tag.set_layout(layout, workspace.main_width_percentage);
-    Some(true)
+    set_layout(layout, state)
 }
 
 fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
+    let tag_id = state.focus_manager.tag(0)?;
+    // When switching to Monocle or MainAndDeck layout while in Driven
+    // or ClickTo focus mode, we check if the focus is given to a visible window.
+    if state.focus_manager.behaviour != FocusBehaviour::Sloppy {
+        //if the currently focused window is floatin, nothing will be done
+        let focused_window = state.focus_manager.window_history.get(0);
+        let is_focused_floating = match state
+            .windows
+            .iter()
+            .find(|w| Some(&Some(w.handle)) == focused_window)
+        {
+            Some(w) => w.floating(),
+            None => false,
+        };
+        if !is_focused_floating {
+            let mut to_focus: Option<Window> = None;
+
+            if layout == Layout::Monocle {
+                to_focus = state
+                    .windows
+                    .iter()
+                    .find(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .cloned();
+            } else if layout == Layout::MainAndDeck {
+                let tags_windows = state
+                    .windows
+                    .iter()
+                    .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .collect::<Vec<&Window>>();
+                if let (Some(mw), Some(tdw)) = (tags_windows.get(0), tags_windows.get(1)) {
+                    // If the focused window is the main or the top of the deck, we don't do
+                    // anything.
+                    if let Some(&Some(h)) = focused_window {
+                        if mw.handle != h && tdw.handle != h {
+                            if let Some(w) = tags_windows.get(1).copied() {
+                                to_focus = Some(w.clone());
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let Some(w) = to_focus {
+                state.focus_window(&w.handle);
+            }
+        }
+    }
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
-    let tag_id = state.focus_manager.tag(0)?;
     let tag = state.tags.get_mut(tag_id)?;
     tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
