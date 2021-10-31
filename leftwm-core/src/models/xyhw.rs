@@ -268,17 +268,12 @@ impl Xyhw {
         .into()
     }
 
-    pub fn center_relative(&mut self, outer: Self, border: i32, change: Option<XyhwChange>) {
+    pub fn center_relative(&mut self, outer: Self, border: i32, change: XyhwChange) {
         // If this is a Splash screen, for some reason w/h are sometimes not sized properly. We
         // therefore want to use the minimum or maximum sizing instead in order to center the
         // windows properly.
-        if let Some(change) = change {
-            self.x = outer.w() / 2 - (change.minw.unwrap_or(self.w).abs() / 2) - border * 2;
-            self.y = outer.h() / 2 - (change.minh.unwrap_or(self.h).abs() / 2) - border * 2;
-        } else {
-            self.x = outer.w() / 2 - (self.w.abs() / 2) - border * 2;
-            self.y = outer.h() / 2 - (self.h.abs() / 2) - border * 2;
-        }
+        self.x = outer.x() + outer.w() / 2 - change.minw.unwrap_or(self.w).abs() / 2 - border;
+        self.y = outer.y() + outer.h() / 2 - change.minh.unwrap_or(self.h).abs() / 2 - border;
     }
 
     #[must_use]
