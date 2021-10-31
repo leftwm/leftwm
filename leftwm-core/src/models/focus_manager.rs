@@ -66,9 +66,7 @@ impl FocusManager {
     /// Return the currently focused tag if the offset is 0.
     /// Offset is used to reach further down the history.
     pub fn tag(&self, offset: usize) -> Option<TagId> {
-        self.tag_history
-            .get(offset)
-            .map(|id| id.clone())
+        self.tag_history.get(offset).map(|id| id.clone())
     }
 
     /// Return the currently focused window.

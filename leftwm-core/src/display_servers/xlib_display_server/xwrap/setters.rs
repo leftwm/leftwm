@@ -1,7 +1,7 @@
 //! `XWrap` setters.
 use super::WindowHandle;
-use crate::XWrap;
 use crate::models::TagId;
+use crate::XWrap;
 use std::ffi::CString;
 use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
@@ -23,7 +23,8 @@ impl XWrap {
 
     /// Sets the current desktop.
     pub fn set_current_desktop(&self, current_tags: Vec<usize>) {
-        let mut indexes: Vec<u32> = current_tags.iter()
+        let mut indexes: Vec<u32> = current_tags
+            .iter()
             .map(|tag| tag.to_owned() as u32)
             .collect();
         if indexes.is_empty() {
@@ -125,9 +126,7 @@ impl XWrap {
 
     /// Sets what desktop a window is on.
     pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &Vec<TagId>) {
-        let mut indexes: Vec<c_long> = current_tags.iter()
-            .map(|tag| (tag - 1) as c_long)
-            .collect();
+        let mut indexes: Vec<c_long> = current_tags.iter().map(|tag| (tag - 1) as c_long).collect();
         if indexes.is_empty() {
             indexes.push(0);
         }

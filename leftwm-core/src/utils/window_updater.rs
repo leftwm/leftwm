@@ -8,7 +8,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
      * based on the new state of the WM
      */
     pub fn update_windows(&mut self) {
-        
         // set all tagged windows as visible
         self.state
             .windows
@@ -18,7 +17,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         for ws in &self.state.workspaces {
             let windows = &mut self.state.windows;
             let all_tags = &self.state.tags;
-            let tags: Vec<&Tag> = ws.tags.iter()
+            let tags: Vec<&Tag> = ws
+                .tags
+                .iter()
                 .flat_map(|tag_id| all_tags.get(tag_id.clone()))
                 .collect();
             for tag in &tags {

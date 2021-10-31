@@ -107,14 +107,17 @@ impl From<&State> for ManagerState {
     fn from(state: &State) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         // tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
-        let working_tags = state.tags.all()
+        let working_tags = state
+            .tags
+            .all()
             .iter()
             .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id)))
             .map(|t| t.label.clone())
             .collect();
         for ws in &state.workspaces {
-
-            let tag_labels = ws.tags.iter()
+            let tag_labels = ws
+                .tags
+                .iter()
                 .map(|&tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
                 .map(|opt| opt.unwrap())
                 .collect();
@@ -129,7 +132,11 @@ impl From<&State> for ManagerState {
             });
         }
         let active_desktop = match state.focus_manager.workspace(&state.workspaces) {
-            Some(ws) => ws.tags.iter().map(|&tag_id| state.tags.get(tag_id).unwrap().label.clone()).collect(),
+            Some(ws) => ws
+                .tags
+                .iter()
+                .map(|&tag_id| state.tags.get(tag_id).unwrap().label.clone())
+                .collect(),
             None => vec![], // todo ??
         };
         let window_title = match state.focus_manager.window(&state.windows) {
@@ -138,7 +145,9 @@ impl From<&State> for ManagerState {
         };
         Self {
             window_title,
-            desktop_names: state.tags.visible()
+            desktop_names: state
+                .tags
+                .visible()
                 .iter()
                 .map(|t| t.label.clone())
                 .collect(),

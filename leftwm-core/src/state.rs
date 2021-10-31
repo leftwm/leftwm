@@ -41,11 +41,9 @@ impl State {
     pub(crate) fn new(config: &impl Config) -> Self {
         let layout_manager = LayoutManager::new(config);
         let mut tags = Tags::new();
-        config.create_list_of_tag_labels()
-            .iter()
-            .for_each(|label| {
-                tags.add_new(label.as_str(), layout_manager.new_layout());
-            });
+        config.create_list_of_tag_labels().iter().for_each(|label| {
+            tags.add_new(label.as_str(), layout_manager.new_layout());
+        });
         tags.add_new_hidden("NSP");
 
         Self {

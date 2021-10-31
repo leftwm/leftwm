@@ -18,9 +18,9 @@ pub struct Tags {
 
 impl Tags {
     pub fn new() -> Self {
-        Tags { 
-            vec: vec!(),
-            hidden: vec!()
+        Tags {
+            vec: vec![],
+            hidden: vec![],
         }
     }
 
@@ -67,13 +67,16 @@ impl Tags {
 
     /// Get a tag by its ID
     pub fn get(&self, id: TagId) -> Option<&Tag> {
-        self.vec.get(id - 1) // tag id starts at 1, arrays at 0
+        self.vec
+            .get(id - 1) // tag id starts at 1, arrays at 0
             .or(self.hidden.iter().find(|&hidden_tag| hidden_tag.id == id))
     }
 
     pub fn get_mut(&mut self, id: TagId) -> Option<&mut Tag> {
-        self.vec.get_mut(id - 1)
-            .or(self.hidden.iter_mut().find(|hidden_tag| hidden_tag.id == id))
+        self.vec.get_mut(id - 1).or(self
+            .hidden
+            .iter_mut()
+            .find(|hidden_tag| hidden_tag.id == id))
     }
 
     /// Get a hidden tag by its label

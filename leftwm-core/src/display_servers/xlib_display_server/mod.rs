@@ -60,7 +60,9 @@ impl DisplayServer for XlibDisplayServer {
         focused_window: Option<&Window>,
         state: &State,
     ) {
-        let max_tag_index = state.workspaces.iter()
+        let max_tag_index = state
+            .workspaces
+            .iter()
             .flat_map(|w| &w.tags)
             .max()
             .map(|tag| tag.to_owned())

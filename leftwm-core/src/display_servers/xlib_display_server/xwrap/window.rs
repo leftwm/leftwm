@@ -126,11 +126,23 @@ impl XWrap {
                 let unlock =
                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
                 unsafe {
-                    (self.xlib.XConfigureWindow)(self.display, handle, u32::from(unlock), &mut changes);
+                    (self.xlib.XConfigureWindow)(
+                        self.display,
+                        handle,
+                        u32::from(unlock),
+                        &mut changes,
+                    );
                     (self.xlib.XSync)(self.display, 0);
                     let rw: u32 = window.width() as u32;
                     let rh: u32 = window.height() as u32;
-                    (self.xlib.XMoveResizeWindow)(self.display, handle, window.x(), window.y(), rw, rh);
+                    (self.xlib.XMoveResizeWindow)(
+                        self.display,
+                        handle,
+                        window.x(),
+                        window.y(),
+                        rw,
+                        rh,
+                    );
 
                     let mut color: c_ulong = if is_focused {
                         self.colors.active

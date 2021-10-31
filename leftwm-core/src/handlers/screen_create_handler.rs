@@ -35,13 +35,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let next_id = tag_index + 1;
         if self.state.tags.len() < next_id {
             let id = next_id.to_string();
-            self.state.tags.add_new(id.as_str(), self.state.layout_manager.new_layout());
+            self.state
+                .tags
+                .add_new(id.as_str(), self.state.layout_manager.new_layout());
         }
         let next_tag = self.state.tags.get(next_id).unwrap().clone();
         self.state.focus_workspace(&workspace);
         self.state.focus_tag(&next_tag.id);
         workspace.show_tag(&next_tag.id);
-        
+
         self.state.workspaces.push(workspace.clone());
         self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
         self.state.screens.push(screen);
@@ -79,10 +81,7 @@ mod tests {
 
     #[test]
     fn creating_more_screens_than_tags_should_automatically_create_new_tags() {
-        let mut manager = Manager::new_test(vec![
-            "web".to_string(),
-            "console".to_string(),
-        ]);
+        let mut manager = Manager::new_test(vec!["web".to_string(), "console".to_string()]);
 
         // there should be 2 tags in the beginning
         assert_eq!(manager.state.tags.len(), 2);

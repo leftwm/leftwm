@@ -150,7 +150,8 @@ impl State {
     pub fn update_current_tags(&mut self) {
         if let Some(workspace) = self.focus_manager.workspace(&self.workspaces) {
             if let Some(tag) = workspace.tags.first().cloned() {
-                self.actions.push_back(DisplayAction::SetCurrentTags(vec![tag]));
+                self.actions
+                    .push_back(DisplayAction::SetCurrentTags(vec![tag]));
             }
         }
     }
@@ -339,7 +340,11 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
         manager.state.focus_tag(&1);
-        let actual = manager.state.focus_manager.workspace(&manager.state.workspaces).unwrap();
+        let actual = manager
+            .state
+            .focus_manager
+            .workspace(&manager.state.workspaces)
+            .unwrap();
         assert_eq!(actual.id, Some(0));
     }
 
@@ -379,7 +384,12 @@ mod tests {
         window.tag(&2);
         manager.state.windows.push(window.clone());
         manager.state.focus_window(&window.handle);
-        let actual = manager.state.focus_manager.workspace(&manager.state.workspaces).unwrap().id;
+        let actual = manager
+            .state
+            .focus_manager
+            .workspace(&manager.state.workspaces)
+            .unwrap()
+            .id;
         let expected = manager.state.workspaces[1].id;
         assert_eq!(expected, actual);
     }

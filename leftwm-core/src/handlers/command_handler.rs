@@ -123,8 +123,6 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             .map(|w| w.handle);
     }
 
-
-
     if let Some(nsp_tag) = manager.state.tags.get_hidden("NSP") {
         if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
             if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
@@ -150,12 +148,15 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                         manager.state.move_to_top(&h);
                     }
                 }
-                
+
                 return Some(true);
             }
         }
 
-        log::debug!("no active scratchpad found for name {:?}. creating a new one", scratchpad.name);
+        log::debug!(
+            "no active scratchpad found for name {:?}. creating a new one",
+            scratchpad.name
+        );
         let name = scratchpad.name.clone();
         let pid = exec_shell(&scratchpad.value, &mut manager.children);
         manager.state.active_scratchpads.insert(name, pid);
@@ -226,7 +227,7 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
         .workspace(&manager.state.workspaces)?;
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
-    
+
     let tag_num = workspace.tags.first()?;
     move_to_tag(*tag_num, manager)
 }
@@ -288,12 +289,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         return Some(true);
     }
     if state.workspaces.len() == 1 {
-        let last = state
-            .focus_manager
-            .tag_history
-            .get(1)
-            .unwrap()
-            .clone();
+        let last = state.focus_manager.tag_history.get(1).unwrap().clone();
         return state.goto_tag_handler(last);
     }
     None

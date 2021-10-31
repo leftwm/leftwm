@@ -311,7 +311,7 @@ impl Window {
     pub fn tag(&mut self, tag: &TagId) {
         if !self.tags.contains(tag) {
             self.tags.push(tag.clone());
-        }        
+        }
     }
 
     pub fn clear_tags(&mut self) {
