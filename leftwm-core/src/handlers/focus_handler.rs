@@ -228,15 +228,16 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
 }
 
 fn focus_tag_work<C: Config>(state: &mut State<C>, tag: &TagId) -> Option<()> {
-    state.focus_manager.tag(0)
-        .filter(|tag_id| tag_id != tag) // only create entry in history if tag changed
-        .and_then(|_| {
-            //clean old ones
-            state.focus_manager.tag_history.truncate(10);
-            //add this focus to the history
-            state.focus_manager.tag_history.push_front(tag.clone());
-            Some(())
-        })
+    if let Some(current_tag) = state.focus_manager.tag(0) {
+        if current_tag == *tag {
+            return None;
+        }
+    };
+    //clean old ones
+    state.focus_manager.tag_history.truncate(10);
+    //add this focus to the history
+    state.focus_manager.tag_history.push_front(tag.clone());
+    Some(())
 }
 
 #[cfg(test)]

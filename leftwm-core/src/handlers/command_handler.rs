@@ -255,8 +255,8 @@ fn focus_tag_change<C: Config>(state: &mut State<C>, delta: i8) -> Option<bool> 
         let tags_on_the_left = current_tag - 1;
         // if there are enough tags on the left
         match tags_on_the_left >= delta.abs() as usize {
-            true => current_tag + delta as usize,
-            false => visible_tags.len() - (delta as usize + current_tag),
+            true => current_tag - delta.abs() as usize,
+            false => visible_tags.len() - (delta.abs() as usize - current_tag),
         }
     } else {
         let tags_on_the_right = visible_tags.len() - current_tag;
