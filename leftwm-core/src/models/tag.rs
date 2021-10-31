@@ -44,6 +44,13 @@ impl Tags {
         }
     }
 
+    /// Get all the visible (non-hidden) tags
+    pub fn visible(&self) -> Vec<Tag> {
+        self.vec
+    }
+
+    /// Get all tags, including hidden ones.
+    /// The hidden tags are appended at the end of the list.
     pub fn all(&self) -> Vec<Tag> {
         let mut result: Vec<Tag> = vec![];
         result.append(&mut self.vec);

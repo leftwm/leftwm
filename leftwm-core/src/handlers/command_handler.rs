@@ -5,12 +5,14 @@
 // allow shadow should be removed once it is resolved
 // https://github.com/rust-lang/rust-clippy/issues/6563
 
+use std::ops::Rem;
+
 use super::*;
 use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{TagId, WindowState};
+use crate::models::{Tag, TagId, WindowState};
 use crate::state::State;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
@@ -225,13 +227,9 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
         .workspace(&manager.state.workspaces)?;
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
-    let tag_num = manager
-        .state
-        .tags
-        .vec
-        .iter()
-        .position(|t| workspace.has_tag(&t.label))?;
-    move_to_tag(tag_num + 1, manager)
+    
+    let tag_num = workspace.tags.first()?;
+    move_to_tag(*tag_num, manager)
 }
 
 fn goto_tag<C: Config>(state: &mut State<C>, input_tag: usize) -> Option<bool> {
@@ -245,31 +243,32 @@ fn goto_tag<C: Config>(state: &mut State<C>, input_tag: usize) -> Option<bool> {
     state.goto_tag_handler(destination_tag)
 }
 
+/// Focus the adjacent tags, depending on the delta.
+/// A delta of 1 means "next tag", a delta of -1 means "previous tag".
 fn focus_tag_change<C: Config>(state: &mut State<C>, delta: i8) -> Option<bool> {
-    let current = state.focus_manager.tag(0)?;
-    let active_tags: Vec<(usize, TagId)> = state
-        .tags
-        .iter()
-        .enumerate()
-        .filter(|(_, tag)| !tag.hidden)
-        .map(|(i, tag)| (i + 1, tag.label.clone()))
-        .collect();
-    let mut index = active_tags
-        .iter()
-        .position(|(_, tag_id)| *tag_id == current)?;
-    if delta.is_negative() {
-        index = match index.checked_sub(delta.abs() as usize) {
-            Some(i) => i,
-            None => active_tags.len() - 1,
+    let current_tag = state.focus_manager.tag(0)?;
+    let visible_tags: Vec<Tag> = state.tags.visible();
+
+    // if delta is larger than the amount of tags, just use the remainder
+    let delta = delta % visible_tags.len() as i8;
+
+    let new_tag = if delta.is_negative() {
+        let tags_on_the_left = current_tag - 1;
+        // if there are enough tags on the left
+        match tags_on_the_left >= delta.abs() as usize {
+            true => current_tag + delta as usize,
+            false => visible_tags.len() - (delta as usize + current_tag),
         }
     } else {
-        index += delta as usize;
-        if index >= active_tags.len() {
-            index = 0;
+        let tags_on_the_right = visible_tags.len() - current_tag;
+        // if there are enough tags on the right
+        match tags_on_the_right >= delta as usize {
+            true => current_tag + delta as usize,
+            false => delta as usize - tags_on_the_right,
         }
-    }
-    let (next, _) = *active_tags.get(index)?;
-    state.goto_tag_handler(next)
+    };
+
+    state.goto_tag_handler(new_tag)
 }
 
 fn swap_tags<C: Config>(state: &mut State<C>) -> Option<bool> {
@@ -599,7 +598,7 @@ fn send_workspace_to_tag<C: Config>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{Tag, Tags};
+    use crate::models::Tags;
 
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
@@ -672,5 +671,40 @@ mod tests {
         assert_eq!(manager.state.focus_manager.tag(1).unwrap_or_default(), 3);
         assert_eq!(manager.state.focus_manager.tag(2).unwrap_or_default(), 2);
         assert_eq!(manager.state.focus_manager.tag(3).unwrap_or_default(), 6);
+    }
+
+    #[test]
+    fn focus_tag_change_should_go_to_previous_and_next_tag() {
+        let mut manager = Manager::new_test(vec![
+            "A15".to_string(),
+            "B24".to_string(),
+            "C".to_string(),
+            "6D4".to_string(),
+            "E39".to_string(),
+            "F67".to_string(),
+        ]);
+        let state = &mut manager.state;
+        state.screen_create_handler(Screen::default());
+
+        state.focus_tag(2);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
+
+        focus_tag_change(&mut manager.state, 1);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
+
+        focus_tag_change(&mut manager.state, -1);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
+
+        focus_tag_change(&mut manager.state, 2);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 4);
+
+        focus_tag_change(&mut manager.state, -5);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 5);
+
+        focus_tag_change(&mut manager.state, 3);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
+
+        focus_tag_change(&mut manager.state, 13);
+        assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
     }
 }
