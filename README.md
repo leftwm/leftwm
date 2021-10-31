@@ -234,7 +234,7 @@ simple black screen on login.  For a more customized look, install a theme.
 1.  Now if you want to get the newest version of leftwm run this command from your build directory:  
 
 ```bash
-git pull origin master
+git pull origin main
 ```
 
 2. Build leftwm
@@ -287,7 +287,7 @@ LeftWM comes packaged with a couple of default themes. There is also a
 For more information about themes check out our [theme guide][theme-guide] or the [wiki].
 
 [community-repo]: https://github.com/leftwm/leftwm-community-themes
-[theme-guide]: https://github.com/leftwm/leftwm/tree/master/themes
+[theme-guide]: https://github.com/leftwm/leftwm/tree/main/themes
 [wiki]: https://github.com/leftwm/leftwm/wiki/Themes
 
 # Configuring
