@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
-        const tag_id: TagId = 1;
+        const TAG_ID: TagId = 1;
         let mut subject = Workspace::new(
             None,
             BBox {
@@ -281,10 +281,10 @@ mod tests {
             Layout::default(),
             None,
         );
-        let tag = crate::models::Tag::new(tag_id, "test", Layout::default());
+        let tag = crate::models::Tag::new(TAG_ID, "test", Layout::default());
         subject.show_tag(&tag.id);
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
-        w.tag(tag_id);
+        w.tag(&TAG_ID);
         assert!(subject.is_displaying(&w), "workspace should include window");
     }
 }

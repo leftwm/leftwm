@@ -259,7 +259,7 @@ fn setup_window<C: Config>(
         window.tags = vec![1];
         if is_scratchpad(state, window) {
             if let Some(scratchpad_tag) = state.tags.get_hidden("NSP") {
-                window.tag(scratchpad_tag.id);
+                window.tag(&scratchpad_tag.id);
                 window.set_floating(true);
             }
         }

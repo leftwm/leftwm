@@ -10,7 +10,7 @@ use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
 use crate::config::Config;
-use crate::models::{FocusBehaviour, Mode, TagId};
+use crate::models::{FocusBehaviour, Mode};
 use crate::utils::xkeysym_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_ulong};

@@ -68,7 +68,7 @@ impl FocusManager {
     pub fn tag(&self, offset: usize) -> Option<TagId> {
         self.tag_history
             .get(offset)
-            .map(|id| id.to_owned())
+            .map(|id| id.clone())
     }
 
     /// Return the currently focused window.

@@ -303,9 +303,9 @@ impl Window {
         self.calculated_xyhw().contains_point(x, y)
     }
 
-    pub fn tag(&mut self, tag: TagId) {
-        if !self.tags.contains(&tag) {
-            self.tags.push(tag);
+    pub fn tag(&mut self, tag: &TagId) {
+        if !self.tags.contains(tag) {
+            self.tags.push(tag.clone());
         }        
     }
 
@@ -314,12 +314,12 @@ impl Window {
     }
 
     #[must_use]
-    pub fn has_tag(&self, tag: TagId) -> bool {
-        self.tags.contains(&tag)
+    pub fn has_tag(&self, tag: &TagId) -> bool {
+        self.tags.contains(tag)
     }
 
-    pub fn untag(&mut self, tag: TagId) {
-        self.tags.retain(|t| t != &tag) // todo: test
+    pub fn untag(&mut self, tag: &TagId) {
+        self.tags.retain(|t| t != tag) // todo: test
     }
 
     #[must_use]
@@ -335,15 +335,15 @@ mod tests {
     #[test]
     fn should_be_able_to_tag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
-        subject.tag(1);
-        assert!(subject.has_tag(1), "was unable to tag the window");
+        subject.tag(&1);
+        assert!(subject.has_tag(&1), "was unable to tag the window");
     }
 
     #[test]
     fn should_be_able_to_untag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
-        subject.tag(1);
-        subject.untag(1);
-        assert!(!subject.has_tag(1), "was unable to untag the window");
+        subject.tag(&1);
+        subject.untag(&1);
+        assert!(!subject.has_tag(&1), "was unable to untag the window");
     }
 }

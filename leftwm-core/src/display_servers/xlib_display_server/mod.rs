@@ -81,7 +81,7 @@ impl DisplayServer for XlibDisplayServer {
                 None => false,
             };
 
-            let hide_offset = right_offset(max_tag_index, to_the_right, state, window)
+            let hide_offset = right_offset(max_tag_index, to_the_right, window)
                 .unwrap_or_else(|| left_offset(max_screen_width, window));
 
             self.xw.update_window(window, is_focused, hide_offset);
@@ -310,10 +310,9 @@ impl XlibDisplayServer {
 }
 
 //return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset<C: Config>(
+fn right_offset(
     max_tag_index: usize,
     max_right_screen: Option<i32>,
-    state: &State<C>,
     window: &Window,
 ) -> Option<i32> {
     let max_right_screen = max_right_screen?;

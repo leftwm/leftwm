@@ -101,7 +101,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     name: &str,
 ) -> Option<bool> {
-    let current_tag = manager.state.focus_manager.tag(0)?;
+    let current_tag = &manager.state.focus_manager.tag(0)?;
     let scratchpad = manager
         .state
         .scratchpads
@@ -132,7 +132,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                 window.clear_tags();
                 if is_visible {
                     // hide the scratchpad
-                    window.tag(nsp_tag.id);
+                    window.tag(&nsp_tag.id);
                     if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
                         handle = Some(*prev);
                     }
@@ -185,7 +185,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
 
     // In order to apply the correct margin multiplier we want to copy this value
     // from any window already present on the target tag
-    let margin_multiplier = match manager.state.windows.iter().find(|w| w.has_tag(tag.id)) {
+    let margin_multiplier = match manager.state.windows.iter().find(|w| w.has_tag(&tag.id)) {
         Some(w) => w.margin_multiplier(),
         None => 1.0,
     };
@@ -204,7 +204,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         .window_mut(&mut manager.state.windows)?;
     window.clear_tags();
     window.set_floating(false);
-    window.tag(tag.id);
+    window.tag(&tag.id);
     window.apply_margin_multiplier(margin_multiplier);
     let act = DisplayAction::SetWindowTags(window.handle, vec![tag.id]);
     manager.state.actions.push_back(act);
@@ -291,8 +291,10 @@ fn swap_tags<C: Config>(state: &mut State<C>) -> Option<bool> {
         let last = state
             .focus_manager
             .tag_history
-            .get(1)?;
-        return state.goto_tag_handler(*last);
+            .get(1)
+            .unwrap()
+            .clone();
+        return state.goto_tag_handler(last);
     }
     None
 }
@@ -648,7 +650,7 @@ mod tests {
         manager.state.screen_create_handler(Screen::default());
 
         assert!(manager.command_handler(&Command::GotoTag(6)));
-        let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
+        let current_tag = manager.state.focus_manager.tag(0).unwrap();
         assert_eq!(current_tag, 6);
 
         assert!(manager.command_handler(&Command::GotoTag(2)));

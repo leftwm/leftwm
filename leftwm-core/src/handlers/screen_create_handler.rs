@@ -1,6 +1,5 @@
 use super::{Screen, Workspace};
 use crate::config::Config;
-use crate::models::Tag;
 use crate::state::State;
 
 impl<C: Config> State<C> {

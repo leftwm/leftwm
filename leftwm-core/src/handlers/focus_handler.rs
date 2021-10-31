@@ -32,7 +32,7 @@ impl<C: Config> State<C> {
         let (focused_window_tag, workspace_id) =
             match self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
                 Some(ws) => (
-                    ws.tags.iter().find(|&&t| window.has_tag(t)).cloned(),
+                    ws.tags.iter().find(|t| window.has_tag(t)).cloned(),
                     Some(ws.id),
                 ),
                 None => (None, None),
@@ -365,7 +365,7 @@ mod tests {
         state.screen_create_handler(Screen::default());
         state.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
-        window.tag(2);
+        window.tag(&2);
         state.windows.push(window.clone());
         state.focus_window(&window.handle);
         let actual = state.focus_manager.tag(0).unwrap();
@@ -380,7 +380,7 @@ mod tests {
         state.screen_create_handler(Screen::default());
         state.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
-        window.tag(2);
+        window.tag(&2);
         state.windows.push(window.clone());
         state.focus_window(&window.handle);
         let actual = state.focus_manager.workspace(&state.workspaces).unwrap().id;
@@ -394,7 +394,7 @@ mod tests {
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
-        window.tag(1);
+        window.tag(&1);
         state.windows.push(window.clone());
         state.focus_window(&window.handle);
         state.focus_tag(&2);
