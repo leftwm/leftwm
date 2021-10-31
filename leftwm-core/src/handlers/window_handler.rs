@@ -242,18 +242,10 @@ fn setup_window<C: Config>(
             window.set_floating_exact(new_float_exact);
         }
         if window.type_ == WindowType::Splash {
-            if let Some(requested) = window.requested {
-                window.normal = ws.xyhw;
-                requested.update_window_floating(window);
-                let mut xhyw = window.get_floating_offsets().unwrap_or_default();
-                xhyw.center_relative(ws.xyhw, window.border, window.requested);
-                window.set_floating_offsets(Some(xhyw));
-            } else {
-                window.set_floating(true);
-                let new_float_exact = ws.center_halfed();
-                window.normal = ws.xyhw;
-                window.set_floating_exact(new_float_exact);
-            }
+            set_relative_floating(window, ws, ws.xyhw);
+        }
+        if let Some(parent) = find_transient_parent(state, window) {
+            set_relative_floating(window, ws, parent.calculated_xyhw());
         }
     } else {
         window.tags = vec![state.tags[0].id.clone()];
@@ -261,13 +253,6 @@ fn setup_window<C: Config>(
             window.tag("NSP");
             window.set_floating(true);
         }
-    }
-
-    if let Some(parent) = find_transient_parent(state, window) {
-        window.set_floating(true);
-        let new_float_exact = parent.calculated_xyhw().center_halfed();
-        window.normal = parent.normal;
-        window.set_floating_exact(new_float_exact);
     }
 
     window.update_for_theme(&state.config);
@@ -315,6 +300,21 @@ fn insert_window<C: Config>(state: &mut State<C>, window: &mut Window, layout: L
     } else {
         state.windows.push(window.clone());
     }
+}
+
+fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
+    window.set_floating(true);
+    window.normal = ws.xyhw;
+    let xyhw = window.requested.map_or_else(
+        || ws.center_halfed(),
+        |requested| {
+            let mut xyhw = Xyhw::default();
+            requested.update(&mut xyhw);
+            xyhw.center_relative(outer, window.border, requested);
+            xyhw
+        },
+    );
+    window.set_floating_exact(xyhw);
 }
 
 fn is_scratchpad<C: Config>(state: &State<C>, window: &Window) -> bool {
