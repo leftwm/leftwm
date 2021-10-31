@@ -9,6 +9,9 @@ pub struct ThemeSetting {
     pub border_width: i32,
     pub margin: CustomMargins,
     pub workspace_margin: Option<CustomMargins>,
+    pub default_width: Option<i32>,
+    pub default_height: Option<i32>,
+    pub always_float: Option<bool>,
     pub gutter: Option<Vec<Gutter>>,
     pub default_border_color: String,
     pub floating_border_color: String,
@@ -35,6 +38,9 @@ impl Default for ThemeSetting {
             border_width: 1,
             margin: CustomMargins::Int(10),
             workspace_margin: Some(CustomMargins::Int(10)),
+            default_width: Some(1000),
+            default_height: Some(700),
+            always_float: Some(false),
             gutter: None,
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
@@ -90,6 +96,9 @@ mod tests {
     fn deserialize_custom_theme_config() {
         let config = r#"
 border_width = 0
+default_width = 400
+default_height = 400
+always_float = true
 margin = 5
 workspace_margin = 5
 default_border_color = '#222222'
@@ -109,6 +118,9 @@ value = 0
                 border_width: 0,
                 margin: CustomMargins::Int(5),
                 workspace_margin: Some(CustomMargins::Int(5)),
+                default_width: Some(400),
+                default_height: Some(400),
+                always_float: Some(true),
                 gutter: Some(vec![Gutter {
                     side: Side::Top,
                     value: 0,

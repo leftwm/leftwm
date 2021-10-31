@@ -19,6 +19,8 @@ pub enum BaseCommand {
     ToggleSticky,
     GotoTag,
     FloatingToTile,
+    TileToFloating,
+    ToggleFloating,
     MoveWindowUp,
     MoveWindowDown,
     MoveWindowTop,

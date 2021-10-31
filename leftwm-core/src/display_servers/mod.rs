@@ -19,17 +19,9 @@ pub trait DisplayServer {
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent>;
 
-    fn update_theme_settings(&mut self, _config: &impl Config) {}
+    fn load_config(&mut self, _config: &impl Config) {}
 
-    fn update_windows<C: Config>(
-        &self,
-        _windows: Vec<&Window>,
-        _focused: Option<&Window>,
-        _state: &State<C>,
-    ) where
-        Self: Sized,
-    {
-    }
+    fn update_windows(&self, _windows: Vec<&Window>, _focused: Option<&Window>, _state: &State) {}
 
     fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
 

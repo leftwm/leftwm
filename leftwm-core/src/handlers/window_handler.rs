@@ -31,6 +31,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut is_first,
             &mut on_same_tag,
         );
+        window.load_config(&self.config);
         insert_window(&mut self.state, &mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
@@ -54,7 +55,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.focus_window(&window.handle);
         }
 
-        if let Some(cmd) = &self.state.config.on_new_window_cmd() {
+        if let Some(cmd) = &self.config.on_new_window_cmd() {
             exec_shell(cmd, &mut self.children);
         }
 
@@ -180,8 +181,8 @@ impl Window {
     }
 }
 
-fn setup_window<C: Config>(
-    state: &mut State<C>,
+fn setup_window(
+    state: &mut State,
     window: &mut Window,
     xy: (i32, i32),
     layout: &mut Layout,
@@ -242,18 +243,10 @@ fn setup_window<C: Config>(
             window.set_floating_exact(new_float_exact);
         }
         if window.type_ == WindowType::Splash {
-            if let Some(requested) = window.requested {
-                window.normal = ws.xyhw;
-                requested.update_window_floating(window);
-                let mut xhyw = window.get_floating_offsets().unwrap_or_default();
-                xhyw.center_relative(ws.xyhw, window.border, window.requested);
-                window.set_floating_offsets(Some(xhyw));
-            } else {
-                window.set_floating(true);
-                let new_float_exact = ws.center_halfed();
-                window.normal = ws.xyhw;
-                window.set_floating_exact(new_float_exact);
-            }
+            set_relative_floating(window, ws, ws.xyhw);
+        }
+        if let Some(parent) = find_transient_parent(state, window) {
+            set_relative_floating(window, ws, parent.calculated_xyhw());
         }
     } else {
         window.tags = vec![state.tags[0].id.clone()];
@@ -262,18 +255,9 @@ fn setup_window<C: Config>(
             window.set_floating(true);
         }
     }
-
-    if let Some(parent) = find_transient_parent(state, window) {
-        window.set_floating(true);
-        let new_float_exact = parent.calculated_xyhw().center_halfed();
-        window.normal = parent.normal;
-        window.set_floating_exact(new_float_exact);
-    }
-
-    window.update_for_theme(&state.config);
 }
 
-fn insert_window<C: Config>(state: &mut State<C>, window: &mut Window, layout: Layout) {
+fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
     // If the tag contains a fullscreen window, minimize it
     let for_active_workspace =
         |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
@@ -317,14 +301,29 @@ fn insert_window<C: Config>(state: &mut State<C>, window: &mut Window, layout: L
     }
 }
 
-fn is_scratchpad<C: Config>(state: &State<C>, window: &Window) -> bool {
+fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
+    window.set_floating(true);
+    window.normal = ws.xyhw;
+    let xyhw = window.requested.map_or_else(
+        || ws.center_halfed(),
+        |requested| {
+            let mut xyhw = Xyhw::default();
+            requested.update(&mut xyhw);
+            xyhw.center_relative(outer, window.border, requested);
+            xyhw
+        },
+    );
+    window.set_floating_exact(xyhw);
+}
+
+fn is_scratchpad(state: &State, window: &Window) -> bool {
     state
         .active_scratchpads
         .iter()
         .any(|(_, &id)| window.pid == id)
 }
 
-fn find_terminal<C: Config>(state: &State<C>, pid: Option<u32>) -> Option<&Window> {
+fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {
     // Get $SHELL, e.g. /bin/zsh
     let shell_path = env::var("SHELL").ok()?;
     // Remove /bin/
@@ -355,10 +354,7 @@ fn find_terminal<C: Config>(state: &State<C>, pid: Option<u32>) -> Option<&Windo
     None
 }
 
-fn find_transient_parent<'w, C: Config>(
-    state: &'w State<C>,
-    window: &Window,
-) -> Option<&'w Window> {
+fn find_transient_parent<'w>(state: &'w State, window: &Window) -> Option<&'w Window> {
     let mut transient = window.transient?;
     loop {
         transient = if let Some(found) = state

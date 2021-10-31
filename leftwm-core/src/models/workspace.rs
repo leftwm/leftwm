@@ -11,6 +11,7 @@ pub struct Workspace {
     pub id: Option<i32>,
     /// Active layout
     pub layout: Layout,
+    pub main_width_percentage: u8,
     pub tags: Vec<TagId>,
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -52,6 +53,7 @@ impl Workspace {
         Self {
             id,
             layout,
+            main_width_percentage: layout.main_width(),
             tags: vec![],
             margin: Margins::new(10),
             margin_multiplier: 1.0,
@@ -77,7 +79,7 @@ impl Workspace {
         }
     }
 
-    pub fn update_for_theme(&mut self, config: &impl Config) {
+    pub fn load_config(&mut self, config: &impl Config) {
         self.margin = config.workspace_margin().unwrap_or_else(|| Margins::new(0));
         self.gutters = self.get_gutters_for_theme(config);
     }
@@ -219,6 +221,23 @@ impl Workspace {
     #[must_use]
     pub const fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
+    }
+
+    pub fn change_main_width(&mut self, delta: i8) {
+        //Check we are not gonna go negative
+        let mwp = &mut self.main_width_percentage;
+        if (*mwp as i8) < -delta {
+            *mwp = 0;
+            return;
+        }
+        if delta.is_negative() {
+            *mwp -= delta.unsigned_abs();
+            return;
+        }
+        *mwp += delta as u8;
+        if *mwp > 100 {
+            *mwp = 100;
+        }
     }
 }
 

@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::errors::{LeftError, Result};
 use crate::models::dto::ManagerState;
 use std::path::PathBuf;
@@ -56,10 +55,7 @@ impl StateSocket {
     /// # Errors
     /// Will return Err if a mut ref to the peer is unavailable.
     /// Will return error if state cannot be serialized
-    pub async fn write_manager_state<C: Config>(
-        &mut self,
-        raw_state: &crate::state::State<C>,
-    ) -> Result<()> {
+    pub async fn write_manager_state(&mut self, raw_state: &crate::state::State) -> Result<()> {
         if self.listener.is_some() {
             let state: ManagerState = raw_state.into();
             let mut json = serde_json::to_string(&state)?;

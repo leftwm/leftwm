@@ -7,6 +7,7 @@ use leftwm_core::{
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size},
     state::State,
+    Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -53,6 +54,8 @@ impl TryFrom<Keybind> for leftwm_core::Keybind {
                     .context("invalid index value for GotoTag")?,
             ),
             BaseCommand::FloatingToTile => leftwm_core::Command::FloatingToTile,
+            BaseCommand::TileToFloating => leftwm_core::Command::TileToFloating,
+            BaseCommand::ToggleFloating => leftwm_core::Command::ToggleFloating,
             BaseCommand::MoveWindowUp => leftwm_core::Command::MoveWindowUp,
             BaseCommand::MoveWindowDown => leftwm_core::Command::MoveWindowDown,
             BaseCommand::MoveWindowTop => leftwm_core::Command::MoveWindowTop,
@@ -303,16 +306,16 @@ impl leftwm_core::Config for Config {
             .expect("we created it in the Default impl; qed")
     }
 
-    fn workspaces(&self) -> Option<&[Workspace]> {
-        self.workspaces.as_deref()
+    fn workspaces(&self) -> Option<Vec<Workspace>> {
+        self.workspaces.clone()
     }
 
     fn focus_behaviour(&self) -> FocusBehaviour {
         self.focus_behaviour
     }
 
-    fn mousekey(&self) -> &str {
-        &self.mousekey
+    fn mousekey(&self) -> String {
+        self.mousekey.clone()
     }
 
     fn disable_current_tag_swap(&self) -> bool {
@@ -338,20 +341,20 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
-    fn command_handler(command: &str, state: &mut State<Self>) -> bool {
+    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool {
         if let Some((command, value)) = command.split_once(' ') {
             match command {
                 "LoadTheme" => {
                     if let Some(absolute) = absolute_path(value.trim()) {
-                        state.config.theme_setting.load(absolute);
+                        manager.config.theme_setting.load(absolute);
                     } else {
                         log::warn!("Path submitted does not exist.");
                     }
-                    return state.update_for_theme();
+                    return manager.reload_config();
                 }
                 "UnloadTheme" => {
-                    state.config.theme_setting = Default::default();
-                    return state.update_for_theme();
+                    manager.config.theme_setting = Default::default();
+                    return manager.reload_config();
                 }
                 _ => {
                     log::warn!("Command not recognized: {}", command);
@@ -393,16 +396,28 @@ impl leftwm_core::Config for Config {
         self.theme_setting.gutter.clone()
     }
 
-    fn default_border_color(&self) -> &str {
-        &self.theme_setting.default_border_color
+    fn default_border_color(&self) -> String {
+        self.theme_setting.default_border_color.clone()
     }
 
-    fn floating_border_color(&self) -> &str {
-        &self.theme_setting.floating_border_color
+    fn floating_border_color(&self) -> String {
+        self.theme_setting.floating_border_color.clone()
     }
 
-    fn focused_border_color(&self) -> &str {
-        &self.theme_setting.focused_border_color
+    fn always_float(&self) -> bool {
+        self.theme_setting.always_float.unwrap_or(false)
+    }
+
+    fn default_width(&self) -> i32 {
+        self.theme_setting.default_width.unwrap_or(800)
+    }
+
+    fn default_height(&self) -> i32 {
+        self.theme_setting.default_height.unwrap_or(600)
+    }
+
+    fn focused_border_color(&self) -> String {
+        self.theme_setting.focused_border_color.clone()
     }
 
     fn on_new_window_cmd(&self) -> Option<String> {
@@ -417,8 +432,8 @@ impl leftwm_core::Config for Config {
         self.max_window_width
     }
 
-    fn save_state(state: &State<Self>) {
-        let path = state.config.state_file();
+    fn save_state(&self, state: &State) {
+        let path = self.state_file();
         let state_file = match File::create(&path) {
             Ok(file) => file,
             Err(err) => {
@@ -431,8 +446,8 @@ impl leftwm_core::Config for Config {
         }
     }
 
-    fn load_state(state: &mut State<Self>) {
-        let path = state.config.state_file().to_owned();
+    fn load_state(&self, state: &mut State) {
+        let path = self.state_file().to_owned();
         match File::open(&path) {
             Ok(file) => {
                 match serde_json::from_reader(file) {
