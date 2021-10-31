@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
-use crate::models::Manager;
+use crate::models::{Manager, Tag};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /*
@@ -16,10 +16,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .for_each(|w| w.set_visible(w.tags.is_empty()));
 
         for ws in &self.state.workspaces {
-            ws.tags.iter()
-                .map(|tag_id| tag_id.to_owned())
-                .flat_map(|tag_id| self.state.tags.get(tag_id))
-                .for_each(|tag| tag.update_windows(&mut self.state.windows, ws));
+            let windows = &mut self.state.windows;
+            let all_tags = &self.state.tags;
+            let tags: Vec<&Tag> = ws.tags.iter()
+                .flat_map(|tag_id| all_tags.get(tag_id.clone()))
+                .collect();
+            for tag in &tags {
+                tag.update_windows(windows, ws)
+            }
 
             // resize all windows marked as fullscreen to the workspace size
             self.state

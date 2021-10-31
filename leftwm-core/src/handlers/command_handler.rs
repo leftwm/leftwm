@@ -5,14 +5,12 @@
 // allow shadow should be removed once it is resolved
 // https://github.com/rust-lang/rust-clippy/issues/6563
 
-use std::ops::Rem;
-
 use super::*;
 use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{Tag, TagId, WindowState};
+use crate::models::{Tag, WindowState};
 use crate::state::State;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
@@ -125,11 +123,11 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             .map(|w| w.handle);
     }
 
+
+
     if let Some(nsp_tag) = manager.state.tags.get_hidden("NSP") {
-        if let Some(Some(window)) = manager.state.active_scratchpads
-            .get(&scratchpad.name)
-            .map(|opt_pid| manager.state.windows.iter_mut().find(|w| w.pid == *opt_pid))
-        {
+        if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
+            if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
                 let is_visible = window.has_tag(current_tag);
                 window.clear_tags();
                 if is_visible {
@@ -143,7 +141,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                     window.tag(current_tag);
                     handle = Some(window.handle);
                 }
-                let act = DisplayAction::SetWindowTags(window.handle, window.tags);
+                let act = DisplayAction::SetWindowTags(window.handle, window.tags.clone());
                 manager.state.actions.push_back(act);
                 manager.state.sort_windows();
                 if let Some(h) = handle {
@@ -153,14 +151,15 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                     }
                 }
                 
-                Some(true)
-        } else {
-            log::debug!("no active scratchpad found for name {:?}. creating a new one", scratchpad.name);
-            let name = scratchpad.name.clone();
-            let pid = exec_shell(&scratchpad.value, &mut manager.children);
-            manager.state.active_scratchpads.insert(name, pid);
-            None
+                return Some(true);
+            }
         }
+
+        log::debug!("no active scratchpad found for name {:?}. creating a new one", scratchpad.name);
+        let name = scratchpad.name.clone();
+        let pid = exec_shell(&scratchpad.value, &mut manager.children);
+        manager.state.active_scratchpads.insert(name, pid);
+        return None;
     } else {
         log::warn!("unable to find NSP tag");
         None
@@ -247,7 +246,7 @@ fn goto_tag<C: Config>(state: &mut State<C>, input_tag: usize) -> Option<bool> {
 /// A delta of 1 means "next tag", a delta of -1 means "previous tag".
 fn focus_tag_change<C: Config>(state: &mut State<C>, delta: i8) -> Option<bool> {
     let current_tag = state.focus_manager.tag(0)?;
-    let visible_tags: Vec<Tag> = state.tags.visible();
+    let visible_tags: &Vec<Tag> = state.tags.visible();
 
     // if delta is larger than the amount of tags, just use the remainder
     let delta = delta % visible_tags.len() as i8;
@@ -284,7 +283,7 @@ fn swap_tags<C: Config>(state: &mut State<C>) -> Option<bool> {
         state.update_static();
         state
             .layout_manager
-            .update_layouts(&mut state.workspaces, &mut state.tags);
+            .update_layouts(&mut state.workspaces, &mut state.tags.all());
 
         return Some(true);
     }
@@ -292,11 +291,8 @@ fn swap_tags<C: Config>(state: &mut State<C>) -> Option<bool> {
         let last = state
             .focus_manager
             .tag_history
-            .get(1)
-            .map(std::string::ToString::to_string)?;
-
-        let tag_index = state.tags.iter().position(|x| x.label == last)? + 1;
-        return state.goto_tag_handler(tag_index);
+            .get(1)?;
+        return state.goto_tag_handler(*last);
     }
     None
 }
@@ -326,7 +322,7 @@ fn next_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     let layout = state.layout_manager.next_layout(workspace.layout);
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get(tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
@@ -336,7 +332,7 @@ fn previous_layout<C: Config>(state: &mut State<C>) -> Option<bool> {
     let layout = state.layout_manager.previous_layout(workspace.layout);
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get(tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
@@ -345,7 +341,7 @@ fn set_layout<C: Config>(layout: Layout, state: &mut State<C>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get(tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.set_layout(layout, workspace.main_width_percentage);
     Some(true)
 }
@@ -536,7 +532,7 @@ fn focus_workspace_change<C: Config>(state: &mut State<C>, val: i32) -> Option<b
 
 fn rotate_tag<C: Config>(state: &mut State<C>) -> Option<bool> {
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get(tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.rotate_layout()?;
     Some(true)
 }
@@ -545,7 +541,7 @@ fn change_main_width<C: Config>(state: &mut State<C>, delta: i8, factor: i8) -> 
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.change_main_width(delta * factor);
     let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get(tag_id)?;
+    let tag = state.tags.get_mut(tag_id)?;
     tag.change_main_width(delta * factor);
     Some(true)
 }
@@ -686,25 +682,25 @@ mod tests {
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
 
-        state.focus_tag(2);
+        state.focus_tag(&2);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
 
-        focus_tag_change(&mut manager.state, 1);
+        focus_tag_change(state, 1);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
 
-        focus_tag_change(&mut manager.state, -1);
+        focus_tag_change(state, -1);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
 
-        focus_tag_change(&mut manager.state, 2);
+        focus_tag_change(state, 2);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 4);
 
-        focus_tag_change(&mut manager.state, -5);
+        focus_tag_change(state, -5);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 5);
 
-        focus_tag_change(&mut manager.state, 3);
+        focus_tag_change(state, 3);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 2);
 
-        focus_tag_change(&mut manager.state, 13);
+        focus_tag_change(state, 13);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
     }
 }

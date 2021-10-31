@@ -3,7 +3,6 @@
 use crate::config::{Config, ScratchPad};
 use crate::layouts::Layout;
 use crate::models::{Screen, Tags};
-use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 use crate::models::{FocusManager, LayoutManager};
@@ -40,7 +39,7 @@ where
     pub(crate) fn new(config: C) -> Self {
         let layout_manager = LayoutManager::new(&config);
 
-        let tags = Tags::new();
+        let mut tags = Tags::new();
         config.create_list_of_tag_labels()
             .iter()
             .for_each(|label| {
@@ -197,43 +196,37 @@ where
         let mut ordered = vec![];
         let mut had_strut = false;
 
-        state.windows.iter().for_each(|old| {
-            if let Some((index, window)) = self
+        state.windows.iter().for_each(|old_window| {
+            if let Some((index, new_window)) = self
                 .windows
                 .clone()
                 .iter_mut()
                 .enumerate()
-                .find(|w| w.1.handle == old.handle)
+                .find(|w| w.1.handle == old_window.handle)
             {
-                had_strut = old.strut.is_some() || had_strut;
+                had_strut = old_window.strut.is_some() || had_strut;
 
-                window.set_floating(old.floating());
-                window.set_floating_offsets(old.get_floating_offsets());
-                window.apply_margin_multiplier(old.margin_multiplier);
-                window.pid = old.pid;
-                window.normal = old.normal;
+                new_window.set_floating(old_window.floating());
+                new_window.set_floating_offsets(old_window.get_floating_offsets());
+                new_window.apply_margin_multiplier(old_window.margin_multiplier);
+                new_window.pid = old_window.pid;
+                new_window.normal = old_window.normal;
                 if self.tags.all().eq(&state.tags.all()) {
-                    window.tags = old.tags.clone();
+                    new_window.tags = old_window.tags.clone();
                 } else {
-                    old.tags.iter().for_each(|t| {
-                        let manager_tags = &self.tags.clone();
-                        if let Some(tag_index) = &state.tags.clone().iter().position(|o| &o.label == t)
-                        {
-                            window.clear_tags();
-                            // if the config prior reload had more tags then the current one
-                            // we want to move windows of 'lost tags' to the 'first' tag
-                            // also we want to ignore the `NSP` tag for length check
-                            if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
-                                window.tag(&manager_tags[*tag_index].label);
-                            } else if let Some(tag) = manager_tags.first() {
-                                window.tag(&tag.label);
-                            }
-                        }
-                    });
+                    let mut new_tags = old_window.tags.clone();
+                    // only retain the tags, that still exist
+                    new_tags.retain(|&tag_id| self.tags.get(tag_id).is_some());
+                    // if there are no tags, add tag '1', so the window will not be lost
+                    if new_tags.len() < 1 {
+                        new_tags.push(1);
+                    }
+                    new_window.clear_tags();
+                    new_tags.iter().for_each(|&tag_id| new_window.tag(tag_id));
                 }
-                window.strut = old.strut;
-                window.set_states(old.states());
-                ordered.push(window.clone());
+                new_window.strut = old_window.strut;
+                new_window.set_states(old_window.states());
+                ordered.push(new_window.clone());
                 self.windows.remove(index);
             }
         });

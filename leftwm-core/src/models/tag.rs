@@ -7,7 +7,7 @@ use super::TagId;
 /// Wrapper struct holding all the tags.
 /// This wrapper provides convenience methods to change the tag-list
 /// during its lifetime, while ensuring that all tags are numbered correctly.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tags {
     // holds all the 'normal' tags
     vec: Vec<Tag>,
@@ -24,43 +24,56 @@ impl Tags {
         }
     }
 
-    pub fn add_new<'a>(&'a self, label: &str, layout: Layout) -> &'a Tag {
+    pub fn add_new<'a>(&'a mut self, label: &str, layout: Layout) -> &'a Tag {
         let next_id = self.vec.len() + 1; // tag id starts at 1
         let tag = Tag::new(next_id, label, layout);
         self.vec.push(tag);
-        &tag
+        self.get(next_id).unwrap()
+    }
+
+    pub fn add_new_unlabeled<'a>(&'a mut self, layout: Layout) -> &'a Tag {
+        let next_id = self.vec.len() + 1; // tag id starts at 1
+        self.add_new(next_id.to_string().as_str(), layout)
     }
 
     // todo: add_new_at(position, label, layout) -> shifting all one to the right (vec.insert)
 
-    pub fn add_new_hidden<'a>(&'a self, label: &str) -> &'a Tag {
+    pub fn add_new_hidden<'a>(&'a mut self, label: &str) -> &'a Tag {
         // hidden tags are numbered descending from the highest possible number
         let next_id = usize::MAX - self.hidden.len();
-        &Tag {
+        let tag = Tag {
             id: next_id,
             label: label.to_string(),
             hidden: true,
             ..Tag::default()
-        }
+        };
+        self.hidden.push(tag);
+        self.get_hidden(label).unwrap()
     }
 
     /// Get all the visible (non-hidden) tags
-    pub fn visible(&self) -> Vec<Tag> {
-        self.vec
+    pub fn visible(&self) -> &Vec<Tag> {
+        &self.vec
     }
 
     /// Get all tags, including hidden ones.
     /// The hidden tags are appended at the end of the list.
     pub fn all(&self) -> Vec<Tag> {
         let mut result: Vec<Tag> = vec![];
-        result.append(&mut self.vec);
-        result.append(&mut self.hidden);
+        result.append(&mut self.vec.clone());
+        result.append(&mut self.hidden.clone());
         result
     }
 
     /// Get a tag by its ID
-    pub fn get(&self, id: usize) -> Option<&Tag> {
+    pub fn get(&self, id: TagId) -> Option<&Tag> {
         self.vec.get(id - 1) // tag id starts at 1, arrays at 0
+            .or(self.hidden.iter().find(|&hidden_tag| hidden_tag.id == id))
+    }
+
+    pub fn get_mut(&mut self, id: TagId) -> Option<&mut Tag> {
+        self.vec.get_mut(id - 1)
+            .or(self.hidden.iter_mut().find(|hidden_tag| hidden_tag.id == id))
     }
 
     /// Get a hidden tag by its label

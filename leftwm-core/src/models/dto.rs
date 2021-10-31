@@ -108,15 +108,21 @@ impl<C: Config> From<&State<C>> for ManagerState {
     fn from(state: &State<C>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         let mut tags_len = state.tags.len();
-        tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
-        let working_tags = state.tags[0..tags_len]
+        // tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
+        let working_tags = state.tags.all()
             .iter()
-            .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.label)))
+            .filter(|tag| state.windows.iter().any(|w| w.has_tag(tag.id)))
             .map(|t| t.label.clone())
             .collect();
         for ws in &state.workspaces {
+
+            let tag_labels = ws.tags.iter()
+                .map(|&tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
+                .map(|opt| opt.unwrap())
+                .collect();
+
             viewports.push(Viewport {
-                tags: ws.tags.clone(),
+                tags: tag_labels,
                 x: ws.xyhw.x(),
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
@@ -125,8 +131,8 @@ impl<C: Config> From<&State<C>> for ManagerState {
             });
         }
         let active_desktop = match state.focus_manager.workspace(&state.workspaces) {
-            Some(ws) => ws.tags.clone(),
-            None => vec!["".to_owned()],
+            Some(ws) => ws.tags.iter().map(|&tag_id| state.tags.get(tag_id).unwrap().label.clone()).collect(),
+            None => vec![], // todo ??
         };
         let window_title = match state.focus_manager.window(&state.windows) {
             Some(win) => win.name.clone(),
@@ -134,7 +140,7 @@ impl<C: Config> From<&State<C>> for ManagerState {
         };
         Self {
             window_title,
-            desktop_names: state.tags[0..tags_len]
+            desktop_names: state.tags.visible()
                 .iter()
                 .map(|t| t.label.clone())
                 .collect(),

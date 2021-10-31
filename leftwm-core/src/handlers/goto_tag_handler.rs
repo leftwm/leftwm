@@ -1,15 +1,15 @@
 #![allow(clippy::wildcard_imports)]
 use super::*;
-use crate::state::State;
+use crate::{models::TagId, state::State};
 
 impl<C: Config> State<C> {
-    pub fn goto_tag_handler(&mut self, tag_num: usize) -> Option<bool> {
+    pub fn goto_tag_handler(&mut self, tag_num: TagId) -> Option<bool> {
         if tag_num > self.tags.len() || tag_num < 1 {
             return Some(false);
         }
 
-        let tag_id = self.tags[tag_num - 1].label.clone();
-        let new_tags = vec![tag_id.clone()];
+        //let tag_id = self.tags[tag_num - 1].label.clone();
+        let new_tags = vec![tag_num];
         //no focus safety check
         let old_tags = self.focus_manager.workspace(&self.workspaces)?.tags.clone();
         if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
@@ -25,10 +25,10 @@ impl<C: Config> State<C> {
         }
 
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tags = new_tags;
-        self.focus_tag(&tag_id);
+        self.focus_tag(&tag_num);
         self.update_static();
         self.layout_manager
-            .update_layouts(&mut self.workspaces, &mut self.tags);
+            .update_layouts(&mut self.workspaces, &mut self.tags.all());
         Some(true)
     }
 }
@@ -45,7 +45,7 @@ mod tests {
         state.screen_create_handler(Screen::default());
         state.screen_create_handler(Screen::default());
         state.goto_tag_handler(1);
-        assert_eq!(state.workspaces[0].tags, ["2".to_owned()]);
-        assert_eq!(state.workspaces[1].tags, ["1".to_owned()]);
+        assert_eq!(state.workspaces[0].tags, [2]);
+        assert_eq!(state.workspaces[1].tags, [1]);
     }
 }

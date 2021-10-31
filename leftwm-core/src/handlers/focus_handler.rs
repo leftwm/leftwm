@@ -12,7 +12,7 @@ impl<C: Config> State<C> {
         if focus_workspace_work(self, workspace.id).is_some() {
             //make sure this workspaces tag is focused
             workspace.tags.iter().for_each(|t| {
-                focus_tag_work(self, t.to_owned());
+                focus_tag_work(self, t);
             });
             // create an action to inform the DM
             self.update_current_tags();
@@ -43,7 +43,7 @@ impl<C: Config> State<C> {
 
         //make sure the focused window's tag is focused
         if let Some(tag) = focused_window_tag {
-            let _ = focus_tag_work(self, tag);
+            let _ = focus_tag_work(self, &tag);
         }
         true
     }
@@ -66,7 +66,7 @@ impl<C: Config> State<C> {
 
     /// marks a tag as the focused tag
     //NOTE: should only be called externally from this file
-    pub fn focus_tag(&mut self, tag: TagId) -> bool {
+    pub fn focus_tag(&mut self, tag: &TagId) -> bool {
         if focus_tag_work(self, tag).is_none() {
             return false;
         }
@@ -227,14 +227,14 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
     (xs + ys).sqrt().abs().floor() as i32
 }
 
-fn focus_tag_work<C: Config>(state: &mut State<C>, tag: TagId) -> Option<()> {
+fn focus_tag_work<C: Config>(state: &mut State<C>, tag: &TagId) -> Option<()> {
     state.focus_manager.tag(0)
-        .filter(|tag_id| tag_id != &tag) // only create entry in history if tag changed
+        .filter(|tag_id| tag_id != tag) // only create entry in history if tag changed
         .and_then(|_| {
             //clean old ones
             state.focus_manager.tag_history.truncate(10);
             //add this focus to the history
-            state.focus_manager.tag_history.push_front(tag);
+            state.focus_manager.tag_history.push_front(tag.clone());
             Some(())
         })
 }
@@ -315,7 +315,7 @@ mod tests {
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
         let expected: usize = 1;
-        state.focus_tag(expected);
+        state.focus_tag(&expected);
         let actual = state.focus_manager.tag(0).unwrap();
         assert_eq!(actual, expected);
     }
@@ -326,9 +326,9 @@ mod tests {
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
         let tag: usize = 1;
-        state.focus_tag(tag);
+        state.focus_tag(&tag);
         let start_length = state.focus_manager.tag_history.len();
-        state.focus_tag(tag);
+        state.focus_tag(&tag);
         let end_length = state.focus_manager.tag_history.len();
         assert_eq!(start_length, end_length, "expected no new history event");
     }
@@ -339,7 +339,7 @@ mod tests {
         let state = &mut manager.state;
         state.screen_create_handler(Screen::default());
         state.screen_create_handler(Screen::default());
-        state.focus_tag(1);
+        state.focus_tag(&1);
         let actual = state.focus_manager.workspace(&state.workspaces).unwrap();
         assert_eq!(actual.id, Some(0));
     }
@@ -397,7 +397,7 @@ mod tests {
         window.tag(1);
         state.windows.push(window.clone());
         state.focus_window(&window.handle);
-        state.focus_tag(2);
+        state.focus_tag(&2);
         let focused = state.focus_manager.window(&state.windows);
         assert!(focused.is_none());
     }

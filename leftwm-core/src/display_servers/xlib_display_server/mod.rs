@@ -93,7 +93,7 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            self.xw.set_current_desktop(focused.tags);
+            self.xw.set_current_desktop(focused.tags.clone());
         }
     }
 
@@ -317,8 +317,8 @@ fn right_offset<C: Config>(
     window: &Window,
 ) -> Option<i32> {
     let max_right_screen = max_right_screen?;
-    for tag in window.tags {
-        if tag > max_tag_index {
+    for tag in &window.tags {
+        if tag > &max_tag_index {
             return Some(max_right_screen + window.x());
         }
     }
