@@ -79,7 +79,7 @@ impl Workspace {
         }
     }
 
-    pub fn update_for_theme(&mut self, config: &impl Config) {
+    pub fn load_config(&mut self, config: &impl Config) {
         self.margin = config.workspace_margin().unwrap_or_else(|| Margins::new(0));
         self.gutters = self.get_gutters_for_theme(config);
     }

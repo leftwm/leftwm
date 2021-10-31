@@ -5,7 +5,7 @@ use crate::models::TagId;
 use crate::state::State;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
-impl<C: Config> State<C> {
+impl State {
     /// Marks a workspace as the focused workspace.
     //NOTE: should only be called externally from this file
     pub fn focus_workspace(&mut self, workspace: &Workspace) -> bool {
@@ -156,7 +156,7 @@ impl<C: Config> State<C> {
     }
 }
 
-fn focus_workspace_work<C: Config>(state: &mut State<C>, workspace_id: Option<i32>) -> Option<()> {
+fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<()> {
     //no new history if no change
     if let Some(fws) = state.focus_manager.workspace(&state.workspaces) {
         if fws.id == workspace_id {
@@ -170,10 +170,7 @@ fn focus_workspace_work<C: Config>(state: &mut State<C>, workspace_id: Option<i3
     state.focus_manager.workspace_history.push_front(index);
     Some(())
 }
-fn focus_window_by_handle_work<C: Config>(
-    state: &mut State<C>,
-    handle: &WindowHandle,
-) -> Option<Window> {
+fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Option<Window> {
     //Docks don't want to get focus. If they do weird things happen. They don't get events...
     //Do the focus, Add the action to the list of action
     let found: &Window = state.windows.iter().find(|w| &w.handle == handle)?;
@@ -200,7 +197,7 @@ fn focus_window_by_handle_work<C: Config>(
     Some(found.clone())
 }
 
-fn focus_closest_window<C: Config>(state: &mut State<C>, x: i32, y: i32) -> bool {
+fn focus_closest_window(state: &mut State, x: i32, y: i32) -> bool {
     let ws = match state.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
         Some(ws) => ws,
         None => return false,
@@ -227,7 +224,7 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
     (xs + ys).sqrt().abs().floor() as i32
 }
 
-fn focus_tag_work<C: Config>(state: &mut State<C>, tag: &TagId) -> Option<()> {
+fn focus_tag_work(state: &mut State, tag: &TagId) -> Option<()> {
     if let Some(current_tag) = state.focus_manager.tag(0) {
         if current_tag == *tag {
             return None;
@@ -248,33 +245,35 @@ mod tests {
     #[test]
     fn focusing_a_workspace_should_make_it_active() {
         let mut manager = Manager::new_test(vec![]);
-        let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
-        let expected = state.workspaces[0].clone();
-        state.focus_workspace(&expected);
-        let actual = state.focus_manager.workspace(&state.workspaces).unwrap();
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        let expected = manager.state.workspaces[0].clone();
+        manager.state.focus_workspace(&expected);
+        let actual = manager
+            .state
+            .focus_manager
+            .workspace(&manager.state.workspaces)
+            .unwrap();
         assert_eq!(Some(0), actual.id);
     }
 
     #[test]
     fn focusing_the_same_workspace_shouldnt_add_to_the_history() {
         let mut manager = Manager::new_test(vec![]);
-        let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
-        let ws = state.workspaces[0].clone();
-        state.focus_workspace(&ws);
-        let start_length = state.focus_manager.workspace_history.len();
-        state.focus_workspace(&ws);
-        let end_length = state.focus_manager.workspace_history.len();
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        let ws = manager.state.workspaces[0].clone();
+        manager.state.focus_workspace(&ws);
+        let start_length = manager.state.focus_manager.workspace_history.len();
+        manager.state.focus_workspace(&ws);
+        let end_length = manager.state.focus_manager.workspace_history.len();
         assert_eq!(start_length, end_length, "expected no new history event");
     }
 
     #[test]
     fn focusing_a_window_should_make_it_active() {
         let mut manager = Manager::new_test(vec![]);
-        manager.state.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -299,7 +298,7 @@ mod tests {
     #[test]
     fn focusing_the_same_window_shouldnt_add_to_the_history() {
         let mut manager = Manager::new_test(vec![]);
-        manager.state.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
         let window = Window::new(WindowHandle::MockHandle(1), None, None);
         manager.window_created_handler(window.clone(), -1, -1);
         manager.state.focus_window(&window.handle);
@@ -313,8 +312,8 @@ mod tests {
     #[test]
     fn focusing_a_tag_should_make_it_active() {
         let mut manager = Manager::new_test(vec![]);
+        manager.screen_create_handler(Screen::default());
         let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
         let expected: usize = 1;
         state.focus_tag(&expected);
         let actual = state.focus_manager.tag(0).unwrap();
@@ -324,8 +323,8 @@ mod tests {
     #[test]
     fn focusing_the_same_tag_shouldnt_add_to_the_history() {
         let mut manager = Manager::new_test(vec![]);
+        manager.screen_create_handler(Screen::default());
         let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
         let tag: usize = 1;
         state.focus_tag(&tag);
         let start_length = state.focus_manager.tag_history.len();
@@ -337,69 +336,64 @@ mod tests {
     #[test]
     fn focusing_a_tag_should_focus_its_workspace() {
         let mut manager = Manager::new_test(vec!["1".to_string()]);
-        let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
-        state.focus_tag(&1);
-        let actual = state.focus_manager.workspace(&state.workspaces).unwrap();
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager.state.focus_tag(&1);
+        let actual = manager.state.focus_manager.workspace(&manager.state.workspaces).unwrap();
         assert_eq!(actual.id, Some(0));
     }
 
     #[test]
     fn focusing_a_workspace_should_focus_its_tag() {
         let mut manager = Manager::new_test(vec![]);
-        let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
-        let ws = state.workspaces[1].clone();
-        state.focus_workspace(&ws);
-        let actual = state.focus_manager.tag(0).unwrap();
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        let ws = manager.state.workspaces[1].clone();
+        manager.state.focus_workspace(&ws);
+        let actual = manager.state.focus_manager.tag(0).unwrap();
         assert_eq!(2, actual);
     }
 
     #[test]
     fn focusing_a_window_should_focus_its_tag() {
         let mut manager = Manager::new_test(vec![]);
-        let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag(&2);
-        state.windows.push(window.clone());
-        state.focus_window(&window.handle);
-        let actual = state.focus_manager.tag(0).unwrap();
+        manager.state.windows.push(window.clone());
+        manager.state.focus_window(&window.handle);
+        let actual = manager.state.focus_manager.tag(0).unwrap();
         assert_eq!(2, actual);
     }
 
     #[test]
     fn focusing_a_window_should_focus_workspace() {
         let mut manager = Manager::new_test(vec![]);
-        let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag(&2);
-        state.windows.push(window.clone());
-        state.focus_window(&window.handle);
-        let actual = state.focus_manager.workspace(&state.workspaces).unwrap().id;
-        let expected = state.workspaces[1].id;
+        manager.state.windows.push(window.clone());
+        manager.state.focus_window(&window.handle);
+        let actual = manager.state.focus_manager.workspace(&manager.state.workspaces).unwrap().id;
+        let expected = manager.state.workspaces[1].id;
         assert_eq!(expected, actual);
     }
 
     #[test]
     fn focusing_an_empty_tag_should_unfocus_any_focused_window() {
         let mut manager = Manager::new_test(vec![]);
-        let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag(&1);
-        state.windows.push(window.clone());
-        state.focus_window(&window.handle);
-        state.focus_tag(&2);
-        let focused = state.focus_manager.window(&state.windows);
+        manager.state.windows.push(window.clone());
+        manager.state.focus_window(&window.handle);
+        manager.state.focus_tag(&2);
+        let focused = manager.state.focus_manager.window(&manager.state.windows);
         assert!(focused.is_none());
     }
 }

@@ -34,8 +34,6 @@ impl DisplayServer for XlibDisplayServer {
     fn new(config: &impl Config) -> Self {
         let mut wrap = XWrap::new();
 
-        wrap.focus_behaviour = config.focus_behaviour();
-        wrap.mouse_key_mask = utils::xkeysym_lookup::into_mod(config.mousekey());
         wrap.init(config); //setup events masks
 
         let root = wrap.get_default_root();
@@ -52,15 +50,15 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn update_theme_settings(&mut self, config: &impl Config) {
-        self.xw.load_colors(config);
+    fn load_config(&mut self, config: &impl Config) {
+        self.xw.load_config(config);
     }
 
-    fn update_windows<C: Config>(
+    fn update_windows(
         &self,
         windows: Vec<&Window>,
         focused_window: Option<&Window>,
-        state: &State<C>,
+        state: &State,
     ) {
         let max_tag_index = state.workspaces.iter()
             .flat_map(|w| &w.tags)
@@ -258,7 +256,7 @@ impl XlibDisplayServer {
                     events.push(e);
                 });
             } else {
-                for wsc in workspaces.iter() {
+                for wsc in &workspaces {
                     let mut screen = Screen::from(wsc);
                     screen.root = WindowHandle::XlibHandle(self.root);
                     let e = DisplayEvent::ScreenCreate(screen);

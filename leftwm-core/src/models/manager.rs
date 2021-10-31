@@ -7,7 +7,8 @@ use std::sync::{atomic::AtomicBool, Arc};
 /// Maintains current program state.
 #[derive(Debug)]
 pub struct Manager<C, SERVER> {
-    pub state: State<C>,
+    pub state: State,
+    pub config: C,
 
     pub(crate) children: Children,
     pub(crate) reap_requested: Arc<AtomicBool>,
@@ -21,17 +22,18 @@ where
     SERVER: DisplayServer,
 {
     pub fn new(config: C) -> Self {
-        let display_server = SERVER::new(&config);
-
         Self {
-            state: State::new(config),
+            display_server: SERVER::new(&config),
+            state: State::new(&config),
+            config,
             children: Default::default(),
             reap_requested: Default::default(),
             reload_requested: false,
-            display_server,
         }
     }
+}
 
+impl<C, SERVER> Manager<C, SERVER> {
     pub fn register_child_hook(&self) {
         crate::child_process::register_child_hook(self.reap_requested.clone());
     }
@@ -39,6 +41,17 @@ where
     /// Soft reload the worker without saving state.
     pub fn hard_reload(&mut self) {
         self.reload_requested = true;
+    }
+}
+
+impl<C, SERVER> Manager<C, SERVER>
+where
+    C: Config,
+{
+    /// Reload the configuration of the running [`Manager`].
+    pub fn reload_config(&mut self) -> bool {
+        self.state.load_config(&self.config);
+        true
     }
 }
 

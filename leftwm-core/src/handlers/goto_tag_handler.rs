@@ -1,8 +1,6 @@
-#![allow(clippy::wildcard_imports)]
-use super::*;
 use crate::{models::TagId, state::State};
 
-impl<C: Config> State<C> {
+impl State {
     pub fn goto_tag_handler(&mut self, tag_num: TagId) -> Option<bool> {
         if tag_num > self.tags.len() || tag_num < 1 {
             return Some(false);
@@ -35,17 +33,16 @@ impl<C: Config> State<C> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::models::Screen;
     use crate::Manager;
 
     #[test]
     fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
-        let state = &mut manager.state;
-        state.screen_create_handler(Screen::default());
-        state.screen_create_handler(Screen::default());
-        state.goto_tag_handler(1);
-        assert_eq!(state.workspaces[0].tags, [2]);
-        assert_eq!(state.workspaces[1].tags, [1]);
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager.state.goto_tag_handler(1);
+        assert_eq!(manager.state.workspaces[0].tags, [2]);
+        assert_eq!(manager.state.workspaces[1].tags, [1]);
     }
 }
