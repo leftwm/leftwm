@@ -246,7 +246,7 @@ fn goto_tag(state: &mut State, input_tag: usize) -> Option<bool> {
 /// A delta of 1 means "next tag", a delta of -1 means "previous tag".
 fn focus_tag_change(state: &mut State, delta: i8) -> Option<bool> {
     let current_tag = state.focus_manager.tag(0)?;
-    let visible_tags: &Vec<Tag> = state.tags.visible();
+    let visible_tags: &Vec<Tag> = state.tags.normal();
 
     // if delta is larger than the amount of tags, just use the remainder
     let delta = delta % visible_tags.len() as i8;

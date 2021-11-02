@@ -147,7 +147,7 @@ impl From<&State> for ManagerState {
             window_title,
             desktop_names: state
                 .tags
-                .visible()
+                .normal()
                 .iter()
                 .map(|t| t.label.clone())
                 .collect(),

@@ -6,38 +6,77 @@ use super::TagId;
 
 /// Wrapper struct holding all the tags.
 /// This wrapper provides convenience methods to change the tag-list
-/// during its lifetime, while ensuring that all tags are numbered correctly.
+/// during its lifetime, while ensuring that all tags are in correct order
+/// and numbered accordingly.
+/// 
+/// Each Tag is stored in either the 'normal' or the 'hidden' list.
+/// This is just an internal simplification for handling the different
+/// kinds of Tags.
+/// 
+/// ## Normal Tags
+/// Normal tags are the tags visible to the user, those are the tags
+/// that can be labelled via the config file. Tags are identified by a
+/// unique ID which is automatically assigned by LeftWM, those IDs start at 1
+/// and increment by 1. You can always expect that the tags are ordered by their ID
+/// and that there is no gap between the numbers. The largest tag ID is equal to the 
+/// amount of normal tags. This also means: tags with larger IDs are always to the right
+/// and tags with smaller IDs are always to the left of the reference tag.
+/// 
+/// Usually the number of normal tags is equal to the number of tags configured by the user. 
+/// However, if there are more workspaces than there are tags, additional "unnamed" tags
+/// will be created automatically and appended to the list.
+/// 
+/// ## Hidden Tags
+/// A hidden tag is a tag that is invisible and unknown to the user.
+/// Those tags are created in the source code and can be used for
+/// various purposes. The Scratchpad (NSP) feature is an example which uses
+/// a hidden Tag called "NSP" to hide away the scratchpad until its summoned again. 
+/// You can think of a hidden tag as an invisible window storage. It is not possible
+/// for a user to display a hidden tag in a workspace.
+/// 
+/// Hidden tags also have a unique ID starting at usize::MAX, decrementing by 1.
+/// This prevents conflicts of Tag IDs between normal and hidden tags and makes it easier
+/// to dynamically change normal tags and their ID without affecting hidden tags and vice versa.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Tags {
     // holds all the 'normal' tags
-    vec: Vec<Tag>,
+    normal: Vec<Tag>,
 
-    // holds the 'hidden' tags
+    // holds the 'hidden' tags (like 'NSP')
     hidden: Vec<Tag>,
 }
 
 impl Tags {
+    /// Create a new empty Taglist
     pub fn new() -> Self {
         Tags {
-            vec: vec![],
+            normal: vec![],
             hidden: vec![],
         }
     }
 
+    /// Create a new tag with the provided label and layout, 
+    /// and append it to the list of normal tags.
     pub fn add_new(&mut self, label: &str, layout: Layout) -> TagId {
-        let next_id = self.vec.len() + 1; // tag id starts at 1
+        let next_id = self.normal.len() + 1; // tag id starts at 1
         let tag = Tag::new(next_id, label, layout);
         let id = tag.id;
-        self.vec.push(tag);
+        self.normal.push(tag);
         id
     }
 
+    /// Create a new tag with the provided layout, labelling it directly with its ID,
+    /// and append it to the list of normal tags.
     pub fn add_new_unlabeled(&mut self, layout: Layout) -> TagId {
-        let next_id = self.vec.len() + 1; // tag id starts at 1
+        let next_id = self.normal.len() + 1; // tag id starts at 1
         self.add_new(next_id.to_string().as_str(), layout)
     }
 
-    // todo: add_new_at(position, label, layout) -> shifting all one to the right (vec.insert)
+    // todo: add_new_at(position, label, layout) 
+    // -> shifting all one to the right and re-number them (vec.insert)
+
+    // todo: remove(id) 
+    // -> shifting all right of the removed tag one to the left and re-number them
 
     pub fn add_new_hidden(&mut self, label: &str) -> TagId {
         // hidden tags are numbered descending from the highest possible number
@@ -53,29 +92,29 @@ impl Tags {
         id
     }
 
-    /// Get all the visible (non-hidden) tags
-    pub fn visible(&self) -> &Vec<Tag> {
-        &self.vec
+    /// Get all normal tags
+    pub fn normal(&self) -> &Vec<Tag> {
+        &self.normal
     }
 
     /// Get all tags, including hidden ones.
     /// The hidden tags are appended at the end of the list.
     pub fn all(&self) -> Vec<Tag> {
         let mut result: Vec<Tag> = vec![];
-        result.append(&mut self.vec.clone());
+        result.append(&mut self.normal.clone());
         result.append(&mut self.hidden.clone());
         result
     }
 
     /// Get a tag by its ID
     pub fn get(&self, id: TagId) -> Option<&Tag> {
-        self.vec
+        self.normal
             .get(id - 1) // tag id starts at 1, arrays at 0
             .or_else(|| self.hidden.iter().find(|&hidden_tag| hidden_tag.id == id))
     }
 
     pub fn get_mut(&mut self, id: TagId) -> Option<&mut Tag> {
-        if let Some(normal) = self.vec.get_mut(id - 1) {
+        if let Some(normal) = self.normal.get_mut(id - 1) {
             return Some(normal);
         }
         return self
@@ -91,11 +130,11 @@ impl Tags {
 
     /// Get the amount of 'normal' tags
     pub fn len(&self) -> usize {
-        self.vec.len()
+        self.normal.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.vec.is_empty()
+        self.normal.is_empty()
     }
 }
 
