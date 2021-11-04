@@ -1,7 +1,7 @@
 //! Creates a pipe to listen for external commands.
 use crate::layouts::Layout;
-use crate::Command;
 use crate::models::TagId;
+use crate::Command;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tokio::fs;
