@@ -123,7 +123,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             .map(|w| w.handle);
     }
 
-    if let Some(nsp_tag) = manager.state.tags.get_hidden("NSP") {
+    if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
         if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
             if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
                 let is_visible = window.has_tag(current_tag);
@@ -615,7 +615,8 @@ fn handle_focus(state: &mut State, handle: WindowHandle) -> bool {
 }
 
 fn send_workspace_to_tag(state: &mut State, ws_index: usize, tag_index: usize) -> bool {
-    if ws_index < state.workspaces.len() && tag_index < state.tags.len() {
+    // todo: address inconsistency of using the index instead of the id here
+    if ws_index < state.workspaces.len() && tag_index < state.tags.len_normal() {
         let workspace = &state.workspaces[ws_index].clone();
         state.focus_workspace(workspace);
         state.goto_tag_handler(tag_index + 1);

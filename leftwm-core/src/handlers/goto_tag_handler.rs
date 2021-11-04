@@ -2,7 +2,7 @@ use crate::{models::TagId, state::State};
 
 impl State {
     pub fn goto_tag_handler(&mut self, tag_num: TagId) -> Option<bool> {
-        if tag_num > self.tags.len() || tag_num < 1 {
+        if tag_num > self.tags.len_normal() || tag_num < 1 {
             return Some(false);
         }
 

@@ -8,15 +8,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
         let tag_index = self.state.workspaces.len();
-
-        let mut workspace = Workspace::new(
+        let tag_len = self.state.tags.len_normal();
+        let mut new_workspace = Workspace::new(
             screen.wsid,
             screen.bbox,
             self.state.layout_manager.new_layout(),
             screen.max_window_width.or(self.state.max_window_width),
         );
-        if workspace.id.is_none() {
-            workspace.id = Some(
+        if new_workspace.id.is_none() {
+            new_workspace.id = Some(
                 self.state
                     .workspaces
                     .iter()
@@ -26,13 +26,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     + 1,
             );
         }
-        if workspace.id.unwrap_or(0) as usize >= self.state.tags.len() {
+        if new_workspace.id.unwrap_or(0) as usize >= tag_len {
             dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
         }
-        workspace.load_config(&self.config);
+        new_workspace.load_config(&self.config);
 
         //make sure are enough tags for this new screen
-        let next_id = if self.state.tags.len() > tag_index {
+        let next_id = if tag_len > tag_index {
             tag_index + 1
         } else {
             // add a new tag for the workspace
@@ -41,13 +41,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 .add_new_unlabeled(self.state.layout_manager.new_layout())
         };
 
-        self.state.focus_workspace(&workspace);
+        self.state.focus_workspace(&new_workspace);
         self.state.focus_tag(&next_id);
-        workspace.show_tag(&next_id);
-        self.state.workspaces.push(workspace.clone());
+        new_workspace.show_tag(&next_id);
+        self.state.workspaces.push(new_workspace.clone());
         self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
         self.state.screens.push(screen);
-        self.state.focus_workspace(&workspace);
+        self.state.focus_workspace(&new_workspace);
         false
     }
 }
@@ -84,7 +84,7 @@ mod tests {
         let mut manager = Manager::new_test(vec!["web".to_string(), "console".to_string()]);
 
         // there should be 2 tags in the beginning
-        assert_eq!(manager.state.tags.len(), 2);
+        assert_eq!(manager.state.tags.len_normal(), 2);
 
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
@@ -95,7 +95,7 @@ mod tests {
         assert_eq!(manager.state.workspaces.len(), 4);
 
         // there should be 4 tags after creating 4 screens/workspaces
-        assert_eq!(manager.state.tags.len(), 4);
+        assert_eq!(manager.state.tags.len_normal(), 4);
 
         // workspaces should have tags in order
         assert!(manager.state.workspaces[0].has_tag(&1));
