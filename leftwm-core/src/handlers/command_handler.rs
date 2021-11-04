@@ -10,7 +10,7 @@ use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{Tag, WindowState};
+use crate::models::{Tag, TagId, WindowState};
 use crate::state::State;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
@@ -178,7 +178,7 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
 }
 
 fn move_to_tag<C: Config, SERVER: DisplayServer>(
-    tag_num: usize,
+    tag_num: TagId,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
     let tag = manager.state.tags.get(tag_num)?.clone();
@@ -231,7 +231,7 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     move_to_tag(*tag_num, manager)
 }
 
-fn goto_tag(state: &mut State, input_tag: usize) -> Option<bool> {
+fn goto_tag(state: &mut State, input_tag: TagId) -> Option<bool> {
     let current_tag = state.focus_manager.tag(0).unwrap_or_default();
     let previous_tag = state.focus_manager.tag(1).unwrap_or_default();
     let destination_tag = if !state.disable_current_tag_swap && current_tag == input_tag {
