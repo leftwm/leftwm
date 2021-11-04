@@ -341,6 +341,7 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
+    #[allow(clippy::default_trait_access)]
     fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool {
         if let Some((command, value)) = command.split_once(' ') {
             match command {
@@ -354,6 +355,9 @@ impl leftwm_core::Config for Config {
                 }
                 "UnloadTheme" => {
                     manager.config.theme_setting = Default::default();
+                    return manager.reload_config();
+                }
+                "ReloadConfig" => {
                     return manager.reload_config();
                 }
                 _ => {

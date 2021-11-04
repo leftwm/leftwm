@@ -65,16 +65,13 @@ impl State {
             actions: Default::default(),
             frame_rate_limitor: Default::default(),
             tags,
-<<<<<<< HEAD
             config,
             loglevel: String::from("info"),
-=======
             disable_current_tag_swap: config.disable_current_tag_swap(),
             max_window_width: config.max_window_width(),
             mousekey: config.mousekey(),
             default_width: config.default_width(),
             default_height: config.default_height(),
->>>>>>> master
         }
     }
 
