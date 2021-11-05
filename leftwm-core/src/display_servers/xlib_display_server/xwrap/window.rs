@@ -185,7 +185,7 @@ impl XWrap {
                     std::mem::forget(list);
                 }
             }
-            // This is fix windows processing the take focus event too slow.
+            // This is fixes windows that process the `WMTakeFocus` event too slow.
             // See: https://github.com/leftwm/leftwm/pull/563
             if self.focus_behaviour != FocusBehaviour::Sloppy {
                 // Tell the window to take focus
