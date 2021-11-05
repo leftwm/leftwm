@@ -166,7 +166,10 @@ impl XWrap {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             self.grab_mouse_clicks(handle);
 
-            if !window.never_focus {
+            if window.never_focus {
+                // Tell the window to take focus
+                self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
+            } else {
                 // Mark this window as the `_NET_ACTIVE_WINDOW`
                 unsafe {
                     (self.xlib.XSetInputFocus)(
@@ -184,9 +187,6 @@ impl XWrap {
                     );
                     std::mem::forget(list);
                 }
-            } else {
-                // Tell the window to take focus
-                self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
             }
         }
     }
