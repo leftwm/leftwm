@@ -184,10 +184,10 @@ impl XWrap {
                     );
                     std::mem::forget(list);
                 }
+            } else {
+                // Tell the window to take focus
+                self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
             }
-
-            // Tell the window to take focus
-            self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
         }
     }
 
