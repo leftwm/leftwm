@@ -165,24 +165,39 @@ impl Default for Tags {
 /// Each Screen/Workspace will always display a certain Tag.
 /// A Tag can not be displayed on more than one Workspace at a time.
 ///
-/// In `LeftWM` the same set of tags and windows are shared among
+/// Unlike in some other WMs (eg. `dwm`), in `LeftWM`
+/// the same set of tags and windows are shared among
 /// all Workspaces, this means there aren't multiple instances of
-/// the same Tag on different Screens, like it may be the cause for other
-/// WMs (eg. `dwm`).
+/// the same Tag on different Screens.
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tag {
     /// Unique identifier for the tag,
-    /// this is automatically assigned by `LeftWM`
+    /// this is automatically assigned by `LeftWM`.
+    /// IDs start at 1 for the first tag, and are
+    /// incremented by 1 for each subsequent tag.
     pub id: TagId,
 
-    /// Label of the tag, may not be unique,
-    /// only used for display purposes
+    /// Label of the tag, only used for display purposes.
+    ///
+    /// Labels of normal tags may not be unique,
+    /// but labels of hidden tags must be unique.
+    ///
+    /// ## Hint
+    /// Unlike in earlier versions of LeftWM,
+    /// the label of a Tag is not something that
+    /// actually identifies a Tag. Tags are always
+    /// identified and referenced by their ID (ie. `[1, 2, 3, ...]`).
+    ///
+    /// This means, if the user configures the tags `["home", "chat", "surf", "code"]`
+    /// and later removes the `chat` tag, leaving `["home", "surf", "code"]`, this does not mean
+    /// that Tag 2 is removed, it just means that Tag 2 has the label "surf" now.
+    /// What is actually removed in that case is Tag 4.
     pub label: String,
 
     /// Indicates whether the tag can be
     /// displayed in a Workspace or not.
     /// Hidden tags are internal only, and
-    /// are not known to other programs like (eg. polybar)
+    /// are unknown to other programs (eg. polybar)
     pub hidden: bool,
 
     /// The layout in which the windows
@@ -285,5 +300,129 @@ impl Tag {
         self.flipped_horizontal = *horz;
         self.flipped_vertical = *vert;
         Some(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Tags;
+    use crate::layouts::Layout;
+
+    #[test]
+    fn normal_tags_are_numbered_in_order() {
+        let mut tags = Tags::new();
+        let home_id = tags.add_new("home", Layout::default());
+        let chat_id = tags.add_new("chat", Layout::default());
+        let surf_id = tags.add_new("surf", Layout::default());
+        let code_id = tags.add_new("code", Layout::default());
+        assert_eq!(home_id, 1);
+        assert_eq!(chat_id, 2);
+        assert_eq!(surf_id, 3);
+        assert_eq!(code_id, 4);
+    }
+
+    #[test]
+    fn hidden_tags_are_numbered_in_order() {
+        let mut tags = Tags::new();
+        let nsp_id = tags.add_new_hidden("NSP");
+        let whatver_id = tags.add_new_hidden("whatever");
+        assert_eq!(nsp_id, Some(usize::MAX));
+        assert_eq!(whatver_id, Some(usize::MAX - 1));
+    }
+
+    #[test]
+    fn multiple_normal_tags_can_have_same_label() {
+        let mut tags = Tags::new();
+        let first_id = tags.add_new("home", Layout::default());
+        let second_id = tags.add_new("home", Layout::default());
+        assert_eq!(first_id, 1);
+        assert_eq!(second_id, 2);
+    }
+
+    #[test]
+    fn unlabelled_tags_are_automatically_labelled_with_their_id() {
+        let mut tags = Tags::new();
+        let first_tag = tags.add_new_unlabeled(Layout::default());
+        let second_tag = tags.add_new_unlabeled(Layout::default());
+        let first_label = tags.get(first_tag).map(|tag| tag.label.clone());
+        let second_label = tags.get(second_tag).map(|tag| tag.label.clone());
+        assert_eq!(first_label, Some(String::from("1")));
+        assert_eq!(second_label, Some(String::from("2")));
+    }
+
+    #[test]
+    fn hidden_tags_must_have_unique_label() {
+        let mut tags = Tags::new();
+        let first_tag = tags.add_new_hidden("NSP");
+        let second_tag = tags.add_new_hidden("NSP");
+        let third_tag = tags.add_new_hidden("something-unique");
+        assert_eq!(first_tag, Some(usize::MAX));
+        assert_eq!(second_tag, None);
+        assert_eq!(third_tag, Some(usize::MAX - 1));
+        assert_eq!(tags.all().len(), 2); // the second tag must not be created
+    }
+
+    #[test]
+    fn must_be_able_to_only_get_normal_tags() {
+        let mut tags = Tags::new();
+        tags.add_new("home", Layout::default());
+        tags.add_new("chat", Layout::default());
+        tags.add_new("surf", Layout::default());
+        tags.add_new("code", Layout::default());
+        tags.add_new_hidden("NSP");
+
+        assert_eq!(tags.len_normal(), 4);
+        assert_eq!(tags.normal().len(), 4);
+    }
+
+    #[test]
+    fn must_be_able_to_get_all_tags() {
+        let mut tags = Tags::new();
+        tags.add_new("home", Layout::default());
+        tags.add_new("chat", Layout::default());
+        tags.add_new("surf", Layout::default());
+        tags.add_new("code", Layout::default());
+        tags.add_new_hidden("NSP");
+
+        assert_eq!(tags.all().len(), 5);
+    }
+
+    #[test]
+    fn hidden_tags_must_be_retrievable_by_label() {
+        let mut tags = Tags::new();
+        tags.add_new("home", Layout::default());
+        tags.add_new_hidden("NSP");
+        tags.add_new_hidden("whatever");
+
+        let nsp_tag = tags.get_hidden_by_label("NSP");
+        let whatever_tag = tags.get_hidden_by_label("whatever");
+        let inexistent_tag = tags.get_hidden_by_label("inexistent");
+
+        assert!(nsp_tag.is_some());
+        assert!(whatever_tag.is_some());
+        assert!(inexistent_tag.is_none());
+    }
+
+    #[test]
+    fn only_hidden_tags_can_be_retrieved_by_label() {
+        let mut tags = Tags::new();
+        tags.add_new("home", Layout::default());
+        let tag = tags.get_hidden_by_label("home");
+        assert!(tag.is_none());
+    }
+
+    #[test]
+    fn tags_can_be_mutable() {
+        let mut tags = Tags::new();
+        tags.add_new("home", Layout::default());
+        tags.add_new("chat", Layout::default());
+        tags.add_new("surf", Layout::default());
+
+        let first_retrieve = tags.get_mut(2).unwrap();
+        assert_eq!(first_retrieve.label, String::from("chat"));
+        first_retrieve.label = String::from("code");
+
+        let second_retrieve = tags.get_mut(2).unwrap();
+        assert_eq!(second_retrieve.label, String::from("code"));
     }
 }

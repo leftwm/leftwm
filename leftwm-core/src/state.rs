@@ -113,40 +113,6 @@ impl State {
         Some(())
     }
 
-    /*#[must_use]
-    pub fn workspaces_display(&self) -> String {
-        let mut focused_id = None;
-        if let Some(f) = self.focus_manager.workspace(&self.workspaces) {
-            focused_id = f.id;
-        }
-        let list: Vec<String> = self
-            .workspaces
-            .iter()
-            .map(|w| {
-                let tags = w.tags.join(",");
-                if w.id == focused_id {
-                    format!("({})", tags)
-                } else {
-                    format!(" {} ", tags)
-                }
-            })
-            .collect();
-        list.join(" ")
-    }*/
-
-    /*#[must_use]
-    pub fn windows_display(&self) -> String {
-        let list: Vec<String> = self
-            .windows
-            .iter()
-            .map(|w| {
-                let tags = w.tags.join(",");
-                format!("[{:?}:{}]", w.handle, tags)
-            })
-            .collect();
-        list.join(" ")
-    }*/
-
     pub fn update_static(&mut self) {
         let workspaces = self.workspaces.clone();
         self.windows
