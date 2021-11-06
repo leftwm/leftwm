@@ -15,8 +15,8 @@ pub enum DisplayEvent {
     WindowChange(WindowChange),
     WindowDestroy(WindowHandle),
     MouseEnteredWindow(WindowHandle),
-    VerifyFocusedAt(i32, i32), //Request focus validation at this point
-    MoveFocusTo(i32, i32),     //Focus the nearest window to this point
+    VerifyFocusedAt(WindowHandle), //Request focus validation at this point
+    MoveFocusTo(i32, i32),         //Focus the nearest window to this point
     MoveWindow(WindowHandle, c_ulong, i32, i32),
     ResizeWindow(WindowHandle, c_ulong, i32, i32),
     ScreenCreate(Screen),

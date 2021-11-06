@@ -28,8 +28,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             //This is a request to validate focus. Double check that we are focused the correct
             //thing under this point.
-            DisplayEvent::VerifyFocusedAt(x, y) => match self.state.focus_manager.behaviour {
-                FocusBehaviour::Sloppy => return self.state.validate_focus_at(x, y),
+            DisplayEvent::VerifyFocusedAt(handle) => match self.state.focus_manager.behaviour {
+                FocusBehaviour::Sloppy => return self.state.validate_focus_at(&handle),
                 _ => return false,
             },
 

@@ -32,7 +32,7 @@ const NORMAL_STATE: WindowStateConst = 1;
 // const ICONIC_STATE: WindowStateConst = 2;
 const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
 
-const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
+const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
 
 pub struct Colors {
@@ -210,6 +210,8 @@ impl XWrap {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
+            | xlib::ButtonReleaseMask
+            | xlib::ButtonMotionMask
             | xlib::PointerMotionMask
             | xlib::EnterWindowMask
             | xlib::LeaveWindowMask

@@ -277,8 +277,8 @@ impl XlibDisplayServer {
     }
 
     fn verify_focused_window_work(&self) -> Option<Vec<DisplayEvent>> {
-        let point = self.xw.get_cursor_point().ok()?;
-        Some(vec![DisplayEvent::VerifyFocusedAt(point.0, point.1)])
+        let handle = self.xw.get_cursor_window().ok()?;
+        Some(vec![DisplayEvent::VerifyFocusedAt(handle)])
     }
 
     fn find_all_windows(&self) -> Vec<Window> {

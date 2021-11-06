@@ -107,7 +107,7 @@ impl State {
         true
     }
 
-    pub fn validate_focus_at(&mut self, x: i32, y: i32) -> bool {
+    pub fn validate_focus_at(&mut self, handle: &WindowHandle) -> bool {
         let current = match self.focus_manager.window(&self.windows) {
             Some(w) => w,
             None => return false,
@@ -117,7 +117,7 @@ impl State {
             .windows
             .iter()
             .filter(|x| x.can_focus())
-            .find(|w| w.contains_point(x, y))
+            .find(|w| &w.handle == handle)
             .cloned();
         match found {
             Some(window) => {
