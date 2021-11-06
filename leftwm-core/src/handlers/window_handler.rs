@@ -43,7 +43,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         //let the DS know the correct desktop to find this window
         if !window.tags.is_empty() {
-            let act = DisplayAction::SetWindowTags(window.handle, window.tags[0].clone());
+            let act = DisplayAction::SetWindowTags(window.handle, window.tags);
             self.state.actions.push_back(act);
         }
 
@@ -249,10 +249,12 @@ fn setup_window(
             set_relative_floating(window, ws, parent.calculated_xyhw());
         }
     } else {
-        window.tags = vec![state.tags[0].id.clone()];
+        window.tags = vec![1];
         if is_scratchpad(state, window) {
-            window.tag("NSP");
-            window.set_floating(true);
+            if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
+                window.tag(&scratchpad_tag.id);
+                window.set_floating(true);
+            }
         }
     }
 }

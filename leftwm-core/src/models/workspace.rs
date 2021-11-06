@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::models::{
-    layouts::Layout, BBox, Gutter, Margins, Side, Size, Tag, TagId, Window, Xyhw, XyhwBuilder,
+    layouts::Layout, BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -102,8 +102,9 @@ impl Workspace {
             })
     }
 
-    pub fn show_tag(&mut self, tag: &Tag) {
-        self.tags = vec![tag.id.clone()];
+    pub fn show_tag(&mut self, tag: &TagId) {
+        // todo: display multiple tags?
+        self.tags = vec![*tag];
     }
 
     #[must_use]
@@ -112,8 +113,8 @@ impl Workspace {
     }
 
     #[must_use]
-    pub fn has_tag(&self, tag: &str) -> bool {
-        self.tags.contains(&tag.to_owned())
+    pub fn has_tag(&self, tag: &TagId) -> bool {
+        self.tags.contains(tag)
     }
 
     /// Returns true if the workspace is displays a given window.
@@ -268,6 +269,7 @@ mod tests {
 
     #[test]
     fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
+        const TAG_ID: TagId = 1;
         let mut subject = Workspace::new(
             None,
             BBox {
@@ -279,10 +281,10 @@ mod tests {
             Layout::default(),
             None,
         );
-        let tag = crate::models::Tag::new("test", Layout::default());
-        subject.show_tag(&tag);
+        let tag = crate::models::Tag::new(TAG_ID, "test", Layout::default());
+        subject.show_tag(&tag.id);
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
-        w.tag("test");
+        w.tag(&TAG_ID);
         assert!(subject.is_displaying(&w), "workspace should include window");
     }
 }

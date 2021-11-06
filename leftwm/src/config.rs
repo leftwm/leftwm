@@ -292,7 +292,7 @@ impl leftwm_core::Config for Config {
             .collect()
     }
 
-    fn create_list_of_tags(&self) -> Vec<String> {
+    fn create_list_of_tag_labels(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();
         }

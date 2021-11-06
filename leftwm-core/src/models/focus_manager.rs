@@ -25,7 +25,7 @@ pub struct FocusManager {
     pub focus_new_windows: bool,
     pub workspace_history: VecDeque<usize>,
     pub window_history: VecDeque<MaybeWindowHandle>,
-    pub tag_history: VecDeque<String>,
+    pub tag_history: VecDeque<TagId>,
     pub tags_last_window: HashMap<TagId, WindowHandle>,
 }
 
@@ -65,10 +65,8 @@ impl FocusManager {
 
     /// Return the currently focused tag if the offset is 0.
     /// Offset is used to reach further down the history.
-    pub fn tag(&self, offset: usize) -> Option<String> {
-        self.tag_history
-            .get(offset)
-            .map(std::string::ToString::to_string)
+    pub fn tag(&self, offset: usize) -> Option<TagId> {
+        self.tag_history.get(offset).copied()
     }
 
     /// Return the currently focused window.

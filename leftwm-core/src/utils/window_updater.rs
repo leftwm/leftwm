@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
-use crate::models::Manager;
+use crate::models::{Manager, Tag};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /*
@@ -8,26 +8,32 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
      * based on the new state of the WM
      */
     pub fn update_windows(&mut self) {
+        // set all tagged windows as visible
         self.state
             .windows
             .iter_mut()
             .for_each(|w| w.set_visible(w.tags.is_empty()));
 
         for ws in &self.state.workspaces {
-            let tag = self
-                .state
+            let windows = &mut self.state.windows;
+            let all_tags = &self.state.tags;
+            let tags: Vec<&Tag> = ws
                 .tags
-                .iter_mut()
-                .find(|t| ws.has_tag(&t.id))
-                .expect("Workspace has no tag.");
-            tag.update_windows(&mut self.state.windows, ws);
+                .iter()
+                .filter_map(|tag_id| all_tags.get(*tag_id))
+                .collect();
+            for tag in &tags {
+                tag.update_windows(windows, ws);
+            }
 
+            // resize all windows marked as fullscreen to the workspace size
             self.state
                 .windows
                 .iter_mut()
                 .filter(|w| ws.is_displaying(w) && w.is_fullscreen())
                 .for_each(|w| w.normal = ws.xyhw);
         }
+
         self.state
             .windows
             .iter()

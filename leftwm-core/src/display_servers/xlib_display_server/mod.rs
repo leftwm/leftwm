@@ -60,9 +60,13 @@ impl DisplayServer for XlibDisplayServer {
         focused_window: Option<&Window>,
         state: &State,
     ) {
-        let tags: Vec<&String> = state.workspaces.iter().flat_map(|w| &w.tags).collect();
+        let max_tag_index = state
+            .workspaces
+            .iter()
+            .flat_map(|w| &w.tags)
+            .max()
+            .map_or(0, std::borrow::ToOwned::to_owned);
 
-        let max_tag_index: Option<usize> = tags.iter().filter_map(|&t| state.tag_index(t)).max();
         let to_the_right = state
             .screens
             .iter()
@@ -76,7 +80,7 @@ impl DisplayServer for XlibDisplayServer {
                 None => false,
             };
 
-            let hide_offset = right_offset(max_tag_index, to_the_right, state, window)
+            let hide_offset = right_offset(max_tag_index, to_the_right, window)
                 .unwrap_or_else(|| left_offset(max_screen_width, window));
 
             self.xw.update_window(window, is_focused, hide_offset);
@@ -88,10 +92,7 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            focused
-                .tags
-                .iter()
-                .for_each(|tag| self.xw.set_current_desktop(tag));
+            self.xw.set_current_desktop(&focused.tags);
         }
     }
 
@@ -309,16 +310,13 @@ impl XlibDisplayServer {
 
 //return an offset to hide the window in the right, if it should be hidden on the right
 fn right_offset(
-    max_tag_index: Option<usize>,
+    max_tag_index: usize,
     max_right_screen: Option<i32>,
-    state: &State,
     window: &Window,
 ) -> Option<i32> {
-    let max_tag_index = max_tag_index?;
     let max_right_screen = max_right_screen?;
     for tag in &window.tags {
-        let index = state.tag_index(tag)?;
-        if index > max_tag_index {
+        if tag > &max_tag_index {
             return Some(max_right_screen + window.x());
         }
     }

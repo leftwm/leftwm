@@ -104,13 +104,13 @@ impl XWrap {
     // `XMoveResizeWindow`: https://tronche.com/gui/x/xlib/window/XMoveResizeWindow.html
     // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
     pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
-        if let WindowHandle::XlibHandle(h) = window.handle {
+        if let WindowHandle::XlibHandle(handle) = window.handle {
             if window.visible() {
                 // If type dock we only need to move it.
                 // Also fixes issues with eww.
                 if window.is_unmanaged() {
                     unsafe {
-                        (self.xlib.XMoveWindow)(self.display, h, window.x(), window.y());
+                        (self.xlib.XMoveWindow)(self.display, handle, window.x(), window.y());
                     }
                     return;
                 }
@@ -126,11 +126,23 @@ impl XWrap {
                 let unlock =
                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
                 unsafe {
-                    (self.xlib.XConfigureWindow)(self.display, h, u32::from(unlock), &mut changes);
+                    (self.xlib.XConfigureWindow)(
+                        self.display,
+                        handle,
+                        u32::from(unlock),
+                        &mut changes,
+                    );
                     (self.xlib.XSync)(self.display, 0);
                     let rw: u32 = window.width() as u32;
                     let rh: u32 = window.height() as u32;
-                    (self.xlib.XMoveResizeWindow)(self.display, h, window.x(), window.y(), rw, rh);
+                    (self.xlib.XMoveResizeWindow)(
+                        self.display,
+                        handle,
+                        window.x(),
+                        window.y(),
+                        rw,
+                        rh,
+                    );
 
                     let mut color: c_ulong = if is_focused {
                         self.colors.active
@@ -144,17 +156,17 @@ impl XWrap {
                     bytes[3] = 0xff;
                     color = c_ulong::from_le_bytes(bytes);
 
-                    (self.xlib.XSetWindowBorder)(self.display, h, color);
+                    (self.xlib.XSetWindowBorder)(self.display, handle, color);
                 }
                 if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.ungrab_buttons(h);
-                    self.grab_buttons(h, xlib::Button1, xlib::AnyModifier);
+                    self.ungrab_buttons(handle);
+                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
                 }
                 self.send_config(window);
             } else {
                 unsafe {
                     // If not visible window is placed of screen.
-                    (self.xlib.XMoveWindow)(self.display, h, hide_offset, window.y());
+                    (self.xlib.XMoveWindow)(self.display, handle, hide_offset, window.y());
                 }
             }
         }

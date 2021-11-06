@@ -1,5 +1,6 @@
 //! Creates a pipe to listen for external commands.
 use crate::layouts::Layout;
+use crate::models::TagId;
 use crate::Command;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -121,8 +122,8 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
 fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "SendWindowToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
-    let tag_index: usize = parts.get(0).ok_or("missing argument tag_index")?.parse()?;
-    Ok(Command::SendWindowToTag(tag_index))
+    let tag_id: TagId = parts.get(0).ok_or("missing argument tag_id")?.parse()?;
+    Ok(Command::SendWindowToTag(tag_id))
 }
 
 fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
