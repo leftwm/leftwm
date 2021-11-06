@@ -152,7 +152,7 @@ pub(crate) mod test {
     }
 
     #[test]
-    fn find_relative_index_should_work_both_ways() {
+    fn relative_find_should_work_both_ways() {
         let list = vec!["hello", "world", "foo", "bar"];
         let result = relative_find(&list, |&e| e == "hello", 2, false);
         assert_eq!(result, Some(&"foo"));
@@ -161,14 +161,14 @@ pub(crate) mod test {
     }
 
     #[test]
-    fn find_relative_with_inexistent_reference_must_return_none() {
+    fn relative_find_with_inexistent_reference_must_return_none() {
         let list = vec!["hello", "world", "foo", "bar"];
         let result = relative_find(&list, |&e| e == "inexistent", 2, false);
         assert_eq!(result, None);
     }
 
     #[test]
-    fn find_relative_index_should_be_able_to_loop() {
+    fn relative_find_should_be_able_to_loop() {
         let list = vec!["hello", "world", "foo", "bar"];
         let result = relative_find(&list, |&e| e == "hello", 4, true);
         assert_eq!(result, Some(&"hello"));
@@ -179,7 +179,7 @@ pub(crate) mod test {
     }
 
     #[test]
-    fn find_relative_index_loop_can_be_disabled() {
+    fn relative_find_loop_can_be_disabled() {
         let list = vec!["hello", "world", "foo", "bar"];
         let result = relative_find(&list, |&e| e == "hello", 9, false);
         assert_eq!(result, None);
