@@ -84,30 +84,64 @@ where
     Some(())
 }
 
-pub fn relative_find<T, F>(list: &[T], test: F, shift: i32, should_loop: bool) -> Option<&T>
+/// Find element relative to reference element.
+///
+/// eg. to get the next element, use `shift` 1,
+/// to get the previous element, use `shift` -1.
+///
+/// ## Arguments
+/// * `list` - The list to get the element from
+/// * `reference_finder` - Predicate to find the reference element in the list
+/// * `shift` - The shift (distance) of the element you try to find relative to the reference element, can be negative to move left
+/// * `should_loop` - If the list should loop when the `shift` goes beyond the start/end of the list
+///
+/// ## Example
+/// ```
+/// let list = vec!["hello", "world", "foo", "bar"];
+/// let result = leftwm_core::utils::helpers::relative_find(&list, |&e| e == "world", 2, false);
+/// assert_eq!(result, Some(&"bar"));
+/// ```
+pub fn relative_find<T, F>(
+    list: &[T],
+    reference_finder: F,
+    shift: i32,
+    should_loop: bool,
+) -> Option<&T>
 where
     F: Fn(&T) -> bool,
-    T: Clone,
 {
-    let index = list.iter().position(test)?;
     let len = list.len() as i32;
-    if len == 1 {
-        return list.get(index as usize);
-    }
+    let reference_index = list.iter().position(reference_finder)?;
+    let loops = if shift.is_negative() {
+        // check if shift is larger than there are elements on the left
+        shift.abs() as usize > reference_index
+    } else {
+        // check if shift is larger than there are elements on the right
+        shift as usize > len as usize - (reference_index + 1)
+    };
 
-    let mut find_index = index as i32 + shift;
-    if find_index < 0 && should_loop {
-        find_index += len;
-    } else if find_index >= len && should_loop {
-        find_index -= len;
-    } else if find_index < 0 || find_index >= len {
-        return None;
-    }
-    list.get(find_index as usize)
+    let relative_index = if loops && !should_loop {
+        None
+    } else {
+        let shift = shift % len;
+        let shifted_index = reference_index as i32 + shift;
+        let max_index = len - 1;
+        if shifted_index < 0 {
+            Some((len + shifted_index) as usize)
+        } else if shifted_index > max_index {
+            Some((shifted_index - len) as usize)
+        } else {
+            Some(shifted_index as usize)
+        }
+    }?;
+
+    list.get(relative_index)
 }
 
 #[cfg(test)]
 pub(crate) mod test {
+    use crate::utils::helpers::relative_find;
+
     pub async fn temp_path() -> std::io::Result<std::path::PathBuf> {
         tokio::task::spawn_blocking(|| tempfile::Builder::new().tempfile_in("../target"))
             .await
@@ -115,5 +149,39 @@ pub(crate) mod test {
             .into_temp_path()
             .keep()
             .map_err(Into::into)
+    }
+
+    #[test]
+    fn find_relative_index_should_work_both_ways() {
+        let list = vec!["hello", "world", "foo", "bar"];
+        let result = relative_find(&list, |&e| e == "hello", 2, false);
+        assert_eq!(result, Some(&"foo"));
+        let result = relative_find(&list, |&e| e == "bar", -2, false);
+        assert_eq!(result, Some(&"world"));
+    }
+
+    #[test]
+    fn find_relative_with_inexistent_reference_must_return_none() {
+        let list = vec!["hello", "world", "foo", "bar"];
+        let result = relative_find(&list, |&e| e == "inexistent", 2, false);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn find_relative_index_should_be_able_to_loop() {
+        let list = vec!["hello", "world", "foo", "bar"];
+        let result = relative_find(&list, |&e| e == "hello", 4, true);
+        assert_eq!(result, Some(&"hello"));
+        let result = relative_find(&list, |&e| e == "hello", 9, true);
+        assert_eq!(result, Some(&"world"));
+        let result = relative_find(&list, |&e| e == "hello", -9, true);
+        assert_eq!(result, Some(&"bar"));
+    }
+
+    #[test]
+    fn find_relative_index_loop_can_be_disabled() {
+        let list = vec!["hello", "world", "foo", "bar"];
+        let result = relative_find(&list, |&e| e == "hello", 9, false);
+        assert_eq!(result, None);
     }
 }
