@@ -285,7 +285,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         state.update_static();
         state
             .layout_manager
-            .update_layouts(&mut state.workspaces, &mut state.tags.all());
+            .update_layouts(&mut state.workspaces, state.tags.all_mut());
 
         return Some(true);
     }
