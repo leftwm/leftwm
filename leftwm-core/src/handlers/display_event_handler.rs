@@ -26,8 +26,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             DisplayEvent::MoveFocusTo(x, y) => self.state.move_focus_to_point(x, y),
 
-            //This is a request to validate focus. Double check that we are focused the correct
-            //thing under this point.
+            // This is a request to validate focus. Double check that we are focused on the correct
+            // window.
             DisplayEvent::VerifyFocusedAt(handle) => match self.state.focus_manager.behaviour {
                 FocusBehaviour::Sloppy => return self.state.validate_focus_at(&handle),
                 _ => return false,
