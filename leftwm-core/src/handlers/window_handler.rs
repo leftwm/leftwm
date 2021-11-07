@@ -84,6 +84,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 self.state.actions.push_back(act);
             } else if let Some(h) = new_handle {
                 self.state.focus_window(&h);
+            } else {
+                let act = DisplayAction::Unfocus;
+                self.state.actions.push_back(act);
             }
         }
 
@@ -138,21 +141,19 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
     }
 
-    //Find the next or previous window on the workspace
+    /// Find the next or previous window on the currently focused workspace.
+    /// May return `None` if no other window is present.
     pub fn get_next_or_previous(&mut self, handle: &WindowHandle) -> Option<WindowHandle> {
-        if self.state.focus_manager.behaviour != FocusBehaviour::Sloppy {
-            let ws = self.state.focus_manager.workspace(&self.state.workspaces)?;
-            let for_active_workspace = |x: &Window| -> bool { ws.is_managed(x) };
-            let mut windows = helpers::vec_extract(&mut self.state.windows, for_active_workspace);
-            let is_handle = |x: &Window| -> bool { &x.handle == handle };
-            let p = helpers::relative_find(&windows, is_handle, -1, false);
-            let new_handle = helpers::relative_find(&windows, is_handle, 1, false)
-                .or(p) //Backup
-                .map(|w| w.handle);
-            self.state.windows.append(&mut windows);
-            return new_handle;
-        }
-        None
+        let focused_workspace = self.state.focus_manager.workspace(&self.state.workspaces)?;
+        let on_focused_workspace = |x: &Window| -> bool { focused_workspace.is_managed(x) };
+        let mut windows_on_workspace =
+            helpers::vec_extract(&mut self.state.windows, on_focused_workspace);
+        let is_handle = |x: &Window| -> bool { &x.handle == handle };
+        let new_handle = helpers::relative_find(&windows_on_workspace, is_handle, 1, false)
+            .or_else(|| helpers::relative_find(&windows_on_workspace, is_handle, -1, false))
+            .map(|w| w.handle);
+        self.state.windows.append(&mut windows_on_workspace);
+        new_handle
     }
 }
 
