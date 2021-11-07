@@ -197,9 +197,12 @@ impl XWrap {
                     std::mem::forget(list);
                 }
             }
-
-            // Tell the window to take focus
-            self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
+            // This fixes windows that process the `WMTakeFocus` event too slow.
+            // See: https://github.com/leftwm/leftwm/pull/563
+            if self.focus_behaviour != FocusBehaviour::Sloppy {
+                // Tell the window to take focus
+                self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
+            }
         }
     }
 
