@@ -22,7 +22,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Some(w) => {
                 process_window(w, offset_x, offset_y);
                 w.apply_margin_multiplier(margin_multiplier);
-                snap_to_workspaces(w, &self.state.workspaces);
+                w.is_snapping = should_snap(w, &self.state.workspaces);
                 true
             }
             None => false,
@@ -40,27 +40,27 @@ fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
 }
 
 //if the windows is really close to a workspace, snap to it
-fn snap_to_workspaces(window: &mut Window, workspaces: &[Workspace]) -> bool {
+fn should_snap(window: &mut Window, workspaces: &[Workspace]) -> bool {
     workspaces
         .iter()
-        .any(|workspace| should_snap(window, workspace))
+        .any(|workspace| should_snap_to_workspace(window, workspace))
 }
 
 //to be snapable, the window must be inside the workspace AND the a side must be close to
 //the workspaces edge
-fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
+fn should_snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool {
     if window.must_float() {
         return false;
     }
-    let loc = window.calculated_xyhw();
+    let loc = window.calculated_floating_xyhw().unwrap_or(window.calculated_xyhw());
     //get window sides
     let win_left = loc.x();
-    let win_right = win_left + window.width();
+    let win_right = win_left + loc.w();
     let win_top = loc.y();
-    let win_bottom = win_top + window.height();
+    let win_bottom = win_top + loc.h();
+    
     //check for conatins
-    let center_x = loc.x() + (window.width() / 2);
-    let center_y = loc.y() + (window.height() / 2);
+    let (center_x, center_y) = loc.center();
     if !workspace.contains_point(center_x, center_y) {
         return false;
     }
@@ -71,17 +71,11 @@ fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
     let ws_right = workspace.x() + workspace.width();
     let ws_top = workspace.y();
     let ws_bottom = workspace.y() + workspace.height();
-    if (win_top - ws_top).abs() < dist {
-        return window.snap_to_workspace(workspace);
-    }
-    if (win_bottom - ws_bottom).abs() < dist {
-        return window.snap_to_workspace(workspace);
-    }
-    if (win_left - ws_left).abs() < dist {
-        return window.snap_to_workspace(workspace);
-    }
-    if (win_right - ws_right).abs() < dist {
-        return window.snap_to_workspace(workspace);
-    }
-    false
+    
+    let snap_top = (win_top - ws_top).abs() < dist;
+    let snap_bottom = (win_bottom - ws_bottom).abs() < dist;
+    let snap_left = (win_left - ws_left).abs() < dist;
+    let snap_right = (win_right - ws_right).abs() < dist;
+
+    snap_top || snap_bottom || snap_left || snap_right
 }

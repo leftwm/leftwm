@@ -44,6 +44,12 @@ pub struct Window {
     pub requested: Option<XyhwChange>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
+    
+    /// Whether the window should snap to a workspace (from floating to tiled).
+    /// This may be set to true if the window is currently moved/resized,
+    /// it will be set to false automatically after it has snapped to a workspace.
+    pub is_snapping: bool,
+
     pub container_size: Option<Xyhw>,
     pub strut: Option<Xyhw>,
 }
@@ -71,6 +77,7 @@ impl Window {
             requested: None,
             floating: None,
             start_loc: None,
+            is_snapping: false,
             container_size: None,
             strut: None,
         }
@@ -216,9 +223,8 @@ impl Window {
         let mut value;
         if self.is_fullscreen() {
             value = self.normal.w();
-        } else if self.floating() && self.floating.is_some() {
-            let relative = self.normal + self.floating.unwrap_or_default();
-            value = relative.w() - (self.border * 2);
+        } else if self.floating() && self.floating.is_some() && !self.is_snapping {
+            value = self.calculated_floating_xyhw().unwrap_or_default().w();
         } else {
             value = self.normal.w()
                 - (((self.margin.left + self.margin.right) as f32) * self.margin_multiplier) as i32
@@ -235,9 +241,8 @@ impl Window {
         let mut value;
         if self.is_fullscreen() {
             value = self.normal.h();
-        } else if self.floating() && self.floating.is_some() {
-            let relative = self.normal + self.floating.unwrap_or_default();
-            value = relative.h() - (self.border * 2);
+        } else if self.floating() && self.floating.is_some() && !self.is_snapping {
+            value = self.calculated_floating_xyhw().unwrap_or_default().h();
         } else {
             value = self.normal.h()
                 - (((self.margin.top + self.margin.bottom) as f32) * self.margin_multiplier) as i32
@@ -268,11 +273,9 @@ impl Window {
     #[must_use]
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
-            return self.normal.x();
-        }
-        if self.floating() && self.floating.is_some() {
-            let relative = self.normal + self.floating.unwrap_or_default();
-            relative.x()
+            self.normal.x()
+        } else if self.floating() && self.floating.is_some() && !self.is_snapping {
+            self.calculated_floating_xyhw().unwrap_or_default().x()
         } else {
             self.normal.x() + (self.margin.left as f32 * self.margin_multiplier) as i32
         }
@@ -281,11 +284,9 @@ impl Window {
     #[must_use]
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
-            return self.normal.y();
-        }
-        if self.floating() && self.floating.is_some() {
-            let relative = self.normal + self.floating.unwrap_or_default();
-            relative.y()
+            self.normal.y()
+        } else if self.floating() && self.floating.is_some() && !self.is_snapping {
+            self.calculated_floating_xyhw().unwrap_or_default().y()
         } else {
             self.normal.y() + (self.margin.top as f32 * self.margin_multiplier) as i32
         }
@@ -301,6 +302,18 @@ impl Window {
             ..XyhwBuilder::default()
         }
         .into()
+    }
+
+    pub fn calculated_floating_xyhw(&self) -> Option<Xyhw> {
+        let absolute = self.normal + self.floating?;
+        let xyhw: Xyhw = XyhwBuilder {
+            h: absolute.h() - (self.border * 2),
+            w: absolute.w() - (self.border * 2),
+            x: absolute.x(),
+            y: absolute.y(),
+            ..XyhwBuilder::default()
+        }.into();
+        Some(xyhw)
     }
 
     #[must_use]
