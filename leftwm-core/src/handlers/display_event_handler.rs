@@ -51,10 +51,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             DisplayEvent::ChangeToNormalMode => {
                 self.state.mode = Mode::Normal;
 
-                // every window that has `is_snapping` set to true, should be tiled 
+                // every window that has `is_snapping` set to true, should be tiled
                 // to the workspace it currently is displayed on.
                 let workspaces = &self.state.workspaces;
-                let _ = self.state.windows.iter_mut()
+                self.state
+                    .windows
+                    .iter_mut()
                     .filter(|window| window.is_snapping)
                     .for_each(|window| {
                         window.snap_to_current_workspace(workspaces);

@@ -157,32 +157,27 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 }
 
 impl Window {
-
     /// Snap the window to the workspace where it's currently positioned.
     /// This will calculate the center coordinate where the window is currently displayed
     /// and search for the workspace containing this coordinate.
-    /// 
+    ///
     /// Returns true if the window was tiled.
-    /// 
+    ///
     /// ## Arguments
     /// * workspaces - All workspaces, required to find out on which the window is positioned
-    pub fn snap_to_current_workspace(&mut self, workspaces: &Vec<Workspace>) -> bool {
+    pub fn snap_to_current_workspace(&mut self, workspaces: &[Workspace]) -> bool {
         let pos = self.calculated_xyhw();
         let (center_x, center_y) = pos.center();
-        if let Some(workspace) = workspaces
+        workspaces
             .iter()
-            .find(|ws| ws.contains_point(center_x, center_y)) 
-        {
-            self.snap_to_workspace(workspace)
-        } else {
-            false
-        }
+            .find(|workspace| workspace.contains_point(center_x, center_y))
+            .map_or(false, |workspace| self.snap_to_workspace(workspace))
     }
 
     /// Snap the window to the provided workspace.
-    /// 
+    ///
     /// Returns true if the window was tiled.
-    /// 
+    ///
     /// ## Arguments
     /// + workspace - The workspace on which the window should be tiled
     pub fn snap_to_workspace(&mut self, workspace: &Workspace) -> bool {

@@ -52,13 +52,15 @@ fn should_snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool 
     if window.must_float() {
         return false;
     }
-    let loc = window.calculated_floating_xyhw().unwrap_or(window.calculated_xyhw());
+    let loc = window
+        .calculated_floating_xyhw()
+        .unwrap_or_else(|| window.calculated_xyhw());
     //get window sides
     let win_left = loc.x();
     let win_right = win_left + loc.w();
     let win_top = loc.y();
     let win_bottom = win_top + loc.h();
-    
+
     //check for conatins
     let (center_x, center_y) = loc.center();
     if !workspace.contains_point(center_x, center_y) {
@@ -71,7 +73,7 @@ fn should_snap_to_workspace(window: &mut Window, workspace: &Workspace) -> bool 
     let ws_right = workspace.x() + workspace.width();
     let ws_top = workspace.y();
     let ws_bottom = workspace.y() + workspace.height();
-    
+
     let snap_top = (win_top - ws_top).abs() < dist;
     let snap_bottom = (win_bottom - ws_bottom).abs() < dist;
     let snap_left = (win_left - ws_left).abs() < dist;

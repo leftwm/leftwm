@@ -44,7 +44,7 @@ pub struct Window {
     pub requested: Option<XyhwChange>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
-    
+
     /// Whether the window should snap to a workspace (from floating to tiled).
     /// This may be set to true if the window is currently moved/resized,
     /// it will be set to false automatically after it has snapped to a workspace.
@@ -312,7 +312,8 @@ impl Window {
             x: absolute.x(),
             y: absolute.y(),
             ..XyhwBuilder::default()
-        }.into();
+        }
+        .into();
         Some(xyhw)
     }
 
