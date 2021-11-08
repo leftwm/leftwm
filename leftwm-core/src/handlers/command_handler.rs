@@ -216,6 +216,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     } else {
         let act = DisplayAction::Unfocus;
         manager.state.actions.push_back(act);
+        manager.state.focus_manager.window_history.push_front(None);
     }
     Some(true)
 }
