@@ -80,6 +80,41 @@ impl XWrap {
         Err(XlibError::RootWindowNotFound)
     }
 
+    /// Returns the current window under the cursor.
+    /// # Errors
+    ///
+    /// Will error if root window cannot be found.
+    // `XQueryPointer`: https://tronche.com/gui/x/xlib/window-information/XQueryPointer.html
+    pub fn get_cursor_window(&self) -> Result<WindowHandle, XlibError> {
+        let roots = self.get_roots();
+        for w in roots {
+            let mut root_return: xlib::Window = 0;
+            let mut child_return: xlib::Window = 0;
+            let mut root_x_return: c_int = 0;
+            let mut root_y_return: c_int = 0;
+            let mut win_x_return: c_int = 0;
+            let mut win_y_return: c_int = 0;
+            let mut mask_return: c_uint = 0;
+            let success = unsafe {
+                (self.xlib.XQueryPointer)(
+                    self.display,
+                    w,
+                    &mut root_return,
+                    &mut child_return,
+                    &mut root_x_return,
+                    &mut root_y_return,
+                    &mut win_x_return,
+                    &mut win_y_return,
+                    &mut mask_return,
+                )
+            };
+            if success > 0 {
+                return Ok(WindowHandle::XlibHandle(child_return));
+            }
+        }
+        Err(XlibError::RootWindowNotFound)
+    }
+
     /// Returns the handle of the default root.
     #[must_use]
     pub const fn get_default_root_handle(&self) -> WindowHandle {

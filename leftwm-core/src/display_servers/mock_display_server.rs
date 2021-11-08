@@ -26,7 +26,7 @@ impl DisplayServer for MockDisplayServer {
         unimplemented!()
     }
 
-    fn verify_focused_window(&self) -> Vec<DisplayEvent> {
+    fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
         unimplemented!()
     }
 }
