@@ -213,6 +213,9 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     manager.state.sort_windows();
     if let Some(new_handle) = new_handle {
         manager.state.focus_window(&new_handle);
+    } else {
+        let act = DisplayAction::Unfocus;
+        manager.state.actions.push_back(act);
     }
     Some(true)
 }
