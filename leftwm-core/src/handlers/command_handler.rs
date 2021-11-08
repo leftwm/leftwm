@@ -10,8 +10,9 @@ use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{Tag, TagId, WindowState};
+use crate::models::{TagId, WindowState};
 use crate::state::State;
+use crate::utils::helpers::relative_find;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
@@ -246,30 +247,10 @@ fn goto_tag(state: &mut State, input_tag: TagId) -> Option<bool> {
 /// A delta of 1 means "next tag", a delta of -1 means "previous tag".
 fn focus_tag_change(state: &mut State, delta: i8) -> Option<bool> {
     let current_tag = state.focus_manager.tag(0)?;
-    let visible_tags: &Vec<Tag> = state.tags.normal();
-
-    // if delta is larger than the amount of tags, just use the remainder
-    let delta = delta % visible_tags.len() as i8;
-
-    let new_tag = if delta.is_negative() {
-        let tags_on_the_left = current_tag - 1;
-        // if there are enough tags on the left
-        if tags_on_the_left >= delta.abs() as usize {
-            current_tag - delta.abs() as usize
-        } else {
-            visible_tags.len() - (delta.abs() as usize - current_tag)
-        }
-    } else {
-        let tags_on_the_right = visible_tags.len() - current_tag;
-        // if there are enough tags on the right
-        if tags_on_the_right >= delta as usize {
-            current_tag + delta as usize
-        } else {
-            delta as usize - tags_on_the_right
-        }
-    };
-
-    state.goto_tag_handler(new_tag)
+    let tags = state.tags.normal();
+    let relative_tag_id = relative_find(tags, |tag| tag.id == current_tag, i32::from(delta), true)
+        .map(|tag| tag.id)?;
+    state.goto_tag_handler(relative_tag_id)
 }
 
 fn swap_tags(state: &mut State) -> Option<bool> {
