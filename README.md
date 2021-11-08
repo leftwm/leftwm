@@ -29,6 +29,7 @@
 - [Manual Installation (no package manager)](#manual-installation-no-package-manager)
   - [Using a graphical login such as LightDM, GDM, LXDM, and others](#using-a-graphical-login-such-as-lightdm-gdm-lxdm-and-others)
   - [Optional Development Installation](#optional-development-installation)
+  - [Using the Makefile](#using-the-makefile)
   - [Starting with startx or a login such as slim](#starting-with-startx-or-a-login-such-as-slim)
 - [Theming](#theming)
   - [With LeftWM-Theme](#with-leftwm-theme)
@@ -257,11 +258,26 @@ cargo build --release --features=journald
 Mod + Shift + R
 ```
 
+## Using the Makefile
+
+For conveniece we also have a Makefile with the following subcommands:
+
+|make ... | info |
+| - | - |
+|all | implies `build` and `test` |
+|test | runs same tests as CI on github |
+| build | builds with cargo flag `--release` |
+| clean | clean all buildfiles |
+| install | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/shar/xsession` and cleans build files |
+| install-dev | installs by symlinking, copies `leftwm.desktop`, no clean |
+| uninstall | removes `leftwm-*` files from `/usr/bin` and `leftwm.desktop` file |
+
 ## Starting with startx or a login such as slim
 
 Make sure this is at the end of your .xinitrc file:
 
-```bash .xinitrc
+```
+bash .xinitrc
 exec dbus-launch leftwm
 ```
 
