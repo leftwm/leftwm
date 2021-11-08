@@ -260,7 +260,7 @@ Mod + Shift + R
 
 ## Using the Makefile
 
-For conveniece we also have a Makefile with the following subcommands:
+For conveniece we also have a Makefile with the following rules:
 
 |make ... | info |
 | - | - |
