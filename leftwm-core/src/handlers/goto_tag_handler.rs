@@ -26,7 +26,7 @@ impl State {
         self.focus_tag(&tag_num);
         self.update_static();
         self.layout_manager
-            .update_layouts(&mut self.workspaces, &mut self.tags.all());
+            .update_layouts(&mut self.workspaces, self.tags.all_mut());
         Some(true)
     }
 }

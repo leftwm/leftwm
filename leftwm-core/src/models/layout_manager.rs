@@ -58,7 +58,7 @@ impl LayoutManager {
     pub fn update_layouts(
         &self,
         workspaces: &mut Vec<Workspace>,
-        tags: &mut Vec<Tag>,
+        mut tags: Vec<&mut Tag>,
     ) -> Option<bool> {
         for workspace in workspaces {
             let tag = tags.iter_mut().find(|t| t.id == workspace.tags[0])?;
