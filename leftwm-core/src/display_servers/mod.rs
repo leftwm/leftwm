@@ -33,5 +33,5 @@ pub trait DisplayServer {
 
     fn flush(&self);
 
-    fn verify_focused_window(&self) -> Vec<DisplayEvent>;
+    fn generate_verify_focus_event(&self) -> Option<DisplayEvent>;
 }

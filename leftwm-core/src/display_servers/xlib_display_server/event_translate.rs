@@ -133,9 +133,7 @@ fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent
     };
     let event = xlib::XEnterWindowEvent::from(raw_event);
     let crossing = xlib::XCrossingEvent::from(raw_event);
-    if (crossing.mode != xlib::NotifyNormal || crossing.detail == xlib::NotifyInferior)
-        && crossing.window != xw.get_default_root()
-    {
+    if crossing.detail == xlib::NotifyInferior && crossing.window != xw.get_default_root() {
         return None;
     }
     let h = WindowHandle::XlibHandle(event.window);

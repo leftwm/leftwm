@@ -240,8 +240,10 @@ impl DisplayServer for XlibDisplayServer {
         self.xw.flush();
     }
 
-    fn verify_focused_window(&self) -> Vec<DisplayEvent> {
-        self.verify_focused_window_work().unwrap_or_default()
+    /// Creates a verify focus event for the cursors current window.
+    fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
+        let handle = self.xw.get_cursor_window().ok()?;
+        Some(DisplayEvent::VerifyFocusedAt(handle))
     }
 }
 
@@ -274,11 +276,6 @@ impl XlibDisplayServer {
         });
 
         events
-    }
-
-    fn verify_focused_window_work(&self) -> Option<Vec<DisplayEvent>> {
-        let point = self.xw.get_cursor_point().ok()?;
-        Some(vec![DisplayEvent::VerifyFocusedAt(point.0, point.1)])
     }
 
     fn find_all_windows(&self) -> Vec<Window> {

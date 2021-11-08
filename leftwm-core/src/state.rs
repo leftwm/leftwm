@@ -151,8 +151,8 @@ impl State {
             }
         }
 
-        for tag in &mut self.tags.all() {
-            if let Some(old_tag) = state.tags.get(tag.id) {
+        for old_tag in state.tags.all() {
+            if let Some(tag) = self.tags.get_mut(old_tag.id) {
                 tag.hidden = old_tag.hidden;
                 tag.layout = old_tag.layout;
                 tag.layout_rotation = old_tag.layout_rotation;

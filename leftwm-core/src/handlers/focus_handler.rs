@@ -107,29 +107,22 @@ impl State {
         true
     }
 
-    pub fn validate_focus_at(&mut self, x: i32, y: i32) -> bool {
-        let current = match self.focus_manager.window(&self.windows) {
-            Some(w) => w,
-            None => return false,
-        };
-        //only look at windows we can focus
-        let found: Option<Window> = self
+    pub fn validate_focus_at(&mut self, handle: &WindowHandle) -> bool {
+        // If the window is already focused do nothing.
+        if let Some(current) = self.focus_manager.window(&self.windows) {
+            if &current.handle == handle {
+                return false;
+            }
+        }
+        // Focus the window only if it is also focusable.
+        if self
             .windows
             .iter()
-            .filter(|x| x.can_focus())
-            .find(|w| w.contains_point(x, y))
-            .cloned();
-        match found {
-            Some(window) => {
-                //only do the focus if we need to
-                let handle = window.handle;
-                if current.handle == handle {
-                    return false;
-                }
-                self.focus_window(&handle)
-            }
-            None => false,
+            .any(|w| w.can_focus() && &w.handle == handle)
+        {
+            return self.focus_window(handle);
         }
+        false
     }
 
     pub fn move_focus_to_point(&mut self, x: i32, y: i32) -> bool {
