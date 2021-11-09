@@ -134,16 +134,16 @@ impl XWrap {
         if let Some(size) = hint {
             let mut xyhw = XyhwChange::default();
 
-            if (size.flags & xlib::PBaseSize) != 0 {
+            if (size.flags & xlib::PSize) != 0 || (size.flags & xlib::USSize) != 0 {
+                // These are depreciated/obsolete but are still used sometimes.
+                xyhw.w = Some(size.width);
+                xyhw.h = Some(size.height);
+            } else if (size.flags & xlib::PBaseSize) != 0 {
                 xyhw.w = Some(size.base_width);
                 xyhw.h = Some(size.base_height);
             } else if (size.flags & xlib::PMinSize) != 0 {
                 xyhw.w = Some(size.min_width);
                 xyhw.h = Some(size.min_height);
-            } else if (size.flags & xlib::PSize) != 0 {
-                // These are depreciated but are still used sometimes.
-                xyhw.w = Some(size.width);
-                xyhw.h = Some(size.height);
             }
 
             if (size.flags & xlib::PResizeInc) != 0 {
