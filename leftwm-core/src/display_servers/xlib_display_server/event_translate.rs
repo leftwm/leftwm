@@ -102,7 +102,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
     if let Some(hint) = sizing_hint {
         if hint.minw.is_none() || hint.minh.is_none() || hint.maxw.is_none() || hint.maxh.is_none()
         {
-            can_resize = can_resize || true;
+            can_resize = true;
         } else {
             can_resize = can_resize || hint.minw != hint.maxw || hint.minh != hint.maxh;
         }
