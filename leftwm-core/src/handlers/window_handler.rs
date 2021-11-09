@@ -237,18 +237,22 @@ fn setup_window(
         if window.type_ == WindowType::Normal {
             window.apply_margin_multiplier(ws.margin_multiplier);
         }
-        //if dialog, center in workspace
-        if window.type_ == WindowType::Dialog {
+        // Center dialogs and modal in workspace
+        if window.type_ == WindowType::Dialog || window.states().contains(&WindowState::Modal) {
             window.set_floating(true);
-            let new_float_exact = ws.center_halfed();
-            window.normal = ws.xyhw;
-            window.set_floating_exact(new_float_exact);
+            if window.can_resize() {
+                let new_float_exact = ws.center_halfed();
+                window.normal = ws.xyhw;
+                window.set_floating_exact(new_float_exact);
+            } else {
+                set_relative_floating(window, ws, ws.xyhw);
+            }
         }
         if window.type_ == WindowType::Splash {
             set_relative_floating(window, ws, ws.xyhw);
         }
         if let Some(parent) = find_transient_parent(state, window) {
-            set_relative_floating(window, ws, parent.calculated_xyhw());
+            set_relative_floating(window, ws, parent.exact_xyhw());
         }
     } else {
         window.tags = vec![1];
@@ -313,7 +317,7 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         |requested| {
             let mut xyhw = Xyhw::default();
             requested.update(&mut xyhw);
-            xyhw.center_relative(outer, window.border, requested);
+            xyhw.center_relative(outer, window.border);
             xyhw
         },
     );

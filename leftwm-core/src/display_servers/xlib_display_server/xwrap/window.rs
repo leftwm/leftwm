@@ -114,6 +114,9 @@ impl XWrap {
                     }
                     return;
                 }
+                if window.type_ == WindowType::Dialog {
+                    log::info!("Dialog: {:?}", window.calculated_xyhw());
+                }
                 let mut changes = xlib::XWindowChanges {
                     x: window.x(),
                     y: window.y(),

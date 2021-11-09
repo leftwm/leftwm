@@ -77,31 +77,43 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
     let event = xlib::XMapRequestEvent::from(raw_event);
     let handle = WindowHandle::XlibHandle(event.window);
     xw.subscribe_to_window_events(&handle);
-    //check that the window isn't requesting to be unmanaged
+    // Check that the window isn't requesting to be unmanaged
     let attr = xw.get_window_attrs(event.window).ok()?;
     if attr.override_redirect > 0 {
         return None;
     }
-    //build the new window, and fill in info about it from xlib
+    // Gather info about the window from xlib.
     let name = xw.get_window_name(event.window);
     let pid = xw.get_window_pid(event.window);
-    let mut w = Window::new(handle, name, pid);
+    let type_ = xw.get_window_type(event.window);
+    let states = xw.get_window_states(event.window);
+    let actions = xw.get_window_actions_atoms(event.window);
+    let mut can_resize = actions.contains(&xw.atoms.NetWMActionResize);
     let trans = xw.get_transient_for(event.window);
-    if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
-        hint.update_window_floating(&mut w);
-        w.set_requested(hint);
-    }
-    w.set_states(xw.get_window_states(event.window));
-    if w.floating() {
-        if let Ok(geo) = xw.get_window_geometry(event.window) {
-            log::debug!("geo: {geo:?}", geo = geo);
-            geo.update_window_floating(&mut w);
-        }
-    }
+    let sizing_hint = xw.get_hint_sizing_as_xyhw(event.window);
+
+    // Build the new window, and fill in info about it.
+    let mut w = Window::new(handle, name, pid);
+    w.type_ = type_;
+    w.set_states(states);
     if let Some(trans) = trans {
         w.transient = Some(WindowHandle::XlibHandle(trans));
     }
-    w.type_ = xw.get_window_type(event.window);
+    if let Some(hint) = sizing_hint {
+        can_resize = can_resize || hint.minw != hint.maxw || hint.minh != hint.maxh;
+        log::info!("hint: {:?}", hint);
+        hint.update_window_floating(&mut w);
+        w.set_requested(hint);
+    }
+    w.can_resize = can_resize;
+    log::info!("xyhw: {:?}", w.calculated_xyhw());
+    // Is this needed? Made it so it doens't overwrite prior sizing.
+    if w.floating() && sizing_hint.is_none() {
+        if let Ok(geo) = xw.get_window_geometry(event.window) {
+            geo.update_window_floating(&mut w);
+        }
+    }
+
     let cursor = xw.get_cursor_point().unwrap_or_default();
     Some(DisplayEvent::WindowCreate(w, cursor.0, cursor.1))
 }

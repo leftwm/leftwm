@@ -138,26 +138,27 @@ impl XWrap {
                 xyhw.w = Some(size.base_width);
                 xyhw.h = Some(size.base_height);
             } else if (size.flags & xlib::PMinSize) != 0 {
-                xyhw.minw = Some(size.min_width);
-                xyhw.minh = Some(size.min_height);
+                xyhw.w = Some(size.min_width);
+                xyhw.h = Some(size.min_height);
+            } else if (size.flags & xlib::PSize) != 0 {
+                // These are depreciated but are still used sometimes.
+                xyhw.w = Some(size.width);
+                xyhw.h = Some(size.height);
             }
 
-            if size.flags & xlib::PResizeInc != 0 {
+            if (size.flags & xlib::PResizeInc) != 0 {
                 xyhw.w = Some(size.width_inc);
                 xyhw.h = Some(size.height_inc);
             }
 
-            if size.flags & xlib::PMaxSize != 0 {
+            if (size.flags & xlib::PMaxSize) != 0 {
                 xyhw.maxw = Some(size.max_width);
                 xyhw.maxh = Some(size.max_height);
             }
 
-            if size.flags & xlib::PMinSize != 0 {
+            if (size.flags & xlib::PMinSize) != 0 {
                 xyhw.minw = Some(size.min_width);
                 xyhw.minh = Some(size.min_height);
-            } else if size.flags & xlib::PBaseSize != 0 {
-                xyhw.w = Some(size.base_width);
-                xyhw.h = Some(size.base_height);
             }
 
             // TODO: support min/max aspect
@@ -246,6 +247,40 @@ impl XWrap {
             } else {
                 None
             }
+        }
+    }
+
+    /// Returns the atom actions of a window.
+    // `XGetWindowProperty`: https://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
+    #[must_use]
+    pub fn get_window_actions_atoms(&self, window: xlib::Window) -> Vec<xlib::Atom> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut bytes_remaining: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::zeroed() };
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMAction,
+                0,
+                MAX_PROPERTY_VALUE_LEN / 4,
+                xlib::False,
+                xlib::XA_ATOM,
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut bytes_remaining,
+                &mut prop_return,
+            );
+            if status == i32::from(xlib::Success) && !prop_return.is_null() {
+                #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
+                let ptr = prop_return as *const c_ulong;
+                let results: &[xlib::Atom] = slice::from_raw_parts(ptr, nitems_return as usize);
+                return results.to_vec();
+            }
+            vec![]
         }
     }
 

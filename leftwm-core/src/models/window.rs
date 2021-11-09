@@ -28,6 +28,7 @@ pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
     visible: bool,
+    pub can_resize: bool,
     is_floating: bool,
     must_float: bool,
     floating: Option<Xyhw>,
@@ -55,6 +56,7 @@ impl Window {
             handle: h,
             transient: None,
             visible: false,
+            can_resize: true,
             is_floating: false,
             must_float: false,
             debugging: false,
@@ -158,7 +160,7 @@ impl Window {
     }
     #[must_use]
     pub fn can_resize(&self) -> bool {
-        !self.is_unmanaged()
+        self.can_resize && !self.is_unmanaged()
     }
 
     #[must_use]
@@ -301,6 +303,15 @@ impl Window {
             ..XyhwBuilder::default()
         }
         .into()
+    }
+
+    #[must_use]
+    pub fn exact_xyhw(&self) -> Xyhw {
+        if self.floating() && self.floating.is_some() {
+            self.normal + self.floating.unwrap_or_default()
+        } else {
+            self.normal
+        }
     }
 
     #[must_use]

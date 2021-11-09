@@ -1,6 +1,5 @@
 //! Various window and workspace sizing structs.
 #![allow(clippy::module_name_repetitions)]
-use crate::models::XyhwChange;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::ops::Add;
@@ -268,12 +267,12 @@ impl Xyhw {
         .into()
     }
 
-    pub fn center_relative(&mut self, outer: Self, border: i32, change: XyhwChange) {
+    pub fn center_relative(&mut self, outer: Self, border: i32) {
         // If this is a Splash screen, for some reason w/h are sometimes not sized properly. We
         // therefore want to use the minimum or maximum sizing instead in order to center the
         // windows properly.
-        self.x = outer.x() + outer.w() / 2 - change.minw.unwrap_or(self.w).abs() / 2 - border;
-        self.y = outer.y() + outer.h() / 2 - change.minh.unwrap_or(self.h).abs() / 2 - border;
+        self.x = outer.x() + outer.w() / 2 - self.w / 2 - border;
+        self.y = outer.y() + outer.h() / 2 - self.h / 2 - border;
     }
 
     #[must_use]
