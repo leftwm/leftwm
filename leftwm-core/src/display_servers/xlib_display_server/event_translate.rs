@@ -100,13 +100,16 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
         w.transient = Some(WindowHandle::XlibHandle(trans));
     }
     if let Some(hint) = sizing_hint {
-        can_resize = can_resize || hint.minw != hint.maxw || hint.minh != hint.maxh;
-        log::info!("hint: {:?}", hint);
+        if hint.minw.is_none() || hint.minh.is_none() || hint.maxw.is_none() || hint.maxh.is_none()
+        {
+            can_resize = can_resize || true;
+        } else {
+            can_resize = can_resize || hint.minw != hint.maxw || hint.minh != hint.maxh;
+        }
         hint.update_window_floating(&mut w);
         w.set_requested(hint);
     }
     w.can_resize = can_resize;
-    log::info!("xyhw: {:?}", w.calculated_xyhw());
     // Is this needed? Made it so it doens't overwrite prior sizing.
     if w.floating() && sizing_hint.is_none() {
         if let Ok(geo) = xw.get_window_geometry(event.window) {
