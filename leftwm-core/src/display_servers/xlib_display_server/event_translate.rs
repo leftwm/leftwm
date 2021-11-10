@@ -107,7 +107,9 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
             can_resize = can_resize || hint.minw != hint.maxw || hint.minh != hint.maxh;
         }
         hint.update_window_floating(&mut w);
-        w.set_requested(hint);
+        let mut hint_xyhw = Xyhw::default();
+        hint.update(&mut hint_xyhw);
+        w.requested = Some(hint_xyhw);
     }
     w.can_resize = can_resize;
     // Is this needed? Made it so it doens't overwrite prior sizing.

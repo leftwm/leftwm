@@ -314,11 +314,9 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.normal = ws.xyhw;
     let xyhw = window.requested.map_or_else(
         || ws.center_halfed(),
-        |requested| {
-            let mut xyhw = Xyhw::default();
-            requested.update(&mut xyhw);
-            xyhw.center_relative(outer, window.border);
-            xyhw
+        |mut requested| {
+            requested.center_relative(outer, window.border);
+            requested
         },
     );
     window.set_floating_exact(xyhw);

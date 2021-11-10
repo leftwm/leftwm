@@ -3,7 +3,6 @@
 use super::WindowState;
 use super::WindowType;
 use crate::config::Config;
-use crate::models::xyhw_change::XyhwChange;
 use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
@@ -42,7 +41,7 @@ pub struct Window {
     pub margin: Margins,
     pub margin_multiplier: f32,
     states: Vec<WindowState>,
-    pub requested: Option<XyhwChange>,
+    pub requested: Option<Xyhw>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
     pub container_size: Option<Xyhw>,
@@ -190,14 +189,6 @@ impl Window {
         self.states.clone()
     }
 
-    pub fn set_requested(&mut self, change: XyhwChange) {
-        self.requested = Some(change);
-    }
-
-    pub fn get_requested(&mut self) -> Option<XyhwChange> {
-        self.requested
-    }
-
     pub fn apply_margin_multiplier(&mut self, value: f32) {
         self.margin_multiplier = value.abs();
         if value < 0 as f32 {
@@ -226,8 +217,12 @@ impl Window {
                 - (((self.margin.left + self.margin.right) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
-        if value < 100 && !self.is_unmanaged() {
-            value = 100;
+        let limit = match self.requested {
+            Some(requested) if requested.minw() > 0 => requested.minw(),
+            _ => 100,
+        };
+        if value < limit && !self.is_unmanaged() {
+            value = limit;
         }
         value
     }
@@ -245,8 +240,12 @@ impl Window {
                 - (((self.margin.top + self.margin.bottom) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
-        if value < 100 && !self.is_unmanaged() {
-            value = 100;
+        let limit = match self.requested {
+            Some(requested) if requested.minh() > 0 => requested.minh(),
+            _ => 100,
+        };
+        if value < limit && !self.is_unmanaged() {
+            value = limit;
         }
         value
     }

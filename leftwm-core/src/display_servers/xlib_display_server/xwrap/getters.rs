@@ -141,9 +141,6 @@ impl XWrap {
             } else if (size.flags & xlib::PBaseSize) != 0 {
                 xyhw.w = Some(size.base_width);
                 xyhw.h = Some(size.base_height);
-            } else if (size.flags & xlib::PMinSize) != 0 {
-                xyhw.w = Some(size.min_width);
-                xyhw.h = Some(size.min_height);
             }
 
             if (size.flags & xlib::PResizeInc) != 0 {
@@ -160,6 +157,9 @@ impl XWrap {
                 xyhw.minw = Some(size.min_width);
                 xyhw.minh = Some(size.min_height);
             }
+            // Make sure that width and height are not smaller than the min values.
+            xyhw.w = std::cmp::max(xyhw.w, xyhw.minw);
+            xyhw.h = std::cmp::max(xyhw.h, xyhw.minh);
 
             // TODO: support min/max aspect
             // if size.flags & xlib::PAspect != 0 {
