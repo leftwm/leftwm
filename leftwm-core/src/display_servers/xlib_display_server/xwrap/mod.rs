@@ -12,13 +12,15 @@ use super::{utils, Screen, Window, WindowHandle};
 use crate::config::Config;
 use crate::models::{FocusBehaviour, Mode};
 use crate::utils::xkeysym_lookup::ModMask;
+use libc::c_double;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_ulong};
+use std::os::raw::{c_char, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
 use std::{ptr, slice};
 use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
 use x11_dl::xlib;
+use x11_dl::xrandr::Xrandr;
 
 mod getters;
 mod keyboard;
@@ -64,6 +66,8 @@ pub struct XWrap {
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
     pub task_notify: Arc<Notify>,
+    pub motion_event_limitor: c_ulong,
+    pub refresh_rate: c_short,
 }
 
 impl Default for XWrap {
@@ -83,6 +87,7 @@ impl XWrap {
     // `XSelectInput`: https://tronche.com/gui/x/xlib/event-handling/XSelectInput.html
     // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
         const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().expect("Couldn't not connect to Xorg Server");
@@ -131,6 +136,37 @@ impl XWrap {
             active: 0,
         };
 
+        // Get the current refresh rate from xrandr.
+        let xrandr = Xrandr::open().expect("Unable to open xrandr connection");
+        let refresh_rate = unsafe {
+            let screen_resources = (xrandr.XRRGetScreenResources)(display, root);
+            let crtcs = slice::from_raw_parts(
+                (*screen_resources).crtcs,
+                (*screen_resources).ncrtc as usize,
+            );
+            let active_modes: Vec<c_ulong> = crtcs
+                .iter()
+                .map(|crtc| (xrandr.XRRGetCrtcInfo)(display, screen_resources, *crtc))
+                .filter(|&crtc_info| (*crtc_info).mode != 0)
+                .map(|crtc_info| (*crtc_info).mode)
+                .collect();
+            let modes = slice::from_raw_parts(
+                (*screen_resources).modes,
+                (*screen_resources).nmode as usize,
+            );
+            modes
+                .iter()
+                .filter(|mode_info| active_modes.contains(&mode_info.id))
+                .map(|mode_info| {
+                    (mode_info.dotClock as c_double
+                        / c_double::from(mode_info.hTotal * mode_info.vTotal))
+                        as c_short
+                })
+                .max()
+                .unwrap_or(60)
+        };
+        log::info!("Refresh rate: {:?}", refresh_rate);
+
         let xw = Self {
             xlib,
             display,
@@ -146,6 +182,8 @@ impl XWrap {
             mode_origin: (0, 0),
             _task_guard,
             task_notify,
+            motion_event_limitor: 0,
+            refresh_rate,
         };
 
         // Check that another WM is not running.

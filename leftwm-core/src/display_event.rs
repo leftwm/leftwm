@@ -1,5 +1,3 @@
-use std::os::raw::c_ulong;
-
 use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask, XKeysym};
 use crate::models::WindowChange;
 use crate::Command;
@@ -17,8 +15,8 @@ pub enum DisplayEvent {
     MouseEnteredWindow(WindowHandle),
     VerifyFocusedAt(WindowHandle), // Request focus validation for this window.
     MoveFocusTo(i32, i32),         // Focus the nearest window to this point.
-    MoveWindow(WindowHandle, c_ulong, i32, i32),
-    ResizeWindow(WindowHandle, c_ulong, i32, i32),
+    MoveWindow(WindowHandle, i32, i32),
+    ResizeWindow(WindowHandle, i32, i32),
     ScreenCreate(Screen),
     SendCommand(Command),
     ChangeToNormalMode,

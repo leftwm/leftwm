@@ -9,9 +9,10 @@ use crate::models::WindowHandle;
 use crate::models::WindowType;
 use crate::models::Xyhw;
 use crate::models::XyhwChange;
+use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
-pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
+pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 
 impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     fn from(x_event: XEvent) -> Self {
@@ -64,7 +65,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 Some(DisplayEvent::KeyCombo(event.state, sym))
             }
 
-            xlib::MotionNotify => Some(from_motion_notify(raw_event, xw)),
+            xlib::MotionNotify => from_motion_notify(raw_event, xw),
 
             xlib::ConfigureRequest => from_configure_request(xw, raw_event),
 
@@ -100,12 +101,12 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent>
         w.transient = Some(WindowHandle::XlibHandle(trans));
     }
     if let Some(hint) = sizing_hint {
-        if hint.minw.is_none() || hint.minh.is_none() || hint.maxw.is_none() || hint.maxh.is_none()
-        {
-            can_resize = true;
-        } else {
-            can_resize = can_resize || hint.minw != hint.maxw || hint.minh != hint.maxh;
-        }
+        can_resize = match (hint.minw, hint.minh, hint.maxw, hint.maxh) {
+            (Some(min_width), Some(min_height), Some(max_width), Some(max_height)) => {
+                can_resize || min_width != max_width || min_height != max_height
+            }
+            _ => true,
+        };
         hint.update_window_floating(&mut w);
         let mut hint_xyhw = Xyhw::default();
         hint.update(&mut hint_xyhw);
@@ -157,16 +158,22 @@ fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent
     Some(DisplayEvent::MouseEnteredWindow(h))
 }
 
-fn from_motion_notify(raw_event: xlib::XEvent, xw: &XWrap) -> DisplayEvent {
+fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEvent> {
     let event = xlib::XMotionEvent::from(raw_event);
-    let event_h = WindowHandle::XlibHandle(event.window);
-    let offset_x = event.x_root - xw.mode_origin.0;
-    let offset_y = event.y_root - xw.mode_origin.1;
-    match &xw.mode {
-        Mode::Normal => DisplayEvent::Movement(event_h, event.x_root, event.y_root),
-        Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, event.time, offset_x, offset_y),
-        Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, event.time, offset_x, offset_y),
+    // Limit motion events to current refresh rate.
+    if event.time - xw.motion_event_limitor > (1000 / xw.refresh_rate as c_ulong) {
+        xw.motion_event_limitor = event.time;
+        let event_h = WindowHandle::XlibHandle(event.window);
+        let offset_x = event.x_root - xw.mode_origin.0;
+        let offset_y = event.y_root - xw.mode_origin.1;
+        let display_event = match &xw.mode {
+            Mode::Normal => DisplayEvent::Movement(event_h, event.x_root, event.y_root),
+            Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, offset_x, offset_y),
+            Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, offset_x, offset_y),
+        };
+        return Some(display_event);
     }
+    None
 }
 
 fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {

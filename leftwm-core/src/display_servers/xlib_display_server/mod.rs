@@ -109,7 +109,7 @@ impl DisplayServer for XlibDisplayServer {
 
         for _ in 0..event_in_queue {
             let xlib_event = self.xw.get_next_event();
-            let event = XEvent(&self.xw, xlib_event).into();
+            let event = XEvent(&mut self.xw, xlib_event).into();
             if let Some(e) = event {
                 log::trace!("DisplayEvent: {:?}", e);
                 events.push(e);
