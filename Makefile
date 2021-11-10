@@ -30,9 +30,10 @@ clean:
 # builds the project and installs the binaries (and .desktop)
 install: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop /usr/share/xsessions/
+	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo install -s -Dm755 $(ROOT_DIR)/target/release/leftwm $(ROOT_DIR)/target/release/leftwm-worker $(ROOT_DIR)/target/release/leftwm-state $(ROOT_DIR)/target/release/leftwm-check $(ROOT_DIR)/target/release/leftwm-command -t /usr/bin
 	cd $(ROOT_DIR) && cargo clean
-	@echo "binaries and '.desktop' file have been installed"
+	@echo "binaries, '.desktop' file and manual page have been installed"
 
 # build the project and links the binaries, will also install the .desktop file
 install-dev: build
