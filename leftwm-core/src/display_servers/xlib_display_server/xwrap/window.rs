@@ -23,15 +23,11 @@ impl XWrap {
 
                 // Let Xlib know we are managing this window.
                 let list = vec![handle as c_long];
-                (self.xlib.XChangeProperty)(
-                    self.display,
+                self.append_property_long(
                     self.root,
                     self.atoms.NetClientList,
                     xlib::XA_WINDOW,
-                    32,
-                    xlib::PropModeAppend,
-                    list.as_ptr().cast::<u8>(),
-                    1,
+                    &list,
                 );
                 std::mem::forget(list);
 
@@ -188,7 +184,7 @@ impl XWrap {
                         xlib::CurrentTime,
                     );
                     let list = vec![handle as c_long];
-                    self.set_property_long(
+                    self.replace_property_long(
                         self.root,
                         self.atoms.NetActiveWindow,
                         xlib::XA_WINDOW,
@@ -212,7 +208,7 @@ impl XWrap {
         let handle = self.root;
         unsafe {
             (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
-            self.set_property_long(
+            self.replace_property_long(
                 self.root,
                 self.atoms.NetActiveWindow,
                 xlib::XA_WINDOW,

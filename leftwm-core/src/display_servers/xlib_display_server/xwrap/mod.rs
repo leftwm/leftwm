@@ -80,6 +80,7 @@ impl XWrap {
     /// # Panics
     ///
     /// Panics if unable to contact xorg.
+    // TODO: Split this function up.
     // `XOpenDisplay`: https://tronche.com/gui/x/xlib/display/opening.html
     // `XConnectionNumber`: https://tronche.com/gui/x/xlib/display/display-macros.html#ConnectionNumber
     // `XDefaultRootWindow`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultRootWindow
@@ -136,36 +137,39 @@ impl XWrap {
             active: 0,
         };
 
-        // Get the current refresh rate from xrandr.
-        let xrandr = Xrandr::open().expect("Unable to open xrandr connection");
-        let refresh_rate = unsafe {
-            let screen_resources = (xrandr.XRRGetScreenResources)(display, root);
-            let crtcs = slice::from_raw_parts(
-                (*screen_resources).crtcs,
-                (*screen_resources).ncrtc as usize,
-            );
-            let active_modes: Vec<c_ulong> = crtcs
-                .iter()
-                .map(|crtc| (xrandr.XRRGetCrtcInfo)(display, screen_resources, *crtc))
-                .filter(|&crtc_info| (*crtc_info).mode != 0)
-                .map(|crtc_info| (*crtc_info).mode)
-                .collect();
-            let modes = slice::from_raw_parts(
-                (*screen_resources).modes,
-                (*screen_resources).nmode as usize,
-            );
-            modes
-                .iter()
-                .filter(|mode_info| active_modes.contains(&mode_info.id))
-                .map(|mode_info| {
-                    (mode_info.dotClock as c_double
-                        / c_double::from(mode_info.hTotal * mode_info.vTotal))
-                        as c_short
-                })
-                .max()
-                .unwrap_or(60)
+        let refresh_rate = match Xrandr::open() {
+            // Get the current refresh rate from xrandr if available.
+            Ok(xrandr) => unsafe {
+                let screen_resources = (xrandr.XRRGetScreenResources)(display, root);
+                let crtcs = slice::from_raw_parts(
+                    (*screen_resources).crtcs,
+                    (*screen_resources).ncrtc as usize,
+                );
+                let active_modes: Vec<c_ulong> = crtcs
+                    .iter()
+                    .map(|crtc| (xrandr.XRRGetCrtcInfo)(display, screen_resources, *crtc))
+                    .filter(|&crtc_info| (*crtc_info).mode != 0)
+                    .map(|crtc_info| (*crtc_info).mode)
+                    .collect();
+                let modes = slice::from_raw_parts(
+                    (*screen_resources).modes,
+                    (*screen_resources).nmode as usize,
+                );
+                modes
+                    .iter()
+                    .filter(|mode_info| active_modes.contains(&mode_info.id))
+                    .map(|mode_info| {
+                        (mode_info.dotClock as c_double
+                            / c_double::from(mode_info.hTotal * mode_info.vTotal))
+                            as c_short
+                    })
+                    .max()
+                    .unwrap_or(60)
+            },
+            Err(_) => 60,
         };
-        log::info!("Refresh rate: {:?}", refresh_rate);
+
+        log::info!("Refresh Rate: {}", refresh_rate);
 
         let xw = Self {
             xlib,
@@ -280,7 +284,7 @@ impl XWrap {
                 .iter()
                 .map(|&atom| atom as c_long)
                 .collect();
-            self.set_property_long(root, self.atoms.NetSupported, xlib::XA_ATOM, &supported);
+            self.replace_property_long(root, self.atoms.NetSupported, xlib::XA_ATOM, &supported);
             std::mem::forget(supported);
             // Cleanup the client list.
             (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
