@@ -197,7 +197,7 @@ If your goal is to continously build leftwm and keep up to date with the latest 
 prefer to symlink the leftwm executables instead of copying them.  If you choose to install this
 way, make sure you do not move the build directory as it will break your installation.
 
-1. Dependencies: Rust, Cargo
+1. Dependencies: Rust, Cargo, Pandoc
 2. Clone the repository and cd into the directory
 
 ```bash
