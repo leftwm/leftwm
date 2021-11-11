@@ -21,7 +21,6 @@ test:
 # builds the project and converts manpage
 build:
 	cd $(ROOT_DIR) && cargo build ${BUILDFLAGS}
-	pandoc --standalone --to man $(ROOT_DIR)/leftwm/doc/leftwm.md -o $(ROOT_DIR)/leftwm/doc/leftwm.1
 
 # removes the generated binaries
 clean:
@@ -38,6 +37,7 @@ install: build
 
 # build the project and links the binaries, will also install the .desktop file
 install-dev: build
+	pandoc --standalone --to man $(ROOT_DIR)/leftwm/doc/leftwm.md -o $(ROOT_DIR)/leftwm/doc/leftwm.1
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm $(TARGET_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-worker $(TARGET_DIR)/leftwm-worker
