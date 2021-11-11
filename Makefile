@@ -18,9 +18,10 @@ test:
 	cd $(ROOT_DIR) && cargo fmt -- --check
 	cd $(ROOT_DIR) && cargo clippy --release
 
-# builds the project
+# builds the project and converts manpage
 build:
 	cd $(ROOT_DIR) && cargo build ${BUILDFLAGS}
+	pandoc --standalone --to man $(ROOT_DIR)/leftwm/doc/leftwm.md -o $(ROOT_DIR)/leftwm/doc/leftwm.1
 
 # removes the generated binaries
 clean:
