@@ -218,7 +218,7 @@ impl Window {
                 - (self.border * 2);
         }
         let limit = match self.requested {
-            Some(requested) if requested.minw() > 0 => requested.minw(),
+            Some(requested) if requested.minw() > 0 && self.floating() => requested.minw(),
             _ => 100,
         };
         if value < limit && !self.is_unmanaged() {
@@ -241,7 +241,7 @@ impl Window {
                 - (self.border * 2);
         }
         let limit = match self.requested {
-            Some(requested) if requested.minh() > 0 => requested.minh(),
+            Some(requested) if requested.minh() > 0 && self.floating() => requested.minh(),
             _ => 100,
         };
         if value < limit && !self.is_unmanaged() {
