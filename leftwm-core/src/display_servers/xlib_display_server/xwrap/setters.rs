@@ -71,7 +71,7 @@ impl XWrap {
     pub fn set_current_desktop(&self, current_tags: &[TagId]) {
         let mut indexes: Vec<u32> = current_tags
             .iter()
-            .map(|tag| (tag.to_owned() - 1) as u32)
+            .map(|tag| tag.to_owned() as u32 - 1)
             .collect();
         if indexes.is_empty() {
             indexes.push(0);
