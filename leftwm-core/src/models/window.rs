@@ -269,9 +269,8 @@ impl Window {
     #[must_use]
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
-            return self.normal.x();
-        }
-        if self.floating() && self.floating.is_some() {
+            self.normal.x()
+        } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.x()
         } else {
@@ -282,9 +281,8 @@ impl Window {
     #[must_use]
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
-            return self.normal.y();
-        }
-        if self.floating() && self.floating.is_some() {
+            self.normal.y()
+        } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.y()
         } else {

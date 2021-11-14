@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{layouts::Layout, Window, Workspace};
+use crate::{layouts::Layout, models::WindowHandle, Window, Workspace};
 
 use super::TagId;
 
@@ -248,6 +248,17 @@ impl Tag {
         {
             window.set_visible(true);
             window.normal = workspace.xyhw;
+            let handle = window.handle;
+            windows
+                .iter_mut()
+                .filter(|w| {
+                    w.has_tag(&self.id)
+                        && w.transient.unwrap_or(WindowHandle::XlibHandle(0)) == handle
+                        && !w.is_unmanaged()
+                })
+                .for_each(|w| {
+                    w.set_visible(true);
+                });
         } else {
             // Don't bother updating the other windows when a window is fullscreen.
             // Mark all windows for this workspace as visible.

@@ -107,7 +107,9 @@ fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<Windo
         //junk hint; change change anything
         return None;
     }
-    change.floating = Some(hint);
+    let mut xyhw = Xyhw::default();
+    hint.update(&mut xyhw);
+    change.requested = Some(xyhw);
     Some(change)
 }
 

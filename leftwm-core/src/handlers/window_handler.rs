@@ -252,7 +252,9 @@ fn setup_window(
             set_relative_floating(window, ws, ws.xyhw);
         }
         if let Some(parent) = find_transient_parent(state, window) {
-            set_relative_floating(window, ws, parent.exact_xyhw());
+            if window.type_ != WindowType::Utility {
+                set_relative_floating(window, ws, parent.exact_xyhw());
+            }
         }
     } else {
         window.tags = vec![1];

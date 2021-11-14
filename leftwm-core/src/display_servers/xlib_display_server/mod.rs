@@ -74,7 +74,7 @@ impl DisplayServer for XlibDisplayServer {
             .max();
         let max_screen_width = state.screens.iter().map(|s| s.bbox.width).max();
 
-        for window in windows {
+        for window in &windows {
             let is_focused = match focused_window {
                 Some(f) => f.handle == window.handle,
                 None => false,
@@ -84,9 +84,19 @@ impl DisplayServer for XlibDisplayServer {
                 .unwrap_or_else(|| left_offset(max_screen_width, window));
 
             self.xw.update_window(window, is_focused, hide_offset);
-            if window.is_fullscreen() {
-                self.xw.move_to_top(&window.handle);
-            }
+            // if window.is_fullscreen() {
+            //     self.xw.move_to_top(&window.handle);
+            //     let handle = window.handle;
+            //     windows
+            //         .iter()
+            //         .filter(|w| {
+            //             w.transient.unwrap_or(WindowHandle::XlibHandle(0)) == handle
+            //                 && !w.is_unmanaged()
+            //         })
+            //         .for_each(|w| {
+            //             self.xw.move_to_top(&w.handle);
+            //         });
+            // }
         }
     }
 
