@@ -130,7 +130,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                 let is_visible = window.has_tag(current_tag);
                 window.clear_tags();
                 if is_visible {
-                    // hide the scratchpad
+                    // Hide the scratchpad.
                     window.tag(&nsp_tag.id);
                     // Make sure when changing focus the scratchpad is currently focused.
                     if Some(&Some(window.handle))
@@ -143,14 +143,13 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                         handle = Some(*prev);
                     }
                 } else {
-                    // show the scratchpad
+                    // Show the scratchpad.
                     window.tag(current_tag);
                     handle = Some(window.handle);
                 }
                 let act = DisplayAction::SetWindowTags(window.handle, window.tags.clone());
                 manager.state.actions.push_back(act);
                 manager.state.sort_windows();
-                log::info!("Handle: {:?}", handle);
                 if let Some(h) = handle {
                     handle_focus(&mut manager.state, h);
                     if !is_visible {
