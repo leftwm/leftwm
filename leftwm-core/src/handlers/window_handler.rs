@@ -239,8 +239,8 @@ fn setup_window(
         }
         // Center dialogs and modal in workspace
         if window.type_ == WindowType::Dialog || window.states().contains(&WindowState::Modal) {
-            window.set_floating(true);
             if window.can_resize() {
+                window.set_floating(true);
                 let new_float_exact = ws.center_halfed();
                 window.normal = ws.xyhw;
                 window.set_floating_exact(new_float_exact);
@@ -266,47 +266,58 @@ fn setup_window(
 }
 
 fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
-    // If the tag contains a fullscreen window, minimize it
-    let for_active_workspace =
-        |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
     let mut was_fullscreen = false;
-    if let Some(fsw) = state
-        .windows
-        .iter_mut()
-        .find(|w| for_active_workspace(w) && w.is_fullscreen())
-    {
-        let act =
-            DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
-        state.actions.push_back(act);
-        was_fullscreen = true;
+    if window.type_ == WindowType::Normal {
+        let for_active_workspace =
+            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
+        // Only minimize when the new window is type normal.
+        if let Some(fsw) = state
+            .windows
+            .iter_mut()
+            .find(|w| for_active_workspace(w) && w.is_fullscreen())
+        {
+            let act =
+                DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
+            state.actions.push_back(act);
+            was_fullscreen = true;
+        }
+        if matches!(layout, Layout::Monocle | Layout::MainAndDeck) {
+            // Extract the current windows on the same workspace.
+            let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
+            if layout == Layout::Monocle || to_reorder.is_empty() {
+                // When in monocle we want the new window to be fullscreen if a window was
+                // fullscreen.
+                if was_fullscreen {
+                    let act = DisplayAction::SetState(
+                        window.handle,
+                        !window.is_fullscreen(),
+                        WindowState::Fullscreen,
+                    );
+                    state.actions.push_back(act);
+                }
+                // Place the window above the other windows on the workspace.
+                to_reorder.insert(0, window.clone());
+            } else {
+                // Place the window second within the other windows on the workspace.
+                to_reorder.insert(1, window.clone());
+            }
+            state.windows.append(&mut to_reorder);
+            return;
+        }
     }
 
-    if matches!(layout, Layout::Monocle | Layout::MainAndDeck) && window.type_ == WindowType::Normal
-    {
-        let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
-        if layout == Layout::Monocle || to_reorder.is_empty() {
-            if was_fullscreen {
-                let act = DisplayAction::SetState(
-                    window.handle,
-                    !window.is_fullscreen(),
-                    WindowState::Fullscreen,
-                );
-                state.actions.push_back(act);
-            }
-            to_reorder.insert(0, window.clone());
-        } else {
-            to_reorder.insert(1, window.clone());
-        }
-        state.windows.append(&mut to_reorder);
-    } else if window.type_ == WindowType::Dialog
+    // If a window is a dialog, splash, or scractchpad we want it to be at the top.
+    if window.type_ == WindowType::Dialog
         || window.type_ == WindowType::Splash
+        || window.type_ == WindowType::Utility
         || is_scratchpad(state, window)
     {
-        //Slow
         state.windows.insert(0, window.clone());
-    } else {
-        state.windows.push(window.clone());
+        return;
     }
+
+    // Past special cases we just push the winodw to the bottom.
+    state.windows.push(window.clone());
 }
 
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {

@@ -135,7 +135,7 @@ impl XWrap {
             let mut xyhw = XyhwChange::default();
 
             if (size.flags & xlib::PSize) != 0 || (size.flags & xlib::USSize) != 0 {
-                // These are depreciated/obsolete but are still used sometimes.
+                // These are obsolete but are still used sometimes.
                 xyhw.w = Some(size.width);
                 xyhw.h = Some(size.height);
             } else if (size.flags & xlib::PBaseSize) != 0 {
@@ -161,6 +161,11 @@ impl XWrap {
             xyhw.w = std::cmp::max(xyhw.w, xyhw.minw);
             xyhw.h = std::cmp::max(xyhw.h, xyhw.minh);
 
+            // if (size.flags & xlib::PPosition) != 0 || (size.flags & xlib::USPosition) != 0 {
+            //     // These are obsolete but are still used sometimes.
+            //     xyhw.x = Some(size.x);
+            //     xyhw.y = Some(size.y);
+            // }
             // TODO: support min/max aspect
             // if size.flags & xlib::PAspect != 0 {
             //     //c->mina = (float)size.min_aspect.y / size.min_aspect.x;
