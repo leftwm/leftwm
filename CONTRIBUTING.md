@@ -69,8 +69,7 @@ If possilbe please provide a snippet for the relevant wiki-article/section, so t
 #### Manual Page
 
 If possible, please document your newly added commands / configuration options to the `leftwm` manual page, as this will help users
-who need offline documentation available or a "quick look" at any command. To do so, search for `leftwm/doc/leftwm.md` and generate
-the new manpage by running either: `make install-dev` or `pandoc --standalone --to man leftwm/doc/leftwm.md -o leftwm/doc/leftwm.1`
+who need offline documentation available or a "quick look" at any command. To do so, search for `leftwm/doc/leftwm.1` and document your changes in there.
 
 ### Tips and Tricks
 
