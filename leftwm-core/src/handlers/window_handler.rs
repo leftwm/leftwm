@@ -21,7 +21,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         let mut is_first = false;
         let mut on_same_tag = true;
-        let mut fullscreen_parent = false;
         //Random value
         let mut layout: Layout = Layout::MainAndVertStack;
         setup_window(
@@ -31,7 +30,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut layout,
             &mut is_first,
             &mut on_same_tag,
-            &mut fullscreen_parent,
         );
         window.load_config(&self.config);
         insert_window(&mut self.state, &mut window, layout);
@@ -51,9 +49,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         // Tell the WM the new display order of the windows, only if the parent window is not
         // fullscreen.
-        if !fullscreen_parent {
-            self.state.sort_windows();
-        }
+        self.state.sort_windows();
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
@@ -100,6 +96,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
     pub fn window_changed_handler(&mut self, change: WindowChange) -> bool {
         let mut changed = false;
+        let mut fullscreen_changed = false;
         let strut_changed = change.strut.is_some();
         if let Some(w) = self
             .state
@@ -107,13 +104,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .iter_mut()
             .find(|w| w.handle == change.handle)
         {
+            if let Some(ref states) = change.states {
+                let change_contains = states.contains(&WindowState::Fullscreen);
+                fullscreen_changed = change_contains || w.is_fullscreen();
+            }
             log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
             changed = change.update(w);
             if w.type_ == WindowType::Dock {
                 self.update_workspace_avoid_list();
-                //don't left changes from docks re-render the worker. This will result in an
-                //infinite loop. Just be patient a rerender will occur.
+                // Don't let changes from docks re-render the worker. This will result in an
+                // infinite loop. Just be patient a rerender will occur.
             }
+        }
+        if fullscreen_changed {
+            // Reorder windows.
+            let act = DisplayAction::SetWindowOrder(self.state.windows.clone());
+            self.state.actions.push_back(act);
         }
         if strut_changed {
             self.state.update_static();
@@ -194,7 +200,6 @@ fn setup_window(
     layout: &mut Layout,
     is_first: &mut bool,
     on_same_tag: &mut bool,
-    fullscreen_parent: &mut bool,
 ) {
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
@@ -261,12 +266,6 @@ fn setup_window(
             // case comes up where we don't want to move the window.
             if window.type_ != WindowType::Utility {
                 set_relative_floating(window, ws, parent.exact_xyhw());
-            }
-            if parent.is_fullscreen() {
-                *fullscreen_parent = true;
-                // Raise the window.
-                let act = DisplayAction::MoveToTop(window.handle);
-                state.actions.push_back(act);
             }
         }
     } else {

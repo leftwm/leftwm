@@ -181,19 +181,7 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let act = DisplayAction::SetState(handle, toggle_to, window_state);
     state.actions.push_back(act);
     match window_state {
-        WindowState::Fullscreen => {
-            // Focus and raise the window.
-            if toggle_to {
-                let act = DisplayAction::MoveToTop(handle);
-                state.actions.push_back(act);
-            } else {
-                // Reorder so floating windows don't go behind the minimized window.
-                let windows = state.windows.iter().map(|w| w.handle).collect();
-                let act = DisplayAction::SetWindowOrder(windows);
-                state.actions.push_back(act);
-            }
-            Some(handle_focus(state, handle))
-        }
+        WindowState::Fullscreen => Some(handle_focus(state, handle)),
         _ => Some(true),
     }
 }

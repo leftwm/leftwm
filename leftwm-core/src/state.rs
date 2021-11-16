@@ -92,16 +92,14 @@ impl State {
         //other is all the reset
 
         //build the updated window list
-        let windows: Vec<Window> = level1
+        self.windows = level1
             .iter()
             .chain(level2.iter())
             .chain(level3.iter())
             .chain(other.iter())
             .map(|&w| w.clone())
             .collect();
-        self.windows = windows;
-        let order: Vec<_> = self.windows.iter().map(|w| w.handle).collect();
-        let act = DisplayAction::SetWindowOrder(order);
+        let act = DisplayAction::SetWindowOrder(self.windows.clone());
         self.actions.push_back(act);
     }
 
