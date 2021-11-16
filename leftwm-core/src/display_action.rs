@@ -30,6 +30,9 @@ pub enum DisplayAction {
     /// first in the array is top most
     SetWindowOrder(Vec<WindowHandle>),
 
+    /// Raises a given window.
+    MoveToTop(WindowHandle),
+
     /// Tell the DS we no longer care about the this window and other
     /// cleanup.
     DestroyedWindow(WindowHandle),

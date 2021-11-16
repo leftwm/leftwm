@@ -84,19 +84,6 @@ impl DisplayServer for XlibDisplayServer {
                 .unwrap_or_else(|| left_offset(max_screen_width, window));
 
             self.xw.update_window(window, is_focused, hide_offset);
-            // if window.is_fullscreen() {
-            //     self.xw.move_to_top(&window.handle);
-            //     let handle = window.handle;
-            //     windows
-            //         .iter()
-            //         .filter(|w| {
-            //             w.transient.unwrap_or(WindowHandle::XlibHandle(0)) == handle
-            //                 && !w.is_unmanaged()
-            //         })
-            //         .for_each(|w| {
-            //             self.xw.move_to_top(&w.handle);
-            //         });
-            // }
         }
     }
 
@@ -135,6 +122,8 @@ impl DisplayServer for XlibDisplayServer {
         events
     }
 
+    // TODO: Split function up.
+    #[allow(clippy::too_many_lines)]
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
         log::trace!("DisplayAction: {:?}", act);
         let event: Option<DisplayEvent> = match act {
@@ -186,19 +175,22 @@ impl DisplayServer for XlibDisplayServer {
                 None
             }
             DisplayAction::SetWindowOrder(wins) => {
-                // get all the windows are aren't managing.
-                // They should be in front of our windows.
-                let unmanged: Vec<WindowHandle> = self
+                // The windows we are managing should be behind unmagaed windows.
+                let all = self
                     .xw
                     .get_all_windows()
                     .unwrap_or_default()
                     .iter()
-                    .filter(|&x| *x != self.root)
-                    .map(|x| WindowHandle::XlibHandle(*x))
+                    .filter(|&w| *w != self.root)
+                    .map(|w| WindowHandle::XlibHandle(*w))
                     .filter(|h| !wins.contains(h))
+                    .chain(wins.clone())
                     .collect();
-                let all: Vec<WindowHandle> = unmanged.iter().chain(wins.iter()).copied().collect();
                 self.xw.restack(all);
+                None
+            }
+            DisplayAction::MoveToTop(handle) => {
+                self.xw.move_to_top(&handle);
                 None
             }
             DisplayAction::FocusWindowUnderCursor => {

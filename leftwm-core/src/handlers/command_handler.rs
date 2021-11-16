@@ -177,10 +177,23 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     let handle = window.handle;
-    let act = DisplayAction::SetState(handle, !window.has_state(&window_state), window_state);
+    let toggle_to = !window.has_state(&window_state);
+    let act = DisplayAction::SetState(handle, toggle_to, window_state);
     state.actions.push_back(act);
     match window_state {
-        WindowState::Fullscreen => Some(handle_focus(state, handle)),
+        WindowState::Fullscreen => {
+            // Focus and raise the window.
+            if toggle_to {
+                let act = DisplayAction::MoveToTop(handle);
+                state.actions.push_back(act);
+            } else {
+                // Reorder so floating windows don't go behind the minimized window.
+                let windows = state.windows.iter().map(|w| w.handle).collect();
+                let act = DisplayAction::SetWindowOrder(windows);
+                state.actions.push_back(act);
+            }
+            Some(handle_focus(state, handle))
+        }
         _ => Some(true),
     }
 }

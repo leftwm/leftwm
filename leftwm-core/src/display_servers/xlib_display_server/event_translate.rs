@@ -74,14 +74,14 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     }
 }
 
-fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent> {
+fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEvent> {
     let event = xlib::XMapRequestEvent::from(raw_event);
     let handle = WindowHandle::XlibHandle(event.window);
     xw.subscribe_to_window_events(&handle);
     // Check that the window isn't requesting to be unmanaged
-    let attr = xw.get_window_attrs(event.window).ok()?;
-    if attr.override_redirect > 0 {
-        return None;
+    match xw.get_window_attrs(event.window) {
+        Ok(attr) if attr.override_redirect == 0 => (),
+        _ => return None,
     }
     // Gather info about the window from xlib.
     let name = xw.get_window_name(event.window);

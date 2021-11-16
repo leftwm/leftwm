@@ -21,6 +21,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         let mut is_first = false;
         let mut on_same_tag = true;
+        let mut fullscreen_parent = false;
         //Random value
         let mut layout: Layout = Layout::MainAndVertStack;
         setup_window(
@@ -30,6 +31,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut layout,
             &mut is_first,
             &mut on_same_tag,
+            &mut fullscreen_parent,
         );
         window.load_config(&self.config);
         insert_window(&mut self.state, &mut window, layout);
@@ -47,9 +49,11 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.actions.push_back(act);
         }
 
-        // tell the WM the new display order of the windows
-        //new windows should be on the top of the stack
-        self.state.sort_windows();
+        // Tell the WM the new display order of the windows, only if the parent window is not
+        // fullscreen.
+        if !fullscreen_parent {
+            self.state.sort_windows();
+        }
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
@@ -190,6 +194,7 @@ fn setup_window(
     layout: &mut Layout,
     is_first: &mut bool,
     on_same_tag: &mut bool,
+    fullscreen_parent: &mut bool,
 ) {
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
@@ -252,8 +257,16 @@ fn setup_window(
             set_relative_floating(window, ws, ws.xyhw);
         }
         if let Some(parent) = find_transient_parent(state, window) {
+            // This is currently for vlc, this probably will need to be more general if another
+            // case comes up where we don't want to move the window.
             if window.type_ != WindowType::Utility {
                 set_relative_floating(window, ws, parent.exact_xyhw());
+            }
+            if parent.is_fullscreen() {
+                *fullscreen_parent = true;
+                // Raise the window.
+                let act = DisplayAction::MoveToTop(window.handle);
+                state.actions.push_back(act);
             }
         }
     } else {
