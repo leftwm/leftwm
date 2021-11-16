@@ -47,8 +47,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.actions.push_back(act);
         }
 
-        // Tell the WM the new display order of the windows, only if the parent window is not
-        // fullscreen.
+        // Tell the WM the new display order of the windows.
         self.state.sort_windows();
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
