@@ -189,9 +189,6 @@ impl DisplayServer for XlibDisplayServer {
                 // Fullscreen windows children.
                 let level1: Vec<WindowHandle> =
                     fullscreen_children.iter().map(|w| w.handle).collect();
-
-                log::info!("Children: {:?}", level1);
-                log::info!("Fullscreen: {:?}", level2);
                 // Left over managed windows.
                 let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
                 // Unmanaged windows.
