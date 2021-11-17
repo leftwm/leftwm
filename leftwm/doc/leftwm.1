@@ -8,10 +8,13 @@ LeftWM \- A tiling window manager for adventurers. For more comprehensive docume
 .B leftwm [SUBCOMMAND]
 .SH DESCRIPTION
 .B leftwm
-starts the left window manager on $DISPLAY. This also launches leftwm-worker and logs for errors to the console. The list of available subcommands available for leftwm is listed below:
+starts the left window manager on $DISPLAY, this will depend on your session manager, though it is recommended to start leftwm using
+.B "exec-dbus-launch leftwm".
+This command also launches leftwm-worker and logs for errors to the console.
+The list of available subcommands available for leftwm is listed below:
 .SH SUBCOMMANDS
 .IP "-h, --help"
-Prints help information.
+Prints help information for this subcommand. This flag can also be used with other subcommands to display their own help message.
 .IP "-v --version"
 Prints the version information.
 .IP "check"
@@ -19,17 +22,19 @@ This command will run several actions to ensure leftwm is configured properly, t
 .I config.toml
 file, check your environment and theme files for errors as well.
 .IP "command"
-This subcommand sends commands directly to leftwm. This can be used to trigger workspace layout changes as well as trigger window movement or positioning in scripts or the same
+This subcommand sends commands directly to leftwm. It can also be used to concat commands for a keybind in
 .I config.toml
-file.
+For a list of a list of available commands use the '-l|list' flag.
 .IP "state"
-Prints the current state of leftwm (in JSON format).
+Prints the current state of leftwm (in JSON format). You can also use flags and liqud-like syntax for a more refined output of this command.
 .IP "theme"
 Manage leftwm themes (This is part of an external package found in: https://GitHub.com/leftwm/leftwm-theme).
+.B "NOTE:"
+This subcommand will check for basic / common mistakes made in the directory structure or permissions, however it will not check or report if any mistakes were made in any extra scripts, bar configurations, liquid templates and anything that isn't the up or down executables.
 .SH CONFIGURING LEFTWM
 .IP "Configuration file"
 The settings file of leftwm can be found at:
-.I ~/$USER/.config/leftwm/config.toml
+.I $HOME/.config/leftwm/config.toml
 .IP
 With this file you can configure the modkey for leftwm, available keybinds, tag names, workspace layouts and more.
 .RS
@@ -195,12 +200,14 @@ Drag window onto a tile
 T}@T{
 Switch a floating window to tiling mode
 T}
-T{
-Mod + Shift + (1-9)
-T}@T{
-Switch a floating window to tiling mode
-T}
 .TE
+.SS FloatingToTile
+This behaviour snaps the currenly focused window into the workspace below.
+.SS TileToFloating
+This behaviour switches the currently focused window to floating mode when it's tiled.
+.SS ToggleFloating
+This behaviour switches the currenly focused window between floating and tiled mode.
+
 .\" Configuration section\"
 .SH CONFIGURATION
 .B IMPORTANT:
@@ -223,7 +230,7 @@ float or tile.
 Default: \f[C]mousekey = \[dq]Mod4\[dq]\f[R] (windows key)
 .SS Focus Behaviour
 .PP
-LeftWM now has 3 focusing behaviours (Sloppy, ClickTo, and Driven) and
+LeftWM has 3 focusing behaviours (Sloppy, ClickTo, and Driven) and
 one option (focus_new_windows), which alter the way focus is handled.
 These encompass 4 different patterns:
 .IP "1." 3
@@ -275,7 +282,7 @@ layouts = [
 .SS Workspaces
 .PP
 Workspaces are how you view tags (desktops).
-A workspace is a area on a screen or most likely the whole screen.
+A workspace is an area on a screen or most likely the whole screen.
 in this areas you can view a given tag.
 .PP
 Default: \f[C]workspaces = []\f[R] (one workspace per screen)
