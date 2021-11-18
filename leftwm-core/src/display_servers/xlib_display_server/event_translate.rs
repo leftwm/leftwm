@@ -86,7 +86,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     // Gather info about the window from xlib.
     let name = xw.get_window_name(event.window);
     let pid = xw.get_window_pid(event.window);
-    let type_ = xw.get_window_type(event.window);
+    let r#type = xw.get_window_type(event.window);
     let states = xw.get_window_states(event.window);
     let actions = xw.get_window_actions_atoms(event.window);
     let mut can_resize = actions.contains(&xw.atoms.NetWMActionResize);
@@ -95,7 +95,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
 
     // Build the new window, and fill in info about it.
     let mut w = Window::new(handle, name, pid);
-    w.type_ = type_;
+    w.r#type = r#type;
     w.set_states(states);
     if let Some(trans) = trans {
         w.transient = Some(WindowHandle::XlibHandle(trans));
@@ -161,8 +161,8 @@ fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent
 fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEvent> {
     let event = xlib::XMotionEvent::from(raw_event);
     // Limit motion events to current refresh rate.
-    if event.time - xw.motion_event_limitor > (1000 / xw.refresh_rate as c_ulong) {
-        xw.motion_event_limitor = event.time;
+    if event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong) {
+        xw.motion_event_limiter = event.time;
         let event_h = WindowHandle::XlibHandle(event.window);
         let offset_x = event.x_root - xw.mode_origin.0;
         let offset_y = event.y_root - xw.mode_origin.1;

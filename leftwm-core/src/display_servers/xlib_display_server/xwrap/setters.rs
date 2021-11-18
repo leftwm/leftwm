@@ -15,7 +15,7 @@ impl XWrap {
         &self,
         window: xlib::Window,
         property: xlib::Atom,
-        type_: xlib::Atom,
+        r#type: xlib::Atom,
         data: &[c_long],
     ) {
         unsafe {
@@ -23,7 +23,7 @@ impl XWrap {
                 self.display,
                 window,
                 property,
-                type_,
+                r#type,
                 32,
                 xlib::PropModeAppend,
                 data.as_ptr().cast::<u8>(),
@@ -38,7 +38,7 @@ impl XWrap {
         &self,
         window: xlib::Window,
         property: xlib::Atom,
-        type_: xlib::Atom,
+        r#type: xlib::Atom,
         data: &[c_long],
     ) {
         unsafe {
@@ -46,7 +46,7 @@ impl XWrap {
                 self.display,
                 window,
                 property,
-                type_,
+                r#type,
                 32,
                 xlib::PropModeReplace,
                 data.as_ptr().cast::<u8>(),
@@ -102,9 +102,9 @@ impl XWrap {
     }
 
     /// Sets a desktop property with type `c_ulong`.
-    pub fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, type_: c_ulong) {
+    pub fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, r#type: c_ulong) {
         let data = vec![value as c_long];
-        self.replace_property_long(self.root, atom, type_, &data);
+        self.replace_property_long(self.root, atom, r#type, &data);
     }
 
     /// Sets a desktop property with type string.

@@ -555,7 +555,7 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let window = state
         .windows
         .iter()
-        .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)?
+        .find(|w| workspace.is_displaying(w) && w.r#type == WindowType::Normal)?
         .clone();
     Some(handle_focus(state, window.handle))
 }
@@ -580,9 +580,9 @@ fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bo
     let ws = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     ws.set_margin_multiplier(margin_multiplier);
     let tags = ws.tags.clone();
-    if state.windows.iter().any(|w| w.type_ == WindowType::Normal) {
+    if state.windows.iter().any(|w| w.r#type == WindowType::Normal) {
         let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&tags, &x.tags) && x.type_ == WindowType::Normal
+            helpers::intersect(&tags, &x.tags) && x.r#type == WindowType::Normal
         };
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut state.windows, for_active_workspace);

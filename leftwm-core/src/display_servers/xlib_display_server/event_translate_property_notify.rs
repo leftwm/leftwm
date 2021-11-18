@@ -74,7 +74,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
 fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
     let handle = WindowHandle::XlibHandle(window);
     let mut change = WindowChange::new(handle);
-    let type_ = xw.get_window_type(window);
+    let r#type = xw.get_window_type(window);
 
     if let Some(dock_area) = xw.get_window_strut_array(window) {
         let dems = xw.get_screens_area_dimensions();
@@ -86,14 +86,14 @@ fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Opti
 
         if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
             change.floating = Some(xyhw.into());
-            change.type_ = Some(type_);
+            change.r#type = Some(r#type);
             return Some(change);
         }
     } else if let Ok(geo) = xw.get_window_geometry(window) {
         let mut xyhw = Xyhw::default();
         geo.update(&mut xyhw);
         change.floating = Some(xyhw.into());
-        change.type_ = Some(type_);
+        change.r#type = Some(r#type);
         return Some(change);
     }
     None

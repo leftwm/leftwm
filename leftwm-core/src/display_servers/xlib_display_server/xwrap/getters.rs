@@ -518,7 +518,7 @@ impl XWrap {
         &self,
         window: xlib::Window,
         property: xlib::Atom,
-        type_: xlib::Atom,
+        r#type: xlib::Atom,
     ) -> Result<(*const c_uchar, c_ulong), XlibError> {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
@@ -533,7 +533,7 @@ impl XWrap {
                 0,
                 MAX_PROPERTY_VALUE_LEN / 4,
                 xlib::False,
-                type_,
+                r#type,
                 &mut type_return,
                 &mut format_return,
                 &mut nitems_return,

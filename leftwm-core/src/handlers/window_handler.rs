@@ -109,7 +109,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
             log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
             changed = change.update(w);
-            if w.type_ == WindowType::Dock {
+            if w.r#type == WindowType::Dock {
                 self.update_workspace_avoid_list();
                 // Don't let changes from docks re-render the worker. This will result in an
                 // infinite loop. Just be patient a rerender will occur.
@@ -131,7 +131,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state
             .windows
             .iter()
-            .filter(|w| w.type_ == WindowType::Dock)
+            .filter(|w| w.r#type == WindowType::Dock)
             .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
             .for_each(|(handle, to_avoid)| {
                 log::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
@@ -243,11 +243,11 @@ fn setup_window(
                 }
             }
         }
-        if window.type_ == WindowType::Normal {
+        if window.r#type == WindowType::Normal {
             window.apply_margin_multiplier(ws.margin_multiplier);
         }
         // Center dialogs and modal in workspace
-        if window.type_ == WindowType::Dialog || window.states().contains(&WindowState::Modal) {
+        if window.r#type == WindowType::Dialog || window.states().contains(&WindowState::Modal) {
             if window.can_resize() {
                 window.set_floating(true);
                 let new_float_exact = ws.center_halfed();
@@ -257,13 +257,13 @@ fn setup_window(
                 set_relative_floating(window, ws, ws.xyhw);
             }
         }
-        if window.type_ == WindowType::Splash {
+        if window.r#type == WindowType::Splash {
             set_relative_floating(window, ws, ws.xyhw);
         }
         if let Some(parent) = find_transient_parent(state, window) {
             // This is currently for vlc, this probably will need to be more general if another
             // case comes up where we don't want to move the window.
-            if window.type_ != WindowType::Utility {
+            if window.r#type != WindowType::Utility {
                 set_relative_floating(window, ws, parent.exact_xyhw());
             }
         }
@@ -280,7 +280,7 @@ fn setup_window(
 
 fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
     let mut was_fullscreen = false;
-    if window.type_ == WindowType::Normal {
+    if window.r#type == WindowType::Normal {
         let for_active_workspace =
             |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
         // Only minimize when the new window is type normal.
@@ -320,9 +320,9 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
     }
 
     // If a window is a dialog, splash, or scractchpad we want it to be at the top.
-    if window.type_ == WindowType::Dialog
-        || window.type_ == WindowType::Splash
-        || window.type_ == WindowType::Utility
+    if window.r#type == WindowType::Dialog
+        || window.r#type == WindowType::Splash
+        || window.r#type == WindowType::Utility
         || is_scratchpad(state, window)
     {
         state.windows.insert(0, window.clone());

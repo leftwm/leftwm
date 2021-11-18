@@ -175,7 +175,7 @@ impl DisplayServer for XlibDisplayServer {
                 None
             }
             DisplayAction::SetWindowOrder(windows) => {
-                // The windows we are managing should be behind unmagaed windows. Unless they are
+                // The windows we are managing should be behind unmanaged windows. Unless they are
                 // fullscreen, or their children.
                 let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
                     windows.iter().partition(|w| w.is_fullscreen());

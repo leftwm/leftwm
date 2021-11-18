@@ -65,7 +65,7 @@ pub struct XWrap {
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
     pub task_notify: Arc<Notify>,
-    pub motion_event_limitor: c_ulong,
+    pub motion_event_limiter: c_ulong,
     pub refresh_rate: c_short,
 }
 
@@ -168,7 +168,7 @@ impl XWrap {
             Err(_) => 60,
         };
 
-        log::info!("Refresh Rate: {}", refresh_rate);
+        log::debug!("Refresh Rate: {}", refresh_rate);
 
         let xw = Self {
             xlib,
@@ -185,7 +185,7 @@ impl XWrap {
             mode_origin: (0, 0),
             _task_guard,
             task_notify,
-            motion_event_limitor: 0,
+            motion_event_limiter: 0,
             refresh_rate,
         };
 

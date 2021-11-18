@@ -35,7 +35,7 @@ pub struct Window {
     pub debugging: bool,
     pub name: Option<String>,
     pub pid: Option<u32>,
-    pub type_: WindowType,
+    pub r#type: WindowType,
     pub tags: Vec<TagId>,
     pub border: i32,
     pub margin: Margins,
@@ -62,7 +62,7 @@ impl Window {
             never_focus: false,
             name,
             pid,
-            type_: WindowType::Normal,
+            r#type: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
             margin: Margins::new(10),
@@ -78,7 +78,7 @@ impl Window {
     }
 
     pub(crate) fn load_config(&mut self, config: &impl Config) {
-        if self.type_ == WindowType::Normal {
+        if self.r#type == WindowType::Normal {
             self.margin = config.margin();
             self.border = config.border_width();
             self.must_float = config.always_float();
@@ -95,10 +95,10 @@ impl Window {
     #[must_use]
     pub fn visible(&self) -> bool {
         self.visible
-            || self.type_ == WindowType::Menu
-            || self.type_ == WindowType::Splash
-            || self.type_ == WindowType::Dialog
-            || self.type_ == WindowType::Toolbar
+            || self.r#type == WindowType::Menu
+            || self.r#type == WindowType::Splash
+            || self.r#type == WindowType::Dialog
+            || self.r#type == WindowType::Toolbar
     }
 
     pub fn set_floating(&mut self, value: bool) {
@@ -151,7 +151,7 @@ impl Window {
         self.must_float
             || self.transient.is_some()
             || self.is_unmanaged()
-            || self.type_ == WindowType::Splash
+            || self.r#type == WindowType::Splash
     }
     #[must_use]
     pub fn can_move(&self) -> bool {
@@ -337,7 +337,7 @@ impl Window {
 
     #[must_use]
     pub fn is_unmanaged(&self) -> bool {
-        self.type_ == WindowType::Desktop || self.type_ == WindowType::Dock
+        self.r#type == WindowType::Desktop || self.r#type == WindowType::Dock
     }
 }
 
