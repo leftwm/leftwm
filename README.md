@@ -453,7 +453,7 @@ layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertica
 
 ## LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant
 
-The default layouts are [all of the kinds](src/layouts/mod.rs#L16) described by the Layout enum.
+The default layouts are [all of the kinds](leftwm-core/src/layouts/mod.rs#L21) described by the Layout enum.
 
 ## Troubleshooting
 
