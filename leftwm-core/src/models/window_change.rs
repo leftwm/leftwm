@@ -3,6 +3,7 @@ use super::Window;
 use super::WindowHandle;
 use super::WindowState;
 use super::WindowType;
+use super::Xyhw;
 use crate::models::{Margins, XyhwChange};
 
 type MaybeName = Option<String>;
@@ -13,9 +14,10 @@ pub struct WindowChange {
     pub transient: Option<MaybeWindowHandle>,
     pub never_focus: Option<bool>,
     pub name: Option<MaybeName>,
-    pub type_: Option<WindowType>,
+    pub r#type: Option<WindowType>,
     pub floating: Option<XyhwChange>,
     pub strut: Option<XyhwChange>,
+    pub requested: Option<Xyhw>,
     pub states: Option<Vec<WindowState>>,
 }
 
@@ -27,9 +29,10 @@ impl WindowChange {
             transient: None,
             never_focus: None,
             name: None,
-            type_: None,
+            r#type: None,
             floating: None,
             strut: None,
+            requested: None,
             states: None,
         }
     }
@@ -74,13 +77,16 @@ impl WindowChange {
             //////}
             changed = changed || changed_strut;
         }
-        if let Some(type_) = &self.type_ {
-            let changed_type = &window.type_ != type_;
+        if let Some(requested) = self.requested {
+            window.requested = Some(requested);
+        }
+        if let Some(r#type) = &self.r#type {
+            let changed_type = &window.r#type != r#type;
             //if changed_type {
             //    warn!("CHANGED: type");
             //}
             changed = changed || changed_type;
-            window.type_ = type_.clone();
+            window.r#type = r#type.clone();
             if window.is_unmanaged() {
                 window.border = 0;
                 window.margin = Margins::new(0);

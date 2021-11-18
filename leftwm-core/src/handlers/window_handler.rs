@@ -47,8 +47,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.actions.push_back(act);
         }
 
-        // tell the WM the new display order of the windows
-        //new windows should be on the top of the stack
+        // Tell the WM the new display order of the windows.
         self.state.sort_windows();
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
@@ -96,6 +95,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
     pub fn window_changed_handler(&mut self, change: WindowChange) -> bool {
         let mut changed = false;
+        let mut fullscreen_changed = false;
         let strut_changed = change.strut.is_some();
         if let Some(w) = self
             .state
@@ -103,13 +103,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .iter_mut()
             .find(|w| w.handle == change.handle)
         {
+            if let Some(ref states) = change.states {
+                let change_contains = states.contains(&WindowState::Fullscreen);
+                fullscreen_changed = change_contains || w.is_fullscreen();
+            }
             log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
             changed = change.update(w);
-            if w.type_ == WindowType::Dock {
+            if w.r#type == WindowType::Dock {
                 self.update_workspace_avoid_list();
-                //don't left changes from docks re-render the worker. This will result in an
-                //infinite loop. Just be patient a rerender will occur.
+                // Don't let changes from docks re-render the worker. This will result in an
+                // infinite loop. Just be patient a rerender will occur.
             }
+        }
+        if fullscreen_changed {
+            // Reorder windows.
+            let act = DisplayAction::SetWindowOrder(self.state.windows.clone());
+            self.state.actions.push_back(act);
         }
         if strut_changed {
             self.state.update_static();
@@ -122,7 +131,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state
             .windows
             .iter()
-            .filter(|w| w.type_ == WindowType::Dock)
+            .filter(|w| w.r#type == WindowType::Dock)
             .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
             .for_each(|(handle, to_avoid)| {
                 log::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
@@ -234,21 +243,29 @@ fn setup_window(
                 }
             }
         }
-        if window.type_ == WindowType::Normal {
+        if window.r#type == WindowType::Normal {
             window.apply_margin_multiplier(ws.margin_multiplier);
         }
-        //if dialog, center in workspace
-        if window.type_ == WindowType::Dialog {
-            window.set_floating(true);
-            let new_float_exact = ws.center_halfed();
-            window.normal = ws.xyhw;
-            window.set_floating_exact(new_float_exact);
+        // Center dialogs and modal in workspace
+        if window.r#type == WindowType::Dialog || window.states().contains(&WindowState::Modal) {
+            if window.can_resize() {
+                window.set_floating(true);
+                let new_float_exact = ws.center_halfed();
+                window.normal = ws.xyhw;
+                window.set_floating_exact(new_float_exact);
+            } else {
+                set_relative_floating(window, ws, ws.xyhw);
+            }
         }
-        if window.type_ == WindowType::Splash {
+        if window.r#type == WindowType::Splash {
             set_relative_floating(window, ws, ws.xyhw);
         }
         if let Some(parent) = find_transient_parent(state, window) {
-            set_relative_floating(window, ws, parent.calculated_xyhw());
+            // This is currently for vlc, this probably will need to be more general if another
+            // case comes up where we don't want to move the window.
+            if window.r#type != WindowType::Utility {
+                set_relative_floating(window, ws, parent.exact_xyhw());
+            }
         }
     } else {
         window.tags = vec![1];
@@ -262,47 +279,58 @@ fn setup_window(
 }
 
 fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
-    // If the tag contains a fullscreen window, minimize it
-    let for_active_workspace =
-        |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
     let mut was_fullscreen = false;
-    if let Some(fsw) = state
-        .windows
-        .iter_mut()
-        .find(|w| for_active_workspace(w) && w.is_fullscreen())
-    {
-        let act =
-            DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
-        state.actions.push_back(act);
-        was_fullscreen = true;
+    if window.r#type == WindowType::Normal {
+        let for_active_workspace =
+            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
+        // Only minimize when the new window is type normal.
+        if let Some(fsw) = state
+            .windows
+            .iter_mut()
+            .find(|w| for_active_workspace(w) && w.is_fullscreen())
+        {
+            let act =
+                DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
+            state.actions.push_back(act);
+            was_fullscreen = true;
+        }
+        if matches!(layout, Layout::Monocle | Layout::MainAndDeck) {
+            // Extract the current windows on the same workspace.
+            let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
+            if layout == Layout::Monocle || to_reorder.is_empty() {
+                // When in monocle we want the new window to be fullscreen if a window was
+                // fullscreen.
+                if was_fullscreen {
+                    let act = DisplayAction::SetState(
+                        window.handle,
+                        !window.is_fullscreen(),
+                        WindowState::Fullscreen,
+                    );
+                    state.actions.push_back(act);
+                }
+                // Place the window above the other windows on the workspace.
+                to_reorder.insert(0, window.clone());
+            } else {
+                // Place the window second within the other windows on the workspace.
+                to_reorder.insert(1, window.clone());
+            }
+            state.windows.append(&mut to_reorder);
+            return;
+        }
     }
 
-    if matches!(layout, Layout::Monocle | Layout::MainAndDeck) && window.type_ == WindowType::Normal
-    {
-        let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
-        if layout == Layout::Monocle || to_reorder.is_empty() {
-            if was_fullscreen {
-                let act = DisplayAction::SetState(
-                    window.handle,
-                    !window.is_fullscreen(),
-                    WindowState::Fullscreen,
-                );
-                state.actions.push_back(act);
-            }
-            to_reorder.insert(0, window.clone());
-        } else {
-            to_reorder.insert(1, window.clone());
-        }
-        state.windows.append(&mut to_reorder);
-    } else if window.type_ == WindowType::Dialog
-        || window.type_ == WindowType::Splash
+    // If a window is a dialog, splash, or scractchpad we want it to be at the top.
+    if window.r#type == WindowType::Dialog
+        || window.r#type == WindowType::Splash
+        || window.r#type == WindowType::Utility
         || is_scratchpad(state, window)
     {
-        //Slow
         state.windows.insert(0, window.clone());
-    } else {
-        state.windows.push(window.clone());
+        return;
     }
+
+    // Past special cases we just push the winodw to the bottom.
+    state.windows.push(window.clone());
 }
 
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
@@ -310,11 +338,9 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.normal = ws.xyhw;
     let xyhw = window.requested.map_or_else(
         || ws.center_halfed(),
-        |requested| {
-            let mut xyhw = Xyhw::default();
-            requested.update(&mut xyhw);
-            xyhw.center_relative(outer, window.border, requested);
-            xyhw
+        |mut requested| {
+            requested.center_relative(outer, window.border);
+            requested
         },
     );
     window.set_floating_exact(xyhw);

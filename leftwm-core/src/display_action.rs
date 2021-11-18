@@ -28,7 +28,10 @@ pub enum DisplayAction {
 
     /// Sets the "z-index" order of the windows
     /// first in the array is top most
-    SetWindowOrder(Vec<WindowHandle>),
+    SetWindowOrder(Vec<Window>),
+
+    /// Raises a given window.
+    MoveToTop(WindowHandle),
 
     /// Tell the DS we no longer care about the this window and other
     /// cleanup.
@@ -37,10 +40,10 @@ pub enum DisplayAction {
     /// Tell a window that it is to become focused.
     WindowTakeFocus(Window),
 
-    /// Remove focus on any visible window by focusing the root window
+    /// Remove focus on any visible window by focusing the root window.
     Unfocus,
 
-    /// To the window under the cursor to take the focus
+    /// To the window under the cursor to take the focus.
     FocusWindowUnderCursor,
 
     /// Tell the DM we are going to resize a window and only send that
@@ -61,6 +64,6 @@ pub enum DisplayAction {
     /// window or moving a window).
     NormalMode,
 
-    /// SoftReload keygrabs, needed when keyboard changes
+    /// SoftReload keygrabs, needed when keyboard changes.
     ReloadKeyGrabs(Vec<Keybind>),
 }

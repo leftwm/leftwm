@@ -13,12 +13,13 @@ use crate::config::Config;
 use crate::models::{FocusBehaviour, Mode};
 use crate::utils::xkeysym_lookup::ModMask;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_ulong};
+use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
 use std::{ptr, slice};
 use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
 use x11_dl::xlib;
+use x11_dl::xrandr::Xrandr;
 
 mod getters;
 mod keyboard;
@@ -64,6 +65,8 @@ pub struct XWrap {
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
     pub task_notify: Arc<Notify>,
+    pub motion_event_limiter: c_ulong,
+    pub refresh_rate: c_short,
 }
 
 impl Default for XWrap {
@@ -76,6 +79,7 @@ impl XWrap {
     /// # Panics
     ///
     /// Panics if unable to contact xorg.
+    // TODO: Split this function up.
     // `XOpenDisplay`: https://tronche.com/gui/x/xlib/display/opening.html
     // `XConnectionNumber`: https://tronche.com/gui/x/xlib/display/display-macros.html#ConnectionNumber
     // `XDefaultRootWindow`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultRootWindow
@@ -83,6 +87,7 @@ impl XWrap {
     // `XSelectInput`: https://tronche.com/gui/x/xlib/event-handling/XSelectInput.html
     // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
         const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().expect("Couldn't not connect to Xorg Server");
@@ -131,6 +136,40 @@ impl XWrap {
             active: 0,
         };
 
+        let refresh_rate = match Xrandr::open() {
+            // Get the current refresh rate from xrandr if available.
+            Ok(xrandr) => unsafe {
+                let screen_resources = (xrandr.XRRGetScreenResources)(display, root);
+                let crtcs = slice::from_raw_parts(
+                    (*screen_resources).crtcs,
+                    (*screen_resources).ncrtc as usize,
+                );
+                let active_modes: Vec<c_ulong> = crtcs
+                    .iter()
+                    .map(|crtc| (xrandr.XRRGetCrtcInfo)(display, screen_resources, *crtc))
+                    .filter(|&crtc_info| (*crtc_info).mode != 0)
+                    .map(|crtc_info| (*crtc_info).mode)
+                    .collect();
+                let modes = slice::from_raw_parts(
+                    (*screen_resources).modes,
+                    (*screen_resources).nmode as usize,
+                );
+                modes
+                    .iter()
+                    .filter(|mode_info| active_modes.contains(&mode_info.id))
+                    .map(|mode_info| {
+                        (mode_info.dotClock as c_double
+                            / c_double::from(mode_info.hTotal * mode_info.vTotal))
+                            as c_short
+                    })
+                    .max()
+                    .unwrap_or(60)
+            },
+            Err(_) => 60,
+        };
+
+        log::debug!("Refresh Rate: {}", refresh_rate);
+
         let xw = Self {
             xlib,
             display,
@@ -146,6 +185,8 @@ impl XWrap {
             mode_origin: (0, 0),
             _task_guard,
             task_notify,
+            motion_event_limiter: 0,
+            refresh_rate,
         };
 
         // Check that another WM is not running.
@@ -242,7 +283,7 @@ impl XWrap {
                 .iter()
                 .map(|&atom| atom as c_long)
                 .collect();
-            self.set_property_long(root, self.atoms.NetSupported, xlib::XA_ATOM, &supported);
+            self.replace_property_long(root, self.atoms.NetSupported, xlib::XA_ATOM, &supported);
             std::mem::forget(supported);
             // Cleanup the client list.
             (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);

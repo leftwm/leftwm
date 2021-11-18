@@ -9,6 +9,52 @@ use x11_dl::xlib;
 impl XWrap {
     // Public functions.
 
+    /// Appends a window property.
+    // `XChangeProperty`: https://tronche.com/gui/x/xlib/window-information/XChangeProperty.html
+    pub fn append_property_long(
+        &self,
+        window: xlib::Window,
+        property: xlib::Atom,
+        r#type: xlib::Atom,
+        data: &[c_long],
+    ) {
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                property,
+                r#type,
+                32,
+                xlib::PropModeAppend,
+                data.as_ptr().cast::<u8>(),
+                data.len() as i32,
+            );
+        }
+    }
+
+    /// Replaces a window property.
+    // `XChangeProperty`: https://tronche.com/gui/x/xlib/window-information/XChangeProperty.html
+    pub fn replace_property_long(
+        &self,
+        window: xlib::Window,
+        property: xlib::Atom,
+        r#type: xlib::Atom,
+        data: &[c_long],
+    ) {
+        unsafe {
+            (self.xlib.XChangeProperty)(
+                self.display,
+                window,
+                property,
+                r#type,
+                32,
+                xlib::PropModeReplace,
+                data.as_ptr().cast::<u8>(),
+                data.len() as i32,
+            );
+        }
+    }
+
     /// Sets the client list to the currently managed windows.
     // `XDeleteProperty`: https://tronche.com/gui/x/xlib/window-information/XDeleteProperty.html
     pub fn set_client_list(&self) {
@@ -17,7 +63,7 @@ impl XWrap {
         }
         for w in &self.managed_windows {
             let list = vec![*w as c_long];
-            self.set_property_long(self.root, self.atoms.NetClientList, xlib::XA_WINDOW, &list);
+            self.append_property_long(self.root, self.atoms.NetClientList, xlib::XA_WINDOW, &list);
         }
     }
 
@@ -52,13 +98,13 @@ impl XWrap {
     /// Sets a desktop property.
     pub fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
         let x_data: Vec<c_long> = data.iter().map(|x| *x as c_long).collect();
-        self.set_property_long(self.root, atom, xlib::XA_CARDINAL, &x_data);
+        self.replace_property_long(self.root, atom, xlib::XA_CARDINAL, &x_data);
     }
 
     /// Sets a desktop property with type `c_ulong`.
-    pub fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, type_: c_ulong) {
+    pub fn set_desktop_prop_c_ulong(&self, value: c_ulong, atom: c_ulong, r#type: c_ulong) {
         let data = vec![value as c_long];
-        self.set_property_long(self.root, atom, type_, &data);
+        self.replace_property_long(self.root, atom, r#type, &data);
     }
 
     /// Sets a desktop property with type string.
@@ -78,29 +124,6 @@ impl XWrap {
                 );
                 std::mem::forget(cstring);
             }
-        }
-    }
-
-    /// Sets a window property.
-    // `XChangeProperty`: https://tronche.com/gui/x/xlib/window-information/XChangeProperty.html
-    pub fn set_property_long(
-        &self,
-        window: xlib::Window,
-        property: xlib::Atom,
-        type_: xlib::Atom,
-        data: &[c_long],
-    ) {
-        unsafe {
-            (self.xlib.XChangeProperty)(
-                self.display,
-                window,
-                property,
-                type_,
-                32,
-                xlib::PropModeReplace,
-                data.as_ptr().cast::<u8>(),
-                data.len() as i32,
-            );
         }
     }
 
@@ -130,17 +153,17 @@ impl XWrap {
         if indexes.is_empty() {
             indexes.push(0);
         }
-        self.set_property_long(window, self.atoms.NetWMDesktop, xlib::XA_CARDINAL, &indexes);
+        self.replace_property_long(window, self.atoms.NetWMDesktop, xlib::XA_CARDINAL, &indexes);
     }
 
     /// Sets the atom states of a window.
     pub fn set_window_states_atoms(&self, window: xlib::Window, states: &[xlib::Atom]) {
         let data: Vec<c_long> = states.iter().map(|x| *x as c_long).collect();
-        self.set_property_long(window, self.atoms.NetWMState, xlib::XA_ATOM, &data);
+        self.replace_property_long(window, self.atoms.NetWMState, xlib::XA_ATOM, &data);
     }
 
     /// Sets the `WM_STATE` of a window.
     pub fn set_wm_states(&self, window: xlib::Window, states: &[c_long]) {
-        self.set_property_long(window, self.atoms.WMState, self.atoms.WMState, states);
+        self.replace_property_long(window, self.atoms.WMState, self.atoms.WMState, states);
     }
 }

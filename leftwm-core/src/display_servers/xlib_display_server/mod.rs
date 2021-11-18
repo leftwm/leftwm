@@ -74,7 +74,7 @@ impl DisplayServer for XlibDisplayServer {
             .max();
         let max_screen_width = state.screens.iter().map(|s| s.bbox.width).max();
 
-        for window in windows {
+        for window in &windows {
             let is_focused = match focused_window {
                 Some(f) => f.handle == window.handle,
                 None => false,
@@ -84,9 +84,6 @@ impl DisplayServer for XlibDisplayServer {
                 .unwrap_or_else(|| left_offset(max_screen_width, window));
 
             self.xw.update_window(window, is_focused, hide_offset);
-            if window.is_fullscreen() {
-                self.xw.move_to_top(&window.handle);
-            }
         }
     }
 
@@ -109,7 +106,7 @@ impl DisplayServer for XlibDisplayServer {
 
         for _ in 0..event_in_queue {
             let xlib_event = self.xw.get_next_event();
-            let event = XEvent(&self.xw, xlib_event).into();
+            let event = XEvent(&mut self.xw, xlib_event).into();
             if let Some(e) = event {
                 log::trace!("DisplayEvent: {:?}", e);
                 events.push(e);
@@ -125,6 +122,8 @@ impl DisplayServer for XlibDisplayServer {
         events
     }
 
+    // TODO: Split function up.
+    #[allow(clippy::too_many_lines)]
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
         log::trace!("DisplayAction: {:?}", act);
         let event: Option<DisplayEvent> = match act {
@@ -175,20 +174,45 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.set_state(h, toggle_to, state);
                 None
             }
-            DisplayAction::SetWindowOrder(wins) => {
-                // get all the windows are aren't managing.
-                // They should be in front of our windows.
-                let unmanged: Vec<WindowHandle> = self
+            DisplayAction::SetWindowOrder(windows) => {
+                // The windows we are managing should be behind unmanaged windows. Unless they are
+                // fullscreen, or their children.
+                let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
+                    windows.iter().partition(|w| w.is_fullscreen());
+                // Fullscreen windows.
+                let level2: Vec<WindowHandle> =
+                    fullscreen_windows.iter().map(|w| w.handle).collect();
+                let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) =
+                    other.iter().partition(|w| {
+                        level2.contains(&w.transient.unwrap_or(WindowHandle::XlibHandle(0)))
+                    });
+                // Fullscreen windows children.
+                let level1: Vec<WindowHandle> =
+                    fullscreen_children.iter().map(|w| w.handle).collect();
+                // Left over managed windows.
+                let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+                // Unmanaged windows.
+                let level3: Vec<WindowHandle> = self
                     .xw
                     .get_all_windows()
                     .unwrap_or_default()
                     .iter()
-                    .filter(|&x| *x != self.root)
-                    .map(|x| WindowHandle::XlibHandle(*x))
-                    .filter(|h| !wins.contains(h))
+                    .filter(|&w| *w != self.root)
+                    .map(|w| WindowHandle::XlibHandle(*w))
+                    .filter(|&h| !windows.iter().any(|w| w.handle == h))
                     .collect();
-                let all: Vec<WindowHandle> = unmanged.iter().chain(wins.iter()).copied().collect();
+                let all: Vec<WindowHandle> = level1
+                    .iter()
+                    .chain(level2.iter())
+                    .chain(level3.iter())
+                    .chain(level4.iter())
+                    .copied()
+                    .collect();
                 self.xw.restack(all);
+                None
+            }
+            DisplayAction::MoveToTop(handle) => {
+                self.xw.move_to_top(&handle);
                 None
             }
             DisplayAction::FocusWindowUnderCursor => {
