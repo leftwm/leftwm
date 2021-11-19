@@ -18,7 +18,7 @@ test:
 	cd $(ROOT_DIR) && cargo fmt -- --check
 	cd $(ROOT_DIR) && cargo clippy --release
 
-# builds the project and converts manpage
+# builds the project
 build:
 	cd $(ROOT_DIR) && cargo build ${BUILDFLAGS}
 
