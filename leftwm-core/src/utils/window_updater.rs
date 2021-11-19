@@ -25,13 +25,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             for tag in &tags {
                 tag.update_windows(windows, ws);
             }
-
-            // resize all windows marked as fullscreen to the workspace size
-            self.state
-                .windows
-                .iter_mut()
-                .filter(|w| ws.is_displaying(w) && w.is_fullscreen())
-                .for_each(|w| w.normal = ws.xyhw);
         }
 
         self.state

@@ -23,23 +23,19 @@ impl XWrap {
 
                 // Let Xlib know we are managing this window.
                 let list = vec![handle as c_long];
-                (self.xlib.XChangeProperty)(
-                    self.display,
+                self.append_property_long(
                     self.root,
                     self.atoms.NetClientList,
                     xlib::XA_WINDOW,
-                    32,
-                    xlib::PropModeAppend,
-                    list.as_ptr().cast::<u8>(),
-                    1,
+                    &list,
                 );
                 std::mem::forget(list);
 
                 (self.xlib.XSync)(self.display, 0);
             }
 
-            let type_ = self.get_window_type(handle);
-            if type_ == WindowType::Dock || type_ == WindowType::Desktop {
+            let r#type = self.get_window_type(handle);
+            if r#type == WindowType::Dock || r#type == WindowType::Desktop {
                 if let Some(dock_area) = self.get_window_strut_array(handle) {
                     let dems = self.get_screens_area_dimensions();
                     let screen = self
@@ -51,7 +47,7 @@ impl XWrap {
                     if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
                         let mut change = WindowChange::new(h);
                         change.strut = Some(xyhw.into());
-                        change.type_ = Some(type_);
+                        change.r#type = Some(r#type);
                         return Some(DisplayEvent::WindowChange(change));
                     }
                 } else if let Ok(geo) = self.get_window_geometry(handle) {
@@ -59,7 +55,7 @@ impl XWrap {
                     geo.update(&mut xyhw);
                     let mut change = WindowChange::new(h);
                     change.strut = Some(xyhw.into());
-                    change.type_ = Some(type_);
+                    change.r#type = Some(r#type);
                     return Some(DisplayEvent::WindowChange(change));
                 }
             } else {
@@ -188,7 +184,7 @@ impl XWrap {
                         xlib::CurrentTime,
                     );
                     let list = vec![handle as c_long];
-                    self.set_property_long(
+                    self.replace_property_long(
                         self.root,
                         self.atoms.NetActiveWindow,
                         xlib::XA_WINDOW,
@@ -212,7 +208,7 @@ impl XWrap {
         let handle = self.root;
         unsafe {
             (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
-            self.set_property_long(
+            self.replace_property_long(
                 self.root,
                 self.atoms.NetActiveWindow,
                 xlib::XA_WINDOW,

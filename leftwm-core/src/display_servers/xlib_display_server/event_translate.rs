@@ -9,9 +9,10 @@ use crate::models::WindowHandle;
 use crate::models::WindowType;
 use crate::models::Xyhw;
 use crate::models::XyhwChange;
+use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
-pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
+pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 
 impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     fn from(x_event: XEvent) -> Self {
@@ -64,7 +65,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 Some(DisplayEvent::KeyCombo(event.state, sym))
             }
 
-            xlib::MotionNotify => Some(from_motion_notify(raw_event, xw)),
+            xlib::MotionNotify => from_motion_notify(raw_event, xw),
 
             xlib::ConfigureRequest => from_configure_request(xw, raw_event),
 
@@ -73,35 +74,52 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     }
 }
 
-fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent> {
+fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEvent> {
     let event = xlib::XMapRequestEvent::from(raw_event);
     let handle = WindowHandle::XlibHandle(event.window);
     xw.subscribe_to_window_events(&handle);
-    //check that the window isn't requesting to be unmanaged
-    let attr = xw.get_window_attrs(event.window).ok()?;
-    if attr.override_redirect > 0 {
-        return None;
+    // Check that the window isn't requesting to be unmanaged
+    match xw.get_window_attrs(event.window) {
+        Ok(attr) if attr.override_redirect == 0 => (),
+        _ => return None,
     }
-    //build the new window, and fill in info about it from xlib
+    // Gather info about the window from xlib.
     let name = xw.get_window_name(event.window);
     let pid = xw.get_window_pid(event.window);
-    let mut w = Window::new(handle, name, pid);
+    let r#type = xw.get_window_type(event.window);
+    let states = xw.get_window_states(event.window);
+    let actions = xw.get_window_actions_atoms(event.window);
+    let mut can_resize = actions.contains(&xw.atoms.NetWMActionResize);
     let trans = xw.get_transient_for(event.window);
-    if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
-        hint.update_window_floating(&mut w);
-        w.set_requested(hint);
-    }
-    w.set_states(xw.get_window_states(event.window));
-    if w.floating() {
-        if let Ok(geo) = xw.get_window_geometry(event.window) {
-            log::debug!("geo: {geo:?}", geo = geo);
-            geo.update_window_floating(&mut w);
-        }
-    }
+    let sizing_hint = xw.get_hint_sizing_as_xyhw(event.window);
+
+    // Build the new window, and fill in info about it.
+    let mut w = Window::new(handle, name, pid);
+    w.r#type = r#type;
+    w.set_states(states);
     if let Some(trans) = trans {
         w.transient = Some(WindowHandle::XlibHandle(trans));
     }
-    w.type_ = xw.get_window_type(event.window);
+    if let Some(hint) = sizing_hint {
+        can_resize = match (hint.minw, hint.minh, hint.maxw, hint.maxh) {
+            (Some(min_width), Some(min_height), Some(max_width), Some(max_height)) => {
+                can_resize || min_width != max_width || min_height != max_height
+            }
+            _ => true,
+        };
+        hint.update_window_floating(&mut w);
+        let mut hint_xyhw = Xyhw::default();
+        hint.update(&mut hint_xyhw);
+        w.requested = Some(hint_xyhw);
+    }
+    w.can_resize = can_resize;
+    // Is this needed? Made it so it doens't overwrite prior sizing.
+    if w.floating() && sizing_hint.is_none() {
+        if let Ok(geo) = xw.get_window_geometry(event.window) {
+            geo.update_window_floating(&mut w);
+        }
+    }
+
     let cursor = xw.get_cursor_point().unwrap_or_default();
     Some(DisplayEvent::WindowCreate(w, cursor.0, cursor.1))
 }
@@ -140,16 +158,22 @@ fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent
     Some(DisplayEvent::MouseEnteredWindow(h))
 }
 
-fn from_motion_notify(raw_event: xlib::XEvent, xw: &XWrap) -> DisplayEvent {
+fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEvent> {
     let event = xlib::XMotionEvent::from(raw_event);
-    let event_h = WindowHandle::XlibHandle(event.window);
-    let offset_x = event.x_root - xw.mode_origin.0;
-    let offset_y = event.y_root - xw.mode_origin.1;
-    match &xw.mode {
-        Mode::Normal => DisplayEvent::Movement(event_h, event.x_root, event.y_root),
-        Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, event.time, offset_x, offset_y),
-        Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, event.time, offset_x, offset_y),
+    // Limit motion events to current refresh rate.
+    if event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong) {
+        xw.motion_event_limiter = event.time;
+        let event_h = WindowHandle::XlibHandle(event.window);
+        let offset_x = event.x_root - xw.mode_origin.0;
+        let offset_y = event.y_root - xw.mode_origin.1;
+        let display_event = match &xw.mode {
+            Mode::Normal => DisplayEvent::Movement(event_h, event.x_root, event.y_root),
+            Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, offset_x, offset_y),
+            Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, offset_x, offset_y),
+        };
+        return Some(display_event);
     }
+    None
 }
 
 fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {

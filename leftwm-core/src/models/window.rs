@@ -3,7 +3,6 @@
 use super::WindowState;
 use super::WindowType;
 use crate::config::Config;
-use crate::models::xyhw_change::XyhwChange;
 use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
@@ -28,6 +27,7 @@ pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
     visible: bool,
+    pub can_resize: bool,
     is_floating: bool,
     must_float: bool,
     floating: Option<Xyhw>,
@@ -35,13 +35,13 @@ pub struct Window {
     pub debugging: bool,
     pub name: Option<String>,
     pub pid: Option<u32>,
-    pub type_: WindowType,
+    pub r#type: WindowType,
     pub tags: Vec<TagId>,
     pub border: i32,
     pub margin: Margins,
     pub margin_multiplier: f32,
     states: Vec<WindowState>,
-    pub requested: Option<XyhwChange>,
+    pub requested: Option<Xyhw>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
 
@@ -61,13 +61,14 @@ impl Window {
             handle: h,
             transient: None,
             visible: false,
+            can_resize: true,
             is_floating: false,
             must_float: false,
             debugging: false,
             never_focus: false,
             name,
             pid,
-            type_: WindowType::Normal,
+            r#type: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
             margin: Margins::new(10),
@@ -84,7 +85,7 @@ impl Window {
     }
 
     pub(crate) fn load_config(&mut self, config: &impl Config) {
-        if self.type_ == WindowType::Normal {
+        if self.r#type == WindowType::Normal {
             self.margin = config.margin();
             self.border = config.border_width();
             self.must_float = config.always_float();
@@ -101,10 +102,10 @@ impl Window {
     #[must_use]
     pub fn visible(&self) -> bool {
         self.visible
-            || self.type_ == WindowType::Menu
-            || self.type_ == WindowType::Splash
-            || self.type_ == WindowType::Dialog
-            || self.type_ == WindowType::Toolbar
+            || self.r#type == WindowType::Menu
+            || self.r#type == WindowType::Splash
+            || self.r#type == WindowType::Dialog
+            || self.r#type == WindowType::Toolbar
     }
 
     pub fn set_floating(&mut self, value: bool) {
@@ -157,7 +158,7 @@ impl Window {
         self.must_float
             || self.transient.is_some()
             || self.is_unmanaged()
-            || self.type_ == WindowType::Splash
+            || self.r#type == WindowType::Splash
     }
     #[must_use]
     pub fn can_move(&self) -> bool {
@@ -165,7 +166,7 @@ impl Window {
     }
     #[must_use]
     pub fn can_resize(&self) -> bool {
-        !self.is_unmanaged()
+        self.can_resize && !self.is_unmanaged()
     }
 
     #[must_use]
@@ -195,14 +196,6 @@ impl Window {
         self.states.clone()
     }
 
-    pub fn set_requested(&mut self, change: XyhwChange) {
-        self.requested = Some(change);
-    }
-
-    pub fn get_requested(&mut self) -> Option<XyhwChange> {
-        self.requested
-    }
-
     pub fn apply_margin_multiplier(&mut self, value: f32) {
         self.margin_multiplier = value.abs();
         if value < 0 as f32 {
@@ -230,8 +223,12 @@ impl Window {
                 - (((self.margin.left + self.margin.right) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
-        if value < 100 && !self.is_unmanaged() {
-            value = 100;
+        let limit = match self.requested {
+            Some(requested) if requested.minw() > 0 && self.floating() => requested.minw(),
+            _ => 100,
+        };
+        if value < limit && !self.is_unmanaged() {
+            value = limit;
         }
         value
     }
@@ -248,8 +245,12 @@ impl Window {
                 - (((self.margin.top + self.margin.bottom) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
-        if value < 100 && !self.is_unmanaged() {
-            value = 100;
+        let limit = match self.requested {
+            Some(requested) if requested.minh() > 0 && self.floating() => requested.minh(),
+            _ => 100,
+        };
+        if value < limit && !self.is_unmanaged() {
+            value = limit;
         }
         value
     }
@@ -275,7 +276,8 @@ impl Window {
         if self.is_fullscreen() {
             self.normal.x()
         } else if self.floating() && self.floating.is_some() && !self.is_snapping {
-            self.calculated_floating_xyhw().unwrap_or_default().x()
+            let relative = self.normal + self.floating.unwrap_or_default();
+            relative.x()
         } else {
             self.normal.x() + (self.margin.left as f32 * self.margin_multiplier) as i32
         }
@@ -286,7 +288,8 @@ impl Window {
         if self.is_fullscreen() {
             self.normal.y()
         } else if self.floating() && self.floating.is_some() && !self.is_snapping {
-            self.calculated_floating_xyhw().unwrap_or_default().y()
+            let relative = self.normal + self.floating.unwrap_or_default();
+            relative.y()
         } else {
             self.normal.y() + (self.margin.top as f32 * self.margin_multiplier) as i32
         }
@@ -318,6 +321,15 @@ impl Window {
     }
 
     #[must_use]
+    pub fn exact_xyhw(&self) -> Xyhw {
+        if self.floating() && self.floating.is_some() {
+            self.normal + self.floating.unwrap_or_default()
+        } else {
+            self.normal
+        }
+    }
+
+    #[must_use]
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
         self.calculated_xyhw().contains_point(x, y)
     }
@@ -343,7 +355,7 @@ impl Window {
 
     #[must_use]
     pub fn is_unmanaged(&self) -> bool {
-        self.type_ == WindowType::Desktop || self.type_ == WindowType::Dock
+        self.r#type == WindowType::Desktop || self.r#type == WindowType::Dock
     }
 }
 

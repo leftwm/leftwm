@@ -130,13 +130,20 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                 let is_visible = window.has_tag(current_tag);
                 window.clear_tags();
                 if is_visible {
-                    // hide the scratchpad
+                    // Hide the scratchpad.
                     window.tag(&nsp_tag.id);
-                    if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
+                    // Make sure when changing focus the scratchpad is currently focused.
+                    if Some(&Some(window.handle))
+                        != manager.state.focus_manager.window_history.get(0)
+                    {
+                        handle = None;
+                    } else if let Some(Some(prev)) =
+                        manager.state.focus_manager.window_history.get(1)
+                    {
                         handle = Some(*prev);
                     }
                 } else {
-                    // show the scratchpad
+                    // Show the scratchpad.
                     window.tag(current_tag);
                     handle = Some(window.handle);
                 }
@@ -170,7 +177,8 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     let handle = window.handle;
-    let act = DisplayAction::SetState(handle, !window.has_state(&window_state), window_state);
+    let toggle_to = !window.has_state(&window_state);
+    let act = DisplayAction::SetState(handle, toggle_to, window_state);
     state.actions.push_back(act);
     match window_state {
         WindowState::Fullscreen => Some(handle_focus(state, handle)),
@@ -547,7 +555,7 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let window = state
         .windows
         .iter()
-        .find(|w| workspace.is_displaying(w) && w.type_ == WindowType::Normal)?
+        .find(|w| workspace.is_displaying(w) && w.r#type == WindowType::Normal)?
         .clone();
     Some(handle_focus(state, window.handle))
 }
@@ -572,9 +580,9 @@ fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bo
     let ws = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     ws.set_margin_multiplier(margin_multiplier);
     let tags = ws.tags.clone();
-    if state.windows.iter().any(|w| w.type_ == WindowType::Normal) {
+    if state.windows.iter().any(|w| w.r#type == WindowType::Normal) {
         let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&tags, &x.tags) && x.type_ == WindowType::Normal
+            helpers::intersect(&tags, &x.tags) && x.r#type == WindowType::Normal
         };
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut state.windows, for_active_workspace);

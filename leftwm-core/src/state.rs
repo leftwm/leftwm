@@ -73,35 +73,33 @@ impl State {
         use crate::models::WindowType;
         //first dialogs and modals
         let (level1, other): (Vec<&Window>, Vec<&Window>) = self.windows.iter().partition(|w| {
-            w.type_ == WindowType::Dialog
-                || w.type_ == WindowType::Splash
-                || w.type_ == WindowType::Utility
-                || w.type_ == WindowType::Menu
+            w.r#type == WindowType::Dialog
+                || w.r#type == WindowType::Splash
+                || w.r#type == WindowType::Utility
+                || w.r#type == WindowType::Menu
         });
 
         //next floating
         let (level2, other): (Vec<&Window>, Vec<&Window>) = other
             .iter()
-            .partition(|w| w.type_ == WindowType::Normal && w.floating());
+            .partition(|w| w.r#type == WindowType::Normal && w.floating());
 
         //then normal windows
         let (level3, other): (Vec<&Window>, Vec<&Window>) =
-            other.iter().partition(|w| w.type_ == WindowType::Normal);
+            other.iter().partition(|w| w.r#type == WindowType::Normal);
 
         //last docks
         //other is all the reset
 
         //build the updated window list
-        let windows: Vec<Window> = level1
+        self.windows = level1
             .iter()
             .chain(level2.iter())
             .chain(level3.iter())
             .chain(other.iter())
             .map(|&w| w.clone())
             .collect();
-        self.windows = windows;
-        let order: Vec<_> = self.windows.iter().map(|w| w.handle).collect();
-        let act = DisplayAction::SetWindowOrder(order);
+        let act = DisplayAction::SetWindowOrder(self.windows.clone());
         self.actions.push_back(act);
     }
 

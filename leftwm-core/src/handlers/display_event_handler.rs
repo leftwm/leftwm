@@ -77,24 +77,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 false
             }
 
-            DisplayEvent::MoveWindow(handle, time, x, y) => {
-                //limit the frame rate to 60f/sec. otherwise you get lag
-                let mut refresh = false;
-                if (time - self.state.frame_rate_limitor) > (1000 / 60) {
-                    refresh = self.window_move_handler(&handle, x, y);
-                    self.state.frame_rate_limitor = time;
-                }
-                refresh
-            }
-            DisplayEvent::ResizeWindow(handle, time, x, y) => {
-                //limit the frame rate to 60f/sec. otherwise you get lag
-                let mut refresh = false;
-                if (time - self.state.frame_rate_limitor) > (1000 / 60) {
-                    refresh = self.window_resize_handler(&handle, x, y);
-                    self.state.frame_rate_limitor = time;
-                }
-                refresh
-            }
+            DisplayEvent::MoveWindow(handle, x, y) => self.window_move_handler(&handle, x, y),
+            DisplayEvent::ResizeWindow(handle, x, y) => self.window_resize_handler(&handle, x, y),
         };
 
         if update_needed {
