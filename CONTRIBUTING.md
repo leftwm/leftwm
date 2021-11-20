@@ -63,7 +63,13 @@ cargo clippy -- -W clippy::pedantic -A clippy::must_use_candidate -A clippy::cas
 ### User Documentation
 
 When introducing new commands or config options it is helpfull to provide some user level documentation and keep the initial PR message body updated with this documentation.
+
 If possilbe please provide a snippet for the relevant wiki-article/section, so this can be updated acordingly as quick as possible.
+
+#### Manual Page
+
+If possible, please document your newly added commands / configuration options to the `leftwm` manual page, as this will help users
+who need offline documentation available or a "quick look" at any command. To do so, search for `leftwm/doc/leftwm.1` and document your changes in there.
 
 ### Tips and Tricks
 
