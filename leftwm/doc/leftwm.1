@@ -21,6 +21,8 @@ Prints the version information.
 This command will run several actions to ensure leftwm is configured properly, this will report the current leftwm version and git commit, it will also check if configuration is loaded correctly, check for syntax errors in your
 .I config.toml
 file, check your environment and theme files for errors as well.
+.B "NOTE:"
+This subcommand will check for basic / common mistakes made in the directory structure or permissions, however it will not check or report if any mistakes were made in any extra scripts, bar configurations, liquid templates and anything that isn't the up or down executables.
 .IP "command"
 This subcommand sends commands directly to leftwm. It can also be used to concat commands for a keybind in
 .I config.toml
@@ -29,8 +31,6 @@ For a list of available commands use the '-l|list' flag.
 Prints the current state of leftwm (in JSON format). You can also use flags and liqud-like syntax for a more refined output of this command.
 .IP "theme"
 Manage leftwm themes (This is part of an external package found in: https://GitHub.com/leftwm/leftwm-theme).
-.B "NOTE:"
-This subcommand will check for basic / common mistakes made in the directory structure or permissions, however it will not check or report if any mistakes were made in any extra scripts, bar configurations, liquid templates and anything that isn't the up or down executables.
 .SH CONFIGURING LEFTWM
 .IP "Configuration file"
 The settings file of leftwm can be found at:
