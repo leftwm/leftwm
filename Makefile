@@ -49,5 +49,6 @@ install-dev: build
 # uninstalls leftwm from the system, no matter if installed via 'install' or 'install-dev'
 uninstall:
 	sudo rm -f $(SHARE_DIR)/leftwm.desktop
+	sudo rm /usr/local/share/man/man1/leftwm.1
 	sudo rm -f $(TARGET_DIR)/leftwm $(TARGET_DIR)/leftwm-worker $(TARGET_DIR)/leftwm-state $(TARGET_DIR)/leftwm-check $(TARGET_DIR)/leftwm-command
 	@echo "binaries have been uninstalled and '.desktop' file removed"
