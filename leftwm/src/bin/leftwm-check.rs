@@ -303,42 +303,43 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
 fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
     let permissions = metadata.permissions();
-    if verbose {
-        if metadata.is_file() && (permissions.mode() & 0o111 != 0) {
+    if metadata.is_file() && (permissions.mode() & 0o111 != 0) {
+        if verbose {
             println!(
                 "Found `{}` with executable permissions: {:?}",
                 filepath.display(),
                 permissions.mode() & 0o111 != 0,
             );
-            Ok(filepath)
-        } else {
-            bail!(
-                "Found `{}`, but missing executable permissions!",
-                filepath.display(),
-            );
         }
-    } else {
+
         Ok(filepath)
+    } else {
+        bail!(
+            "Found `{}`, but missing executable permissions!",
+            filepath.display(),
+        );
     }
 }
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
     let contents = fs::read_to_string(&filepath.as_path())?;
-    if verbose {
-        if metadata.is_file() {
+
+    if metadata.is_file() {
+        if verbose {
             println!("Found: {}", filepath.display());
-            match toml::from_str::<ThemeSetting>(&contents) {
-                Ok(_) => {
+        }
+
+        match toml::from_str::<ThemeSetting>(&contents) {
+            Ok(_) => {
+                if verbose {
                     println!("The theme file looks OK.");
-                    Ok(filepath)
                 }
-                Err(err) => bail!("Could not parse theme file: {}", err),
+                Ok(filepath)
             }
-        } else {
-            bail!("No `theme.toml` found at path: {}", filepath.display());
+            Err(err) => bail!("Could not parse theme file: {}", err),
         }
     } else {
-        Ok(filepath)
+        bail!("No `theme.toml` found at path: {}", filepath.display());
     }
 }
