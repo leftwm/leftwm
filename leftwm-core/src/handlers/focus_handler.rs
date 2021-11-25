@@ -165,28 +165,26 @@ fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<
     Some(())
 }
 fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Option<Window> {
-    //Docks don't want to get focus. If they do weird things happen. They don't get events...
-    //Do the focus, Add the action to the list of action
+    // Find the handle in our managed windows.
     let found: &Window = state.windows.iter().find(|w| &w.handle == handle)?;
+    // Docks don't want to get focus. If they do weird things happen. They don't get events...
     if found.is_unmanaged() {
         return None;
     }
-    //NOTE: we are intentionally creating the focus event even if we think this window
-    //is already in focus. This is to force the DM to update its knowledge of the focused window
-    let act = DisplayAction::WindowTakeFocus(found.clone());
-    state.actions.push_back(act);
-
-    //no new history if no change
+    // No new history if no change.
     if let Some(fw) = state.focus_manager.window(&state.windows) {
         if &fw.handle == handle {
-            //NOTE: we still made the action so return some
-            return Some(found.clone());
+            return None;
         }
     }
-    //clean old ones
+
+    // Clean old history.
     state.focus_manager.window_history.truncate(10);
-    //add this focus to the history
+    // Add this focus change to the history.
     state.focus_manager.window_history.push_front(Some(*handle));
+
+    let act = DisplayAction::WindowTakeFocus(found.clone());
+    state.actions.push_back(act);
 
     Some(found.clone())
 }

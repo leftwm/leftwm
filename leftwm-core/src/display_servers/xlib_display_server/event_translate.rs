@@ -92,6 +92,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     let mut can_resize = actions.contains(&xw.atoms.NetWMActionResize);
     let trans = xw.get_transient_for(event.window);
     let sizing_hint = xw.get_hint_sizing_as_xyhw(event.window);
+    let wm_hint = xw.get_wmhints(event.window);
 
     // Build the new window, and fill in info about it.
     let mut w = Window::new(handle, name, pid);
@@ -113,6 +114,9 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
         w.requested = Some(hint_xyhw);
     }
     w.can_resize = can_resize;
+    if let Some(hint) = wm_hint {
+        w.never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
+    }
     // Is this needed? Made it so it doens't overwrite prior sizing.
     if w.floating() && sizing_hint.is_none() {
         if let Ok(geo) = xw.get_window_geometry(event.window) {
