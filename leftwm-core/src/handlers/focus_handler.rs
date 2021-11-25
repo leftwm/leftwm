@@ -28,7 +28,7 @@ impl State {
             None => return false,
         };
 
-        //make sure the focused window's workspace is focused
+        // Make sure the focused window's workspace is focused.
         let (focused_window_tag, workspace_id) =
             match self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
                 Some(ws) => (
@@ -41,7 +41,7 @@ impl State {
             let _ = focus_workspace_work(self, workspace_id);
         }
 
-        //make sure the focused window's tag is focused
+        // Make sure the focused window's tag is focused.
         if let Some(tag) = focused_window_tag {
             let _ = focus_tag_work(self, tag);
         }
@@ -157,9 +157,9 @@ fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<
             return None;
         }
     }
-    //clean old ones
+    // Clean old history.
     state.focus_manager.workspace_history.truncate(10);
-    //add this focus to the history
+    // Add this focus to the history.
     let index = state.workspaces.iter().position(|x| x.id == workspace_id)?;
     state.focus_manager.workspace_history.push_front(index);
     Some(())

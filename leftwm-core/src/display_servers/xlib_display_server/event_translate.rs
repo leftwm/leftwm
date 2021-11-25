@@ -187,17 +187,25 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
     };
     let event = xlib::XConfigureRequestEvent::from(raw_event);
     let window_type = xw.get_window_type(event.window);
-    if window_type == WindowType::Normal || window_type == WindowType::Dialog {
+    if window_type == WindowType::Normal {
         return None;
     }
     let handle = WindowHandle::XlibHandle(event.window);
     let mut change = WindowChange::new(handle);
-    let xyhw = XyhwChange {
-        w: Some(event.width),
-        h: Some(event.height),
-        x: Some(event.x),
-        y: Some(event.y),
-        ..XyhwChange::default()
+    let xyhw = match window_type {
+        // We want to handle the window positioning when it is a dialog.
+        WindowType::Dialog => XyhwChange {
+            w: Some(event.width),
+            h: Some(event.height),
+            ..XyhwChange::default()
+        },
+        _ => XyhwChange {
+            w: Some(event.width),
+            h: Some(event.height),
+            x: Some(event.x),
+            y: Some(event.y),
+            ..XyhwChange::default()
+        },
     };
     change.floating = Some(xyhw);
     if window_type == WindowType::Dock || window_type == WindowType::Desktop {
