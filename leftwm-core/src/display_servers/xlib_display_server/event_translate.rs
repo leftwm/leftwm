@@ -100,11 +100,14 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     if let Some(trans) = trans {
         w.transient = Some(WindowHandle::XlibHandle(trans));
     }
-    let mut xyhw = XyhwChange::default();
-    xyhw.x = Some(attrs.x);
-    xyhw.y = Some(attrs.y);
-    xyhw.w = Some(attrs.width);
-    xyhw.h = Some(attrs.height);
+    // Initialise the windows floating we the pre-mapped settings.
+    let xyhw = XyhwChange {
+        x: Some(attrs.x),
+        y: Some(attrs.y),
+        w: Some(attrs.width),
+        h: Some(attrs.height),
+        ..XyhwChange::default()
+    };
     xyhw.update_window_floating(&mut w);
     let mut requested = Xyhw::default();
     xyhw.update(&mut requested);
