@@ -70,7 +70,7 @@ impl State {
         if focus_tag_work(self, *tag).is_none() {
             return false;
         }
-        // check each workspace, if its displaying this tag it should be focused too
+        // Check each workspace, if its displaying this tag it should be focused too.
         let to_focus: Vec<Workspace> = self
             .workspaces
             .iter()
@@ -80,7 +80,7 @@ impl State {
         for ws in &to_focus {
             focus_workspace_work(self, ws.id);
         }
-        //make sure the focused window is on this workspace
+        // Make sure the focused window is on this workspace.
         if self.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             self.actions.push_back(act);

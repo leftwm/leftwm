@@ -127,6 +127,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
         if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
             if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
+                let previous_tag = window.tags[0];
                 let is_visible = window.has_tag(current_tag);
                 window.clear_tags();
                 if is_visible {
@@ -143,6 +144,13 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                         handle = Some(*prev);
                     }
                 } else {
+                    // Remove the entry for the previous tag to prevent the scratchpad being
+                    // refocused.
+                    manager
+                        .state
+                        .focus_manager
+                        .tags_last_window
+                        .remove(&previous_tag);
                     // Show the scratchpad.
                     window.tag(current_tag);
                     handle = Some(window.handle);
