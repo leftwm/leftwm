@@ -174,7 +174,8 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
     // No new history if no change.
     if let Some(fw) = state.focus_manager.window(&state.windows) {
         if &fw.handle == handle {
-            return None;
+            // Return some so we still update the visuals.
+            return Some(found.clone());
         }
     }
 
