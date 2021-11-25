@@ -160,6 +160,9 @@ impl XWrap {
             // Make sure that width and height are not smaller than the min values.
             xyhw.w = std::cmp::max(xyhw.w, xyhw.minw);
             xyhw.h = std::cmp::max(xyhw.h, xyhw.minh);
+            // Ignore the sizing if the sizing is set to 0.
+            xyhw.w = if xyhw.w == Some(0) { None } else { xyhw.w };
+            xyhw.h = if xyhw.h == Some(0) { None } else { xyhw.h };
 
             if (size.flags & xlib::PPosition) != 0 || (size.flags & xlib::USPosition) != 0 {
                 // These are obsolete but are still used sometimes.

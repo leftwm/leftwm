@@ -57,7 +57,7 @@ pub struct XWrap {
     pub atoms: XAtom,
     cursors: XCursor,
     colors: Colors,
-    managed_windows: Vec<xlib::Window>,
+    pub managed_windows: Vec<xlib::Window>,
     pub tag_labels: Vec<String>,
     pub mode: Mode,
     pub focus_behaviour: FocusBehaviour,

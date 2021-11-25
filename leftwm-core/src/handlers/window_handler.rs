@@ -112,7 +112,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
             changed = change.update(window);
             // Reposition a dialog after a resize.
-            if window.r#type == WindowType::Dialog && is_floating_change {
+            if window.r#type == WindowType::Dialog
+                || window.transient.is_some() && is_floating_change
+            {
                 if let Some(ws) = self
                     .state
                     .workspaces
@@ -265,7 +267,7 @@ fn setup_window(
             window.apply_margin_multiplier(ws.margin_multiplier);
         }
         // Center dialogs and modal in workspace
-        if window.r#type == WindowType::Dialog || window.states().contains(&WindowState::Modal) {
+        if window.r#type == WindowType::Dialog {
             if window.can_resize() {
                 window.set_floating(true);
                 let new_float_exact = ws.center_halfed();

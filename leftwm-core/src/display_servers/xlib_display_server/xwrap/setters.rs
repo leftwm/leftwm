@@ -147,6 +147,18 @@ impl XWrap {
         }
     }
 
+    pub fn set_window_config(
+        &self,
+        window: xlib::Window,
+        mut window_changes: xlib::XWindowChanges,
+        unlock: u32,
+    ) {
+        unsafe {
+            (self.xlib.XConfigureWindow)(self.display, window, unlock, &mut window_changes);
+            (self.xlib.XSync)(self.display, 0);
+        }
+    }
+
     /// Sets what desktop a window is on.
     pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &[TagId]) {
         let mut indexes: Vec<c_long> = current_tags.iter().map(|tag| (tag - 1) as c_long).collect();

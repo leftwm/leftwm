@@ -110,7 +110,7 @@ impl XWrap {
                     }
                     return;
                 }
-                let mut changes = xlib::XWindowChanges {
+                let changes = xlib::XWindowChanges {
                     x: window.x(),
                     y: window.y(),
                     width: window.width(),
@@ -121,25 +121,11 @@ impl XWrap {
                 };
                 let unlock =
                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
+                self.set_window_config(handle, changes, u32::from(unlock));
+                let w: u32 = window.width() as u32;
+                let h: u32 = window.height() as u32;
+                self.move_resize_window(handle, window.x(), window.y(), w, h);
                 unsafe {
-                    (self.xlib.XConfigureWindow)(
-                        self.display,
-                        handle,
-                        u32::from(unlock),
-                        &mut changes,
-                    );
-                    (self.xlib.XSync)(self.display, 0);
-                    let rw: u32 = window.width() as u32;
-                    let rh: u32 = window.height() as u32;
-                    (self.xlib.XMoveResizeWindow)(
-                        self.display,
-                        handle,
-                        window.x(),
-                        window.y(),
-                        rw,
-                        rh,
-                    );
-
                     let mut color: c_ulong = if is_focused {
                         self.colors.active
                     } else if window.floating() {
@@ -172,6 +158,7 @@ impl XWrap {
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn window_take_focus(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
+            self.replay_click();
             self.grab_mouse_clicks(handle);
 
             if !window.never_focus {
@@ -230,6 +217,12 @@ impl XWrap {
         let ptr = windows.as_mut_ptr();
         unsafe {
             (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
+        }
+    }
+
+    pub fn move_resize_window(&self, window: xlib::Window, x: i32, y: i32, w: u32, h: u32) {
+        unsafe {
+            (self.xlib.XMoveResizeWindow)(self.display, window, x, y, w, h);
         }
     }
 
