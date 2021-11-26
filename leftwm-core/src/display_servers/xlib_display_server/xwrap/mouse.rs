@@ -1,7 +1,6 @@
 //! Xlib calls related to a mouse.
 use super::{XlibError, MOUSEMASK};
 use crate::display_servers::xlib_display_server::xwrap::BUTTONMASK;
-use crate::models::FocusBehaviour;
 use crate::XWrap;
 use std::os::raw::{c_int, c_ulong};
 use x11_dl::xlib;
@@ -34,7 +33,7 @@ impl XWrap {
                     window,
                     0,
                     BUTTONMASK as u32,
-                    xlib::GrabModeSync,
+                    xlib::GrabModeAsync,
                     xlib::GrabModeAsync,
                     0,
                     0,
@@ -123,15 +122,10 @@ impl XWrap {
 
     /// Replay a click on a window.
     // `XAllowEvents`: https://linux.die.net/man/3/xallowevents
-    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     pub fn replay_click(&self) {
-        // Only replay the click when in ClickToFocus and we are not trying to move/resize the
-        // window.
-        if self.focus_behaviour == FocusBehaviour::ClickTo {
-            unsafe {
-                (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
-                (self.xlib.XSync)(self.display, 0);
-            }
+        unsafe {
+            (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
         }
+        self.flush();
     }
 }

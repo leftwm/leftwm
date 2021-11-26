@@ -67,6 +67,7 @@ pub struct XWrap {
     pub task_notify: Arc<Notify>,
     pub motion_event_limiter: c_ulong,
     pub refresh_rate: c_short,
+    pub click_replayed: bool,
 }
 
 impl Default for XWrap {
@@ -187,6 +188,7 @@ impl XWrap {
             task_notify,
             motion_event_limiter: 0,
             refresh_rate,
+            click_replayed: false,
         };
 
         // Check that another WM is not running.
@@ -401,6 +403,18 @@ impl XWrap {
             return true;
         }
         false
+    }
+
+    pub fn send_xevent(
+        &self,
+        window: xlib::Window,
+        propogate: i32,
+        mask: c_long,
+        mut event: xlib::XEvent,
+    ) {
+        unsafe {
+            (self.xlib.XSendEvent)(self.display, window, propogate, mask, &mut event);
+        }
     }
 
     /// Returns whether a window can recieve a xevent atom.

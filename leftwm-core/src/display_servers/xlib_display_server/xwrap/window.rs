@@ -156,9 +156,13 @@ impl XWrap {
 
     /// Makes a window take focus.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn window_take_focus(&self, window: &Window) {
+    pub fn window_take_focus(&mut self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
-            self.replay_click();
+            // Only replay the click when in ClickToFocus.
+            if self.focus_behaviour == FocusBehaviour::ClickTo {
+                // self.replay_click();
+                self.click_replayed = false;
+            }
             self.grab_mouse_clicks(handle);
 
             if !window.never_focus {

@@ -2,6 +2,7 @@ use super::event_translate_client_message;
 use super::event_translate_property_notify;
 use super::DisplayEvent;
 use super::XWrap;
+use crate::models;
 use crate::models::Mode;
 use crate::models::Window;
 use crate::models::WindowChange;
@@ -17,7 +18,7 @@ pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     fn from(x_event: XEvent) -> Self {
         let xw = x_event.0;
-        let raw_event = x_event.1;
+        let mut raw_event = x_event.1;
 
         match raw_event.get_type() {
             // new window is created
@@ -45,7 +46,23 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
                 Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
             }
-            xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
+            xlib::ButtonRelease => {
+                if xw.mode == models::Mode::Normal {
+                    if !xw.click_replayed {
+                        let event = xlib::XButtonReleasedEvent::from(raw_event);
+                        raw_event.type_ = xlib::ButtonPress;
+                        xw.send_xevent(event.window, 1, 0xfff, raw_event);
+                        xw.flush();
+                        // std::thread::sleep(std::time::Duration::from_millis(5));
+                        raw_event.type_ = xlib::ButtonRelease;
+                        xw.send_xevent(event.window, 1, 0xfff, raw_event);
+                        xw.flush();
+                        xw.click_replayed = true;
+                    }
+                    return None;
+                }
+                Some(DisplayEvent::ChangeToNormalMode)
+            }
 
             xlib::EnterNotify => from_enter_notify(xw, raw_event),
 
