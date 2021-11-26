@@ -18,7 +18,7 @@ pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     fn from(x_event: XEvent) -> Self {
         let xw = x_event.0;
-        let mut raw_event = x_event.1;
+        let raw_event = x_event.1;
 
         match raw_event.get_type() {
             // new window is created
@@ -40,6 +40,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
 
             xlib::ButtonPress => {
+                xw.click_event = Some(raw_event);
                 let event = xlib::XButtonPressedEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
                 let mut mod_mask = event.state;
@@ -48,17 +49,6 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
             xlib::ButtonRelease => {
                 if xw.mode == models::Mode::Normal {
-                    if !xw.click_replayed {
-                        let event = xlib::XButtonReleasedEvent::from(raw_event);
-                        raw_event.type_ = xlib::ButtonPress;
-                        xw.send_xevent(event.window, 1, 0xfff, raw_event);
-                        xw.flush();
-                        // std::thread::sleep(std::time::Duration::from_millis(5));
-                        raw_event.type_ = xlib::ButtonRelease;
-                        xw.send_xevent(event.window, 1, 0xfff, raw_event);
-                        xw.flush();
-                        xw.click_replayed = true;
-                    }
                     return None;
                 }
                 Some(DisplayEvent::ChangeToNormalMode)

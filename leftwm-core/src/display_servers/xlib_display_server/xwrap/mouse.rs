@@ -128,4 +128,17 @@ impl XWrap {
         }
         self.flush();
     }
+
+    pub fn play_click(&self, window: xlib::Window) {
+        if let Some(mut event) = self.click_event {
+            event.type_ = xlib::ButtonPress;
+            event.button.time = xlib::CurrentTime;
+            self.send_xevent(window, 1, 0xfff, event);
+            self.flush();
+            event.type_ = xlib::ButtonRelease;
+            event.button.time = xlib::CurrentTime;
+            self.send_xevent(window, 1, 0xfff, event);
+            self.flush();
+        }
+    }
 }
