@@ -1,6 +1,6 @@
-# Contributing to Leftwm
+# Contributing to LeftWM
 
-Thank you for your interest in contributing to Leftwm!
+Thank you for your interest in contributing to LeftWM!
 
 Table of Contents:
 
@@ -15,19 +15,19 @@ Table of Contents:
 ## Feature Requests
 
 Feature requests should be reported in the
-[Leftwm issue tracker](https://github.com/leftwm/leftwm/issues).
+[LeftWM issue tracker](https://github.com/leftwm/leftwm/issues).
 
 ## Bug Reports
 
 Bug reports should be reported in the
-[Leftwm issue tracker](https://github.com/leftwm/leftwm/issues). 
+[LeftWM issue tracker](https://github.com/leftwm/leftwm/issues). 
 Before reporting a bug, please check the troubleshooting steps in the README and previous issues.
 
 ## Patches / Pull Requests
 
 All patches have to be sent on Github as [pull requests](https://github.com/leftwm/leftwm/pulls).
 
-Please note that the minimum supported version of Leftwm is Rust 1.51.0. 
+Please note that the minimum supported version of Rust capable of compiling LeftWM is Rust 1.52.0.
 
 ### Testing
 

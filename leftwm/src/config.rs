@@ -348,7 +348,7 @@ impl leftwm_core::Config for Config {
                     return manager.reload_config();
                 }
                 "UnloadTheme" => {
-                    manager.config.theme_setting = Default::default();
+                    manager.config.theme_setting = ThemeSetting::default();
                     return manager.reload_config();
                 }
                 _ => {
