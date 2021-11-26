@@ -133,6 +133,7 @@ impl XWrap {
         if let Some(mut event) = self.click_event {
             event.type_ = xlib::ButtonPress;
             event.button.time = xlib::CurrentTime;
+            event.button.window = window;
             self.send_xevent(window, 1, 0xfff, event);
             self.flush();
             event.type_ = xlib::ButtonRelease;

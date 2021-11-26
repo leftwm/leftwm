@@ -49,6 +49,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
             xlib::ButtonRelease => {
                 if xw.mode == models::Mode::Normal {
+                    xw.click_event = None;
                     return None;
                 }
                 Some(DisplayEvent::ChangeToNormalMode)
