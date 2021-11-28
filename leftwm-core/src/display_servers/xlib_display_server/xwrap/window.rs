@@ -161,6 +161,7 @@ impl XWrap {
             // Play a click when in ClickToFocus.
             if self.focus_behaviour == FocusBehaviour::ClickTo {
                 self.play_click(handle);
+                self.click_event = None;
             }
             self.grab_mouse_clicks(handle);
 

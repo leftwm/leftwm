@@ -47,13 +47,10 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
                 Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
             }
-            xlib::ButtonRelease => {
-                if xw.mode == models::Mode::Normal {
-                    xw.click_event = None;
-                    return None;
-                }
-                Some(DisplayEvent::ChangeToNormalMode)
-            }
+            xlib::ButtonRelease => match xw.mode {
+                models::Mode::Normal => None,
+                _ => Some(DisplayEvent::ChangeToNormalMode),
+            },
 
             xlib::EnterNotify => from_enter_notify(xw, raw_event),
 
