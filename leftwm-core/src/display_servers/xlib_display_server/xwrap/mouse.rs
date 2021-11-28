@@ -136,12 +136,12 @@ impl XWrap {
             let window = unsafe { event.button.window };
             event.type_ = xlib::ButtonPress;
             event.button.time = xlib::CurrentTime;
-            self.send_xevent(window, 1, 0xfff, event);
+            self.send_xevent(window, 1, xlib::ButtonPressMask, event);
             self.flush();
             std::thread::sleep(std::time::Duration::from_millis(5));
             event.type_ = xlib::ButtonRelease;
             event.button.time = xlib::CurrentTime;
-            self.send_xevent(window, 1, 0xfff, event);
+            self.send_xevent(window, 1, xlib::ButtonReleaseMask, event);
             self.flush();
         }
     }
