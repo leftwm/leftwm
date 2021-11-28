@@ -35,7 +35,7 @@ impl XWrap {
                     BUTTONMASK as u32,
                     xlib::GrabModeAsync,
                     xlib::GrabModeAsync,
-                    0,
+                    self.root,
                     0,
                 );
             }
@@ -125,21 +125,23 @@ impl XWrap {
     pub fn replay_click(&self) {
         unsafe {
             (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
+            (self.xlib.XSync)(self.display, xlib::False);
         }
-        self.flush();
     }
 
-    pub fn play_click(&self, window: xlib::Window) {
+    pub fn play_click(&mut self) {
         if let Some(mut event) = self.click_event {
+            let window = unsafe { event.button.window };
             event.type_ = xlib::ButtonPress;
             event.button.time = xlib::CurrentTime;
-            event.button.window = window;
             self.send_xevent(window, 1, 0xfff, event);
             self.flush();
+            std::thread::sleep(std::time::Duration::from_millis(5));
             event.type_ = xlib::ButtonRelease;
             event.button.time = xlib::CurrentTime;
             self.send_xevent(window, 1, 0xfff, event);
             self.flush();
+            self.click_event = None;
         }
     }
 }

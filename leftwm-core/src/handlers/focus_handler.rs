@@ -171,12 +171,14 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
     if found.is_unmanaged() {
         return None;
     }
+    let mut previous = None;
     // No new history if no change.
     if let Some(fw) = state.focus_manager.window(&state.windows) {
         if &fw.handle == handle {
             // Return some so we still update the visuals.
             return Some(found.clone());
         }
+        previous = Some(fw.handle);
     }
 
     // Clean old history.
@@ -184,7 +186,7 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
     // Add this focus change to the history.
     state.focus_manager.window_history.push_front(Some(*handle));
 
-    let act = DisplayAction::WindowTakeFocus(found.clone());
+    let act = DisplayAction::WindowTakeFocus(found.clone(), previous);
     state.actions.push_back(act);
 
     Some(found.clone())

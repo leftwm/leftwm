@@ -25,7 +25,7 @@ impl XWrap {
                     m,
                     root,
                     1,
-                    xlib::GrabModeAsync,
+                    xlib::GrabModeSync,
                     xlib::GrabModeAsync,
                 );
             }

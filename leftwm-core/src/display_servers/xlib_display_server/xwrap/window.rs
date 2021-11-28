@@ -140,10 +140,6 @@ impl XWrap {
 
                     (self.xlib.XSetWindowBorder)(self.display, handle, color);
                 }
-                if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.ungrab_buttons(handle);
-                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
-                }
                 self.send_config(window);
             } else {
                 unsafe {
@@ -156,12 +152,16 @@ impl XWrap {
 
     /// Makes a window take focus.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn window_take_focus(&mut self, window: &Window) {
+    pub fn window_take_focus(&mut self, window: &Window, previous: Option<WindowHandle>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             // Play a click when in ClickToFocus.
             if self.focus_behaviour == FocusBehaviour::ClickTo {
-                self.play_click(handle);
-                self.click_event = None;
+                self.play_click();
+                // Open up button1 clicking on the previously focused window.
+                if let Some(WindowHandle::XlibHandle(previous)) = previous {
+                    self.ungrab_buttons(previous);
+                    self.grab_buttons(previous, xlib::Button1, xlib::AnyModifier);
+                }
             }
             self.grab_mouse_clicks(handle);
 

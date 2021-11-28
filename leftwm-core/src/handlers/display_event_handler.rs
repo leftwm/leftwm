@@ -50,7 +50,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             DisplayEvent::ChangeToNormalMode => {
                 self.state.mode = Mode::Normal;
-                //look through the config and build a command if its defined in the config
                 let act = DisplayAction::NormalMode;
                 self.state.actions.push_back(act);
                 true

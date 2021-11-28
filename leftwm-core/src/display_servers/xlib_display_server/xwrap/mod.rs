@@ -253,6 +253,7 @@ impl XWrap {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
+            | xlib::ButtonReleaseMask
             | xlib::PointerMotionMask
             | xlib::EnterWindowMask
             | xlib::LeaveWindowMask
