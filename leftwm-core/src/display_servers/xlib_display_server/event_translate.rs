@@ -48,7 +48,10 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
             }
             xlib::ButtonRelease => match xw.mode {
-                models::Mode::Normal => None,
+                models::Mode::Normal => {
+                    xw.click_event = None;
+                    None
+                }
                 _ => Some(DisplayEvent::ChangeToNormalMode),
             },
 

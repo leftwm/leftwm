@@ -122,6 +122,7 @@ impl XWrap {
 
     /// Replay a click on a window.
     // `XAllowEvents`: https://linux.die.net/man/3/xallowevents
+    //  `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     pub fn replay_click(&self) {
         unsafe {
             (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
@@ -129,6 +130,7 @@ impl XWrap {
         }
     }
 
+    /// Plays the currently stored click event.
     pub fn play_click(&mut self) {
         if let Some(mut event) = self.click_event {
             let window = unsafe { event.button.window };
@@ -141,7 +143,6 @@ impl XWrap {
             event.button.time = xlib::CurrentTime;
             self.send_xevent(window, 1, 0xfff, event);
             self.flush();
-            self.click_event = None;
         }
     }
 }
