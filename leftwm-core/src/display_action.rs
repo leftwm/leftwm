@@ -40,7 +40,7 @@ pub enum DisplayAction {
     /// Tell a window that it is to become focused.
     WindowTakeFocus {
         window: Window,
-        previous_handle: WindowHandle,
+        previous_handle: Option<WindowHandle>,
     },
 
     /// Remove focus on any visible window by focusing the root window.

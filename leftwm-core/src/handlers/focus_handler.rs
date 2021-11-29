@@ -186,7 +186,10 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
     // Add this focus change to the history.
     state.focus_manager.window_history.push_front(Some(*handle));
 
-    let act = DisplayAction::WindowTakeFocus(found.clone(), previous);
+    let act = DisplayAction::WindowTakeFocus {
+        window: found.clone(),
+        previous_handle: previous,
+    };
     state.actions.push_back(act);
 
     Some(found.clone())
