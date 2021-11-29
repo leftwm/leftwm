@@ -108,7 +108,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     if let Some(trans) = trans {
         w.transient = Some(WindowHandle::XlibHandle(trans));
     }
-    // Initialise the windows floating we the pre-mapped settings.
+    // Initialise the windows floating with the pre-mapped settings.
     let xyhw = XyhwChange {
         x: Some(attrs.x),
         y: Some(attrs.y),
