@@ -161,8 +161,8 @@ impl XWrap {
             xyhw.w = std::cmp::max(xyhw.w, xyhw.minw);
             xyhw.h = std::cmp::max(xyhw.h, xyhw.minh);
             // Ignore the sizing if the sizing is set to 0.
-            xyhw.w = if xyhw.w == Some(0) { None } else { xyhw.w };
-            xyhw.h = if xyhw.h == Some(0) { None } else { xyhw.h };
+            xyhw.w = xyhw.w.filter(|w| w != 0);
+            xyhw.h = xyhw.h.filter(|h| h != 0);
 
             if (size.flags & xlib::PPosition) != 0 || (size.flags & xlib::USPosition) != 0 {
                 // These are obsolete but are still used sometimes.
