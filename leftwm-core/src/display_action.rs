@@ -38,7 +38,10 @@ pub enum DisplayAction {
     DestroyedWindow(WindowHandle),
 
     /// Tell a window that it is to become focused.
-    WindowTakeFocus(Window, Option<WindowHandle>),
+    WindowTakeFocus {
+        window: Window,
+        previous_handle: WindowHandle,
+    },
 
     /// Remove focus on any visible window by focusing the root window.
     Unfocus,
