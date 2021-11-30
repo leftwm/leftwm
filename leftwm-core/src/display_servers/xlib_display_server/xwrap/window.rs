@@ -63,8 +63,9 @@ impl XWrap {
                     let _ = self.move_cursor_to_window(handle);
                 }
                 if self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.ungrab_buttons(handle);
-                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
+                    // self.ungrab_buttons(handle);
+                    // self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
+                    self.grab_mouse_clicks(handle, false);
                 }
             }
             // Make sure there is at least an empty list of _NET_WM_STATE.
@@ -156,14 +157,16 @@ impl XWrap {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             // Play a click when in ClickToFocus.
             if self.focus_behaviour == FocusBehaviour::ClickTo {
-                self.play_click();
+                // self.play_click();
+                self.replay_click();
                 // Open up button1 clicking on the previously focused window.
                 if let Some(WindowHandle::XlibHandle(previous)) = previous {
-                    self.ungrab_buttons(previous);
-                    self.grab_buttons(previous, xlib::Button1, xlib::AnyModifier);
+                    // self.ungrab_buttons(previous);
+                    // self.grab_buttons(previous, xlib::Button1, xlib::AnyModifier);
+                    self.grab_mouse_clicks(previous, false);
                 }
             }
-            self.grab_mouse_clicks(handle);
+            self.grab_mouse_clicks(handle, true);
 
             if !window.never_focus {
                 // Mark this window as the `_NET_ACTIVE_WINDOW`

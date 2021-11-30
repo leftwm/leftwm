@@ -67,7 +67,6 @@ pub struct XWrap {
     pub task_notify: Arc<Notify>,
     pub motion_event_limiter: c_ulong,
     pub refresh_rate: c_short,
-    pub click_event: Option<xlib::XEvent>,
 }
 
 impl Default for XWrap {
@@ -188,7 +187,6 @@ impl XWrap {
             task_notify,
             motion_event_limiter: 0,
             refresh_rate,
-            click_event: None,
         };
 
         // Check that another WM is not running.

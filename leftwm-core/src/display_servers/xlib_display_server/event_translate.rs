@@ -10,6 +10,7 @@ use crate::models::WindowHandle;
 use crate::models::WindowType;
 use crate::models::Xyhw;
 use crate::models::XyhwChange;
+use models::FocusBehaviour;
 use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
@@ -40,7 +41,6 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             }
 
             xlib::ButtonPress => {
-                xw.click_event = Some(raw_event);
                 let event = xlib::XButtonPressedEvent::from(raw_event);
                 let h = WindowHandle::XlibHandle(event.window);
                 let mut mod_mask = event.state;
@@ -48,10 +48,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
             }
             xlib::ButtonRelease => match xw.mode {
-                models::Mode::Normal => {
-                    xw.click_event = None;
-                    None
-                }
+                models::Mode::Normal => None,
                 _ => Some(DisplayEvent::ChangeToNormalMode),
             },
 
@@ -168,6 +165,7 @@ fn from_unmap_event(raw_event: xlib::XEvent) -> DisplayEvent {
 fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
     match &xw.mode {
         Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
+        Mode::Normal if xw.focus_behaviour != FocusBehaviour::Sloppy => return None,
         Mode::Normal => {}
     };
     let event = xlib::XEnterWindowEvent::from(raw_event);
@@ -188,9 +186,12 @@ fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<Display
         let offset_x = event.x_root - xw.mode_origin.0;
         let offset_y = event.y_root - xw.mode_origin.1;
         let display_event = match &xw.mode {
-            Mode::Normal => DisplayEvent::Movement(event_h, event.x_root, event.y_root),
             Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, offset_x, offset_y),
             Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, offset_x, offset_y),
+            Mode::Normal if xw.focus_behaviour == FocusBehaviour::Sloppy => {
+                DisplayEvent::Movement(event_h, event.x_root, event.y_root)
+            }
+            Mode::Normal => return None,
         };
         return Some(display_event);
     }

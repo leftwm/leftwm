@@ -7,17 +7,46 @@ use x11_dl::xlib;
 
 impl XWrap {
     /// Grabs the mouse clicks of a window.
-    pub fn grab_mouse_clicks(&self, handle: xlib::Window) {
+    pub fn grab_mouse_clicks(&self, handle: xlib::Window, is_focused: bool) {
         self.ungrab_buttons(handle);
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
+        if !is_focused {
+            self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier, xlib::GrabModeSync);
+        }
+        self.grab_buttons(
+            handle,
+            xlib::Button1,
+            self.mouse_key_mask,
+            xlib::GrabModeAsync,
+        );
+        self.grab_buttons(
+            handle,
+            xlib::Button1,
+            self.mouse_key_mask | xlib::ShiftMask,
+            xlib::GrabModeAsync,
+        );
+        self.grab_buttons(
+            handle,
+            xlib::Button3,
+            self.mouse_key_mask,
+            xlib::GrabModeAsync,
+        );
+        self.grab_buttons(
+            handle,
+            xlib::Button3,
+            self.mouse_key_mask | xlib::ShiftMask,
+            xlib::GrabModeAsync,
+        );
     }
 
     /// Grabs the button with the modifier for a window.
     // `XGrabButton`: https://tronche.com/gui/x/xlib/input/XGrabButton.html
-    pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
+    pub fn grab_buttons(
+        &self,
+        window: xlib::Window,
+        button: u32,
+        modifiers: u32,
+        pointer_mode: i32,
+    ) {
         // Grab the buttons with and without numlock (Mod2).
         let mods: Vec<u32> = vec![
             modifiers,
@@ -33,7 +62,7 @@ impl XWrap {
                     window,
                     0,
                     BUTTONMASK as u32,
-                    xlib::GrabModeAsync,
+                    pointer_mode,
                     xlib::GrabModeAsync,
                     self.root,
                     0,
@@ -127,22 +156,6 @@ impl XWrap {
         unsafe {
             (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
             (self.xlib.XSync)(self.display, xlib::False);
-        }
-    }
-
-    /// Plays the currently stored click event.
-    pub fn play_click(&mut self) {
-        if let Some(mut event) = self.click_event {
-            let window = unsafe { event.button.window };
-            event.type_ = xlib::ButtonPress;
-            event.button.time = xlib::CurrentTime;
-            self.send_xevent(window, 1, xlib::ButtonPressMask, event);
-            self.flush();
-            std::thread::sleep(std::time::Duration::from_millis(5));
-            event.type_ = xlib::ButtonRelease;
-            event.button.time = xlib::CurrentTime;
-            self.send_xevent(window, 1, xlib::ButtonReleaseMask, event);
-            self.flush();
         }
     }
 }
