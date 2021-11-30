@@ -63,8 +63,6 @@ impl XWrap {
                     let _ = self.move_cursor_to_window(handle);
                 }
                 if self.focus_behaviour == FocusBehaviour::ClickTo {
-                    // self.ungrab_buttons(handle);
-                    // self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
                     self.grab_mouse_clicks(handle, false);
                 }
             }
