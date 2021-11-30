@@ -195,10 +195,17 @@ impl XWrap {
 
     /// Unfocuses all windows.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn unfocus(&self) {
-        let handle = self.root;
+    pub fn unfocus(&self, handle: Option<WindowHandle>) {
+        if let Some(WindowHandle::XlibHandle(handle)) = handle {
+            self.grab_mouse_clicks(handle, false);
+        }
         unsafe {
-            (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
+            (self.xlib.XSetInputFocus)(
+                self.display,
+                self.root,
+                xlib::RevertToPointerRoot,
+                xlib::CurrentTime,
+            );
             self.replace_property_long(
                 self.root,
                 self.atoms.NetActiveWindow,

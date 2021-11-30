@@ -84,7 +84,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             } else if let Some(h) = new_handle {
                 self.state.focus_window(&h);
             } else {
-                let act = DisplayAction::Unfocus;
+                let act = DisplayAction::Unfocus(Some(*handle));
                 self.state.actions.push_back(act);
                 self.state.focus_manager.window_history.push_front(None);
             }

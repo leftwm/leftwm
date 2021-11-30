@@ -230,7 +230,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     if let Some(new_handle) = new_handle {
         manager.state.focus_window(&new_handle);
     } else {
-        let act = DisplayAction::Unfocus;
+        let act = DisplayAction::Unfocus(Some(handle));
         manager.state.actions.push_back(act);
         manager.state.focus_manager.window_history.push_front(None);
     }
