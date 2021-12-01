@@ -72,6 +72,19 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
+            // Make sure the currently focused window is saved for the tag.
+            if let Some((handle, tag)) = state
+                .focus_manager
+                .window(&state.windows)
+                .map(|w| (w.handle, w.tags[0]))
+            {
+                let old_handle = state
+                    .focus_manager
+                    .tags_last_window
+                    .entry(tag)
+                    .or_insert(handle);
+                *old_handle = handle;
+            }
             manager.config.save_state(&manager.state);
             manager.hard_reload();
             None
