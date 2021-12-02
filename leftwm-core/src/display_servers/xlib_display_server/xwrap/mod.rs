@@ -341,7 +341,9 @@ impl XWrap {
         }
 
         // Set the WM NAME.
-        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName);
+        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName, self.atoms.UTF8String);
+
+        self.set_desktop_prop_string("LeftWM", self.atoms.WMClass, xlib::XA_STRING);
 
         self.set_desktop_prop_c_ulong(
             self.root as c_ulong,

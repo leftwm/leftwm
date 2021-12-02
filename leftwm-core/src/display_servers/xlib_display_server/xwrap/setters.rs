@@ -109,14 +109,14 @@ impl XWrap {
 
     /// Sets a desktop property with type string.
     // `XChangeProperty`: https://tronche.com/gui/x/xlib/window-information/XChangeProperty.html
-    pub fn set_desktop_prop_string(&self, value: &str, atom: c_ulong) {
+    pub fn set_desktop_prop_string(&self, value: &str, atom: c_ulong, encoding: xlib::Atom) {
         if let Ok(cstring) = CString::new(value) {
             unsafe {
                 (self.xlib.XChangeProperty)(
                     self.display,
                     self.root,
                     atom,
-                    xlib::XA_CARDINAL,
+                    encoding,
                     8,
                     xlib::PropModeReplace,
                     cstring.as_ptr().cast::<u8>(),
