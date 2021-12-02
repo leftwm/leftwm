@@ -88,9 +88,10 @@ author of the theme and could be different.
 
 List of LeftWM dependencies:  
 
-- xorg (libxinerama, xrandr, xorg-server)  
-- bash
-- rust  
+- xorg (runtime, build):(specifically libx11, xrandr, xorg-server, libxinerama)  
+- sh (ruuntime): any posix-compliant shell for starting up and down files
+- rust (build): >= 1.52.0
+- bash (optional): Most of the themes available use bash, though the scrips maybe converted to any posix-compliant shell
 
 List of common dependencies for themes:
 
