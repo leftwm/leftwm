@@ -46,6 +46,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
 
             DisplayEvent::ChangeToNormalMode => {
+                match self.state.mode {
+                    Mode::MovingWindow(h) | Mode::ResizingWindow(h) => {
+                        let _ = self.state.focus_window(&h);
+                    }
+                    Mode::Normal => {}
+                }
                 self.state.mode = Mode::Normal;
                 let act = DisplayAction::NormalMode;
                 self.state.actions.push_back(act);
