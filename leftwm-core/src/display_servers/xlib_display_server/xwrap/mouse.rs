@@ -11,6 +11,7 @@ impl XWrap {
         self.ungrab_buttons(handle);
         if !is_focused {
             self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier, xlib::GrabModeSync);
+            self.grab_buttons(handle, xlib::Button3, xlib::AnyModifier, xlib::GrabModeSync);
         }
         self.grab_buttons(
             handle,

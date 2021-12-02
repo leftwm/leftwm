@@ -66,12 +66,18 @@ impl State {
                 None
             }
             xlib::Button3 => {
-                let _ = self
-                    .windows
-                    .iter()
-                    .find(|w| w.handle == window && w.can_resize())?;
-                self.mode = Mode::ResizingWindow(window);
-                Some(DisplayAction::StartResizingWindow(window))
+                if self.focus_manager.behaviour == FocusBehaviour::ClickTo {
+                    self.focus_window(&window);
+                }
+                if mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask) {
+                    let _ = self
+                        .windows
+                        .iter()
+                        .find(|w| w.handle == window && w.can_resize())?;
+                    self.mode = Mode::ResizingWindow(window);
+                    return Some(DisplayAction::StartResizingWindow(window));
+                }
+                None
             }
             _ => None,
         }
