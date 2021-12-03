@@ -408,8 +408,10 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     if !window.floating() {
         return None;
     }
-    window.snap_to_workspace(workspace);
     let handle = window.handle;
+    if window.snap_to_workspace(workspace) {
+        state.sort_windows();
+    }
     Some(handle_focus(state, handle))
 }
 
