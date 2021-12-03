@@ -61,8 +61,7 @@ fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
     let win_top = loc.y();
     let win_bottom = win_top + window.height();
     // Check for conatins.
-    let center_x = loc.x() + (window.width() / 2);
-    let center_y = loc.y() + (window.height() / 2);
+    let (center_x, center_y) = loc.center();
     if !workspace.contains_point(center_x, center_y) {
         return false;
     }
