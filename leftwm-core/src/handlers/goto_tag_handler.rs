@@ -8,7 +8,7 @@ impl State {
 
         //let tag_id = self.tags[tag_num - 1].label.clone();
         let new_tags = vec![tag_num];
-        //no focus safety check
+        // No focus safety check.
         let old_tags = self.focus_manager.workspace(&self.workspaces)?.tags.clone();
         if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
             let old_handle = self

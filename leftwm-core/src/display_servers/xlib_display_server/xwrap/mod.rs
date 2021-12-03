@@ -57,7 +57,7 @@ pub struct XWrap {
     pub atoms: XAtom,
     cursors: XCursor,
     colors: Colors,
-    managed_windows: Vec<xlib::Window>,
+    pub managed_windows: Vec<xlib::Window>,
     pub tag_labels: Vec<String>,
     pub mode: Mode,
     pub focus_behaviour: FocusBehaviour,
@@ -251,6 +251,7 @@ impl XWrap {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
+            | xlib::ButtonReleaseMask
             | xlib::PointerMotionMask
             | xlib::EnterWindowMask
             | xlib::LeaveWindowMask
@@ -340,7 +341,9 @@ impl XWrap {
         }
 
         // Set the WM NAME.
-        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName);
+        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName, self.atoms.UTF8String);
+
+        self.set_desktop_prop_string("LeftWM", self.atoms.WMClass, xlib::XA_STRING);
 
         self.set_desktop_prop_c_ulong(
             self.root as c_ulong,
@@ -401,6 +404,18 @@ impl XWrap {
             return true;
         }
         false
+    }
+
+    pub fn send_xevent(
+        &self,
+        window: xlib::Window,
+        propogate: i32,
+        mask: c_long,
+        mut event: xlib::XEvent,
+    ) {
+        unsafe {
+            (self.xlib.XSendEvent)(self.display, window, propogate, mask, &mut event);
+        }
     }
 
     /// Returns whether a window can recieve a xevent atom.
