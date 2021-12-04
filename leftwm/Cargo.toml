@@ -1,6 +1,6 @@
 [package]
 name = "leftwm"
-version = "0.2.10"
+version = "0.2.11"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 description = "A window manager for Adventurers"
 edition = "2018"
@@ -11,7 +11,7 @@ repository = "https://github.com/leftwm/leftwm"
 readme = "README.md"
 
 [dependencies]
-leftwm-core = { path = "../leftwm-core", version='0.2.10' }
+leftwm-core = { path = "../leftwm-core", version='0.2.11' }
 git-version = "0.3.4"
 signal-hook = "0.3.4"
 mio = "0.7.7"
