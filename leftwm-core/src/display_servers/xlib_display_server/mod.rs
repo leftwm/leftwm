@@ -148,12 +148,15 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.teardown_managed_window(&w);
                 None
             }
-            DisplayAction::WindowTakeFocus(w) => {
-                self.xw.window_take_focus(&w);
+            DisplayAction::WindowTakeFocus {
+                window,
+                previous_handle,
+            } => {
+                self.xw.window_take_focus(&window, previous_handle);
                 None
             }
-            DisplayAction::Unfocus => {
-                self.xw.unfocus();
+            DisplayAction::Unfocus(handle) => {
+                self.xw.unfocus(handle);
                 None
             }
             DisplayAction::SetState(h, toggle_to, window_state) => {
