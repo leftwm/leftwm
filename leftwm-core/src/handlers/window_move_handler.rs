@@ -22,7 +22,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Some(w) => {
                 process_window(w, offset_x, offset_y);
                 w.apply_margin_multiplier(margin_multiplier);
-                snap_to_workspaces(w, &self.state.workspaces);
+                if snap_to_workspaces(w, &self.state.workspaces) {
+                    self.state.sort_windows();
+                }
                 true
             }
             None => false,
@@ -53,34 +55,33 @@ fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
         return false;
     }
     let loc = window.calculated_xyhw();
-    //get window sides
+    // Get window sides.
     let win_left = loc.x();
     let win_right = win_left + window.width();
     let win_top = loc.y();
     let win_bottom = win_top + window.height();
-    //check for conatins
-    let center_x = loc.x() + (window.width() / 2);
-    let center_y = loc.y() + (window.height() / 2);
+    // Check for conatins.
+    let (center_x, center_y) = loc.center();
     if !workspace.contains_point(center_x, center_y) {
         return false;
     }
 
-    //check for close edge
+    // Check for close edge.
     let dist = 10;
     let ws_left = workspace.x();
     let ws_right = workspace.x() + workspace.width();
     let ws_top = workspace.y();
     let ws_bottom = workspace.y() + workspace.height();
-    if (win_top - ws_top).abs() < dist {
-        return window.snap_to_workspace(workspace);
-    }
-    if (win_bottom - ws_bottom).abs() < dist {
-        return window.snap_to_workspace(workspace);
-    }
-    if (win_left - ws_left).abs() < dist {
-        return window.snap_to_workspace(workspace);
-    }
-    if (win_right - ws_right).abs() < dist {
+    if vec![
+        win_top - ws_top,
+        win_bottom - ws_bottom,
+        win_left - ws_left,
+        win_right - ws_right,
+    ]
+    .iter()
+    .map(|x| x.abs())
+    .any(|x| x < dist)
+    {
         return window.snap_to_workspace(workspace);
     }
     false

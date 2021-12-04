@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
     println!("\x1b[0;94m::\x1b[0m Checking environment . . .");
     check_elogind(verbose)?;
     println!("\x1b[0;94m::\x1b[0m Checking theme . . .");
-    check_theme(verbose)?;
+    check_theme(verbose);
 
     Ok(())
 }
@@ -235,50 +235,71 @@ fn check_elogind(verbose: bool) -> Result<()> {
 /// Checks if `.config/leftwm/theme/current/` is a valid path
 /// Checks if `up` and `down` scripts are in the `current` directory and have executable permission
 /// Checks if `theme.toml` is in the `current` path
-fn check_theme(verbose: bool) -> Result<()> {
-    //let mut returns = Vec::new();
-    let path_current_theme =
-        BaseDirectories::with_prefix("leftwm/themes")?.find_config_file("current");
+fn check_theme(verbose: bool) -> bool {
+    let xdg_base_dir = BaseDirectories::with_prefix("leftwm/themes");
+    let err_formatter = |s| println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {} \x1b[0m", s);
+
+    if let Err(e) = xdg_base_dir {
+        err_formatter(e.to_string());
+        return false;
+    }
+
+    let xdg_base_dir = xdg_base_dir.unwrap();
+    let path_current_theme = xdg_base_dir.find_config_file("current");
 
     match check_current_theme_set(&path_current_theme, verbose) {
-        Ok(_) => check_theme_contents(
-            BaseDirectories::with_prefix("leftwm/themes")?.list_config_files("current"),
-            verbose,
-        ),
-        Err(e) => Err(e),
-    }
-}
-
-fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> Result<()> {
-    if let Some(file) = missing_expected_file(&filepaths) {
-        bail!("File not found: {}", file);
-    } else {
-        for filepath in filepaths {
-            match filepath {
-                f if f.ends_with("up") => match check_permissions(f, verbose) {
-                    Ok(_fp) => continue,
-                    Err(e) => return Err(e),
-                },
-                f if f.ends_with("down") => match check_permissions(f, verbose) {
-                    Ok(_fp) => continue,
-                    Err(e) => return Err(e),
-                },
-                f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
-                    Ok(_fp) => continue,
-                    Err(e) => return Err(e),
-                },
-                _ => (),
-            }
+        Ok(_) => check_theme_contents(xdg_base_dir.list_config_files("current"), verbose),
+        Err(e) => {
+            err_formatter(e.to_string());
+            false
         }
-        println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
-        Ok(())
     }
 }
 
-fn missing_expected_file<'a>(filepaths: &[PathBuf]) -> Option<&'a str> {
+fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
+    let mut returns = Vec::new();
+    let missing_files = missing_expected_file(&filepaths);
+
+    if !missing_files.is_empty() {
+        missing_files
+            .into_iter()
+            .for_each(|file| returns.push(format!("File not found: {}", file)));
+    }
+
+    for filepath in filepaths {
+        match filepath {
+            f if f.ends_with("up") => match check_permissions(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => returns.push(e.to_string()),
+            },
+            f if f.ends_with("down") => match check_permissions(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => returns.push(e.to_string()),
+            },
+            f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => returns.push(e.to_string()),
+            },
+            _ => continue,
+        }
+    }
+
+    if returns.is_empty() {
+        println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
+        true
+    } else {
+        for error in &returns {
+            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {} \x1b[0m", error);
+        }
+        false
+    }
+}
+
+fn missing_expected_file<'a>(filepaths: &[PathBuf]) -> Vec<&'a str> {
     vec!["up", "down", "theme.toml"]
         .into_iter()
-        .find(|f| !filepaths.iter().any(|fp| fp.ends_with(f)))
+        .filter(|f| !filepaths.iter().any(|fp| fp.ends_with(f)))
+        .collect()
 }
 
 fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<&PathBuf> {
@@ -303,42 +324,43 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
 fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
     let permissions = metadata.permissions();
-    if verbose {
-        if metadata.is_file() && (permissions.mode() & 0o111 != 0) {
+    if metadata.is_file() && (permissions.mode() & 0o111 != 0) {
+        if verbose {
             println!(
                 "Found `{}` with executable permissions: {:?}",
                 filepath.display(),
                 permissions.mode() & 0o111 != 0,
             );
-            Ok(filepath)
-        } else {
-            bail!(
-                "Found `{}`, but missing executable permissions!",
-                filepath.display(),
-            );
         }
-    } else {
+
         Ok(filepath)
+    } else {
+        bail!(
+            "Found `{}`, but missing executable permissions!",
+            filepath.display(),
+        );
     }
 }
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
     let contents = fs::read_to_string(&filepath.as_path())?;
-    if verbose {
-        if metadata.is_file() {
+
+    if metadata.is_file() {
+        if verbose {
             println!("Found: {}", filepath.display());
-            match toml::from_str::<ThemeSetting>(&contents) {
-                Ok(_) => {
+        }
+
+        match toml::from_str::<ThemeSetting>(&contents) {
+            Ok(_) => {
+                if verbose {
                     println!("The theme file looks OK.");
-                    Ok(filepath)
                 }
-                Err(err) => bail!("Could not parse theme file: {}", err),
+                Ok(filepath)
             }
-        } else {
-            bail!("No `theme.toml` found at path: {}", filepath.display());
+            Err(err) => bail!("Could not parse theme file: {}", err),
         }
     } else {
-        Ok(filepath)
+        bail!("No `theme.toml` found at path: {}", filepath.display());
     }
 }

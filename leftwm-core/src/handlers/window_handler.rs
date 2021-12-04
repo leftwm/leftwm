@@ -84,7 +84,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             } else if let Some(h) = new_handle {
                 self.state.focus_window(&h);
             } else {
-                let act = DisplayAction::Unfocus;
+                let act = DisplayAction::Unfocus(Some(*handle));
                 self.state.actions.push_back(act);
                 self.state.focus_manager.window_history.push_front(None);
             }
@@ -97,7 +97,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut changed = false;
         let mut fullscreen_changed = false;
         let strut_changed = change.strut.is_some();
-        if let Some(w) = self
+        let windows = self.state.windows.clone();
+        if let Some(window) = self
             .state
             .windows
             .iter_mut()
@@ -105,11 +106,30 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         {
             if let Some(ref states) = change.states {
                 let change_contains = states.contains(&WindowState::Fullscreen);
-                fullscreen_changed = change_contains || w.is_fullscreen();
+                fullscreen_changed = change_contains || window.is_fullscreen();
             }
-            log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
-            changed = change.update(w);
-            if w.r#type == WindowType::Dock {
+            let is_floating_change = change.floating.is_some();
+            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
+            changed = change.update(window);
+            // Reposition a dialog after a resize.
+            if window.r#type == WindowType::Dialog
+                || window.transient.is_some() && is_floating_change
+            {
+                if let Some(ws) = self
+                    .state
+                    .workspaces
+                    .iter()
+                    .find(|ws| ws.has_tag(&window.tags[0]))
+                {
+                    let transient = window.transient;
+                    match find_transient_parent(&windows, transient) {
+                        Some(parent) => set_relative_floating(window, ws, parent.exact_xyhw()),
+                        None => set_relative_floating(window, ws, ws.xyhw),
+                    }
+                }
+            }
+
+            if window.r#type == WindowType::Dock {
                 self.update_workspace_avoid_list();
                 // Don't let changes from docks re-render the worker. This will result in an
                 // infinite loop. Just be patient a rerender will occur.
@@ -247,7 +267,7 @@ fn setup_window(
             window.apply_margin_multiplier(ws.margin_multiplier);
         }
         // Center dialogs and modal in workspace
-        if window.r#type == WindowType::Dialog || window.states().contains(&WindowState::Modal) {
+        if window.r#type == WindowType::Dialog {
             if window.can_resize() {
                 window.set_floating(true);
                 let new_float_exact = ws.center_halfed();
@@ -260,7 +280,7 @@ fn setup_window(
         if window.r#type == WindowType::Splash {
             set_relative_floating(window, ws, ws.xyhw);
         }
-        if let Some(parent) = find_transient_parent(state, window) {
+        if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
             // This is currently for vlc, this probably will need to be more general if another
             // case comes up where we don't want to move the window.
             if window.r#type != WindowType::Utility {
@@ -384,18 +404,17 @@ fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {
     None
 }
 
-fn find_transient_parent<'w>(state: &'w State, window: &Window) -> Option<&'w Window> {
-    let mut transient = window.transient?;
+fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) -> Option<&Window> {
+    let mut transient = transient?;
     loop {
-        transient = if let Some(found) = state
-            .windows
+        transient = if let Some(found) = windows
             .iter()
             .find(|x| x.handle == transient)
             .and_then(|x| x.transient)
         {
             found
         } else {
-            return state.windows.iter().find(|x| x.handle == transient);
+            return windows.iter().find(|x| x.handle == transient);
         };
     }
 }

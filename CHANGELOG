@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased 0.2.11]
 ### Fixed
 ### Added
+### Minimum Supported Rust Version
+- The currently supported MSRV is 1.52.0
 
 ## [0.2.10] - 2021-12-04
 To view the full list of changes visit the [milestone](https://github.com/leftwm/leftwm/milestone/1?closed=1).

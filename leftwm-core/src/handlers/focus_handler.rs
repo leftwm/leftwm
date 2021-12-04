@@ -28,7 +28,7 @@ impl State {
             None => return false,
         };
 
-        //make sure the focused window's workspace is focused
+        // Make sure the focused window's workspace is focused.
         let (focused_window_tag, workspace_id) =
             match self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
                 Some(ws) => (
@@ -41,7 +41,7 @@ impl State {
             let _ = focus_workspace_work(self, workspace_id);
         }
 
-        //make sure the focused window's tag is focused
+        // Make sure the focused window's tag is focused.
         if let Some(tag) = focused_window_tag {
             let _ = focus_tag_work(self, tag);
         }
@@ -70,7 +70,7 @@ impl State {
         if focus_tag_work(self, *tag).is_none() {
             return false;
         }
-        // check each workspace, if its displaying this tag it should be focused too
+        // Check each workspace, if its displaying this tag it should be focused too.
         let to_focus: Vec<Workspace> = self
             .workspaces
             .iter()
@@ -80,7 +80,7 @@ impl State {
         for ws in &to_focus {
             focus_workspace_work(self, ws.id);
         }
-        //make sure the focused window is on this workspace
+        // Make sure the focused window is on this workspace.
         if self.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
             self.actions.push_back(act);
@@ -100,7 +100,8 @@ impl State {
         // Unfocus last window if the target tag is empty
         if let Some(window) = self.focus_manager.window(&self.windows) {
             if !window.tags.contains(&tag.to_owned()) {
-                self.actions.push_back(DisplayAction::Unfocus);
+                self.actions
+                    .push_back(DisplayAction::Unfocus(Some(window.handle)));
                 self.focus_manager.window_history.push_front(None);
             }
         }
@@ -157,36 +158,40 @@ fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<
             return None;
         }
     }
-    //clean old ones
+    // Clean old history.
     state.focus_manager.workspace_history.truncate(10);
-    //add this focus to the history
+    // Add this focus to the history.
     let index = state.workspaces.iter().position(|x| x.id == workspace_id)?;
     state.focus_manager.workspace_history.push_front(index);
     Some(())
 }
 fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Option<Window> {
-    //Docks don't want to get focus. If they do weird things happen. They don't get events...
-    //Do the focus, Add the action to the list of action
+    // Find the handle in our managed windows.
     let found: &Window = state.windows.iter().find(|w| &w.handle == handle)?;
+    // Docks don't want to get focus. If they do weird things happen. They don't get events...
     if found.is_unmanaged() {
         return None;
     }
-    //NOTE: we are intentionally creating the focus event even if we think this window
-    //is already in focus. This is to force the DM to update its knowledge of the focused window
-    let act = DisplayAction::WindowTakeFocus(found.clone());
-    state.actions.push_back(act);
-
-    //no new history if no change
+    let mut previous = None;
+    // No new history if no change.
     if let Some(fw) = state.focus_manager.window(&state.windows) {
         if &fw.handle == handle {
-            //NOTE: we still made the action so return some
+            // Return some so we still update the visuals.
             return Some(found.clone());
         }
+        previous = Some(fw.handle);
     }
-    //clean old ones
+
+    // Clean old history.
     state.focus_manager.window_history.truncate(10);
-    //add this focus to the history
+    // Add this focus change to the history.
     state.focus_manager.window_history.push_front(Some(*handle));
+
+    let act = DisplayAction::WindowTakeFocus {
+        window: found.clone(),
+        previous_handle: previous,
+    };
+    state.actions.push_back(act);
 
     Some(found.clone())
 }

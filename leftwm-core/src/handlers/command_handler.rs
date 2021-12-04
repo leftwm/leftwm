@@ -72,6 +72,19 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
+            // Make sure the currently focused window is saved for the tag.
+            if let Some((handle, tag)) = state
+                .focus_manager
+                .window(&state.windows)
+                .map(|w| (w.handle, w.tags[0]))
+            {
+                let old_handle = state
+                    .focus_manager
+                    .tags_last_window
+                    .entry(tag)
+                    .or_insert(handle);
+                *old_handle = handle;
+            }
             manager.config.save_state(&manager.state);
             manager.hard_reload();
             None
@@ -127,6 +140,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
         if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
             if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
+                let previous_tag = window.tags[0];
                 let is_visible = window.has_tag(current_tag);
                 window.clear_tags();
                 if is_visible {
@@ -143,6 +157,13 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                         handle = Some(*prev);
                     }
                 } else {
+                    // Remove the entry for the previous tag to prevent the scratchpad being
+                    // refocused.
+                    manager
+                        .state
+                        .focus_manager
+                        .tags_last_window
+                        .remove(&previous_tag);
                     // Show the scratchpad.
                     window.tag(current_tag);
                     handle = Some(window.handle);
@@ -222,7 +243,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     if let Some(new_handle) = new_handle {
         manager.state.focus_window(&new_handle);
     } else {
-        let act = DisplayAction::Unfocus;
+        let act = DisplayAction::Unfocus(Some(handle));
         manager.state.actions.push_back(act);
         manager.state.focus_manager.window_history.push_front(None);
     }
@@ -387,8 +408,10 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     if !window.floating() {
         return None;
     }
-    window.snap_to_workspace(workspace);
     let handle = window.handle;
+    if window.snap_to_workspace(workspace) {
+        state.sort_windows();
+    }
     Some(handle_focus(state, handle))
 }
 

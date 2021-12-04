@@ -2,32 +2,31 @@
 name = "leftwm-core"
 version = "0.2.11"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
-description = "A window manager for Adventurers"
+categories = ["window manager"]
 edition = "2018"
 keywords = ["wm", "window", "manager"]
-categories = ["window manager"]
 license = "MIT"
-repository = "https://github.com/leftwm/leftwm"
 readme = "README.md"
+repository = "https://github.com/leftwm/leftwm"
+description = "A window manager for Adventurers"
 
 [dependencies]
-signal-hook = "0.3.4"
-mio = "0.7.7"
-nix = "0.20.0"
-x11-dl = "2.18.4"
-xdg = "2.2.0"
+dirs-next = "2.0.0"
+futures = "0.3.12"
+log = "0.4.8"
+mio = { version = "0.8.0", features = ["os-ext"] }
+nix = "0.23.0"
 serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
-log = "0.4.8"
-dirs-next = "2.0.0"
+signal-hook = "0.3.4"
+thiserror = "1.0.30"
 tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
-futures = "0.3.12"
-thiserror = "1"
+x11-dl = "2.18.4"
+xdg = "2.2.0"
 
 [dev-dependencies]
 tempfile = "3.2.0"
 
 [features]
-
 # Sleep on restart
 slow-dm-fix = []

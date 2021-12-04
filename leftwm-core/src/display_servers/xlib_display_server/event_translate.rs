@@ -2,6 +2,7 @@ use super::event_translate_client_message;
 use super::event_translate_property_notify;
 use super::DisplayEvent;
 use super::XWrap;
+use crate::models;
 use crate::models::Mode;
 use crate::models::Window;
 use crate::models::WindowChange;
@@ -9,6 +10,7 @@ use crate::models::WindowHandle;
 use crate::models::WindowType;
 use crate::models::Xyhw;
 use crate::models::XyhwChange;
+use models::FocusBehaviour;
 use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
@@ -43,10 +45,12 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                 let h = WindowHandle::XlibHandle(event.window);
                 let mut mod_mask = event.state;
                 mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
-                xw.replay_click(mod_mask);
                 Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
             }
-            xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
+            xlib::ButtonRelease => match xw.mode {
+                models::Mode::Normal => None,
+                _ => Some(DisplayEvent::ChangeToNormalMode),
+            },
 
             xlib::EnterNotify => from_enter_notify(xw, raw_event),
 
@@ -79,10 +83,10 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     let handle = WindowHandle::XlibHandle(event.window);
     xw.subscribe_to_window_events(&handle);
     // Check that the window isn't requesting to be unmanaged
-    match xw.get_window_attrs(event.window) {
-        Ok(attr) if attr.override_redirect == 0 => (),
+    let attrs = match xw.get_window_attrs(event.window) {
+        Ok(attr) if attr.override_redirect == 0 => attr,
         _ => return None,
-    }
+    };
     // Gather info about the window from xlib.
     let name = xw.get_window_name(event.window);
     let pid = xw.get_window_pid(event.window);
@@ -92,6 +96,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     let mut can_resize = actions.contains(&xw.atoms.NetWMActionResize);
     let trans = xw.get_transient_for(event.window);
     let sizing_hint = xw.get_hint_sizing_as_xyhw(event.window);
+    let wm_hint = xw.get_wmhints(event.window);
 
     // Build the new window, and fill in info about it.
     let mut w = Window::new(handle, name, pid);
@@ -100,6 +105,17 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     if let Some(trans) = trans {
         w.transient = Some(WindowHandle::XlibHandle(trans));
     }
+    // Initialise the windows floating with the pre-mapped settings.
+    let xyhw = XyhwChange {
+        x: Some(attrs.x),
+        y: Some(attrs.y),
+        w: Some(attrs.width),
+        h: Some(attrs.height),
+        ..XyhwChange::default()
+    };
+    xyhw.update_window_floating(&mut w);
+    let mut requested = Xyhw::default();
+    xyhw.update(&mut requested);
     if let Some(hint) = sizing_hint {
         can_resize = match (hint.minw, hint.minh, hint.maxw, hint.maxh) {
             (Some(min_width), Some(min_height), Some(max_width), Some(max_height)) => {
@@ -108,11 +124,13 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
             _ => true,
         };
         hint.update_window_floating(&mut w);
-        let mut hint_xyhw = Xyhw::default();
-        hint.update(&mut hint_xyhw);
-        w.requested = Some(hint_xyhw);
+        hint.update(&mut requested);
     }
+    w.requested = Some(requested);
     w.can_resize = can_resize;
+    if let Some(hint) = wm_hint {
+        w.never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
+    }
     // Is this needed? Made it so it doens't overwrite prior sizing.
     if w.floating() && sizing_hint.is_none() {
         if let Ok(geo) = xw.get_window_geometry(event.window) {
@@ -128,7 +146,7 @@ fn from_mapping_notify(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEve
     let mut event = xlib::XMappingEvent::from(raw_event);
     if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
         // refresh keyboard
-        log::info!("Updating keyboard");
+        log::debug!("Updating keyboard");
         xw.refresh_keyboard(&mut event).ok()?;
 
         // SoftReload keybinds
@@ -147,6 +165,7 @@ fn from_unmap_event(raw_event: xlib::XEvent) -> DisplayEvent {
 fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
     match &xw.mode {
         Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
+        Mode::Normal if xw.focus_behaviour != FocusBehaviour::Sloppy => return None,
         Mode::Normal => {}
     };
     let event = xlib::XEnterWindowEvent::from(raw_event);
@@ -167,9 +186,12 @@ fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<Display
         let offset_x = event.x_root - xw.mode_origin.0;
         let offset_y = event.y_root - xw.mode_origin.1;
         let display_event = match &xw.mode {
-            Mode::Normal => DisplayEvent::Movement(event_h, event.x_root, event.y_root),
             Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, offset_x, offset_y),
             Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, offset_x, offset_y),
+            Mode::Normal if xw.focus_behaviour == FocusBehaviour::Sloppy => {
+                DisplayEvent::Movement(event_h, event.x_root, event.y_root)
+            }
+            Mode::Normal => return None,
         };
         return Some(display_event);
     }
@@ -182,37 +204,57 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
         Mode::Normal => {}
     };
     let event = xlib::XConfigureRequestEvent::from(raw_event);
+    // If the window is not mapped, configure it.
+    if !xw.managed_windows.contains(&event.window) {
+        let window_changes = xlib::XWindowChanges {
+            x: event.x,
+            y: event.y,
+            width: event.width,
+            height: event.height,
+            border_width: event.border_width,
+            sibling: event.above,
+            stack_mode: event.detail,
+        };
+        let unlock = xlib::CWX
+            | xlib::CWY
+            | xlib::CWWidth
+            | xlib::CWHeight
+            | xlib::CWBorderWidth
+            | xlib::CWSibling
+            | xlib::CWStackMode;
+        xw.set_window_config(event.window, window_changes, u32::from(unlock));
+        xw.move_resize_window(
+            event.window,
+            event.x,
+            event.y,
+            event.width as u32,
+            event.height as u32,
+        );
+        return None;
+    }
     let window_type = xw.get_window_type(event.window);
-    if window_type == WindowType::Normal || window_type == WindowType::Dialog {
+    let trans = xw.get_transient_for(event.window);
+    if window_type == WindowType::Normal && trans.is_none() {
         return None;
     }
     let handle = WindowHandle::XlibHandle(event.window);
     let mut change = WindowChange::new(handle);
-    let xyhw = XyhwChange {
-        w: Some(event.width),
-        h: Some(event.height),
-        x: Some(event.x),
-        y: Some(event.y),
-        ..XyhwChange::default()
+    let xyhw = match window_type {
+        // We want to handle the window positioning when it is a dialog or a normal window with a
+        // parent.
+        WindowType::Dialog | WindowType::Normal => XyhwChange {
+            w: Some(event.width),
+            h: Some(event.height),
+            ..XyhwChange::default()
+        },
+        _ => XyhwChange {
+            w: Some(event.width),
+            h: Some(event.height),
+            x: Some(event.x),
+            y: Some(event.y),
+            ..XyhwChange::default()
+        },
     };
     change.floating = Some(xyhw);
-    if window_type == WindowType::Dock || window_type == WindowType::Desktop {
-        if let Some(dock_area) = xw.get_window_strut_array(event.window) {
-            let dems = xw.get_screens_area_dimensions();
-            let screen = xw
-                .get_screens()
-                .iter()
-                .find(|s| s.contains_dock_area(dock_area, dems))?
-                .clone();
-
-            if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
-                change.strut = Some(xyhw.into());
-            }
-        } else if let Ok(geo) = xw.get_window_geometry(event.window) {
-            let mut xyhw = Xyhw::default();
-            geo.update(&mut xyhw);
-            change.strut = Some(xyhw.into());
-        }
-    }
     Some(DisplayEvent::WindowChange(change))
 }
