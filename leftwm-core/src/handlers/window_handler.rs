@@ -440,7 +440,7 @@ fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32
     match config_value {
         Some(Size::Ratio(ratio)) if (0.0..=1.0).contains(&ratio) => {
             // This is to allow for better rust version compatibility.
-            (max_pixel as f32 * ratio).floor() as i32
+            Size::Ratio(ratio).into_absolute(max_pixel)
             // When rust 1.56 becomes widely availible change the match to
             // Some(size @ Size::Ration(ratio)) ...
             // Also change to this:
