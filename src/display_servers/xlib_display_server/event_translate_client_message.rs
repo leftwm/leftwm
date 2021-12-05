@@ -57,7 +57,7 @@ fn goto_tag_by_index(xw: &XWrap, index: c_long) -> Option<DisplayEvent> {
     if index >= 0 && index < xw.tags.len() as c_long {
         let tag_num = index + 1;
         Some(DisplayEvent::SendCommand(
-            Command::GotoTag,
+            Command::GoToTag,
             Some(tag_num.to_string()),
         ))
     } else {

@@ -45,7 +45,7 @@ pub fn process_internal(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, manager, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, manager, 0),
 
-        Command::GotoTag => goto_tag(manager, val, config),
+        Command::GoToTag => goto_tag(manager, val, config),
 
         Command::CloseWindow => close_window(manager),
         Command::SwapTags => swap_tags(manager),
@@ -494,19 +494,19 @@ mod tests {
         assert!(!process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("6".to_string())
         ));
         assert!(!process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("2".to_string())
         ));
         assert!(!process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("15".to_string())
         ),);
     }
@@ -521,20 +521,20 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("2".to_string())
         ));
         assert!(process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("1".to_string())
         ));
         // we only have one tag per screen created automatically
         assert!(!process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("3".to_string())
         ),);
     }
@@ -555,16 +555,16 @@ mod tests {
         assert!(!process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("abc".to_string())
         ),);
         assert!(!process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("ab45c".to_string())
         ));
-        assert!(!process(&mut manager, &config, &Command::GotoTag, &None));
+        assert!(!process(&mut manager, &config, &Command::GoToTag, &None));
     }
 
     #[test]
@@ -587,7 +587,7 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("6".to_string())
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
@@ -595,7 +595,7 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("2".to_string())
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
@@ -604,7 +604,7 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("3".to_string())
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());
@@ -613,7 +613,7 @@ mod tests {
         assert!(process(
             &mut manager,
             &config,
-            &Command::GotoTag,
+            &Command::GoToTag,
             &Some("4".to_string())
         ));
         let current_tag = manager.tag_index(&manager.focused_tag(0).unwrap_or_default());

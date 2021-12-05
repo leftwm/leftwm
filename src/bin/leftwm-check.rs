@@ -102,7 +102,7 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
     let value_required_commands = vec![
         Command::ToggleScratchPad,
         Command::MoveToTag,
-        Command::GotoTag,
+        Command::GoToTag,
         Command::Execute,
         Command::IncreaseMainWidth,
         Command::DecreaseMainWidth,

@@ -345,7 +345,7 @@ impl Default for Config {
         // add "goto workspace"
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
-                command: Command::GotoTag,
+                command: Command::GoToTag,
                 value: Some(i.to_string()),
                 modifier: vec!["modkey".to_owned()],
                 key: i.to_string(),
