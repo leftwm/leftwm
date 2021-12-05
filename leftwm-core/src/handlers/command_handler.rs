@@ -66,6 +66,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusPreviousTag => focus_tag_change(state, -1),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, state, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, state, 1),
+        Command::FocusWindowTop => move_focus_common_vars(focus_window_top, state, 0),
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
@@ -565,6 +566,27 @@ fn focus_window_change(
     }
     state.windows.append(&mut to_reorder);
     Some(handle_focus(state, handle))
+}
+
+fn focus_window_top(
+    state: &mut State,
+    _val: i32,
+    handle: WindowHandle,
+    _layout: Option<Layout>,
+    mut to_reorder: Vec<Window>,
+) -> Option<bool> {
+    let tag = state.focus_manager.tag(0)?;
+    let mut new_handle = to_reorder.get(0)?.handle;
+    state.windows.append(&mut to_reorder);
+
+    if handle == new_handle {
+        // top window is already focused, get the previous window on the tag instead
+        new_handle = *state.focus_manager.tags_last_window.get(&tag)?;
+    } else {
+        state.focus_manager.tags_last_window.insert(tag, handle);
+    }
+
+    Some(handle_focus(state, new_handle))
 }
 
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
