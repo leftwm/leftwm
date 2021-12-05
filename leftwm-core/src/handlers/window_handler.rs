@@ -438,13 +438,10 @@ pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
 
 fn sane_dimension(config_value: Option<Size>, default_percent: f32, max_pixel: i32) -> i32 {
     match config_value {
-        Some(size) => match size {
-            Size::Percentage(percentage) if (0.0..=1.0).contains(&percentage) => {
-                size.into_absolute(max_pixel as f32) as i32
-            }
-            Size::Pixel(pixel) if (0..=max_pixel).contains(&pixel) => pixel,
-            _ => (default_percent * max_pixel as f32) as i32,
-        },
+        Some(size @ Size::Percentage(percentage)) if (0.0..=1.0).contains(&percentage) => {
+            size.into_absolute(max_pixel as f32) as i32
+        }
+        Some(Size::Pixel(pixel)) if (0..=max_pixel).contains(&pixel) => pixel,
         _ => (default_percent * max_pixel as f32) as i32,
     }
 }
