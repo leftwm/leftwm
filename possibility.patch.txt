@@ -1,0 +1,181 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index e3d705c..5c0fc88 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -13,18 +13,18 @@ dependencies = [
+ 
+ [[package]]
+ name = "ansi_term"
+-version = "0.11.0"
++version = "0.12.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b"
++checksum = "d52a9bb7ec0cf484c551830a7ce27bd20d67eac647e1befb56b0be4ee39a55d2"
+ dependencies = [
+  "winapi",
+ ]
+ 
+ [[package]]
+ name = "anyhow"
+-version = "1.0.48"
++version = "1.0.51"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "62e1f47f7dc0422027a4e370dd4548d4d66b26782e513e98dca1e689e058a80e"
++checksum = "8b26702f315f53b6071259e15dd9d64528213b44d61de1ec926eca7715d62203"
+ 
+ [[package]]
+ name = "anymap2"
+@@ -121,15 +121,15 @@ dependencies = [
+  "libc",
+  "num-integer",
+  "num-traits",
+- "time",
++ "time 0.1.43",
+  "winapi",
+ ]
+ 
+ [[package]]
+ name = "clap"
+-version = "2.33.3"
++version = "2.34.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "37e58ac78573c40708d45522f0d80fa2f01cc4f9b4e2bf749807255454312002"
++checksum = "a0610544180c38b88101fecf2dd634b174a62eef6946f84dfc6a7127512b381c"
+ dependencies = [
+  "ansi_term",
+  "atty",
+@@ -403,7 +403,6 @@ name = "leftwm"
+ version = "0.2.10"
+ dependencies = [
+  "anyhow",
+- "chrono",
+  "clap",
+  "dirs-next",
+  "futures",
+@@ -426,6 +425,7 @@ dependencies = [
+  "slog-term",
+  "tempfile",
+  "thiserror",
++ "time 0.3.5",
+  "tokio",
+  "toml",
+  "x11-dl",
+@@ -867,9 +867,9 @@ checksum = "61b3909d758bb75c79f23d4736fac9433868679d3ad2ea7a61e3c25cfda9a088"
+ 
+ [[package]]
+ name = "ryu"
+-version = "1.0.5"
++version = "1.0.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
++checksum = "3c9613b5a66ab9ba26415184cfc41156594925a9cf3a2057e57f31ff145f6568"
+ 
+ [[package]]
+ name = "serde"
+@@ -1115,15 +1115,24 @@ dependencies = [
+ 
+ [[package]]
+ name = "time"
+-version = "0.1.44"
++version = "0.1.43"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
++checksum = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438"
+ dependencies = [
+  "libc",
+- "wasi",
+  "winapi",
+ ]
+ 
++[[package]]
++name = "time"
++version = "0.3.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "41effe7cfa8af36f439fac33861b66b049edc6f9a32331e2312660529c1c24ad"
++dependencies = [
++ "itoa",
++ "libc",
++]
++
+ [[package]]
+ name = "tokio"
+ version = "1.14.0"
+@@ -1199,9 +1208,9 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
+ 
+ [[package]]
+ name = "wasi"
+-version = "0.10.0+wasi-snapshot-preview1"
++version = "0.10.2+wasi-snapshot-preview1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
++checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
+ 
+ [[package]]
+ name = "winapi"
+diff --git a/leftwm/Cargo.toml b/leftwm/Cargo.toml
+index 9ea5469..b062230 100644
+--- a/leftwm/Cargo.toml
++++ b/leftwm/Cargo.toml
+@@ -12,7 +12,6 @@ description = "A window manager for Adventurers"
+ 
+ [dependencies]
+ anyhow = "1.0.48"
+-chrono = "0.4.19"
+ clap = "2.33.0"
+ dirs-next = "2.0.0"
+ futures = "0.3.12"
+@@ -34,6 +33,7 @@ slog-scope = "4.3.0"
+ slog-stdlog = "4.0.0"
+ slog-term = { version = "2.5.0", optional = true }
+ thiserror = "1.0.30"
++time = { version = "0.3.5", features = ["formatting", "local-offset"]}
+ tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
+ toml = "0.5.5"
+ x11-dl = "2.18.4"
+diff --git a/leftwm/src/bin/leftwm-state.rs b/leftwm/src/bin/leftwm-state.rs
+index 2e9dc44..0b710a7 100644
+--- a/leftwm/src/bin/leftwm-state.rs
++++ b/leftwm/src/bin/leftwm-state.rs
+@@ -198,8 +198,11 @@ fn template_handler(
+ }
+ 
+ fn get_localtime() -> String {
+-    let now = chrono::Local::now();
+-    now.format("%m/%d/%Y %l:%M %p").to_string()
++    use time::{format_description, OffsetDateTime};
++    let date: OffsetDateTime =
++        OffsetDateTime::now_local().unwrap_or(OffsetDateTime::now_utc().into());
++    date.format(&format_description::parse("[year][month][day][hour][minute]").expect("unk-time"))
++        .unwrap_or(String::from("unk-time"))
+ }
+ 
+ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
+diff --git a/leftwm/src/bin/leftwm-worker.rs b/leftwm/src/bin/leftwm-worker.rs
+index 5afea45..5b9cca9 100644
+--- a/leftwm/src/bin/leftwm-worker.rs
++++ b/leftwm/src/bin/leftwm-worker.rs
+@@ -29,13 +29,21 @@ fn main() {
+ // outputs to /tmp/leftwm/leftwm-XXXXXXXXXXXX.log
+ #[allow(dead_code)]
+ fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
+-    use chrono::Local;
+     use std::fs;
+     use std::fs::OpenOptions;
+-    let date = Local::now();
++    use time::{format_description, OffsetDateTime};
++    let date: OffsetDateTime =
++        OffsetDateTime::now_local().unwrap_or(OffsetDateTime::now_utc().into());
+     let path = "/tmp/leftwm";
+     let _droppable = fs::create_dir_all(path);
+-    let log_path = format!("{}/leftwm-{}.log", path, date.format("%Y%m%d%H%M"));
++    let log_path = format!(
++        "{}/leftwm-{}.log",
++        path,
++        date.format(
++            &format_description::parse("[year][month][day][hour][minute]").expect("unk-time")
++        )
++        .unwrap_or(String::from("unk-time"))
++    );
+     let file = OpenOptions::new()
+         .create(true)
+         .write(true)

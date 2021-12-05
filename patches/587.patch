@@ -1,0 +1,687 @@
+From 7d97777d0ef5d7abc35bfa3dd364d42f24109328 Mon Sep 17 00:00:00 2001
+From: AethanFoot <aethanfoot@hotmail.com>
+Date: Thu, 25 Nov 2021 13:20:53 +0000
+Subject: [PATCH 1/6] Fix #585
+
+---
+ .../xlib_display_server/event_translate.rs    |  4 ++++
+ leftwm-core/src/handlers/focus_handler.rs     | 22 +++++++++----------
+ 2 files changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs b/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
+index 7b96aba6..30169bab 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
+@@ -92,6 +92,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
+     let mut can_resize = actions.contains(&xw.atoms.NetWMActionResize);
+     let trans = xw.get_transient_for(event.window);
+     let sizing_hint = xw.get_hint_sizing_as_xyhw(event.window);
++    let wm_hint = xw.get_wmhints(event.window);
+ 
+     // Build the new window, and fill in info about it.
+     let mut w = Window::new(handle, name, pid);
+@@ -113,6 +114,9 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
+         w.requested = Some(hint_xyhw);
+     }
+     w.can_resize = can_resize;
++    if let Some(hint) = wm_hint {
++        w.never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
++    }
+     // Is this needed? Made it so it doens't overwrite prior sizing.
+     if w.floating() && sizing_hint.is_none() {
+         if let Ok(geo) = xw.get_window_geometry(event.window) {
+diff --git a/leftwm-core/src/handlers/focus_handler.rs b/leftwm-core/src/handlers/focus_handler.rs
+index f51ba92e..7b275d76 100644
+--- a/leftwm-core/src/handlers/focus_handler.rs
++++ b/leftwm-core/src/handlers/focus_handler.rs
+@@ -165,29 +165,27 @@ fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<
+     Some(())
+ }
+ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Option<Window> {
+-    //Docks don't want to get focus. If they do weird things happen. They don't get events...
+-    //Do the focus, Add the action to the list of action
++    // Find the handle in our managed windows.
+     let found: &Window = state.windows.iter().find(|w| &w.handle == handle)?;
++    // Docks don't want to get focus. If they do weird things happen. They don't get events...
+     if found.is_unmanaged() {
+         return None;
+     }
+-    //NOTE: we are intentionally creating the focus event even if we think this window
+-    //is already in focus. This is to force the DM to update its knowledge of the focused window
+-    let act = DisplayAction::WindowTakeFocus(found.clone());
+-    state.actions.push_back(act);
+-
+-    //no new history if no change
++    // No new history if no change.
+     if let Some(fw) = state.focus_manager.window(&state.windows) {
+         if &fw.handle == handle {
+-            //NOTE: we still made the action so return some
+-            return Some(found.clone());
++            return None;
+         }
+     }
+-    //clean old ones
++
++    // Clean old history.
+     state.focus_manager.window_history.truncate(10);
+-    //add this focus to the history
++    // Add this focus change to the history.
+     state.focus_manager.window_history.push_front(Some(*handle));
+ 
++    let act = DisplayAction::WindowTakeFocus(found.clone());
++    state.actions.push_back(act);
++
+     Some(found.clone())
+ }
+ 
+
+From 7cf5da307bfcf56ac4d30aef3f910f15daacc72a Mon Sep 17 00:00:00 2001
+From: AethanFoot <aethanfoot@hotmail.com>
+Date: Thu, 25 Nov 2021 14:05:23 +0000
+Subject: [PATCH 2/6] Fix #574?
+
+---
+ .../xlib_display_server/event_translate.rs    | 22 +++++++----
+ leftwm-core/src/handlers/focus_handler.rs     |  8 ++--
+ leftwm-core/src/handlers/window_handler.rs    | 39 +++++++++++++------
+ 3 files changed, 47 insertions(+), 22 deletions(-)
+
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs b/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
+index 30169bab..08769fa8 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
+@@ -187,17 +187,25 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
+     };
+     let event = xlib::XConfigureRequestEvent::from(raw_event);
+     let window_type = xw.get_window_type(event.window);
+-    if window_type == WindowType::Normal || window_type == WindowType::Dialog {
++    if window_type == WindowType::Normal {
+         return None;
+     }
+     let handle = WindowHandle::XlibHandle(event.window);
+     let mut change = WindowChange::new(handle);
+-    let xyhw = XyhwChange {
+-        w: Some(event.width),
+-        h: Some(event.height),
+-        x: Some(event.x),
+-        y: Some(event.y),
+-        ..XyhwChange::default()
++    let xyhw = match window_type {
++        // We want to handle the window positioning when it is a dialog.
++        WindowType::Dialog => XyhwChange {
++            w: Some(event.width),
++            h: Some(event.height),
++            ..XyhwChange::default()
++        },
++        _ => XyhwChange {
++            w: Some(event.width),
++            h: Some(event.height),
++            x: Some(event.x),
++            y: Some(event.y),
++            ..XyhwChange::default()
++        },
+     };
+     change.floating = Some(xyhw);
+     if window_type == WindowType::Dock || window_type == WindowType::Desktop {
+diff --git a/leftwm-core/src/handlers/focus_handler.rs b/leftwm-core/src/handlers/focus_handler.rs
+index 7b275d76..d464a73e 100644
+--- a/leftwm-core/src/handlers/focus_handler.rs
++++ b/leftwm-core/src/handlers/focus_handler.rs
+@@ -28,7 +28,7 @@ impl State {
+             None => return false,
+         };
+ 
+-        //make sure the focused window's workspace is focused
++        // Make sure the focused window's workspace is focused.
+         let (focused_window_tag, workspace_id) =
+             match self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
+                 Some(ws) => (
+@@ -41,7 +41,7 @@ impl State {
+             let _ = focus_workspace_work(self, workspace_id);
+         }
+ 
+-        //make sure the focused window's tag is focused
++        // Make sure the focused window's tag is focused.
+         if let Some(tag) = focused_window_tag {
+             let _ = focus_tag_work(self, tag);
+         }
+@@ -157,9 +157,9 @@ fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<
+             return None;
+         }
+     }
+-    //clean old ones
++    // Clean old history.
+     state.focus_manager.workspace_history.truncate(10);
+-    //add this focus to the history
++    // Add this focus to the history.
+     let index = state.workspaces.iter().position(|x| x.id == workspace_id)?;
+     state.focus_manager.workspace_history.push_front(index);
+     Some(())
+diff --git a/leftwm-core/src/handlers/window_handler.rs b/leftwm-core/src/handlers/window_handler.rs
+index 84847cd1..9f754c25 100644
+--- a/leftwm-core/src/handlers/window_handler.rs
++++ b/leftwm-core/src/handlers/window_handler.rs
+@@ -97,7 +97,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+         let mut changed = false;
+         let mut fullscreen_changed = false;
+         let strut_changed = change.strut.is_some();
+-        if let Some(w) = self
++        let windows = self.state.windows.clone();
++        if let Some(window) = self
+             .state
+             .windows
+             .iter_mut()
+@@ -105,11 +106,28 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+         {
+             if let Some(ref states) = change.states {
+                 let change_contains = states.contains(&WindowState::Fullscreen);
+-                fullscreen_changed = change_contains || w.is_fullscreen();
++                fullscreen_changed = change_contains || window.is_fullscreen();
+             }
+-            log::debug!("WINDOW CHANGED {:?} {:?}", &w, change);
+-            changed = change.update(w);
+-            if w.r#type == WindowType::Dock {
++            let is_floating_change = change.floating.is_some();
++            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
++            changed = change.update(window);
++            // Reposition a dialog after a resize.
++            if window.r#type == WindowType::Dialog && is_floating_change {
++                if let Some(ws) = self
++                    .state
++                    .workspaces
++                    .iter()
++                    .find(|ws| ws.has_tag(&window.tags[0]))
++                {
++                    let transient = window.transient;
++                    match find_transient_parent(&windows, transient) {
++                        Some(parent) => set_relative_floating(window, ws, parent.exact_xyhw()),
++                        None => set_relative_floating(window, ws, ws.xyhw),
++                    }
++                }
++            }
++
++            if window.r#type == WindowType::Dock {
+                 self.update_workspace_avoid_list();
+                 // Don't let changes from docks re-render the worker. This will result in an
+                 // infinite loop. Just be patient a rerender will occur.
+@@ -260,7 +278,7 @@ fn setup_window(
+         if window.r#type == WindowType::Splash {
+             set_relative_floating(window, ws, ws.xyhw);
+         }
+-        if let Some(parent) = find_transient_parent(state, window) {
++        if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
+             // This is currently for vlc, this probably will need to be more general if another
+             // case comes up where we don't want to move the window.
+             if window.r#type != WindowType::Utility {
+@@ -384,18 +402,17 @@ fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {
+     None
+ }
+ 
+-fn find_transient_parent<'w>(state: &'w State, window: &Window) -> Option<&'w Window> {
+-    let mut transient = window.transient?;
++fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) -> Option<&Window> {
++    let mut transient = transient?;
+     loop {
+-        transient = if let Some(found) = state
+-            .windows
++        transient = if let Some(found) = windows
+             .iter()
+             .find(|x| x.handle == transient)
+             .and_then(|x| x.transient)
+         {
+             found
+         } else {
+-            return state.windows.iter().find(|x| x.handle == transient);
++            return windows.iter().find(|x| x.handle == transient);
+         };
+     }
+ }
+
+From f86842a9959cf723db1a0ed3ed2c4176afd39aaa Mon Sep 17 00:00:00 2001
+From: AethanFoot <aethanfoot@hotmail.com>
+Date: Thu, 25 Nov 2021 14:30:50 +0000
+Subject: [PATCH 3/6] Fix #560
+
+---
+ leftwm-core/src/handlers/command_handler.rs  | 8 ++++++++
+ leftwm-core/src/handlers/focus_handler.rs    | 4 ++--
+ leftwm-core/src/handlers/goto_tag_handler.rs | 2 +-
+ 3 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/leftwm-core/src/handlers/command_handler.rs b/leftwm-core/src/handlers/command_handler.rs
+index 69df6b10..819a6ec6 100644
+--- a/leftwm-core/src/handlers/command_handler.rs
++++ b/leftwm-core/src/handlers/command_handler.rs
+@@ -127,6 +127,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
+     if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
+         if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
+             if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
++                let previous_tag = window.tags[0];
+                 let is_visible = window.has_tag(current_tag);
+                 window.clear_tags();
+                 if is_visible {
+@@ -143,6 +144,13 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
+                         handle = Some(*prev);
+                     }
+                 } else {
++                    // Remove the entry for the previous tag to prevent the scratchpad being
++                    // refocused.
++                    manager
++                        .state
++                        .focus_manager
++                        .tags_last_window
++                        .remove(&previous_tag);
+                     // Show the scratchpad.
+                     window.tag(current_tag);
+                     handle = Some(window.handle);
+diff --git a/leftwm-core/src/handlers/focus_handler.rs b/leftwm-core/src/handlers/focus_handler.rs
+index d464a73e..bb5bd9b3 100644
+--- a/leftwm-core/src/handlers/focus_handler.rs
++++ b/leftwm-core/src/handlers/focus_handler.rs
+@@ -70,7 +70,7 @@ impl State {
+         if focus_tag_work(self, *tag).is_none() {
+             return false;
+         }
+-        // check each workspace, if its displaying this tag it should be focused too
++        // Check each workspace, if its displaying this tag it should be focused too.
+         let to_focus: Vec<Workspace> = self
+             .workspaces
+             .iter()
+@@ -80,7 +80,7 @@ impl State {
+         for ws in &to_focus {
+             focus_workspace_work(self, ws.id);
+         }
+-        //make sure the focused window is on this workspace
++        // Make sure the focused window is on this workspace.
+         if self.focus_manager.behaviour == FocusBehaviour::Sloppy {
+             let act = DisplayAction::FocusWindowUnderCursor;
+             self.actions.push_back(act);
+diff --git a/leftwm-core/src/handlers/goto_tag_handler.rs b/leftwm-core/src/handlers/goto_tag_handler.rs
+index 61487642..98b627f7 100644
+--- a/leftwm-core/src/handlers/goto_tag_handler.rs
++++ b/leftwm-core/src/handlers/goto_tag_handler.rs
+@@ -8,7 +8,7 @@ impl State {
+ 
+         //let tag_id = self.tags[tag_num - 1].label.clone();
+         let new_tags = vec![tag_num];
+-        //no focus safety check
++        // No focus safety check.
+         let old_tags = self.focus_manager.workspace(&self.workspaces)?.tags.clone();
+         if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
+             let old_handle = self
+
+From 966b2642798673d244dd486947df10536ba286eb Mon Sep 17 00:00:00 2001
+From: AethanFoot <aethanfoot@hotmail.com>
+Date: Thu, 25 Nov 2021 15:34:37 +0000
+Subject: [PATCH 4/6] Fix windows not updating
+
+---
+ leftwm-core/src/handlers/focus_handler.rs | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/leftwm-core/src/handlers/focus_handler.rs b/leftwm-core/src/handlers/focus_handler.rs
+index bb5bd9b3..e12c2985 100644
+--- a/leftwm-core/src/handlers/focus_handler.rs
++++ b/leftwm-core/src/handlers/focus_handler.rs
+@@ -174,7 +174,8 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
+     // No new history if no change.
+     if let Some(fw) = state.focus_manager.window(&state.windows) {
+         if &fw.handle == handle {
+-            return None;
++            // Return some so we still update the visuals.
++            return Some(found.clone());
+         }
+     }
+ 
+
+From 60d3628858ef314d54688aa4e601e953e2f2ee68 Mon Sep 17 00:00:00 2001
+From: AethanFoot <aethanfoot@hotmail.com>
+Date: Thu, 25 Nov 2021 18:27:01 +0000
+Subject: [PATCH 5/6] Handle configure requests before the window is mapped
+
+---
+ .../xlib_display_server/event_translate.rs    | 76 ++++++++++++-------
+ .../xlib_display_server/xwrap/getters.rs      |  3 +
+ .../xlib_display_server/xwrap/mod.rs          |  2 +-
+ .../xlib_display_server/xwrap/mouse.rs        |  8 +-
+ .../xlib_display_server/xwrap/setters.rs      | 12 +++
+ .../xlib_display_server/xwrap/window.rs       | 31 +++-----
+ leftwm-core/src/handlers/window_handler.rs    |  6 +-
+ 7 files changed, 81 insertions(+), 57 deletions(-)
+
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs b/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
+index 08769fa8..d05c5162 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
+@@ -43,7 +43,6 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
+                 let h = WindowHandle::XlibHandle(event.window);
+                 let mut mod_mask = event.state;
+                 mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
+-                xw.replay_click(mod_mask);
+                 Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
+             }
+             xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
+@@ -79,10 +78,10 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
+     let handle = WindowHandle::XlibHandle(event.window);
+     xw.subscribe_to_window_events(&handle);
+     // Check that the window isn't requesting to be unmanaged
+-    match xw.get_window_attrs(event.window) {
+-        Ok(attr) if attr.override_redirect == 0 => (),
++    let attrs = match xw.get_window_attrs(event.window) {
++        Ok(attr) if attr.override_redirect == 0 => attr,
+         _ => return None,
+-    }
++    };
+     // Gather info about the window from xlib.
+     let name = xw.get_window_name(event.window);
+     let pid = xw.get_window_pid(event.window);
+@@ -101,6 +100,14 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
+     if let Some(trans) = trans {
+         w.transient = Some(WindowHandle::XlibHandle(trans));
+     }
++    let mut xyhw = XyhwChange::default();
++    xyhw.x = Some(attrs.x);
++    xyhw.y = Some(attrs.y);
++    xyhw.w = Some(attrs.width);
++    xyhw.h = Some(attrs.height);
++    xyhw.update_window_floating(&mut w);
++    let mut requested = Xyhw::default();
++    xyhw.update(&mut requested);
+     if let Some(hint) = sizing_hint {
+         can_resize = match (hint.minw, hint.minh, hint.maxw, hint.maxh) {
+             (Some(min_width), Some(min_height), Some(max_width), Some(max_height)) => {
+@@ -109,10 +116,9 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
+             _ => true,
+         };
+         hint.update_window_floating(&mut w);
+-        let mut hint_xyhw = Xyhw::default();
+-        hint.update(&mut hint_xyhw);
+-        w.requested = Some(hint_xyhw);
++        hint.update(&mut requested);
+     }
++    w.requested = Some(requested);
+     w.can_resize = can_resize;
+     if let Some(hint) = wm_hint {
+         w.never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
+@@ -132,7 +138,7 @@ fn from_mapping_notify(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEve
+     let mut event = xlib::XMappingEvent::from(raw_event);
+     if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
+         // refresh keyboard
+-        log::info!("Updating keyboard");
++        log::debug!("Updating keyboard");
+         xw.refresh_keyboard(&mut event).ok()?;
+ 
+         // SoftReload keybinds
+@@ -186,15 +192,45 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
+         Mode::Normal => {}
+     };
+     let event = xlib::XConfigureRequestEvent::from(raw_event);
++    // If the window is not mapped, configure it.
++    if !xw.managed_windows.contains(&event.window) {
++        let window_changes = xlib::XWindowChanges {
++            x: event.x,
++            y: event.y,
++            width: event.width,
++            height: event.height,
++            border_width: event.border_width,
++            sibling: event.above,
++            stack_mode: event.detail,
++        };
++        let unlock = xlib::CWX
++            | xlib::CWY
++            | xlib::CWWidth
++            | xlib::CWHeight
++            | xlib::CWBorderWidth
++            | xlib::CWSibling
++            | xlib::CWStackMode;
++        xw.set_window_config(event.window, window_changes, u32::from(unlock));
++        xw.move_resize_window(
++            event.window,
++            event.x,
++            event.y,
++            event.width as u32,
++            event.height as u32,
++        );
++        return None;
++    }
+     let window_type = xw.get_window_type(event.window);
+-    if window_type == WindowType::Normal {
++    let trans = xw.get_transient_for(event.window);
++    if window_type == WindowType::Normal && trans.is_none() {
+         return None;
+     }
+     let handle = WindowHandle::XlibHandle(event.window);
+     let mut change = WindowChange::new(handle);
+     let xyhw = match window_type {
+-        // We want to handle the window positioning when it is a dialog.
+-        WindowType::Dialog => XyhwChange {
++        // We want to handle the window positioning when it is a dialog or a normal window with a
++        // parent.
++        WindowType::Dialog | WindowType::Normal => XyhwChange {
+             w: Some(event.width),
+             h: Some(event.height),
+             ..XyhwChange::default()
+@@ -208,23 +244,5 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
+         },
+     };
+     change.floating = Some(xyhw);
+-    if window_type == WindowType::Dock || window_type == WindowType::Desktop {
+-        if let Some(dock_area) = xw.get_window_strut_array(event.window) {
+-            let dems = xw.get_screens_area_dimensions();
+-            let screen = xw
+-                .get_screens()
+-                .iter()
+-                .find(|s| s.contains_dock_area(dock_area, dems))?
+-                .clone();
+-
+-            if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
+-                change.strut = Some(xyhw.into());
+-            }
+-        } else if let Ok(geo) = xw.get_window_geometry(event.window) {
+-            let mut xyhw = Xyhw::default();
+-            geo.update(&mut xyhw);
+-            change.strut = Some(xyhw.into());
+-        }
+-    }
+     Some(DisplayEvent::WindowChange(change))
+ }
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/xwrap/getters.rs b/leftwm-core/src/display_servers/xlib_display_server/xwrap/getters.rs
+index 06a79f49..85a64d7d 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/xwrap/getters.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/xwrap/getters.rs
+@@ -160,6 +160,9 @@ impl XWrap {
+             // Make sure that width and height are not smaller than the min values.
+             xyhw.w = std::cmp::max(xyhw.w, xyhw.minw);
+             xyhw.h = std::cmp::max(xyhw.h, xyhw.minh);
++            // Ignore the sizing if the sizing is set to 0.
++            xyhw.w = if xyhw.w == Some(0) { None } else { xyhw.w };
++            xyhw.h = if xyhw.h == Some(0) { None } else { xyhw.h };
+ 
+             if (size.flags & xlib::PPosition) != 0 || (size.flags & xlib::USPosition) != 0 {
+                 // These are obsolete but are still used sometimes.
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/xwrap/mod.rs b/leftwm-core/src/display_servers/xlib_display_server/xwrap/mod.rs
+index e65d271f..fa64a9cb 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/xwrap/mod.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/xwrap/mod.rs
+@@ -57,7 +57,7 @@ pub struct XWrap {
+     pub atoms: XAtom,
+     cursors: XCursor,
+     colors: Colors,
+-    managed_windows: Vec<xlib::Window>,
++    pub managed_windows: Vec<xlib::Window>,
+     pub tag_labels: Vec<String>,
+     pub mode: Mode,
+     pub focus_behaviour: FocusBehaviour,
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/xwrap/mouse.rs b/leftwm-core/src/display_servers/xlib_display_server/xwrap/mouse.rs
+index ccfff50f..c28c65e9 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/xwrap/mouse.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/xwrap/mouse.rs
+@@ -2,7 +2,6 @@
+ use super::{XlibError, MOUSEMASK};
+ use crate::display_servers::xlib_display_server::xwrap::BUTTONMASK;
+ use crate::models::FocusBehaviour;
+-use crate::utils::xkeysym_lookup::ModMask;
+ use crate::XWrap;
+ use std::os::raw::{c_int, c_ulong};
+ use x11_dl::xlib;
+@@ -125,13 +124,10 @@ impl XWrap {
+     /// Replay a click on a window.
+     // `XAllowEvents`: https://linux.die.net/man/3/xallowevents
+     // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
+-    pub fn replay_click(&self, mod_mask: ModMask) {
++    pub fn replay_click(&self) {
+         // Only replay the click when in ClickToFocus and we are not trying to move/resize the
+         // window.
+-        if self.focus_behaviour == FocusBehaviour::ClickTo
+-            && !(mod_mask == self.mouse_key_mask
+-                || mod_mask == (self.mouse_key_mask | xlib::ShiftMask))
+-        {
++        if self.focus_behaviour == FocusBehaviour::ClickTo {
+             unsafe {
+                 (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
+                 (self.xlib.XSync)(self.display, 0);
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/xwrap/setters.rs b/leftwm-core/src/display_servers/xlib_display_server/xwrap/setters.rs
+index d6c8857f..e8b3b63e 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/xwrap/setters.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/xwrap/setters.rs
+@@ -147,6 +147,18 @@ impl XWrap {
+         }
+     }
+ 
++    pub fn set_window_config(
++        &self,
++        window: xlib::Window,
++        mut window_changes: xlib::XWindowChanges,
++        unlock: u32,
++    ) {
++        unsafe {
++            (self.xlib.XConfigureWindow)(self.display, window, unlock, &mut window_changes);
++            (self.xlib.XSync)(self.display, 0);
++        }
++    }
++
+     /// Sets what desktop a window is on.
+     pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &[TagId]) {
+         let mut indexes: Vec<c_long> = current_tags.iter().map(|tag| (tag - 1) as c_long).collect();
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/xwrap/window.rs b/leftwm-core/src/display_servers/xlib_display_server/xwrap/window.rs
+index 3569a8ad..99414494 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/xwrap/window.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/xwrap/window.rs
+@@ -110,7 +110,7 @@ impl XWrap {
+                     }
+                     return;
+                 }
+-                let mut changes = xlib::XWindowChanges {
++                let changes = xlib::XWindowChanges {
+                     x: window.x(),
+                     y: window.y(),
+                     width: window.width(),
+@@ -121,25 +121,11 @@ impl XWrap {
+                 };
+                 let unlock =
+                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
++                self.set_window_config(handle, changes, u32::from(unlock));
++                let w: u32 = window.width() as u32;
++                let h: u32 = window.height() as u32;
++                self.move_resize_window(handle, window.x(), window.y(), w, h);
+                 unsafe {
+-                    (self.xlib.XConfigureWindow)(
+-                        self.display,
+-                        handle,
+-                        u32::from(unlock),
+-                        &mut changes,
+-                    );
+-                    (self.xlib.XSync)(self.display, 0);
+-                    let rw: u32 = window.width() as u32;
+-                    let rh: u32 = window.height() as u32;
+-                    (self.xlib.XMoveResizeWindow)(
+-                        self.display,
+-                        handle,
+-                        window.x(),
+-                        window.y(),
+-                        rw,
+-                        rh,
+-                    );
+-
+                     let mut color: c_ulong = if is_focused {
+                         self.colors.active
+                     } else if window.floating() {
+@@ -172,6 +158,7 @@ impl XWrap {
+     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
+     pub fn window_take_focus(&self, window: &Window) {
+         if let WindowHandle::XlibHandle(handle) = window.handle {
++            self.replay_click();
+             self.grab_mouse_clicks(handle);
+ 
+             if !window.never_focus {
+@@ -233,6 +220,12 @@ impl XWrap {
+         }
+     }
+ 
++    pub fn move_resize_window(&self, window: xlib::Window, x: i32, y: i32, w: u32, h: u32) {
++        unsafe {
++            (self.xlib.XMoveResizeWindow)(self.display, window, x, y, w, h);
++        }
++    }
++
+     /// Raise a window.
+     // `XRaiseWindow`: https://tronche.com/gui/x/xlib/window/XRaiseWindow.html
+     pub fn move_to_top(&self, handle: &WindowHandle) {
+diff --git a/leftwm-core/src/handlers/window_handler.rs b/leftwm-core/src/handlers/window_handler.rs
+index 9f754c25..30c3511d 100644
+--- a/leftwm-core/src/handlers/window_handler.rs
++++ b/leftwm-core/src/handlers/window_handler.rs
+@@ -112,7 +112,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+             log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
+             changed = change.update(window);
+             // Reposition a dialog after a resize.
+-            if window.r#type == WindowType::Dialog && is_floating_change {
++            if window.r#type == WindowType::Dialog
++                || window.transient.is_some() && is_floating_change
++            {
+                 if let Some(ws) = self
+                     .state
+                     .workspaces
+@@ -265,7 +267,7 @@ fn setup_window(
+             window.apply_margin_multiplier(ws.margin_multiplier);
+         }
+         // Center dialogs and modal in workspace
+-        if window.r#type == WindowType::Dialog || window.states().contains(&WindowState::Modal) {
++        if window.r#type == WindowType::Dialog {
+             if window.can_resize() {
+                 window.set_floating(true);
+                 let new_float_exact = ws.center_halfed();
+
+From b6ac5254b370093ac09185e87711cbff507c12ce Mon Sep 17 00:00:00 2001
+From: AethanFoot <aethanfoot@hotmail.com>
+Date: Thu, 25 Nov 2021 18:35:22 +0000
+Subject: [PATCH 6/6] clippy
+
+---
+ .../xlib_display_server/event_translate.rs          | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs b/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
+index d05c5162..2390505f 100644
+--- a/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
++++ b/leftwm-core/src/display_servers/xlib_display_server/event_translate.rs
+@@ -100,11 +100,14 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
+     if let Some(trans) = trans {
+         w.transient = Some(WindowHandle::XlibHandle(trans));
+     }
+-    let mut xyhw = XyhwChange::default();
+-    xyhw.x = Some(attrs.x);
+-    xyhw.y = Some(attrs.y);
+-    xyhw.w = Some(attrs.width);
+-    xyhw.h = Some(attrs.height);
++    // Initialise the windows floating we the pre-mapped settings.
++    let xyhw = XyhwChange {
++        x: Some(attrs.x),
++        y: Some(attrs.y),
++        w: Some(attrs.width),
++        h: Some(attrs.height),
++        ..XyhwChange::default()
++    };
+     xyhw.update_window_floating(&mut w);
+     let mut requested = Xyhw::default();
+     xyhw.update(&mut requested);
