@@ -438,8 +438,13 @@ pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
 
 fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32) -> i32 {
     match config_value {
-        Some(size @ Size::Ratio(percentage)) if (0.0..=1.0).contains(&percentage) => {
-            size.into_absolute(max_pixel)
+        Some(Size::Ratio(ratio)) if (0.0..=1.0).contains(&ratio) => {
+            // This is to allow for better rust version compatibility.
+            Size::Ratio(ratio).into_absolute(max_pixel)
+            // When rust 1.56 becomes widely availible change the match to
+            // Some(size @ Size::Ration(ratio)) ...
+            // Also change to this:
+            // // size.into_absolute(max_pixel)
         }
         Some(Size::Pixel(pixel)) if (0..=max_pixel).contains(&pixel) => pixel,
         _ => Size::Ratio(default_ratio).into_absolute(max_pixel),
