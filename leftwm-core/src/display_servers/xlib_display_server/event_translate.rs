@@ -235,8 +235,6 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
             event.width as u32,
             event.height as u32,
         );
-
-        log::info!("1");
         return None;
     }
     let handle = WindowHandle::XlibHandle(event.window);
