@@ -204,8 +204,13 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
         Mode::Normal => {}
     };
     let event = xlib::XConfigureRequestEvent::from(raw_event);
-    // If the window is not mapped, configure it.
-    if !xw.managed_windows.contains(&event.window) {
+    let window_type = xw.get_window_type(event.window);
+    let trans = xw.get_transient_for(event.window);
+    // We configure non-floating normal windows and unmagaed windows. This is mainly to fix issues
+    // with xterm.
+    if window_type == WindowType::Normal && trans.is_none()
+        || !xw.managed_windows.contains(&event.window)
+    {
         let window_changes = xlib::XWindowChanges {
             x: event.x,
             y: event.y,
@@ -230,11 +235,8 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
             event.width as u32,
             event.height as u32,
         );
-        return None;
-    }
-    let window_type = xw.get_window_type(event.window);
-    let trans = xw.get_transient_for(event.window);
-    if window_type == WindowType::Normal && trans.is_none() {
+
+        log::info!("1");
         return None;
     }
     let handle = WindowHandle::XlibHandle(event.window);
