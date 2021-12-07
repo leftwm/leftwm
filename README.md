@@ -88,7 +88,7 @@ author of the theme and could be different.
 
 List of LeftWM dependencies:  
 
-- xorg (runtime, build):(specifically libx11, xrandr, xorg-server, libxinerama)  
+- xorg (runtime, build): specifically libx11, xrandr, xorg-server, libxinerama  
 - sh (runtime): any posix-compliant shell for starting up and down files
 - rust (build): >= 1.52.0
 - bash (optional): Most of the themes available use bash, though the scrips maybe converted to any posix-compliant shell
@@ -142,6 +142,17 @@ Fedora ([copr])
 sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
 ```
 
+NetBSD ([Official repositories])
+```sh
+pkgin install leftwm
+```
+
+or, if you prefer to build it from source
+```sh
+cd /usr/pkgsrc/wm/leftwm
+make install
+```
+
 Cargo ([crates.io])
 ```sh
 cargo install leftwm
@@ -155,6 +166,7 @@ sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 
 [AUR]: https://aur.archlinux.org/packages/leftwm
 [copr]: https://copr.fedorainfracloud.org/coprs/atim/leftwm/
+[Official repositories]: https://pkgsrc.se/wm/leftwm/
 [crates.io]: https://crates.io/crates/leftwm
 [paru]: https://github.com/Morganamilo/paru
 [yay]: https://github.com/Jguer/yay
