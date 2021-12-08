@@ -156,31 +156,39 @@ impl Xyhw {
 
     pub fn set_x(&mut self, value: i32) {
         self.x = value;
+        self.update_limits();
     }
     pub fn set_y(&mut self, value: i32) {
         self.y = value;
+        self.update_limits();
     }
     pub fn set_h(&mut self, value: i32) {
         self.h = value;
+        self.update_limits();
     }
     pub fn set_w(&mut self, value: i32) {
         self.w = value;
+        self.update_limits();
     }
 
     pub fn set_minw(&mut self, value: i32) {
         self.minw = value;
+        self.update_limits();
     }
     pub fn set_maxw(&mut self, value: i32) {
         self.maxw = value;
+        self.update_limits();
     }
     pub fn set_minh(&mut self, value: i32) {
         self.minh = value;
+        self.update_limits();
     }
     pub fn set_maxh(&mut self, value: i32) {
         self.maxh = value;
+        self.update_limits();
     }
 
-    pub fn update_limits(&mut self) {
+    fn update_limits(&mut self) {
         if self.h > self.maxh {
             self.h = self.maxh;
         }
