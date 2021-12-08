@@ -249,6 +249,10 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.reset_grabs(&keybinds);
                 None
             }
+            DisplayAction::ConfigureXlibWindow(window) => {
+                self.xw.configure_window(&window);
+                None
+            }
         };
         if event.is_some() {
             log::trace!("DisplayEvent: {:?}", event);
