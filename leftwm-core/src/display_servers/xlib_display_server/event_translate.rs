@@ -210,7 +210,6 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
         Mode::Normal => {}
     };
     let event = xlib::XConfigureRequestEvent::from(raw_event);
-    log::info!("Configure Request");
     // If the window is not mapped, configure it.
     if !xw.managed_windows.contains(&event.window) {
         let window_changes = xlib::XWindowChanges {

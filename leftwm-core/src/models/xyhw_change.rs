@@ -80,6 +80,7 @@ impl XyhwChange {
                 changed = true;
             }
         }
+        xyhw.update_limits();
         changed
     }
 
