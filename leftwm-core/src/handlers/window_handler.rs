@@ -109,7 +109,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 fullscreen_changed = change_contains || window.is_fullscreen();
             }
             let container = match find_transient_parent(&windows, window.transient) {
-                Some(parent) if window.r#type == WindowType::Dialog => Some(parent.exact_xyhw()),
+                Some(parent) => Some(parent.exact_xyhw()),
                 None if window.r#type == WindowType::Dialog => self
                     .state
                     .workspaces
