@@ -116,7 +116,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     xyhw.update_window_floating(&mut w);
     let mut requested = Xyhw::default();
     xyhw.update(&mut requested);
-    if let Some(hint) = sizing_hint {
+    if let Some(mut hint) = sizing_hint {
         // Ignore this for now for non-splashes as it causes issues, e.g. mintstick is non-resizable but is too
         // small, issue #614: https://github.com/leftwm/leftwm/issues/614.
         can_resize = match (r#type, hint.minw, hint.minh, hint.maxw, hint.maxh) {
@@ -129,6 +129,9 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
             ) => can_resize || min_width != max_width || min_height != max_height,
             _ => true,
         };
+        // Use the pre-mapped sizes if they are bigger.
+        hint.w = std::cmp::max(xyhw.w, hint.w);
+        hint.h = std::cmp::max(xyhw.h, hint.h);
         hint.update_window_floating(&mut w);
         hint.update(&mut requested);
     }
