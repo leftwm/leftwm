@@ -19,5 +19,6 @@ pub enum DisplayEvent {
     ResizeWindow(WindowHandle, i32, i32),
     ScreenCreate(Screen),
     SendCommand(Command),
+    ConfigureXlibWindow(WindowHandle),
     ChangeToNormalMode,
 }

@@ -69,4 +69,7 @@ pub enum DisplayAction {
 
     /// SoftReload keygrabs, needed when keyboard changes.
     ReloadKeyGrabs(Vec<Keybind>),
+
+    /// Configure a xlib window.
+    ConfigureXlibWindow(Window),
 }
