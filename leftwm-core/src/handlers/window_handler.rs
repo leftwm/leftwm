@@ -108,27 +108,19 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 let change_contains = states.contains(&WindowState::Fullscreen);
                 fullscreen_changed = change_contains || window.is_fullscreen();
             }
-            let is_floating_change = change.floating.is_some();
-            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
-            changed = change.update(window);
-            // Reposition a dialog after a resize.
-            if window.r#type == WindowType::Dialog
-                || window.transient.is_some() && is_floating_change
-            {
-                if let Some(ws) = self
+            let container = match find_transient_parent(&windows, window.transient) {
+                Some(parent) if window.r#type == WindowType::Dialog => Some(parent.exact_xyhw()),
+                None if window.r#type == WindowType::Dialog => self
                     .state
                     .workspaces
                     .iter()
                     .find(|ws| ws.has_tag(&window.tags[0]))
-                {
-                    let transient = window.transient;
-                    match find_transient_parent(&windows, transient) {
-                        Some(parent) => set_relative_floating(window, ws, parent.exact_xyhw()),
-                        None => set_relative_floating(window, ws, ws.xyhw),
-                    }
-                }
-            }
+                    .map(|ws| ws.xyhw),
+                _ => None,
+            };
 
+            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
+            changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
                 self.update_workspace_avoid_list();
                 // Don't let changes from docks re-render the worker. This will result in an
