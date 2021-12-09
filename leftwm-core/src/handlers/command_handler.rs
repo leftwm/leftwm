@@ -347,7 +347,7 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
     // When switching to Monocle or MainAndDeck layout while in Driven
     // or ClickTo focus mode, we check if the focus is given to a visible window.
     if state.focus_manager.behaviour != FocusBehaviour::Sloppy {
-        //if the currently focused window is floatin, nothing will be done
+        //if the currently focused window is floating, nothing will be done
         let focused_window = state.focus_manager.window_history.get(0);
         let is_focused_floating = match state
             .windows
@@ -393,7 +393,11 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
     let tag = state.tags.get_mut(tag_id)?;
-    tag.set_layout(layout, workspace.main_width_percentage);
+    match layout {
+        Layout::RightWiderLeftStack => tag.set_layout(layout, layout.main_width()),
+        Layout::LeftWiderRightStack => tag.set_layout(layout, layout.main_width()),
+        _ => tag.set_layout(layout, workspace.main_width_percentage)
+    }
     Some(true)
 }
 
