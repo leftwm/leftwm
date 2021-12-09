@@ -181,22 +181,22 @@ fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<Display
     let event = xlib::XMotionEvent::from(raw_event);
     // Limit motion events to current refresh rate.
 
-    if xw.refresh_rate as c_ulong > 0 {
-        if event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong) {
-            xw.motion_event_limiter = event.time;
-            let event_h = WindowHandle::XlibHandle(event.window);
-            let offset_x = event.x_root - xw.mode_origin.0;
-            let offset_y = event.y_root - xw.mode_origin.1;
-            let display_event = match &xw.mode {
-                Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, offset_x, offset_y),
-                Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, offset_x, offset_y),
-                Mode::Normal if xw.focus_behaviour == FocusBehaviour::Sloppy => {
-                    DisplayEvent::Movement(event_h, event.x_root, event.y_root)
-                }
-                Mode::Normal => return None,
-            };
-            return Some(display_event);
-        }
+    if xw.refresh_rate as c_ulong > 0
+        && event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong)
+    {
+        xw.motion_event_limiter = event.time;
+        let event_h = WindowHandle::XlibHandle(event.window);
+        let offset_x = event.x_root - xw.mode_origin.0;
+        let offset_y = event.y_root - xw.mode_origin.1;
+        let display_event = match &xw.mode {
+            Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, offset_x, offset_y),
+            Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, offset_x, offset_y),
+            Mode::Normal if xw.focus_behaviour == FocusBehaviour::Sloppy => {
+                DisplayEvent::Movement(event_h, event.x_root, event.y_root)
+            }
+            Mode::Normal => return None,
+        };
+        return Some(display_event);
     }
 
     None
