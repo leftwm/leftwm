@@ -180,7 +180,10 @@ fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent
 fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEvent> {
     let event = xlib::XMotionEvent::from(raw_event);
     // Limit motion events to current refresh rate.
-    if event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong) {
+
+    if xw.refresh_rate as c_ulong > 0
+        && event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong)
+    {
         xw.motion_event_limiter = event.time;
         let event_h = WindowHandle::XlibHandle(event.window);
         let offset_x = event.x_root - xw.mode_origin.0;
@@ -195,6 +198,7 @@ fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<Display
         };
         return Some(display_event);
     }
+
     None
 }
 
