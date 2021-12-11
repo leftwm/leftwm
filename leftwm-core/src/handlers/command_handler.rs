@@ -48,7 +48,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, state, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, state, 0),
 
-        Command::GotoTag { tag, swap } => goto_tag(state, *tag, *swap),
+        Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
 
         Command::CloseWindow => close_window(state),
         Command::SwapScreens => swap_tags(state),

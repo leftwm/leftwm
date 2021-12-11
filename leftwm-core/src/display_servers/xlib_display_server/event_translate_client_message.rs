@@ -15,7 +15,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         let value = event.data.get_long(0);
         match usize::try_from(value) {
             Ok(index) => {
-                return Some(DisplayEvent::SendCommand(Command::GotoTag {
+                return Some(DisplayEvent::SendCommand(Command::GoToTag {
                     tag: index + 1,
                     swap: false,
                 }));

@@ -57,15 +57,15 @@ impl Keybind {
             }
             BaseCommand::ToggleFullScreen => leftwm_core::Command::ToggleFullScreen,
             BaseCommand::ToggleSticky => leftwm_core::Command::ToggleSticky,
-            BaseCommand::GotoTag => leftwm_core::Command::GotoTag {
+            BaseCommand::GotoTag => leftwm_core::Command::GoToTag {
                 tag: usize::from_str(&self.value).context("invalid index value for GotoTag")?,
                 swap: !config.disable_current_tag_swap,
             },
-            BaseCommand::GotoTagSwap => leftwm_core::Command::GotoTag {
+            BaseCommand::GoToTagSwap => leftwm_core::Command::GoToTag {
                 tag: usize::from_str(&self.value).context("invalid index value for GotoTagSwap")?,
                 swap: true,
             },
-            BaseCommand::GotoTagNoSwap => leftwm_core::Command::GotoTag {
+            BaseCommand::GoToTagNoSwap => leftwm_core::Command::GoToTag {
                 tag: usize::from_str(&self.value)
                     .context("invalid index value for GotoTagNoSwap")?,
                 swap: false,
