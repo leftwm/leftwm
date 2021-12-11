@@ -1,10 +1,8 @@
 use anyhow::{bail, Result};
 use clap::{App, Arg};
-use leftwm::{Config, Keybind, ThemeSetting};
-use leftwm_core::config::Workspace;
+use leftwm::{Config, ThemeSetting};
 use leftwm_core::utils;
-use std::collections::HashMap;
-use std::convert::TryFrom;
+use std::collections::HashSet;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
@@ -48,8 +46,8 @@ async fn main() -> Result<()> {
             if verbose {
                 dbg!(&config);
             }
-            check_workspace_ids(config.workspaces, verbose);
-            check_keybinds(config.keybind, verbose);
+            check_workspace_ids(&config, verbose);
+            check_keybinds(&config, verbose);
         }
         Err(e) => {
             println!("Configuration failed. Reason: {:?}", e);
@@ -89,8 +87,8 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
 }
 
 /// Checks defined workspaces to ensure no ID collisions occur.
-fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> bool {
-    workspaces.map_or(true, |wss|
+fn check_workspace_ids(config: &Config, verbose: bool) -> bool {
+    config.workspaces.as_ref().map_or(true, |wss|
     {
         if verbose {
             println!("Checking config for valid workspace definitions.");
@@ -118,15 +116,15 @@ fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> boo
 /// Checks to see if value is provided (if required)
 /// Checks to see if keys are valid against Xkeysym
 /// Ideally, we will pass this to the command handler with a dummy config
-fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
+fn check_keybinds(config: &Config, verbose: bool) -> bool {
     let mut returns = Vec::new();
     println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
-    let mut bindings = HashMap::new();
-    for keybind in keybinds {
+    let mut bindings = HashSet::new();
+    for keybind in config.keybind.iter() {
         if verbose {
-            println!("Keybind: {:?} {}", keybind, keybind.value.is_none());
+            println!("Keybind: {:?} {}", keybind, keybind.value.is_empty());
         }
-        if let Err(err) = leftwm_core::Keybind::try_from(keybind.clone()) {
+        if let Err(err) = keybind.try_convert_to_core_keybind(config) {
             returns.push((Some(keybind.clone()), err.to_string()));
         }
         if utils::xkeysym_lookup::into_keysym(&keybind.key).is_none() {
@@ -145,8 +143,8 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
             }
         }
         let mut modkey = keybind.modifier.clone();
-        modkey.sort();
-        if let Some(conflict_key) = bindings.get(&(modkey.clone(), keybind.key.clone())) {
+        modkey.sort_unstable();
+        if let Some(conflict_key) = bindings.replace((modkey, &keybind.key)) {
             returns.push((
                 None,
                 format!(
@@ -160,8 +158,6 @@ fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
                     keybind.command,
                 ),
             ));
-        } else {
-            bindings.insert((modkey, keybind.key), keybind.command);
         }
     }
     if returns.is_empty() {

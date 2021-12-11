@@ -48,7 +48,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, state, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, state, 0),
 
-        Command::GotoTag(tag) => goto_tag(state, *tag),
+        Command::GotoTag { tag, swap } => goto_tag(state, *tag, *swap),
 
         Command::CloseWindow => close_window(state),
         Command::SwapScreens => swap_tags(state),
@@ -265,10 +265,10 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     move_to_tag(*tag_num, manager)
 }
 
-fn goto_tag(state: &mut State, input_tag: TagId) -> Option<bool> {
+fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Option<bool> {
     let current_tag = state.focus_manager.tag(0).unwrap_or_default();
     let previous_tag = state.focus_manager.tag(1).unwrap_or_default();
-    let destination_tag = if !state.disable_current_tag_swap && current_tag == input_tag {
+    let destination_tag = if current_tag_swap && current_tag == input_tag {
         previous_tag
     } else {
         input_tag

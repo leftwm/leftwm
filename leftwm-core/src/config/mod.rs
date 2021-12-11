@@ -23,9 +23,6 @@ pub trait Config {
 
     fn mousekey(&self) -> String;
 
-    //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
-    fn disable_current_tag_swap(&self) -> bool;
-
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
 
     fn layouts(&self) -> Vec<Layout>;
