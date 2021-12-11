@@ -575,7 +575,7 @@ fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
     let next = state
         .windows
         .iter()
-        .find(|x| x.tags.contains(&tag) && !x.is_unmanaged())
+        .find(|x| x.tags.contains(&tag) && !x.floating() && !x.is_unmanaged())
         .map(|w| w.handle);
 
     match (next, cur, prev) {
