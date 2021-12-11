@@ -10,7 +10,7 @@ impl Config {
         if verbose {
             println!("Checking config for valid workspace definitions.");
         }
-        let ids = crate::get_workspace_ids(&wss);
+        let ids = crate::get_workspace_ids(wss);
         if ids.iter().any(std::option::Option::is_some) {
             if !crate::all_ids_some(&ids)
             {

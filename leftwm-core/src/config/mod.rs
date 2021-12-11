@@ -84,9 +84,6 @@ impl Config for TestConfig {
     fn mousekey(&self) -> String {
         "Mod4".to_string()
     }
-    fn disable_current_tag_swap(&self) -> bool {
-        false
-    }
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
         vec![]
     }
@@ -104,7 +101,10 @@ impl Config for TestConfig {
         SERVER: DisplayServer,
     {
         match command {
-            "GotoTag2" => manager.command_handler(&crate::Command::GotoTag(2)),
+            "GotoTag2" => manager.command_handler(&crate::Command::GotoTag {
+                tag: 2,
+                swap: false,
+            }),
             _ => unimplemented!("custom command handler: {:?}", command),
         }
     }
