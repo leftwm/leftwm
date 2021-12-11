@@ -66,7 +66,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusPreviousTag => focus_tag_change(state, -1),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, state, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, state, 1),
-        Command::FocusWindowTop => move_focus_common_vars(focus_window_top, state, 0),
+        Command::FocusWindowTop(toggle) => focus_window_top(state, *toggle),
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
@@ -568,25 +568,26 @@ fn focus_window_change(
     Some(handle_focus(state, handle))
 }
 
-fn focus_window_top(
-    state: &mut State,
-    _val: i32,
-    handle: WindowHandle,
-    _layout: Option<Layout>,
-    mut to_reorder: Vec<Window>,
-) -> Option<bool> {
+fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
     let tag = state.focus_manager.tag(0)?;
-    let mut new_handle = to_reorder.get(0)?.handle;
-    state.windows.append(&mut to_reorder);
+    let cur = state.focus_manager.window(&state.windows).map(|w| w.handle);
+    let prev = state.focus_manager.tags_last_window.get(&tag).copied();
+    let next = state
+        .windows
+        .iter()
+        .find(|x| x.tags.contains(&tag) && !x.is_unmanaged())
+        .map(|w| w.handle);
 
-    if handle == new_handle {
-        // top window is already focused, get the previous window on the tag instead
-        new_handle = *state.focus_manager.tags_last_window.get(&tag)?;
-    } else {
-        state.focus_manager.tags_last_window.insert(tag, handle);
+    match (next, cur, prev) {
+        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => {
+            Some(handle_focus(state, prev))
+        }
+        (Some(next), Some(cur), _) if next != cur => {
+            state.focus_manager.tags_last_window.insert(tag, cur);
+            Some(handle_focus(state, next))
+        }
+        _ => None,
     }
-
-    Some(handle_focus(state, new_handle))
 }
 
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
@@ -800,7 +801,7 @@ mod tests {
 
         assert!(manager.state.focus_window(&initial.handle));
 
-        assert!(manager.command_handler(&Command::FocusWindowTop));
+        assert!(manager.command_handler(&Command::FocusWindowTop(false)));
         let actual = manager
             .state
             .focus_manager
@@ -809,7 +810,16 @@ mod tests {
             .handle;
         assert_eq!(expected.handle, actual);
 
-        assert!(manager.state.focus_window(&initial.handle));
+        assert!(!manager.command_handler(&Command::FocusWindowTop(false)));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(expected.handle, actual);
+
+        assert!(manager.command_handler(&Command::FocusWindowTop(true)));
         let actual = manager
             .state
             .focus_manager
