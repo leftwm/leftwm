@@ -66,6 +66,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusPreviousTag => focus_tag_change(state, -1),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, state, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, state, 1),
+        Command::FocusWindowTop(toggle) => focus_window_top(state, *toggle),
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
@@ -572,6 +573,28 @@ fn focus_window_change(
     Some(handle_focus(state, handle))
 }
 
+fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
+    let tag = state.focus_manager.tag(0)?;
+    let cur = state.focus_manager.window(&state.windows).map(|w| w.handle);
+    let prev = state.focus_manager.tags_last_window.get(&tag).copied();
+    let next = state
+        .windows
+        .iter()
+        .find(|x| x.tags.contains(&tag) && !x.floating() && !x.is_unmanaged())
+        .map(|w| w.handle);
+
+    match (next, cur, prev) {
+        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => {
+            Some(handle_focus(state, prev))
+        }
+        (Some(next), Some(cur), _) if next != cur => {
+            state.focus_manager.tags_last_window.insert(tag, cur);
+            Some(handle_focus(state, next))
+        }
+        _ => None,
+    }
+}
+
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let current = state.focus_manager.workspace(&state.workspaces)?;
     let workspace = helpers::relative_find(&state.workspaces, |w| w == current, val, true)?.clone();
@@ -755,5 +778,59 @@ mod tests {
 
         focus_tag_change(state, 13);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
+    }
+
+    #[test]
+    fn focus_window_top() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(3), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = manager.state.windows[0].clone();
+        let initial = manager.state.windows[1].clone();
+
+        assert!(manager.state.focus_window(&initial.handle));
+
+        assert!(manager.command_handler(&Command::FocusWindowTop(false)));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(expected.handle, actual);
+
+        assert!(!manager.command_handler(&Command::FocusWindowTop(false)));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(expected.handle, actual);
+
+        assert!(manager.command_handler(&Command::FocusWindowTop(true)));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(initial.handle, actual);
     }
 }
