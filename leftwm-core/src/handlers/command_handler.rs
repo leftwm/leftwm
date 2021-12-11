@@ -773,4 +773,49 @@ mod tests {
         focus_tag_change(state, 13);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
     }
+
+    #[test]
+    fn focus_window_top() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(3), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = manager.state.windows[0].clone();
+        let initial = manager.state.windows[1].clone();
+
+        assert!(manager.state.focus_window(&initial.handle));
+
+        assert!(manager.command_handler(&Command::FocusWindowTop));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(expected.handle, actual);
+
+        assert!(manager.state.focus_window(&initial.handle));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(initial.handle, actual);
+    }
 }
