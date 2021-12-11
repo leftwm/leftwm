@@ -101,7 +101,7 @@ impl Config for TestConfig {
         SERVER: DisplayServer,
     {
         match command {
-            "GotoTag2" => manager.command_handler(&crate::Command::GotoTag {
+            "GoToTag2" => manager.command_handler(&crate::Command::GoToTag {
                 tag: 2,
                 swap: false,
             }),
@@ -164,7 +164,7 @@ mod tests {
     fn ensure_command_handler_trait_boundary() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
         manager.screen_create_handler(Screen::default());
-        assert!(TestConfig::command_handler("GotoTag2", &mut manager));
+        assert!(TestConfig::command_handler("GoToTag2", &mut manager));
         assert_eq!(manager.state.focus_manager.tag_history, &[2, 1]);
     }
 }

@@ -655,15 +655,15 @@ mod tests {
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::new_test(vec![]);
         // no screen creation here
-        assert!(!manager.command_handler(&Command::GotoTag {
+        assert!(!manager.command_handler(&Command::GoToTag {
             tag: 6,
             swap: false
         }));
-        assert!(!manager.command_handler(&Command::GotoTag {
+        assert!(!manager.command_handler(&Command::GoToTag {
             tag: 2,
             swap: false
         }));
-        assert!(!manager.command_handler(&Command::GotoTag {
+        assert!(!manager.command_handler(&Command::GoToTag {
             tag: 15,
             swap: false
         }));
@@ -675,16 +675,16 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
         // no tag creation here but one tag per screen is created
-        assert!(manager.command_handler(&Command::GotoTag {
+        assert!(manager.command_handler(&Command::GoToTag {
             tag: 2,
             swap: false
         }));
-        assert!(manager.command_handler(&Command::GotoTag {
+        assert!(manager.command_handler(&Command::GoToTag {
             tag: 1,
             swap: false
         }));
         // we only have one tag per screen created automatically
-        assert!(!manager.command_handler(&Command::GotoTag {
+        assert!(!manager.command_handler(&Command::GoToTag {
             tag: 3,
             swap: false
         }));
@@ -701,11 +701,11 @@ mod tests {
         manager.state.tags.add_new("6D4", Layout::default());
         manager.state.tags.add_new("E39", Layout::default());
         manager.state.tags.add_new("F67", Layout::default());
-        assert!(!manager.command_handler(&Command::GotoTag {
+        assert!(!manager.command_handler(&Command::GoToTag {
             tag: 0,
             swap: false
         }));
-        assert!(!manager.command_handler(&Command::GotoTag {
+        assert!(!manager.command_handler(&Command::GoToTag {
             tag: 999,
             swap: false
         }));
@@ -724,28 +724,28 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
 
-        assert!(manager.command_handler(&Command::GotoTag {
+        assert!(manager.command_handler(&Command::GoToTag {
             tag: 6,
             swap: false
         }));
         let current_tag = manager.state.focus_manager.tag(0).unwrap();
         assert_eq!(current_tag, 6);
 
-        assert!(manager.command_handler(&Command::GotoTag {
+        assert!(manager.command_handler(&Command::GoToTag {
             tag: 2,
             swap: false
         }));
         let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
         assert_eq!(current_tag, 2);
 
-        assert!(manager.command_handler(&Command::GotoTag {
+        assert!(manager.command_handler(&Command::GoToTag {
             tag: 3,
             swap: false
         }));
         let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
         assert_eq!(current_tag, 3);
 
-        assert!(manager.command_handler(&Command::GotoTag {
+        assert!(manager.command_handler(&Command::GoToTag {
             tag: 4,
             swap: false
         }));
