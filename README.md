@@ -289,8 +289,8 @@ For conveniece we also have a Makefile with the following rules:
 
 Make sure this is at the end of your .xinitrc file:
 
-```
-bash .xinitrc
+```bash 
+# .xinitrc
 exec dbus-launch leftwm
 ```
 
