@@ -33,6 +33,7 @@ pub enum BaseCommand {
     FocusPreviousTag,
     FocusWindowUp,
     FocusWindowDown,
+    FocusWindowTop,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     MoveToTag,

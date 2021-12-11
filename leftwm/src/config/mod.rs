@@ -80,6 +80,14 @@ impl Keybind {
             BaseCommand::FocusPreviousTag => leftwm_core::Command::FocusPreviousTag,
             BaseCommand::FocusWindowUp => leftwm_core::Command::FocusWindowUp,
             BaseCommand::FocusWindowDown => leftwm_core::Command::FocusWindowDown,
+            BaseCommand::FocusWindowTop => {
+                leftwm_core::Command::FocusWindowTop(if self.value.is_empty() {
+                    false
+                } else {
+                    bool::from_str(&self.value)
+                        .context("invalid boolean value for FocusWindowTop")?
+                })
+            }
             BaseCommand::FocusWorkspaceNext => leftwm_core::Command::FocusWorkspaceNext,
             BaseCommand::FocusWorkspacePrevious => leftwm_core::Command::FocusWorkspacePrevious,
             BaseCommand::MoveToTag => leftwm_core::Command::SendWindowToTag(

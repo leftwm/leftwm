@@ -92,9 +92,10 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleFloating" => Ok(Command::ToggleFloating),
         "MoveWindowUp" => Ok(Command::MoveWindowUp),
         "MoveWindowDown" => Ok(Command::MoveWindowDown),
-        "FocusWindowUp" => Ok(Command::FocusWindowUp),
         "MoveWindowTop" => Ok(Command::MoveWindowTop),
+        "FocusWindowUp" => Ok(Command::FocusWindowUp),
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
+        "FocusWindowTop" => build_focus_window_top(s),
         "FocusNextTag" => Ok(Command::FocusNextTag),
         "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
@@ -149,6 +150,13 @@ fn build_set_margin_multiplier(raw: &str) -> Result<Command, Box<dyn std::error:
     let parts: Vec<&str> = headless.split(' ').collect();
     let margin_multiplier = f32::from_str(parts.get(0).ok_or("missing argument multiplier")?)?;
     Ok(Command::SetMarginMultiplier(margin_multiplier))
+}
+
+fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "FocusWindowTop ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let toggle = bool::from_str(parts.get(0).unwrap_or(&"false"))?;
+    Ok(Command::FocusWindowTop(toggle))
 }
 
 fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {

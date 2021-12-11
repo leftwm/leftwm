@@ -22,6 +22,7 @@ pub enum Command {
     FocusPreviousTag,
     FocusWindowUp,
     FocusWindowDown,
+    FocusWindowTop(bool),
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     SendWindowToTag(TagId),

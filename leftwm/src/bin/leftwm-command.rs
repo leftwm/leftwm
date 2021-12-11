@@ -58,9 +58,10 @@ async fn main() -> Result<()> {
         ToggleFloating
         MoveWindowUp
         MoveWindowDown
-        FocusWindowUp
         MoveWindowTop
+        FocusWindowUp
         FocusWindowDown
+        FocusWindowTop
         FocusNextTag
         FocusPreviousTag
         FocusWorkspaceNext

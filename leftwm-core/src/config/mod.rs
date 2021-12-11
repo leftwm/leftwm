@@ -79,7 +79,7 @@ impl Config for TestConfig {
         unimplemented!()
     }
     fn focus_behaviour(&self) -> FocusBehaviour {
-        FocusBehaviour::Sloppy
+        FocusBehaviour::ClickTo
     }
     fn mousekey(&self) -> String {
         "Mod4".to_string()
