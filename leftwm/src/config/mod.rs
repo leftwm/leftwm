@@ -61,15 +61,6 @@ impl Keybind {
                 tag: usize::from_str(&self.value).context("invalid index value for GotoTag")?,
                 swap: !config.disable_current_tag_swap,
             },
-            BaseCommand::GoToTagSwap => leftwm_core::Command::GoToTag {
-                tag: usize::from_str(&self.value).context("invalid index value for GotoTagSwap")?,
-                swap: true,
-            },
-            BaseCommand::GoToTagNoSwap => leftwm_core::Command::GoToTag {
-                tag: usize::from_str(&self.value)
-                    .context("invalid index value for GotoTagNoSwap")?,
-                swap: false,
-            },
             BaseCommand::FloatingToTile => leftwm_core::Command::FloatingToTile,
             BaseCommand::TileToFloating => leftwm_core::Command::TileToFloating,
             BaseCommand::ToggleFloating => leftwm_core::Command::ToggleFloating,

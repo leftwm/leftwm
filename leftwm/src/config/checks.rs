@@ -2,11 +2,6 @@ use super::*;
 use leftwm_core::utils;
 use std::collections::HashSet;
 
-#[rustfmt::skip]
-const DEPRECATED_COMMANDS: &[(BaseCommand, &[BaseCommand])] = &[
-    (BaseCommand::GotoTag, &[BaseCommand::GoToTagSwap, BaseCommand::GoToTagNoSwap]),
-];
-
 impl Config {
     /// Checks defined workspaces to ensure no ID collisions occur.
     pub fn check_workspace_ids(&self, verbose: bool) -> bool {
@@ -78,24 +73,6 @@ impl Config {
                         keybind.key,
                         conflict_key,
                         keybind.command,
-                    ),
-                ));
-            }
-
-            let deprecated = DEPRECATED_COMMANDS
-                .iter()
-                .find(|(x, _)| *x == keybind.command);
-            if let Some((old_command, new_commands)) = deprecated {
-                returns.push((
-                    Some(keybind.clone()),
-                    format!(
-                        "\x1b[0m\x1b[1mCommand {:?} is deprecated. Please use {} instead.\n",
-                        old_command,
-                        new_commands
-                            .iter()
-                            .map(|x| format!("{:?}", x))
-                            .collect::<Vec<_>>()
-                            .join(", "),
                     ),
                 ));
             }
