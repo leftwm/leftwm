@@ -1,3 +1,4 @@
+use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 
@@ -20,7 +21,7 @@ use crate::models::Workspace;
 /// |   |   |   |
 /// +---+---+---+
 /// ```
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) {
     let window_count = windows.len() as i32;
 
     // choose the number of columns so that we get close to an even NxN grid.
@@ -43,7 +44,14 @@ pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
             };
             win.set_height(win_height);
             win.set_width(win_width);
-            win.set_x(workspace.x_limited(num_cols as usize) + win_width * col);
+
+            let pos_x = if tag.flipped_horizontal {
+                num_cols - col - 1
+            } else {
+                col
+            };
+
+            win.set_x(workspace.x_limited(num_cols as usize) + win_width * pos_x);
             win.set_y(workspace.y() + win_height * row);
         }
     }

@@ -65,7 +65,7 @@ impl Layout {
                 main_and_horizontal_stack::update(workspace, tag, windows);
             }
             Self::MainAndDeck => main_and_deck::update(workspace, tag, windows),
-            Self::GridHorizontal => grid_horizontal::update(workspace, windows),
+            Self::GridHorizontal => grid_horizontal::update(workspace, tag, windows),
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),
             Self::Fibonacci => fibonacci::update(workspace, tag, windows),
