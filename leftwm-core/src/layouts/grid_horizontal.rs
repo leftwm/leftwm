@@ -51,8 +51,14 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) 
             win.set_height(win_height);
             win.set_width(win_width);
 
+            let pos_y = if tag.flipped_vertical {
+                num_rows_in_this_col - row - 1
+            } else {
+                row
+            };
+
             win.set_x(workspace.x_limited(num_cols as usize) + win_width * pos_x);
-            win.set_y(workspace.y() + win_height * row);
+            win.set_y(workspace.y() + win_height * pos_y);
         }
     }
 }

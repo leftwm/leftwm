@@ -89,7 +89,7 @@ impl Layout {
     pub fn rotations(&self) -> Vec<(bool, bool)> {
         match self {
             //Layouts that can be flipped both ways
-            Self::Fibonacci => {
+            Self::Fibonacci | Self::GridHorizontal => {
                 [(false, false), (true, false), (true, true), (false, true)].to_vec()
             }
             //Layouts that can be flipped vertically
