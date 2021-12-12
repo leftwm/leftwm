@@ -37,6 +37,12 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) 
         let win_height = workspace.height() / num_rows_in_this_col;
         let win_width = workspace.width_limited(num_cols as usize) / num_cols;
 
+        let pos_x = if tag.flipped_horizontal {
+            num_cols - col - 1
+        } else {
+            col
+        };
+
         for row in 0..num_rows_in_this_col {
             let (_idx, win) = match iter.next() {
                 Some(x) => x,
@@ -44,12 +50,6 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) 
             };
             win.set_height(win_height);
             win.set_width(win_width);
-
-            let pos_x = if tag.flipped_horizontal {
-                num_cols - col - 1
-            } else {
-                col
-            };
 
             win.set_x(workspace.x_limited(num_cols as usize) + win_width * pos_x);
             win.set_y(workspace.y() + win_height * row);
