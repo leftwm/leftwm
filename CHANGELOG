@@ -29,25 +29,6 @@ To view the full list of changes visit the [milestone](https://github.com/leftwm
 - ToggleFloating and TileToFloating commands
 - Manpage
 
-## [0.2.10] - 2021-12-04
-To view the full list of changes visit the [milestone](https://github.com/leftwm/leftwm/milestone/1?closed=1).
-
-### Fixed
-- Fixed a command in basic-eww theme
-- Window width resetting on tag resize
-- Render emoji's in window titles
-- Greatly improved dialog handling
-- Many focus fixes
-- leftwm-check not running needed checks
-- Xterm loading times
-- Floating windows going behind newly tiled windows
-### Added
-- Windows opened from a terminal will spawn on the same tag
-- Added Makefile
-- When in ClickTo, windows are focused when moved/resized
-- ToggleFloating and TileToFloating commands
-- Manpage
-
 ## [0.2.9] - 2021-10-11
 ### Fixed
 - lots of small papercuts
