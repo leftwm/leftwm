@@ -67,6 +67,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             DisplayEvent::MoveWindow(handle, x, y) => self.window_move_handler(&handle, x, y),
             DisplayEvent::ResizeWindow(handle, x, y) => self.window_resize_handler(&handle, x, y),
+
+            DisplayEvent::ConfigureXlibWindow(handle) => {
+                if let Some(window) = self.state.windows.iter().find(|w| w.handle == handle) {
+                    let act = DisplayAction::ConfigureXlibWindow(window.clone());
+                    self.state.actions.push_back(act);
+                    return true;
+                }
+                false
+            }
         };
 
         if update_needed {

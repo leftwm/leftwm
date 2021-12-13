@@ -64,8 +64,19 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn window_destroyed_handler(&mut self, handle: &WindowHandle) -> bool {
-        //Find the next or previous window on the workspace
+        // Find the next or previous window on the workspace.
         let new_handle = self.get_next_or_previous(handle);
+        // If there is a parent we would want to focus it.
+        let transient = match self
+            .state
+            .windows
+            .iter()
+            .find(|w| &w.handle == handle)
+            .map(|w| w.transient)
+        {
+            Some(transient) => transient,
+            None => None,
+        };
         self.state
             .focus_manager
             .tags_last_window
@@ -81,8 +92,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             if self.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
-            } else if let Some(h) = new_handle {
-                self.state.focus_window(&h);
+            } else if let Some(parent) =
+                find_transient_parent(&self.state.windows, transient).map(|p| p.handle)
+            {
+                self.state.focus_window(&parent);
+            } else if let Some(handle) = new_handle {
+                self.state.focus_window(&handle);
             } else {
                 let act = DisplayAction::Unfocus(Some(*handle));
                 self.state.actions.push_back(act);
@@ -108,27 +123,19 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 let change_contains = states.contains(&WindowState::Fullscreen);
                 fullscreen_changed = change_contains || window.is_fullscreen();
             }
-            let is_floating_change = change.floating.is_some();
-            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
-            changed = change.update(window);
-            // Reposition a dialog after a resize.
-            if window.r#type == WindowType::Dialog
-                || window.transient.is_some() && is_floating_change
-            {
-                if let Some(ws) = self
+            let container = match find_transient_parent(&windows, window.transient) {
+                Some(parent) => Some(parent.exact_xyhw()),
+                None if window.r#type == WindowType::Dialog => self
                     .state
                     .workspaces
                     .iter()
                     .find(|ws| ws.has_tag(&window.tags[0]))
-                {
-                    let transient = window.transient;
-                    match find_transient_parent(&windows, transient) {
-                        Some(parent) => set_relative_floating(window, ws, parent.exact_xyhw()),
-                        None => set_relative_floating(window, ws, ws.xyhw),
-                    }
-                }
-            }
+                    .map(|ws| ws.xyhw),
+                _ => None,
+            };
 
+            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
+            changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
                 self.update_workspace_avoid_list();
                 // Don't let changes from docks re-render the worker. This will result in an

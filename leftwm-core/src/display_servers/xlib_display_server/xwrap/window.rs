@@ -139,7 +139,7 @@ impl XWrap {
 
                     (self.xlib.XSetWindowBorder)(self.display, handle, color);
                 }
-                self.send_config(window);
+                self.configure_window(window);
             } else {
                 unsafe {
                     // If not visible window is placed of screen.
@@ -209,6 +209,30 @@ impl XWrap {
                 self.atoms.NetActiveWindow,
                 xlib::XA_WINDOW,
                 &[c_long::MAX],
+            );
+        }
+    }
+
+    /// Send a `XConfigureEvent` for a window to X.
+    pub fn configure_window(&self, window: &Window) {
+        if let WindowHandle::XlibHandle(handle) = window.handle {
+            let mut configure_event: xlib::XConfigureEvent = unsafe { std::mem::zeroed() };
+            configure_event.type_ = xlib::ConfigureNotify;
+            configure_event.display = self.display;
+            configure_event.event = handle;
+            configure_event.window = handle;
+            configure_event.x = window.x();
+            configure_event.y = window.y();
+            configure_event.width = window.width();
+            configure_event.height = window.height();
+            configure_event.border_width = window.border;
+            configure_event.above = 0;
+            configure_event.override_redirect = 0;
+            self.send_xevent(
+                handle,
+                0,
+                xlib::StructureNotifyMask,
+                &mut configure_event.into(),
             );
         }
     }

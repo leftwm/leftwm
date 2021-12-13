@@ -100,7 +100,7 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
 
     // Build the new window, and fill in info about it.
     let mut w = Window::new(handle, name, pid);
-    w.r#type = r#type;
+    w.r#type = r#type.clone();
     w.set_states(states);
     if let Some(trans) = trans {
         w.transient = Some(WindowHandle::XlibHandle(trans));
@@ -116,13 +116,22 @@ fn from_map_request(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEv
     xyhw.update_window_floating(&mut w);
     let mut requested = Xyhw::default();
     xyhw.update(&mut requested);
-    if let Some(hint) = sizing_hint {
-        can_resize = match (hint.minw, hint.minh, hint.maxw, hint.maxh) {
-            (Some(min_width), Some(min_height), Some(max_width), Some(max_height)) => {
-                can_resize || min_width != max_width || min_height != max_height
-            }
+    if let Some(mut hint) = sizing_hint {
+        // Ignore this for now for non-splashes as it causes issues, e.g. mintstick is non-resizable but is too
+        // small, issue #614: https://github.com/leftwm/leftwm/issues/614.
+        can_resize = match (r#type, hint.minw, hint.minh, hint.maxw, hint.maxh) {
+            (
+                WindowType::Splash,
+                Some(min_width),
+                Some(min_height),
+                Some(max_width),
+                Some(max_height),
+            ) => can_resize || min_width != max_width || min_height != max_height,
             _ => true,
         };
+        // Use the pre-mapped sizes if they are bigger.
+        hint.w = std::cmp::max(xyhw.w, hint.w);
+        hint.h = std::cmp::max(xyhw.h, hint.h);
         hint.update_window_floating(&mut w);
         hint.update(&mut requested);
     }
@@ -204,13 +213,8 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
         Mode::Normal => {}
     };
     let event = xlib::XConfigureRequestEvent::from(raw_event);
-    let window_type = xw.get_window_type(event.window);
-    let trans = xw.get_transient_for(event.window);
-    // We configure non-floating normal windows and unmagaed windows. This is mainly to fix issues
-    // with xterm.
-    if window_type == WindowType::Normal && trans.is_none()
-        || !xw.managed_windows.contains(&event.window)
-    {
+    // If the window is not mapped, configure it.
+    if !xw.managed_windows.contains(&event.window) {
         let window_changes = xlib::XWindowChanges {
             x: event.x,
             y: event.y,
@@ -237,7 +241,12 @@ fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<Display
         );
         return None;
     }
+    let window_type = xw.get_window_type(event.window);
+    let trans = xw.get_transient_for(event.window);
     let handle = WindowHandle::XlibHandle(event.window);
+    if window_type == WindowType::Normal && trans.is_none() {
+        return Some(DisplayEvent::ConfigureXlibWindow(handle));
+    }
     let mut change = WindowChange::new(handle);
     let xyhw = match window_type {
         // We want to handle the window positioning when it is a dialog or a normal window with a

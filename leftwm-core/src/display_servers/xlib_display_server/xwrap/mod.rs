@@ -356,38 +356,6 @@ impl XWrap {
         self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
     }
 
-    /// Send a `XConfigureEvent` for a window to X.
-    // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
-    pub fn send_config(&self, window: &Window) {
-        if let WindowHandle::XlibHandle(handle) = window.handle {
-            let config = xlib::XConfigureEvent {
-                type_: xlib::ConfigureNotify,
-                serial: 0, //not used
-                send_event: 0,
-                display: self.display,
-                event: handle,
-                window: handle,
-                x: window.x(),
-                y: window.y(),
-                width: window.width(),
-                height: window.height(),
-                border_width: window.border(),
-                above: 0,
-                override_redirect: 0,
-            };
-            unsafe {
-                let mut event: xlib::XEvent = xlib::XConfigureEvent::into(config);
-                (self.xlib.XSendEvent)(
-                    self.display,
-                    handle,
-                    0,
-                    xlib::StructureNotifyMask,
-                    &mut event,
-                );
-            }
-        }
-    }
-
     /// Send a xevent atom for a window to X.
     // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
     fn send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
@@ -400,21 +368,24 @@ impl XWrap {
             msg.data.set_long(0, atom as c_long);
             msg.data.set_long(1, xlib::CurrentTime as c_long);
             let mut ev: xlib::XEvent = msg.into();
-            unsafe { (self.xlib.XSendEvent)(self.display, window, 0, xlib::NoEventMask, &mut ev) };
+            self.send_xevent(window, 0, xlib::NoEventMask, &mut ev);
             return true;
         }
         false
     }
 
+    /// Send a xevent for a window to X.
+    // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
     pub fn send_xevent(
         &self,
         window: xlib::Window,
         propogate: i32,
         mask: c_long,
-        mut event: xlib::XEvent,
+        event: &mut xlib::XEvent,
     ) {
         unsafe {
-            (self.xlib.XSendEvent)(self.display, window, propogate, mask, &mut event);
+            (self.xlib.XSendEvent)(self.display, window, propogate, mask, event);
+            (self.xlib.XSync)(self.display, 0);
         }
     }
 
