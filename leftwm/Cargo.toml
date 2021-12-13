@@ -1,6 +1,6 @@
 [package]
 name = "leftwm"
-version = "0.2.10"
+version = "0.2.11"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["window manager"]
 edition = "2018"
@@ -17,7 +17,7 @@ clap = "2.33.0"
 dirs-next = "2.0.0"
 futures = "0.3.12"
 git-version = "0.3.4"
-leftwm-core = { path = "../leftwm-core", version = '0.2.10' }
+leftwm-core = { path = "../leftwm-core", version = '0.2.11' }
 liquid = "0.23"
 log = "0.4.8"
 mio = "0.8.0"
