@@ -2,6 +2,7 @@ mod keybind;
 mod scratchpad;
 mod workspace_config;
 
+use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
 use crate::models::{LayoutMode, Manager};
@@ -35,6 +36,7 @@ pub trait Config {
 
     fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
     where
+        SERVER: DisplayServer,
         Self: Sized;
 
     fn always_float(&self) -> bool;
@@ -80,7 +82,7 @@ impl Config for TestConfig {
         unimplemented!()
     }
     fn focus_behaviour(&self) -> FocusBehaviour {
-        FocusBehaviour::Sloppy
+        FocusBehaviour::ClickTo
     }
     fn mousekey(&self) -> String {
         "Mod4".to_string()
@@ -100,8 +102,14 @@ impl Config for TestConfig {
     fn focus_new_windows(&self) -> bool {
         false
     }
-    fn command_handler<SERVER>(_command: &str, _manager: &mut Manager<Self, SERVER>) -> bool {
-        unimplemented!()
+    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
+    where
+        SERVER: DisplayServer,
+    {
+        match command {
+            "GotoTag2" => manager.command_handler(&crate::Command::GotoTag(2)),
+            _ => unimplemented!("custom command handler: {:?}", command),
+        }
     }
     fn always_float(&self) -> bool {
         false
@@ -147,5 +155,19 @@ impl Config for TestConfig {
     }
     fn load_state(&self, _state: &mut State) {
         unimplemented!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Screen;
+
+    #[test]
+    fn ensure_command_handler_trait_boundary() {
+        let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
+        manager.screen_create_handler(Screen::default());
+        assert!(TestConfig::command_handler("GotoTag2", &mut manager));
+        assert_eq!(manager.state.focus_manager.tag_history, &[2, 1]);
     }
 }

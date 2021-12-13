@@ -11,6 +11,7 @@ pub struct XAtom {
     pub WMProtocols: xlib::Atom,
     pub WMDelete: xlib::Atom,
     pub WMState: xlib::Atom,
+    pub WMClass: xlib::Atom,
     pub WMTakeFocus: xlib::Atom,
     pub NetActiveWindow: xlib::Atom,
     pub NetSupported: xlib::Atom,
@@ -61,6 +62,8 @@ pub struct XAtom {
     pub NetWMDesktop: xlib::Atom,
     pub NetWMStrutPartial: xlib::Atom, //net version - Reserve Screen Space
     pub NetWMStrut: xlib::Atom,        //old version
+
+    pub UTF8String: xlib::Atom,
 }
 
 impl XAtom {
@@ -125,6 +128,9 @@ impl XAtom {
         }
         if atom == self.WMState {
             return "WM_STATE";
+        }
+        if atom == self.WMClass {
+            return "WM_CLASS";
         }
         if atom == self.WMTakeFocus {
             return "WM_TAKE_FOCUS";
@@ -246,6 +252,10 @@ impl XAtom {
         if atom == self.NetWMStrut {
             return "_NET_WM_STRUT";
         }
+
+        if atom == self.UTF8String {
+            return "UTF8_STRING";
+        }
         "(UNKNOWN)"
     }
 
@@ -254,6 +264,7 @@ impl XAtom {
             WMProtocols: from(xlib, dpy, "WM_PROTOCOLS"),
             WMDelete: from(xlib, dpy, "WM_DELETE_WINDOW"),
             WMState: from(xlib, dpy, "WM_STATE"),
+            WMClass: from(xlib, dpy, "WM_CLASS"),
             WMTakeFocus: from(xlib, dpy, "WM_TAKE_FOCUS"),
             NetActiveWindow: from(xlib, dpy, "_NET_ACTIVE_WINDOW"),
             NetSupported: from(xlib, dpy, "_NET_SUPPORTED"),
@@ -304,6 +315,8 @@ impl XAtom {
             NetWMDesktop: from(xlib, dpy, "_NET_WM_DESKTOP"),
             NetWMStrutPartial: from(xlib, dpy, "_NET_WM_STRUT_PARTIAL"),
             NetWMStrut: from(xlib, dpy, "_NET_WM_STRUT"),
+
+            UTF8String: from(xlib, dpy, "UTF8_STRING"),
         }
     }
 }

@@ -63,8 +63,7 @@ impl XWrap {
                     let _ = self.move_cursor_to_window(handle);
                 }
                 if self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.ungrab_buttons(handle);
-                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
+                    self.grab_mouse_clicks(handle, false);
                 }
             }
             // Make sure there is at least an empty list of _NET_WM_STATE.
@@ -110,7 +109,7 @@ impl XWrap {
                     }
                     return;
                 }
-                let mut changes = xlib::XWindowChanges {
+                let changes = xlib::XWindowChanges {
                     x: window.x(),
                     y: window.y(),
                     width: window.width(),
@@ -121,25 +120,11 @@ impl XWrap {
                 };
                 let unlock =
                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
+                self.set_window_config(handle, changes, u32::from(unlock));
+                let w: u32 = window.width() as u32;
+                let h: u32 = window.height() as u32;
+                self.move_resize_window(handle, window.x(), window.y(), w, h);
                 unsafe {
-                    (self.xlib.XConfigureWindow)(
-                        self.display,
-                        handle,
-                        u32::from(unlock),
-                        &mut changes,
-                    );
-                    (self.xlib.XSync)(self.display, 0);
-                    let rw: u32 = window.width() as u32;
-                    let rh: u32 = window.height() as u32;
-                    (self.xlib.XMoveResizeWindow)(
-                        self.display,
-                        handle,
-                        window.x(),
-                        window.y(),
-                        rw,
-                        rh,
-                    );
-
                     let mut color: c_ulong = if is_focused {
                         self.colors.active
                     } else if window.floating() {
@@ -154,10 +139,6 @@ impl XWrap {
 
                     (self.xlib.XSetWindowBorder)(self.display, handle, color);
                 }
-                if !is_focused && self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.ungrab_buttons(handle);
-                    self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
-                }
                 self.send_config(window);
             } else {
                 unsafe {
@@ -170,9 +151,17 @@ impl XWrap {
 
     /// Makes a window take focus.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn window_take_focus(&self, window: &Window) {
+    pub fn window_take_focus(&mut self, window: &Window, previous: Option<WindowHandle>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
-            self.grab_mouse_clicks(handle);
+            // Play a click when in ClickToFocus.
+            if self.focus_behaviour == FocusBehaviour::ClickTo {
+                self.replay_click();
+                // Open up button1 clicking on the previously focused window.
+                if let Some(WindowHandle::XlibHandle(previous)) = previous {
+                    self.grab_mouse_clicks(previous, false);
+                }
+            }
+            self.grab_mouse_clicks(handle, true);
 
             if !window.never_focus {
                 // Mark this window as the `_NET_ACTIVE_WINDOW`
@@ -204,10 +193,17 @@ impl XWrap {
 
     /// Unfocuses all windows.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn unfocus(&self) {
-        let handle = self.root;
+    pub fn unfocus(&self, handle: Option<WindowHandle>) {
+        if let Some(WindowHandle::XlibHandle(handle)) = handle {
+            self.grab_mouse_clicks(handle, false);
+        }
         unsafe {
-            (self.xlib.XSetInputFocus)(self.display, handle, xlib::RevertToNone, xlib::CurrentTime);
+            (self.xlib.XSetInputFocus)(
+                self.display,
+                self.root,
+                xlib::RevertToPointerRoot,
+                xlib::CurrentTime,
+            );
             self.replace_property_long(
                 self.root,
                 self.atoms.NetActiveWindow,
@@ -230,6 +226,12 @@ impl XWrap {
         let ptr = windows.as_mut_ptr();
         unsafe {
             (self.xlib.XRestackWindows)(self.display, ptr, size as i32);
+        }
+    }
+
+    pub fn move_resize_window(&self, window: xlib::Window, x: i32, y: i32, w: u32, h: u32) {
+        unsafe {
+            (self.xlib.XMoveResizeWindow)(self.display, window, x, y, w, h);
         }
     }
 

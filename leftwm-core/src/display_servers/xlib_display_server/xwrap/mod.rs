@@ -57,7 +57,7 @@ pub struct XWrap {
     pub atoms: XAtom,
     cursors: XCursor,
     colors: Colors,
-    managed_windows: Vec<xlib::Window>,
+    pub managed_windows: Vec<xlib::Window>,
     pub tag_labels: Vec<String>,
     pub mode: Mode,
     pub focus_behaviour: FocusBehaviour,
@@ -251,6 +251,7 @@ impl XWrap {
         let root_event_mask: c_long = xlib::SubstructureRedirectMask
             | xlib::SubstructureNotifyMask
             | xlib::ButtonPressMask
+            | xlib::ButtonReleaseMask
             | xlib::PointerMotionMask
             | xlib::EnterWindowMask
             | xlib::LeaveWindowMask
@@ -340,7 +341,9 @@ impl XWrap {
         }
 
         // Set the WM NAME.
-        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName);
+        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName, self.atoms.UTF8String);
+
+        self.set_desktop_prop_string("LeftWM", self.atoms.WMClass, xlib::XA_STRING);
 
         self.set_desktop_prop_c_ulong(
             self.root as c_ulong,
@@ -403,6 +406,18 @@ impl XWrap {
         false
     }
 
+    pub fn send_xevent(
+        &self,
+        window: xlib::Window,
+        propogate: i32,
+        mask: c_long,
+        mut event: xlib::XEvent,
+    ) {
+        unsafe {
+            (self.xlib.XSendEvent)(self.display, window, propogate, mask, &mut event);
+        }
+    }
+
     /// Returns whether a window can recieve a xevent atom.
     // `XGetWMProtocols`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMProtocols.html
     fn can_send_xevent_atom(&self, window: xlib::Window, atom: xlib::Atom) -> bool {
@@ -428,13 +443,15 @@ impl XWrap {
     /// Sets the mode within our xwrapper.
     pub fn set_mode(&mut self, mode: Mode) {
         // Prevent resizing and moving of root.
-        match &mode {
-            Mode::MovingWindow(h) | Mode::ResizingWindow(h) => {
-                if h == &self.get_default_root_handle() {
-                    return;
-                }
+        match mode {
+            Mode::MovingWindow(h) | Mode::ResizingWindow(h)
+                if h == self.get_default_root_handle() =>
+            {
+                return;
             }
-            Mode::Normal => {}
+            Mode::MovingWindow(WindowHandle::XlibHandle(h))
+            | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => self.ungrab_buttons(h),
+            Mode::MovingWindow(_) | Mode::ResizingWindow(_) | Mode::Normal => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
             self.mode = mode;
@@ -451,6 +468,13 @@ impl XWrap {
         }
         if mode == Mode::Normal {
             self.ungrab_pointer();
+            match self.mode {
+                Mode::MovingWindow(WindowHandle::XlibHandle(h))
+                | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => {
+                    self.grab_mouse_clicks(h, true);
+                }
+                Mode::MovingWindow(_) | Mode::ResizingWindow(_) | Mode::Normal => {}
+            }
             self.mode = mode;
         }
     }

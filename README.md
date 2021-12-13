@@ -47,7 +47,7 @@
 
 LeftWM is a tiling window manager written in [Rust] that aims to be stable and performant. LeftWM is
 [designed to do one thing and to do that one thing well][unix-philosophy]: _be a window manager_.
-LeftWM therefore follows the following mantra:
+LeftWM follows the following mantra:
 
 > LeftWM is not a compositor.  
 > LeftWM is not a lock screen.  
@@ -84,13 +84,14 @@ With LeftWM, there are two types of configuration files:
 
 While LeftWM has very few dependencies, this isn't always the case for themes.
 Themes typically require the following to be installed. However, this is up to the
-author of the theme, and could be different.
+author of the theme and could be different.
 
 List of LeftWM dependencies:  
 
-- xorg (libxinerama, xrandr, xorg-server)  
-- bash
-- rust  
+- xorg (runtime, build): specifically libx11, xrandr, xorg-server, libxinerama  
+- sh (runtime): any posix-compliant shell for starting up and down files
+- rust (build): >= 1.52.0
+- bash (optional): Most of the themes available use bash, though the scrips maybe converted to any posix-compliant shell
 
 List of common dependencies for themes:
 
@@ -141,6 +142,17 @@ Fedora ([copr])
 sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
 ```
 
+NetBSD ([Official repositories])
+```sh
+pkgin install leftwm
+```
+
+or, if you prefer to build it from source
+```sh
+cd /usr/pkgsrc/wm/leftwm
+make install
+```
+
 Cargo ([crates.io])
 ```sh
 cargo install leftwm
@@ -154,6 +166,7 @@ sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 
 [AUR]: https://aur.archlinux.org/packages/leftwm
 [copr]: https://copr.fedorainfracloud.org/coprs/atim/leftwm/
+[Official repositories]: https://pkgsrc.se/wm/leftwm/
 [crates.io]: https://crates.io/crates/leftwm
 [paru]: https://github.com/Morganamilo/paru
 [yay]: https://github.com/Jguer/yay
@@ -193,7 +206,7 @@ simple black screen on login.  For a more customized look, install a theme.
 
 ## Optional Development Installation
 
-If your goal is to continously build leftwm and keep up to date with the latest releases, you may
+If your goal is to continuously build leftwm and keep up to date with the latest releases, you may
 prefer to symlink the leftwm executables instead of copying them.  If you choose to install this
 way, make sure you do not move the build directory as it will break your installation.
 
@@ -239,7 +252,7 @@ simple black screen on login.  For a more customized look, install a theme.
 1.  Now if you want to get the newest version of leftwm run this command from your build directory:  
 
 ```bash
-git pull origin master
+git pull origin main
 ```
 
 2. Build leftwm
@@ -276,8 +289,8 @@ For conveniece we also have a Makefile with the following rules:
 
 Make sure this is at the end of your .xinitrc file:
 
-```
-bash .xinitrc
+```bash 
+# .xinitrc
 exec dbus-launch leftwm
 ```
 
@@ -307,7 +320,7 @@ LeftWM comes packaged with a couple of default themes. There is also a
 For more information about themes check out our [theme guide][theme-guide] or the [wiki].
 
 [community-repo]: https://github.com/leftwm/leftwm-community-themes
-[theme-guide]: https://github.com/leftwm/leftwm/tree/master/themes
+[theme-guide]: https://github.com/leftwm/leftwm/tree/main/themes
 [wiki]: https://github.com/leftwm/leftwm/wiki/Themes
 
 # Configuring
@@ -383,7 +396,7 @@ Here is an example config changing the way workspaces are defined (~/.config/lef
 
 ---
 **NOTE**
-The line `workspaces = []` needs to be removed, or commented out if a configuration like the
+The line `workspaces = []` needs to be removed or commented out if a configuration like the
 following example is used.
 
 ---
@@ -420,7 +433,7 @@ id = 0
 ```
 ---
 **NOTE**
-You do not have to define an ID for each workspace, but if you assign an ID to one workspace all subsequently defined worksapces without an ID will be assigned an ID incrementing from the largest ID currently assigned to any workspace. In the above example if the second workspace was not defined with ID = 0 it would be assigned ID = 2. Keep this in mind when creating or customizing themes.
+You do not have to define an ID for each workspace, but if you assign an ID to one workspace all subsequently defined workspaces without an ID will be assigned an ID incrementing from the largest ID currently assigned to any workspace. In the above example if the second workspace was not defined with ID = 0 it would be assigned ID = 2. Keep this in mind when creating or customizing themes.
 
 ---
 
@@ -459,7 +472,7 @@ The default layouts are [all of the kinds](leftwm-core/src/layouts/mod.rs#L21) d
 
 | Issue | Description | Solution |
 |-|-|:-:|
-| LeftWM not listed by login manager | It's likely you need to add the xsessions file to the right folder. | See [installation](#installation-with-package-manager) |
+| LeftWM not listed by login manager | You likely need to add the xsessions file to the right folder. | See [installation](#installation-with-package-manager) |
 | No config.toml file exists | LeftWM does not always ship with a `config.toml`. You will need to execute LeftWM at least once for one to be generated. | Try the following: ``` leftwm-worker ``` |
 | Config.toml is not being parsed | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR. | Try the following: ``` leftwm-check ``` |
 | Keybinding doesn't work | It's likely you need to specify a value or have a typo. | See Wiki |

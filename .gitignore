@@ -1,5 +1,6 @@
 **/target
 **/*.rs.bk
 leftwm.logs
+.idea/
 
 sweep.timestamp

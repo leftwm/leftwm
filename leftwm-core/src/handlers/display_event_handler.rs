@@ -12,10 +12,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
 
             //The window has been focused, do we want to do anything about it?
-            DisplayEvent::MouseEnteredWindow(handle) => match self.state.focus_manager.behaviour {
-                FocusBehaviour::Sloppy => return self.state.focus_window(&handle),
-                _ => return false,
-            },
+            DisplayEvent::MouseEnteredWindow(handle) => self.state.focus_window(&handle),
 
             DisplayEvent::KeyGrabReload => {
                 self.state
@@ -49,17 +46,20 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
 
             DisplayEvent::ChangeToNormalMode => {
+                match self.state.mode {
+                    Mode::MovingWindow(h) | Mode::ResizingWindow(h) => {
+                        let _ = self.state.focus_window(&h);
+                    }
+                    Mode::Normal => {}
+                }
                 self.state.mode = Mode::Normal;
-                //look through the config and build a command if its defined in the config
                 let act = DisplayAction::NormalMode;
                 self.state.actions.push_back(act);
                 true
             }
 
             DisplayEvent::Movement(handle, x, y) => {
-                if self.state.screens.iter().any(|s| s.root == handle)
-                    && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
-                {
+                if self.state.screens.iter().any(|s| s.root == handle) {
                     return self.state.focus_workspace_under_cursor(x, y);
                 }
                 false

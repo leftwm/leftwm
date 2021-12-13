@@ -1,25 +1,53 @@
 //! Xlib calls related to a mouse.
 use super::{XlibError, MOUSEMASK};
 use crate::display_servers::xlib_display_server::xwrap::BUTTONMASK;
-use crate::models::FocusBehaviour;
-use crate::utils::xkeysym_lookup::ModMask;
 use crate::XWrap;
 use std::os::raw::{c_int, c_ulong};
 use x11_dl::xlib;
 
 impl XWrap {
     /// Grabs the mouse clicks of a window.
-    pub fn grab_mouse_clicks(&self, handle: xlib::Window) {
+    pub fn grab_mouse_clicks(&self, handle: xlib::Window, is_focused: bool) {
         self.ungrab_buttons(handle);
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
+        if !is_focused {
+            self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier, xlib::GrabModeSync);
+            self.grab_buttons(handle, xlib::Button3, xlib::AnyModifier, xlib::GrabModeSync);
+        }
+        self.grab_buttons(
+            handle,
+            xlib::Button1,
+            self.mouse_key_mask,
+            xlib::GrabModeAsync,
+        );
+        self.grab_buttons(
+            handle,
+            xlib::Button1,
+            self.mouse_key_mask | xlib::ShiftMask,
+            xlib::GrabModeAsync,
+        );
+        self.grab_buttons(
+            handle,
+            xlib::Button3,
+            self.mouse_key_mask,
+            xlib::GrabModeAsync,
+        );
+        self.grab_buttons(
+            handle,
+            xlib::Button3,
+            self.mouse_key_mask | xlib::ShiftMask,
+            xlib::GrabModeAsync,
+        );
     }
 
     /// Grabs the button with the modifier for a window.
     // `XGrabButton`: https://tronche.com/gui/x/xlib/input/XGrabButton.html
-    pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
+    pub fn grab_buttons(
+        &self,
+        window: xlib::Window,
+        button: u32,
+        modifiers: u32,
+        pointer_mode: i32,
+    ) {
         // Grab the buttons with and without numlock (Mod2).
         let mods: Vec<u32> = vec![
             modifiers,
@@ -35,9 +63,9 @@ impl XWrap {
                     window,
                     0,
                     BUTTONMASK as u32,
-                    xlib::GrabModeSync,
+                    pointer_mode,
                     xlib::GrabModeAsync,
-                    0,
+                    self.root,
                     0,
                 );
             }
@@ -124,18 +152,11 @@ impl XWrap {
 
     /// Replay a click on a window.
     // `XAllowEvents`: https://linux.die.net/man/3/xallowevents
-    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
-    pub fn replay_click(&self, mod_mask: ModMask) {
-        // Only replay the click when in ClickToFocus and we are not trying to move/resize the
-        // window.
-        if self.focus_behaviour == FocusBehaviour::ClickTo
-            && !(mod_mask == self.mouse_key_mask
-                || mod_mask == (self.mouse_key_mask | xlib::ShiftMask))
-        {
-            unsafe {
-                (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
-                (self.xlib.XSync)(self.display, 0);
-            }
+    //  `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
+    pub fn replay_click(&self) {
+        unsafe {
+            (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
+            (self.xlib.XSync)(self.display, xlib::False);
         }
     }
 }

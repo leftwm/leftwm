@@ -2,42 +2,42 @@
 name = "leftwm"
 version = "0.3.0"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
-description = "A window manager for Adventurers"
+categories = ["window manager"]
 edition = "2018"
 keywords = ["wm", "window", "manager"]
-categories = ["window manager"]
 license = "MIT"
-repository = "https://github.com/leftwm/leftwm"
 readme = "README.md"
+repository = "https://github.com/leftwm/leftwm"
+description = "A window manager for Adventurers"
 
 [dependencies]
-leftwm-core = { path = "../leftwm-core", version='0.3.0' }
+anyhow = "1.0.48"
+chrono = "0.4.19"
+clap = "2.33.0"
+dirs-next = "2.0.0"
+futures = "0.3.12"
 git-version = "0.3.4"
-signal-hook = "0.3.4"
-mio = "0.7.7"
-nix = "0.20.0"
-x11-dl = "2.18.4"
-xdg = "2.2.0"
-toml = "0.5.5"
+leftwm-core = { path = "../leftwm-core", version='0.3.0' }
+liquid = "0.23"
+log = "0.4.8"
+mio = "0.8.0"
+nix = "0.23.0"
 serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
-log = "0.4.8"
-dirs-next = "2.0.0"
-tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
-clap = "2.33.0"
-liquid = "0.23"
-chrono = "0.4.19"
-futures = "0.3.12"
-slog = "2.5.2"
-slog-stdlog = "4.0.0"
-slog-scope = "4.3.0"
-slog-envlogger = "2.2.0"
-slog-async = "2.4.0"
-slog-journald = { version = "2.1.1", optional = true }
-slog-term = { version = "2.5.0", optional = true }
-anyhow = "1"
-thiserror = "1"
 shellexpand = "2.1"
+signal-hook = "0.3.4"
+slog = "2.5.2"
+slog-async = "2.4.0"
+slog-envlogger = "2.2.0"
+slog-journald = { version = "2.1.1", optional = true }
+slog-scope = "4.3.0"
+slog-stdlog = "4.0.0"
+slog-term = { version = "2.5.0", optional = true }
+thiserror = "1.0.30"
+tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
+toml = "0.5.5"
+x11-dl = "2.18.4"
+xdg = "2.2.0"
 
 [dev-dependencies]
 tempfile = "3.2.0"

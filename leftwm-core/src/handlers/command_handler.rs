@@ -66,12 +66,26 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusPreviousTag => focus_tag_change(state, -1),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, state, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, state, 1),
+        Command::FocusWindowTop(toggle) => focus_window_top(state, *toggle),
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
         Command::MouseMoveWindow => None,
 
         Command::SoftReload => {
+            // Make sure the currently focused window is saved for the tag.
+            if let Some((handle, tag)) = state
+                .focus_manager
+                .window(&state.windows)
+                .map(|w| (w.handle, w.tags[0]))
+            {
+                let old_handle = state
+                    .focus_manager
+                    .tags_last_window
+                    .entry(tag)
+                    .or_insert(handle);
+                *old_handle = handle;
+            }
             manager.config.save_state(&manager.state);
             manager.hard_reload();
             None
@@ -127,6 +141,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
         if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
             if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
+                let previous_tag = window.tags[0];
                 let is_visible = window.has_tag(current_tag);
                 window.clear_tags();
                 if is_visible {
@@ -143,6 +158,13 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                         handle = Some(*prev);
                     }
                 } else {
+                    // Remove the entry for the previous tag to prevent the scratchpad being
+                    // refocused.
+                    manager
+                        .state
+                        .focus_manager
+                        .tags_last_window
+                        .remove(&previous_tag);
                     // Show the scratchpad.
                     window.tag(current_tag);
                     handle = Some(window.handle);
@@ -222,7 +244,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     if let Some(new_handle) = new_handle {
         manager.state.focus_window(&new_handle);
     } else {
-        let act = DisplayAction::Unfocus;
+        let act = DisplayAction::Unfocus(Some(handle));
         manager.state.actions.push_back(act);
         manager.state.focus_manager.window_history.push_front(None);
     }
@@ -326,7 +348,7 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
     // When switching to Monocle or MainAndDeck layout while in Driven
     // or ClickTo focus mode, we check if the focus is given to a visible window.
     if state.focus_manager.behaviour != FocusBehaviour::Sloppy {
-        //if the currently focused window is floatin, nothing will be done
+        //if the currently focused window is floating, nothing will be done
         let focused_window = state.focus_manager.window_history.get(0);
         let is_focused_floating = match state
             .windows
@@ -372,7 +394,12 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
     let tag = state.tags.get_mut(tag_id)?;
-    tag.set_layout(layout, workspace.main_width_percentage);
+    match layout {
+        Layout::RightWiderLeftStack | Layout::LeftWiderRightStack => {
+            tag.set_layout(layout, layout.main_width());
+        }
+        _ => tag.set_layout(layout, workspace.main_width_percentage),
+    }
     Some(true)
 }
 
@@ -387,8 +414,10 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     if !window.floating() {
         return None;
     }
-    window.snap_to_workspace(workspace);
     let handle = window.handle;
+    if window.snap_to_workspace(workspace) {
+        state.sort_windows();
+    }
     Some(handle_focus(state, handle))
 }
 
@@ -542,6 +571,28 @@ fn focus_window_change(
     }
     state.windows.append(&mut to_reorder);
     Some(handle_focus(state, handle))
+}
+
+fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
+    let tag = state.focus_manager.tag(0)?;
+    let cur = state.focus_manager.window(&state.windows).map(|w| w.handle);
+    let prev = state.focus_manager.tags_last_window.get(&tag).copied();
+    let next = state
+        .windows
+        .iter()
+        .find(|x| x.tags.contains(&tag) && !x.floating() && !x.is_unmanaged())
+        .map(|w| w.handle);
+
+    match (next, cur, prev) {
+        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => {
+            Some(handle_focus(state, prev))
+        }
+        (Some(next), Some(cur), _) if next != cur => {
+            state.focus_manager.tags_last_window.insert(tag, cur);
+            Some(handle_focus(state, next))
+        }
+        _ => None,
+    }
 }
 
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
@@ -727,5 +778,59 @@ mod tests {
 
         focus_tag_change(state, 13);
         assert_eq!(state.focus_manager.tag(0).unwrap(), 3);
+    }
+
+    #[test]
+    fn focus_window_top() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(3), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = manager.state.windows[0].clone();
+        let initial = manager.state.windows[1].clone();
+
+        assert!(manager.state.focus_window(&initial.handle));
+
+        assert!(manager.command_handler(&Command::FocusWindowTop(false)));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(expected.handle, actual);
+
+        assert!(!manager.command_handler(&Command::FocusWindowTop(false)));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(expected.handle, actual);
+
+        assert!(manager.command_handler(&Command::FocusWindowTop(true)));
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .unwrap()
+            .handle;
+        assert_eq!(initial.handle, actual);
     }
 }
