@@ -3,7 +3,7 @@ use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN};
 use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
 use std::ffi::CString;
-use std::os::raw::{c_int, c_long, c_uchar, c_uint, c_ulong};
+use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
 use x11_dl::xlib;
 
@@ -575,7 +575,7 @@ impl XWrap {
             if status == 0 {
                 return Err(XlibError::FailedStatus);
             }
-            if let Ok(s) = CString::from_raw(text_prop.value.cast::<i8>()).into_string() {
+            if let Ok(s) = CString::from_raw(text_prop.value.cast::<c_char>()).into_string() {
                 return Ok(s);
             }
         };
