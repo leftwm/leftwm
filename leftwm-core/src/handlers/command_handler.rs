@@ -48,7 +48,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowDown => move_focus_common_vars(move_window_change, state, 1),
         Command::MoveWindowTop => move_focus_common_vars(move_window_top, state, 0),
 
-        Command::GotoTag(tag) => goto_tag(state, *tag),
+        Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
 
         Command::CloseWindow => close_window(state),
         Command::SwapScreens => swap_tags(state),
@@ -266,10 +266,10 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     move_to_tag(*tag_num, manager)
 }
 
-fn goto_tag(state: &mut State, input_tag: TagId) -> Option<bool> {
+fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Option<bool> {
     let current_tag = state.focus_manager.tag(0).unwrap_or_default();
     let previous_tag = state.focus_manager.tag(1).unwrap_or_default();
-    let destination_tag = if !state.disable_current_tag_swap && current_tag == input_tag {
+    let destination_tag = if current_tag_swap && current_tag == input_tag {
         previous_tag
     } else {
         input_tag
@@ -678,9 +678,18 @@ mod tests {
     fn go_to_tag_should_return_false_if_no_screen_is_created() {
         let mut manager = Manager::new_test(vec![]);
         // no screen creation here
-        assert!(!manager.command_handler(&Command::GotoTag(6)));
-        assert!(!manager.command_handler(&Command::GotoTag(2)));
-        assert!(!manager.command_handler(&Command::GotoTag(15)));
+        assert!(!manager.command_handler(&Command::GoToTag {
+            tag: 6,
+            swap: false
+        }));
+        assert!(!manager.command_handler(&Command::GoToTag {
+            tag: 2,
+            swap: false
+        }));
+        assert!(!manager.command_handler(&Command::GoToTag {
+            tag: 15,
+            swap: false
+        }));
     }
 
     #[test]
@@ -689,10 +698,19 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
         // no tag creation here but one tag per screen is created
-        assert!(manager.command_handler(&Command::GotoTag(2)));
-        assert!(manager.command_handler(&Command::GotoTag(1)));
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 2,
+            swap: false
+        }));
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 1,
+            swap: false
+        }));
         // we only have one tag per screen created automatically
-        assert!(!manager.command_handler(&Command::GotoTag(3)));
+        assert!(!manager.command_handler(&Command::GoToTag {
+            tag: 3,
+            swap: false
+        }));
     }
 
     #[test]
@@ -706,8 +724,14 @@ mod tests {
         manager.state.tags.add_new("6D4", Layout::default());
         manager.state.tags.add_new("E39", Layout::default());
         manager.state.tags.add_new("F67", Layout::default());
-        assert!(!manager.command_handler(&Command::GotoTag(0)));
-        assert!(!manager.command_handler(&Command::GotoTag(999)));
+        assert!(!manager.command_handler(&Command::GoToTag {
+            tag: 0,
+            swap: false
+        }));
+        assert!(!manager.command_handler(&Command::GoToTag {
+            tag: 999,
+            swap: false
+        }));
     }
 
     #[test]
@@ -723,19 +747,31 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
 
-        assert!(manager.command_handler(&Command::GotoTag(6)));
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 6,
+            swap: false
+        }));
         let current_tag = manager.state.focus_manager.tag(0).unwrap();
         assert_eq!(current_tag, 6);
 
-        assert!(manager.command_handler(&Command::GotoTag(2)));
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 2,
+            swap: false
+        }));
         let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
         assert_eq!(current_tag, 2);
 
-        assert!(manager.command_handler(&Command::GotoTag(3)));
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 3,
+            swap: false
+        }));
         let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
         assert_eq!(current_tag, 3);
 
-        assert!(manager.command_handler(&Command::GotoTag(4)));
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 4,
+            swap: false
+        }));
         let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
         assert_eq!(current_tag, 4);
 

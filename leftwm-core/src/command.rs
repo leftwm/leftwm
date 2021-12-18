@@ -11,7 +11,7 @@ pub enum Command {
     ToggleScratchPad(String),
     ToggleFullScreen,
     ToggleSticky,
-    GotoTag(TagId),
+    GoToTag { tag: TagId, swap: bool },
     FloatingToTile,
     TileToFloating,
     ToggleFloating,

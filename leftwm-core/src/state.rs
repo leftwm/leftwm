@@ -26,7 +26,6 @@ pub struct State {
     pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
-    pub disable_current_tag_swap: bool,
     pub mousekey: String,
     pub max_window_width: Option<Size>,
     pub default_width: i32,
@@ -54,7 +53,6 @@ impl State {
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
-            disable_current_tag_swap: config.disable_current_tag_swap(),
             max_window_width: config.max_window_width(),
             mousekey: config.mousekey(),
             default_width: config.default_width(),

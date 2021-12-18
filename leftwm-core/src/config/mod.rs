@@ -23,9 +23,6 @@ pub trait Config {
 
     fn mousekey(&self) -> String;
 
-    //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
-    fn disable_current_tag_swap(&self) -> bool;
-
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
 
     fn layouts(&self) -> Vec<Layout>;
@@ -87,9 +84,6 @@ impl Config for TestConfig {
     fn mousekey(&self) -> String {
         "Mod4".to_string()
     }
-    fn disable_current_tag_swap(&self) -> bool {
-        false
-    }
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
         vec![]
     }
@@ -107,7 +101,10 @@ impl Config for TestConfig {
         SERVER: DisplayServer,
     {
         match command {
-            "GotoTag2" => manager.command_handler(&crate::Command::GotoTag(2)),
+            "GoToTag2" => manager.command_handler(&crate::Command::GoToTag {
+                tag: 2,
+                swap: false,
+            }),
             _ => unimplemented!("custom command handler: {:?}", command),
         }
     }
@@ -167,7 +164,7 @@ mod tests {
     fn ensure_command_handler_trait_boundary() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
         manager.screen_create_handler(Screen::default());
-        assert!(TestConfig::command_handler("GotoTag2", &mut manager));
+        assert!(TestConfig::command_handler("GoToTag2", &mut manager));
         assert_eq!(manager.state.focus_manager.tag_history, &[2, 1]);
     }
 }
