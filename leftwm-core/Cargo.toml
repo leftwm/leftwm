@@ -23,7 +23,6 @@ thiserror = "1.0.30"
 tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 x11-dl = "2.18.4"
 xdg = "2.2.0"
-phf = { version = "0.10", features = ["macros"] }
 
 [dev-dependencies]
 tempfile = "3.2.0"
