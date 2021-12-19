@@ -13,7 +13,6 @@ use leftwm_core::{
     Manager,
 };
 use serde::{Deserialize, Serialize};
-use std::convert::TryInto;
 use std::default::Default;
 use std::env;
 use std::fs;
@@ -21,6 +20,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::{collections::HashMap, convert::TryInto};
 use xdg::BaseDirectories;
 
 /// Path to file where state will be dumper upon soft reload.
@@ -141,6 +141,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
+    pub window_config_by_class: Option<HashMap<String, usize>>,
 
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
@@ -460,6 +461,14 @@ impl leftwm_core::Config for Config {
                 }
             }
             Err(err) => log::error!("Cannot open old state: {}", err),
+        }
+    }
+
+    fn get_tag_from_wm_class(&self, wm_class: &Option<String>) -> Option<usize> {
+        if let (Some(class), Some(wm_middleware)) = (wm_class, &self.window_config_by_class) {
+            wm_middleware.get(class).copied()
+        } else {
+            None
         }
     }
 }

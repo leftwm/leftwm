@@ -59,6 +59,9 @@ pub trait Config {
 
     /// Load saved state if it exists.
     fn load_state(&self, state: &mut State);
+
+    /// Handle window placement based on `WM_CLASS`
+    fn get_tag_from_wm_class(&self, wm_class: &Option<String>) -> Option<usize>;
 }
 
 #[cfg(test)]
@@ -152,6 +155,9 @@ impl Config for TestConfig {
     }
     fn load_state(&self, _state: &mut State) {
         unimplemented!()
+    }
+    fn get_tag_from_wm_class(&self, _wm_class: &Option<String>) -> Option<usize> {
+        None
     }
 }
 
