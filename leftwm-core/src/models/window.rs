@@ -46,6 +46,7 @@ pub struct Window {
     pub start_loc: Option<Xyhw>,
     pub container_size: Option<Xyhw>,
     pub strut: Option<Xyhw>,
+    pub wm_class: Option<String>,
 }
 
 impl Window {
@@ -74,6 +75,7 @@ impl Window {
             start_loc: None,
             container_size: None,
             strut: None,
+            wm_class: None,
         }
     }
 

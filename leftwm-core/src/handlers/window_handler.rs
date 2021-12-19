@@ -10,6 +10,20 @@ use crate::{child_process::exec_shell, models::FocusBehaviour};
 use std::env;
 use std::str::FromStr;
 
+// name of window -> tog where it will be placed upon creation
+pub static WM_CLASS_TO_TAG: phf::Map<&'static str, usize> = phf::phf_map! {
+    "Navigator" => 2,
+    "slack" => 5,
+    "microsoft teams - preview" => 5,
+    "microsoft teams" => 5,
+    "zoom" => 6,
+    "discord" => 5,
+    "krita" => 3,
+    "org.inkscape.Inkscape" => 3,
+    "Blender" => 3,
+    "soffice" => 3,
+};
+
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
@@ -238,6 +252,18 @@ fn setup_window(
                 && state.focus_manager.behaviour == FocusBehaviour::Sloppy
         })
         .or_else(|| state.focus_manager.workspace(&state.workspaces)); //backup plan
+
+    // lookup if window has a predefined tag to be set
+    match &window.wm_class {
+        Some(class) => {
+            if let Some(tag) = WM_CLASS_TO_TAG.get(class) {
+                window.tags = vec![*tag];
+                log::info!("Window {} spawned in {}", class, tag);
+                return;
+            }
+        }
+        None => (),
+    };
 
     if let Some(ws) = ws {
         let for_active_workspace =
