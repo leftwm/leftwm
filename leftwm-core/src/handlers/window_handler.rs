@@ -230,21 +230,10 @@ fn setup_window(
     on_same_tag: &mut bool,
     predefined_tag: Option<usize>,
 ) {
-    // lookup if window has a predefined tag to be set
-    if let Some(tag) = predefined_tag {
-        window.tags = vec![tag];
-        log::info!(
-            "Windows  {:?} spawned in predefined tag {}",
-            window.wm_class,
-            tag
-        );
-        return;
-    }
-
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
     //the workspace that has windows on its is still active not the empty workspace.
-    let ws: Option<&Workspace> = state
+    let mut ws: Option<&Workspace> = state
         .workspaces
         .iter()
         .find(|ws| {
@@ -253,17 +242,44 @@ fn setup_window(
         })
         .or_else(|| state.focus_manager.workspace(&state.workspaces)); //backup plan
 
+    // lookup if window has a predefined tag to be set
+    if let Some(tag) = predefined_tag {
+        window.tags = vec![tag];
+        log::info!(
+            "Windows {:?} spawned in predefined tag {}",
+            window.wm_class,
+            tag
+        );
+
+        // TODO: maybe this block should be removed so that Dialogs, Splash,
+        // etc. are placed in focused window regardless of user config
+        ws = state
+            .workspaces
+            .iter()
+            .find(|ws| ws.has_tag(&tag))
+            .or_else(|| state.focus_manager.workspace(&state.workspaces));
+
+        // A WM_CLASS may be shared between the dialogs, splashes and the main program
+        // window, but the Splash and Dialogs require further processing.
+        if ws.is_none() {
+            return;
+        }
+    }
+
     if let Some(ws) = ws {
         let for_active_workspace =
             |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
         *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
-        window.tags = find_terminal(state, window.pid).map_or_else(
-            || ws.tags.clone(),
-            |terminal| {
-                *on_same_tag = ws.tags == terminal.tags;
-                terminal.tags.clone()
-            },
-        );
+        // may have been set by a predefined tag
+        if window.tags.is_empty() {
+            window.tags = find_terminal(state, window.pid).map_or_else(
+                || ws.tags.clone(),
+                |terminal| {
+                    *on_same_tag = ws.tags == terminal.tags;
+                    terminal.tags.clone()
+                },
+            );
+        }
         *layout = ws.layout;
 
         if is_scratchpad(state, window) {
