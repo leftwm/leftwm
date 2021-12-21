@@ -156,8 +156,12 @@ impl Config for TestConfig {
     fn load_state(&self, _state: &mut State) {
         unimplemented!()
     }
-    fn get_tag_from_wm_class(&self, _wm_class: &Option<String>) -> Option<usize> {
-        None
+    fn get_tag_from_wm_class(&self, wm_class: &Option<String>) -> Option<usize> {
+        if wm_class == &Some("ShouldGoToTag2".to_string()) {
+            Some(2)
+        } else {
+            None
+        }
     }
 }
 
@@ -165,6 +169,8 @@ impl Config for TestConfig {
 mod tests {
     use super::*;
     use crate::models::Screen;
+    use crate::models::Window;
+    use crate::models::WindowHandle;
 
     #[test]
     fn ensure_command_handler_trait_boundary() {
@@ -172,5 +178,15 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         assert!(TestConfig::command_handler("GoToTag2", &mut manager));
         assert_eq!(manager.state.focus_manager.tag_history, &[2, 1]);
+    }
+
+    #[test]
+    fn check_wm_class_is_associated_with_predefined_tag() {
+        let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
+        manager.screen_create_handler(Screen::default());
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
+        subject.wm_class = Some("ShouldGoToTag2".to_string());
+        manager.window_created_handler(subject, 0, 0);
+        assert!(manager.state.windows.iter().all(|w| w.has_tag(&2)));
     }
 }
