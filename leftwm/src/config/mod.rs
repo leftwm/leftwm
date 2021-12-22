@@ -155,7 +155,9 @@ impl WindowHook {
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
         (self.window_class.is_some() & (self.window_class == window.wm_class)) as u8
-            + 2 * (self.window_title.is_some() & (self.window_title == window.name)) as u8
+            + 2 * (self.window_title.is_some()
+                & ((self.window_title == window.name) | (self.window_title == window.legacy_name)))
+                as u8
     }
 
     fn apply(&self, window: &mut Window) {
