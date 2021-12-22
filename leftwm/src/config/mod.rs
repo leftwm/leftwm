@@ -140,8 +140,10 @@ impl Keybind {
 /// windows whose WM_CLASS is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct WindowHook {
-    pub wm_class: Option<String>,
-    pub title: Option<String>,
+    /// `WM_CLASS` in X11
+    pub window_class: Option<String>,
+    /// `_NET_WM_NAME` in X11
+    pub window_title: Option<String>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_floating: Option<bool>,
 }
@@ -152,8 +154,8 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        (self.wm_class.is_some() & (self.wm_class == window.wm_class)) as u8
-            + 2 * (self.title.is_some() & (self.title == window.name)) as u8
+        (self.window_class.is_some() & (self.window_class == window.wm_class)) as u8
+            + 2 * (self.window_title.is_some() & (self.window_title == window.name)) as u8
     }
 
     fn apply(&self, window: &mut Window) {
@@ -184,7 +186,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
-    pub window_config_by_class: Vec<WindowHook>,
+    pub window_rules: Vec<WindowHook>,
 
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
@@ -510,7 +512,7 @@ impl leftwm_core::Config for Config {
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
     fn setup_predefined_window(&self, window: &mut Window) -> bool {
         let best_match = self
-            .window_config_by_class
+            .window_rules
             .iter()
             // map first instead of using max_by_key directly...
             .map(|wh| (wh, wh.score_window(window)))
