@@ -124,7 +124,7 @@ impl State {
         self.mousekey = config.mousekey();
         self.max_window_width = config.max_window_width();
         for win in &mut self.windows {
-            win.load_config(config);
+            config.load_window(win);
         }
         for ws in &mut self.workspaces {
             ws.load_config(config);

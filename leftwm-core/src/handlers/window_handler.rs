@@ -23,7 +23,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut on_same_tag = true;
         //Random value
         let mut layout: Layout = Layout::MainAndVertStack;
-        let tag = self.config.get_tag_from_wm_class(&window.wm_class);
         setup_window(
             &mut self.state,
             &mut window,
@@ -31,9 +30,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut layout,
             &mut is_first,
             &mut on_same_tag,
-            tag,
+            &self.config,
         );
-        window.load_config(&self.config);
+        self.config.load_window(&mut window);
         insert_window(&mut self.state, &mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
@@ -228,7 +227,7 @@ fn setup_window(
     layout: &mut Layout,
     is_first: &mut bool,
     on_same_tag: &mut bool,
-    predefined_tag: Option<usize>,
+    config: &impl Config,
 ) {
     //When adding a window we add to the workspace under the cursor, This isn't necessarily the
     //focused workspace. If the workspace is empty, it might not have received focus. This is so
@@ -243,21 +242,15 @@ fn setup_window(
         .or_else(|| state.focus_manager.workspace(&state.workspaces)); //backup plan
 
     // lookup if window has a predefined tag to be set
-    if let Some(tag) = predefined_tag {
-        window.tags = vec![tag];
-        log::info!(
-            "Windows {:?} spawned in predefined tag {}",
-            window.wm_class,
-            tag
-        );
-
-        // TODO: maybe this block should be removed so that Dialogs, Splash,
-        // etc. are placed in focused window regardless of user config
-        ws = state
-            .workspaces
-            .iter()
-            .find(|ws| ws.has_tag(&tag))
-            .or_else(|| state.focus_manager.workspace(&state.workspaces));
+    if config.setup_predefined_window(window) {
+        // tags may not be set even if the window has handled
+        if let Some(tag) = window.tags.last() {
+            ws = state
+                .workspaces
+                .iter()
+                .find(|ws| ws.has_tag(tag))
+                .or_else(|| state.focus_manager.workspace(&state.workspaces));
+        }
 
         // A WM_CLASS may be shared between the dialogs, splashes and the main program
         // window, but the Splash and Dialogs require further processing.

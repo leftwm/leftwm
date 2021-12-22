@@ -5,7 +5,7 @@ mod workspace_config;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
-use crate::models::{LayoutMode, Manager};
+use crate::models::{LayoutMode, Manager, Window, WindowType};
 use crate::state::State;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
@@ -61,7 +61,18 @@ pub trait Config {
     fn load_state(&self, state: &mut State);
 
     /// Handle window placement based on `WM_CLASS`
-    fn get_tag_from_wm_class(&self, wm_class: &Option<String>) -> Option<usize>;
+    fn setup_predefined_window(&self, window: &mut Window) -> bool;
+
+    fn load_window(&self, window: &mut Window) {
+        if window.r#type == WindowType::Normal {
+            window.margin = self.margin();
+            window.border = self.border_width();
+            window.must_float = self.always_float();
+        } else {
+            window.margin = Margins::new(0);
+            window.border = 0;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -156,11 +167,12 @@ impl Config for TestConfig {
     fn load_state(&self, _state: &mut State) {
         unimplemented!()
     }
-    fn get_tag_from_wm_class(&self, wm_class: &Option<String>) -> Option<usize> {
-        if wm_class == &Some("ShouldGoToTag2".to_string()) {
-            Some(2)
+    fn setup_predefined_window(&self, window: &mut Window) -> bool {
+        if window.wm_class == Some("ShouldGoToTag2".to_string()) {
+            window.tags = vec![2];
+            true
         } else {
-            None
+            false
         }
     }
 }
