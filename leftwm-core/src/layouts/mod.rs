@@ -54,6 +54,12 @@ impl Default for Layout {
     }
 }
 
+impl Default for &Layout {
+    fn default() -> Self {
+        &Layout::MainAndVertStack
+    }
+}
+
 // This is tedious, but simple and effective.
 impl Layout {
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>, tag: &Tag) {
