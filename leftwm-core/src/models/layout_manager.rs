@@ -28,7 +28,7 @@ impl LayoutManager {
             .workspaces()
             .unwrap_or_default()
             .iter()
-            .filter_map(|w| w.id.map(|id| (id, w.layouts.clone())))
+            .filter_map(|ws| ws.id.map(|id| (id, ws.layouts.clone())))
             .collect();
 
         Self {
@@ -42,30 +42,34 @@ impl LayoutManager {
         *self.layouts.first().unwrap_or(&Layout::default())
     }
 
-    pub fn next_layout(&self, layout: Layout, workspace: &Workspace) -> Layout {
-        *workspace
+    pub fn next_layout(&self, workspace: &Workspace) -> Layout {
+        let layouts = workspace
             .id
             .and_then(|id| self.layouts_per_workspaces.get(&id))
-            .or(Some(&self.layouts))
-            .and_then(|layouts| match layouts.iter().position(|&x| x == layout) {
-                Some(index) if index == layouts.len() - 1 => layouts.first(),
-                Some(index) => layouts.get(index + 1),
-                None => None,
-            })
-            .unwrap_or_default()
+            .unwrap_or(&self.layouts);
+
+        let next = match layouts.iter().position(|&x| x == workspace.layout) {
+            Some(index) if index == layouts.len() - 1 => layouts.first(),
+            Some(index) => layouts.get(index + 1),
+            None => None,
+        };
+
+        *next.unwrap_or(&workspace.layout)
     }
 
-    pub fn previous_layout(&self, layout: Layout, workspace: &Workspace) -> Layout {
-        *workspace
+    pub fn previous_layout(&self, workspace: &Workspace) -> Layout {
+        let layouts = workspace
             .id
             .and_then(|id| self.layouts_per_workspaces.get(&id))
-            .or(Some(&self.layouts))
-            .and_then(|layouts| match layouts.iter().position(|&x| x == layout) {
-                Some(index) if index == 0 => layouts.last(),
-                Some(index) => layouts.get(index - 1),
-                None => None,
-            })
-            .unwrap_or_default()
+            .unwrap_or(&self.layouts);
+
+        let next = match layouts.iter().position(|&x| x == workspace.layout) {
+            Some(index) if index == 0 => layouts.last(),
+            Some(index) => layouts.get(index - 1),
+            None => None,
+        };
+
+        *next.unwrap_or(&workspace.layout)
     }
 
     pub fn update_layouts(
@@ -137,10 +141,7 @@ mod tests {
         let layout_manager = layout_manager();
         let workspace = workspace(0, Layout::CenterMainBalanced);
 
-        assert_eq!(
-            layout_manager.next_layout(workspace.layout, &workspace),
-            Layout::MainAndDeck
-        );
+        assert_eq!(layout_manager.next_layout(&workspace), Layout::MainAndDeck);
     }
 
     #[test]
@@ -148,10 +149,7 @@ mod tests {
         let layout_manager = layout_manager();
         let workspace = workspace(0, Layout::MainAndDeck);
 
-        assert_eq!(
-            layout_manager.next_layout(workspace.layout, &workspace),
-            Layout::CenterMain
-        );
+        assert_eq!(layout_manager.next_layout(&workspace), Layout::CenterMain);
     }
 
     #[test]
@@ -160,7 +158,7 @@ mod tests {
         let workspace = workspace(1, Layout::EvenVertical);
 
         assert_eq!(
-            layout_manager.next_layout(workspace.layout, &workspace),
+            layout_manager.next_layout(&workspace),
             Layout::MainAndHorizontalStack
         );
     }
@@ -171,7 +169,7 @@ mod tests {
         let workspace = workspace(0, Layout::CenterMainBalanced);
 
         assert_eq!(
-            layout_manager.previous_layout(workspace.layout, &workspace),
+            layout_manager.previous_layout(&workspace),
             Layout::CenterMain
         );
     }
@@ -182,7 +180,7 @@ mod tests {
         let workspace = workspace(0, Layout::CenterMain);
 
         assert_eq!(
-            layout_manager.previous_layout(workspace.layout, &workspace),
+            layout_manager.previous_layout(&workspace),
             Layout::MainAndDeck
         );
     }
@@ -192,9 +190,6 @@ mod tests {
         let layout_manager = layout_manager();
         let workspace = workspace(1, Layout::EvenVertical);
 
-        assert_eq!(
-            layout_manager.previous_layout(workspace.layout, &workspace),
-            Layout::Monocle
-        );
+        assert_eq!(layout_manager.previous_layout(&workspace), Layout::Monocle);
     }
 }
