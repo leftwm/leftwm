@@ -107,15 +107,21 @@ mod tests {
                 Layout::EvenVertical,
                 Layout::MainAndHorizontalStack,
             ],
-            workspaces: Some(vec![crate::config::Workspace {
-                id: Some(0),
-                layouts: vec![
-                    Layout::CenterMain,
-                    Layout::CenterMainBalanced,
-                    Layout::MainAndDeck,
-                ],
-                ..Default::default()
-            }]),
+            workspaces: Some(vec![
+                crate::config::Workspace {
+                    id: Some(0),
+                    layouts: vec![
+                        Layout::CenterMain,
+                        Layout::CenterMainBalanced,
+                        Layout::MainAndDeck,
+                    ],
+                    ..Default::default()
+                },
+                crate::config::Workspace {
+                    id: Some(1),
+                    ..Default::default()
+                },
+            ]),
             ..Default::default()
         };
 
@@ -155,12 +161,20 @@ mod tests {
     #[test]
     fn next_layout_fallback_to_global_layouts() {
         let layout_manager = layout_manager();
-        let workspace = workspace(1, Layout::EvenVertical);
+        let workspace = workspace(2, Layout::EvenVertical);
 
         assert_eq!(
             layout_manager.next_layout(&workspace),
             Layout::MainAndHorizontalStack
         );
+    }
+
+    #[test]
+    fn next_layout_fallback_to_the_current_layout() {
+        let layout_manager = layout_manager();
+        let workspace = workspace(0, Layout::Fibonacci);
+
+        assert_eq!(layout_manager.next_layout(&workspace), Layout::Fibonacci);
     }
 
     #[test]
@@ -188,8 +202,19 @@ mod tests {
     #[test]
     fn previous_layout_fallback_to_global_layouts() {
         let layout_manager = layout_manager();
-        let workspace = workspace(1, Layout::EvenVertical);
+        let workspace = workspace(2, Layout::EvenVertical);
 
         assert_eq!(layout_manager.previous_layout(&workspace), Layout::Monocle);
+    }
+
+    #[test]
+    fn previous_layout_fallback_to_the_current_layout() {
+        let layout_manager = layout_manager();
+        let workspace = workspace(0, Layout::Fibonacci);
+
+        assert_eq!(
+            layout_manager.previous_layout(&workspace),
+            Layout::Fibonacci
+        );
     }
 }
