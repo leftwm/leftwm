@@ -44,8 +44,9 @@ async fn main() -> Result<()> {
             if verbose {
                 dbg!(&config);
             }
-            config.check_workspace_ids(verbose);
-            config.check_keybinds(verbose);
+            if !config.check_workspace_ids(verbose) || !config.check_keybinds(verbose) {
+                dbg!("Workspace id or keybind failed.");
+            }
         }
         Err(e) => {
             println!("Configuration failed. Reason: {:?}", e);

@@ -43,6 +43,17 @@ macro_rules! ensure_non_empty {
 }
 
 impl Keybind {
+    /// Converts a `BaseCommand` keybind to a `leftwm_core` keybind
+    ///
+    /// # Errors
+    ///
+    /// - Returns `Error` if invalid `GoToTag` index value is passed.
+    /// - Returns `Error` if invalid boolean `FocusWindowTop` value is passed.
+    /// - Returns `Error` if invalid `SendWindowToTag` index value is passed.
+    /// - Returns `Error` if invalid `Layout` in `SetLayout` command.
+    /// - Returns `Error` if invalid width value passed to either `IncreaseMainWidth` or
+    /// `DecreaseMainWidth` commands.
+    /// - Returns `Error` if invalid `SetMarginMultiplier` multiplier is passed.
     pub fn try_convert_to_core_keybind(&self, config: &Config) -> Result<leftwm_core::Keybind> {
         let command = match &self.command {
             BaseCommand::Execute => {

@@ -81,20 +81,19 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) 
         _ => ((workspace_width - primary_width) as f32 / 2.0).floor() as i32,
     };
 
-    let (primary_x, secondary_x, stack_x) = match window_count {
-        1 => (workspace_x, 0, 0),
-        _ => {
-            let px = workspace_x + secondary_width;
-            let (sx, stx);
-            if tag.flipped_horizontal {
-                sx = workspace_x + primary_width + secondary_width;
-                stx = workspace_x;
-            } else {
-                sx = workspace_x;
-                stx = workspace_x + primary_width + secondary_width;
-            }
-            (px, sx, stx)
+    let (primary_x, secondary_x, stack_x) = if window_count == 1 {
+        (workspace_x, 0, 0)
+    } else {
+        let px = workspace_x + secondary_width;
+        let (sx, stx);
+        if tag.flipped_horizontal {
+            sx = workspace_x + primary_width + secondary_width;
+            stx = workspace_x;
+        } else {
+            sx = workspace_x;
+            stx = workspace_x + primary_width + secondary_width;
         }
+        (px, sx, stx)
     };
 
     let mut iter = windows.iter_mut();

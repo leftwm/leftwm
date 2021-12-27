@@ -1,9 +1,10 @@
-use super::*;
+use super::Config;
 use leftwm_core::utils;
 use std::collections::HashSet;
 
 impl Config {
     /// Checks defined workspaces to ensure no ID collisions occur.
+    #[must_use]
     pub fn check_workspace_ids(&self, verbose: bool) -> bool {
         self.workspaces.as_ref().map_or(true, |wss|
     {
@@ -33,11 +34,12 @@ impl Config {
     /// Checks to see if value is provided (if required)
     /// Checks to see if keys are valid against Xkeysym
     /// Ideally, we will pass this to the command handler with a dummy config
+    #[must_use]
     pub fn check_keybinds(&self, verbose: bool) -> bool {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
         let mut bindings = HashSet::new();
-        for keybind in self.keybind.iter() {
+        for keybind in &self.keybind {
             if verbose {
                 println!("Keybind: {:?} {}", keybind, keybind.value.is_empty());
             }
