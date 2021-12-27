@@ -38,15 +38,15 @@ impl LayoutManager {
         }
     }
 
-    pub fn new_layout(&self) -> Layout {
-        *self.layouts.first().unwrap_or(&Layout::default())
+    pub fn new_layout(&self, workspace_id: Option<i32>) -> Layout {
+        *self
+            .layouts(workspace_id)
+            .first()
+            .unwrap_or(&Layout::default())
     }
 
     pub fn next_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = workspace
-            .id
-            .and_then(|id| self.layouts_per_workspaces.get(&id))
-            .unwrap_or(&self.layouts);
+        let layouts = self.layouts(workspace.id);
 
         let next = match layouts.iter().position(|&x| x == workspace.layout) {
             Some(index) if index == layouts.len() - 1 => layouts.first(),
@@ -58,10 +58,7 @@ impl LayoutManager {
     }
 
     pub fn previous_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = workspace
-            .id
-            .and_then(|id| self.layouts_per_workspaces.get(&id))
-            .unwrap_or(&self.layouts);
+        let layouts = self.layouts(workspace.id);
 
         let next = match layouts.iter().position(|&x| x == workspace.layout) {
             Some(index) if index == 0 => layouts.last(),
@@ -90,6 +87,12 @@ impl LayoutManager {
             }
         }
         Some(true)
+    }
+
+    fn layouts(&self, workspace_id: Option<i32>) -> &Vec<Layout> {
+        workspace_id
+            .and_then(|id| self.layouts_per_workspaces.get(&id))
+            .unwrap_or(&self.layouts)
     }
 }
 
