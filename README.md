@@ -457,7 +457,7 @@ only the layouts you specify.
 
 Example:
 ```toml
-layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain"]
+layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"]
 ```
 
 [More detailed configuration information can be found in the Wiki.][config-wiki]
