@@ -460,6 +460,30 @@ Example:
 layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain"]
 ```
 
+Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.
+
+Example:
+```toml
+[[workspaces]]
+id = 0
+x = 0
+y = 480
+width = 3840
+height = 1600
+layouts = ["CenterMain", "CenterMainBalanced", "EvenHorizontal"]
+
+[[workspaces]]
+id = 1
+x = 3840
+y = 0
+width = 1440
+height = 2560
+layouts = ["MainAndHorizontalStack", "EvenVertical"]
+```
+
+**NOTE**
+When defining layouts per workspace, you will need to define workspace IDs explicitely.
+
 [More detailed configuration information can be found in the Wiki.][config-wiki]
 
 [config-wiki]: https://github.com/leftwm/leftwm/wiki/Config
