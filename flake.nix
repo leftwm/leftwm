@@ -13,7 +13,7 @@
   };
 
   outputs = { self, fenix, flake-utils, naersk, nixpkgs }:
-    flake-utils.lib.eachDefaultSystem (system:
+    (flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
         deps = with pkgs; [
@@ -63,5 +63,9 @@
               fenix.packages.${system}.rust-analyzer
             ];
           };
-      });
+      })) // {
+      overlay = _: _: {
+        leftwm = self.defaultPackage;
+      };
+    };
 }
