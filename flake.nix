@@ -50,7 +50,7 @@
         # `nix develop`
         devShell = pkgs.mkShell
           {
-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (deps ++ [ (pkgs.lib.getLib pkgs.systemd) ]);
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (deps ++ [ pkgs.glibc (pkgs.lib.getLib pkgs.systemd) ]);
             buildInputs = deps ++ [ pkgs.pkg-config pkgs.systemd ];
             nativeBuildInputs = with pkgs; [
               gnumake
