@@ -64,8 +64,8 @@
             ];
           };
       })) // {
-      overlay = _: _: {
-        leftwm = self.defaultPackage;
+      overlay = final: prev: {
+        leftwm = self.packages.${final.system}.leftwm;
       };
     };
 }
