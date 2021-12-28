@@ -11,6 +11,7 @@ mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
 mod grid_horizontal;
+mod left_main;
 mod main_and_deck;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
@@ -28,6 +29,7 @@ pub enum Layout {
     Fibonacci,
     CenterMain,
     CenterMainBalanced,
+    LeftMain,
     Monocle,
     RightWiderLeftStack,
     LeftWiderRightStack,
@@ -43,6 +45,7 @@ pub const LAYOUTS: &[Layout] = &[
     Layout::Fibonacci,
     Layout::CenterMain,
     Layout::CenterMainBalanced,
+    Layout::LeftMain,
     Layout::Monocle,
     Layout::RightWiderLeftStack,
     Layout::LeftWiderRightStack,
@@ -71,6 +74,7 @@ impl Layout {
             Self::Fibonacci => fibonacci::update(workspace, tag, windows),
             Self::CenterMain => center_main::update(workspace, tag, windows),
             Self::CenterMainBalanced => center_main_balanced::update(workspace, tag, windows),
+            Self::LeftMain => left_main::update(workspace, tag, windows),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => {
                 right_main_and_vert_stack::update(workspace, tag, windows);
@@ -118,6 +122,7 @@ impl FromStr for Layout {
             "Fibonacci" => Ok(Self::Fibonacci),
             "CenterMain" => Ok(Self::CenterMain),
             "CenterMainBalanced" => Ok(Self::CenterMainBalanced),
+            "LeftMain" => Ok(Self::LeftMain),
             "Monocle" => Ok(Self::Monocle),
             "RightWiderLeftStack" => Ok(Self::RightWiderLeftStack),
             "LeftWiderRightStack" => Ok(Self::LeftWiderRightStack),
@@ -164,7 +169,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let layout_strs: [&str; 12] = [
+        let layout_strs: [&str; 13] = [
             "MainAndVertStack",
             "MainAndHorizontalStack",
             "MainAndDeck",
@@ -174,6 +179,7 @@ mod tests {
             "Fibonacci",
             "CenterMain",
             "CenterMainBalanced",
+            "LeftMain",
             "Monocle",
             "RightWiderLeftStack",
             "LeftWiderRightStack",
