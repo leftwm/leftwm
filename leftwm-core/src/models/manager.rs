@@ -58,6 +58,10 @@ where
 #[cfg(test)]
 impl Manager<crate::config::TestConfig, crate::display_servers::MockDisplayServer> {
     pub fn new_test(tags: Vec<String>) -> Self {
-        Self::new(crate::config::TestConfig { tags })
+        use crate::config::TestConfig;
+        Self::new(TestConfig {
+            tags,
+            ..TestConfig::default()
+        })
     }
 }

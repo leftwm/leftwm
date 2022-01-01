@@ -9,23 +9,21 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
+        let workspace_id = screen.wsid.unwrap_or_else(|| {
+            self.state
+                .workspaces
+                .iter()
+                .map(|ws| ws.id.unwrap_or(-1))
+                .max()
+                .unwrap_or(-1)
+                + 1
+        });
         let mut new_workspace = Workspace::new(
-            screen.wsid,
+            Some(workspace_id),
             screen.bbox,
-            self.state.layout_manager.new_layout(),
+            self.state.layout_manager.new_layout(Some(workspace_id)),
             screen.max_window_width.or(self.state.max_window_width),
         );
-        if new_workspace.id.is_none() {
-            new_workspace.id = Some(
-                self.state
-                    .workspaces
-                    .iter()
-                    .map(|ws| ws.id.unwrap_or(-1))
-                    .max()
-                    .unwrap_or(-1)
-                    + 1,
-            );
-        }
         if new_workspace.id.unwrap_or(0) as usize >= tag_len {
             dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
         }
@@ -38,8 +36,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             // add a new tag for the workspace
             self.state
                 .tags
-                .add_new_unlabeled(self.state.layout_manager.new_layout())
+                .add_new_unlabeled(self.state.layout_manager.new_layout(Some(workspace_id)))
         };
+
+        if let Some(tag) = self.state.tags.get_mut(next_id) {
+            tag.layout = new_workspace.layout;
+        }
 
         self.state.focus_workspace(&new_workspace);
         self.state.focus_tag(&next_id);

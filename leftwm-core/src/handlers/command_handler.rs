@@ -333,13 +333,13 @@ fn move_to_last_workspace(state: &mut State) -> Option<bool> {
 
 fn next_layout(state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
-    let layout = state.layout_manager.next_layout(workspace.layout);
+    let layout = state.layout_manager.next_layout(workspace);
     set_layout(layout, state)
 }
 
 fn previous_layout(state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
-    let layout = state.layout_manager.previous_layout(workspace.layout);
+    let layout = state.layout_manager.previous_layout(workspace);
     set_layout(layout, state)
 }
 
