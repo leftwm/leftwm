@@ -54,7 +54,9 @@ impl LayoutManager {
             None => None,
         };
 
-        *next.unwrap_or(&workspace.layout)
+        // If no layout was found, return the first in the list, in case of a
+        // SoftReload with a new list that does not include the current layout.
+        *next.unwrap_or_else(|| layouts.first().unwrap_or(&workspace.layout))
     }
 
     pub fn previous_layout(&self, workspace: &Workspace) -> Layout {
@@ -66,7 +68,9 @@ impl LayoutManager {
             None => None,
         };
 
-        *next.unwrap_or(&workspace.layout)
+        // If no layout was found, return the first in the list, in case of a
+        // SoftReload with a new list that does not include the current layout.
+        *next.unwrap_or_else(|| layouts.first().unwrap_or(&workspace.layout))
     }
 
     pub fn update_layouts(
@@ -92,6 +96,13 @@ impl LayoutManager {
     fn layouts(&self, workspace_id: Option<i32>) -> &Vec<Layout> {
         workspace_id
             .and_then(|id| self.layouts_per_workspaces.get(&id))
+            .and_then(|layouts| {
+                if layouts.is_empty() {
+                    None
+                } else {
+                    Some(layouts)
+                }
+            })
             .unwrap_or(&self.layouts)
     }
 }
@@ -124,6 +135,11 @@ mod tests {
                     id: Some(1),
                     ..Default::default()
                 },
+                crate::config::Workspace {
+                    id: Some(2),
+                    layouts: vec![],
+                    ..Default::default()
+                },
             ]),
             ..Default::default()
         };
@@ -146,6 +162,16 @@ mod tests {
     }
 
     #[test]
+    fn layouts_should_fallback_to_the_global_list() {
+        let layout_manager = layout_manager();
+
+        assert_eq!(layout_manager.layouts(Some(1)), &layout_manager.layouts); // layouts = None
+        assert_eq!(layout_manager.layouts(Some(2)), &layout_manager.layouts); // layouts = vec[]!
+        assert_eq!(layout_manager.layouts(Some(3)), &layout_manager.layouts); // Non existent id
+        assert_eq!(layout_manager.layouts(None), &layout_manager.layouts);
+    }
+
+    #[test]
     fn next_layout_basic() {
         let layout_manager = layout_manager();
         let workspace = workspace(0, Layout::CenterMainBalanced);
@@ -164,8 +190,8 @@ mod tests {
     #[test]
     fn next_layout_fallback_to_global_layouts() {
         let layout_manager = layout_manager();
-        let workspace = workspace(2, Layout::EvenVertical);
 
+        let workspace = workspace(1, Layout::EvenVertical);
         assert_eq!(
             layout_manager.next_layout(&workspace),
             Layout::MainAndHorizontalStack
@@ -173,11 +199,11 @@ mod tests {
     }
 
     #[test]
-    fn next_layout_fallback_to_the_current_layout() {
+    fn next_layout_fallback_to_the_first_layout() {
         let layout_manager = layout_manager();
         let workspace = workspace(0, Layout::Fibonacci);
 
-        assert_eq!(layout_manager.next_layout(&workspace), Layout::Fibonacci);
+        assert_eq!(layout_manager.next_layout(&workspace), Layout::CenterMain);
     }
 
     #[test]
@@ -211,13 +237,13 @@ mod tests {
     }
 
     #[test]
-    fn previous_layout_fallback_to_the_current_layout() {
+    fn previous_layout_fallback_to_the_first_layout() {
         let layout_manager = layout_manager();
         let workspace = workspace(0, Layout::Fibonacci);
 
         assert_eq!(
             layout_manager.previous_layout(&workspace),
-            Layout::Fibonacci
+            Layout::CenterMain
         );
     }
 }
