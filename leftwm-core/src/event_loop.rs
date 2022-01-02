@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+    /// # Panics
+    /// This function panics if it can't create or write to the command file.
     pub async fn event_loop(mut self) {
         let socket_file = place_runtime_file("current_state.sock")
             .expect("ERROR: couldn't create current_state.sock");
