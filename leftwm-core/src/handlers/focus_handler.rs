@@ -165,15 +165,6 @@ fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<
         }
     }
 
-    // Add the currently focused window to the history
-    if let Some((tag, handle)) = state
-        .focus_manager
-        .tag(0)
-        .zip(state.focus_manager.window(&state.windows).map(|w| w.handle))
-    {
-        state.focus_manager.tags_last_window.insert(tag, handle);
-    }
-
     // Clean old history.
     state.focus_manager.workspace_history.truncate(10);
     // Add this focus to the history.
@@ -245,6 +236,16 @@ fn focus_tag_work(state: &mut State, tag: TagId) -> Option<()> {
             return None;
         }
     };
+
+    // Add the currently focused window to the history
+    if let Some((tag, handle)) = state
+        .focus_manager
+        .tag(0)
+        .zip(state.focus_manager.window(&state.windows).map(|w| w.handle))
+    {
+        state.focus_manager.tags_last_window.insert(tag, handle);
+    }
+
     //clean old ones
     state.focus_manager.tag_history.truncate(10);
     //add this focus to the history
