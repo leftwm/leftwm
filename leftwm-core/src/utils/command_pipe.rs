@@ -2,6 +2,7 @@
 use crate::layouts::Layout;
 use crate::models::TagId;
 use crate::Command;
+use std::env;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tokio::fs;
@@ -52,6 +53,15 @@ impl CommandPipe {
         });
 
         Ok(Self { pipe_file, rx })
+    }
+
+    pub fn pipe_name() -> PathBuf {
+        let display = env::var("DISPLAY")
+            .ok()
+            .and_then(|d| d.rsplit_once(":").map(|(_, r)| r.to_owned()))
+            .unwrap_or_else(|| "0".to_string());
+
+        PathBuf::from(format!("command-{}.pipe", display))
     }
 
     pub async fn read_command(&mut self) -> Option<Command> {
