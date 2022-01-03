@@ -158,11 +158,10 @@ fn execute_subcommand(args: &[String], subcommands: &[&str]) -> Option<bool> {
 fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &str>) {
     // If there are more than two arguments, do not invoke `clap`, since `clap` will get confused
     // about arguments to subcommands and throw spurrious errors.
-
     let version = format!(
         "{}, Git-Hash: {}",
         crate_version!(),
-        git_version::git_version!(fallback = "NONE")
+        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
     let mut app = App::new("LeftWM")
         .author("Lex Childs <lex.childs@gmail.com>")

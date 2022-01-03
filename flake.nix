@@ -33,7 +33,9 @@
             for p in $out/bin/leftwm*; do
               patchelf --set-rpath "${pkgs.lib.makeLibraryPath deps}" $p
             done
-            # '';
+          '';
+ 
+          GIT_HASH = self.shortRev or "dirty";
         });
       in
       rec {

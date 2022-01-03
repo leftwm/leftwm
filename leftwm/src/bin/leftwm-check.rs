@@ -1,6 +1,7 @@
 use anyhow::{bail, Result};
 use clap::{App, Arg};
 use leftwm::{Config, ThemeSetting};
+use std::env;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
@@ -35,7 +36,7 @@ async fn main() -> Result<()> {
     );
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
-        git_version::git_version!(fallback = "NONE")
+        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
