@@ -130,6 +130,12 @@ List of common dependencies for themes:
 
 # Installation (with package manager)
 
+Gentoo ([GURU])
+```sh
+sudo layman -a guru && sudo emerge --sync 
+sudo emerge --ask --verbose x11-wm/leftwm
+```
+
 Archlinux ([AUR])
 ```sh
 paru -S leftwm
@@ -165,6 +171,7 @@ sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 ```
 
 [AUR]: https://aur.archlinux.org/packages/leftwm
+[GURU]: https://gitweb.gentoo.org/repo/proj/guru.git/tree/x11-wm/leftwm
 [copr]: https://copr.fedorainfracloud.org/coprs/atim/leftwm/
 [Official repositories]: https://pkgsrc.se/wm/leftwm/
 [crates.io]: https://crates.io/crates/leftwm
