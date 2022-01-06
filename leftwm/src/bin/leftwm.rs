@@ -45,6 +45,7 @@ fn main() {
     // If _not_ invoked with a subcommand, start leftwm.
     if let Ok(current_exe) = std::env::current_exe() {
         // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
+        env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
         let mut children = Nanny::autostart();
 
         let flag = Arc::new(AtomicBool::new(false));
@@ -52,7 +53,6 @@ fn main() {
 
         // Fix for Java apps so they repaint correctly
         env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
-        env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
 
         let worker_path = current_exe.with_file_name("leftwm-worker");
 
