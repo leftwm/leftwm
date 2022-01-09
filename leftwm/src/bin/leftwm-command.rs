@@ -1,12 +1,8 @@
 use anyhow::{Context, Result};
 use clap::{App, Arg};
-<<<<<<< Updated upstream
 use leftwm_core::CommandPipe;
-=======
->>>>>>> Stashed changes
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use std::path::PathBuf;
 use xdg::BaseDirectories;
 
 #[tokio::main]
