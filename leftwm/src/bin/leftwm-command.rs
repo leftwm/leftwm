@@ -1,8 +1,12 @@
 use anyhow::{Context, Result};
 use clap::{App, Arg};
+<<<<<<< Updated upstream
 use leftwm_core::CommandPipe;
+=======
+>>>>>>> Stashed changes
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use std::path::PathBuf;
 use xdg::BaseDirectories;
 
 #[tokio::main]
@@ -49,12 +53,15 @@ async fn main() -> Result<()> {
         Available Commands:
 
         Commands without arguments:
-        
+
         UnloadTheme
         SoftReload
         ToggleFullScreen
+        ToggleSticky
         SwapScreens
         MoveWindowToLastWorkspace
+        MoveWindowToNextWorkspace
+        MoveWindowToPreviousWorkspace
         FloatingToTile
         TileToFloating
         ToggleFloating
@@ -77,13 +84,13 @@ async fn main() -> Result<()> {
             Use quotations for the command and arguments, like this:
             leftwm-command \"<command> <args>\"
 
-        LoadTheme              Args: <Path_to/theme.toml> 
+        LoadTheme              Args: <Path_to/theme.toml>
         ToggleScratchPad       Args: <ScratchpadName>
         SendWorkspaceToTag     Args: <workspaxe_index> <tag_index> (int)
         SendWindowToTag        Args: <tag_index> (int)
         SetLayout              Args: <LayoutName>
         SetMarginMultiplier    Args: <multiplier-value> (float)
-        
+
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands
          "
