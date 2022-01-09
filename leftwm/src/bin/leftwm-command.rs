@@ -1,5 +1,6 @@
+use anyhow::{Context, Result};
 use clap::{App, Arg};
-use leftwm_core::errors::Result;
+use leftwm_core::CommandPipe;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use xdg::BaseDirectories;
@@ -24,13 +25,14 @@ async fn main() -> Result<()> {
         )
         .get_matches();
 
+    let file_name = CommandPipe::pipe_name();
     let file_path = BaseDirectories::with_prefix("leftwm")?
-        .find_runtime_file("commands.pipe")
-        .expect("ERROR: Couldn't find commands.pipe");
+        .find_runtime_file(&file_name)
+        .with_context(|| format!("ERROR: Couldn't find {}", file_name.display()))?;
     let mut file = OpenOptions::new()
         .append(true)
         .open(file_path)
-        .expect("ERROR: Couldn't open commands.pipe");
+        .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
     if let Some(commands) = matches.values_of("command") {
         for command in commands {
             if let Err(e) = writeln!(file, "{}", command) {

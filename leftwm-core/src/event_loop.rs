@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+    /// # Panics
+    /// This function panics if it can't create or write to the command file.
     pub async fn event_loop(mut self) {
         let socket_file = place_runtime_file("current_state.sock")
             .expect("ERROR: couldn't create current_state.sock");
@@ -13,11 +15,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .await
             .expect("ERROR: couldn't connect to current_state.sock");
 
-        let pipe_file =
-            place_runtime_file("commands.pipe").expect("ERROR: couldn't create commands.pipe");
+        let file_name = CommandPipe::pipe_name();
+        let pipe_file = place_runtime_file(&file_name)
+            .unwrap_or_else(|_| panic!("ERROR: couldn't create {}", file_name.display()));
         let mut command_pipe = CommandPipe::new(pipe_file)
             .await
-            .expect("ERROR: couldn't connect to commands.pipe");
+            .unwrap_or_else(|_| panic!("ERROR: couldn't connect to {}", file_name.display()));
 
         //start the current theme
         let after_first_loop: Once = Once::new();
