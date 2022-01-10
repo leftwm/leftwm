@@ -41,7 +41,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
 
-        Command::SendWindowToTag(tag) => move_to_tag(*tag, manager),
+        Command::SendWindowToTag { window, tag } => move_to_tag(*window, *tag, manager),
         Command::MoveWindowToNextWorkspace => move_window_to_workspace_change(manager, 1),
         Command::MoveWindowToPreviousWorkspace => move_window_to_workspace_change(manager, -1),
         Command::MoveWindowUp => move_focus_common_vars(move_window_change, state, -1),
@@ -209,6 +209,7 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
 }
 
 fn move_to_tag<C: Config, SERVER: DisplayServer>(
+    window: Option<WindowHandle>,
     tag_num: TagId,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
@@ -221,18 +222,15 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         None => 1.0,
     };
 
-    let handle = manager
-        .state
-        .focus_manager
-        .window(&manager.state.windows)?
-        .handle;
+    let handle = window.or(*manager.state.focus_manager.window_history.get(0)?)?;
     //Focus the next or previous window on the workspace
     let new_handle = manager.get_next_or_previous(&handle);
 
     let window = manager
         .state
-        .focus_manager
-        .window_mut(&mut manager.state.windows)?;
+        .windows
+        .iter_mut()
+        .find(|w| w.handle == handle)?;
     window.clear_tags();
     window.set_floating(false);
     window.tag(&tag.id);
@@ -263,7 +261,7 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
 
     let tag_num = workspace.tags.first()?;
-    move_to_tag(*tag_num, manager)
+    move_to_tag(None, *tag_num, manager)
 }
 
 fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Option<bool> {

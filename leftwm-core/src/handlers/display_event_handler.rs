@@ -10,9 +10,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             DisplayEvent::ScreenCreate(s) => self.screen_create_handler(s),
             DisplayEvent::WindowCreate(w, x, y) => self.window_created_handler(w, x, y),
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
-
-            //The window has been focused, do we want to do anything about it?
-            DisplayEvent::MouseEnteredWindow(handle) => self.state.focus_window(&handle),
+            DisplayEvent::WindowTakeFocus(handle) => self.state.focus_window(&handle),
 
             DisplayEvent::KeyGrabReload => {
                 self.state

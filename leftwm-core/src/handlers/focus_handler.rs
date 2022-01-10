@@ -99,7 +99,7 @@ impl State {
 
         // Unfocus last window if the target tag is empty
         if let Some(window) = self.focus_manager.window(&self.windows) {
-            if !window.tags.contains(&tag.to_owned()) {
+            if !window.tags.contains(tag) {
                 self.actions
                     .push_back(DisplayAction::Unfocus(Some(window.handle)));
                 self.focus_manager.window_history.push_front(None);

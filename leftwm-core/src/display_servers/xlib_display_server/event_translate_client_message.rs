@@ -15,10 +15,11 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         let value = event.data.get_long(0);
         match usize::try_from(value) {
             Ok(index) => {
-                return Some(DisplayEvent::SendCommand(Command::GoToTag {
+                let event = DisplayEvent::SendCommand(Command::GoToTag {
                     tag: index + 1,
                     swap: false,
-                }));
+                });
+                return Some(event);
             }
             Err(err) => {
                 log::debug!(
@@ -29,6 +30,31 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
                 return None;
             }
         }
+    }
+    if event.message_type == xw.atoms.NetWMDesktop {
+        let value = event.data.get_long(0);
+        match usize::try_from(value) {
+            Ok(index) => {
+                let event = DisplayEvent::SendCommand(Command::SendWindowToTag {
+                    window: Some(WindowHandle::XlibHandle(event.window)),
+                    tag: index + 1,
+                });
+                return Some(event);
+            }
+            Err(err) => {
+                log::debug!(
+                    "Received invalid value for current desktop new index ({}): {}",
+                    value,
+                    err,
+                );
+                return None;
+            }
+        }
+    }
+    if event.message_type == xw.atoms.NetActiveWindow {
+        return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
+            event.window,
+        )));
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too

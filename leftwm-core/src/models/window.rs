@@ -97,7 +97,6 @@ impl Window {
         self.visible
             || self.r#type == WindowType::Menu
             || self.r#type == WindowType::Splash
-            || self.r#type == WindowType::Dialog
             || self.r#type == WindowType::Toolbar
     }
 
