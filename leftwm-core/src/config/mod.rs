@@ -5,7 +5,7 @@ mod workspace_config;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
-use crate::models::{LayoutMode, Manager};
+use crate::models::{LayoutMode, Manager, Window, WindowType};
 use crate::state::State;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
@@ -59,6 +59,20 @@ pub trait Config {
 
     /// Load saved state if it exists.
     fn load_state(&self, state: &mut State);
+
+    /// Handle window placement based on `WM_CLASS`
+    fn setup_predefined_window(&self, window: &mut Window) -> bool;
+
+    fn load_window(&self, window: &mut Window) {
+        if window.r#type == WindowType::Normal {
+            window.margin = self.margin();
+            window.border = self.border_width();
+            window.must_float = self.always_float();
+        } else {
+            window.margin = Margins::new(0);
+            window.border = 0;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -156,12 +170,22 @@ impl Config for TestConfig {
     fn load_state(&self, _state: &mut State) {
         unimplemented!()
     }
+    fn setup_predefined_window(&self, window: &mut Window) -> bool {
+        if window.wm_class == Some("ShouldGoToTag2".to_string()) {
+            window.tags = vec![2];
+            true
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::models::Screen;
+    use crate::models::Window;
+    use crate::models::WindowHandle;
 
     #[test]
     fn ensure_command_handler_trait_boundary() {
@@ -169,5 +193,15 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         assert!(TestConfig::command_handler("GoToTag2", &mut manager));
         assert_eq!(manager.state.focus_manager.tag_history, &[2, 1]);
+    }
+
+    #[test]
+    fn check_wm_class_is_associated_with_predefined_tag() {
+        let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
+        manager.screen_create_handler(Screen::default());
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
+        subject.wm_class = Some("ShouldGoToTag2".to_string());
+        manager.window_created_handler(subject, 0, 0);
+        assert!(manager.state.windows.iter().all(|w| w.has_tag(&2)));
     }
 }

@@ -359,6 +359,24 @@ impl XWrap {
         None
     }
 
+    /// Returns a `WM_NAME` (not `_NET`windows name).
+    #[must_use]
+    pub fn get_window_legacy_name(&self, window: xlib::Window) -> Option<String> {
+        if let Ok(text) = self.get_text_prop(window, xlib::XA_WM_NAME) {
+            return Some(text);
+        }
+        None
+    }
+
+    /// Returns a windows class `WM_CLASS`
+    #[must_use]
+    pub fn get_window_class(&self, window: xlib::Window) -> Option<String> {
+        if let Ok(text) = self.get_text_prop(window, self.atoms.WMClass) {
+            return Some(text);
+        }
+        None
+    }
+
     /// Returns a windows `_NET_WM_PID`.
     #[must_use]
     pub fn get_window_pid(&self, window: xlib::Window) -> Option<u32> {

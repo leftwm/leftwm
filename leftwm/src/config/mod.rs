@@ -8,7 +8,7 @@ use anyhow::{ensure, Context, Result};
 use leftwm_core::{
     config::{ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size},
+    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
     state::State,
     Manager,
 };
@@ -123,6 +123,53 @@ impl Keybind {
     }
 }
 
+/// Selecting by `WM_CLASS` and/or window title, allow the user to define if a
+/// window should spawn on a specified tag and/or its floating state.
+///
+/// # Example
+///
+/// In `config.toml`
+///
+/// ```toml
+/// [[window_config_by_class]]
+/// wm_class = "krita"
+/// spawn_on_tag = 3
+/// spawn_floating = false
+/// ```
+///
+/// windows whose WM_CLASS is "krita" will spawn on tag 3 (1-indexed) and not floating.
+#[derive(Serialize, Deserialize, Default, Debug)]
+pub struct WindowHook {
+    /// `WM_CLASS` in X11
+    pub window_class: Option<String>,
+    /// `_NET_WM_NAME` in X11
+    pub window_title: Option<String>,
+    pub spawn_on_tag: Option<usize>,
+    pub spawn_floating: Option<bool>,
+}
+
+impl WindowHook {
+    /// Score the similarity between a [`leftwm_core::models::Window`] and a [`WindowHook`].
+    ///
+    /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
+    /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
+    fn score_window(&self, window: &Window) -> u8 {
+        (self.window_class.is_some() & (self.window_class == window.wm_class)) as u8
+            + 2 * (self.window_title.is_some()
+                & ((self.window_title == window.name) | (self.window_title == window.legacy_name)))
+                as u8
+    }
+
+    fn apply(&self, window: &mut Window) {
+        if let Some(tag) = self.spawn_on_tag {
+            window.tags = vec![tag];
+        }
+        if let Some(should_float) = self.spawn_floating {
+            window.set_floating(should_float)
+        }
+    }
+}
+
 /// General configuration
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
@@ -141,6 +188,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
+    pub window_rules: Vec<WindowHook>,
 
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
@@ -460,6 +508,30 @@ impl leftwm_core::Config for Config {
                 }
             }
             Err(err) => log::error!("Cannot open old state: {}", err),
+        }
+    }
+
+    /// Pick the best matching [`WindowHook`], if any, and apply its config.
+    fn setup_predefined_window(&self, window: &mut Window) -> bool {
+        let best_match = self
+            .window_rules
+            .iter()
+            // map first instead of using max_by_key directly...
+            .map(|wh| (wh, wh.score_window(window)))
+            // ...since this filter is required (0 := non-match)
+            .filter(|(_wh, score)| score != &0)
+            .max_by_key(|(_wh, score)| *score);
+        if let Some((hook, _)) = best_match {
+            hook.apply(window);
+            log::info!(
+                "Window {:?} spawned in tag={:?} with floating={:?}",
+                window.wm_class,
+                hook.spawn_on_tag,
+                hook.spawn_floating,
+            );
+            true
+        } else {
+            false
         }
     }
 }
