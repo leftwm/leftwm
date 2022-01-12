@@ -182,6 +182,10 @@ impl State {
                 new_window.set_states(old_window.states());
                 ordered.push(new_window.clone());
                 self.windows.remove(index);
+
+                // Make the x server aware of any tag changes for the window.
+                let act = DisplayAction::SetWindowTags(new_window.handle, new_window.tags.clone());
+                self.actions.push_back(act);
             }
         });
         if had_strut {

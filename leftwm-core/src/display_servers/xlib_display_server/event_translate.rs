@@ -188,7 +188,7 @@ fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent
         return None;
     }
     let h = WindowHandle::XlibHandle(event.window);
-    Some(DisplayEvent::MouseEnteredWindow(h))
+    Some(DisplayEvent::WindowTakeFocus(h))
 }
 
 fn from_motion_notify(raw_event: xlib::XEvent, xw: &mut XWrap) -> Option<DisplayEvent> {

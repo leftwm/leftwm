@@ -58,7 +58,7 @@ impl CommandPipe {
     pub fn pipe_name() -> PathBuf {
         let display = env::var("DISPLAY")
             .ok()
-            .and_then(|d| d.rsplit_once(":").map(|(_, r)| r.to_owned()))
+            .and_then(|d| d.rsplit_once(':').map(|(_, r)| r.to_owned()))
             .unwrap_or_else(|| "0".to_string());
 
         PathBuf::from(format!("command-{}.pipe", display))
@@ -134,7 +134,10 @@ fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Er
     let headless = without_head(raw, "SendWindowToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let tag_id: TagId = parts.get(0).ok_or("missing argument tag_id")?.parse()?;
-    Ok(Command::SendWindowToTag(tag_id))
+    Ok(Command::SendWindowToTag {
+        window: None,
+        tag: tag_id,
+    })
 }
 
 fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {

@@ -81,9 +81,11 @@ impl Keybind {
             }
             BaseCommand::FocusWorkspaceNext => leftwm_core::Command::FocusWorkspaceNext,
             BaseCommand::FocusWorkspacePrevious => leftwm_core::Command::FocusWorkspacePrevious,
-            BaseCommand::MoveToTag => leftwm_core::Command::SendWindowToTag(
-                usize::from_str(&self.value).context("invalid index value for SendWindowToTag")?,
-            ),
+            BaseCommand::MoveToTag => leftwm_core::Command::SendWindowToTag {
+                window: None,
+                tag: usize::from_str(&self.value)
+                    .context("invalid index value for SendWindowToTag")?,
+            },
             BaseCommand::MoveToLastWorkspace => leftwm_core::Command::MoveWindowToLastWorkspace,
             BaseCommand::MoveWindowToNextWorkspace => {
                 leftwm_core::Command::MoveWindowToNextWorkspace
