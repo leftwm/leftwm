@@ -169,7 +169,10 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     for filepath in filepaths {
         match filepath {
             f if f.ends_with("up") => match check_permissions(f, verbose) {
-                Ok(_fp) => continue,
+                Ok(fp) => match check_up_file(fp) {
+                    Ok(_) => continue,
+                    Err(e) => returns.push(e.to_string()),
+                },
                 Err(e) => returns.push(e.to_string()),
             },
             f if f.ends_with("down") => match check_permissions(f, verbose) {
@@ -240,6 +243,15 @@ fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             filepath.display(),
         );
     }
+}
+
+fn check_up_file(filepath: PathBuf) -> Result<()> {
+    let contents = fs::read_to_string(filepath)?;
+    // Deprecate commands.pipe after 97de790. See #652 for details.
+    if contents.contains("leftwm/commands.pipe") {
+        bail!("`commands.pipe` is deprecated. See https://github.com/leftwm/leftwm/issues/652 for workaround.");
+    }
+    Ok(())
 }
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
