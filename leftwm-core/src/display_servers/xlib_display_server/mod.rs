@@ -21,6 +21,8 @@ mod xwrap;
 pub use xwrap::XWrap;
 
 use event_translate::XEvent;
+
+use self::xwrap::ICONIC_STATE;
 mod xcursor;
 
 pub struct XlibDisplayServer {
@@ -276,33 +278,29 @@ impl XlibDisplayServer {
             }
         }
 
-        // tell manager about existing windows
-        self.find_all_windows().into_iter().for_each(|w| {
-            let cursor = self.xw.get_cursor_point().ok().unwrap_or_default();
-            let e = DisplayEvent::WindowCreate(w, cursor.0, cursor.1);
-            events.push(e);
-        });
+        // Tell manager about existing windows.
+        events.append(&mut self.find_all_windows());
 
         events
     }
 
-    fn find_all_windows(&self) -> Vec<Window> {
-        let mut all: Vec<Window> = Vec::new();
+    fn find_all_windows(&self) -> Vec<DisplayEvent> {
+        let mut all: Vec<DisplayEvent> = Vec::new();
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
                 let attrs = match self.xw.get_window_attrs(handle) {
                     Ok(x) => x,
                     Err(_) => return,
                 };
-                let managed = match self.xw.get_transient_for(handle) {
-                    Some(_) => attrs.map_state == 2,
-                    None => attrs.override_redirect <= 0 && attrs.map_state == 2,
+                let state = match self.xw.get_wm_state(handle) {
+                    Some(state) => state,
+                    None => return,
                 };
-                if managed {
-                    let name = self.xw.get_window_name(handle);
-                    let pid = self.xw.get_window_pid(handle);
-                    let w = Window::new(WindowHandle::XlibHandle(handle), name, pid);
-                    all.push(w);
+                if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
+                    match self.xw.setup_window(handle) {
+                        Some(event) => all.push(event),
+                        None => {}
+                    }
                 }
             }),
             Err(err) => {
