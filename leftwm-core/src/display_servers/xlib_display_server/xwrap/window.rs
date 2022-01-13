@@ -6,6 +6,7 @@ use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
 
 impl XWrap {
+    /// Sets up a window before we manage it.
     pub fn setup_window(&self, window: xlib::Window) -> Option<DisplayEvent> {
         // Check that the window isn't requesting to be unmanaged
         let attrs = match self.get_window_attrs(window) {
@@ -184,8 +185,8 @@ impl XWrap {
                 // Also fixes issues with eww.
                 if window.is_unmanaged() {
                     unsafe {
-                        (self.xlib.XMoveWindow)(self.display, handle, window.x(), window.y());
-                    }
+                        (self.xlib.XMoveWindow)(self.display, handle, window.x(), window.y())
+                    };
                     return;
                 }
                 let changes = xlib::XWindowChanges {
@@ -219,6 +220,23 @@ impl XWrap {
                     (self.xlib.XSetWindowBorder)(self.display, handle, color);
                 }
                 self.configure_window(window);
+            } else {
+                // Example start for picom animations.
+                let center = window.calculated_xyhw().center();
+                if let Some(screen) = self
+                    .get_screens()
+                    .iter()
+                    .find(|s| s.contains_point(center.0, center.1))
+                {
+                    unsafe {
+                        (self.xlib.XMoveWindow)(
+                            self.display,
+                            handle,
+                            screen.bbox.x - window.width(),
+                            window.y(),
+                        )
+                    };
+                }
             }
         }
     }

@@ -27,7 +27,6 @@ impl XWrap {
                 Err(err) => return Err(err),
             }
         }
-        log::info!("Windows: {:?}", all);
         Ok(all)
     }
 
@@ -500,6 +499,7 @@ impl XWrap {
         }
     }
 
+    /// Returns the `WM_STATE` of a window.
     pub fn get_wm_state(&self, window: xlib::Window) -> Option<c_long> {
         let (prop_return, nitems_return) = self
             .get_property(window, self.atoms.WMState, self.atoms.WMState)
