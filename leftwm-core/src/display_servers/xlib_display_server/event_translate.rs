@@ -2,9 +2,7 @@ use super::{
     event_translate_client_message, event_translate_property_notify, xwrap::WITHDRAWN_STATE,
     DisplayEvent, XWrap,
 };
-use crate::models::{
-    FocusBehaviour, Mode, Window, WindowChange, WindowHandle, WindowType, Xyhw, XyhwChange,
-};
+use crate::models::{FocusBehaviour, Mode, WindowChange, WindowHandle, WindowType, XyhwChange};
 use std::os::raw::c_ulong;
 use x11_dl::xlib;
 

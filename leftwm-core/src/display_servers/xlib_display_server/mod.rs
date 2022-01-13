@@ -297,9 +297,8 @@ impl XlibDisplayServer {
                     None => return,
                 };
                 if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
-                    match self.xw.setup_window(handle) {
-                        Some(event) => all.push(event),
-                        None => {}
+                    if let Some(event) = self.xw.setup_window(handle) {
+                        all.push(event);
                     }
                 }
             }),
