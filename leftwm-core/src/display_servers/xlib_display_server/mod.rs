@@ -6,7 +6,6 @@ use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
 use crate::models::Workspace;
-use crate::state::State;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
@@ -54,36 +53,14 @@ impl DisplayServer for XlibDisplayServer {
         self.xw.load_config(config);
     }
 
-    fn update_windows(
-        &self,
-        windows: Vec<&Window>,
-        focused_window: Option<&Window>,
-        state: &State,
-    ) {
-        let max_tag_index = state
-            .workspaces
-            .iter()
-            .flat_map(|w| &w.tags)
-            .max()
-            .map_or(0, std::borrow::ToOwned::to_owned);
-
-        let to_the_right = state
-            .screens
-            .iter()
-            .map(|s| s.bbox.width + s.bbox.x + 100)
-            .max();
-        let max_screen_width = state.screens.iter().map(|s| s.bbox.width).max();
-
+    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {
         for window in &windows {
             let is_focused = match focused_window {
                 Some(f) => f.handle == window.handle,
                 None => false,
             };
 
-            let hide_offset = right_offset(max_tag_index, to_the_right, window)
-                .unwrap_or_else(|| left_offset(max_screen_width, window));
-
-            self.xw.update_window(window, is_focused, hide_offset);
+            self.xw.update_window(window, is_focused);
         }
     }
 
@@ -334,29 +311,4 @@ impl XlibDisplayServer {
         }
         all
     }
-}
-
-//return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset(
-    max_tag_index: usize,
-    max_right_screen: Option<i32>,
-    window: &Window,
-) -> Option<i32> {
-    let max_right_screen = max_right_screen?;
-    for tag in &window.tags {
-        if tag > &max_tag_index {
-            return Some(max_right_screen + window.x());
-        }
-    }
-    None
-}
-
-//return an offset to hide the window on the left
-fn left_offset(max_screen_width: Option<i32>, window: &Window) -> i32 {
-    let mut left = -(window.width());
-    if let Some(screen_width) = max_screen_width {
-        let best_left = window.x() - screen_width;
-        left = std::cmp::min(best_left, left);
-    }
-    left
 }

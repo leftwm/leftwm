@@ -1,5 +1,5 @@
 //! Xlib calls related to a window.
-use super::{Window, WindowHandle, NORMAL_STATE};
+use super::{Window, WindowHandle, ICONIC_STATE, NORMAL_STATE, ROOT_EVENT_MASK};
 use crate::models::{FocusBehaviour, WindowChange, WindowType, Xyhw};
 use crate::{DisplayEvent, XWrap};
 use std::os::raw::{c_long, c_ulong};
@@ -98,8 +98,9 @@ impl XWrap {
     // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     // `XMoveResizeWindow`: https://tronche.com/gui/x/xlib/window/XMoveResizeWindow.html
     // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
-    pub fn update_window(&self, window: &Window, is_focused: bool, hide_offset: i32) {
+    pub fn update_window(&self, window: &Window, is_focused: bool) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
+            self.toggle_window_visibility(handle, window.visible());
             if window.visible() {
                 // If type dock we only need to move it.
                 // Also fixes issues with eww.
@@ -140,13 +141,30 @@ impl XWrap {
                     (self.xlib.XSetWindowBorder)(self.display, handle, color);
                 }
                 self.configure_window(window);
-            } else {
-                unsafe {
-                    // If not visible window is placed of screen.
-                    (self.xlib.XMoveWindow)(self.display, handle, hide_offset, window.y());
-                }
             }
         }
+    }
+
+    /// Maps and unmaps a window depending on it is visible.
+    pub fn toggle_window_visibility(&self, window: xlib::Window, visible: bool) {
+        // We don't want to receive this map or unmap event.
+        let mask_off = ROOT_EVENT_MASK & !(xlib::SubstructureNotifyMask);
+        let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
+        attrs.event_mask = mask_off;
+        self.change_window_attributes(self.root, xlib::CWEventMask, attrs);
+        if visible {
+            // Set WM_STATE to normal state.
+            self.set_wm_states(window, &[NORMAL_STATE]);
+            // Make sure the window is mapped.
+            unsafe { (self.xlib.XMapWindow)(self.display, window) };
+        } else {
+            // Make sure the window is unmapped.
+            unsafe { (self.xlib.XUnmapWindow)(self.display, window) };
+            // Set WM_STATE to iconic state.
+            self.set_wm_states(window, &[ICONIC_STATE]);
+        }
+        attrs.event_mask = ROOT_EVENT_MASK;
+        self.change_window_attributes(self.root, xlib::CWEventMask, attrs);
     }
 
     /// Makes a window take focus.
@@ -237,6 +255,19 @@ impl XWrap {
         }
     }
 
+    /// Change a windows attributes.
+    // `XChangeWindowAttributes`: https://tronche.com/gui/x/xlib/window/XChangeWindowAttributes.html
+    pub fn change_window_attributes(
+        &self,
+        window: xlib::Window,
+        mask: c_ulong,
+        mut attrs: xlib::XSetWindowAttributes,
+    ) {
+        unsafe {
+            (self.xlib.XChangeWindowAttributes)(self.display, window, mask, &mut attrs);
+        }
+    }
+
     /// Restacks the windows to the order of the vec.
     // `XRestackWindows`: https://tronche.com/gui/x/xlib/window/XRestackWindows.html
     pub fn restack(&self, handles: Vec<WindowHandle>) {
@@ -303,18 +334,13 @@ impl XWrap {
     /// Subscribe to an event of a window.
     // `XSelectInput`: https://tronche.com/gui/x/xlib/event-handling/XSelectInput.html
     pub fn subscribe_to_event(&self, window: xlib::Window, mask: c_long) {
-        unsafe {
-            (self.xlib.XSelectInput)(self.display, window, mask);
-        }
+        unsafe { (self.xlib.XSelectInput)(self.display, window, mask) };
     }
 
     /// Subscribe to the wanted events of a window.
     pub fn subscribe_to_window_events(&self, handle: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = handle {
-            let mask = xlib::EnterWindowMask
-                | xlib::FocusChangeMask
-                | xlib::PropertyChangeMask
-                | xlib::StructureNotifyMask;
+            let mask = xlib::EnterWindowMask | xlib::FocusChangeMask | xlib::PropertyChangeMask;
             self.subscribe_to_event(*handle, mask);
         }
     }
