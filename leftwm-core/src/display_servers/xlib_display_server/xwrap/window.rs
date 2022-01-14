@@ -220,23 +220,6 @@ impl XWrap {
                     (self.xlib.XSetWindowBorder)(self.display, handle, color);
                 }
                 self.configure_window(window);
-            } else {
-                // Example start for picom animations.
-                let center = window.calculated_xyhw().center();
-                if let Some(screen) = self
-                    .get_screens()
-                    .iter()
-                    .find(|s| s.contains_point(center.0, center.1))
-                {
-                    unsafe {
-                        (self.xlib.XMoveWindow)(
-                            self.display,
-                            handle,
-                            screen.bbox.x - window.width(),
-                            window.y(),
-                        )
-                    };
-                }
             }
         }
     }
