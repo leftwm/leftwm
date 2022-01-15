@@ -153,6 +153,11 @@ NetBSD ([Official repositories])
 pkgin install leftwm
 ```
 
+Void ([XBPS])
+```sh
+sudo xbps-install -S leftwm
+```
+
 or, if you prefer to build it from source
 ```sh
 cd /usr/pkgsrc/wm/leftwm
@@ -174,6 +179,7 @@ sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 [GURU]: https://gitweb.gentoo.org/repo/proj/guru.git/tree/x11-wm/leftwm
 [copr]: https://copr.fedorainfracloud.org/coprs/atim/leftwm/
 [Official repositories]: https://pkgsrc.se/wm/leftwm/
+[XBPS]: https://voidlinux.org/packages/?arch=x86_64&q=leftwm
 [crates.io]: https://crates.io/crates/leftwm
 [paru]: https://github.com/Morganamilo/paru
 [yay]: https://github.com/Jguer/yay
