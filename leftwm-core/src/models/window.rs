@@ -46,6 +46,7 @@ pub struct Window {
     pub start_loc: Option<Xyhw>,
     pub container_size: Option<Xyhw>,
     pub strut: Option<Xyhw>,
+    // Two strings that are within a XClassHint, kept separate for simpler comparing.
     pub res_name: Option<String>,
     pub res_class: Option<String>,
 }
