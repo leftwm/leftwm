@@ -499,6 +499,17 @@ impl XWrap {
         }
     }
 
+    /// Returns the `WM_STATE` of a window.
+    pub fn get_wm_state(&self, window: xlib::Window) -> Option<c_long> {
+        let (prop_return, nitems_return) = self
+            .get_property(window, self.atoms.WMState, self.atoms.WMState)
+            .ok()?;
+        if nitems_return == 0 {
+            return None;
+        }
+        Some(unsafe { *prop_return.cast::<c_long>() })
+    }
+
     /// Returns the name of a `XAtom`.
     /// # Errors
     ///
