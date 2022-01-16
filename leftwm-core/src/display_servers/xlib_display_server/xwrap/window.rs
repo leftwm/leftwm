@@ -32,7 +32,10 @@ impl XWrap {
 
         // Build the new window, and fill in info about it.
         let mut w = Window::new(handle, name, pid);
-        w.wm_class = class;
+        if let Some((res_name, res_class)) = class {
+            w.res_name = Some(res_name);
+            w.res_class = Some(res_class);
+        }
         w.legacy_name = legacy_name;
         w.r#type = r#type.clone();
         w.set_states(states);

@@ -370,11 +370,25 @@ impl XWrap {
 
     /// Returns a windows class `WM_CLASS`
     #[must_use]
-    pub fn get_window_class(&self, window: xlib::Window) -> Option<String> {
-        if let Ok(text) = self.get_text_prop(window, self.atoms.WMClass) {
-            return Some(text);
+    pub fn get_window_class(&self, window: xlib::Window) -> Option<(String, String)> {
+        unsafe {
+            let mut class_return: xlib::XClassHint = std::mem::zeroed();
+            let status = (self.xlib.XGetClassHint)(self.display, window, &mut class_return);
+            if status == 0 {
+                return None;
+            }
+            let res_name =
+                match CString::from_raw(class_return.res_name.cast::<c_char>()).into_string() {
+                    Ok(s) => s,
+                    Err(_) => return None,
+                };
+            let res_class =
+                match CString::from_raw(class_return.res_class.cast::<c_char>()).into_string() {
+                    Ok(s) => s,
+                    Err(_) => return None,
+                };
+            Some((res_name, res_class))
         }
-        None
     }
 
     /// Returns a windows `_NET_WM_PID`.
