@@ -179,7 +179,16 @@ impl XWrap {
     // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
     pub fn update_window(&self, window: &Window, is_focused: bool) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
-            self.toggle_window_visibility(handle, window.visible());
+            let state = match self.get_wm_state(handle) {
+                Some(state) => state,
+                None => return,
+            };
+            // Only change when needed. This prevents task bar icons flashing (especially with steam).
+            if window.visible() && state != NORMAL_STATE {
+                self.toggle_window_visibility(handle, true);
+            } else if !window.visible() && state != ICONIC_STATE {
+                self.toggle_window_visibility(handle, false);
+            }
             if window.visible() {
                 // If type dock we only need to move it.
                 // Also fixes issues with eww.
