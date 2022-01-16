@@ -171,7 +171,7 @@ impl Config for TestConfig {
         unimplemented!()
     }
     fn setup_predefined_window(&self, window: &mut Window) -> bool {
-        if window.wm_class == Some("ShouldGoToTag2".to_string()) {
+        if window.res_class == Some("ShouldGoToTag2".to_string()) {
             window.tags = vec![2];
             true
         } else {
@@ -200,7 +200,7 @@ mod tests {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
         manager.screen_create_handler(Screen::default());
         let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
-        subject.wm_class = Some("ShouldGoToTag2".to_string());
+        subject.res_class = Some("ShouldGoToTag2".to_string());
         manager.window_created_handler(subject, 0, 0);
         assert!(manager.state.windows.iter().all(|w| w.has_tag(&2)));
     }
