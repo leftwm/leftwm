@@ -153,15 +153,15 @@ NetBSD ([Official repositories])
 pkgin install leftwm
 ```
 
-Void ([XBPS])
-```sh
-sudo xbps-install -S leftwm
-```
-
 or, if you prefer to build it from source
 ```sh
 cd /usr/pkgsrc/wm/leftwm
 make install
+```
+
+Void ([XBPS])
+```sh
+sudo xbps-install -S leftwm
 ```
 
 Cargo ([crates.io])
