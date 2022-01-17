@@ -130,32 +130,27 @@ List of common dependencies for themes:
 
 # Installation (with package manager)
 
-Gentoo ([GURU])
+#### Gentoo ([GURU])
 ```sh
 sudo layman -a guru && sudo emerge --sync 
 sudo emerge --ask --verbose x11-wm/leftwm
 ```
 
-Archlinux ([AUR])
+#### Archlinux ([AUR])
 ```sh
 paru -S leftwm
 ```
 
 [paru] is an AUR helper like [yay], but written in [Rust].
 
-Fedora ([copr])
+#### Fedora ([copr])
 ```sh
 sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
 ```
 
-NetBSD ([Official repositories])
+#### NetBSD ([Official repositories])
 ```sh
 pkgin install leftwm
-```
-
-Void ([XBPS])
-```sh
-sudo xbps-install -S leftwm
 ```
 
 or, if you prefer to build it from source
@@ -164,7 +159,12 @@ cd /usr/pkgsrc/wm/leftwm
 make install
 ```
 
-Cargo ([crates.io])
+#### Void ([XBPS])
+```sh
+sudo xbps-install -S leftwm
+```
+
+#### Cargo ([crates.io])
 ```sh
 cargo install leftwm
 ```
