@@ -66,7 +66,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     Mode::Normal => {
                         let windows: Vec<&Window> = self.state.windows.iter().collect();
                         let focused = self.state.focus_manager.window(&self.state.windows);
-                        self.display_server.update_windows(windows, focused);
+                        self.display_server
+                            .update_windows(windows, focused, &self.state);
                         let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
                         let focused = self.state.focus_manager.workspace(&self.state.workspaces);
                         self.display_server.update_workspaces(workspaces, focused);
@@ -78,7 +79,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                             .iter()
                             .filter(|w| w.handle == h)
                             .collect();
-                        self.display_server.update_windows(windows, focused);
+                        self.display_server
+                            .update_windows(windows, focused, &self.state);
                     }
                 }
             }
