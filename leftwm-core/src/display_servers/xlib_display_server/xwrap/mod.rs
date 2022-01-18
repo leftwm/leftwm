@@ -36,7 +36,8 @@ const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
 pub(crate) const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
     | xlib::SubstructureNotifyMask
     | xlib::StructureNotifyMask
-    | xlib::ButtonPressMask;
+    | xlib::ButtonPressMask
+    | xlib::PointerMotionMask;
 
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
