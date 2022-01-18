@@ -527,6 +527,12 @@ impl leftwm_core::Config for Config {
             .max_by_key(|(_wh, score)| *score);
         if let Some((hook, _)) = best_match {
             hook.apply(window);
+            log::debug!(
+                "Window {:?} spawned in tag={:?} with floating={:?}",
+                window.wm_class,
+                hook.spawn_on_tag,
+                hook.spawn_floating,
+            );
             true
         } else {
             false
