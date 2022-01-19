@@ -28,7 +28,13 @@ impl LayoutManager {
             .workspaces()
             .unwrap_or_default()
             .iter()
-            .filter_map(|ws| ws.id.map(|id| (id, ws.layouts.clone().unwrap_or_default())))
+            // .filter(|ws| ws.id.is_some() && ws.layouts.is_some())
+            .map(|ws| {
+                (
+                    ws.id.unwrap_or_default(),
+                    ws.layouts.clone().unwrap_or_default(),
+                )
+            })
             .collect();
 
         Self {
