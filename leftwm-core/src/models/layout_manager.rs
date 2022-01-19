@@ -124,11 +124,11 @@ mod tests {
             workspaces: Some(vec![
                 crate::config::Workspace {
                     id: Some(0),
-                    layouts: vec![
+                    layouts: Some(vec![
                         Layout::CenterMain,
                         Layout::CenterMainBalanced,
                         Layout::MainAndDeck,
-                    ],
+                    ]),
                     ..Default::default()
                 },
                 crate::config::Workspace {
@@ -137,7 +137,7 @@ mod tests {
                 },
                 crate::config::Workspace {
                     id: Some(2),
-                    layouts: vec![],
+                    layouts: Some(vec![]),
                     ..Default::default()
                 },
             ]),
