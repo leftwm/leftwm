@@ -528,8 +528,11 @@ impl leftwm_core::Config for Config {
         if let Some((hook, _)) = best_match {
             hook.apply(window);
             log::debug!(
-                "Window {:?} spawned in tag={:?} with floating={:?}",
-                window.wm_class,
+                "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}",
+                window.name,
+                window.legacy_name,
+                window.res_name,
+                window.res_class,
                 hook.spawn_on_tag,
                 hook.spawn_floating,
             );
