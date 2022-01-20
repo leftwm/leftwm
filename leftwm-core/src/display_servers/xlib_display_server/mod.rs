@@ -6,7 +6,6 @@ use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
 use crate::models::Workspace;
-use crate::state::State;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
@@ -22,6 +21,8 @@ mod xwrap;
 pub use xwrap::XWrap;
 
 use event_translate::XEvent;
+
+use self::xwrap::ICONIC_STATE;
 mod xcursor;
 
 pub struct XlibDisplayServer {
@@ -54,36 +55,14 @@ impl DisplayServer for XlibDisplayServer {
         self.xw.load_config(config);
     }
 
-    fn update_windows(
-        &self,
-        windows: Vec<&Window>,
-        focused_window: Option<&Window>,
-        state: &State,
-    ) {
-        let max_tag_index = state
-            .workspaces
-            .iter()
-            .flat_map(|w| &w.tags)
-            .max()
-            .map_or(0, std::borrow::ToOwned::to_owned);
-
-        let to_the_right = state
-            .screens
-            .iter()
-            .map(|s| s.bbox.width + s.bbox.x + 100)
-            .max();
-        let max_screen_width = state.screens.iter().map(|s| s.bbox.width).max();
-
+    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {
         for window in &windows {
             let is_focused = match focused_window {
                 Some(f) => f.handle == window.handle,
                 None => false,
             };
 
-            let hide_offset = right_offset(max_tag_index, to_the_right, window)
-                .unwrap_or_else(|| left_offset(max_screen_width, window));
-
-            self.xw.update_window(window, is_focused, hide_offset);
+            self.xw.update_window(window, is_focused);
         }
     }
 
@@ -299,33 +278,28 @@ impl XlibDisplayServer {
             }
         }
 
-        // tell manager about existing windows
-        self.find_all_windows().into_iter().for_each(|w| {
-            let cursor = self.xw.get_cursor_point().ok().unwrap_or_default();
-            let e = DisplayEvent::WindowCreate(w, cursor.0, cursor.1);
-            events.push(e);
-        });
+        // Tell manager about existing windows.
+        events.append(&mut self.find_all_windows());
 
         events
     }
 
-    fn find_all_windows(&self) -> Vec<Window> {
-        let mut all: Vec<Window> = Vec::new();
+    fn find_all_windows(&self) -> Vec<DisplayEvent> {
+        let mut all: Vec<DisplayEvent> = Vec::new();
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
                 let attrs = match self.xw.get_window_attrs(handle) {
                     Ok(x) => x,
                     Err(_) => return,
                 };
-                let managed = match self.xw.get_transient_for(handle) {
-                    Some(_) => attrs.map_state == 2,
-                    None => attrs.override_redirect <= 0 && attrs.map_state == 2,
+                let state = match self.xw.get_wm_state(handle) {
+                    Some(state) => state,
+                    None => return,
                 };
-                if managed {
-                    let name = self.xw.get_window_name(handle);
-                    let pid = self.xw.get_window_pid(handle);
-                    let w = Window::new(WindowHandle::XlibHandle(handle), name, pid);
-                    all.push(w);
+                if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
+                    if let Some(event) = self.xw.setup_window(handle) {
+                        all.push(event);
+                    }
                 }
             }),
             Err(err) => {
@@ -334,29 +308,4 @@ impl XlibDisplayServer {
         }
         all
     }
-}
-
-//return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset(
-    max_tag_index: usize,
-    max_right_screen: Option<i32>,
-    window: &Window,
-) -> Option<i32> {
-    let max_right_screen = max_right_screen?;
-    for tag in &window.tags {
-        if tag > &max_tag_index {
-            return Some(max_right_screen + window.x());
-        }
-    }
-    None
-}
-
-//return an offset to hide the window on the left
-fn left_offset(max_screen_width: Option<i32>, window: &Window) -> i32 {
-    let mut left = -(window.width());
-    if let Some(screen_width) = max_screen_width {
-        let best_left = window.x() - screen_width;
-        left = std::cmp::min(best_left, left);
-    }
-    left
 }

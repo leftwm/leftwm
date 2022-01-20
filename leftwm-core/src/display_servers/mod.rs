@@ -2,7 +2,6 @@ use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Window;
 use crate::models::Workspace;
-use crate::state::State;
 use crate::DisplayEvent;
 #[cfg(test)]
 mod mock_display_server;
@@ -21,7 +20,7 @@ pub trait DisplayServer {
 
     fn load_config(&mut self, _config: &impl Config) {}
 
-    fn update_windows(&self, _windows: Vec<&Window>, _focused: Option<&Window>, _state: &State) {}
+    fn update_windows(&self, _windows: Vec<&Window>, _focused: Option<&Window>) {}
 
     fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
 

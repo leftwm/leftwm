@@ -28,10 +28,16 @@ mod setters;
 mod window;
 
 type WindowStateConst = c_long;
-// const WITHDRAWN_STATE: WindowStateConst = 0;
-const NORMAL_STATE: WindowStateConst = 1;
-// const ICONIC_STATE: WindowStateConst = 2;
+pub(crate) const WITHDRAWN_STATE: WindowStateConst = 0;
+pub(crate) const NORMAL_STATE: WindowStateConst = 1;
+pub(crate) const ICONIC_STATE: WindowStateConst = 2;
 const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
+
+pub(crate) const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
+    | xlib::SubstructureNotifyMask
+    | xlib::StructureNotifyMask
+    | xlib::ButtonPressMask
+    | xlib::PointerMotionMask;
 
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
@@ -248,22 +254,12 @@ impl XWrap {
         self.focus_behaviour = config.focus_behaviour();
         self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
 
-        let root_event_mask: c_long = xlib::SubstructureRedirectMask
-            | xlib::SubstructureNotifyMask
-            | xlib::ButtonPressMask
-            | xlib::ButtonReleaseMask
-            | xlib::PointerMotionMask
-            | xlib::EnterWindowMask
-            | xlib::LeaveWindowMask
-            | xlib::StructureNotifyMask
-            | xlib::PropertyChangeMask;
-
         let root = self.root;
         self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
-        attrs.event_mask = root_event_mask;
+        attrs.event_mask = ROOT_EVENT_MASK;
 
         unsafe {
             (self.xlib.XChangeWindowAttributes)(
@@ -274,7 +270,7 @@ impl XWrap {
             );
         }
 
-        self.subscribe_to_event(root, root_event_mask);
+        self.subscribe_to_event(root, ROOT_EVENT_MASK);
 
         // EWMH compliance.
         unsafe {
