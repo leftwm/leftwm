@@ -28,7 +28,12 @@ impl LayoutManager {
             .workspaces()
             .unwrap_or_default()
             .iter()
-            .filter_map(|ws| ws.id.map(|id| (id, ws.layouts.clone())))
+            .map(|ws| {
+                (
+                    ws.id.unwrap_or_default(),
+                    ws.layouts.clone().unwrap_or_default(),
+                )
+            })
             .collect();
 
         Self {
@@ -124,11 +129,11 @@ mod tests {
             workspaces: Some(vec![
                 crate::config::Workspace {
                     id: Some(0),
-                    layouts: vec![
+                    layouts: Some(vec![
                         Layout::CenterMain,
                         Layout::CenterMainBalanced,
                         Layout::MainAndDeck,
-                    ],
+                    ]),
                     ..Default::default()
                 },
                 crate::config::Workspace {
@@ -137,7 +142,7 @@ mod tests {
                 },
                 crate::config::Workspace {
                     id: Some(2),
-                    layouts: vec![],
+                    layouts: Some(vec![]),
                     ..Default::default()
                 },
             ]),
