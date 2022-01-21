@@ -37,7 +37,7 @@ impl Config {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
         let mut bindings = HashSet::new();
-        for keybind in self.keybind.iter() {
+        for keybind in &self.keybind {
             if verbose {
                 println!("Keybind: {:?} {}", keybind, keybind.value.is_empty());
             }

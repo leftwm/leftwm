@@ -139,7 +139,7 @@ impl Keybind {
 /// spawn_floating = false
 /// ```
 ///
-/// windows whose WM_CLASS is "krita" will spawn on tag 3 (1-indexed) and not floating.
+/// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct WindowHook {
     /// `WM_CLASS` in X11
@@ -169,7 +169,7 @@ impl WindowHook {
             window.tags = vec![tag];
         }
         if let Some(should_float) = self.spawn_floating {
-            window.set_floating(should_float)
+            window.set_floating(should_float);
         }
     }
 }
