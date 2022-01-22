@@ -26,7 +26,7 @@ pub struct State {
     pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
-    pub mousekey: String,
+    pub mousekey: Vec<String>,
     pub max_window_width: Option<Size>,
     pub default_width: i32,
     pub default_height: i32,

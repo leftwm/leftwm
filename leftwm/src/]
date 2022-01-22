@@ -4,8 +4,6 @@ mod checks;
 mod default;
 mod keybind;
 
-use self::keybind::Modifier;
-
 use super::{BaseCommand, ThemeSetting};
 use crate::config::keybind::Keybind;
 use anyhow::Result;
@@ -83,7 +81,7 @@ impl WindowHook {
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
-    pub mousekey: Modifier,
+    pub mousekey: String,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
@@ -240,18 +238,13 @@ impl leftwm_core::Config for Config {
             .clone()
             .into_iter()
             .map(|mut keybind| {
-                match &mut keybind.modifier {
-                    Modifier::Single(m) if m == "modkey" => *m = self.modkey.clone(),
-                    Modifier::List(ms) => {
-                        for m in ms {
-                            if m == "modkey" {
-                                *m = self.modkey.clone();
-                            }
-                        }
-                    }
-                    _ => {}
-                }
+                match keybind.modifier {}
 
+                for m in &mut keybind.modifier {
+                    if m == "modkey" {
+                        *m = self.modkey.clone();
+                    }
+                }
                 keybind
             })
             .filter_map(|keybind| match keybind.try_convert_to_core_keybind(self) {
@@ -281,8 +274,8 @@ impl leftwm_core::Config for Config {
         self.focus_behaviour
     }
 
-    fn mousekey(&self) -> Vec<String> {
-        self.mousekey.clone().into()
+    fn mousekey(&self) -> String {
+        self.mousekey.clone()
     }
 
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {

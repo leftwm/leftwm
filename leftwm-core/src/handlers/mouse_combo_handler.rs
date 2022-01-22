@@ -14,7 +14,7 @@ impl State {
         button: Button,
         handle: WindowHandle,
     ) -> bool {
-        let modifier = utils::xkeysym_lookup::into_mod(&self.mousekey);
+        let modifier = utils::xkeysym_lookup::into_modmask(&self.mousekey);
         //look through the config and build a command if its defined in the config
         let act = self.build_action(modmask, button, handle, modifier);
         if let Some(act) = act {

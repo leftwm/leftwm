@@ -239,7 +239,7 @@ impl XWrap {
 
     pub fn load_config(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
+        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
         self.load_colors(config);
         self.tag_labels = config.create_list_of_tag_labels();
         self.reset_grabs(&config.mapped_bindings());
@@ -252,7 +252,7 @@ impl XWrap {
     // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
+        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
 
         let root = self.root;
         self.load_colors(config);

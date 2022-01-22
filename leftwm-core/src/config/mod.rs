@@ -21,7 +21,7 @@ pub trait Config {
 
     fn focus_behaviour(&self) -> FocusBehaviour;
 
-    fn mousekey(&self) -> String;
+    fn mousekey(&self) -> Vec<String>;
 
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
 

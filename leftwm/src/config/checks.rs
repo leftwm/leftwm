@@ -51,14 +51,33 @@ impl Config {
                 ));
             }
 
-            for m in &keybind.modifier {
-                if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(m) == 0 {
+            match &keybind.modifier {
+                Modifier::Single(m)
+                    if m != "modkey"
+                        && m != "mousekey"
+                        && utils::xkeysym_lookup::into_mod(m) == 0 =>
+                {
                     returns.push((
                         Some(keybind.clone()),
                         format!("Modifier `{}` is not valid", m),
-                    ));
+                    ))
                 }
+                Modifier::List(ms) => {
+                    for m in ms {
+                        if m != "modkey"
+                            && m != "mousekey"
+                            && utils::xkeysym_lookup::into_mod(m) == 0
+                        {
+                            returns.push((
+                                Some(keybind.clone()),
+                                format!("Modifier `{}` is not valid", m),
+                            ));
+                        }
+                    }
+                }
+                _ => {}
             }
+
             let mut modkey = keybind.modifier.clone();
             modkey.sort_unstable();
             if let Some(conflict_key) = bindings.replace((modkey, &keybind.key)) {
@@ -69,10 +88,7 @@ impl Config {
                     \n\x1b[1;91m    -> {:?}\
                     \n    -> {:?}\
                     \n\x1b[0mHelp: change one of the keybindings to something else.\n",
-                        keybind.modifier.join(" + "),
-                        keybind.key,
-                        conflict_key,
-                        keybind.command,
+                        keybind.modifier, keybind.key, conflict_key, keybind.command,
                     ),
                 ));
             }
