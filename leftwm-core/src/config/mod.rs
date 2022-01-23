@@ -98,8 +98,8 @@ impl Config for TestConfig {
     fn focus_behaviour(&self) -> FocusBehaviour {
         FocusBehaviour::ClickTo
     }
-    fn mousekey(&self) -> String {
-        "Mod4".to_string()
+    fn mousekey(&self) -> Vec<String> {
+        vec!["Mod4".to_owned()]
     }
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
         vec![]

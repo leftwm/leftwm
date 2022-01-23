@@ -120,16 +120,16 @@ impl std::convert::From<Modifier> for Vec<String> {
     }
 }
 
-impl IntoIterator for &Modifier {
+impl<'a> IntoIterator for &'a Modifier {
     type Item = String;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
+    type IntoIter = Box<dyn Iterator<Item = dyn String> + 'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let ms = match self {
-            Modifier::Single(m) => vec![m.clone()],
-            Modifier::List(ms) => ms.clone(),
+        let ms = match &self {
+            Modifier::Single(m) => &vec![*m],
+            Modifier::List(ms) => ms,
         };
-        ms.into_iter()
+        ms.iter()
     }
 }
 

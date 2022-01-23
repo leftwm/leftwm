@@ -51,31 +51,13 @@ impl Config {
                 ));
             }
 
-            match &keybind.modifier {
-                Modifier::Single(m)
-                    if m != "modkey"
-                        && m != "mousekey"
-                        && utils::xkeysym_lookup::into_mod(m) == 0 =>
-                {
+            for m in keybind.modifier.into_iter() {
+                if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(&m) == 0 {
                     returns.push((
                         Some(keybind.clone()),
                         format!("Modifier `{}` is not valid", m),
-                    ))
+                    ));
                 }
-                Modifier::List(ms) => {
-                    for m in ms {
-                        if m != "modkey"
-                            && m != "mousekey"
-                            && utils::xkeysym_lookup::into_mod(m) == 0
-                        {
-                            returns.push((
-                                Some(keybind.clone()),
-                                format!("Modifier `{}` is not valid", m),
-                            ));
-                        }
-                    }
-                }
-                _ => {}
             }
 
             let mut modkey = keybind.modifier.clone();
