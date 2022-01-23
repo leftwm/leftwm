@@ -166,9 +166,13 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
         let event_h = WindowHandle::XlibHandle(event.window);
         let offset_x = event.x_root - xw.mode_origin.0;
         let offset_y = event.y_root - xw.mode_origin.1;
-        let display_event = match &xw.mode {
-            Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, offset_x, offset_y),
-            Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, offset_x, offset_y),
+        let display_event = match xw.mode {
+            Mode::ReadyToMove(h) | Mode::MovingWindow(h) => {
+                DisplayEvent::MoveWindow(h, offset_x, offset_y)
+            }
+            Mode::ReadyToResize(h) | Mode::ResizingWindow(h) => {
+                DisplayEvent::ResizeWindow(h, offset_x, offset_y)
+            }
             Mode::Normal if xw.focus_behaviour == FocusBehaviour::Sloppy => {
                 DisplayEvent::Movement(event_h, event.x_root, event.y_root)
             }

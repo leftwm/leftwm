@@ -20,21 +20,6 @@ impl State {
                 //look through the config and build a command if its defined in the config
                 let act = self.build_action(modmask, button, handle, modifier);
                 if let Some(act) = act {
-                    //save off the info about position of the window when we started to move/resize
-                    if let Some(w) = self.windows.iter_mut().find(|w| w.handle == handle) {
-                        if w.floating() {
-                            let offset = w.get_floating_offsets().unwrap_or_default();
-                            w.start_loc = Some(offset);
-                        } else {
-                            let container = w.container_size.unwrap_or_default();
-                            let normal = w.normal;
-                            let floating = normal - container;
-                            w.set_floating_offsets(Some(floating));
-                            w.start_loc = Some(floating);
-                            w.set_floating(true);
-                        }
-                    }
-                    self.move_to_top(&handle);
                     self.actions.push_back(act);
                     return false;
                 }
@@ -58,16 +43,16 @@ impl State {
                     .windows
                     .iter()
                     .find(|w| w.handle == window && w.can_move())?;
-                self.mode = Mode::MovingWindow(window);
-                Some(DisplayAction::StartMovingWindow(window))
+                self.mode = Mode::ReadyToMove(window);
+                Some(DisplayAction::ReadyToMoveWindow(window))
             }
             xlib::Button3 if is_mouse_key => {
                 let _ = self
                     .windows
                     .iter()
                     .find(|w| w.handle == window && w.can_resize())?;
-                self.mode = Mode::ResizingWindow(window);
-                Some(DisplayAction::StartResizingWindow(window))
+                self.mode = Mode::ReadyToResize(window);
+                Some(DisplayAction::ReadyToResizeWindow(window))
             }
             xlib::Button1 | xlib::Button3
                 if self.focus_manager.behaviour == FocusBehaviour::ClickTo =>

@@ -202,12 +202,12 @@ impl DisplayServer for XlibDisplayServer {
                 let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
                 Some(evt)
             }
-            DisplayAction::StartMovingWindow(w) => {
-                self.xw.set_mode(Mode::MovingWindow(w));
+            DisplayAction::ReadyToMoveWindow(w) => {
+                self.xw.set_mode(Mode::ReadyToMove(w));
                 None
             }
-            DisplayAction::StartResizingWindow(w) => {
-                self.xw.set_mode(Mode::ResizingWindow(w));
+            DisplayAction::ReadyToResizeWindow(w) => {
+                self.xw.set_mode(Mode::ReadyToResize(w));
                 None
             }
             DisplayAction::NormalMode => {

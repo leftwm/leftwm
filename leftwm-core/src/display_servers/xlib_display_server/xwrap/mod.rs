@@ -411,24 +411,26 @@ impl XWrap {
     pub fn set_mode(&mut self, mode: Mode) {
         // Prevent resizing and moving of root.
         match mode {
-            Mode::MovingWindow(h) | Mode::ResizingWindow(h)
+            Mode::MovingWindow(h)
+            | Mode::ResizingWindow(h)
+            | Mode::ReadyToMove(h)
+            | Mode::ReadyToResize(h)
                 if h == self.get_default_root_handle() =>
             {
-                return;
+                return
             }
             Mode::MovingWindow(WindowHandle::XlibHandle(h))
             | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => self.ungrab_buttons(h),
-            Mode::MovingWindow(_) | Mode::ResizingWindow(_) | Mode::Normal => {}
+            _ => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
             self.mode = mode;
-            // Safe at this point as the move/resize has started.
             if let Ok(loc) = self.get_cursor_point() {
                 self.mode_origin = loc;
             }
             let cursor = match mode {
-                Mode::ResizingWindow(_) => self.cursors.resize,
-                Mode::MovingWindow(_) => self.cursors.move_,
+                Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => self.cursors.resize,
+                Mode::ReadyToMove(_) | Mode::MovingWindow(_) => self.cursors.move_,
                 Mode::Normal => self.cursors.normal,
             };
             self.grab_pointer(cursor);
@@ -440,7 +442,11 @@ impl XWrap {
                 | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => {
                     self.grab_mouse_clicks(h, true);
                 }
-                Mode::MovingWindow(_) | Mode::ResizingWindow(_) | Mode::Normal => {}
+                Mode::MovingWindow(_)
+                | Mode::ResizingWindow(_)
+                | Mode::ReadyToMove(_)
+                | Mode::ReadyToResize(_)
+                | Mode::Normal => {}
             }
             self.mode = mode;
         }
