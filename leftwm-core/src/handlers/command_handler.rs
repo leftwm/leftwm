@@ -596,12 +596,18 @@ fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let current = state.focus_manager.workspace(&state.workspaces)?;
     let workspace = helpers::relative_find(&state.workspaces, |w| w == current, val, true)?.clone();
-    let result = state.focus_workspace(&workspace);
     if state.focus_manager.behaviour == FocusBehaviour::Sloppy {
-        let act = DisplayAction::MoveMouseOverPoint(workspace.xyhw.center());
-        state.actions.push_back(act);
+        let action = workspace
+            .tags
+            .first()
+            .and_then(|tag| state.focus_manager.tags_last_window.get(tag))
+            .map(|handle| DisplayAction::MoveMouseOver(handle.clone()))
+            .unwrap_or_else(|| DisplayAction::MoveMouseOverPoint(workspace.xyhw.center()));
+        state.actions.push_back(action);
+        None
+    } else {
+        Some(state.focus_workspace(&workspace))
     }
-    Some(result)
 }
 
 fn rotate_tag(state: &mut State) -> Option<bool> {

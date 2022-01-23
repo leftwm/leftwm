@@ -43,6 +43,7 @@ impl State {
                 ),
                 None => (None, None),
             };
+
         if let Some(workspace_id) = workspace_id {
             let _ = focus_workspace_work(self, workspace_id);
         }
@@ -51,6 +52,7 @@ impl State {
         if let Some(tag) = focused_window_tag {
             let _ = focus_tag_work(self, tag);
         }
+
         true
     }
 
