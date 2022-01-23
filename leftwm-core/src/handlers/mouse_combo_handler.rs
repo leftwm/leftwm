@@ -17,7 +17,7 @@ impl State {
         if let Some(window) = self.windows.iter().find(|w| w.handle == handle) {
             if !self.disable_tile_drag || window.floating() {
                 let modifier = utils::xkeysym_lookup::into_modmask(&self.mousekey);
-                //look through the config and build a command if its defined in the config
+                // Build the display to say whether we are ready to move/resize.
                 let act = self.build_action(modmask, button, handle, modifier);
                 if let Some(act) = act {
                     self.actions.push_back(act);

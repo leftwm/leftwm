@@ -66,6 +66,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
 
             DisplayEvent::MoveWindow(handle, x, y) => {
+                // Setup for when window first moves.
                 if let Mode::ReadyToMove(h) = self.state.mode {
                     self.state.mode = Mode::MovingWindow(h);
                     prepare_window(&mut self.state, h);
@@ -73,6 +74,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 self.window_move_handler(&handle, x, y)
             }
             DisplayEvent::ResizeWindow(handle, x, y) => {
+                // Setup for when window first resizes.
                 if let Mode::ReadyToResize(h) = self.state.mode {
                     self.state.mode = Mode::ResizingWindow(h);
                     prepare_window(&mut self.state, h);
@@ -98,8 +100,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 }
 
+// Save off the info about position of the window when we started to move/resize.
 fn prepare_window(state: &mut State, handle: WindowHandle) {
-    //save off the info about position of the window when we started to move/resize
     if let Some(w) = state.windows.iter_mut().find(|w| w.handle == handle) {
         if w.floating() {
             let offset = w.get_floating_offsets().unwrap_or_default();
