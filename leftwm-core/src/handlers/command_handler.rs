@@ -601,8 +601,10 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
             .tags
             .first()
             .and_then(|tag| state.focus_manager.tags_last_window.get(tag))
-            .map(|handle| DisplayAction::MoveMouseOver(handle.clone()))
-            .unwrap_or_else(|| DisplayAction::MoveMouseOverPoint(workspace.xyhw.center()));
+            .map_or_else(
+                || DisplayAction::MoveMouseOverPoint(workspace.xyhw.center()),
+                |h| DisplayAction::MoveMouseOver(*h),
+            );
         state.actions.push_back(action);
         None
     } else {
