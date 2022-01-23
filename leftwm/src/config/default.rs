@@ -202,10 +202,11 @@ impl Default for Config {
             // Currently default values are set in sane_dimension fn.
             scratchpad: Some(vec![]),
             disable_current_tag_swap: false,
+            disable_tile_drag: false,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
             focus_new_windows: true, // default behaviour: focuses windows on creation
             modkey: "Mod4".to_owned(), //win key
-            mousekey: Some("Mod4".to_owned().into()), //win key
+            mousekey: Some("Mod4".into()), //win key
             keybind: commands,
             theme_setting: ThemeSetting::default(),
             max_window_width: None,

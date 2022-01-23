@@ -101,7 +101,7 @@ impl Keybind {
             modifier: self
                 .modifier
                 .as_ref()
-                .unwrap_or(&"Mod4".to_owned().into())
+                .unwrap_or(&"Mod4".into())
                 .clone()
                 .into(),
             key: self.key.clone(),
@@ -140,13 +140,13 @@ impl IntoIterator for &Modifier {
 
 impl std::convert::From<Vec<String>> for Modifier {
     fn from(l: Vec<String>) -> Self {
-        Self::List(l)
+        Self::List(l.to_vec())
     }
 }
 
-impl std::convert::From<String> for Modifier {
-    fn from(m: String) -> Self {
-        Self::Single(m)
+impl std::convert::From<&str> for Modifier {
+    fn from(m: &str) -> Self {
+        Self::Single(m.to_owned())
     }
 }
 

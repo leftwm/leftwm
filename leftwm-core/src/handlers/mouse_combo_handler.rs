@@ -14,30 +14,31 @@ impl State {
         button: Button,
         handle: WindowHandle,
     ) -> bool {
-        let modifier = utils::xkeysym_lookup::into_modmask(&self.mousekey);
-        //look through the config and build a command if its defined in the config
-        let act = self.build_action(modmask, button, handle, modifier);
-        if let Some(act) = act {
-            //save off the info about position of the window when we started to move/resize
-            self.windows
-                .iter_mut()
-                .filter(|w| w.handle == handle)
-                .for_each(|w| {
-                    if w.floating() {
-                        let offset = w.get_floating_offsets().unwrap_or_default();
-                        w.start_loc = Some(offset);
-                    } else {
-                        let container = w.container_size.unwrap_or_default();
-                        let normal = w.normal;
-                        let floating = normal - container;
-                        w.set_floating_offsets(Some(floating));
-                        w.start_loc = Some(floating);
-                        w.set_floating(true);
+        if let Some(window) = self.windows.iter().find(|w| w.handle == handle) {
+            if !self.disable_tile_drag || window.floating() {
+                let modifier = utils::xkeysym_lookup::into_modmask(&self.mousekey);
+                //look through the config and build a command if its defined in the config
+                let act = self.build_action(modmask, button, handle, modifier);
+                if let Some(act) = act {
+                    //save off the info about position of the window when we started to move/resize
+                    if let Some(w) = self.windows.iter_mut().find(|w| w.handle == handle) {
+                        if w.floating() {
+                            let offset = w.get_floating_offsets().unwrap_or_default();
+                            w.start_loc = Some(offset);
+                        } else {
+                            let container = w.container_size.unwrap_or_default();
+                            let normal = w.normal;
+                            let floating = normal - container;
+                            w.set_floating_offsets(Some(floating));
+                            w.start_loc = Some(floating);
+                            w.set_floating(true);
+                        }
                     }
-                });
-            self.move_to_top(&handle);
-            self.actions.push_back(act);
-            return false;
+                    self.move_to_top(&handle);
+                    self.actions.push_back(act);
+                    return false;
+                }
+            }
         }
 
         true

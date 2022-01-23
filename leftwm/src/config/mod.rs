@@ -92,6 +92,7 @@ pub struct Config {
     pub scratchpad: Option<Vec<ScratchPad>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
+    pub disable_tile_drag: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
@@ -286,7 +287,7 @@ impl leftwm_core::Config for Config {
     fn mousekey(&self) -> Vec<String> {
         self.mousekey
             .as_ref()
-            .unwrap_or(&"Mod4".to_owned().into())
+            .unwrap_or(&"Mod4".into())
             .clone()
             .into()
     }
@@ -399,6 +400,10 @@ impl leftwm_core::Config for Config {
 
     fn max_window_width(&self) -> Option<Size> {
         self.max_window_width
+    }
+
+    fn disable_tile_drag(&self) -> bool {
+        self.disable_tile_drag
     }
 
     fn save_state(&self, state: &State) {

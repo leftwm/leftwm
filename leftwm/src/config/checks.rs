@@ -51,11 +51,7 @@ impl Config {
                 ));
             }
 
-            let mut modkey = keybind
-                .modifier
-                .as_ref()
-                .unwrap_or(&"".to_owned().into())
-                .clone();
+            let mut modkey = keybind.modifier.as_ref().unwrap_or(&"".into()).clone();
             for m in modkey.clone().into_iter() {
                 if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(&m) == 0 {
                     returns.push((
