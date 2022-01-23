@@ -140,7 +140,7 @@ impl IntoIterator for &Modifier {
 
 impl std::convert::From<Vec<String>> for Modifier {
     fn from(l: Vec<String>) -> Self {
-        Self::List(l.to_vec())
+        Self::List(l)
     }
 }
 
