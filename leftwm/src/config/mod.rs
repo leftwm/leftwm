@@ -43,7 +43,7 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 /// spawn_floating = false
 /// ```
 ///
-/// windows whose WM_CLASS is "krita" will spawn on tag 3 (1-indexed) and not floating.
+/// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct WindowHook {
     /// `WM_CLASS` in X11
@@ -60,12 +60,13 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        (self.window_class.is_some()
-            & (self.window_class == window.res_name || self.window_class == window.res_class))
-            as u8
-            + 2 * (self.window_title.is_some()
-                & ((self.window_title == window.name) | (self.window_title == window.legacy_name)))
-                as u8
+        u8::from(
+            self.window_class.is_some()
+                & (self.window_class == window.res_name || self.window_class == window.res_class),
+        ) + 2 * u8::from(
+            self.window_title.is_some()
+                & ((self.window_title == window.name) | (self.window_title == window.legacy_name)),
+        )
     }
 
     fn apply(&self, window: &mut Window) {
@@ -73,7 +74,7 @@ impl WindowHook {
             window.tags = vec![tag];
         }
         if let Some(should_float) = self.spawn_floating {
-            window.set_floating(should_float)
+            window.set_floating(should_float);
         }
     }
 }
@@ -251,7 +252,7 @@ impl leftwm_core::Config for Config {
                                 }
                             }
                         }
-                        _ => {}
+                        Modifier::Single(_) => {}
                     }
                 }
 

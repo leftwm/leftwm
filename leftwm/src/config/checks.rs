@@ -1,4 +1,4 @@
-use super::*;
+use super::Config;
 use leftwm_core::utils;
 use std::collections::HashSet;
 
@@ -37,7 +37,7 @@ impl Config {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
         let mut bindings = HashSet::new();
-        for keybind in self.keybind.iter() {
+        for keybind in &self.keybind {
             if verbose {
                 println!("Keybind: {:?} {}", keybind, keybind.value.is_empty());
             }
@@ -52,7 +52,7 @@ impl Config {
             }
 
             let mut modkey = keybind.modifier.as_ref().unwrap_or(&"".into()).clone();
-            for m in modkey.clone().into_iter() {
+            for m in &modkey.clone() {
                 if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(&m) == 0 {
                     returns.push((
                         Some(keybind.clone()),

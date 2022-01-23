@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    default_terminal, exit_strategy, BaseCommand, Config, Default, FocusBehaviour, Keybind,
+    LayoutMode, ThemeSetting, LAYOUTS,
+};
 
 impl Default for Config {
     // We allow this because this function would be difficult to reduce. If someone would like to
@@ -25,14 +28,14 @@ impl Default for Config {
             // Mod + Shift + q => kill focused window
             Keybind {
                 command: BaseCommand::CloseWindow,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "q".to_owned(),
             },
             // Mod + Shift + r => soft reload leftwm
             Keybind {
                 command: BaseCommand::SoftReload,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "r".to_owned(),
             },
@@ -53,116 +56,116 @@ impl Default for Config {
             // Mod + Shift + w => swap the tags on the last to active workspaces
             Keybind {
                 command: BaseCommand::MoveToLastWorkspace,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "w".to_owned(),
             },
             // Mod + w => move the active window to the previous workspace
             Keybind {
                 command: BaseCommand::SwapTags,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "w".to_owned(),
             },
             Keybind {
                 command: BaseCommand::MoveWindowUp,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "k".to_owned(),
             },
             Keybind {
                 command: BaseCommand::MoveWindowDown,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "j".to_owned(),
             },
             Keybind {
                 command: BaseCommand::MoveWindowTop,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Return".to_owned(),
             },
             Keybind {
                 command: BaseCommand::FocusWindowUp,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "k".to_owned(),
             },
             Keybind {
                 command: BaseCommand::FocusWindowDown,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "j".to_owned(),
             },
             Keybind {
                 command: BaseCommand::NextLayout,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "k".to_owned(),
             },
             Keybind {
                 command: BaseCommand::PreviousLayout,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "j".to_owned(),
             },
             Keybind {
                 command: BaseCommand::FocusWorkspaceNext,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "l".to_owned(),
             },
             Keybind {
                 command: BaseCommand::FocusWorkspacePrevious,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "h".to_owned(),
             },
             Keybind {
                 command: BaseCommand::MoveWindowUp,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "Up".to_owned(),
             },
             Keybind {
                 command: BaseCommand::MoveWindowDown,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "Down".to_owned(),
             },
             Keybind {
                 command: BaseCommand::FocusWindowUp,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Up".to_owned(),
             },
             Keybind {
                 command: BaseCommand::FocusWindowDown,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Down".to_owned(),
             },
             Keybind {
                 command: BaseCommand::NextLayout,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "Up".to_owned(),
             },
             Keybind {
                 command: BaseCommand::PreviousLayout,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "Down".to_owned(),
             },
             Keybind {
                 command: BaseCommand::FocusWorkspaceNext,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Right".to_owned(),
             },
             Keybind {
                 command: BaseCommand::FocusWorkspacePrevious,
-                value: Default::default(),
+                value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Left".to_owned(),
             },
