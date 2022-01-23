@@ -165,6 +165,9 @@ impl Config for TestConfig {
     fn max_window_width(&self) -> Option<Size> {
         None
     }
+    fn disable_tile_drag(&self) -> bool {
+        false
+    }
     fn save_state(&self, _state: &State) {
         unimplemented!()
     }
