@@ -51,7 +51,12 @@ impl Config {
                 ));
             }
 
-            for m in keybind.modifier.into_iter() {
+            let mut modkey = keybind
+                .modifier
+                .as_ref()
+                .unwrap_or(&"".to_owned().into())
+                .clone();
+            for m in modkey.clone().into_iter() {
                 if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(&m) == 0 {
                     returns.push((
                         Some(keybind.clone()),
@@ -60,9 +65,8 @@ impl Config {
                 }
             }
 
-            let mut modkey = keybind.modifier.clone();
             modkey.sort_unstable();
-            if let Some(conflict_key) = bindings.replace((modkey, &keybind.key)) {
+            if let Some(conflict_key) = bindings.replace((modkey.clone(), &keybind.key)) {
                 returns.push((
                     None,
                     format!(
@@ -70,7 +74,7 @@ impl Config {
                     \n\x1b[1;91m    -> {:?}\
                     \n    -> {:?}\
                     \n\x1b[0mHelp: change one of the keybindings to something else.\n",
-                        keybind.modifier, keybind.key, conflict_key, keybind.command,
+                        modkey, keybind.key, conflict_key, keybind.command,
                     ),
                 ));
             }

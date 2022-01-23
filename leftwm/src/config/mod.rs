@@ -83,7 +83,7 @@ impl WindowHook {
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
-    pub mousekey: Modifier,
+    pub mousekey: Option<Modifier>,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
@@ -240,16 +240,18 @@ impl leftwm_core::Config for Config {
             .clone()
             .into_iter()
             .map(|mut keybind| {
-                match &mut keybind.modifier {
-                    Modifier::Single(m) if m == "modkey" => *m = self.modkey.clone(),
-                    Modifier::List(ms) => {
-                        for m in ms {
-                            if m == "modkey" {
-                                *m = self.modkey.clone();
+                if let Some(ref mut modifier) = keybind.modifier {
+                    match modifier {
+                        Modifier::Single(m) if m == "modkey" => *m = self.modkey.clone(),
+                        Modifier::List(ms) => {
+                            for m in ms {
+                                if m == "modkey" {
+                                    *m = self.modkey.clone();
+                                }
                             }
                         }
+                        _ => {}
                     }
-                    _ => {}
                 }
 
                 keybind
@@ -282,7 +284,11 @@ impl leftwm_core::Config for Config {
     }
 
     fn mousekey(&self) -> Vec<String> {
-        self.mousekey.clone().into()
+        self.mousekey
+            .as_ref()
+            .unwrap_or(&"Mod4".to_owned().into())
+            .clone()
+            .into()
     }
 
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {

@@ -10,7 +10,7 @@ pub struct Keybind {
     pub command: BaseCommand,
     #[serde(default)]
     pub value: String,
-    pub modifier: Modifier,
+    pub modifier: Option<Modifier>,
     pub key: String,
 }
 
@@ -98,7 +98,12 @@ impl Keybind {
 
         Ok(leftwm_core::Keybind {
             command,
-            modifier: self.modifier.clone().into(),
+            modifier: self
+                .modifier
+                .as_ref()
+                .unwrap_or(&"Mod4".to_owned().into())
+                .clone()
+                .into(),
             key: self.key.clone(),
         })
     }
