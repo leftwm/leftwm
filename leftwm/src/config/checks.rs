@@ -3,6 +3,28 @@ use leftwm_core::utils;
 use std::collections::HashSet;
 
 impl Config {
+    pub fn check_mousekey(&self, verbose: bool) -> bool {
+        if verbose {
+            println!("Checking if mousekey is set.");
+        }
+        if let Some(mousekey) = &self.mousekey {
+            if verbose {
+                println!("Mousekey is set.");
+            }
+            if *mousekey == "".into()
+                || *mousekey == vec!["".to_owned()].into()
+                || *mousekey == vec![].into()
+            {
+                println!("Your mousekey is set to nothing, this will cause windows to move/resize with just a mouse press.");
+                return false;
+            }
+            if verbose {
+                println!("Mousekey is okay.");
+            }
+        }
+        true
+    }
+
     /// Checks defined workspaces to ensure no ID collisions occur.
     pub fn check_workspace_ids(&self, verbose: bool) -> bool {
         self.workspaces.as_ref().map_or(true, |wss|
