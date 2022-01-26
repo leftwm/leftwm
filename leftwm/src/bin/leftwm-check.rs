@@ -98,7 +98,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
                 println!(":: XDG_RUNTIME_DIR: {}, LOGINCTL OKAY", val);
             }
 
-            println!("\x1b[0;92m    -> Environment OK \x1b[0;92m");
+            println!("\x1b[0;92m    -> Environment OK \x1b[0m");
 
             Ok(())
         }
@@ -107,7 +107,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
                 println!(":: XDG_RUNTIME_DIR: {}, LOGINCTL not installed", val);
             }
 
-            println!("\x1b[0;92m    -> Environment OK (has XDG_RUNTIME_DIR) \x1b[0;92m");
+            println!("\x1b[0;92m    -> Environment OK (has XDG_RUNTIME_DIR) \x1b[0m");
 
             Ok(())
         }
@@ -189,7 +189,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     }
 
     if returns.is_empty() {
-        println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
+        println!("\x1b[0;92m    -> Theme OK \x1b[0m");
         true
     } else {
         for error in &returns {
