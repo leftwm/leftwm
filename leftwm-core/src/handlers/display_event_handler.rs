@@ -1,5 +1,7 @@
 use super::{CommandBuilder, Config, DisplayEvent, Manager, Mode};
 use crate::display_servers::DisplayServer;
+use crate::models::WindowHandle;
+use crate::State;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
@@ -48,7 +50,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     Mode::MovingWindow(h) | Mode::ResizingWindow(h) => {
                         let _ = self.state.focus_window(&h);
                     }
-                    Mode::Normal => {}
+                    _ => {}
                 }
                 self.state.mode = Mode::Normal;
                 let act = DisplayAction::NormalMode;
@@ -63,8 +65,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 false
             }
 
-            DisplayEvent::MoveWindow(handle, x, y) => self.window_move_handler(&handle, x, y),
-            DisplayEvent::ResizeWindow(handle, x, y) => self.window_resize_handler(&handle, x, y),
+            DisplayEvent::MoveWindow(handle, x, y) => {
+                // Setup for when window first moves.
+                if let Mode::ReadyToMove(h) = self.state.mode {
+                    self.state.mode = Mode::MovingWindow(h);
+                    prepare_window(&mut self.state, h);
+                }
+                self.window_move_handler(&handle, x, y)
+            }
+            DisplayEvent::ResizeWindow(handle, x, y) => {
+                // Setup for when window first resizes.
+                if let Mode::ReadyToResize(h) = self.state.mode {
+                    self.state.mode = Mode::ResizingWindow(h);
+                    prepare_window(&mut self.state, h);
+                }
+                self.window_resize_handler(&handle, x, y)
+            }
 
             DisplayEvent::ConfigureXlibWindow(handle) => {
                 if let Some(window) = self.state.windows.iter().find(|w| w.handle == handle) {
@@ -82,4 +98,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         update_needed
     }
+}
+
+// Save off the info about position of the window when we started to move/resize.
+fn prepare_window(state: &mut State, handle: WindowHandle) {
+    if let Some(w) = state.windows.iter_mut().find(|w| w.handle == handle) {
+        if w.floating() {
+            let offset = w.get_floating_offsets().unwrap_or_default();
+            w.start_loc = Some(offset);
+        } else {
+            let container = w.container_size.unwrap_or_default();
+            let normal = w.normal;
+            let floating = normal - container;
+            w.set_floating_offsets(Some(floating));
+            w.start_loc = Some(floating);
+            w.set_floating(true);
+        }
+    }
+    state.move_to_top(&handle);
 }

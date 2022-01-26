@@ -1,8 +1,30 @@
-use super::*;
+use super::Config;
 use leftwm_core::utils;
 use std::collections::HashSet;
 
 impl Config {
+    pub fn check_mousekey(&self, verbose: bool) -> bool {
+        if verbose {
+            println!("Checking if mousekey is set.");
+        }
+        if let Some(mousekey) = &self.mousekey {
+            if verbose {
+                println!("Mousekey is set.");
+            }
+            if *mousekey == "".into()
+                || *mousekey == vec!["".to_owned()].into()
+                || *mousekey == vec![].into()
+            {
+                println!("Your mousekey is set to nothing, this will cause windows to move/resize with just a mouse press.");
+                return false;
+            }
+            if verbose {
+                println!("Mousekey is okay.");
+            }
+        }
+        true
+    }
+
     /// Checks defined workspaces to ensure no ID collisions occur.
     pub fn check_workspace_ids(&self, verbose: bool) -> bool {
         self.workspaces.as_ref().map_or(true, |wss|
@@ -37,7 +59,7 @@ impl Config {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
         let mut bindings = HashSet::new();
-        for keybind in self.keybind.iter() {
+        for keybind in &self.keybind {
             if verbose {
                 println!("Keybind: {:?} {}", keybind, keybind.value.is_empty());
             }
@@ -51,17 +73,18 @@ impl Config {
                 ));
             }
 
-            for m in &keybind.modifier {
-                if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(m) == 0 {
+            let mut modkey = keybind.modifier.as_ref().unwrap_or(&"None".into()).clone();
+            for m in &modkey.clone() {
+                if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(&m) == 0 {
                     returns.push((
                         Some(keybind.clone()),
                         format!("Modifier `{}` is not valid", m),
                     ));
                 }
             }
-            let mut modkey = keybind.modifier.clone();
+
             modkey.sort_unstable();
-            if let Some(conflict_key) = bindings.replace((modkey, &keybind.key)) {
+            if let Some(conflict_key) = bindings.replace((modkey.clone(), &keybind.key)) {
                 returns.push((
                     None,
                     format!(
@@ -69,10 +92,7 @@ impl Config {
                     \n\x1b[1;91m    -> {:?}\
                     \n    -> {:?}\
                     \n\x1b[0mHelp: change one of the keybindings to something else.\n",
-                        keybind.modifier.join(" + "),
-                        keybind.key,
-                        conflict_key,
-                        keybind.command,
+                        modkey, keybind.key, conflict_key, keybind.command,
                     ),
                 ));
             }

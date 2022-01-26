@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
 pub enum Mode {
+    ReadyToResize(WindowHandle),
+    ReadyToMove(WindowHandle),
     ResizingWindow(WindowHandle),
     MovingWindow(WindowHandle),
     Normal,

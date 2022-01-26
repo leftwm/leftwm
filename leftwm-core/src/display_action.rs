@@ -49,13 +49,11 @@ pub enum DisplayAction {
     /// To the window under the cursor to take the focus.
     FocusWindowUnderCursor,
 
-    /// Tell the DM we are going to resize a window and only send that
-    /// type of events.
-    StartResizingWindow(WindowHandle),
+    /// Tell the DM we are ready to resize this window.
+    ReadyToResizeWindow(WindowHandle),
 
-    /// Tell the DM we are going to move a window and only send that
-    /// type of events.
-    StartMovingWindow(WindowHandle),
+    /// Tell the DM we are ready to move this window.
+    ReadyToMoveWindow(WindowHandle),
 
     /// Used to let the WM know of the current displayed tag changes.
     SetCurrentTags(Vec<TagId>),

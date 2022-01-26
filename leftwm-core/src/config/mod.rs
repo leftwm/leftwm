@@ -21,7 +21,7 @@ pub trait Config {
 
     fn focus_behaviour(&self) -> FocusBehaviour;
 
-    fn mousekey(&self) -> String;
+    fn mousekey(&self) -> Vec<String>;
 
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
 
@@ -49,6 +49,7 @@ pub trait Config {
     fn on_new_window_cmd(&self) -> Option<String>;
     fn get_list_of_gutters(&self) -> Vec<Gutter>;
     fn max_window_width(&self) -> Option<Size>;
+    fn disable_tile_drag(&self) -> bool;
 
     /// Attempt to write current state to a file.
     ///
@@ -98,8 +99,8 @@ impl Config for TestConfig {
     fn focus_behaviour(&self) -> FocusBehaviour {
         FocusBehaviour::ClickTo
     }
-    fn mousekey(&self) -> String {
-        "Mod4".to_string()
+    fn mousekey(&self) -> Vec<String> {
+        vec!["Mod4".to_owned()]
     }
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
         vec![]
@@ -163,6 +164,9 @@ impl Config for TestConfig {
     }
     fn max_window_width(&self) -> Option<Size> {
         None
+    }
+    fn disable_tile_drag(&self) -> bool {
+        false
     }
     fn save_state(&self, _state: &State) {
         unimplemented!()

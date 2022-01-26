@@ -26,10 +26,11 @@ pub struct State {
     pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
-    pub mousekey: String,
+    pub mousekey: Vec<String>,
     pub max_window_width: Option<Size>,
     pub default_width: i32,
     pub default_height: i32,
+    pub disable_tile_drag: bool,
 }
 
 impl State {
@@ -57,6 +58,7 @@ impl State {
             mousekey: config.mousekey(),
             default_width: config.default_width(),
             default_height: config.default_height(),
+            disable_tile_drag: config.disable_tile_drag(),
         }
     }
 

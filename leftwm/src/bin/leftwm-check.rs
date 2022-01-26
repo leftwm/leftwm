@@ -45,6 +45,7 @@ async fn main() -> Result<()> {
             if verbose {
                 dbg!(&config);
             }
+            config.check_mousekey(verbose);
             config.check_workspace_ids(verbose);
             config.check_keybinds(verbose);
         }

@@ -63,14 +63,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 self.update_windows();
 
                 match self.state.mode {
-                    Mode::Normal => {
-                        let windows: Vec<&Window> = self.state.windows.iter().collect();
-                        let focused = self.state.focus_manager.window(&self.state.windows);
-                        self.display_server.update_windows(windows, focused);
-                        let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
-                        let focused = self.state.focus_manager.workspace(&self.state.workspaces);
-                        self.display_server.update_workspaces(workspaces, focused);
-                    }
                     //when (resizing / moving) only deal with the single window
                     Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
                         let focused = self.state.focus_manager.window(&self.state.windows);
@@ -79,6 +71,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                             .filter(|w| w.handle == h)
                             .collect();
                         self.display_server.update_windows(windows, focused);
+                    }
+                    _ => {
+                        let windows: Vec<&Window> = self.state.windows.iter().collect();
+                        let focused = self.state.focus_manager.window(&self.state.windows);
+                        self.display_server.update_windows(windows, focused);
+                        let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
+                        let focused = self.state.focus_manager.workspace(&self.state.workspaces);
+                        self.display_server.update_workspaces(workspaces, focused);
                     }
                 }
             }

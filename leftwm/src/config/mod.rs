@@ -2,9 +2,13 @@
 
 mod checks;
 mod default;
+mod keybind;
+
+use self::keybind::Modifier;
 
 use super::{BaseCommand, ThemeSetting};
-use anyhow::{ensure, Context, Result};
+use crate::config::keybind::Keybind;
+use anyhow::Result;
 use leftwm_core::{
     config::{ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
@@ -20,110 +24,10 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use xdg::BaseDirectories;
 
 /// Path to file where state will be dumper upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Keybind {
-    pub command: BaseCommand,
-    #[serde(default)]
-    pub value: String,
-    pub modifier: Vec<String>,
-    pub key: String,
-}
-
-macro_rules! ensure_non_empty {
-    ($value:expr) => {{
-        ensure!(!$value.is_empty(), "value must not be empty");
-        $value
-    }};
-}
-
-impl Keybind {
-    pub fn try_convert_to_core_keybind(&self, config: &Config) -> Result<leftwm_core::Keybind> {
-        let command = match &self.command {
-            BaseCommand::Execute => {
-                leftwm_core::Command::Execute(ensure_non_empty!(self.value.clone()))
-            }
-            BaseCommand::CloseWindow => leftwm_core::Command::CloseWindow,
-            BaseCommand::SwapTags => leftwm_core::Command::SwapScreens,
-            BaseCommand::SoftReload => leftwm_core::Command::SoftReload,
-            BaseCommand::HardReload => leftwm_core::Command::HardReload,
-            BaseCommand::ToggleScratchPad => {
-                leftwm_core::Command::ToggleScratchPad(ensure_non_empty!(self.value.clone()))
-            }
-            BaseCommand::ToggleFullScreen => leftwm_core::Command::ToggleFullScreen,
-            BaseCommand::ToggleSticky => leftwm_core::Command::ToggleSticky,
-            BaseCommand::GotoTag => leftwm_core::Command::GoToTag {
-                tag: usize::from_str(&self.value).context("invalid index value for GotoTag")?,
-                swap: !config.disable_current_tag_swap,
-            },
-            BaseCommand::FloatingToTile => leftwm_core::Command::FloatingToTile,
-            BaseCommand::TileToFloating => leftwm_core::Command::TileToFloating,
-            BaseCommand::ToggleFloating => leftwm_core::Command::ToggleFloating,
-            BaseCommand::MoveWindowUp => leftwm_core::Command::MoveWindowUp,
-            BaseCommand::MoveWindowDown => leftwm_core::Command::MoveWindowDown,
-            BaseCommand::MoveWindowTop => leftwm_core::Command::MoveWindowTop,
-            BaseCommand::FocusNextTag => leftwm_core::Command::FocusNextTag,
-            BaseCommand::FocusPreviousTag => leftwm_core::Command::FocusPreviousTag,
-            BaseCommand::FocusWindowUp => leftwm_core::Command::FocusWindowUp,
-            BaseCommand::FocusWindowDown => leftwm_core::Command::FocusWindowDown,
-            BaseCommand::FocusWindowTop => {
-                leftwm_core::Command::FocusWindowTop(if self.value.is_empty() {
-                    false
-                } else {
-                    bool::from_str(&self.value)
-                        .context("invalid boolean value for FocusWindowTop")?
-                })
-            }
-            BaseCommand::FocusWorkspaceNext => leftwm_core::Command::FocusWorkspaceNext,
-            BaseCommand::FocusWorkspacePrevious => leftwm_core::Command::FocusWorkspacePrevious,
-            BaseCommand::MoveToTag => leftwm_core::Command::SendWindowToTag {
-                window: None,
-                tag: usize::from_str(&self.value)
-                    .context("invalid index value for SendWindowToTag")?,
-            },
-            BaseCommand::MoveToLastWorkspace => leftwm_core::Command::MoveWindowToLastWorkspace,
-            BaseCommand::MoveWindowToNextWorkspace => {
-                leftwm_core::Command::MoveWindowToNextWorkspace
-            }
-            BaseCommand::MoveWindowToPreviousWorkspace => {
-                leftwm_core::Command::MoveWindowToPreviousWorkspace
-            }
-            BaseCommand::MouseMoveWindow => leftwm_core::Command::MouseMoveWindow,
-            BaseCommand::NextLayout => leftwm_core::Command::NextLayout,
-            BaseCommand::PreviousLayout => leftwm_core::Command::PreviousLayout,
-            BaseCommand::SetLayout => leftwm_core::Command::SetLayout(
-                Layout::from_str(&self.value)
-                    .context("could not parse layout for command SetLayout")?,
-            ),
-            BaseCommand::RotateTag => leftwm_core::Command::RotateTag,
-            BaseCommand::IncreaseMainWidth => leftwm_core::Command::IncreaseMainWidth(
-                i8::from_str(&self.value).context("invalid width value for IncreaseMainWidth")?,
-            ),
-            BaseCommand::DecreaseMainWidth => leftwm_core::Command::DecreaseMainWidth(
-                i8::from_str(&self.value).context("invalid width value for DecreaseMainWidth")?,
-            ),
-            BaseCommand::SetMarginMultiplier => leftwm_core::Command::SetMarginMultiplier(
-                f32::from_str(&self.value)
-                    .context("invalid margin multiplier for SetMarginMultiplier")?,
-            ),
-            BaseCommand::UnloadTheme => leftwm_core::Command::Other("UnloadTheme".into()),
-            BaseCommand::LoadTheme => {
-                leftwm_core::Command::Other(format!("LoadTheme {}", ensure_non_empty!(&self.value)))
-            }
-        };
-
-        Ok(leftwm_core::Keybind {
-            command,
-            modifier: self.modifier.clone(),
-            key: self.key.clone(),
-        })
-    }
-}
 
 /// Selecting by `WM_CLASS` and/or window title, allow the user to define if a
 /// window should spawn on a specified tag and/or its floating state.
@@ -139,7 +43,7 @@ impl Keybind {
 /// spawn_floating = false
 /// ```
 ///
-/// windows whose WM_CLASS is "krita" will spawn on tag 3 (1-indexed) and not floating.
+/// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct WindowHook {
     /// `WM_CLASS` in X11
@@ -156,12 +60,13 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        (self.window_class.is_some()
-            & (self.window_class == window.res_name || self.window_class == window.res_class))
-            as u8
-            + 2 * (self.window_title.is_some()
-                & ((self.window_title == window.name) | (self.window_title == window.legacy_name)))
-                as u8
+        u8::from(
+            self.window_class.is_some()
+                & (self.window_class == window.res_name || self.window_class == window.res_class),
+        ) + 2 * u8::from(
+            self.window_title.is_some()
+                & ((self.window_title == window.name) | (self.window_title == window.legacy_name)),
+        )
     }
 
     fn apply(&self, window: &mut Window) {
@@ -169,7 +74,7 @@ impl WindowHook {
             window.tags = vec![tag];
         }
         if let Some(should_float) = self.spawn_floating {
-            window.set_floating(should_float)
+            window.set_floating(should_float);
         }
     }
 }
@@ -179,7 +84,7 @@ impl WindowHook {
 #[serde(default)]
 pub struct Config {
     pub modkey: String,
-    pub mousekey: String,
+    pub mousekey: Option<Modifier>,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
@@ -188,6 +93,7 @@ pub struct Config {
     pub scratchpad: Option<Vec<ScratchPad>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
+    pub disable_tile_drag: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
@@ -336,11 +242,20 @@ impl leftwm_core::Config for Config {
             .clone()
             .into_iter()
             .map(|mut keybind| {
-                for m in &mut keybind.modifier {
-                    if m == "modkey" {
-                        *m = self.modkey.clone();
+                if let Some(ref mut modifier) = keybind.modifier {
+                    match modifier {
+                        Modifier::Single(m) if m == "modkey" => *m = self.modkey.clone(),
+                        Modifier::List(ms) => {
+                            for m in ms {
+                                if m == "modkey" {
+                                    *m = self.modkey.clone();
+                                }
+                            }
+                        }
+                        Modifier::Single(_) => {}
                     }
                 }
+
                 keybind
             })
             .filter_map(|keybind| match keybind.try_convert_to_core_keybind(self) {
@@ -370,8 +285,12 @@ impl leftwm_core::Config for Config {
         self.focus_behaviour
     }
 
-    fn mousekey(&self) -> String {
-        self.mousekey.clone()
+    fn mousekey(&self) -> Vec<String> {
+        self.mousekey
+            .as_ref()
+            .unwrap_or(&"Mod4".into())
+            .clone()
+            .into()
     }
 
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
@@ -482,6 +401,10 @@ impl leftwm_core::Config for Config {
 
     fn max_window_width(&self) -> Option<Size> {
         self.max_window_width
+    }
+
+    fn disable_tile_drag(&self) -> bool {
+        self.disable_tile_drag
     }
 
     fn save_state(&self, state: &State) {
