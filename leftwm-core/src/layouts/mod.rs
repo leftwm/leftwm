@@ -50,7 +50,7 @@ pub const LAYOUTS: &[Layout] = &[
 
 impl Default for Layout {
     fn default() -> Self {
-        Layout::MainAndVertStack
+        Self::MainAndVertStack
     }
 }
 

@@ -3,7 +3,7 @@ use leftwm_core::utils;
 use std::collections::HashSet;
 
 impl Config {
-    pub fn check_mousekey(&self, verbose: bool) -> bool {
+    pub fn check_mousekey(&self, verbose: bool) {
         if verbose {
             println!("Checking if mousekey is set.");
         }
@@ -16,46 +16,36 @@ impl Config {
                 || *mousekey == vec![].into()
             {
                 println!("Your mousekey is set to nothing, this will cause windows to move/resize with just a mouse press.");
-                return false;
+                return;
             }
             if verbose {
                 println!("Mousekey is okay.");
             }
         }
-        true
     }
 
     /// Checks defined workspaces to ensure no ID collisions occur.
-    pub fn check_workspace_ids(&self, verbose: bool) -> bool {
-        self.workspaces.as_ref().map_or(true, |wss|
-    {
-        if verbose {
-            println!("Checking config for valid workspace definitions.");
-        }
-        let ids = crate::get_workspace_ids(wss);
-        if ids.iter().any(std::option::Option::is_some) {
-            if !crate::all_ids_some(&ids)
-            {
-                println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
-                false
-            } else if crate::all_ids_unique(&ids) {
-                true
-            } else {
-                println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
-                false
+    pub fn check_workspace_ids(&self, verbose: bool) {
+        if let Some(wss) = self.workspaces.as_ref() {
+            if verbose {
+                println!("Checking config for valid workspace definitions.");
             }
-        } else {
-            true
+            let ids = crate::get_workspace_ids(wss);
+            if ids.iter().any(std::option::Option::is_some) {
+                if crate::all_ids_some(&ids) {
+                    println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
+                } else {
+                    println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
+                }
+            }
         }
-    }
-    )
     }
 
     /// Check all keybinds to ensure that required values are provided
     /// Checks to see if value is provided (if required)
     /// Checks to see if keys are valid against Xkeysym
     /// Ideally, we will pass this to the command handler with a dummy config
-    pub fn check_keybinds(&self, verbose: bool) -> bool {
+    pub fn check_keybinds(&self, verbose: bool) {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
         let mut bindings = HashSet::new();
@@ -99,7 +89,6 @@ impl Config {
         }
         if returns.is_empty() {
             println!("\x1b[0;92m    -> All keybinds OK\x1b[0m");
-            true
         } else {
             for error in returns {
                 match error.0 {
@@ -114,7 +103,6 @@ impl Config {
                     }
                 }
             }
-            false
         }
     }
 }

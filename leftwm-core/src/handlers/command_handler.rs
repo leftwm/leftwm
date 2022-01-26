@@ -482,10 +482,10 @@ fn move_window_change(
     mut to_reorder: Vec<Window>,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    if let Some(Layout::Monocle) = layout {
+    if layout == Some(Layout::Monocle) {
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
-    } else if let Some(Layout::MainAndDeck) = layout {
+    } else if layout == Some(Layout::MainAndDeck) {
         if let Some(index) = to_reorder.iter().position(|x: &Window| !x.floating()) {
             let mut window_group = to_reorder.split_off(index + 1);
             if !to_reorder.iter().any(|w| w.handle == handle) {
@@ -542,13 +542,13 @@ fn focus_window_change(
     mut to_reorder: Vec<Window>,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    if let Some(Layout::Monocle) = layout {
+    if layout == Some(Layout::Monocle) {
         // For Monocle we want to also move windows up/down
         // Not the best solution but results
         // in desired behaviour
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
-    } else if let Some(Layout::MainAndDeck) = layout {
+    } else if layout == Some(Layout::MainAndDeck) {
         let len = to_reorder.len() as i32;
         if len > 0 {
             let index = match to_reorder.iter().position(|x: &Window| !x.floating()) {
