@@ -48,8 +48,8 @@ pub struct Tags {
 
 impl Tags {
     /// Create a new empty Taglist
-    pub fn new() -> Self {
-        Tags {
+    pub const fn new() -> Self {
+        Self {
             normal: vec![],
             hidden: vec![],
         }
@@ -111,7 +111,7 @@ impl Tags {
     }
 
     /// Get all normal tags
-    pub fn normal(&self) -> &Vec<Tag> {
+    pub const fn normal(&self) -> &Vec<Tag> {
         &self.normal
     }
 
@@ -228,8 +228,8 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(id: TagId, label: &str, layout: Layout) -> Tag {
-        Tag {
+    pub fn new(id: TagId, label: &str, layout: Layout) -> Self {
+        Self {
             id,
             label: label.to_owned(),
             hidden: false,

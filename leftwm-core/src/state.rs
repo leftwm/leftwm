@@ -134,7 +134,7 @@ impl State {
     }
 
     /// Apply saved state to a running manager.
-    pub fn restore_state(&mut self, state: &State) {
+    pub fn restore_state(&mut self, state: &Self) {
         // Restore tags.
         for old_tag in state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {

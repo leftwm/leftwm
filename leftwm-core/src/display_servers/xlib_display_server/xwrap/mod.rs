@@ -28,12 +28,12 @@ mod setters;
 mod window;
 
 type WindowStateConst = c_long;
-pub(crate) const WITHDRAWN_STATE: WindowStateConst = 0;
-pub(crate) const NORMAL_STATE: WindowStateConst = 1;
-pub(crate) const ICONIC_STATE: WindowStateConst = 2;
+pub const WITHDRAWN_STATE: WindowStateConst = 0;
+pub const NORMAL_STATE: WindowStateConst = 1;
+pub const ICONIC_STATE: WindowStateConst = 2;
 const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
 
-pub(crate) const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
+pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
     | xlib::SubstructureNotifyMask
     | xlib::StructureNotifyMask
     | xlib::ButtonPressMask
