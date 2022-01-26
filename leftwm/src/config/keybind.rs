@@ -98,7 +98,12 @@ impl Keybind {
 
         Ok(leftwm_core::Keybind {
             command,
-            modifier: self.modifier.as_ref().unwrap_or(&"".into()).clone().into(),
+            modifier: self
+                .modifier
+                .as_ref()
+                .unwrap_or(&"None".into())
+                .clone()
+                .into(),
             key: self.key.clone(),
         })
     }
