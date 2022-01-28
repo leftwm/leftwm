@@ -281,6 +281,13 @@ impl Xyhw {
         let y = self.y + (self.h / 2);
         (x, y)
     }
+
+    #[must_use]
+    pub const fn lower_right_corner(&self) -> (i32, i32) {
+        let x = self.x + self.w;
+        let y = self.y + self.h;
+        (x, y)
+    }
 }
 
 #[cfg(test)]
