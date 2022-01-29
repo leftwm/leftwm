@@ -275,14 +275,12 @@ impl Xyhw {
         self.y = outer.y() + outer.h() / 2 - self.h / 2 - border;
     }
 
-    #[must_use]
     pub const fn center(&self) -> (i32, i32) {
         let x = self.x + (self.w / 2);
         let y = self.y + (self.h / 2);
         (x, y)
     }
 
-    #[must_use]
     pub const fn lower_right_corner(&self) -> (i32, i32) {
         let x = self.x + self.w;
         let y = self.y + self.h;
