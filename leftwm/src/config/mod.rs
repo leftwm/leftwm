@@ -189,8 +189,8 @@ pub fn is_program_in_path(program: &str) -> bool {
 /// Returns a terminal to set for the default mod+shift+enter keybind.
 fn default_terminal<'s>() -> &'s str {
     // order from least common to most common.
-    // the thinking is if a machine has a uncommon terminal install it is intentional
-    let terms = vec![
+    // the thinking is if a machine has an uncommon terminal installed, it is intentional
+    let terms = &[
         "alacritty",
         "termite",
         "kitty",
@@ -209,12 +209,12 @@ fn default_terminal<'s>() -> &'s str {
         "guake", // at the bottom because of odd behaviour. guake wants F12 and should really be
                  // started using autostart instead of LeftWM keybind.
     ];
-    for t in terms {
-        if is_program_in_path(t) {
-            return t;
-        }
-    }
-    "termite" //no terminal found in path, default to a good one
+
+    // If no terminal found in path, default to a good one
+    terms
+        .iter()
+        .find(|terminal| is_program_in_path(terminal))
+        .unwrap_or(&"termite")
 }
 
 /// Returns default keybind value for exiting `LeftWM`.
