@@ -368,8 +368,7 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         || ws.center_halfed(),
         |mut requested| {
             requested.center_relative(outer, window.border);
-            let (corner_x, corner_y) = requested.lower_right_corner();
-            if ws.contains_point(corner_x, corner_y) {
+            if ws.xyhw.contains_xyhw(&requested) {
                 requested
             } else {
                 ws.center_halfed()
