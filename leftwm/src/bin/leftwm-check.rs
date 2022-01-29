@@ -161,10 +161,8 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     let mut returns = Vec::new();
     let missing_files = missing_expected_file(&filepaths);
 
-    if !missing_files.is_empty() {
-        missing_files
-            .into_iter()
-            .for_each(|file| returns.push(format!("File not found: {}", file)));
+    for missing_file in missing_files {
+        returns.push(format!("File not found: {}", missing_file));
     }
 
     for filepath in filepaths {
@@ -199,11 +197,10 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     }
 }
 
-fn missing_expected_file<'a>(filepaths: &[PathBuf]) -> Vec<&'a str> {
-    vec!["up", "down", "theme.toml"]
-        .into_iter()
-        .filter(|f| !filepaths.iter().any(|fp| fp.ends_with(f)))
-        .collect()
+fn missing_expected_file<'a>(filepaths: &'a [PathBuf]) -> impl Iterator<Item = &&'a str> {
+    ["up", "down", "theme.toml"]
+        .iter()
+        .filter(move |f| !filepaths.iter().any(|fp| fp.ends_with(f)))
 }
 
 fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<&PathBuf> {
