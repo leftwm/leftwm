@@ -12,17 +12,17 @@ impl XWrap {
     pub fn grab_keys(&self, root: xlib::Window, keysym: u32, modifiers: u32) {
         let code = unsafe { (self.xlib.XKeysymToKeycode)(self.display, c_ulong::from(keysym)) };
         // Grab the keys with and without numlock (Mod2).
-        let mods: Vec<u32> = vec![
+        let mods = [
             modifiers,
             modifiers | xlib::Mod2Mask,
             modifiers | xlib::LockMask,
         ];
-        for m in mods {
+        for m in &mods {
             unsafe {
                 (self.xlib.XGrabKey)(
                     self.display,
                     i32::from(code),
-                    m,
+                    *m,
                     root,
                     1,
                     xlib::GrabModeAsync,
