@@ -11,10 +11,7 @@ impl Config {
             if verbose {
                 println!("Mousekey is set.");
             }
-            if *mousekey == "".into()
-                || *mousekey == vec!["".to_owned()].into()
-                || *mousekey == vec![].into()
-            {
+            if mousekey.is_empty() {
                 println!("Your mousekey is set to nothing, this will cause windows to move/resize with just a mouse press.");
                 return;
             }

@@ -116,6 +116,15 @@ pub enum Modifier {
     List(Vec<String>),
 }
 
+impl Modifier {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Modifier::Single(single) => single.is_empty(),
+            Modifier::List(list) => list.is_empty(),
+        }
+    }
+}
+
 impl std::convert::From<Modifier> for Vec<String> {
     fn from(m: Modifier) -> Self {
         match m {
