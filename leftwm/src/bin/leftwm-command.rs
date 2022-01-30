@@ -86,6 +86,7 @@ async fn main() -> Result<()> {
         SendWindowToTag        Args: <tag_index> (int)
         SetLayout              Args: <LayoutName>
         SetMarginMultiplier    Args: <multiplier-value> (float)
+        FocusWindow            Args: <WindowClass>
 
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands

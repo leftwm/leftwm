@@ -64,6 +64,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::FocusNextTag => focus_tag_change(state, 1),
         Command::FocusPreviousTag => focus_tag_change(state, -1),
+        Command::FocusWindow(window_name) => focus_window(state, window_name),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, state, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, state, 1),
         Command::FocusWindowTop(toggle) => focus_window_top(state, *toggle),
@@ -273,6 +274,24 @@ fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Opti
         input_tag
     };
     state.goto_tag_handler(destination_tag)
+}
+
+fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
+    let is_target = |w: &Window| -> bool { w.res_name.as_ref().map_or(false, |c| c == window_name) };
+
+    let current_window = state.focus_manager.window(&state.windows)?;
+    let target_window = if is_target(current_window) {
+        let previous_window_handle = state.focus_manager.window_history.get(1);
+        state.windows.iter().find(|w| Some(&Some(w.handle)) == previous_window_handle).cloned()
+    } else {
+        state.windows.iter().find(|w| is_target(*w)).cloned()
+    }?;
+
+    let handle = target_window.handle;
+    let tag = target_window.tags.first()?;
+
+    state.goto_tag_handler(*tag)
+        .and(Some(handle_focus(state, handle)))
 }
 
 /// Focus the adjacent tags, depending on the delta.
