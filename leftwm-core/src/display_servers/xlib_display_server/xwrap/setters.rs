@@ -148,6 +148,7 @@ impl XWrap {
     }
 
     /// Sets a windows border color.
+    // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
     pub fn set_window_border_color(&self, window: xlib::Window, mut color: c_ulong) {
         unsafe {
             // Force border opacity to 0xff.

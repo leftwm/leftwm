@@ -100,22 +100,17 @@ impl XWrap {
         self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
             self.managed_windows.push(handle);
-            unsafe {
-                // Make sure the window is mapped.
-                (self.xlib.XMapWindow)(self.display, handle);
+            // Make sure the window is mapped.
+            unsafe { (self.xlib.XMapWindow)(self.display, handle) };
+            // Let Xlib know we are managing this window.
+            let list = vec![handle as c_long];
+            self.append_property_long(self.root, self.atoms.NetClientList, xlib::XA_WINDOW, &list);
 
-                // Let Xlib know we are managing this window.
-                let list = vec![handle as c_long];
-                self.append_property_long(
-                    self.root,
-                    self.atoms.NetClientList,
-                    xlib::XA_WINDOW,
-                    &list,
-                );
-                std::mem::forget(list);
-
-                (self.xlib.XSync)(self.display, 0);
-            }
+            // Make sure there is at least an empty list of _NET_WM_STATE.
+            let states = self.get_window_states_atoms(handle);
+            self.set_window_states_atoms(handle, &states);
+            // Set WM_STATE to normal state to allow window sharing.
+            self.set_wm_states(handle, &[NORMAL_STATE]);
 
             let r#type = self.get_window_type(handle);
             if r#type == WindowType::Dock || r#type == WindowType::Desktop {
@@ -156,11 +151,6 @@ impl XWrap {
                     self.grab_mouse_clicks(handle, false);
                 }
             }
-            // Make sure there is at least an empty list of _NET_WM_STATE.
-            let states = self.get_window_states_atoms(handle);
-            self.set_window_states_atoms(handle, &states);
-            // Set WM_STATE to normal state to allow window sharing.
-            self.set_wm_states(handle, &[NORMAL_STATE]);
         }
         None
     }
@@ -183,22 +173,9 @@ impl XWrap {
     }
 
     /// Updates a window.
-    // `XMoveWindow`: https://tronche.com/gui/x/xlib/window/XMoveWindow.html
-    // `XConfigureWindow`: https://tronche.com/gui/x/xlib/window/XConfigureWindow.html
-    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
-    // `XMoveResizeWindow`: https://tronche.com/gui/x/xlib/window/XMoveResizeWindow.html
-    // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
     pub fn update_window(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             if window.visible() {
-                // If type dock we only need to move it.
-                // Also fixes issues with eww.
-                if window.is_unmanaged() {
-                    unsafe {
-                        (self.xlib.XMoveWindow)(self.display, handle, window.x(), window.y())
-                    };
-                    return;
-                }
                 let changes = xlib::XWindowChanges {
                     x: window.x(),
                     y: window.y(),
@@ -211,10 +188,6 @@ impl XWrap {
                 let unlock =
                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
                 self.set_window_config(handle, changes, u32::from(unlock));
-                let w: u32 = window.width() as u32;
-                let h: u32 = window.height() as u32;
-                self.move_resize_window(handle, window.x(), window.y(), w, h);
-                self.configure_window(window);
             }
             let state = match self.get_wm_state(handle) {
                 Some(state) => state,
