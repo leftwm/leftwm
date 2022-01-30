@@ -237,10 +237,15 @@ impl XWrap {
         xw
     }
 
-    pub fn load_config(&mut self, config: &impl Config) {
+    pub fn load_config(
+        &mut self,
+        config: &impl Config,
+        focused: Option<&Option<WindowHandle>>,
+        windows: &[Window],
+    ) {
         self.focus_behaviour = config.focus_behaviour();
         self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
-        self.load_colors(config);
+        self.load_colors(config, focused, Some(windows));
         self.tag_labels = config.create_list_of_tag_labels();
         self.reset_grabs(&config.mapped_bindings());
     }
@@ -255,7 +260,7 @@ impl XWrap {
         self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
 
         let root = self.root;
-        self.load_colors(config);
+        self.load_colors(config, None, None);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
@@ -399,12 +404,34 @@ impl XWrap {
     }
 
     /// Load the colors of our theme.
-    pub fn load_colors(&mut self, config: &impl Config) {
+    pub fn load_colors(
+        &mut self,
+        config: &impl Config,
+        focused: Option<&Option<WindowHandle>>,
+        windows: Option<&[Window]>,
+    ) {
         self.colors = Colors {
             normal: self.get_color(config.default_border_color()),
             floating: self.get_color(config.floating_border_color()),
             active: self.get_color(config.focused_border_color()),
         };
+        // Update all the windows with the new colors.
+        if let Some(windows) = windows {
+            for window in windows {
+                if let WindowHandle::XlibHandle(handle) = window.handle {
+                    let is_focused =
+                        matches!(focused, Some(&Some(focused)) if focused == window.handle);
+                    let color: c_ulong = if is_focused {
+                        self.colors.active
+                    } else if window.floating() {
+                        self.colors.floating
+                    } else {
+                        self.colors.normal
+                    };
+                    self.set_window_border_color(handle, color);
+                }
+            }
+        }
     }
 
     /// Sets the mode within our xwrapper.

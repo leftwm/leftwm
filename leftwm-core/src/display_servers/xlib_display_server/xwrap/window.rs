@@ -94,6 +94,7 @@ impl XWrap {
     pub fn setup_managed_window(
         &mut self,
         h: WindowHandle,
+        floating: bool,
         follow_mouse: bool,
     ) -> Option<DisplayEvent> {
         self.subscribe_to_window_events(&h);
@@ -141,6 +142,13 @@ impl XWrap {
                     return Some(DisplayEvent::WindowChange(change));
                 }
             } else {
+                let color = if floating {
+                    self.colors.floating
+                } else {
+                    self.colors.normal
+                };
+                self.set_window_border_color(handle, color);
+
                 if follow_mouse {
                     let _ = self.move_cursor_to_window(handle);
                 }
@@ -180,7 +188,7 @@ impl XWrap {
     // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     // `XMoveResizeWindow`: https://tronche.com/gui/x/xlib/window/XMoveResizeWindow.html
     // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
-    pub fn update_window(&self, window: &Window, is_focused: bool) {
+    pub fn update_window(&self, window: &Window) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             if window.visible() {
                 // If type dock we only need to move it.
@@ -206,21 +214,6 @@ impl XWrap {
                 let w: u32 = window.width() as u32;
                 let h: u32 = window.height() as u32;
                 self.move_resize_window(handle, window.x(), window.y(), w, h);
-                unsafe {
-                    let mut color: c_ulong = if is_focused {
-                        self.colors.active
-                    } else if window.floating() {
-                        self.colors.floating
-                    } else {
-                        self.colors.normal
-                    };
-                    // Force border opacity to 0xff.
-                    let mut bytes = color.to_le_bytes();
-                    bytes[3] = 0xff;
-                    color = c_ulong::from_le_bytes(bytes);
-
-                    (self.xlib.XSetWindowBorder)(self.display, handle, color);
-                }
                 self.configure_window(window);
             }
             let state = match self.get_wm_state(handle) {
@@ -260,19 +253,31 @@ impl XWrap {
 
     /// Makes a window take focus.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn window_take_focus(&mut self, window: &Window, previous: Option<WindowHandle>) {
+    pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             // Play a click when in ClickToFocus.
             if self.focus_behaviour == FocusBehaviour::ClickTo {
                 self.replay_click();
-                // Open up button1 clicking on the previously focused window.
-                if let Some(WindowHandle::XlibHandle(previous)) = previous {
-                    self.grab_mouse_clicks(previous, false);
+            }
+            // Update previous window.
+            if let Some(previous) = previous {
+                if let WindowHandle::XlibHandle(previous_handle) = previous.handle {
+                    let color = if window.floating() {
+                        self.colors.floating
+                    } else {
+                        self.colors.normal
+                    };
+                    self.set_window_border_color(previous_handle, color);
+                    // Open up button1 clicking on the previously focused window.
+                    if self.focus_behaviour == FocusBehaviour::ClickTo {
+                        self.grab_mouse_clicks(previous_handle, false);
+                    }
                 }
             }
             self.grab_mouse_clicks(handle, true);
 
             if !window.never_focus {
+                self.set_window_border_color(handle, self.colors.active);
                 // Mark this window as the `_NET_ACTIVE_WINDOW`
                 unsafe {
                     (self.xlib.XSetInputFocus)(

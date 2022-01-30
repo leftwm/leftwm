@@ -40,7 +40,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
             && on_same_tag;
         //let the DS know we are managing this window
-        let act = DisplayAction::AddedWindow(window.handle, follow_mouse);
+        let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
         self.state.actions.push_back(act);
 
         //let the DS know the correct desktop to find this window

@@ -14,9 +14,6 @@ impl State {
             workspace.tags.iter().for_each(|t| {
                 focus_tag_work(self, *t);
             });
-            // create an action to inform the DM
-            self.update_current_tags();
-            return true;
         }
         false
     }
@@ -45,7 +42,7 @@ impl State {
         if let Some(tag) = focused_window_tag {
             let _ = focus_tag_work(self, tag);
         }
-        true
+        false
     }
 
     pub fn focus_workspace_under_cursor(&mut self, x: i32, y: i32) -> bool {
@@ -139,16 +136,6 @@ impl State {
             None => focus_closest_window(self, x, y),
         }
     }
-
-    /// Create an action to inform the DM of the new current tags.
-    pub fn update_current_tags(&mut self) {
-        if let Some(workspace) = self.focus_manager.workspace(&self.workspaces) {
-            if let Some(tag) = workspace.tags.first().copied() {
-                self.actions
-                    .push_back(DisplayAction::SetCurrentTags(vec![tag]));
-            }
-        }
-    }
 }
 
 fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<()> {
@@ -179,7 +166,7 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
             // Return some so we still update the visuals.
             return Some(found.clone());
         }
-        previous = Some(fw.handle);
+        previous = Some(fw.clone());
     }
 
     // Clean old history.
@@ -189,7 +176,7 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
 
     let act = DisplayAction::WindowTakeFocus {
         window: found.clone(),
-        previous_handle: previous,
+        previous_window: previous,
     };
     state.actions.push_back(act);
 
@@ -229,6 +216,9 @@ fn focus_tag_work(state: &mut State, tag: TagId) -> Option<()> {
             return None;
         }
     };
+    state
+        .actions
+        .push_back(DisplayAction::SetCurrentTags(vec![tag]));
     //clean old ones
     state.focus_manager.tag_history.truncate(10);
     //add this focus to the history

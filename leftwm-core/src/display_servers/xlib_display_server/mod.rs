@@ -51,22 +51,22 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn load_config(&mut self, config: &impl Config) {
-        self.xw.load_config(config);
+    fn load_config(
+        &mut self,
+        config: &impl Config,
+        focused: Option<&Option<WindowHandle>>,
+        windows: &[Window],
+    ) {
+        self.xw.load_config(config, focused, windows);
     }
 
-    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {
+    fn update_windows(&self, windows: Vec<&Window>) {
         for window in &windows {
-            let is_focused = match focused_window {
-                Some(f) => f.handle == window.handle,
-                None => false,
-            };
-
-            self.xw.update_window(window, is_focused);
+            self.xw.update_window(window);
         }
     }
 
-    fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
+    fn update_workspaces(&self, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
             self.xw.set_current_desktop(&focused.tags);
         }
@@ -110,8 +110,8 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.kill_window(&w);
                 None
             }
-            DisplayAction::AddedWindow(w, follow_mouse) => {
-                self.xw.setup_managed_window(w, follow_mouse)
+            DisplayAction::AddedWindow(w, floating, follow_mouse) => {
+                self.xw.setup_managed_window(w, floating, follow_mouse)
             }
             DisplayAction::MoveMouseOver(handle) => {
                 if let WindowHandle::XlibHandle(win) = handle {
@@ -129,9 +129,9 @@ impl DisplayServer for XlibDisplayServer {
             }
             DisplayAction::WindowTakeFocus {
                 window,
-                previous_handle,
+                previous_window,
             } => {
-                self.xw.window_take_focus(&window, previous_handle);
+                self.xw.window_take_focus(&window, previous_window.as_ref());
                 None
             }
             DisplayAction::Unfocus(handle) => {

@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Window;
+use crate::models::WindowHandle;
 use crate::models::Workspace;
 use crate::DisplayEvent;
 #[cfg(test)]
@@ -18,11 +19,17 @@ pub trait DisplayServer {
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent>;
 
-    fn load_config(&mut self, _config: &impl Config) {}
+    fn load_config(
+        &mut self,
+        _config: &impl Config,
+        _focused: Option<&Option<WindowHandle>>,
+        _windows: &[Window],
+    ) {
+    }
 
-    fn update_windows(&self, _windows: Vec<&Window>, _focused: Option<&Window>) {}
+    fn update_windows(&self, _windows: Vec<&Window>) {}
 
-    fn update_workspaces(&self, _windows: Vec<&Workspace>, _focused: Option<&Workspace>) {}
+    fn update_workspaces(&self, _focused: Option<&Workspace>) {}
 
     fn execute_action(&mut self, _act: DisplayAction) -> Option<DisplayEvent> {
         None

@@ -147,6 +147,18 @@ impl XWrap {
         }
     }
 
+    /// Sets a windows border color.
+    pub fn set_window_border_color(&self, window: xlib::Window, mut color: c_ulong) {
+        unsafe {
+            // Force border opacity to 0xff.
+            let mut bytes = color.to_le_bytes();
+            bytes[3] = 0xff;
+            color = c_ulong::from_le_bytes(bytes);
+            (self.xlib.XSetWindowBorder)(self.display, window, color);
+        }
+    }
+
+    /// Sets a windows configuration.
     pub fn set_window_config(
         &self,
         window: xlib::Window,
