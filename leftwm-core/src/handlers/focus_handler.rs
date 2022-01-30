@@ -15,8 +15,10 @@ impl State {
                 focus_tag_work(self, *t);
 
                 if let Some(handle) = self.focus_manager.tags_last_window.get(t).copied() {
-                    self.focus_window(&handle);
-                };
+                    focus_window_by_handle_work(self, &handle);
+                } else {
+                    unfocus_current_window(self);
+                }
             });
 
             // create an action to inform the DM
@@ -88,6 +90,7 @@ impl State {
         for ws in &to_focus {
             focus_workspace_work(self, ws.id);
         }
+
         // Make sure the focused window is on this workspace.
         if self.focus_manager.behaviour == FocusBehaviour::Sloppy {
             let act = DisplayAction::FocusWindowUnderCursor;
@@ -108,11 +111,10 @@ impl State {
         // Unfocus last window if the target tag is empty
         if let Some(window) = self.focus_manager.window(&self.windows) {
             if !window.tags.contains(tag) {
-                self.actions
-                    .push_back(DisplayAction::Unfocus(Some(window.handle)));
-                self.focus_manager.window_history.push_front(None);
+                unfocus_current_window(self);
             }
         }
+
         true
     }
 
@@ -131,6 +133,7 @@ impl State {
         {
             return self.focus_window(handle);
         }
+
         false
     }
 
@@ -172,8 +175,25 @@ fn focus_workspace_work(state: &mut State, workspace_id: Option<i32>) -> Option<
     // Add this focus to the history.
     let index = state.workspaces.iter().position(|x| x.id == workspace_id)?;
     state.focus_manager.workspace_history.push_front(index);
+
     Some(())
 }
+
+fn unfocus_current_window(state: &mut State) {
+    if let Some(window) = state.focus_manager.window(&state.windows) {
+        state
+            .actions
+            .push_back(DisplayAction::Unfocus(Some(window.handle)));
+        state.focus_manager.window_history.push_front(None);
+        for tag_id in &window.tags {
+            state
+                .focus_manager
+                .tags_last_window
+                .insert(*tag_id, window.handle);
+        }
+    }
+}
+
 fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Option<Window> {
     // Find the handle in our managed windows.
     let found: &Window = state.windows.iter().find(|w| &w.handle == handle)?;
@@ -181,14 +201,21 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
     if found.is_unmanaged() {
         return None;
     }
-    let mut previous = None;
-    // No new history if no change.
-    if let Some(fw) = state.focus_manager.window(&state.windows) {
-        if &fw.handle == handle {
+
+    let previous = state.focus_manager.window(&state.windows);
+    if let Some(previous) = previous {
+        if &previous.handle == handle {
+            // No new history if no change.
             // Return some so we still update the visuals.
             return Some(found.clone());
         }
-        previous = Some(fw.handle);
+
+        for tag_id in &previous.tags {
+            state
+                .focus_manager
+                .tags_last_window
+                .insert(*tag_id, previous.handle);
+        }
     }
 
     // Clean old history.
@@ -198,7 +225,7 @@ fn focus_window_by_handle_work(state: &mut State, handle: &WindowHandle) -> Opti
 
     let act = DisplayAction::WindowTakeFocus {
         window: found.clone(),
-        previous_handle: previous,
+        previous_handle: previous.map(|w| w.handle),
     };
     state.actions.push_back(act);
 
@@ -239,19 +266,11 @@ fn focus_tag_work(state: &mut State, tag: TagId) -> Option<()> {
         }
     };
 
-    // Add the currently focused window to the history
-    if let Some((tag, handle)) = state
-        .focus_manager
-        .tag(0)
-        .zip(state.focus_manager.window(&state.windows).map(|w| w.handle))
-    {
-        state.focus_manager.tags_last_window.insert(tag, handle);
-    }
-
-    //clean old ones
+    // clean old ones
     state.focus_manager.tag_history.truncate(10);
-    //add this focus to the history
+    // add this focus to the history
     state.focus_manager.tag_history.push_front(tag);
+
     Some(())
 }
 
@@ -279,6 +298,10 @@ mod tests {
     fn focusing_a_workspace_should_focus_its_last_active_window() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
         manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager
+            .state
+            .focus_workspace(&manager.state.workspaces[0].clone());
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -289,22 +312,29 @@ mod tests {
             -1,
             -1,
         );
+        // manager.screen_create_handler(Screen::default());
+
+        manager
+            .state
+            .focus_workspace(&manager.state.workspaces[0].clone());
 
         let expected = manager.state.windows.get(1).map(|w| w.handle);
         manager.state.focus_window(&expected.unwrap());
 
-        // create a second workspace, and focus it
-        manager.screen_create_handler(Screen::default());
+        manager
+            .state
+            .focus_workspace(&manager.state.workspaces[1].clone());
+        manager
+            .state
+            .focus_workspace(&manager.state.workspaces[0].clone());
 
-        let workspace = manager.state.workspaces[0].clone();
-        manager.state.focus_workspace(&workspace);
-
-        let focused = manager
+        let actual = manager
             .state
             .focus_manager
             .window(&manager.state.windows)
             .map(|w| w.handle);
-        assert_eq!(expected, focused);
+
+        assert_eq!(expected, actual);
     }
 
     #[test]
