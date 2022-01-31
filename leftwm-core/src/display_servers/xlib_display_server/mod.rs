@@ -105,30 +105,31 @@ impl DisplayServer for XlibDisplayServer {
 
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
         log::trace!("DisplayAction: {:?}", act);
+        let xw = &mut self.xw;
         let event: Option<DisplayEvent> = match act {
-            DisplayAction::KillWindow(h) => self.from_kill_window(h),
-            DisplayAction::AddedWindow(h, fl, fm) => self.from_added_window(h, fl, fm),
-            DisplayAction::MoveMouseOver(h) => self.from_move_mouse_over(h),
-            DisplayAction::MoveMouseOverPoint(p) => self.from_move_mouse_over_point(p),
-            DisplayAction::DestroyedWindow(h) => self.from_destroyed_window(h),
-            DisplayAction::Unfocus(h) => self.from_unfocus(h),
-            DisplayAction::SetState(h, t, s) => self.from_set_state(h, t, s),
-            DisplayAction::SetWindowOrder(ws) => self.from_set_window_order(&ws),
-            DisplayAction::MoveToTop(h) => self.from_move_to_top(h),
-            DisplayAction::ReadyToMoveWindow(h) => self.from_ready_to_move_window(h),
-            DisplayAction::ReadyToResizeWindow(h) => self.from_ready_to_resize_window(h),
-            DisplayAction::SetCurrentTags(ts) => self.from_set_current_tags(&ts),
-            DisplayAction::SetWindowTags(h, ts) => self.from_set_window_tags(h, &ts),
-            DisplayAction::ReloadKeyGrabs(ks) => self.from_reload_key_grabs(&ks),
-            DisplayAction::ConfigureXlibWindow(w) => self.from_configure_xlib_window(w),
+            DisplayAction::KillWindow(h) => from_kill_window(xw, h),
+            DisplayAction::AddedWindow(h, fl, fm) => from_added_window(xw, h, fl, fm),
+            DisplayAction::MoveMouseOver(h) => from_move_mouse_over(xw, h),
+            DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
+            DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
+            DisplayAction::Unfocus(h) => from_unfocus(xw, h),
+            DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
+            DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, &ws),
+            DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
+            DisplayAction::ReadyToMoveWindow(h) => from_ready_to_move_window(xw, h),
+            DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
+            DisplayAction::SetCurrentTags(ts) => from_set_current_tags(xw, &ts),
+            DisplayAction::SetWindowTags(h, ts) => from_set_window_tags(xw, h, &ts),
+            DisplayAction::ReloadKeyGrabs(ks) => from_reload_key_grabs(xw, &ks),
+            DisplayAction::ConfigureXlibWindow(w) => from_configure_xlib_window(xw, &w),
 
             DisplayAction::WindowTakeFocus {
                 window,
                 previous_window,
-            } => self.from_window_take_focus(window, previous_window),
+            } => from_window_take_focus(xw, &window, &previous_window),
 
-            DisplayAction::FocusWindowUnderCursor => self.from_focus_window_under_cursor(),
-            DisplayAction::NormalMode => self.from_normal_mode(),
+            DisplayAction::FocusWindowUnderCursor => from_focus_window_under_cursor(xw),
+            DisplayAction::NormalMode => from_normal_mode(xw),
         };
         if event.is_some() {
             log::trace!("DisplayEvent: {:?}", event);
@@ -205,161 +206,160 @@ impl XlibDisplayServer {
         }
         all
     }
+}
 
-    // Display actions.
-    fn from_kill_window(&mut self, handle: WindowHandle) -> Option<DisplayEvent> {
-        self.xw.kill_window(&handle);
-        None
-    }
+// Display actions.
+fn from_kill_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.kill_window(&handle);
+    None
+}
 
-    fn from_added_window(
-        &mut self,
-        handle: WindowHandle,
-        floating: bool,
-        follow_mouse: bool,
-    ) -> Option<DisplayEvent> {
-        self.xw.setup_managed_window(handle, floating, follow_mouse)
-    }
+fn from_added_window(
+    xw: &mut XWrap,
+    handle: WindowHandle,
+    floating: bool,
+    follow_mouse: bool,
+) -> Option<DisplayEvent> {
+    xw.setup_managed_window(handle, floating, follow_mouse)
+}
 
-    fn from_move_mouse_over(&mut self, handle: WindowHandle) -> Option<DisplayEvent> {
-        if let WindowHandle::XlibHandle(win) = handle {
-            let _ = self.xw.move_cursor_to_window(win);
-        }
-        None
+fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    if let WindowHandle::XlibHandle(win) = handle {
+        let _ = xw.move_cursor_to_window(win);
     }
+    None
+}
 
-    fn from_move_mouse_over_point(&mut self, point: (i32, i32)) -> Option<DisplayEvent> {
-        let _ = self.xw.move_cursor_to_point(point);
-        None
-    }
+fn from_move_mouse_over_point(xw: &mut XWrap, point: (i32, i32)) -> Option<DisplayEvent> {
+    let _ = xw.move_cursor_to_point(point);
+    None
+}
 
-    fn from_destroyed_window(&mut self, handle: WindowHandle) -> Option<DisplayEvent> {
-        self.xw.teardown_managed_window(&handle);
-        None
-    }
+fn from_destroyed_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.teardown_managed_window(&handle);
+    None
+}
 
-    fn from_unfocus(&mut self, handle: Option<WindowHandle>) -> Option<DisplayEvent> {
-        self.xw.unfocus(handle);
-        None
-    }
+fn from_unfocus(xw: &mut XWrap, handle: Option<WindowHandle>) -> Option<DisplayEvent> {
+    xw.unfocus(handle);
+    None
+}
 
-    fn from_set_state(
-        &mut self,
-        handle: WindowHandle,
-        toggle_to: bool,
-        window_state: WindowState,
-    ) -> Option<DisplayEvent> {
-        // TODO: impl from for windowstate and xlib::Atom
-        let state = match window_state {
-            WindowState::Modal => self.xw.atoms.NetWMStateModal,
-            WindowState::Sticky => self.xw.atoms.NetWMStateSticky,
-            WindowState::MaximizedVert => self.xw.atoms.NetWMStateMaximizedVert,
-            WindowState::MaximizedHorz => self.xw.atoms.NetWMStateMaximizedHorz,
-            WindowState::Shaded => self.xw.atoms.NetWMStateShaded,
-            WindowState::SkipTaskbar => self.xw.atoms.NetWMStateSkipTaskbar,
-            WindowState::SkipPager => self.xw.atoms.NetWMStateSkipPager,
-            WindowState::Hidden => self.xw.atoms.NetWMStateHidden,
-            WindowState::Fullscreen => self.xw.atoms.NetWMStateFullscreen,
-            WindowState::Above => self.xw.atoms.NetWMStateAbove,
-            WindowState::Below => self.xw.atoms.NetWMStateBelow,
-        };
-        self.xw.set_state(handle, toggle_to, state);
-        None
-    }
+fn from_set_state(
+    xw: &mut XWrap,
+    handle: WindowHandle,
+    toggle_to: bool,
+    window_state: WindowState,
+) -> Option<DisplayEvent> {
+    // TODO: impl from for windowstate and xlib::Atom
+    let state = match window_state {
+        WindowState::Modal => xw.atoms.NetWMStateModal,
+        WindowState::Sticky => xw.atoms.NetWMStateSticky,
+        WindowState::MaximizedVert => xw.atoms.NetWMStateMaximizedVert,
+        WindowState::MaximizedHorz => xw.atoms.NetWMStateMaximizedHorz,
+        WindowState::Shaded => xw.atoms.NetWMStateShaded,
+        WindowState::SkipTaskbar => xw.atoms.NetWMStateSkipTaskbar,
+        WindowState::SkipPager => xw.atoms.NetWMStateSkipPager,
+        WindowState::Hidden => xw.atoms.NetWMStateHidden,
+        WindowState::Fullscreen => xw.atoms.NetWMStateFullscreen,
+        WindowState::Above => xw.atoms.NetWMStateAbove,
+        WindowState::Below => xw.atoms.NetWMStateBelow,
+    };
+    xw.set_state(handle, toggle_to, state);
+    None
+}
 
-    fn from_set_window_order(&mut self, windows: &[Window]) -> Option<DisplayEvent> {
-        // The windows we are managing should be behind unmanaged windows. Unless they are
-        // fullscreen, or their children.
-        let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
-            windows.iter().partition(|w| w.is_fullscreen());
-        // Fullscreen windows.
-        let level2: Vec<WindowHandle> = fullscreen_windows.iter().map(|w| w.handle).collect();
-        let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) = other
-            .iter()
-            .partition(|w| level2.contains(&w.transient.unwrap_or(WindowHandle::XlibHandle(0))));
-        // Fullscreen windows children.
-        let level1: Vec<WindowHandle> = fullscreen_children.iter().map(|w| w.handle).collect();
-        // Left over managed windows.
-        let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
-        // Unmanaged windows.
-        let level3: Vec<WindowHandle> = self
-            .xw
-            .get_all_windows()
-            .unwrap_or_default()
-            .iter()
-            .filter(|&w| *w != self.root)
-            .map(|w| WindowHandle::XlibHandle(*w))
-            .filter(|&h| !windows.iter().any(|w| w.handle == h))
-            .collect();
-        let all: Vec<WindowHandle> = level1
-            .iter()
-            .chain(level2.iter())
-            .chain(level3.iter())
-            .chain(level4.iter())
-            .copied()
-            .collect();
-        self.xw.restack(all);
-        None
-    }
+fn from_set_window_order(xw: &mut XWrap, windows: &[Window]) -> Option<DisplayEvent> {
+    // The windows we are managing should be behind unmanaged windows. Unless they are
+    // fullscreen, or their children.
+    let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
+        windows.iter().partition(|w| w.is_fullscreen());
+    // Fullscreen windows.
+    let level2: Vec<WindowHandle> = fullscreen_windows.iter().map(|w| w.handle).collect();
+    let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) = other
+        .iter()
+        .partition(|w| level2.contains(&w.transient.unwrap_or(WindowHandle::XlibHandle(0))));
+    // Fullscreen windows children.
+    let level1: Vec<WindowHandle> = fullscreen_children.iter().map(|w| w.handle).collect();
+    // Left over managed windows.
+    let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+    // Unmanaged windows.
+    let level3: Vec<WindowHandle> = xw
+        .get_all_windows()
+        .unwrap_or_default()
+        .iter()
+        .filter(|&w| *w != xw.get_default_root())
+        .map(|w| WindowHandle::XlibHandle(*w))
+        .filter(|&h| !windows.iter().any(|w| w.handle == h))
+        .collect();
+    let all: Vec<WindowHandle> = level1
+        .iter()
+        .chain(level2.iter())
+        .chain(level3.iter())
+        .chain(level4.iter())
+        .copied()
+        .collect();
+    xw.restack(all);
+    None
+}
 
-    fn from_move_to_top(&mut self, handle: WindowHandle) -> Option<DisplayEvent> {
-        self.xw.move_to_top(&handle);
-        None
-    }
+fn from_move_to_top(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.move_to_top(&handle);
+    None
+}
 
-    fn from_ready_to_move_window(&mut self, handle: WindowHandle) -> Option<DisplayEvent> {
-        self.xw.set_mode(Mode::ReadyToMove(handle));
-        None
-    }
+fn from_ready_to_move_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.set_mode(Mode::ReadyToMove(handle));
+    None
+}
 
-    fn from_ready_to_resize_window(&mut self, handle: WindowHandle) -> Option<DisplayEvent> {
-        self.xw.set_mode(Mode::ReadyToResize(handle));
-        None
-    }
+fn from_ready_to_resize_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.set_mode(Mode::ReadyToResize(handle));
+    None
+}
 
-    fn from_set_current_tags(&mut self, tags: &[TagId]) -> Option<DisplayEvent> {
-        self.xw.set_current_desktop(&tags);
-        None
-    }
+fn from_set_current_tags(xw: &mut XWrap, tags: &[TagId]) -> Option<DisplayEvent> {
+    xw.set_current_desktop(tags);
+    None
+}
 
-    fn from_set_window_tags(
-        &mut self,
-        handle: WindowHandle,
-        tags: &[TagId],
-    ) -> Option<DisplayEvent> {
-        if let WindowHandle::XlibHandle(window) = handle {
-            self.xw.set_window_desktop(window, &tags);
-        }
-        None
+fn from_set_window_tags(
+    xw: &mut XWrap,
+    handle: WindowHandle,
+    tags: &[TagId],
+) -> Option<DisplayEvent> {
+    if let WindowHandle::XlibHandle(window) = handle {
+        xw.set_window_desktop(window, tags);
     }
+    None
+}
 
-    fn from_reload_key_grabs(&mut self, keybinds: &[Keybind]) -> Option<DisplayEvent> {
-        self.xw.reset_grabs(&keybinds);
-        None
-    }
+fn from_reload_key_grabs(xw: &mut XWrap, keybinds: &[Keybind]) -> Option<DisplayEvent> {
+    xw.reset_grabs(keybinds);
+    None
+}
 
-    fn from_configure_xlib_window(&mut self, window: Window) -> Option<DisplayEvent> {
-        self.xw.configure_window(&window);
-        None
-    }
+fn from_configure_xlib_window(xw: &mut XWrap, window: &Window) -> Option<DisplayEvent> {
+    xw.configure_window(window);
+    None
+}
 
-    fn from_window_take_focus(
-        &mut self,
-        window: Window,
-        previous_window: Option<Window>,
-    ) -> Option<DisplayEvent> {
-        self.xw.window_take_focus(&window, previous_window.as_ref());
-        None
-    }
+fn from_window_take_focus(
+    xw: &mut XWrap,
+    window: &Window,
+    previous_window: &Option<Window>,
+) -> Option<DisplayEvent> {
+    xw.window_take_focus(window, previous_window.as_ref());
+    None
+}
 
-    fn from_focus_window_under_cursor(&mut self) -> Option<DisplayEvent> {
-        let point = self.xw.get_cursor_point().ok()?;
-        let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
-        Some(evt)
-    }
+fn from_focus_window_under_cursor(xw: &mut XWrap) -> Option<DisplayEvent> {
+    let point = xw.get_cursor_point().ok()?;
+    let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
+    Some(evt)
+}
 
-    fn from_normal_mode(&mut self) -> Option<DisplayEvent> {
-        self.xw.set_mode(Mode::Normal);
-        None
-    }
+fn from_normal_mode(xw: &mut XWrap) -> Option<DisplayEvent> {
+    xw.set_mode(Mode::Normal);
+    None
 }
