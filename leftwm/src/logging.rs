@@ -101,6 +101,7 @@ pub fn setup_logging() -> slog_scope::GlobalLoggerGuard {
 }
 
 #[cfg(feature = "slog-term")]
+#[allow(dead_code)]
 fn dyn_logger() {
     // atomic variable controlling logging level
     let on = Arc::new(atomic::AtomicBool::new(false));
