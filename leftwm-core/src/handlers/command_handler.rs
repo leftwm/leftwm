@@ -104,7 +104,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
             Some(send_workspace_to_tag(state, *ws_index, *tag_index))
         }
         Command::SetLogLevel(loglevel) => Some(set_log_level(state, loglevel)),
-        Command::Other(cmd) => Some(C::command_handler(cmd, state)),
+        Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
 }
 
@@ -668,7 +668,7 @@ fn send_workspace_to_tag(state: &mut State, ws_index: usize, tag_index: usize) -
     false
 }
 
-fn set_log_level<C: Config>(state: &mut State<C>, loglevel: &str) -> bool {
+fn set_log_level(state: &mut State, loglevel: &str) -> bool {
     state.loglevel = loglevel.to_string();
     log::info!("Loglevel set to: {:?}", state.loglevel);
     true

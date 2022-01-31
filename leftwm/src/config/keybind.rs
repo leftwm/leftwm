@@ -90,6 +90,9 @@ impl Keybind {
                 f32::from_str(&self.value)
                     .context("invalid margin multiplier for SetMarginMultiplier")?,
             ),
+            BaseCommand::SetLogLevel => leftwm_core::Command::SetLogLevel(
+                String::from_str(&self.value).context("invalid loglevel for SetLogLevel")?,
+            ),
             BaseCommand::UnloadTheme => leftwm_core::Command::Other("UnloadTheme".into()),
             BaseCommand::LoadTheme => {
                 leftwm_core::Command::Other(format!("LoadTheme {}", ensure_non_empty!(&self.value)))

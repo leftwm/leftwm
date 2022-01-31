@@ -27,6 +27,7 @@ pub struct State {
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
     pub mousekey: Vec<String>,
+    pub loglevel: String,
     pub max_window_width: Option<Size>,
     pub default_width: i32,
     pub default_height: i32,

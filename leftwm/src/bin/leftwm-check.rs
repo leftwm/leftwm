@@ -180,37 +180,6 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
             },
             f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
                 Ok(_fp) => continue,
-            },
-            _ => (),
-        }
-    }
-    println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
-    Ok(())
-}
-
-fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
-    let mut returns = Vec::new();
-    let missing_files = missing_expected_file(&filepaths);
-
-    for missing_file in missing_files {
-        returns.push(format!("File not found: {}", missing_file));
-    }
-
-    for filepath in filepaths {
-        match filepath {
-            f if f.ends_with("up") => match check_permissions(f, verbose) {
-                Ok(fp) => match check_up_file(fp) {
-                    Ok(_) => continue,
-                    Err(e) => returns.push(e.to_string()),
-                },
-                Err(e) => returns.push(e.to_string()),
-            },
-            f if f.ends_with("down") => match check_permissions(f, verbose) {
-                Ok(_fp) => continue,
-                Err(e) => returns.push(e.to_string()),
-            },
-            f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
-                Ok(_fp) => continue,
                 Err(e) => returns.push(e.to_string()),
             },
             _ => continue,
