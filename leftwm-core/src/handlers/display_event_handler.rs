@@ -99,7 +99,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 }
 
-// Save off the info about position of the window when we started to move/resize.
+// Save off the info about position of the window when we start to move/resize.
 fn prepare_window(state: &mut State, handle: WindowHandle) {
     if let Some(w) = state.windows.iter_mut().find(|w| w.handle == handle) {
         if w.floating() {
