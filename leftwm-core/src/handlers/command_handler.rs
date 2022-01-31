@@ -843,9 +843,9 @@ mod tests {
         let expected = manager.state.windows[0].clone();
         let initial = manager.state.windows[1].clone();
 
-        assert!(manager.state.focus_window(&initial.handle));
+        manager.state.focus_window(&initial.handle);
 
-        assert!(manager.command_handler(&Command::FocusWindowTop(false)));
+        manager.command_handler(&Command::FocusWindowTop(false));
         let actual = manager
             .state
             .focus_manager
@@ -854,7 +854,7 @@ mod tests {
             .handle;
         assert_eq!(expected.handle, actual);
 
-        assert!(!manager.command_handler(&Command::FocusWindowTop(false)));
+        manager.command_handler(&Command::FocusWindowTop(false));
         let actual = manager
             .state
             .focus_manager
@@ -863,7 +863,7 @@ mod tests {
             .handle;
         assert_eq!(expected.handle, actual);
 
-        assert!(manager.command_handler(&Command::FocusWindowTop(true)));
+        manager.command_handler(&Command::FocusWindowTop(true));
         let actual = manager
             .state
             .focus_manager
