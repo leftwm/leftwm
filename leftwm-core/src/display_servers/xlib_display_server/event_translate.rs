@@ -34,7 +34,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             // Mouse button pressed.
             xlib::ButtonPress => Some(from_button_press(raw_event)),
             // Mouse button released.
-            xlib::ButtonRelease if !normal_mode => Some(DisplayEvent::ChangeToNormalMode),
+            xlib::ButtonRelease if !normal_mode => Some(from_button_release(x_event)),
             // Keyboard key pressed.
             xlib::KeyPress => Some(from_key_press(x_event)),
             // Listen for keyboard changes.
@@ -190,6 +190,12 @@ fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent {
     let mut mod_mask = event.state;
     mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
     DisplayEvent::MouseCombo(mod_mask, event.button, h)
+}
+
+fn from_button_release(x_event: XEvent) -> DisplayEvent {
+    let xw = x_event.0;
+    xw.set_mode(Mode::Normal);
+    DisplayEvent::ChangeToNormalMode
 }
 
 fn from_key_press(x_event: XEvent) -> DisplayEvent {

@@ -8,7 +8,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn display_event_handler(&mut self, event: DisplayEvent) -> bool {
-        let update_needed = match event {
+        match event {
             DisplayEvent::ScreenCreate(s) => self.screen_create_handler(s),
             DisplayEvent::WindowCreate(w, x, y) => self.window_created_handler(w, x, y),
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
@@ -61,8 +61,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     _ => {}
                 }
                 self.state.mode = Mode::Normal;
-                let act = DisplayAction::NormalMode;
-                self.state.actions.push_back(act);
                 true
             }
 
@@ -94,17 +92,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 if let Some(window) = self.state.windows.iter().find(|w| w.handle == handle) {
                     let act = DisplayAction::ConfigureXlibWindow(window.clone());
                     self.state.actions.push_back(act);
-                    return true;
                 }
                 false
             }
-        };
-
-        if update_needed {
-            self.update_windows();
         }
-
-        update_needed
     }
 }
 

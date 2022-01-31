@@ -25,7 +25,6 @@ impl State {
                 }
             }
         }
-
         true
     }
 

@@ -53,7 +53,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     needs_update = self.command_handler(&cmd) || needs_update;
                 }
                 else => {
-                    event_buffer.drain(..).for_each(|event| needs_update = self.display_event_handler(event) || needs_update);
+                    event_buffer
+                        .drain(..)
+                        .for_each(|event| needs_update = self.display_event_handler(event) || needs_update);
                 }
             }
 
