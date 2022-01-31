@@ -312,7 +312,6 @@ mod tests {
             -1,
             -1,
         );
-        // manager.screen_create_handler(Screen::default());
 
         manager
             .state
