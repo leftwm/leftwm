@@ -1,4 +1,7 @@
-use crate::layouts::Layout;
+use crate::{
+    layouts::Layout,
+    models::{TagId, WindowHandle},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -11,7 +14,10 @@ pub enum Command {
     ToggleScratchPad(String),
     ToggleFullScreen,
     ToggleSticky,
-    GotoTag(usize),
+    GoToTag {
+        tag: TagId,
+        swap: bool,
+    },
     FloatingToTile,
     TileToFloating,
     ToggleFloating,
@@ -22,9 +28,13 @@ pub enum Command {
     FocusPreviousTag,
     FocusWindowUp,
     FocusWindowDown,
+    FocusWindowTop(bool),
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
-    SendWindowToTag(usize),
+    SendWindowToTag {
+        window: Option<WindowHandle>,
+        tag: TagId,
+    },
     MoveWindowToLastWorkspace,
     MoveWindowToNextWorkspace,
     MoveWindowToPreviousWorkspace,

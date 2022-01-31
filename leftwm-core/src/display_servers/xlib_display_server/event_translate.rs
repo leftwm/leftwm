@@ -1,196 +1,215 @@
-use super::event_translate_client_message;
-use super::event_translate_property_notify;
-use super::DisplayEvent;
-use super::XWrap;
-use crate::models::Mode;
-use crate::models::Window;
-use crate::models::WindowChange;
-use crate::models::WindowHandle;
-use crate::models::WindowType;
-use crate::models::Xyhw;
-use crate::models::XyhwChange;
+use super::{
+    event_translate_client_message, event_translate_property_notify, xwrap::WITHDRAWN_STATE,
+    DisplayEvent, XWrap,
+};
+use crate::models::{FocusBehaviour, Mode, WindowChange, WindowHandle, WindowType, XyhwChange};
+use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
-pub struct XEvent<'a>(pub &'a XWrap, pub xlib::XEvent);
+pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 
 impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     fn from(x_event: XEvent) -> Self {
-        let xw = x_event.0;
         let raw_event = x_event.1;
+        let normal_mode = x_event.0.mode == Mode::Normal;
+        let sloppy_behaviour = x_event.0.focus_behaviour == FocusBehaviour::Sloppy;
 
         match raw_event.get_type() {
-            // new window is created
-            xlib::MapRequest => from_map_request(raw_event, xw),
-
-            // listen for keyboard changes
-            xlib::MappingNotify => from_mapping_notify(raw_event, xw),
-
-            // window is deleted
-            xlib::UnmapNotify | xlib::DestroyNotify => Some(from_unmap_event(raw_event)),
-
-            xlib::ClientMessage => {
-                match &xw.mode {
-                    Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
-                    Mode::Normal => {}
-                };
-                let event = xlib::XClientMessageEvent::from(raw_event);
-                event_translate_client_message::from_event(xw, event)
-            }
-
-            xlib::ButtonPress => {
-                let event = xlib::XButtonPressedEvent::from(raw_event);
-                let h = WindowHandle::XlibHandle(event.window);
-                let mut mod_mask = event.state;
-                mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
-                xw.replay_click(mod_mask);
-                Some(DisplayEvent::MouseCombo(mod_mask, event.button, h))
-            }
-            xlib::ButtonRelease => Some(DisplayEvent::ChangeToNormalMode),
-
-            xlib::EnterNotify => from_enter_notify(xw, raw_event),
-
-            xlib::PropertyNotify => {
-                match &xw.mode {
-                    Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
-                    Mode::Normal => {}
-                };
-                let event = xlib::XPropertyEvent::from(raw_event);
-                event_translate_property_notify::from_event(xw, event)
-            }
-
-            xlib::KeyPress => {
-                let event = xlib::XKeyEvent::from(raw_event);
-                let sym = xw.keycode_to_keysym(event.keycode);
-                Some(DisplayEvent::KeyCombo(event.state, sym))
-            }
-
-            xlib::MotionNotify => Some(from_motion_notify(raw_event, xw)),
-
-            xlib::ConfigureRequest => from_configure_request(xw, raw_event),
-
+            // New window is mapped.
+            xlib::MapRequest => from_map_request(x_event),
+            // Window is unmapped.
+            xlib::UnmapNotify => from_unmap_event(x_event),
+            // Window is destroyed.
+            xlib::DestroyNotify => from_destroy_notify(x_event),
+            // Window client message.
+            xlib::ClientMessage if normal_mode => from_client_message(&x_event),
+            // Window property notify.
+            xlib::PropertyNotify if normal_mode => from_property_notify(&x_event),
+            // Window configure request.
+            xlib::ConfigureRequest if normal_mode => from_configure_request(x_event),
+            // Mouse entered notify.
+            xlib::EnterNotify if normal_mode && sloppy_behaviour => from_enter_notify(&x_event),
+            // Mouse motion notify.
+            xlib::MotionNotify => from_motion_notify(x_event),
+            // Mouse button pressed.
+            xlib::ButtonPress => Some(from_button_press(raw_event)),
+            // Mouse button released.
+            xlib::ButtonRelease if !normal_mode => Some(DisplayEvent::ChangeToNormalMode),
+            // Keyboard key pressed.
+            xlib::KeyPress => Some(from_key_press(x_event)),
+            // Listen for keyboard changes.
+            xlib::MappingNotify => from_mapping_notify(x_event),
             _other => None,
         }
     }
 }
 
-fn from_map_request(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent> {
-    let event = xlib::XMapRequestEvent::from(raw_event);
-    let handle = WindowHandle::XlibHandle(event.window);
-    xw.subscribe_to_window_events(&handle);
-    //check that the window isn't requesting to be unmanaged
-    let attr = xw.get_window_attrs(event.window).ok()?;
-    if attr.override_redirect > 0 {
-        return None;
-    }
-    //build the new window, and fill in info about it from xlib
-    let name = xw.get_window_name(event.window);
-    let pid = xw.get_window_pid(event.window);
-    let mut w = Window::new(handle, name, pid);
-    let trans = xw.get_transient_for(event.window);
-    if let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window) {
-        hint.update_window_floating(&mut w);
-        w.set_requested(hint);
-    }
-    w.set_states(xw.get_window_states(event.window));
-    if w.floating() {
-        if let Ok(geo) = xw.get_window_geometry(event.window) {
-            log::debug!("geo: {geo:?}", geo = geo);
-            geo.update_window_floating(&mut w);
-        }
-    }
-    if let Some(trans) = trans {
-        w.transient = Some(WindowHandle::XlibHandle(trans));
-    }
-    w.type_ = xw.get_window_type(event.window);
-    let cursor = xw.get_cursor_point().unwrap_or_default();
-    Some(DisplayEvent::WindowCreate(w, cursor.0, cursor.1))
+fn from_map_request(x_event: XEvent) -> Option<DisplayEvent> {
+    let xw = x_event.0;
+    let event = xlib::XMapRequestEvent::from(x_event.1);
+    xw.setup_window(event.window)
 }
 
-fn from_mapping_notify(raw_event: xlib::XEvent, xw: &XWrap) -> Option<DisplayEvent> {
-    let mut event = xlib::XMappingEvent::from(raw_event);
-    if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
-        // refresh keyboard
-        log::info!("Updating keyboard");
-        xw.refresh_keyboard(&mut event).ok()?;
-
-        // SoftReload keybinds
-        Some(DisplayEvent::KeyGrabReload)
+fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
+    let xw = x_event.0;
+    let event = xlib::XUnmapEvent::from(x_event.1);
+    if xw.managed_windows.contains(&event.window) {
+        let h = WindowHandle::XlibHandle(event.window);
+        xw.teardown_managed_window(&h);
+        // Set WM_STATE to withdrawn state.
+        xw.set_wm_states(event.window, &[WITHDRAWN_STATE]);
+        Some(DisplayEvent::WindowDestroy(h))
     } else {
         None
     }
 }
 
-fn from_unmap_event(raw_event: xlib::XEvent) -> DisplayEvent {
-    let event = xlib::XUnmapEvent::from(raw_event);
-    let h = WindowHandle::XlibHandle(event.window);
-    DisplayEvent::WindowDestroy(h)
+fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
+    let xw = x_event.0;
+    let event = xlib::XDestroyWindowEvent::from(x_event.1);
+    if xw.managed_windows.contains(&event.window) {
+        let h = WindowHandle::XlibHandle(event.window);
+        xw.teardown_managed_window(&h);
+        Some(DisplayEvent::WindowDestroy(h))
+    } else {
+        None
+    }
 }
 
-fn from_enter_notify(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
-    match &xw.mode {
-        Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
-        Mode::Normal => {}
-    };
-    let event = xlib::XEnterWindowEvent::from(raw_event);
-    let crossing = xlib::XCrossingEvent::from(raw_event);
-    if (crossing.mode != xlib::NotifyNormal || crossing.detail == xlib::NotifyInferior)
-        && crossing.window != xw.get_default_root()
-    {
+fn from_client_message(x_event: &XEvent) -> Option<DisplayEvent> {
+    let event = xlib::XClientMessageEvent::from(x_event.1);
+    event_translate_client_message::from_event(x_event.0, event)
+}
+
+fn from_property_notify(x_event: &XEvent) -> Option<DisplayEvent> {
+    let event = xlib::XPropertyEvent::from(x_event.1);
+    event_translate_property_notify::from_event(x_event.0, event)
+}
+
+fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent> {
+    let xw = x_event.0;
+    let event = xlib::XConfigureRequestEvent::from(x_event.1);
+    // If the window is not mapped, configure it.
+    if !xw.managed_windows.contains(&event.window) {
+        let window_changes = xlib::XWindowChanges {
+            x: event.x,
+            y: event.y,
+            width: event.width,
+            height: event.height,
+            border_width: event.border_width,
+            sibling: event.above,
+            stack_mode: event.detail,
+        };
+        let unlock = xlib::CWX
+            | xlib::CWY
+            | xlib::CWWidth
+            | xlib::CWHeight
+            | xlib::CWBorderWidth
+            | xlib::CWSibling
+            | xlib::CWStackMode;
+        xw.set_window_config(event.window, window_changes, u32::from(unlock));
+        xw.move_resize_window(
+            event.window,
+            event.x,
+            event.y,
+            event.width as u32,
+            event.height as u32,
+        );
         return None;
     }
-    let h = WindowHandle::XlibHandle(event.window);
-    Some(DisplayEvent::MouseEnteredWindow(h))
-}
-
-fn from_motion_notify(raw_event: xlib::XEvent, xw: &XWrap) -> DisplayEvent {
-    let event = xlib::XMotionEvent::from(raw_event);
-    let event_h = WindowHandle::XlibHandle(event.window);
-    let offset_x = event.x_root - xw.mode_origin.0;
-    let offset_y = event.y_root - xw.mode_origin.1;
-    match &xw.mode {
-        Mode::Normal => DisplayEvent::Movement(event_h, event.x_root, event.y_root),
-        Mode::MovingWindow(h) => DisplayEvent::MoveWindow(*h, event.time, offset_x, offset_y),
-        Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(*h, event.time, offset_x, offset_y),
-    }
-}
-
-fn from_configure_request(xw: &XWrap, raw_event: xlib::XEvent) -> Option<DisplayEvent> {
-    match &xw.mode {
-        Mode::MovingWindow(_) | Mode::ResizingWindow(_) => return None,
-        Mode::Normal => {}
-    };
-    let event = xlib::XConfigureRequestEvent::from(raw_event);
     let window_type = xw.get_window_type(event.window);
-    if window_type == WindowType::Normal || window_type == WindowType::Dialog {
-        return None;
-    }
+    let trans = xw.get_transient_for(event.window);
     let handle = WindowHandle::XlibHandle(event.window);
+    if window_type == WindowType::Normal && trans.is_none() {
+        return Some(DisplayEvent::ConfigureXlibWindow(handle));
+    }
     let mut change = WindowChange::new(handle);
-    let xyhw = XyhwChange {
-        w: Some(event.width),
-        h: Some(event.height),
-        x: Some(event.x),
-        y: Some(event.y),
-        ..XyhwChange::default()
+    let xyhw = match window_type {
+        // We want to handle the window positioning when it is a dialog or a normal window with a
+        // parent.
+        WindowType::Dialog | WindowType::Normal => XyhwChange {
+            w: Some(event.width),
+            h: Some(event.height),
+            ..XyhwChange::default()
+        },
+        _ => XyhwChange {
+            w: Some(event.width),
+            h: Some(event.height),
+            x: Some(event.x),
+            y: Some(event.y),
+            ..XyhwChange::default()
+        },
     };
     change.floating = Some(xyhw);
-    if window_type == WindowType::Dock || window_type == WindowType::Desktop {
-        if let Some(dock_area) = xw.get_window_strut_array(event.window) {
-            let dems = xw.get_screens_area_dimensions();
-            let screen = xw
-                .get_screens()
-                .iter()
-                .find(|s| s.contains_dock_area(dock_area, dems))?
-                .clone();
-
-            if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
-                change.strut = Some(xyhw.into());
-            }
-        } else if let Ok(geo) = xw.get_window_geometry(event.window) {
-            let mut xyhw = Xyhw::default();
-            geo.update(&mut xyhw);
-            change.strut = Some(xyhw.into());
-        }
-    }
     Some(DisplayEvent::WindowChange(change))
+}
+
+fn from_enter_notify(x_event: &XEvent) -> Option<DisplayEvent> {
+    let event = xlib::XEnterWindowEvent::from(x_event.1);
+    let crossing = xlib::XCrossingEvent::from(x_event.1);
+    if crossing.detail == xlib::NotifyInferior && crossing.window != x_event.0.get_default_root() {
+        return None;
+    }
+    let h = WindowHandle::XlibHandle(event.window);
+    Some(DisplayEvent::WindowTakeFocus(h))
+}
+
+fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
+    let xw = x_event.0;
+    let event = xlib::XMotionEvent::from(x_event.1);
+
+    // Limit motion events to current refresh rate.
+    if xw.refresh_rate as c_ulong > 0
+        && event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong)
+    {
+        xw.motion_event_limiter = event.time;
+        let event_h = WindowHandle::XlibHandle(event.window);
+        let offset_x = event.x_root - xw.mode_origin.0;
+        let offset_y = event.y_root - xw.mode_origin.1;
+        let display_event = match xw.mode {
+            Mode::ReadyToMove(h) | Mode::MovingWindow(h) => {
+                DisplayEvent::MoveWindow(h, offset_x, offset_y)
+            }
+            Mode::ReadyToResize(h) | Mode::ResizingWindow(h) => {
+                DisplayEvent::ResizeWindow(h, offset_x, offset_y)
+            }
+            Mode::Normal if xw.focus_behaviour == FocusBehaviour::Sloppy => {
+                DisplayEvent::Movement(event_h, event.x_root, event.y_root)
+            }
+            Mode::Normal => return None,
+        };
+        return Some(display_event);
+    }
+
+    None
+}
+
+fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent {
+    let event = xlib::XButtonPressedEvent::from(raw_event);
+    let h = WindowHandle::XlibHandle(event.window);
+    let mut mod_mask = event.state;
+    mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
+    DisplayEvent::MouseCombo(mod_mask, event.button, h)
+}
+
+fn from_key_press(x_event: XEvent) -> DisplayEvent {
+    let xw = x_event.0;
+    let event = xlib::XKeyEvent::from(x_event.1);
+    let sym = xw.keycode_to_keysym(event.keycode);
+    DisplayEvent::KeyCombo(event.state, sym)
+}
+
+fn from_mapping_notify(x_event: XEvent) -> Option<DisplayEvent> {
+    let xw = x_event.0;
+    let mut event = xlib::XMappingEvent::from(x_event.1);
+    if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
+        // Refresh keyboard.
+        log::debug!("Updating keyboard");
+        xw.refresh_keyboard(&mut event).ok()?;
+
+        // SoftReload keybinds.
+        Some(DisplayEvent::KeyGrabReload)
+    } else {
+        None
+    }
 }

@@ -1,6 +1,6 @@
-# Contributing to Leftwm
+# Contributing to LeftWM
 
-Thank you for your interest in contributing to Leftwm!
+Thank you for your interest in contributing to LeftWM!
 
 Table of Contents:
 
@@ -15,19 +15,19 @@ Table of Contents:
 ## Feature Requests
 
 Feature requests should be reported in the
-[Leftwm issue tracker](https://github.com/leftwm/leftwm/issues).
+[LeftWM issue tracker](https://github.com/leftwm/leftwm/issues).
 
 ## Bug Reports
 
 Bug reports should be reported in the
-[Leftwm issue tracker](https://github.com/leftwm/leftwm/issues). 
+[LeftWM issue tracker](https://github.com/leftwm/leftwm/issues). 
 Before reporting a bug, please check the troubleshooting steps in the README and previous issues.
 
 ## Patches / Pull Requests
 
 All patches have to be sent on Github as [pull requests](https://github.com/leftwm/leftwm/pulls).
 
-Please note that the minimum supported version of Leftwm is Rust 1.51.0. 
+Please note that the minimum supported version of Rust capable of compiling LeftWM is Rust 1.52.0.
 
 ### Testing
 
@@ -54,7 +54,7 @@ cargo clippy --release
 ```
 Again these are checked with CI, but it is always easier to check them before creating a pull request.
 
-*Note: if you want to further improe style you alsocould use these additional flags:*
+*Note: if you want to further improve the style you could also use these additional flags:*
 ```
 cargo clippy -- -W clippy::pedantic -A clippy::must_use_candidate -A clippy::cast_precision_loss -A clippy::cast_possible_truncation -A clippy::cast_possible_wrap -A clippy::cast_sign_loss -A clippy::mut_mut
 
@@ -62,8 +62,14 @@ cargo clippy -- -W clippy::pedantic -A clippy::must_use_candidate -A clippy::cas
 
 ### User Documentation
 
-When introducing new commands or config options it is helpfull to provide some user level documentation and keep the initial PR message body updated with this documentation.
-If possilbe please provide a snippet for the relevant wiki-article/section, so this can be updated acordingly as quick as possible.
+When introducing new commands or config options it is helpful to provide some user level documentation and keep the initial PR message body updated with this documentation.
+
+If possible please provide a snippet for the relevant wiki-article/section, so this can be updated accordingly as quick as possible.
+
+#### Manual Page
+
+If possible, please document your newly added commands/configuration options to the `leftwm` manual page, as this will help users
+who need offline documentation available or a "quick look" at any command. To do so, search for `leftwm/doc/leftwm.1` and document your changes in there.
 
 ### Tips and Tricks
 

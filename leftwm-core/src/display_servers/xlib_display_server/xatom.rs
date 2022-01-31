@@ -11,16 +11,26 @@ pub struct XAtom {
     pub WMProtocols: xlib::Atom,
     pub WMDelete: xlib::Atom,
     pub WMState: xlib::Atom,
+    pub WMClass: xlib::Atom,
     pub WMTakeFocus: xlib::Atom,
     pub NetActiveWindow: xlib::Atom,
     pub NetSupported: xlib::Atom,
     pub NetWMName: xlib::Atom,
     pub NetWMState: xlib::Atom,
+    pub NetWMAction: xlib::Atom,
     pub NetWMPid: xlib::Atom,
 
-    //pub NetWMStateSticky: xlib::Atom,
-    //pub NetWMStateAbove: xlib::Atom,
-    //pub NetWMStateFullscreen: xlib::Atom,
+    pub NetWMActionMove: xlib::Atom,
+    pub NetWMActionResize: xlib::Atom,
+    pub NetWMActionMinimize: xlib::Atom,
+    pub NetWMActionShade: xlib::Atom,
+    pub NetWMActionStick: xlib::Atom,
+    pub NetWMActionMaximizeHorz: xlib::Atom,
+    pub NetWMActionMaximizeVert: xlib::Atom,
+    pub NetWMActionFullscreen: xlib::Atom,
+    pub NetWMActionChangeDesktop: xlib::Atom,
+    pub NetWMActionClose: xlib::Atom,
+
     pub NetWMStateModal: xlib::Atom,
     pub NetWMStateSticky: xlib::Atom,
     pub NetWMStateMaximizedVert: xlib::Atom,
@@ -52,6 +62,8 @@ pub struct XAtom {
     pub NetWMDesktop: xlib::Atom,
     pub NetWMStrutPartial: xlib::Atom, //net version - Reserve Screen Space
     pub NetWMStrut: xlib::Atom,        //old version
+
+    pub UTF8String: xlib::Atom,
 }
 
 impl XAtom {
@@ -61,6 +73,7 @@ impl XAtom {
             self.NetSupported,
             self.NetWMName,
             self.NetWMState,
+            self.NetWMAction,
             self.NetWMPid,
             self.NetWMStateModal,
             self.NetWMStateSticky,
@@ -74,6 +87,16 @@ impl XAtom {
             self.NetWMStateAbove,
             self.NetWMStateBelow,
             self.NetWMStateDemandsAttention,
+            self.NetWMActionMove,
+            self.NetWMActionResize,
+            self.NetWMActionMinimize,
+            self.NetWMActionShade,
+            self.NetWMActionStick,
+            self.NetWMActionMaximizeHorz,
+            self.NetWMActionMaximizeVert,
+            self.NetWMActionFullscreen,
+            self.NetWMActionChangeDesktop,
+            self.NetWMActionClose,
             self.NetWMWindowType,
             self.NetWMWindowTypeDesktop,
             self.NetWMWindowTypeDock,
@@ -94,6 +117,8 @@ impl XAtom {
         ]
     }
 
+    #[allow(clippy::too_many_lines)]
+    // TODO: Use a match statement.
     pub const fn get_name(&self, atom: xlib::Atom) -> &str {
         if atom == self.WMProtocols {
             return "WM_PROTOCOLS";
@@ -103,6 +128,9 @@ impl XAtom {
         }
         if atom == self.WMState {
             return "WM_STATE";
+        }
+        if atom == self.WMClass {
+            return "WM_CLASS";
         }
         if atom == self.WMTakeFocus {
             return "WM_TAKE_FOCUS";
@@ -118,6 +146,9 @@ impl XAtom {
         }
         if atom == self.NetWMState {
             return "_NET_WM_STATE";
+        }
+        if atom == self.NetWMAction {
+            return "_NET_WM_ALLOWED_ACTIONS";
         }
         if atom == self.NetWMPid {
             return "_NET_WM_PID";
@@ -157,6 +188,37 @@ impl XAtom {
             return "NetWMStateBelow";
         }
 
+        if atom == self.NetWMActionMove {
+            return "_NET_WM_ACTION_MOVE";
+        }
+        if atom == self.NetWMActionResize {
+            return "_NET_WM_ACTION_RESIZE";
+        }
+        if atom == self.NetWMActionMinimize {
+            return "_NET_WM_ACTION_MINIMIZE";
+        }
+        if atom == self.NetWMActionShade {
+            return "_NET_WM_ACTION_SHADE";
+        }
+        if atom == self.NetWMActionStick {
+            return "_NET_WM_ACTION_STICK";
+        }
+        if atom == self.NetWMActionMaximizeHorz {
+            return "_NET_WM_ACTION_MAXIMIZE_HORZ";
+        }
+        if atom == self.NetWMActionMaximizeVert {
+            return "_NET_WM_ACTION_MAXIMIZE_VERT";
+        }
+        if atom == self.NetWMActionFullscreen {
+            return "_NET_WM_ACTION_FULLSCREEN";
+        }
+        if atom == self.NetWMActionChangeDesktop {
+            return "_NET_WM_ACTION_CHANGE_DESKTOP";
+        }
+        if atom == self.NetWMActionClose {
+            return "_NET_WM_ACTION_CLOSE";
+        }
+
         if atom == self.NetWMWindowType {
             return "_NET_WM_WINDOW_TYPE";
         }
@@ -190,6 +252,10 @@ impl XAtom {
         if atom == self.NetWMStrut {
             return "_NET_WM_STRUT";
         }
+
+        if atom == self.UTF8String {
+            return "UTF8_STRING";
+        }
         "(UNKNOWN)"
     }
 
@@ -198,6 +264,7 @@ impl XAtom {
             WMProtocols: from(xlib, dpy, "WM_PROTOCOLS"),
             WMDelete: from(xlib, dpy, "WM_DELETE_WINDOW"),
             WMState: from(xlib, dpy, "WM_STATE"),
+            WMClass: from(xlib, dpy, "WM_CLASS"),
             WMTakeFocus: from(xlib, dpy, "WM_TAKE_FOCUS"),
             NetActiveWindow: from(xlib, dpy, "_NET_ACTIVE_WINDOW"),
             NetSupported: from(xlib, dpy, "_NET_SUPPORTED"),
@@ -218,6 +285,18 @@ impl XAtom {
             NetWMStateBelow: from(xlib, dpy, "_NET_WM_STATE_BELOW"),
             NetWMStateDemandsAttention: from(xlib, dpy, "_NET_WM_STATE_DEMANDS_ATTENTION"),
 
+            NetWMAction: from(xlib, dpy, "_NET_WM_ALLOWED_ACTIONS"),
+            NetWMActionMove: from(xlib, dpy, "_NET_WM_ACTION_MOVE"),
+            NetWMActionResize: from(xlib, dpy, "_NET_WM_ACTION_RESIZE"),
+            NetWMActionMinimize: from(xlib, dpy, "_NET_WM_ACTION_MINIMIZE"),
+            NetWMActionShade: from(xlib, dpy, "_NET_WM_ACTION_SHADE"),
+            NetWMActionStick: from(xlib, dpy, "_NET_WM_ACTION_STICK"),
+            NetWMActionMaximizeHorz: from(xlib, dpy, "_NET_WM_ACTION_MAXIMIZE_HORZ"),
+            NetWMActionMaximizeVert: from(xlib, dpy, "_NET_WM_ACTION_MAXIMIZE_VERT"),
+            NetWMActionFullscreen: from(xlib, dpy, "_NET_WM_ACTION_FULLSCREEN"),
+            NetWMActionChangeDesktop: from(xlib, dpy, "_NET_WM_ACTION_CHANGE_DESKTOP"),
+            NetWMActionClose: from(xlib, dpy, "_NET_WM_ACTION_CLOSE"),
+
             NetWMWindowType: from(xlib, dpy, "_NET_WM_WINDOW_TYPE"),
             NetWMWindowTypeDesktop: from(xlib, dpy, "_NET_WM_WINDOW_TYPE_DESKTOP"),
             NetWMWindowTypeDock: from(xlib, dpy, "_NET_WM_WINDOW_TYPE_DOCK"),
@@ -236,6 +315,8 @@ impl XAtom {
             NetWMDesktop: from(xlib, dpy, "_NET_WM_DESKTOP"),
             NetWMStrutPartial: from(xlib, dpy, "_NET_WM_STRUT_PARTIAL"),
             NetWMStrut: from(xlib, dpy, "_NET_WM_STRUT"),
+
+            UTF8String: from(xlib, dpy, "UTF8_STRING"),
         }
     }
 }

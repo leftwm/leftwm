@@ -45,6 +45,7 @@ fn main() {
     // If _not_ invoked with a subcommand, start leftwm.
     if let Ok(current_exe) = std::env::current_exe() {
         // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
+        env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
         let mut children = Nanny::autostart();
 
         let flag = Arc::new(AtomicBool::new(false));
@@ -52,7 +53,6 @@ fn main() {
 
         // Fix for Java apps so they repaint correctly
         env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
-        env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
 
         let worker_path = current_exe.with_file_name("leftwm-worker");
 
@@ -158,11 +158,10 @@ fn execute_subcommand(args: &[String], subcommands: &[&str]) -> Option<bool> {
 fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &str>) {
     // If there are more than two arguments, do not invoke `clap`, since `clap` will get confused
     // about arguments to subcommands and throw spurrious errors.
-
     let version = format!(
         "{}, Git-Hash: {}",
         crate_version!(),
-        git_version::git_version!(fallback = "NONE")
+        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
     let mut app = App::new("LeftWM")
         .author("Lex Childs <lex.childs@gmail.com>")

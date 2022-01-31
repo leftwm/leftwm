@@ -1,6 +1,5 @@
 //! Various window and workspace sizing structs.
 #![allow(clippy::module_name_repetitions)]
-use crate::models::XyhwChange;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::ops::Add;
@@ -40,9 +39,9 @@ impl Default for XyhwBuilder {
             y: 0,
             w: 0,
             h: 0,
-            minw: 5,
+            minw: -999_999_999,
             maxw: 999_999_999,
-            minh: 5,
+            minh: -999_999_999,
             maxh: 999_999_999,
         }
     }
@@ -55,9 +54,9 @@ impl Default for Xyhw {
             y: 0,
             w: 0,
             h: 0,
-            minw: 5,
+            minw: -999_999_999,
             maxw: 999_999_999,
-            minh: 5,
+            minh: -999_999_999,
             maxh: 999_999_999,
         }
     }
@@ -211,6 +210,12 @@ impl Xyhw {
         (self.x <= x && x <= max_x) && (self.y <= y && y <= max_y)
     }
 
+    pub const fn contains_xyhw(&self, other: &Self) -> bool {
+        let other_max_x = other.x + other.w;
+        let other_max_y = other.y + other.h;
+        self.contains_point(other.x, other.y) && self.contains_point(other_max_x, other_max_y)
+    }
+
     #[must_use]
     pub const fn volume(&self) -> u64 {
         self.h as u64 * self.w as u64
@@ -268,15 +273,14 @@ impl Xyhw {
         .into()
     }
 
-    pub fn center_relative(&mut self, outer: Self, border: i32, change: XyhwChange) {
+    pub fn center_relative(&mut self, outer: Self, border: i32) {
         // If this is a Splash screen, for some reason w/h are sometimes not sized properly. We
         // therefore want to use the minimum or maximum sizing instead in order to center the
         // windows properly.
-        self.x = outer.x() + outer.w() / 2 - change.minw.unwrap_or(self.w).abs() / 2 - border;
-        self.y = outer.y() + outer.h() / 2 - change.minh.unwrap_or(self.h).abs() / 2 - border;
+        self.x = outer.x() + outer.w() / 2 - self.w / 2 - border;
+        self.y = outer.y() + outer.h() / 2 - self.h / 2 - border;
     }
 
-    #[must_use]
     pub const fn center(&self) -> (i32, i32) {
         let x = self.x + (self.w / 2);
         let y = self.y + (self.h / 2);
@@ -417,5 +421,62 @@ mod tests {
                 ..Xyhw::default()
             }
         );
+    }
+
+    #[test]
+    fn contains_xyhw_should_detect_a_inner_window() {
+        let a = Xyhw {
+            x: 0,
+            y: 0,
+            h: 1000,
+            w: 1000,
+            ..Xyhw::default()
+        };
+        let b = Xyhw {
+            x: 100,
+            y: 100,
+            h: 800,
+            w: 800,
+            ..Xyhw::default()
+        };
+        assert!(a.contains_xyhw(&b));
+    }
+
+    #[test]
+    fn contains_xyhw_should_detect_a_upper_left_corner_outside() {
+        let a = Xyhw {
+            x: 100,
+            y: 100,
+            h: 800,
+            w: 800,
+            ..Xyhw::default()
+        };
+        let b = Xyhw {
+            x: 0,
+            y: 0,
+            h: 200,
+            w: 200,
+            ..Xyhw::default()
+        };
+        assert!(!a.contains_xyhw(&b));
+    }
+
+    #[test]
+    fn contains_xyhw_should_detect_a_lower_right_corner_outside() {
+        let a = Xyhw {
+            x: 100,
+            y: 100,
+            h: 800,
+            w: 800,
+            ..Xyhw::default()
+        };
+        let b = Xyhw {
+            x: 800,
+            y: 800,
+            h: 200,
+            w: 200,
+            ..Xyhw::default()
+        };
+        assert!(!a.contains_xyhw(&b));
     }
 }

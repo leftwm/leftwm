@@ -1,4 +1,5 @@
 use crate::config::Keybind;
+use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
@@ -27,39 +28,46 @@ pub enum DisplayAction {
 
     /// Sets the "z-index" order of the windows
     /// first in the array is top most
-    SetWindowOrder(Vec<WindowHandle>),
+    SetWindowOrder(Vec<Window>),
+
+    /// Raises a given window.
+    MoveToTop(WindowHandle),
 
     /// Tell the DS we no longer care about the this window and other
     /// cleanup.
     DestroyedWindow(WindowHandle),
 
     /// Tell a window that it is to become focused.
-    WindowTakeFocus(Window),
+    WindowTakeFocus {
+        window: Window,
+        previous_handle: Option<WindowHandle>,
+    },
 
-    /// Remove focus on any visible window by focusing the root window
-    Unfocus,
+    /// Remove focus on any visible window by focusing the root window.
+    Unfocus(Option<WindowHandle>),
 
-    /// To the window under the cursor to take the focus
+    /// To the window under the cursor to take the focus.
     FocusWindowUnderCursor,
 
-    /// Tell the DM we are going to resize a window and only send that
-    /// type of events.
-    StartResizingWindow(WindowHandle),
+    /// Tell the DM we are ready to resize this window.
+    ReadyToResizeWindow(WindowHandle),
 
-    /// Tell the DM we are going to move a window and only send that
-    /// type of events.
-    StartMovingWindow(WindowHandle),
+    /// Tell the DM we are ready to move this window.
+    ReadyToMoveWindow(WindowHandle),
 
     /// Used to let the WM know of the current displayed tag changes.
-    SetCurrentTags(String),
+    SetCurrentTags(Vec<TagId>),
 
     /// Used to let the WM know of the tag for a given window.
-    SetWindowTags(WindowHandle, String),
+    SetWindowTags(WindowHandle, Vec<TagId>),
 
     /// Tell the DM to return to normal mode if it is not (ie resize a
     /// window or moving a window).
     NormalMode,
 
-    /// SoftReload keygrabs, needed when keyboard changes
+    /// SoftReload keygrabs, needed when keyboard changes.
     ReloadKeyGrabs(Vec<Keybind>),
+
+    /// Configure a xlib window.
+    ConfigureXlibWindow(Window),
 }

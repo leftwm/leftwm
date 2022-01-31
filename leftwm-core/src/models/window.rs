@@ -2,8 +2,6 @@
 #![allow(clippy::module_name_repetitions)]
 use super::WindowState;
 use super::WindowType;
-use crate::config::Config;
-use crate::models::xyhw_change::XyhwChange;
 use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
@@ -28,24 +26,29 @@ pub struct Window {
     pub handle: WindowHandle,
     pub transient: Option<WindowHandle>,
     visible: bool,
+    pub can_resize: bool,
     is_floating: bool,
-    must_float: bool,
+    pub(crate) must_float: bool,
     floating: Option<Xyhw>,
     pub never_focus: bool,
     pub debugging: bool,
     pub name: Option<String>,
+    pub legacy_name: Option<String>,
     pub pid: Option<u32>,
-    pub type_: WindowType,
+    pub r#type: WindowType,
     pub tags: Vec<TagId>,
     pub border: i32,
     pub margin: Margins,
     pub margin_multiplier: f32,
     states: Vec<WindowState>,
-    pub requested: Option<XyhwChange>,
+    pub requested: Option<Xyhw>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
     pub container_size: Option<Xyhw>,
     pub strut: Option<Xyhw>,
+    // Two strings that are within a XClassHint, kept separate for simpler comparing.
+    pub res_name: Option<String>,
+    pub res_class: Option<String>,
 }
 
 impl Window {
@@ -55,13 +58,15 @@ impl Window {
             handle: h,
             transient: None,
             visible: false,
+            can_resize: true,
             is_floating: false,
             must_float: false,
             debugging: false,
             never_focus: false,
             name,
             pid,
-            type_: WindowType::Normal,
+            legacy_name: None,
+            r#type: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
             margin: Margins::new(10),
@@ -73,17 +78,8 @@ impl Window {
             start_loc: None,
             container_size: None,
             strut: None,
-        }
-    }
-
-    pub(crate) fn load_config(&mut self, config: &impl Config) {
-        if self.type_ == WindowType::Normal {
-            self.margin = config.margin();
-            self.border = config.border_width();
-            self.must_float = config.always_float();
-        } else {
-            self.margin = Margins::new(0);
-            self.border = 0;
+            res_name: None,
+            res_class: None,
         }
     }
 
@@ -94,10 +90,9 @@ impl Window {
     #[must_use]
     pub fn visible(&self) -> bool {
         self.visible
-            || self.type_ == WindowType::Menu
-            || self.type_ == WindowType::Splash
-            || self.type_ == WindowType::Dialog
-            || self.type_ == WindowType::Toolbar
+            || self.r#type == WindowType::Menu
+            || self.r#type == WindowType::Splash
+            || self.r#type == WindowType::Toolbar
     }
 
     pub fn set_floating(&mut self, value: bool) {
@@ -150,7 +145,7 @@ impl Window {
         self.must_float
             || self.transient.is_some()
             || self.is_unmanaged()
-            || self.type_ == WindowType::Splash
+            || self.r#type == WindowType::Splash
     }
     #[must_use]
     pub fn can_move(&self) -> bool {
@@ -158,7 +153,7 @@ impl Window {
     }
     #[must_use]
     pub fn can_resize(&self) -> bool {
-        !self.is_unmanaged()
+        self.can_resize && !self.is_unmanaged()
     }
 
     #[must_use]
@@ -186,14 +181,6 @@ impl Window {
     #[must_use]
     pub fn states(&self) -> Vec<WindowState> {
         self.states.clone()
-    }
-
-    pub fn set_requested(&mut self, change: XyhwChange) {
-        self.requested = Some(change);
-    }
-
-    pub fn get_requested(&mut self) -> Option<XyhwChange> {
-        self.requested
     }
 
     pub fn apply_margin_multiplier(&mut self, value: f32) {
@@ -224,8 +211,12 @@ impl Window {
                 - (((self.margin.left + self.margin.right) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
-        if value < 100 && !self.is_unmanaged() {
-            value = 100;
+        let limit = match self.requested {
+            Some(requested) if requested.minw() > 0 && self.floating() => requested.minw(),
+            _ => 100,
+        };
+        if value < limit && !self.is_unmanaged() {
+            value = limit;
         }
         value
     }
@@ -243,8 +234,12 @@ impl Window {
                 - (((self.margin.top + self.margin.bottom) as f32) * self.margin_multiplier) as i32
                 - (self.border * 2);
         }
-        if value < 100 && !self.is_unmanaged() {
-            value = 100;
+        let limit = match self.requested {
+            Some(requested) if requested.minh() > 0 && self.floating() => requested.minh(),
+            _ => 100,
+        };
+        if value < limit && !self.is_unmanaged() {
+            value = limit;
         }
         value
     }
@@ -268,9 +263,8 @@ impl Window {
     #[must_use]
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
-            return self.normal.x();
-        }
-        if self.floating() && self.floating.is_some() {
+            self.normal.x()
+        } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.x()
         } else {
@@ -281,9 +275,8 @@ impl Window {
     #[must_use]
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
-            return self.normal.y();
-        }
-        if self.floating() && self.floating.is_some() {
+            self.normal.y()
+        } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.y()
         } else {
@@ -304,20 +297,23 @@ impl Window {
     }
 
     #[must_use]
+    pub fn exact_xyhw(&self) -> Xyhw {
+        if self.floating() && self.floating.is_some() {
+            self.normal + self.floating.unwrap_or_default()
+        } else {
+            self.normal
+        }
+    }
+
+    #[must_use]
     pub fn contains_point(&self, x: i32, y: i32) -> bool {
         self.calculated_xyhw().contains_point(x, y)
     }
 
-    pub fn tag(&mut self, tag: &str) {
-        if tag.is_empty() {
-            return;
+    pub fn tag(&mut self, tag: &TagId) {
+        if !self.tags.contains(tag) {
+            self.tags.push(*tag);
         }
-        for t in &self.tags {
-            if t == tag {
-                return;
-            }
-        }
-        self.tags.push(tag.to_string());
     }
 
     pub fn clear_tags(&mut self) {
@@ -325,24 +321,17 @@ impl Window {
     }
 
     #[must_use]
-    pub fn has_tag(&self, tag: &str) -> bool {
-        let t = tag.to_owned();
-        self.tags.contains(&t)
+    pub fn has_tag(&self, tag: &TagId) -> bool {
+        self.tags.contains(tag)
     }
 
-    pub fn untag(&mut self, tag: &str) {
-        let mut new_tags: Vec<TagId> = Vec::new();
-        for t in &self.tags {
-            if t != tag {
-                new_tags.push(t.clone());
-            }
-        }
-        self.tags = new_tags;
+    pub fn untag(&mut self, tag: &TagId) {
+        self.tags.retain(|t| t != tag);
     }
 
     #[must_use]
     pub fn is_unmanaged(&self) -> bool {
-        self.type_ == WindowType::Desktop || self.type_ == WindowType::Dock
+        self.r#type == WindowType::Desktop || self.r#type == WindowType::Dock
     }
 }
 
@@ -353,15 +342,15 @@ mod tests {
     #[test]
     fn should_be_able_to_tag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
-        subject.tag("test");
-        assert!(subject.has_tag("test"), "was unable to tag the window");
+        subject.tag(&1);
+        assert!(subject.has_tag(&1), "was unable to tag the window");
     }
 
     #[test]
     fn should_be_able_to_untag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
-        subject.tag("test");
-        subject.untag("test");
-        assert!(!subject.has_tag("test"), "was unable to untag the window");
+        subject.tag(&1);
+        subject.untag(&1);
+        assert!(!subject.has_tag(&1), "was unable to untag the window");
     }
 }

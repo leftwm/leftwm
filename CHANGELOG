@@ -4,15 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased 0.2.10]
+## [Unreleased 0.3.0]
 ### Fixed
 ### Added
+### Minimum Supported Rust Version
+- The currently supported MSRV is 1.52.0
+
+## [0.2.10] - 2021-12-04
+To view the full list of changes visit the [milestone](https://github.com/leftwm/leftwm/milestone/1?closed=1).
+
+### Fixed
+- Fixed a command in basic-eww theme
+- Window width resetting on tag resize
+- Render emoji's in window titles
+- Greatly improved dialog handling
+- Many focus fixes
+- leftwm-check not running needed checks
+- Xterm loading times
+- Floating windows going behind newly tiled windows
+### Added
+- Windows opened from a terminal will spawn on the same tag
+- Added Makefile
+- When in ClickTo, windows are focused when moved/resized
+- ToggleFloating and TileToFloating commands
+- Manpage
 
 ## [0.2.9] - 2021-10-11
 ### Fixed
 - lots of small papercuts
 - xdg-autostart
-- Better config checking 
+- Better config checking
 ### Added
 - Layouts by Tags not Workspaces
 - New Commands
@@ -20,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.8] - 2021-7-6
 ### Fixed
-- So So many Bug fixes 
+- So So many Bug fixes
 ### Added
 - Add the command 'leftwm-command' to run commands
 
@@ -46,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MainAndDeck layout
 #### Configuration
 - Active layouts may now be set in config.toml with `layouts`
-- GotoTag sends screen to previously viewed tag 
+- GotoTag sends screen to previously viewed tag
 	- Added `disable_current_tag_swap` to config.toml to maintain old behaviour
 - Mousekey for floating drag/resize can now be set with `mousekey` in config.toml
 - FloatingToTile command that allows a window to be set to float in config.toml

@@ -1,20 +1,20 @@
-use crate::state::State;
+use crate::{models::TagId, state::State};
 
 impl State {
-    pub fn goto_tag_handler(&mut self, tag_num: usize) -> Option<bool> {
-        if tag_num > self.tags.len() || tag_num < 1 {
+    pub fn goto_tag_handler(&mut self, tag_num: TagId) -> Option<bool> {
+        if tag_num > self.tags.len_normal() || tag_num < 1 {
             return Some(false);
         }
 
-        let tag_id = self.tags[tag_num - 1].id.clone();
-        let new_tags = vec![tag_id.clone()];
-        //no focus safety check
+        //let tag_id = self.tags[tag_num - 1].label.clone();
+        let new_tags = vec![tag_num];
+        // No focus safety check.
         let old_tags = self.focus_manager.workspace(&self.workspaces)?.tags.clone();
         if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
             let old_handle = self
                 .focus_manager
                 .tags_last_window
-                .entry(old_tags[0].clone())
+                .entry(old_tags[0])
                 .or_insert(handle);
             *old_handle = handle;
         }
@@ -23,10 +23,10 @@ impl State {
         }
 
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tags = new_tags;
-        self.focus_tag(&tag_id);
+        self.focus_tag(&tag_num);
         self.update_static();
         self.layout_manager
-            .update_layouts(&mut self.workspaces, &mut self.tags);
+            .update_layouts(&mut self.workspaces, self.tags.all_mut());
         Some(true)
     }
 }
@@ -42,7 +42,7 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
         manager.state.goto_tag_handler(1);
-        assert_eq!(manager.state.workspaces[0].tags, ["2".to_owned()]);
-        assert_eq!(manager.state.workspaces[1].tags, ["1".to_owned()]);
+        assert_eq!(manager.state.workspaces[0].tags, [2]);
+        assert_eq!(manager.state.workspaces[1].tags, [1]);
     }
 }

@@ -4,7 +4,7 @@ use crate::config::{Config, ScratchPad};
 use crate::layouts::Layout;
 use crate::models::Screen;
 use crate::models::Size;
-use crate::models::Tag;
+use crate::models::Tags;
 use crate::models::Window;
 use crate::models::Workspace;
 use crate::models::{FocusManager, LayoutManager};
@@ -12,7 +12,6 @@ use crate::models::{Mode, WindowHandle};
 use crate::DisplayAction;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use std::os::raw::c_ulong;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct State {
@@ -26,31 +25,22 @@ pub struct State {
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
-    // TODO should this really be saved in the state?
-    // this is used to limit framerate when resizing/moving windows
-    pub frame_rate_limitor: c_ulong,
-    pub tags: Vec<Tag>, //list of all known tags
-    pub loglevel: String,
-    pub disable_current_tag_swap: bool,
-    pub mousekey: String,
+    pub tags: Tags, // List of all known tags.
+    pub mousekey: Vec<String>,
     pub max_window_width: Option<Size>,
     pub default_width: i32,
     pub default_height: i32,
+    pub disable_tile_drag: bool,
 }
 
 impl State {
     pub(crate) fn new(config: &impl Config) -> Self {
         let layout_manager = LayoutManager::new(config);
-        let mut tags: Vec<Tag> = config
-            .create_list_of_tags()
-            .iter()
-            .map(|s| Tag::new(s, layout_manager.new_layout()))
-            .collect();
-        tags.push(Tag {
-            id: "NSP".to_owned(),
-            hidden: true,
-            ..Tag::default()
+        let mut tags = Tags::new();
+        config.create_list_of_tag_labels().iter().for_each(|label| {
+            tags.add_new(label.as_str(), layout_manager.new_layout(None));
         });
+        tags.add_new_hidden("NSP");
 
         Self {
             focus_manager: FocusManager::new(config),
@@ -63,15 +53,13 @@ impl State {
             mode: Default::default(),
             active_scratchpads: Default::default(),
             actions: Default::default(),
-            frame_rate_limitor: Default::default(),
             tags,
-            config,
             loglevel: String::from("info"),
-            disable_current_tag_swap: config.disable_current_tag_swap(),
             max_window_width: config.max_window_width(),
             mousekey: config.mousekey(),
             default_width: config.default_width(),
             default_height: config.default_height(),
+            disable_tile_drag: config.disable_tile_drag(),
         }
     }
 
@@ -81,35 +69,33 @@ impl State {
         use crate::models::WindowType;
         //first dialogs and modals
         let (level1, other): (Vec<&Window>, Vec<&Window>) = self.windows.iter().partition(|w| {
-            w.type_ == WindowType::Dialog
-                || w.type_ == WindowType::Splash
-                || w.type_ == WindowType::Utility
-                || w.type_ == WindowType::Menu
+            w.r#type == WindowType::Dialog
+                || w.r#type == WindowType::Splash
+                || w.r#type == WindowType::Utility
+                || w.r#type == WindowType::Menu
         });
 
         //next floating
         let (level2, other): (Vec<&Window>, Vec<&Window>) = other
             .iter()
-            .partition(|w| w.type_ == WindowType::Normal && w.floating());
+            .partition(|w| w.r#type == WindowType::Normal && w.floating());
 
         //then normal windows
         let (level3, other): (Vec<&Window>, Vec<&Window>) =
-            other.iter().partition(|w| w.type_ == WindowType::Normal);
+            other.iter().partition(|w| w.r#type == WindowType::Normal);
 
         //last docks
         //other is all the reset
 
         //build the updated window list
-        let windows: Vec<Window> = level1
+        self.windows = level1
             .iter()
             .chain(level2.iter())
             .chain(level3.iter())
             .chain(other.iter())
             .map(|&w| w.clone())
             .collect();
-        self.windows = windows;
-        let order: Vec<_> = self.windows.iter().map(|w| w.handle).collect();
-        let act = DisplayAction::SetWindowOrder(order);
+        let act = DisplayAction::SetWindowOrder(self.windows.clone());
         self.actions.push_back(act);
     }
 
@@ -119,46 +105,6 @@ impl State {
         self.windows.insert(0, window);
         self.sort_windows();
         Some(())
-    }
-
-    #[must_use]
-    pub fn workspaces_display(&self) -> String {
-        let mut focused_id = None;
-        if let Some(f) = self.focus_manager.workspace(&self.workspaces) {
-            focused_id = f.id;
-        }
-        let list: Vec<String> = self
-            .workspaces
-            .iter()
-            .map(|w| {
-                let tags = w.tags.join(",");
-                if w.id == focused_id {
-                    format!("({})", tags)
-                } else {
-                    format!(" {} ", tags)
-                }
-            })
-            .collect();
-        list.join(" ")
-    }
-
-    #[must_use]
-    pub fn windows_display(&self) -> String {
-        let list: Vec<String> = self
-            .windows
-            .iter()
-            .map(|w| {
-                let tags = w.tags.join(",");
-                format!("[{:?}:{}]", w.handle, tags)
-            })
-            .collect();
-        list.join(" ")
-    }
-
-    /// Return the index of a given tag.
-    #[must_use]
-    pub fn tag_index(&self, tag: &str) -> Option<usize> {
-        Some(self.tags.iter().position(|t| t.id == tag)).unwrap_or(None)
     }
 
     pub fn update_static(&mut self) {
@@ -181,7 +127,7 @@ impl State {
         self.mousekey = config.mousekey();
         self.max_window_width = config.max_window_width();
         for win in &mut self.windows {
-            win.load_config(config);
+            config.load_window(win);
         }
         for ws in &mut self.workspaces {
             ws.load_config(config);
@@ -189,19 +135,10 @@ impl State {
     }
 
     /// Apply saved state to a running manager.
-    pub fn restore_state(&mut self, state: &State) {
-        // restore workspaces
-        for workspace in &mut self.workspaces {
-            if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {
-                workspace.layout = old_workspace.layout;
-                workspace.main_width_percentage = old_workspace.main_width_percentage;
-                workspace.margin_multiplier = old_workspace.margin_multiplier;
-            }
-        }
-
-        // restore tags
-        for tag in &mut self.tags {
-            if let Some(old_tag) = state.tags.iter().find(|t| t.id == tag.id) {
+    pub fn restore_state(&mut self, state: &Self) {
+        // Restore tags.
+        for old_tag in state.tags.all() {
+            if let Some(tag) = self.tags.get_mut(old_tag.id) {
                 tag.hidden = old_tag.hidden;
                 tag.layout = old_tag.layout;
                 tag.layout_rotation = old_tag.layout_rotation;
@@ -211,48 +148,47 @@ impl State {
             }
         }
 
-        // restore windows
+        let are_tags_equal = self.tags.all().eq(&state.tags.all());
+
+        // Restore windows.
         let mut ordered = vec![];
         let mut had_strut = false;
-
-        state.windows.iter().for_each(|old| {
-            if let Some((index, window)) = self
+        state.windows.iter().for_each(|old_window| {
+            if let Some((index, new_window)) = self
                 .windows
                 .clone()
                 .iter_mut()
                 .enumerate()
-                .find(|w| w.1.handle == old.handle)
+                .find(|w| w.1.handle == old_window.handle)
             {
-                had_strut = old.strut.is_some() || had_strut;
+                had_strut = old_window.strut.is_some() || had_strut;
 
-                window.set_floating(old.floating());
-                window.set_floating_offsets(old.get_floating_offsets());
-                window.apply_margin_multiplier(old.margin_multiplier);
-                window.pid = old.pid;
-                window.normal = old.normal;
-                if self.tags.eq(&state.tags) {
-                    window.tags = old.tags.clone();
+                new_window.set_floating(old_window.floating());
+                new_window.set_floating_offsets(old_window.get_floating_offsets());
+                new_window.apply_margin_multiplier(old_window.margin_multiplier);
+                new_window.pid = old_window.pid;
+                new_window.normal = old_window.normal;
+                if are_tags_equal {
+                    new_window.tags = old_window.tags.clone();
                 } else {
-                    old.tags.iter().for_each(|t| {
-                        let manager_tags = &self.tags.clone();
-                        if let Some(tag_index) = &state.tags.clone().iter().position(|o| &o.id == t)
-                        {
-                            window.clear_tags();
-                            // if the config prior reload had more tags then the current one
-                            // we want to move windows of 'lost tags' to the 'first' tag
-                            // also we want to ignore the `NSP` tag for length check
-                            if tag_index < &(manager_tags.len() - 1) || t == "NSP" {
-                                window.tag(&manager_tags[*tag_index].id);
-                            } else if let Some(tag) = manager_tags.first() {
-                                window.tag(&tag.id);
-                            }
-                        }
-                    });
+                    let mut new_tags = old_window.tags.clone();
+                    // Only retain the tags, that still exist.
+                    new_tags.retain(|&tag_id| self.tags.get(tag_id).is_some());
+                    // If there are no tags, add tag '1', so the window will not be lost.
+                    if new_tags.is_empty() {
+                        new_tags.push(1);
+                    }
+                    new_window.clear_tags();
+                    new_tags.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
-                window.strut = old.strut;
-                window.set_states(old.states());
-                ordered.push(window.clone());
+                new_window.strut = old_window.strut;
+                new_window.set_states(old_window.states());
+                ordered.push(new_window.clone());
                 self.windows.remove(index);
+
+                // Make the x server aware of any tag changes for the window.
+                let act = DisplayAction::SetWindowTags(new_window.handle, new_window.tags.clone());
+                self.actions.push_back(act);
             }
         });
         if had_strut {
@@ -260,9 +196,54 @@ impl State {
         }
         self.windows.append(&mut ordered);
 
-        // restore scratchpads
+        // This is needed due to mutable/immutable borrows.
+        let tags = &self.tags;
+
+        // Restore workspaces.
+        for workspace in &mut self.workspaces {
+            if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {
+                workspace.layout = old_workspace.layout;
+                workspace.main_width_percentage = old_workspace.main_width_percentage;
+                workspace.margin_multiplier = old_workspace.margin_multiplier;
+                if are_tags_equal {
+                    workspace.tags = old_workspace.tags.clone();
+                } else {
+                    let mut new_tags = old_workspace.tags.clone();
+                    // Only retain the tags, that still exist.
+                    new_tags.retain(|&tag_id| tags.get(tag_id).is_some());
+                    // If there are no tags, add tag '1', so the workspace has a tag.
+                    if new_tags.is_empty() {
+                        new_tags.push(1);
+                    }
+                    new_tags
+                        .iter()
+                        .for_each(|&tag_id| workspace.tags = vec![tag_id]);
+                }
+            }
+        }
+
+        // Restore scratchpads.
         for (scratchpad, id) in &state.active_scratchpads {
             self.active_scratchpads.insert(scratchpad.clone(), *id);
         }
+
+        // Restore focus.
+        self.focus_manager.tags_last_window = state.focus_manager.tags_last_window.clone();
+        self.focus_manager
+            .tags_last_window
+            .retain(|&id, _| tags.get(id).is_some());
+        let tag_id = match state.focus_manager.tag(0) {
+            // If the tag still exists it should be displayed on a workspace.
+            Some(tag_id) if self.tags.get(tag_id).is_some() => tag_id,
+            // If the tag doesn't exist, tag 1 should be displayed on a workspace.
+            Some(_) => 1,
+            // If we don't have any tag history (We should), focus the tag on workspace 1.
+            None => match self.workspaces.first() {
+                Some(ws) => ws.tags[0],
+                // This should never happen.
+                None => 1,
+            },
+        };
+        self.focus_tag(&tag_id);
     }
 }

@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+    /// # Panics
+    /// This function panics if it can't create or write to the command file.
     pub async fn event_loop(mut self) {
         let socket_file = place_runtime_file("current_state.sock")
             .expect("ERROR: couldn't create current_state.sock");
@@ -13,11 +15,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .await
             .expect("ERROR: couldn't connect to current_state.sock");
 
-        let pipe_file =
-            place_runtime_file("commands.pipe").expect("ERROR: couldn't create commands.pipe");
+        let file_name = CommandPipe::pipe_name();
+        let pipe_file = place_runtime_file(&file_name)
+            .unwrap_or_else(|_| panic!("ERROR: couldn't create {}", file_name.display()));
         let mut command_pipe = CommandPipe::new(pipe_file)
             .await
-            .expect("ERROR: couldn't connect to commands.pipe");
+            .unwrap_or_else(|_| panic!("ERROR: couldn't connect to {}", file_name.display()));
 
         //start the current theme
         let after_first_loop: Once = Once::new();
@@ -36,11 +39,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     event_buffer.append(&mut self.display_server.get_next_events());
                     continue;
                 }
-                //Once in a blue moon we miss the focus event,
-                //This is to double check that we know which window is currently focused
-                _ = timeout(100), if event_buffer.is_empty() && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy => {
-                    let mut focus_event = self.display_server.verify_focused_window();
-                    event_buffer.append(&mut focus_event);
+                // When a mouse button is pressed enter/motion notifies are blocked and only appear
+                // once the button is released. This is to double check that we know which window
+                // is currently focused.
+                _ = timeout(100), if event_buffer.is_empty()
+                    && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy => {
+                    if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
+                        event_buffer.push(verify_event);
+                    }
                     continue;
                 }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
@@ -57,15 +63,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 self.update_windows();
 
                 match self.state.mode {
-                    Mode::Normal => {
-                        let windows: Vec<&Window> = self.state.windows.iter().collect();
-                        let focused = self.state.focus_manager.window(&self.state.windows);
-                        self.display_server
-                            .update_windows(windows, focused, &self.state);
-                        let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
-                        let focused = self.state.focus_manager.workspace(&self.state.workspaces);
-                        self.display_server.update_workspaces(workspaces, focused);
-                    }
                     //when (resizing / moving) only deal with the single window
                     Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
                         let focused = self.state.focus_manager.window(&self.state.windows);
@@ -73,8 +70,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                             .iter()
                             .filter(|w| w.handle == h)
                             .collect();
-                        self.display_server
-                            .update_windows(windows, focused, &self.state);
+                        self.display_server.update_windows(windows, focused);
+                    }
+                    _ => {
+                        let windows: Vec<&Window> = self.state.windows.iter().collect();
+                        let focused = self.state.focus_manager.window(&self.state.windows);
+                        self.display_server.update_windows(windows, focused);
+                        let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
+                        let focused = self.state.focus_manager.workspace(&self.state.workspaces);
+                        self.display_server.update_workspaces(workspaces, focused);
                     }
                 }
             }

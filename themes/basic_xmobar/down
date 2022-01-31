@@ -7,13 +7,13 @@ if [ -x "$(command -v feh)" ]; then
   feh --bg-scale $SCRIPTPATH/reset.jpg
 fi
 
-echo "UnloadTheme" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+leftwm-command "UnloadTheme"
 
 
 ps -alh | grep xmobar_control_script | awk '{print $3}' | xargs kill
 
 pkill compton
-pkill picom 
+pkill picom
 pkill xmobar
 pkill xmobar
 

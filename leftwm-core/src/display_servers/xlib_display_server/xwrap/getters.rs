@@ -3,7 +3,7 @@ use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN};
 use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
 use std::ffi::CString;
-use std::os::raw::{c_int, c_long, c_uchar, c_uint, c_ulong};
+use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
 use x11_dl::xlib;
 
@@ -80,6 +80,41 @@ impl XWrap {
         Err(XlibError::RootWindowNotFound)
     }
 
+    /// Returns the current window under the cursor.
+    /// # Errors
+    ///
+    /// Will error if root window cannot be found.
+    // `XQueryPointer`: https://tronche.com/gui/x/xlib/window-information/XQueryPointer.html
+    pub fn get_cursor_window(&self) -> Result<WindowHandle, XlibError> {
+        let roots = self.get_roots();
+        for w in roots {
+            let mut root_return: xlib::Window = 0;
+            let mut child_return: xlib::Window = 0;
+            let mut root_x_return: c_int = 0;
+            let mut root_y_return: c_int = 0;
+            let mut win_x_return: c_int = 0;
+            let mut win_y_return: c_int = 0;
+            let mut mask_return: c_uint = 0;
+            let success = unsafe {
+                (self.xlib.XQueryPointer)(
+                    self.display,
+                    w,
+                    &mut root_return,
+                    &mut child_return,
+                    &mut root_x_return,
+                    &mut root_y_return,
+                    &mut win_x_return,
+                    &mut win_y_return,
+                    &mut mask_return,
+                )
+            };
+            if success > 0 {
+                return Ok(WindowHandle::XlibHandle(child_return));
+            }
+        }
+        Err(XlibError::RootWindowNotFound)
+    }
+
     /// Returns the handle of the default root.
     #[must_use]
     pub const fn get_default_root_handle(&self) -> WindowHandle {
@@ -99,32 +134,41 @@ impl XWrap {
         if let Some(size) = hint {
             let mut xyhw = XyhwChange::default();
 
-            if (size.flags & xlib::PBaseSize) != 0 {
+            if (size.flags & xlib::PSize) != 0 || (size.flags & xlib::USSize) != 0 {
+                // These are obsolete but are still used sometimes.
+                xyhw.w = Some(size.width);
+                xyhw.h = Some(size.height);
+            } else if (size.flags & xlib::PBaseSize) != 0 {
                 xyhw.w = Some(size.base_width);
                 xyhw.h = Some(size.base_height);
-            } else if (size.flags & xlib::PMinSize) != 0 {
-                xyhw.minw = Some(size.min_width);
-                xyhw.minh = Some(size.min_height);
             }
 
-            if size.flags & xlib::PResizeInc != 0 {
+            if (size.flags & xlib::PResizeInc) != 0 {
                 xyhw.w = Some(size.width_inc);
                 xyhw.h = Some(size.height_inc);
             }
 
-            if size.flags & xlib::PMaxSize != 0 {
+            if (size.flags & xlib::PMaxSize) != 0 {
                 xyhw.maxw = Some(size.max_width);
                 xyhw.maxh = Some(size.max_height);
             }
 
-            if size.flags & xlib::PMinSize != 0 {
+            if (size.flags & xlib::PMinSize) != 0 {
                 xyhw.minw = Some(size.min_width);
                 xyhw.minh = Some(size.min_height);
-            } else if size.flags & xlib::PBaseSize != 0 {
-                xyhw.w = Some(size.base_width);
-                xyhw.h = Some(size.base_height);
             }
+            // Make sure that width and height are not smaller than the min values.
+            xyhw.w = std::cmp::max(xyhw.w, xyhw.minw);
+            xyhw.h = std::cmp::max(xyhw.h, xyhw.minh);
+            // Ignore the sizing if the sizing is set to 0.
+            xyhw.w = xyhw.w.filter(|&w| w != 0);
+            xyhw.h = xyhw.h.filter(|&h| h != 0);
 
+            if (size.flags & xlib::PPosition) != 0 || (size.flags & xlib::USPosition) != 0 {
+                // These are obsolete but are still used sometimes.
+                xyhw.x = Some(size.x);
+                xyhw.y = Some(size.y);
+            }
             // TODO: support min/max aspect
             // if size.flags & xlib::PAspect != 0 {
             //     //c->mina = (float)size.min_aspect.y / size.min_aspect.x;
@@ -214,6 +258,40 @@ impl XWrap {
         }
     }
 
+    /// Returns the atom actions of a window.
+    // `XGetWindowProperty`: https://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
+    #[must_use]
+    pub fn get_window_actions_atoms(&self, window: xlib::Window) -> Vec<xlib::Atom> {
+        let mut format_return: i32 = 0;
+        let mut nitems_return: c_ulong = 0;
+        let mut bytes_remaining: c_ulong = 0;
+        let mut type_return: xlib::Atom = 0;
+        let mut prop_return: *mut c_uchar = unsafe { std::mem::zeroed() };
+        unsafe {
+            let status = (self.xlib.XGetWindowProperty)(
+                self.display,
+                window,
+                self.atoms.NetWMAction,
+                0,
+                MAX_PROPERTY_VALUE_LEN / 4,
+                xlib::False,
+                xlib::XA_ATOM,
+                &mut type_return,
+                &mut format_return,
+                &mut nitems_return,
+                &mut bytes_remaining,
+                &mut prop_return,
+            );
+            if status == i32::from(xlib::Success) && !prop_return.is_null() {
+                #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
+                let ptr = prop_return as *const c_ulong;
+                let results: &[xlib::Atom] = slice::from_raw_parts(ptr, nitems_return as usize);
+                return results.to_vec();
+            }
+            vec![]
+        }
+    }
+
     /// Returns the attributes of a window.
     /// # Errors
     ///
@@ -229,6 +307,30 @@ impl XWrap {
             return Err(XlibError::FailedStatus);
         }
         Ok(attrs)
+    }
+
+    /// Returns a windows class `WM_CLASS`
+    // `XGetClassHint`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetClassHint.html
+    #[must_use]
+    pub fn get_window_class(&self, window: xlib::Window) -> Option<(String, String)> {
+        unsafe {
+            let mut class_return: xlib::XClassHint = std::mem::zeroed();
+            let status = (self.xlib.XGetClassHint)(self.display, window, &mut class_return);
+            if status == 0 {
+                return None;
+            }
+            let res_name =
+                match CString::from_raw(class_return.res_name.cast::<c_char>()).into_string() {
+                    Ok(s) => s,
+                    Err(_) => return None,
+                };
+            let res_class =
+                match CString::from_raw(class_return.res_class.cast::<c_char>()).into_string() {
+                    Ok(s) => s,
+                    Err(_) => return None,
+                };
+            Some((res_name, res_class))
+        }
     }
 
     /// Returns the geometry of a window as a `XyhwChange` struct.
@@ -275,6 +377,15 @@ impl XWrap {
         if let Ok(text) = self.get_text_prop(window, self.atoms.NetWMName) {
             return Some(text);
         }
+        if let Ok(text) = self.get_text_prop(window, xlib::XA_WM_NAME) {
+            return Some(text);
+        }
+        None
+    }
+
+    /// Returns a `WM_NAME` (not `_NET`windows name).
+    #[must_use]
+    pub fn get_window_legacy_name(&self, window: xlib::Window) -> Option<String> {
         if let Ok(text) = self.get_text_prop(window, xlib::XA_WM_NAME) {
             return Some(text);
         }
@@ -403,6 +514,17 @@ impl XWrap {
         }
     }
 
+    /// Returns the `WM_STATE` of a window.
+    pub fn get_wm_state(&self, window: xlib::Window) -> Option<c_long> {
+        let (prop_return, nitems_return) = self
+            .get_property(window, self.atoms.WMState, self.atoms.WMState)
+            .ok()?;
+        if nitems_return == 0 {
+            return None;
+        }
+        Some(unsafe { *prop_return.cast::<c_long>() })
+    }
+
     /// Returns the name of a `XAtom`.
     /// # Errors
     ///
@@ -443,7 +565,7 @@ impl XWrap {
         &self,
         window: xlib::Window,
         property: xlib::Atom,
-        type_: xlib::Atom,
+        r#type: xlib::Atom,
     ) -> Result<(*const c_uchar, c_ulong), XlibError> {
         let mut format_return: i32 = 0;
         let mut nitems_return: c_ulong = 0;
@@ -458,7 +580,7 @@ impl XWrap {
                 0,
                 MAX_PROPERTY_VALUE_LEN / 4,
                 xlib::False,
-                type_,
+                r#type,
                 &mut type_return,
                 &mut format_return,
                 &mut nitems_return,
@@ -497,7 +619,7 @@ impl XWrap {
             if status == 0 {
                 return Err(XlibError::FailedStatus);
             }
-            if let Ok(s) = CString::from_raw(text_prop.value.cast::<i8>()).into_string() {
+            if let Ok(s) = CString::from_raw(text_prop.value.cast::<c_char>()).into_string() {
                 return Ok(s);
             }
         };

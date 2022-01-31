@@ -6,7 +6,6 @@ use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
 use crate::models::Workspace;
-use crate::state::State;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
@@ -22,6 +21,8 @@ mod xwrap;
 pub use xwrap::XWrap;
 
 use event_translate::XEvent;
+
+use self::xwrap::ICONIC_STATE;
 mod xcursor;
 
 pub struct XlibDisplayServer {
@@ -54,44 +55,20 @@ impl DisplayServer for XlibDisplayServer {
         self.xw.load_config(config);
     }
 
-    fn update_windows(
-        &self,
-        windows: Vec<&Window>,
-        focused_window: Option<&Window>,
-        state: &State,
-    ) {
-        let tags: Vec<&String> = state.workspaces.iter().flat_map(|w| &w.tags).collect();
-
-        let max_tag_index: Option<usize> = tags.iter().filter_map(|&t| state.tag_index(t)).max();
-        let to_the_right = state
-            .screens
-            .iter()
-            .map(|s| s.bbox.width + s.bbox.x + 100)
-            .max();
-        let max_screen_width = state.screens.iter().map(|s| s.bbox.width).max();
-
-        for window in windows {
+    fn update_windows(&self, windows: Vec<&Window>, focused_window: Option<&Window>) {
+        for window in &windows {
             let is_focused = match focused_window {
                 Some(f) => f.handle == window.handle,
                 None => false,
             };
 
-            let hide_offset = right_offset(max_tag_index, to_the_right, state, window)
-                .unwrap_or_else(|| left_offset(max_screen_width, window));
-
-            self.xw.update_window(window, is_focused, hide_offset);
-            if window.is_fullscreen() {
-                self.xw.move_to_top(&window.handle);
-            }
+            self.xw.update_window(window, is_focused);
         }
     }
 
     fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            focused
-                .tags
-                .iter()
-                .for_each(|tag| self.xw.set_current_desktop(tag));
+            self.xw.set_current_desktop(&focused.tags);
         }
     }
 
@@ -108,7 +85,7 @@ impl DisplayServer for XlibDisplayServer {
 
         for _ in 0..event_in_queue {
             let xlib_event = self.xw.get_next_event();
-            let event = XEvent(&self.xw, xlib_event).into();
+            let event = XEvent(&mut self.xw, xlib_event).into();
             if let Some(e) = event {
                 log::trace!("DisplayEvent: {:?}", e);
                 events.push(e);
@@ -124,6 +101,8 @@ impl DisplayServer for XlibDisplayServer {
         events
     }
 
+    // TODO: Split function up.
+    #[allow(clippy::too_many_lines)]
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
         log::trace!("DisplayAction: {:?}", act);
         let event: Option<DisplayEvent> = match act {
@@ -148,12 +127,15 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.teardown_managed_window(&w);
                 None
             }
-            DisplayAction::WindowTakeFocus(w) => {
-                self.xw.window_take_focus(&w);
+            DisplayAction::WindowTakeFocus {
+                window,
+                previous_handle,
+            } => {
+                self.xw.window_take_focus(&window, previous_handle);
                 None
             }
-            DisplayAction::Unfocus => {
-                self.xw.unfocus();
+            DisplayAction::Unfocus(handle) => {
+                self.xw.unfocus(handle);
                 None
             }
             DisplayAction::SetState(h, toggle_to, window_state) => {
@@ -174,20 +156,45 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.set_state(h, toggle_to, state);
                 None
             }
-            DisplayAction::SetWindowOrder(wins) => {
-                // get all the windows are aren't managing.
-                // They should be in front of our windows.
-                let unmanged: Vec<WindowHandle> = self
+            DisplayAction::SetWindowOrder(windows) => {
+                // The windows we are managing should be behind unmanaged windows. Unless they are
+                // fullscreen, or their children.
+                let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
+                    windows.iter().partition(|w| w.is_fullscreen());
+                // Fullscreen windows.
+                let level2: Vec<WindowHandle> =
+                    fullscreen_windows.iter().map(|w| w.handle).collect();
+                let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) =
+                    other.iter().partition(|w| {
+                        level2.contains(&w.transient.unwrap_or(WindowHandle::XlibHandle(0)))
+                    });
+                // Fullscreen windows children.
+                let level1: Vec<WindowHandle> =
+                    fullscreen_children.iter().map(|w| w.handle).collect();
+                // Left over managed windows.
+                let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+                // Unmanaged windows.
+                let level3: Vec<WindowHandle> = self
                     .xw
                     .get_all_windows()
                     .unwrap_or_default()
                     .iter()
-                    .filter(|&x| *x != self.root)
-                    .map(|x| WindowHandle::XlibHandle(*x))
-                    .filter(|h| !wins.contains(h))
+                    .filter(|&w| *w != self.root)
+                    .map(|w| WindowHandle::XlibHandle(*w))
+                    .filter(|&h| !windows.iter().any(|w| w.handle == h))
                     .collect();
-                let all: Vec<WindowHandle> = unmanged.iter().chain(wins.iter()).copied().collect();
+                let all: Vec<WindowHandle> = level1
+                    .iter()
+                    .chain(level2.iter())
+                    .chain(level3.iter())
+                    .chain(level4.iter())
+                    .copied()
+                    .collect();
                 self.xw.restack(all);
+                None
+            }
+            DisplayAction::MoveToTop(handle) => {
+                self.xw.move_to_top(&handle);
                 None
             }
             DisplayAction::FocusWindowUnderCursor => {
@@ -195,12 +202,12 @@ impl DisplayServer for XlibDisplayServer {
                 let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
                 Some(evt)
             }
-            DisplayAction::StartMovingWindow(w) => {
-                self.xw.set_mode(Mode::MovingWindow(w));
+            DisplayAction::ReadyToMoveWindow(w) => {
+                self.xw.set_mode(Mode::ReadyToMove(w));
                 None
             }
-            DisplayAction::StartResizingWindow(w) => {
-                self.xw.set_mode(Mode::ResizingWindow(w));
+            DisplayAction::ReadyToResizeWindow(w) => {
+                self.xw.set_mode(Mode::ReadyToResize(w));
                 None
             }
             DisplayAction::NormalMode => {
@@ -221,6 +228,10 @@ impl DisplayServer for XlibDisplayServer {
                 self.xw.reset_grabs(&keybinds);
                 None
             }
+            DisplayAction::ConfigureXlibWindow(window) => {
+                self.xw.configure_window(&window);
+                None
+            }
         };
         if event.is_some() {
             log::trace!("DisplayEvent: {:?}", event);
@@ -239,8 +250,10 @@ impl DisplayServer for XlibDisplayServer {
         self.xw.flush();
     }
 
-    fn verify_focused_window(&self) -> Vec<DisplayEvent> {
-        self.verify_focused_window_work().unwrap_or_default()
+    /// Creates a verify focus event for the cursors current window.
+    fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
+        let handle = self.xw.get_cursor_window().ok()?;
+        Some(DisplayEvent::VerifyFocusedAt(handle))
     }
 }
 
@@ -265,38 +278,28 @@ impl XlibDisplayServer {
             }
         }
 
-        // tell manager about existing windows
-        self.find_all_windows().into_iter().for_each(|w| {
-            let cursor = self.xw.get_cursor_point().ok().unwrap_or_default();
-            let e = DisplayEvent::WindowCreate(w, cursor.0, cursor.1);
-            events.push(e);
-        });
+        // Tell manager about existing windows.
+        events.append(&mut self.find_all_windows());
 
         events
     }
 
-    fn verify_focused_window_work(&self) -> Option<Vec<DisplayEvent>> {
-        let point = self.xw.get_cursor_point().ok()?;
-        Some(vec![DisplayEvent::VerifyFocusedAt(point.0, point.1)])
-    }
-
-    fn find_all_windows(&self) -> Vec<Window> {
-        let mut all: Vec<Window> = Vec::new();
+    fn find_all_windows(&self) -> Vec<DisplayEvent> {
+        let mut all: Vec<DisplayEvent> = Vec::new();
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
                 let attrs = match self.xw.get_window_attrs(handle) {
                     Ok(x) => x,
                     Err(_) => return,
                 };
-                let managed = match self.xw.get_transient_for(handle) {
-                    Some(_) => attrs.map_state == 2,
-                    None => attrs.override_redirect <= 0 && attrs.map_state == 2,
+                let state = match self.xw.get_wm_state(handle) {
+                    Some(state) => state,
+                    None => return,
                 };
-                if managed {
-                    let name = self.xw.get_window_name(handle);
-                    let pid = self.xw.get_window_pid(handle);
-                    let w = Window::new(WindowHandle::XlibHandle(handle), name, pid);
-                    all.push(w);
+                if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
+                    if let Some(event) = self.xw.setup_window(handle) {
+                        all.push(event);
+                    }
                 }
             }),
             Err(err) => {
@@ -305,32 +308,4 @@ impl XlibDisplayServer {
         }
         all
     }
-}
-
-//return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset(
-    max_tag_index: Option<usize>,
-    max_right_screen: Option<i32>,
-    state: &State,
-    window: &Window,
-) -> Option<i32> {
-    let max_tag_index = max_tag_index?;
-    let max_right_screen = max_right_screen?;
-    for tag in &window.tags {
-        let index = state.tag_index(tag)?;
-        if index > max_tag_index {
-            return Some(max_right_screen + window.x());
-        }
-    }
-    None
-}
-
-//return an offset to hide the window on the left
-fn left_offset(max_screen_width: Option<i32>, window: &Window) -> i32 {
-    let mut left = -(window.width());
-    if let Some(screen_width) = max_screen_width {
-        let best_left = window.x() - screen_width;
-        left = std::cmp::min(best_left, left);
-    }
-    left
 }

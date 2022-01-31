@@ -13,12 +13,13 @@ use crate::config::Config;
 use crate::models::{FocusBehaviour, Mode};
 use crate::utils::xkeysym_lookup::ModMask;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_ulong};
+use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
 use std::{ptr, slice};
 use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
 use x11_dl::xlib;
+use x11_dl::xrandr::Xrandr;
 
 mod getters;
 mod keyboard;
@@ -27,10 +28,16 @@ mod setters;
 mod window;
 
 type WindowStateConst = c_long;
-// const WITHDRAWN_STATE: WindowStateConst = 0;
-const NORMAL_STATE: WindowStateConst = 1;
-// const ICONIC_STATE: WindowStateConst = 2;
+pub const WITHDRAWN_STATE: WindowStateConst = 0;
+pub const NORMAL_STATE: WindowStateConst = 1;
+pub const ICONIC_STATE: WindowStateConst = 2;
 const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
+
+pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
+    | xlib::SubstructureNotifyMask
+    | xlib::StructureNotifyMask
+    | xlib::ButtonPressMask
+    | xlib::PointerMotionMask;
 
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
@@ -56,14 +63,16 @@ pub struct XWrap {
     pub atoms: XAtom,
     cursors: XCursor,
     colors: Colors,
-    managed_windows: Vec<xlib::Window>,
-    pub tags: Vec<String>,
+    pub managed_windows: Vec<xlib::Window>,
+    pub tag_labels: Vec<String>,
     pub mode: Mode,
     pub focus_behaviour: FocusBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
     pub task_notify: Arc<Notify>,
+    pub motion_event_limiter: c_ulong,
+    pub refresh_rate: c_short,
 }
 
 impl Default for XWrap {
@@ -76,6 +85,7 @@ impl XWrap {
     /// # Panics
     ///
     /// Panics if unable to contact xorg.
+    // TODO: Split this function up.
     // `XOpenDisplay`: https://tronche.com/gui/x/xlib/display/opening.html
     // `XConnectionNumber`: https://tronche.com/gui/x/xlib/display/display-macros.html#ConnectionNumber
     // `XDefaultRootWindow`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultRootWindow
@@ -83,6 +93,7 @@ impl XWrap {
     // `XSelectInput`: https://tronche.com/gui/x/xlib/event-handling/XSelectInput.html
     // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     #[must_use]
+    #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
         const SERVER: mio::Token = mio::Token(0);
         let xlib = xlib::Xlib::open().expect("Couldn't not connect to Xorg Server");
@@ -131,6 +142,40 @@ impl XWrap {
             active: 0,
         };
 
+        let refresh_rate = match Xrandr::open() {
+            // Get the current refresh rate from xrandr if available.
+            Ok(xrandr) => unsafe {
+                let screen_resources = (xrandr.XRRGetScreenResources)(display, root);
+                let crtcs = slice::from_raw_parts(
+                    (*screen_resources).crtcs,
+                    (*screen_resources).ncrtc as usize,
+                );
+                let active_modes: Vec<c_ulong> = crtcs
+                    .iter()
+                    .map(|crtc| (xrandr.XRRGetCrtcInfo)(display, screen_resources, *crtc))
+                    .filter(|&crtc_info| (*crtc_info).mode != 0)
+                    .map(|crtc_info| (*crtc_info).mode)
+                    .collect();
+                let modes = slice::from_raw_parts(
+                    (*screen_resources).modes,
+                    (*screen_resources).nmode as usize,
+                );
+                modes
+                    .iter()
+                    .filter(|mode_info| active_modes.contains(&mode_info.id))
+                    .map(|mode_info| {
+                        (mode_info.dotClock as c_double
+                            / c_double::from(mode_info.hTotal * mode_info.vTotal))
+                            as c_short
+                    })
+                    .max()
+                    .unwrap_or(60)
+            },
+            Err(_) => 60,
+        };
+
+        log::debug!("Refresh Rate: {}", refresh_rate);
+
         let xw = Self {
             xlib,
             display,
@@ -139,13 +184,15 @@ impl XWrap {
             cursors,
             colors,
             managed_windows: vec![],
-            tags: vec![],
+            tag_labels: vec![],
             mode: Mode::Normal,
             focus_behaviour: FocusBehaviour::Sloppy,
             mouse_key_mask: 0,
             mode_origin: (0, 0),
             _task_guard,
             task_notify,
+            motion_event_limiter: 0,
+            refresh_rate,
         };
 
         // Check that another WM is not running.
@@ -192,9 +239,9 @@ impl XWrap {
 
     pub fn load_config(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
+        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
         self.load_colors(config);
-        self.tags = config.create_list_of_tags();
+        self.tag_labels = config.create_list_of_tag_labels();
         self.reset_grabs(&config.mapped_bindings());
     }
 
@@ -205,23 +252,14 @@ impl XWrap {
     // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_mod(&config.mousekey());
-
-        let root_event_mask: c_long = xlib::SubstructureRedirectMask
-            | xlib::SubstructureNotifyMask
-            | xlib::ButtonPressMask
-            | xlib::PointerMotionMask
-            | xlib::EnterWindowMask
-            | xlib::LeaveWindowMask
-            | xlib::StructureNotifyMask
-            | xlib::PropertyChangeMask;
+        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
 
         let root = self.root;
         self.load_colors(config);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
-        attrs.event_mask = root_event_mask;
+        attrs.event_mask = ROOT_EVENT_MASK;
 
         unsafe {
             (self.xlib.XChangeWindowAttributes)(
@@ -232,7 +270,7 @@ impl XWrap {
             );
         }
 
-        self.subscribe_to_event(root, root_event_mask);
+        self.subscribe_to_event(root, ROOT_EVENT_MASK);
 
         // EWMH compliance.
         unsafe {
@@ -242,14 +280,14 @@ impl XWrap {
                 .iter()
                 .map(|&atom| atom as c_long)
                 .collect();
-            self.set_property_long(root, self.atoms.NetSupported, xlib::XA_ATOM, &supported);
+            self.replace_property_long(root, self.atoms.NetSupported, xlib::XA_ATOM, &supported);
             std::mem::forget(supported);
             // Cleanup the client list.
             (self.xlib.XDeleteProperty)(self.display, root, self.atoms.NetClientList);
         }
 
         // EWMH compliance for desktops.
-        self.tags = config.create_list_of_tags();
+        self.tag_labels = config.create_list_of_tag_labels();
         self.init_desktops_hints();
 
         self.reset_grabs(&config.mapped_bindings());
@@ -266,8 +304,8 @@ impl XWrap {
     // `Xutf8TextListToTextProperty`: https://linux.die.net/man/3/xutf8textlisttotextproperty
     // `XSetTextProperty`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XSetTextProperty.html
     pub fn init_desktops_hints(&self) {
-        let tags = &self.tags;
-        let tag_length = tags.len();
+        let tag_labels = &self.tag_labels;
+        let tag_length = tag_labels.len();
         // Set the number of desktop.
         let data = vec![tag_length as u32];
         self.set_desktop_prop(&data, self.atoms.NetNumberOfDesktops);
@@ -277,7 +315,7 @@ impl XWrap {
         // Set desktop names.
         let mut text: xlib::XTextProperty = unsafe { std::mem::zeroed() };
         unsafe {
-            let mut clist_tags: Vec<*mut c_char> = tags
+            let mut clist_tags: Vec<*mut c_char> = tag_labels
                 .iter()
                 .map(|x| CString::new(x.clone()).unwrap_or_default().into_raw())
                 .collect();
@@ -299,7 +337,9 @@ impl XWrap {
         }
 
         // Set the WM NAME.
-        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName);
+        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName, self.atoms.UTF8String);
+
+        self.set_desktop_prop_string("LeftWM", self.atoms.WMClass, xlib::XA_STRING);
 
         self.set_desktop_prop_c_ulong(
             self.root as c_ulong,
@@ -310,38 +350,6 @@ impl XWrap {
         // Set a viewport.
         let data = vec![0_u32, 0_u32];
         self.set_desktop_prop(&data, self.atoms.NetDesktopViewport);
-    }
-
-    /// Send a `XConfigureEvent` for a window to X.
-    // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
-    pub fn send_config(&self, window: &Window) {
-        if let WindowHandle::XlibHandle(handle) = window.handle {
-            let config = xlib::XConfigureEvent {
-                type_: xlib::ConfigureNotify,
-                serial: 0, //not used
-                send_event: 0,
-                display: self.display,
-                event: handle,
-                window: handle,
-                x: window.x(),
-                y: window.y(),
-                width: window.width(),
-                height: window.height(),
-                border_width: window.border(),
-                above: 0,
-                override_redirect: 0,
-            };
-            unsafe {
-                let mut event: xlib::XEvent = xlib::XConfigureEvent::into(config);
-                (self.xlib.XSendEvent)(
-                    self.display,
-                    handle,
-                    0,
-                    xlib::StructureNotifyMask,
-                    &mut event,
-                );
-            }
-        }
     }
 
     /// Send a xevent atom for a window to X.
@@ -356,10 +364,25 @@ impl XWrap {
             msg.data.set_long(0, atom as c_long);
             msg.data.set_long(1, xlib::CurrentTime as c_long);
             let mut ev: xlib::XEvent = msg.into();
-            unsafe { (self.xlib.XSendEvent)(self.display, window, 0, xlib::NoEventMask, &mut ev) };
+            self.send_xevent(window, 0, xlib::NoEventMask, &mut ev);
             return true;
         }
         false
+    }
+
+    /// Send a xevent for a window to X.
+    // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
+    pub fn send_xevent(
+        &self,
+        window: xlib::Window,
+        propogate: i32,
+        mask: c_long,
+        event: &mut xlib::XEvent,
+    ) {
+        unsafe {
+            (self.xlib.XSendEvent)(self.display, window, propogate, mask, event);
+            (self.xlib.XSync)(self.display, 0);
+        }
     }
 
     /// Returns whether a window can recieve a xevent atom.
@@ -387,29 +410,44 @@ impl XWrap {
     /// Sets the mode within our xwrapper.
     pub fn set_mode(&mut self, mode: Mode) {
         // Prevent resizing and moving of root.
-        match &mode {
-            Mode::MovingWindow(h) | Mode::ResizingWindow(h) => {
-                if h == &self.get_default_root_handle() {
-                    return;
-                }
+        match mode {
+            Mode::MovingWindow(h)
+            | Mode::ResizingWindow(h)
+            | Mode::ReadyToMove(h)
+            | Mode::ReadyToResize(h)
+                if h == self.get_default_root_handle() =>
+            {
+                return
             }
-            Mode::Normal => {}
+            Mode::MovingWindow(WindowHandle::XlibHandle(h))
+            | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => self.ungrab_buttons(h),
+            _ => {}
         }
         if self.mode == Mode::Normal && mode != Mode::Normal {
             self.mode = mode;
-            // Safe at this point as the move/resize has started.
             if let Ok(loc) = self.get_cursor_point() {
                 self.mode_origin = loc;
             }
             let cursor = match mode {
-                Mode::ResizingWindow(_) => self.cursors.resize,
-                Mode::MovingWindow(_) => self.cursors.move_,
+                Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => self.cursors.resize,
+                Mode::ReadyToMove(_) | Mode::MovingWindow(_) => self.cursors.move_,
                 Mode::Normal => self.cursors.normal,
             };
             self.grab_pointer(cursor);
         }
         if mode == Mode::Normal {
             self.ungrab_pointer();
+            match self.mode {
+                Mode::MovingWindow(WindowHandle::XlibHandle(h))
+                | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => {
+                    self.grab_mouse_clicks(h, true);
+                }
+                Mode::MovingWindow(_)
+                | Mode::ResizingWindow(_)
+                | Mode::ReadyToMove(_)
+                | Mode::ReadyToResize(_)
+                | Mode::Normal => {}
+            }
             self.mode = mode;
         }
     }

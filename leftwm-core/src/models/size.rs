@@ -6,19 +6,19 @@ use serde::{Deserialize, Serialize};
 #[serde(untagged)]
 pub enum Size {
     Pixel(i32),
-    Percentage(f32),
+    Ratio(f32),
 }
 
 impl Size {
-    /// Turn the size into an absolute value, the pixel value
-    /// will be returned as is, the percentage value will be
-    /// multiplied by the provided `whole` to calculate
-    /// the absolute value
+    /// Turn the size into an absolute value.
+    ///
+    /// The pixel value will be returned as is, the ratio value will be multiplied by the provided
+    /// `whole` to calculate the absolute value.
     #[must_use]
-    pub fn into_absolute(self, whole: f32) -> f32 {
+    pub fn into_absolute(self, whole: i32) -> i32 {
         match self {
-            Size::Pixel(x) => x as f32,
-            Size::Percentage(x) => whole * x,
+            Size::Pixel(x) => x,
+            Size::Ratio(x) => (whole as f32 * x).floor() as i32,
         }
     }
 }
