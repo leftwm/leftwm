@@ -202,9 +202,10 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let toggle_to = !window.has_state(&window_state);
     let act = DisplayAction::SetState(handle, toggle_to, window_state);
     state.actions.push_back(act);
+    handle_focus(state, handle);
     match window_state {
-        WindowState::Fullscreen => Some(handle_focus(state, handle)),
-        _ => Some(true),
+        WindowState::Fullscreen => Some(true),
+        _ => Some(false),
     }
 }
 
@@ -416,7 +417,8 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     if window.snap_to_workspace(workspace) {
         state.sort_windows();
     }
-    Some(handle_focus(state, handle))
+    handle_focus(state, handle);
+    Some(true)
 }
 
 fn tile_to_floating(state: &mut State) -> Option<bool> {
@@ -498,7 +500,8 @@ fn move_window_change(
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
     state.windows.append(&mut to_reorder);
-    Some(handle_focus(state, handle))
+    handle_focus(state, handle);
+    Some(true)
 }
 
 //val and layout aren't used which is a bit awkward
@@ -529,7 +532,7 @@ fn move_window_top(
     state.windows.append(&mut to_reorder);
     // focus follows the window if it was not already on top of the stack
     if index > 0 {
-        return Some(handle_focus(state, handle));
+        handle_focus(state, handle);
     }
     Some(true)
 }
@@ -568,7 +571,8 @@ fn focus_window_change(
         handle = new_focused.handle;
     }
     state.windows.append(&mut to_reorder);
-    Some(handle_focus(state, handle))
+    handle_focus(state, handle);
+    Some(layout == Some(Layout::Monocle))
 }
 
 fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
@@ -583,14 +587,15 @@ fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
 
     match (next, cur, prev) {
         (Some(next), Some(cur), Some(prev)) if next == cur && toggle => {
-            Some(handle_focus(state, prev))
+            handle_focus(state, prev);
         }
         (Some(next), Some(cur), _) if next != cur => {
             state.focus_manager.tags_last_window.insert(tag, cur);
-            Some(handle_focus(state, next))
+            handle_focus(state, next);
         }
-        _ => None,
+        _ => {}
     }
+    None
 }
 
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
@@ -606,7 +611,8 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
         .iter()
         .find(|w| workspace.is_displaying(w) && w.r#type == WindowType::Normal)?
         .clone();
-    Some(handle_focus(state, window.handle))
+    handle_focus(state, window.handle);
+    None
 }
 
 fn rotate_tag(state: &mut State) -> Option<bool> {
@@ -645,12 +651,11 @@ fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bo
     Some(true)
 }
 
-fn handle_focus(state: &mut State, handle: WindowHandle) -> bool {
+fn handle_focus(state: &mut State, handle: WindowHandle) {
     match state.focus_manager.behaviour {
         FocusBehaviour::Sloppy => {
             let act = DisplayAction::MoveMouseOver(handle);
             state.actions.push_back(act);
-            true
         }
         _ => state.focus_window(&handle),
     }
