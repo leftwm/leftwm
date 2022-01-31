@@ -13,6 +13,8 @@ impl State {
         modmask: ModMask,
         button: Button,
         handle: WindowHandle,
+        x: i32,
+        y: i32,
     ) -> bool {
         if let Some(window) = self.windows.iter().find(|w| w.handle == handle) {
             if !self.disable_tile_drag || window.floating() {
@@ -22,6 +24,12 @@ impl State {
                 if let Some(act) = act {
                     self.actions.push_back(act);
                     return false;
+                }
+            }
+        } else if self.focus_manager.behaviour == FocusBehaviour::ClickTo {
+            if let xlib::Button1 | xlib::Button3 = button {
+                if self.screens.iter().any(|s| s.root == handle) {
+                    return self.focus_workspace_under_cursor(x, y);
                 }
             }
         }
