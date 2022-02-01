@@ -98,8 +98,9 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
-    pub window_rules: Vec<WindowHook>,
 
+    #[serde(skip)]
+    pub window_rules: Vec<WindowHook>,
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
 }
