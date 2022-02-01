@@ -83,30 +83,14 @@ impl DisplayServer for XlibDisplayServer {
             }
         }
 
-        match self.xw.mode {
-            // Only process minimal events when moving/resizing.
-            Mode::MovingWindow(_)
-            | Mode::ResizingWindow(_)
-            | Mode::ReadyToMove(_)
-            | Mode::ReadyToResize(_) => {
-                let xlib_event = self.xw.get_mask_event();
-                let event = XEvent(&mut self.xw, xlib_event).into();
-                if let Some(e) = event {
-                    log::trace!("DisplayEvent: {:?}", e);
-                    events.push(e);
-                }
-            }
-            Mode::Normal => {
-                let events_in_queue = self.xw.queue_len();
+        let events_in_queue = self.xw.queue_len();
 
-                for _ in 0..events_in_queue {
-                    let xlib_event = self.xw.get_next_event();
-                    let event = XEvent(&mut self.xw, xlib_event).into();
-                    if let Some(e) = event {
-                        log::trace!("DisplayEvent: {:?}", e);
-                        events.push(e);
-                    }
-                }
+        for _ in 0..events_in_queue {
+            let xlib_event = self.xw.get_next_event();
+            let event = XEvent(&mut self.xw, xlib_event).into();
+            if let Some(e) = event {
+                log::trace!("DisplayEvent: {:?}", e);
+                events.push(e);
             }
         }
 
