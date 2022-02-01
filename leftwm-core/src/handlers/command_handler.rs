@@ -287,11 +287,13 @@ fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
         state.windows.iter().find(|w| is_target(*w)).cloned()
     }?;
 
-    let handle = target_window.handle;
-    let tag = target_window.tags.first()?;
+    if state.workspaces.iter().any(|ws| ws.is_displaying(&target_window)) {
+        let handle = target_window.handle;
+        return Some(handle_focus(state, handle));
+    }
 
-    state.goto_tag_handler(*tag)
-        .and(Some(handle_focus(state, handle)))
+    let tag_id = target_window.tags.first()?;
+    state.goto_tag_handler(*tag_id)
 }
 
 /// Focus the adjacent tags, depending on the delta.
