@@ -180,6 +180,8 @@ impl XWrap {
         None
     }
 
+    /// Returns the next `Xevent` that matches the mask of the xserver.
+    // `XMaskEvent`: https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XMaskEvent.html
     pub fn get_mask_event(&self) -> xlib::XEvent {
         unsafe {
             let mut event: xlib::XEvent = std::mem::zeroed();

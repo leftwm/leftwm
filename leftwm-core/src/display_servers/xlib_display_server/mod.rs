@@ -84,6 +84,7 @@ impl DisplayServer for XlibDisplayServer {
         }
 
         match self.xw.mode {
+            // Only process minimal events when moving/resizing.
             Mode::MovingWindow(_)
             | Mode::ResizingWindow(_)
             | Mode::ReadyToMove(_)
