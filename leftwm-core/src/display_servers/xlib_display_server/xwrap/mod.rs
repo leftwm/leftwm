@@ -35,11 +35,11 @@ const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
 
 pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
     | xlib::SubstructureNotifyMask
-    | xlib::StructureNotifyMask
     | xlib::ButtonPressMask
-    | xlib::PointerMotionMask;
+    | xlib::PointerMotionMask
+    | xlib::StructureNotifyMask;
 
-const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask;
+const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
 
 pub struct Colors {
@@ -91,7 +91,6 @@ impl XWrap {
     // `XDefaultRootWindow`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultRootWindow
     // `XSetErrorHandler`: https://tronche.com/gui/x/xlib/event-handling/protocol-errors/XSetErrorHandler.html
     // `XSelectInput`: https://tronche.com/gui/x/xlib/event-handling/XSelectInput.html
-    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     #[must_use]
     #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
@@ -206,8 +205,8 @@ impl XWrap {
         unsafe {
             (xw.xlib.XSetErrorHandler)(Some(startup_check_for_other_wm));
             (xw.xlib.XSelectInput)(xw.display, root, xlib::SubstructureRedirectMask);
-            (xw.xlib.XSync)(xw.display, xlib::False);
         };
+        xw.sync();
 
         // This is allowed for now as const extern fns
         // are not yet stable (1.56.0, 16 Sept 2021)
@@ -230,10 +229,8 @@ impl XWrap {
         // https://stackoverflow.com/questions/35569562/how-to-catch-keyboard-layout-change-event-and-get-current-new-keyboard-layout-on
         xw.keysym_to_keycode(x11_dl::keysym::XK_F1);
 
-        unsafe {
-            (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
-            (xw.xlib.XSync)(xw.display, xlib::False);
-        };
+        unsafe { (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib)) };
+        xw.sync();
         xw
     }
 
@@ -253,7 +250,6 @@ impl XWrap {
     /// Initialize the xwrapper.
     // `XChangeWindowAttributes`: https://tronche.com/gui/x/xlib/window/XChangeWindowAttributes.html
     // `XDeleteProperty`: https://tronche.com/gui/x/xlib/window-information/XDeleteProperty.html
-    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
@@ -297,9 +293,7 @@ impl XWrap {
 
         self.reset_grabs(&config.mapped_bindings());
 
-        unsafe {
-            (self.xlib.XSync)(self.display, 0);
-        }
+        self.sync();
     }
 
     /// EWMH support used for bars such as polybar.
@@ -384,10 +378,8 @@ impl XWrap {
         mask: c_long,
         event: &mut xlib::XEvent,
     ) {
-        unsafe {
-            (self.xlib.XSendEvent)(self.display, window, propogate, mask, event);
-            (self.xlib.XSync)(self.display, 0);
-        }
+        unsafe { (self.xlib.XSendEvent)(self.display, window, propogate, mask, event) };
+        self.sync();
     }
 
     /// Returns whether a window can recieve a xevent atom.
@@ -436,8 +428,8 @@ impl XWrap {
 
     /// Sets the mode within our xwrapper.
     pub fn set_mode(&mut self, mode: Mode) {
-        // Prevent resizing and moving of root.
         match mode {
+            // Prevent resizing and moving of root.
             Mode::MovingWindow(h)
             | Mode::ResizingWindow(h)
             | Mode::ReadyToMove(h)
@@ -446,42 +438,47 @@ impl XWrap {
             {
                 return
             }
-            Mode::MovingWindow(WindowHandle::XlibHandle(h))
-            | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => self.ungrab_buttons(h),
-            _ => {}
-        }
-        if self.mode == Mode::Normal && mode != Mode::Normal {
-            self.mode = mode;
-            if let Ok(loc) = self.get_cursor_point() {
-                self.mode_origin = loc;
-            }
-            let cursor = match mode {
-                Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => self.cursors.resize,
-                Mode::ReadyToMove(_) | Mode::MovingWindow(_) => self.cursors.move_,
-                Mode::Normal => self.cursors.normal,
-            };
-            self.grab_pointer(cursor);
-        }
-        if mode == Mode::Normal {
-            self.ungrab_pointer();
-            match self.mode {
-                Mode::MovingWindow(WindowHandle::XlibHandle(h))
-                | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => {
-                    self.grab_mouse_clicks(h, true);
+            Mode::ReadyToMove(_) | Mode::ReadyToResize(_) if self.mode == Mode::Normal => {
+                self.mode = mode;
+                if let Ok(loc) = self.get_cursor_point() {
+                    self.mode_origin = loc;
                 }
-                Mode::MovingWindow(_)
-                | Mode::ResizingWindow(_)
-                | Mode::ReadyToMove(_)
-                | Mode::ReadyToResize(_)
-                | Mode::Normal => {}
+                let cursor = match mode {
+                    Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => self.cursors.resize,
+                    Mode::ReadyToMove(_) | Mode::MovingWindow(_) => self.cursors.move_,
+                    Mode::Normal => self.cursors.normal,
+                };
+                self.grab_pointer(cursor);
             }
-            self.mode = mode;
+            Mode::MovingWindow(h) | Mode::ResizingWindow(h)
+                if self.mode == Mode::ReadyToMove(h) || self.mode == Mode::ReadyToResize(h) =>
+            {
+                self.ungrab_pointer();
+                self.mode = mode;
+                let cursor = match mode {
+                    Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => self.cursors.resize,
+                    Mode::ReadyToMove(_) | Mode::MovingWindow(_) => self.cursors.move_,
+                    Mode::Normal => self.cursors.normal,
+                };
+                self.grab_pointer(cursor);
+            }
+            Mode::Normal => {
+                self.ungrab_pointer();
+                self.mode = mode;
+            }
+            _ => {}
         }
     }
 
     /// Wait until readable.
     pub async fn wait_readable(&mut self) {
         self.task_notify.notified().await;
+    }
+
+    /// Flush and sync the xserver.
+    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
+    pub fn sync(&self) {
+        unsafe { (self.xlib.XSync)(self.display, xlib::False) };
     }
 
     /// Flush the xserver.

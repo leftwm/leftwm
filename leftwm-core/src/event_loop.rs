@@ -61,7 +61,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             // If we need to update the displayed state.
             if needs_update {
-                log::info!("Update");
                 self.update_windows();
 
                 match self.state.mode {

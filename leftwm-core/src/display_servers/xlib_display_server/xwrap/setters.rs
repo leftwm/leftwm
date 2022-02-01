@@ -166,10 +166,8 @@ impl XWrap {
         mut window_changes: xlib::XWindowChanges,
         unlock: u32,
     ) {
-        unsafe {
-            (self.xlib.XConfigureWindow)(self.display, window, unlock, &mut window_changes);
-            (self.xlib.XSync)(self.display, 0);
-        }
+        unsafe { (self.xlib.XConfigureWindow)(self.display, window, unlock, &mut window_changes) };
+        self.sync();
     }
 
     /// Sets what desktop a window is on.

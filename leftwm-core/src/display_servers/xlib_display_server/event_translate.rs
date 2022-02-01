@@ -54,14 +54,15 @@ fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XUnmapEvent::from(x_event.1);
     if xw.managed_windows.contains(&event.window) {
-        let h = WindowHandle::XlibHandle(event.window);
-        xw.teardown_managed_window(&h);
         // Set WM_STATE to withdrawn state.
         xw.set_wm_states(event.window, &[WITHDRAWN_STATE]);
-        Some(DisplayEvent::WindowDestroy(h))
-    } else {
-        None
+        if event.send_event == xlib::False {
+            let h = WindowHandle::XlibHandle(event.window);
+            xw.teardown_managed_window(&h);
+            return Some(DisplayEvent::WindowDestroy(h));
+        }
     }
+    None
 }
 
 fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
@@ -70,10 +71,9 @@ fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
     if xw.managed_windows.contains(&event.window) {
         let h = WindowHandle::XlibHandle(event.window);
         xw.teardown_managed_window(&h);
-        Some(DisplayEvent::WindowDestroy(h))
-    } else {
-        None
+        return Some(DisplayEvent::WindowDestroy(h));
     }
+    None
 }
 
 fn from_client_message(x_event: &XEvent) -> Option<DisplayEvent> {
@@ -87,6 +87,7 @@ fn from_property_notify(x_event: &XEvent) -> Option<DisplayEvent> {
 }
 
 fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent> {
+    log::info!("ConfigureRequest");
     let xw = x_event.0;
     let event = xlib::XConfigureRequestEvent::from(x_event.1);
     // If the window is not mapped, configure it.
@@ -167,12 +168,16 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
         let offset_x = event.x_root - xw.mode_origin.0;
         let offset_y = event.y_root - xw.mode_origin.1;
         let display_event = match xw.mode {
-            Mode::ReadyToMove(h) | Mode::MovingWindow(h) => {
+            Mode::ReadyToMove(h) => {
+                xw.set_mode(Mode::MovingWindow(h));
                 DisplayEvent::MoveWindow(h, offset_x, offset_y)
             }
-            Mode::ReadyToResize(h) | Mode::ResizingWindow(h) => {
+            Mode::MovingWindow(h) => DisplayEvent::MoveWindow(h, offset_x, offset_y),
+            Mode::ReadyToResize(h) => {
+                xw.set_mode(Mode::ResizingWindow(h));
                 DisplayEvent::ResizeWindow(h, offset_x, offset_y)
             }
+            Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(h, offset_x, offset_y),
             Mode::Normal if xw.focus_behaviour == FocusBehaviour::Sloppy => {
                 DisplayEvent::Movement(event_h, event.x_root, event.y_root)
             }
@@ -185,6 +190,7 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
 }
 
 fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent {
+    log::info!("ButtonPress");
     let event = xlib::XButtonPressedEvent::from(raw_event);
     let h = WindowHandle::XlibHandle(event.window);
     let mut mod_mask = event.state;
@@ -193,6 +199,7 @@ fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent {
 }
 
 fn from_button_release(x_event: XEvent) -> DisplayEvent {
+    log::info!("ButtonRelease");
     let xw = x_event.0;
     xw.set_mode(Mode::Normal);
     DisplayEvent::ChangeToNormalMode

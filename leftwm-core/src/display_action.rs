@@ -44,7 +44,7 @@ pub enum DisplayAction {
     },
 
     /// Remove focus on any visible window by focusing the root window.
-    Unfocus(Option<WindowHandle>),
+    Unfocus(Option<WindowHandle>, bool),
 
     /// To the window under the cursor to take the focus.
     FocusWindowUnderCursor,

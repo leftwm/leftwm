@@ -16,7 +16,6 @@ impl XWrap {
             _ => return None,
         };
         let handle = WindowHandle::XlibHandle(window);
-        self.subscribe_to_window_events(&handle);
         // Gather info about the window from xlib.
         let name = self.get_window_name(window);
         let legacy_name = self.get_window_legacy_name(window);
@@ -90,15 +89,14 @@ impl XWrap {
 
     /// Sets up a window that we want to manage.
     // `XMapWindow`: https://tronche.com/gui/x/xlib/window/XMapWindow.html
-    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     pub fn setup_managed_window(
         &mut self,
         h: WindowHandle,
         floating: bool,
         follow_mouse: bool,
     ) -> Option<DisplayEvent> {
-        self.subscribe_to_window_events(&h);
         if let WindowHandle::XlibHandle(handle) = h {
+            self.subscribe_to_window_events(handle);
             self.managed_windows.push(handle);
             // Make sure the window is mapped.
             unsafe { (self.xlib.XMapWindow)(self.display, handle) };
@@ -157,7 +155,6 @@ impl XWrap {
 
     /// Teardown a managed window when it is destroyed.
     // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
-    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
@@ -166,7 +163,7 @@ impl XWrap {
                 self.managed_windows.retain(|x| *x != *handle);
                 self.set_client_list();
                 self.ungrab_buttons(*handle);
-                (self.xlib.XSync)(self.display, 0);
+                self.sync();
                 (self.xlib.XUngrabServer)(self.display);
             }
         }
@@ -188,6 +185,7 @@ impl XWrap {
                 let unlock =
                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
                 self.set_window_config(handle, changes, u32::from(unlock));
+                self.sync();
             }
             let state = match self.get_wm_state(handle) {
                 Some(state) => state,
@@ -280,8 +278,15 @@ impl XWrap {
 
     /// Unfocuses all windows.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn unfocus(&self, handle: Option<WindowHandle>) {
+    pub fn unfocus(&self, handle: Option<WindowHandle>, floating: bool) {
         if let Some(WindowHandle::XlibHandle(handle)) = handle {
+            let color = if floating {
+                self.colors.floating
+            } else {
+                self.colors.normal
+            };
+            self.set_window_border_color(handle, color);
+
             self.grab_mouse_clicks(handle, false);
         }
         unsafe {
@@ -373,7 +378,6 @@ impl XWrap {
     // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
     // `XSetCloseDownMode`: https://tronche.com/gui/x/xlib/display/XSetCloseDownMode.html
     // `XKillClient`: https://tronche.com/gui/x/xlib/window-and-session-manager/XKillClient.html
-    // `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
@@ -384,7 +388,7 @@ impl XWrap {
                     (self.xlib.XGrabServer)(self.display);
                     (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
                     (self.xlib.XKillClient)(self.display, *handle);
-                    (self.xlib.XSync)(self.display, xlib::False);
+                    self.sync();
                     (self.xlib.XUngrabServer)(self.display);
                 }
             }
@@ -407,10 +411,8 @@ impl XWrap {
     }
 
     /// Subscribe to the wanted events of a window.
-    pub fn subscribe_to_window_events(&self, handle: &WindowHandle) {
-        if let WindowHandle::XlibHandle(handle) = handle {
-            let mask = xlib::EnterWindowMask | xlib::FocusChangeMask | xlib::PropertyChangeMask;
-            self.subscribe_to_event(*handle, mask);
-        }
+    pub fn subscribe_to_window_events(&self, window: xlib::Window) {
+        let mask = xlib::EnterWindowMask | xlib::FocusChangeMask | xlib::PropertyChangeMask;
+        self.subscribe_to_event(window, mask);
     }
 }

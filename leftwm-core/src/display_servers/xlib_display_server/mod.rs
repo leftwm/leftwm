@@ -83,14 +83,29 @@ impl DisplayServer for XlibDisplayServer {
             }
         }
 
-        let events_in_queue = self.xw.queue_len();
+        match self.xw.mode {
+            Mode::MovingWindow(_)
+            | Mode::ResizingWindow(_)
+            | Mode::ReadyToMove(_)
+            | Mode::ReadyToResize(_) => {
+                let xlib_event = self.xw.get_mask_event();
+                let event = XEvent(&mut self.xw, xlib_event).into();
+                if let Some(e) = event {
+                    log::trace!("DisplayEvent: {:?}", e);
+                    events.push(e);
+                }
+            }
+            Mode::Normal => {
+                let events_in_queue = self.xw.queue_len();
 
-        for _ in 0..events_in_queue {
-            let xlib_event = self.xw.get_next_event();
-            let event = XEvent(&mut self.xw, xlib_event).into();
-            if let Some(e) = event {
-                log::trace!("DisplayEvent: {:?}", e);
-                events.push(e);
+                for _ in 0..events_in_queue {
+                    let xlib_event = self.xw.get_next_event();
+                    let event = XEvent(&mut self.xw, xlib_event).into();
+                    if let Some(e) = event {
+                        log::trace!("DisplayEvent: {:?}", e);
+                        events.push(e);
+                    }
+                }
             }
         }
 
@@ -108,11 +123,11 @@ impl DisplayServer for XlibDisplayServer {
         let xw = &mut self.xw;
         let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(h) => from_kill_window(xw, h),
-            DisplayAction::AddedWindow(h, fl, fm) => from_added_window(xw, h, fl, fm),
+            DisplayAction::AddedWindow(h, f, fm) => from_added_window(xw, h, f, fm),
             DisplayAction::MoveMouseOver(h) => from_move_mouse_over(xw, h),
             DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
             DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
-            DisplayAction::Unfocus(h) => from_unfocus(xw, h),
+            DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
             DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, &ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
@@ -240,8 +255,12 @@ fn from_destroyed_window(xw: &mut XWrap, handle: WindowHandle) -> Option<Display
     None
 }
 
-fn from_unfocus(xw: &mut XWrap, handle: Option<WindowHandle>) -> Option<DisplayEvent> {
-    xw.unfocus(handle);
+fn from_unfocus(
+    xw: &mut XWrap,
+    handle: Option<WindowHandle>,
+    floating: bool,
+) -> Option<DisplayEvent> {
+    xw.unfocus(handle, floating);
     None
 }
 
