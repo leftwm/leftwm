@@ -116,8 +116,6 @@ impl XAtom {
         ]
     }
 
-    #[allow(clippy::too_many_lines)]
-    // TODO: Use a match statement.
     pub const fn get_name(&self, atom: xlib::Atom) -> &str {
         match atom {
             a if a == self.WMProtocols => "WM_PROTOCOLS",
