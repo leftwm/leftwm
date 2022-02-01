@@ -450,9 +450,6 @@ impl XWrap {
             Mode::MovingWindow(h) | Mode::ResizingWindow(h)
                 if self.mode == Mode::ReadyToMove(h) || self.mode == Mode::ReadyToResize(h) =>
             {
-                if let WindowHandle::XlibHandle(h) = h {
-                    self.ungrab_buttons(h);
-                }
                 self.ungrab_pointer();
                 self.mode = mode;
                 let cursor = match mode {
@@ -464,13 +461,6 @@ impl XWrap {
             }
             Mode::Normal => {
                 self.ungrab_pointer();
-                match self.mode {
-                    Mode::MovingWindow(WindowHandle::XlibHandle(h))
-                    | Mode::ResizingWindow(WindowHandle::XlibHandle(h)) => {
-                        self.grab_mouse_clicks(h, true);
-                    }
-                    _ => {}
-                }
                 self.mode = mode;
             }
             _ => {}
