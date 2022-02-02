@@ -185,7 +185,7 @@ impl XWrap {
                 let unlock =
                     xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
                 self.set_window_config(handle, changes, u32::from(unlock));
-                self.sync();
+                self.configure_window(window);
             }
             let state = match self.get_wm_state(handle) {
                 Some(state) => state,
