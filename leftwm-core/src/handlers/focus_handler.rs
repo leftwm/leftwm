@@ -22,6 +22,7 @@ impl State {
                 ),
                 None => (None, None),
             };
+
         if let Some(workspace_id) = workspace_id {
             let _ = self.focus_workspace_work(workspace_id);
         }
@@ -31,7 +32,6 @@ impl State {
             let _ = self.focus_tag_work(tag);
         }
     }
-
     /// Focuses the given workspace.
     // NOTE: Should only be called externally from this file.
     pub fn focus_workspace(&mut self, workspace: &Workspace) {
@@ -39,6 +39,12 @@ impl State {
             // Make sure this workspaces tag is focused.
             workspace.tags.iter().for_each(|t| {
                 self.focus_tag_work(*t);
+
+                if let Some(handle) = self.focus_manager.tags_last_window.get(t).copied() {
+                    self.focus_window_work(&handle);
+                } else {
+                    self.unfocus_current_window();
+                }
             });
         }
     }
@@ -79,11 +85,7 @@ impl State {
         // Unfocus last window if the target tag is empty
         if let Some(window) = self.focus_manager.window(&self.windows) {
             if !window.tags.contains(tag) {
-                self.actions.push_back(DisplayAction::Unfocus(
-                    Some(window.handle),
-                    window.floating(),
-                ));
-                self.focus_manager.window_history.push_front(None);
+                self.unfocus_current_window();
             }
         }
     }
@@ -215,6 +217,21 @@ impl State {
             self.focus_window(&handle);
         }
     }
+
+    fn unfocus_current_window(&mut self) {
+        if let Some(window) = self.focus_manager.window(&self.windows) {
+            self.actions.push_back(DisplayAction::Unfocus(
+                Some(window.handle),
+                window.floating(),
+            ));
+            self.focus_manager.window_history.push_front(None);
+            for tag_id in &window.tags {
+                self.focus_manager
+                    .tags_last_window
+                    .insert(*tag_id, window.handle);
+            }
+        }
+    }
 }
 
 // Square root not needed as we are only interested in the comparison.
@@ -244,6 +261,48 @@ mod tests {
             .workspace(&manager.state.workspaces)
             .unwrap();
         assert_eq!(Some(0), actual.id);
+    }
+
+    #[test]
+    fn focusing_a_workspace_should_focus_its_last_active_window() {
+        let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+        manager
+            .state
+            .focus_workspace(&manager.state.workspaces[0].clone());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        manager
+            .state
+            .focus_workspace(&manager.state.workspaces[0].clone());
+
+        let expected = manager.state.windows.get(1).map(|w| w.handle);
+        manager.state.focus_window(&expected.unwrap());
+
+        manager
+            .state
+            .focus_workspace(&manager.state.workspaces[1].clone());
+        manager
+            .state
+            .focus_workspace(&manager.state.workspaces[0].clone());
+
+        let actual = manager
+            .state
+            .focus_manager
+            .window(&manager.state.windows)
+            .map(|w| w.handle);
+
+        assert_eq!(expected, actual);
     }
 
     #[test]
