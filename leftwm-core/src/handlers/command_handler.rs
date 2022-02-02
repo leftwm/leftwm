@@ -586,9 +586,7 @@ fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
         .map(|w| w.handle);
 
     match (next, cur, prev) {
-        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => {
-            handle_focus(state, prev);
-        }
+        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => handle_focus(state, prev),
         (Some(next), Some(cur), _) if next != cur => handle_focus(state, next),
         _ => {}
     }

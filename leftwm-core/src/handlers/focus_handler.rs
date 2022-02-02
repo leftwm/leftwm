@@ -97,14 +97,18 @@ impl State {
         if found.is_unmanaged() {
             return None;
         }
-        let mut previous = None;
+        let previous = self.focus_manager.window(&self.windows);
         // No new history if no change.
-        if let Some(fw) = self.focus_manager.window(&self.windows) {
-            if &fw.handle == handle {
+        if let Some(previous) = previous {
+            if &previous.handle == handle {
                 // Return some so we still update the visuals.
                 return Some(found.clone());
             }
-            previous = Some(fw.clone());
+            for tag_id in &previous.tags {
+                self.focus_manager
+                    .tags_last_window
+                    .insert(*tag_id, previous.handle);
+            }
         }
 
         // Clean old history.
@@ -114,7 +118,7 @@ impl State {
 
         let act = DisplayAction::WindowTakeFocus {
             window: found.clone(),
-            previous_window: previous,
+            previous_window: previous.cloned(),
         };
         self.actions.push_back(act);
 
