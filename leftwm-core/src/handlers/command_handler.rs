@@ -309,7 +309,7 @@ fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
                 w.has_tag(tag_id) && !w.is_unmanaged()
             });
-            let window_index = windows.iter().position(|w| is_target(w))?;
+            let window_index = windows.iter().position(|w| w.handle == handle)?;
             let _ = helpers::cycle_vec(&mut windows, -(window_index as i32));
             state.windows.append(&mut windows);
             Some(handle_focus(state, handle))
