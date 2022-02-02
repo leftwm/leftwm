@@ -277,23 +277,46 @@ fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Opti
 }
 
 fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
-    let is_target = |w: &Window| -> bool { w.res_name.as_ref().map_or(false, |c| c == window_name) };
+    let is_target =
+        |w: &Window| -> bool { w.res_name.as_ref().map_or(false, |c| c == window_name) };
 
     let current_window = state.focus_manager.window(&state.windows)?;
     let target_window = if is_target(current_window) {
         let previous_window_handle = state.focus_manager.window_history.get(1);
-        state.windows.iter().find(|w| Some(&Some(w.handle)) == previous_window_handle).cloned()
+        state
+            .windows
+            .iter()
+            .find(|w| Some(&Some(w.handle)) == previous_window_handle)
+            .cloned()
     } else {
         state.windows.iter().find(|w| is_target(*w)).cloned()
     }?;
 
-    if state.workspaces.iter().any(|ws| ws.is_displaying(&target_window)) {
-        let handle = target_window.handle;
+    let handle = target_window.handle;
+    if target_window.visible() {
         return Some(handle_focus(state, handle));
     }
 
     let tag_id = target_window.tags.first()?;
-    state.goto_tag_handler(*tag_id)
+    state.goto_tag_handler(*tag_id)?;
+
+    match state
+        .focus_manager
+        .workspace(&state.workspaces)
+        .map(|ws| ws.layout)
+    {
+        Some(Layout::Monocle | Layout::MainAndDeck) => {
+            let mut windows = helpers::vec_extract(&mut state.windows, |w| {
+                w.has_tag(tag_id) && !w.is_unmanaged()
+            });
+            let window_index = windows.iter().position(|w| is_target(w))?;
+            let _ = helpers::cycle_vec(&mut windows, -(window_index as i32));
+            state.windows.append(&mut windows);
+            Some(handle_focus(state, handle))
+        }
+        Some(_) => Some(handle_focus(state, handle)),
+        None => None,
+    }
 }
 
 /// Focus the adjacent tags, depending on the delta.
