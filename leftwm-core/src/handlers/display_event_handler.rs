@@ -41,9 +41,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             DisplayEvent::SendCommand(command) => self.command_handler(&command),
 
-            DisplayEvent::MouseCombo(mod_mask, button, handle) => {
-                self.state.mouse_combo_handler(mod_mask, button, handle)
-            }
+            DisplayEvent::MouseCombo(mod_mask, button, handle, x, y) => self
+                .state
+                .mouse_combo_handler(mod_mask, button, handle, x, y),
 
             DisplayEvent::ChangeToNormalMode => {
                 match self.state.mode {
