@@ -305,7 +305,7 @@ fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
         .workspace(&state.workspaces)
         .map(|ws| ws.layout)
     {
-        Some(Layout::Monocle | Layout::MainAndDeck) => {
+        Some(Layout::Monocle) | Some(Layout::MainAndDeck) => {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
                 w.has_tag(tag_id) && !w.is_unmanaged()
             });
