@@ -193,7 +193,7 @@ fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent {
     let h = WindowHandle::XlibHandle(event.window);
     let mut mod_mask = event.state;
     mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
-    DisplayEvent::MouseCombo(mod_mask, event.button, h)
+    DisplayEvent::MouseCombo(mod_mask, event.button, h, event.x, event.y)
 }
 
 fn from_button_release(x_event: XEvent) -> DisplayEvent {
