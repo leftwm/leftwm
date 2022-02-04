@@ -277,8 +277,14 @@ fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Opti
 }
 
 fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
-    let is_target =
-        |w: &Window| -> bool { w.res_name.as_ref().map_or(false, |c| c == window_name) };
+    let is_target = |w: &Window| -> bool {
+        w.res_name
+            .as_ref()
+            .zip(w.res_class.as_ref())
+            .map_or(false, |(res_name, res_class)| {
+                window_name == res_name || window_name == res_class
+            })
+    };
 
     let current_window = state.focus_manager.window(&state.windows)?;
     let target_window = if is_target(current_window) {
