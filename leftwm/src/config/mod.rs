@@ -14,7 +14,7 @@ use leftwm_core::{
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
     state::State,
-    Manager,
+    DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -98,8 +98,9 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
-    pub window_rules: Vec<WindowHook>,
 
+    #[serde(skip)]
+    pub window_rules: Vec<WindowHook>,
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
 }
@@ -312,7 +313,10 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
-    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool {
+    fn command_handler<SERVER: DisplayServer>(
+        command: &str,
+        manager: &mut Manager<Self, SERVER>,
+    ) -> bool {
         if let Some((command, value)) = command.split_once(' ') {
             match command {
                 "LoadTheme" => {

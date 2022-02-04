@@ -8,6 +8,9 @@ use std::os::raw::c_long;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
+    if !xw.managed_windows.contains(&event.window) {
+        return None;
+    }
     let atom_name = xw.atoms.get_name(event.message_type);
     log::trace!("ClientMessage: {} : {:?}", event.window, atom_name);
 

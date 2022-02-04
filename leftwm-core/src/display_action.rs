@@ -15,7 +15,7 @@ pub enum DisplayAction {
 
     /// Get triggered after a new window is discovered and WE are
     /// managing it.
-    AddedWindow(WindowHandle, bool),
+    AddedWindow(WindowHandle, bool, bool),
 
     /// Makes sure the mouse is over a given window.
     MoveMouseOver(WindowHandle),
@@ -40,11 +40,11 @@ pub enum DisplayAction {
     /// Tell a window that it is to become focused.
     WindowTakeFocus {
         window: Window,
-        previous_handle: Option<WindowHandle>,
+        previous_window: Option<Window>,
     },
 
     /// Remove focus on any visible window by focusing the root window.
-    Unfocus(Option<WindowHandle>),
+    Unfocus(Option<WindowHandle>, bool),
 
     /// To the window under the cursor to take the focus.
     FocusWindowUnderCursor,
