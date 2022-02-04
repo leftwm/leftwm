@@ -298,9 +298,11 @@ fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
         state.windows.iter().find(|w| is_target(*w)).cloned()
     }?;
 
+    let focus = |s: &mut State, h: WindowHandle| -> Option<bool> { Some(handle_focus(s, h)) };
     let handle = target_window.handle;
+
     if target_window.visible() {
-        return Some(handle_focus(state, handle));
+        return focus(state, handle);
     }
 
     let tag_id = target_window.tags.first()?;
@@ -311,16 +313,30 @@ fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
         .workspace(&state.workspaces)
         .map(|ws| ws.layout)
     {
-        Some(Layout::Monocle | Layout::MainAndDeck) => {
+        Some(layout) if layout == Layout::Monocle || layout == Layout::MainAndDeck => {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
-                w.has_tag(tag_id) && !w.is_unmanaged()
+                w.has_tag(tag_id) && !w.is_unmanaged() && !w.floating()
             });
-            let window_index = windows.iter().position(|w| w.handle == handle)?;
-            let _ = helpers::cycle_vec(&mut windows, -(window_index as i32));
-            state.windows.append(&mut windows);
-            Some(handle_focus(state, handle))
+
+            let cycle = |wins: &mut Vec<Window>, s: &mut State| {
+                let window_index = wins.iter().position(|w| w.handle == handle).unwrap_or(0);
+                let _ = helpers::cycle_vec(wins, -(window_index as i32));
+                s.windows.append(wins);
+            };
+
+            if layout == Layout::Monocle && windows.len() > 1 {
+                cycle(&mut windows, state);
+            } else if layout == Layout::MainAndDeck && windows.len() > 2 {
+                let main_window = windows.remove(0);
+                state.windows.push(main_window);
+                cycle(&mut windows, state);
+            } else {
+                state.windows.append(&mut windows);
+            }
+
+            focus(state, handle)
         }
-        Some(_) => Some(handle_focus(state, handle)),
+        Some(_) => focus(state, handle),
         None => None,
     }
 }
