@@ -214,7 +214,7 @@ impl Default for Config {
             theme_setting: ThemeSetting::default(),
             max_window_width: None,
             state: None,
-            window_rules: Vec::new(),
+            window_rules: None,
         }
     }
 }
