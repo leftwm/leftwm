@@ -125,7 +125,7 @@ impl XWrap {
 
     /// Replay a click on a window.
     // `XQueryPointer`: https://tronche.com/gui/x/xlib/window-information/XQueryPointer.html
-    pub fn replay_click(&self) {
+    pub fn replay_click(&self, focused_window: xlib::Window) {
         unsafe {
             let mut event: xlib::XButtonEvent = std::mem::zeroed();
             event.button = xlib::Button1;
@@ -146,11 +146,16 @@ impl XWrap {
                     &mut event.state,
                 );
             }
-            event.type_ = xlib::ButtonPress;
-            self.send_xevent(event.window, 0, xlib::ButtonPressMask, &mut event.into());
 
-            event.type_ = xlib::ButtonRelease;
-            self.send_xevent(event.window, 0, xlib::ButtonReleaseMask, &mut event.into());
+            // Make sure we are clicking on the focused window. This also prevents clicks when
+            // focus is changed by a keybind.
+            if event.window == focused_window {
+                event.type_ = xlib::ButtonPress;
+                self.send_xevent(event.window, 0, xlib::ButtonPressMask, &mut event.into());
+
+                event.type_ = xlib::ButtonRelease;
+                self.send_xevent(event.window, 0, xlib::ButtonReleaseMask, &mut event.into());
+            }
         }
     }
 

@@ -49,6 +49,8 @@ pub enum DisplayAction {
     /// To the window under the cursor to take the focus.
     FocusWindowUnderCursor,
 
+    ReplayClick(WindowHandle),
+
     /// Tell the DM we are ready to resize this window.
     ReadyToResizeWindow(WindowHandle),
 

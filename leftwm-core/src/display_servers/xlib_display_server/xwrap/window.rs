@@ -233,9 +233,9 @@ impl XWrap {
     pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             // Play a click when in ClickToFocus.
-            if self.focus_behaviour == FocusBehaviour::ClickTo {
-                self.replay_click();
-            }
+            // if self.focus_behaviour == FocusBehaviour::ClickTo {
+            //     self.replay_click(handle);
+            // }
             // Update previous window.
             if let Some(previous) = previous {
                 if let WindowHandle::XlibHandle(previous_handle) = previous.handle {

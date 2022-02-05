@@ -113,6 +113,7 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
             DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
+            DisplayAction::ReplayClick(h) => from_replay_click(xw, h),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
             DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, &ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
@@ -246,6 +247,13 @@ fn from_unfocus(
     floating: bool,
 ) -> Option<DisplayEvent> {
     xw.unfocus(handle, floating);
+    None
+}
+
+fn from_replay_click(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    if let WindowHandle::XlibHandle(handle) = handle {
+        xw.replay_click(handle);
+    }
     None
 }
 
