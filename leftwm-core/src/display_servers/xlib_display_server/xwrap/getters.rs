@@ -1,5 +1,5 @@
 //! `XWrap` getters.
-use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN};
+use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN, MOUSEMASK};
 use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
 use std::ffi::CString;
@@ -178,6 +178,20 @@ impl XWrap {
             return Some(xyhw);
         }
         None
+    }
+
+    /// Returns the next `Xevent` that matches the mask of the xserver.
+    // `XMaskEvent`: https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XMaskEvent.html
+    pub fn get_mask_event(&self) -> xlib::XEvent {
+        unsafe {
+            let mut event: xlib::XEvent = std::mem::zeroed();
+            (self.xlib.XMaskEvent)(
+                self.display,
+                MOUSEMASK | xlib::SubstructureRedirectMask | xlib::ExposureMask,
+                &mut event,
+            );
+            event
+        }
     }
 
     /// Returns the next `Xevent` of the xserver.

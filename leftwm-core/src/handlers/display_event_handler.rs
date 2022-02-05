@@ -8,11 +8,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn display_event_handler(&mut self, event: DisplayEvent) -> bool {
-        let update_needed = match event {
+        match event {
             DisplayEvent::ScreenCreate(s) => self.screen_create_handler(s),
             DisplayEvent::WindowCreate(w, x, y) => self.window_created_handler(w, x, y),
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
-            DisplayEvent::WindowTakeFocus(handle) => self.state.focus_window(&handle),
+            DisplayEvent::WindowTakeFocus(handle) => {
+                self.state.focus_window(&handle);
+                false
+            }
 
             DisplayEvent::KeyGrabReload => {
                 self.state
@@ -21,14 +24,19 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 false
             }
 
-            DisplayEvent::MoveFocusTo(x, y) => self.state.move_focus_to_point(x, y),
+            DisplayEvent::MoveFocusTo(x, y) => {
+                self.state.move_focus_to_point(x, y);
+                false
+            }
 
             // This is a request to validate focus. Double check that we are focused on the correct
             // window.
-            DisplayEvent::VerifyFocusedAt(handle) => match self.state.focus_manager.behaviour {
-                FocusBehaviour::Sloppy => return self.state.validate_focus_at(&handle),
-                _ => return false,
-            },
+            DisplayEvent::VerifyFocusedAt(handle) => {
+                if self.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
+                    self.state.validate_focus_at(&handle);
+                }
+                false
+            }
 
             DisplayEvent::WindowDestroy(handle) => self.window_destroyed_handler(&handle),
 
@@ -48,19 +56,17 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             DisplayEvent::ChangeToNormalMode => {
                 match self.state.mode {
                     Mode::MovingWindow(h) | Mode::ResizingWindow(h) => {
-                        let _ = self.state.focus_window(&h);
+                        self.state.focus_window(&h);
                     }
                     _ => {}
                 }
                 self.state.mode = Mode::Normal;
-                let act = DisplayAction::NormalMode;
-                self.state.actions.push_back(act);
                 true
             }
 
             DisplayEvent::Movement(handle, x, y) => {
                 if self.state.screens.iter().any(|s| s.root == handle) {
-                    return self.state.focus_workspace_under_cursor(x, y);
+                    self.state.focus_workspace_under_cursor(x, y);
                 }
                 false
             }
@@ -86,21 +92,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 if let Some(window) = self.state.windows.iter().find(|w| w.handle == handle) {
                     let act = DisplayAction::ConfigureXlibWindow(window.clone());
                     self.state.actions.push_back(act);
-                    return true;
                 }
                 false
             }
-        };
-
-        if update_needed {
-            self.update_windows();
         }
-
-        update_needed
     }
 }
 
-// Save off the info about position of the window when we started to move/resize.
+// Save off the info about position of the window when we start to move/resize.
 fn prepare_window(state: &mut State, handle: WindowHandle) {
     if let Some(w) = state.windows.iter_mut().find(|w| w.handle == handle) {
         if w.floating() {

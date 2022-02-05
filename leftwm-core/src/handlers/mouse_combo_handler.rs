@@ -29,11 +29,11 @@ impl State {
         } else if self.focus_manager.behaviour == FocusBehaviour::ClickTo {
             if let xlib::Button1 | xlib::Button3 = button {
                 if self.screens.iter().any(|s| s.root == handle) {
-                    return self.focus_workspace_under_cursor(x, y);
+                    self.focus_workspace_under_cursor(x, y);
+                    return false;
                 }
             }
         }
-
         true
     }
 

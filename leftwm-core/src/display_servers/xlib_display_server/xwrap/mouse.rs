@@ -65,7 +65,7 @@ impl XWrap {
                     BUTTONMASK as u32,
                     pointer_mode,
                     xlib::GrabModeAsync,
-                    self.root,
+                    0,
                     0,
                 );
             }
@@ -154,9 +154,12 @@ impl XWrap {
     // `XAllowEvents`: https://linux.die.net/man/3/xallowevents
     //  `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
     pub fn replay_click(&self) {
-        unsafe {
-            (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime);
-            (self.xlib.XSync)(self.display, xlib::False);
-        }
+        unsafe { (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime) };
+    }
+
+    /// Release the pointer if it is frozen.
+    // `XAllowEvents`: https://linux.die.net/man/3/xallowevents
+    pub fn allow_pointer_events(&self) {
+        unsafe { (self.xlib.XAllowEvents)(self.display, xlib::SyncPointer, xlib::CurrentTime) };
     }
 }

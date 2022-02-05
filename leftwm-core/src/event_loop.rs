@@ -1,5 +1,5 @@
 use crate::{child_process::Nanny, config::Config, models::FocusBehaviour};
-use crate::{CommandPipe, DisplayServer, Manager, Mode, StateSocket, Window, Workspace};
+use crate::{CommandPipe, DisplayServer, Manager, Mode, StateSocket, Window};
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
@@ -51,34 +51,30 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => {
                     needs_update = self.command_handler(&cmd) || needs_update;
-                    self.display_server.load_config(&self.config);
                 }
                 else => {
-                    event_buffer.drain(..).for_each(|event| needs_update = self.display_event_handler(event) || needs_update);
+                    event_buffer
+                        .drain(..)
+                        .for_each(|event| needs_update = self.display_event_handler(event) || needs_update);
                 }
             }
 
-            //if we need to update the displayed state
+            // If we need to update the displayed state.
             if needs_update {
                 self.update_windows();
 
                 match self.state.mode {
-                    //when (resizing / moving) only deal with the single window
+                    // When (resizing / moving) only deal with the single window.
                     Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
-                        let focused = self.state.focus_manager.window(&self.state.windows);
                         let windows: Vec<&Window> = (&self.state.windows)
                             .iter()
                             .filter(|w| w.handle == h)
                             .collect();
-                        self.display_server.update_windows(windows, focused);
+                        self.display_server.update_windows(windows);
                     }
                     _ => {
                         let windows: Vec<&Window> = self.state.windows.iter().collect();
-                        let focused = self.state.focus_manager.window(&self.state.windows);
-                        self.display_server.update_windows(windows, focused);
-                        let workspaces: Vec<&Workspace> = self.state.workspaces.iter().collect();
-                        let focused = self.state.focus_manager.workspace(&self.state.workspaces);
-                        self.display_server.update_workspaces(workspaces, focused);
+                        self.display_server.update_windows(windows);
                     }
                 }
             }

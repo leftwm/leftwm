@@ -203,9 +203,10 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let toggle_to = !window.has_state(&window_state);
     let act = DisplayAction::SetState(handle, toggle_to, window_state);
     state.actions.push_back(act);
+    handle_focus(state, handle);
     match window_state {
-        WindowState::Fullscreen => Some(handle_focus(state, handle)),
-        _ => Some(true),
+        WindowState::Fullscreen => Some(true),
+        _ => Some(false),
     }
 }
 
@@ -243,7 +244,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     if let Some(new_handle) = new_handle {
         manager.state.focus_window(&new_handle);
     } else {
-        let act = DisplayAction::Unfocus(Some(handle));
+        let act = DisplayAction::Unfocus(Some(handle), false);
         manager.state.actions.push_back(act);
         manager.state.focus_manager.window_history.push_front(None);
     }
@@ -482,7 +483,8 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     if window.snap_to_workspace(workspace) {
         state.sort_windows();
     }
-    Some(handle_focus(state, handle))
+    handle_focus(state, handle);
+    Some(true)
 }
 
 fn tile_to_floating(state: &mut State) -> Option<bool> {
@@ -564,7 +566,8 @@ fn move_window_change(
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
     state.windows.append(&mut to_reorder);
-    Some(handle_focus(state, handle))
+    handle_focus(state, handle);
+    Some(true)
 }
 
 //val and layout aren't used which is a bit awkward
@@ -595,7 +598,7 @@ fn move_window_top(
     state.windows.append(&mut to_reorder);
     // focus follows the window if it was not already on top of the stack
     if index > 0 {
-        return Some(handle_focus(state, handle));
+        handle_focus(state, handle);
     }
     Some(true)
 }
@@ -634,7 +637,8 @@ fn focus_window_change(
         handle = new_focused.handle;
     }
     state.windows.append(&mut to_reorder);
-    Some(handle_focus(state, handle))
+    handle_focus(state, handle);
+    Some(layout == Some(Layout::Monocle))
 }
 
 fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
@@ -648,12 +652,11 @@ fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
         .map(|w| w.handle);
 
     match (next, cur, prev) {
-        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => {
-            Some(handle_focus(state, prev))
-        }
-        (Some(next), Some(cur), _) if next != cur => Some(handle_focus(state, next)),
-        _ => None,
+        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => handle_focus(state, prev),
+        (Some(next), Some(cur), _) if next != cur => handle_focus(state, next),
+        _ => {}
     }
+    None
 }
 
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
@@ -671,8 +674,8 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
             );
         state.actions.push_back(action);
     }
-
-    Some(state.focus_workspace(&workspace))
+    state.focus_workspace(&workspace);
+    None
 }
 
 fn rotate_tag(state: &mut State) -> Option<bool> {
@@ -711,12 +714,11 @@ fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bo
     Some(true)
 }
 
-fn handle_focus(state: &mut State, handle: WindowHandle) -> bool {
+fn handle_focus(state: &mut State, handle: WindowHandle) {
     match state.focus_manager.behaviour {
         FocusBehaviour::Sloppy => {
             let act = DisplayAction::MoveMouseOver(handle);
             state.actions.push_back(act);
-            true
         }
         _ => state.focus_window(&handle),
     }
@@ -904,9 +906,9 @@ mod tests {
         let expected = manager.state.windows[0].clone();
         let initial = manager.state.windows[1].clone();
 
-        assert!(manager.state.focus_window(&initial.handle));
+        manager.state.focus_window(&initial.handle);
 
-        assert!(manager.command_handler(&Command::FocusWindowTop(false)));
+        manager.command_handler(&Command::FocusWindowTop(false));
         let actual = manager
             .state
             .focus_manager
@@ -915,7 +917,7 @@ mod tests {
             .handle;
         assert_eq!(expected.handle, actual);
 
-        assert!(!manager.command_handler(&Command::FocusWindowTop(false)));
+        manager.command_handler(&Command::FocusWindowTop(false));
         let actual = manager
             .state
             .focus_manager
@@ -924,7 +926,7 @@ mod tests {
             .handle;
         assert_eq!(expected.handle, actual);
 
-        assert!(manager.command_handler(&Command::FocusWindowTop(true)));
+        manager.command_handler(&Command::FocusWindowTop(true));
         let actual = manager
             .state
             .focus_manager

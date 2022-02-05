@@ -14,7 +14,7 @@ use leftwm_core::{
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
     state::State,
-    Manager,
+    DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -44,7 +44,7 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 /// ```
 ///
 /// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct WindowHook {
     /// `WM_CLASS` in X11
     pub window_class: Option<String>,
@@ -91,6 +91,7 @@ pub struct Config {
     pub layouts: Vec<Layout>,
     pub layout_mode: LayoutMode,
     pub scratchpad: Option<Vec<ScratchPad>>,
+    pub window_rules: Option<Vec<WindowHook>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
     pub disable_tile_drag: bool,
@@ -98,7 +99,6 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
-    pub window_rules: Vec<WindowHook>,
 
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
@@ -189,8 +189,8 @@ pub fn is_program_in_path(program: &str) -> bool {
 /// Returns a terminal to set for the default mod+shift+enter keybind.
 fn default_terminal<'s>() -> &'s str {
     // order from least common to most common.
-    // the thinking is if a machine has a uncommon terminal install it is intentional
-    let terms = vec![
+    // the thinking is if a machine has an uncommon terminal installed, it is intentional
+    let terms = &[
         "alacritty",
         "termite",
         "kitty",
@@ -209,12 +209,12 @@ fn default_terminal<'s>() -> &'s str {
         "guake", // at the bottom because of odd behaviour. guake wants F12 and should really be
                  // started using autostart instead of LeftWM keybind.
     ];
-    for t in terms {
-        if is_program_in_path(t) {
-            return t;
-        }
-    }
-    "termite" //no terminal found in path, default to a good one
+
+    // If no terminal found in path, default to a good one
+    terms
+        .iter()
+        .find(|terminal| is_program_in_path(terminal))
+        .unwrap_or(&"termite")
 }
 
 /// Returns default keybind value for exiting `LeftWM`.
@@ -312,7 +312,10 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
-    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool {
+    fn command_handler<SERVER: DisplayServer>(
+        command: &str,
+        manager: &mut Manager<Self, SERVER>,
+    ) -> bool {
         if let Some((command, value)) = command.split_once(' ') {
             match command {
                 "LoadTheme" => {
@@ -440,29 +443,31 @@ impl leftwm_core::Config for Config {
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
     fn setup_predefined_window(&self, window: &mut Window) -> bool {
-        let best_match = self
-            .window_rules
-            .iter()
-            // map first instead of using max_by_key directly...
-            .map(|wh| (wh, wh.score_window(window)))
-            // ...since this filter is required (0 := non-match)
-            .filter(|(_wh, score)| score != &0)
-            .max_by_key(|(_wh, score)| *score);
-        if let Some((hook, _)) = best_match {
-            hook.apply(window);
-            log::debug!(
-                "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}",
-                window.name,
-                window.legacy_name,
-                window.res_name,
-                window.res_class,
-                hook.spawn_on_tag,
-                hook.spawn_floating,
-            );
-            true
-        } else {
-            false
+        if let Some(window_rules) = &self.window_rules {
+            let best_match = window_rules
+                .iter()
+                // map first instead of using max_by_key directly...
+                .map(|wh| (wh, wh.score_window(window)))
+                // ...since this filter is required (0 := non-match)
+                .filter(|(_wh, score)| score != &0)
+                .max_by_key(|(_wh, score)| *score);
+            if let Some((hook, _)) = best_match {
+                hook.apply(window);
+                log::debug!(
+                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}",
+                    window.name,
+                    window.legacy_name,
+                    window.res_name,
+                    window.res_class,
+                    hook.spawn_on_tag,
+                    hook.spawn_floating,
+                );
+                return true;
+            } else {
+                return false;
+            }
         }
+        false
     }
 }
 

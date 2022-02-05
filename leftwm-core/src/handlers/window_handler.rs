@@ -40,7 +40,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
             && on_same_tag;
         //let the DS know we are managing this window
-        let act = DisplayAction::AddedWindow(window.handle, follow_mouse);
+        let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
         self.state.actions.push_back(act);
 
         //let the DS know the correct desktop to find this window
@@ -69,15 +69,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         // Find the next or previous window on the workspace.
         let new_handle = self.get_next_or_previous(handle);
         // If there is a parent we would want to focus it.
-        let transient = match self
-            .state
-            .windows
-            .iter()
-            .find(|w| &w.handle == handle)
-            .map(|w| w.transient)
-        {
-            Some(transient) => transient,
-            None => None,
+        let (transient, floating) = match self.state.windows.iter().find(|w| &w.handle == handle) {
+            Some(window) => (window.transient, window.floating()),
+            None => (None, false),
         };
         self.state
             .focus_manager
@@ -101,7 +95,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             } else if let Some(handle) = new_handle {
                 self.state.focus_window(&handle);
             } else {
-                let act = DisplayAction::Unfocus(Some(*handle));
+                let act = DisplayAction::Unfocus(Some(*handle), floating);
                 self.state.actions.push_back(act);
                 self.state.focus_manager.window_history.push_front(None);
             }

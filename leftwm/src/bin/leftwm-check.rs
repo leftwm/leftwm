@@ -3,7 +3,10 @@ use clap::{App, Arg};
 use leftwm::{Config, ThemeSetting};
 use std::env;
 use std::fs;
+use std::fs::File;
+use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::path::PathBuf;
 use xdg::BaseDirectories;
 
@@ -79,11 +82,21 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     if verbose {
         dbg!(&config_filename);
     }
-    let contents = fs::read_to_string(config_filename)?;
-    if verbose {
-        dbg!(&contents);
+    if Path::new(&config_filename).exists() {
+        let contents = fs::read_to_string(config_filename)?;
+        if verbose {
+            dbg!(&contents);
+        }
+
+        let config = toml::from_str(&contents)?;
+        Ok(config)
+    } else {
+        let config = Config::default();
+        let toml = toml::to_string(&config).unwrap();
+        let mut file = File::create(&config_filename)?;
+        file.write_all(toml.as_bytes())?;
+        Ok(config)
     }
-    Ok(toml::from_str(&contents)?)
 }
 
 fn check_elogind(verbose: bool) -> Result<()> {

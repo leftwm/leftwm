@@ -204,6 +204,7 @@ impl Default for Config {
             // TODO: add sane default for scratchpad config.
             // Currently default values are set in sane_dimension fn.
             scratchpad: Some(vec![]),
+            window_rules: Some(vec![]),
             disable_current_tag_swap: false,
             disable_tile_drag: false,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
@@ -214,7 +215,6 @@ impl Default for Config {
             theme_setting: ThemeSetting::default(),
             max_window_width: None,
             state: None,
-            window_rules: Vec::new(),
         }
     }
 }
