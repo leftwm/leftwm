@@ -10,44 +10,17 @@ impl XWrap {
     pub fn grab_mouse_clicks(&self, handle: xlib::Window, is_focused: bool) {
         self.ungrab_buttons(handle);
         if !is_focused {
-            self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier, xlib::GrabModeSync);
-            self.grab_buttons(handle, xlib::Button3, xlib::AnyModifier, xlib::GrabModeSync);
+            self.grab_buttons(handle, xlib::AnyButton as u32, xlib::AnyModifier);
         }
-        self.grab_buttons(
-            handle,
-            xlib::Button1,
-            self.mouse_key_mask,
-            xlib::GrabModeAsync,
-        );
-        self.grab_buttons(
-            handle,
-            xlib::Button1,
-            self.mouse_key_mask | xlib::ShiftMask,
-            xlib::GrabModeAsync,
-        );
-        self.grab_buttons(
-            handle,
-            xlib::Button3,
-            self.mouse_key_mask,
-            xlib::GrabModeAsync,
-        );
-        self.grab_buttons(
-            handle,
-            xlib::Button3,
-            self.mouse_key_mask | xlib::ShiftMask,
-            xlib::GrabModeAsync,
-        );
+        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
+        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
+        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
+        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
     }
 
     /// Grabs the button with the modifier for a window.
     // `XGrabButton`: https://tronche.com/gui/x/xlib/input/XGrabButton.html
-    pub fn grab_buttons(
-        &self,
-        window: xlib::Window,
-        button: u32,
-        modifiers: u32,
-        pointer_mode: i32,
-    ) {
+    pub fn grab_buttons(&self, window: xlib::Window, button: u32, modifiers: u32) {
         // Grab the buttons with and without numlock (Mod2).
         let mods: Vec<u32> = vec![
             modifiers,
@@ -63,7 +36,7 @@ impl XWrap {
                     window,
                     0,
                     BUTTONMASK as u32,
-                    pointer_mode,
+                    xlib::GrabModeAsync,
                     xlib::GrabModeAsync,
                     0,
                     0,
@@ -151,10 +124,34 @@ impl XWrap {
     }
 
     /// Replay a click on a window.
-    // `XAllowEvents`: https://linux.die.net/man/3/xallowevents
-    //  `XSync`: https://tronche.com/gui/x/xlib/event-handling/XSync.html
+    // `XQueryPointer`: https://tronche.com/gui/x/xlib/window-information/XQueryPointer.html
     pub fn replay_click(&self) {
-        unsafe { (self.xlib.XAllowEvents)(self.display, xlib::ReplayPointer, xlib::CurrentTime) };
+        unsafe {
+            let mut event: xlib::XButtonEvent = std::mem::zeroed();
+            event.button = xlib::Button1;
+            event.same_screen = xlib::True;
+            event.subwindow = self.get_default_root();
+
+            while event.subwindow != 0 {
+                event.window = event.subwindow;
+                (self.xlib.XQueryPointer)(
+                    self.display,
+                    event.window,
+                    &mut event.root,
+                    &mut event.subwindow,
+                    &mut event.x_root,
+                    &mut event.y_root,
+                    &mut event.x,
+                    &mut event.y,
+                    &mut event.state,
+                );
+            }
+            event.type_ = xlib::ButtonPress;
+            self.send_xevent(event.window, 0, xlib::ButtonPressMask, &mut event.into());
+
+            event.type_ = xlib::ButtonRelease;
+            self.send_xevent(event.window, 0, xlib::ButtonReleaseMask, &mut event.into());
+        }
     }
 
     /// Release the pointer if it is frozen.

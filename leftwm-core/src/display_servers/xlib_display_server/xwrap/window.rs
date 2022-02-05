@@ -212,7 +212,13 @@ impl XWrap {
             self.set_wm_states(window, &[NORMAL_STATE]);
             // Make sure the window is mapped.
             unsafe { (self.xlib.XMapWindow)(self.display, window) };
+            // Regrab the mouse clicks.
+            if self.focus_behaviour == FocusBehaviour::ClickTo {
+                self.grab_mouse_clicks(window, false);
+            }
         } else {
+            // Ungrab the mouse clicks.
+            self.ungrab_buttons(window);
             // Make sure the window is unmapped.
             unsafe { (self.xlib.XUnmapWindow)(self.display, window) };
             // Set WM_STATE to iconic state.
@@ -226,10 +232,6 @@ impl XWrap {
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
-            // Play a click when in ClickToFocus.
-            if self.focus_behaviour == FocusBehaviour::ClickTo {
-                self.replay_click();
-            }
             // Update previous window.
             if let Some(previous) = previous {
                 if let WindowHandle::XlibHandle(previous_handle) = previous.handle {
@@ -239,7 +241,7 @@ impl XWrap {
                         self.colors.normal
                     };
                     self.set_window_border_color(previous_handle, color);
-                    // Open up button1 clicking on the previously focused window.
+                    // Open up clicking on the previously focused window.
                     if self.focus_behaviour == FocusBehaviour::ClickTo {
                         self.grab_mouse_clicks(previous_handle, false);
                     }
@@ -273,6 +275,11 @@ impl XWrap {
                 // Tell the window to take focus
                 self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
             }
+            // Play a click when in ClickToFocus.
+            if self.focus_behaviour == FocusBehaviour::ClickTo {
+                self.replay_click();
+            }
+            self.sync();
         }
     }
 
