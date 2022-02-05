@@ -299,11 +299,11 @@ fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
         state.windows.iter().find(|w| is_target(*w)).cloned()
     }?;
 
-    let focus = |s: &mut State, h: WindowHandle| -> Option<bool> { Some(handle_focus(s, h)) };
     let handle = target_window.handle;
 
     if target_window.visible() {
-        return focus(state, handle);
+        handle_focus(state, handle);
+        return None;
     }
 
     let tag_id = target_window.tags.first()?;
@@ -335,9 +335,13 @@ fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
                 state.windows.append(&mut windows);
             }
 
-            focus(state, handle)
+            handle_focus(state, handle);
+            Some(true)
         }
-        Some(_) => focus(state, handle),
+        Some(_) => {
+            handle_focus(state, handle);
+            Some(true)
+        }
         None => None,
     }
 }
