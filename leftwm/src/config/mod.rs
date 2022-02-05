@@ -91,6 +91,7 @@ pub struct Config {
     pub layouts: Vec<Layout>,
     pub layout_mode: LayoutMode,
     pub scratchpad: Option<Vec<ScratchPad>>,
+    pub window_rules: Option<Vec<WindowHook>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
     pub disable_tile_drag: bool,
@@ -98,7 +99,6 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
-    pub window_rules: Option<Vec<WindowHook>>,
 
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
