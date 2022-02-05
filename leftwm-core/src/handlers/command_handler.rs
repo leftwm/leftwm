@@ -64,7 +64,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::FocusNextTag => focus_tag_change(state, 1),
         Command::FocusPreviousTag => focus_tag_change(state, -1),
-        Command::FocusWindow(window_name) => focus_window(state, window_name),
+        Command::FocusWindow(param) => focus_window(state, param),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, state, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, state, 1),
         Command::FocusWindowTop(toggle) => focus_window_top(state, *toggle),
@@ -277,13 +277,32 @@ fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Opti
     state.goto_tag_handler(destination_tag)
 }
 
-fn focus_window(state: &mut State, window_name: &str) -> Option<bool> {
+fn focus_window(state: &mut State, param: &str) -> Option<bool> {
+    match param.parse::<usize>() {
+        Ok(index) if index > 0 => {
+            //1-based index seems more user-friendly to me in this context
+            let handle = state
+                .windows
+                .iter()
+                .filter(|w| w.visible())
+                .nth(index - 1)?
+                .handle;
+
+            handle_focus(state, handle);
+            None
+        }
+        Err(_) => focus_window_by_class(state, param),
+        Ok(_) => None,
+    }
+}
+
+fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> {
     let is_target = |w: &Window| -> bool {
         w.res_name
             .as_ref()
             .zip(w.res_class.as_ref())
             .map_or(false, |(res_name, res_class)| {
-                window_name == res_name || window_name == res_class
+                window_class == res_name || window_class == res_class
             })
     };
 
