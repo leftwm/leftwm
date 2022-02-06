@@ -59,6 +59,7 @@ impl std::convert::From<BaseCommand> for String {
             BaseCommand::ToggleScratchPad => "ToggleScratchPad",
             BaseCommand::ToggleFullScreen => "ToggleFullScreen",
             BaseCommand::ToggleSticky => "ToggleSticky",
+            BaseCommand::GotoTag => "GoToTag",
             BaseCommand::FloatingToTile => "FloatingToTile",
             BaseCommand::TileToFloating => "TileToFloating",
             BaseCommand::ToggleFloating => "ToggleFloating",

@@ -120,7 +120,6 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "RotateTag" => Ok(Command::RotateTag),
         "IncreaseMainWidth" => build_increase_main_width(s),
         "DecreaseMainWidth" => build_decrease_main_width(s),
-        // Need increase/decrease main width
         "SetMarginMultiplier" => build_set_margin_multiplier(s),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
         _ => Ok(Command::Other(s.into())),

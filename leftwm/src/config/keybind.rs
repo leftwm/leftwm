@@ -50,16 +50,23 @@ impl Keybind {
             _ => {}
         }
 
-        let mut command: String = self.command.into();
-        if !self.value.is_empty() {
-            let args = match &self.command {
-                BaseCommand::GotoTag => {
-                    format!(" {} {}", self.value, config.disable_current_tag_swap)
-                }
-                _ => format!(" {}", self.value),
-            };
-            command.push_str(&args);
-        }
+        let command: String = if self.command == BaseCommand::Execute {
+            self.value.clone()
+        } else {
+            let mut head = "leftwm-command ".to_owned();
+            let mut command_parts: String = self.command.into();
+            if !self.value.is_empty() {
+                let args = match &self.command {
+                    BaseCommand::GotoTag => {
+                        format!(" {} {}", self.value, config.disable_current_tag_swap)
+                    }
+                    _ => format!(" {}", self.value),
+                };
+                command_parts.push_str(&args);
+            }
+            head.push_str(&format!("\"{}\"", command_parts));
+            head
+        };
         Ok(lefthk_core::config::Keybind {
             command: lefthk_core::config::Command::Execute(command),
             modifier: self

@@ -4,15 +4,16 @@ use xdg::BaseDirectories;
 
 fn main() {
     let _log_guard = setup_logging();
-    let config = leftwm::load();
-    let path =
-        BaseDirectories::with_prefix("leftwm").expect("ERROR: could not find base directory");
-    let config_file = path
-        .place_config_file("config.toml")
-        .expect("ERROR: could not find config file");
+    log::info!("lefthk-worker booted!");
     let completed = std::panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
+        let config = leftwm::load();
+        let path =
+            BaseDirectories::with_prefix("leftwm").expect("ERROR: could not find base directory");
+        let config_file = path
+            .place_config_file("config.toml")
+            .expect("ERROR: could not find config file");
         let mut worker = Worker::new(config.mapped_bindings(), config_file.clone());
 
         rt.block_on(worker.event_loop());
