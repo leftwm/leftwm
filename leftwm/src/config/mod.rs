@@ -235,8 +235,8 @@ fn absolute_path(path: &str) -> Option<PathBuf> {
     std::fs::canonicalize(exp_path.as_ref()).ok()
 }
 
-impl leftwm_core::Config for Config {
-    fn mapped_bindings(&self) -> Vec<leftwm_core::Keybind> {
+impl lefthk_core::config::Config for Config {
+    fn mapped_bindings(&self) -> Vec<lefthk_core::config::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -258,16 +258,20 @@ impl leftwm_core::Config for Config {
 
                 keybind
             })
-            .filter_map(|keybind| match keybind.try_convert_to_core_keybind(self) {
-                Ok(internal_keybind) => Some(internal_keybind),
-                Err(err) => {
-                    log::error!("Invalid key binding: {}\n{:?}", err, keybind);
-                    None
-                }
-            })
+            .filter_map(
+                |keybind| match keybind.try_convert_to_lefthk_keybind(self) {
+                    Ok(lefthk_keybind) => Some(lefthk_keybind),
+                    Err(err) => {
+                        log::error!("Invalid key binding: {}\n{:?}", err, keybind);
+                        None
+                    }
+                },
+            )
             .collect()
     }
+}
 
+impl leftwm_core::Config for Config {
     fn create_list_of_tag_labels(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();

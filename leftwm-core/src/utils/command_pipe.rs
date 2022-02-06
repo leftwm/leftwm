@@ -90,35 +90,39 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
 fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
     match head {
+        "CloseWindow" => Ok(Command::CloseWindow),
+        "SwapScreens" => Ok(Command::SwapScreens),
         "SoftReload" => Ok(Command::SoftReload),
+        "ToggleScratchPad" => build_toggle_scratchpad(s),
         "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
         "ToggleSticky" => Ok(Command::ToggleSticky),
-        "SwapScreens" => Ok(Command::SwapScreens),
-        "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
-        "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),
-        "MoveWindowToPreviousWorkspace" => Ok(Command::MoveWindowToPreviousWorkspace),
+        "GoToTag" => build_go_to_tag(s),
         "FloatingToTile" => Ok(Command::FloatingToTile),
         "TileToFloating" => Ok(Command::TileToFloating),
         "ToggleFloating" => Ok(Command::ToggleFloating),
         "MoveWindowUp" => Ok(Command::MoveWindowUp),
         "MoveWindowDown" => Ok(Command::MoveWindowDown),
         "MoveWindowTop" => Ok(Command::MoveWindowTop),
+        "FocusNextTag" => Ok(Command::FocusNextTag),
+        "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
         "FocusWindowUp" => Ok(Command::FocusWindowUp),
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
         "FocusWindowTop" => build_focus_window_top(s),
-        "FocusNextTag" => Ok(Command::FocusNextTag),
-        "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
+        "SendWindowToTag" => build_send_window_to_tag(s),
+        "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
+        "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),
+        "MoveWindowToPreviousWorkspace" => Ok(Command::MoveWindowToPreviousWorkspace),
         "NextLayout" => Ok(Command::NextLayout),
         "PreviousLayout" => Ok(Command::PreviousLayout),
-        "RotateTag" => Ok(Command::RotateTag),
-        "CloseWindow" => Ok(Command::CloseWindow),
-        "ToggleScratchPad" => build_toggle_scratchpad(s),
-        "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
-        "SendWindowToTag" => build_send_window_to_tag(s),
         "SetLayout" => build_set_layout(s),
+        "RotateTag" => Ok(Command::RotateTag),
+        "IncreaseMainWidth" => build_increase_main_width(s),
+        "DecreaseMainWidth" => build_decrease_main_width(s),
+        // Need increase/decrease main width
         "SetMarginMultiplier" => build_set_margin_multiplier(s),
+        "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
         _ => Ok(Command::Other(s.into())),
     }
 }
@@ -128,6 +132,14 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
     let parts: Vec<&str> = headless.split(' ').collect();
     let name = *parts.get(0).ok_or("missing argument scratchpad's name")?;
     Ok(Command::ToggleScratchPad(name.to_string()))
+}
+
+fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "GoToTag ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let tag: TagId = parts.get(0).ok_or("missing argument tag_id")?.parse()?;
+    let swap: bool = parts.get(1).ok_or("missing argument swap")?.parse()?;
+    Ok(Command::GoToTag { tag, swap })
 }
 
 fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
@@ -170,6 +182,20 @@ fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Erro
     let parts: Vec<&str> = headless.split(' ').collect();
     let toggle = bool::from_str(parts.get(0).unwrap_or(&"false"))?;
     Ok(Command::FocusWindowTop(toggle))
+}
+
+fn build_increase_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "IncreaseMainWidth ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let change: i8 = parts.get(0).ok_or("missing argument change")?.parse()?;
+    Ok(Command::IncreaseMainWidth(change))
+}
+
+fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "DecreaseMainWidth ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let change: i8 = parts.get(0).ok_or("missing argument change")?.parse()?;
+    Ok(Command::DecreaseMainWidth(change))
 }
 
 fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {

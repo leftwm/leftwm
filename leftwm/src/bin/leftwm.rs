@@ -55,11 +55,16 @@ fn main() {
         env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
 
         let worker_path = current_exe.with_file_name("leftwm-worker");
+        let lefthk_path = current_exe.with_file_name("lefthk-worker");
 
         loop {
             let mut worker = Command::new(&worker_path)
                 .spawn()
                 .expect("failed to start leftwm");
+
+            let mut lefthk = Command::new(&lefthk_path)
+                .spawn()
+                .expect("failed to start lefthk");
 
             // Wait until worker exits.
             while worker

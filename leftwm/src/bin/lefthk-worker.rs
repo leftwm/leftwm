@@ -1,4 +1,4 @@
-use lefthk_core::worker::Worker;
+use lefthk_core::{config::Config, worker::Worker};
 use slog::{o, Drain};
 use xdg::BaseDirectories;
 

@@ -67,8 +67,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
-        Command::MouseMoveWindow => None,
-
         Command::SoftReload => {
             // Make sure the currently focused window is saved for the tag.
             if let Some((handle, tag)) = state

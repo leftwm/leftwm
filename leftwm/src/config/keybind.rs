@@ -14,90 +14,54 @@ pub struct Keybind {
     pub key: String,
 }
 
-macro_rules! ensure_non_empty {
-    ($value:expr) => {{
-        ensure!(!$value.is_empty(), "value must not be empty");
-        $value
-    }};
-}
-
 impl Keybind {
-    pub fn try_convert_to_core_keybind(&self, config: &Config) -> Result<leftwm_core::Keybind> {
-        let command = match &self.command {
-            BaseCommand::Execute => {
-                leftwm_core::Command::Execute(ensure_non_empty!(self.value.clone()))
+    pub fn try_convert_to_lefthk_keybind(
+        &self,
+        config: &Config,
+    ) -> Result<lefthk_core::config::Keybind> {
+        let value_is_some = !self.value.is_empty();
+        match &self.command {
+            BaseCommand::Execute | BaseCommand::ToggleScratchPad | BaseCommand::LoadTheme => {
+                ensure!(value_is_some, "value must not be empty");
             }
-            BaseCommand::CloseWindow => leftwm_core::Command::CloseWindow,
-            BaseCommand::SwapTags => leftwm_core::Command::SwapScreens,
-            BaseCommand::SoftReload => leftwm_core::Command::SoftReload,
-            BaseCommand::HardReload => leftwm_core::Command::HardReload,
-            BaseCommand::ToggleScratchPad => {
-                leftwm_core::Command::ToggleScratchPad(ensure_non_empty!(self.value.clone()))
+            BaseCommand::GotoTag => {
+                usize::from_str(&self.value).context("invalid index value for GotoTag")?;
             }
-            BaseCommand::ToggleFullScreen => leftwm_core::Command::ToggleFullScreen,
-            BaseCommand::ToggleSticky => leftwm_core::Command::ToggleSticky,
-            BaseCommand::GotoTag => leftwm_core::Command::GoToTag {
-                tag: usize::from_str(&self.value).context("invalid index value for GotoTag")?,
-                swap: !config.disable_current_tag_swap,
-            },
-            BaseCommand::FloatingToTile => leftwm_core::Command::FloatingToTile,
-            BaseCommand::TileToFloating => leftwm_core::Command::TileToFloating,
-            BaseCommand::ToggleFloating => leftwm_core::Command::ToggleFloating,
-            BaseCommand::MoveWindowUp => leftwm_core::Command::MoveWindowUp,
-            BaseCommand::MoveWindowDown => leftwm_core::Command::MoveWindowDown,
-            BaseCommand::MoveWindowTop => leftwm_core::Command::MoveWindowTop,
-            BaseCommand::FocusNextTag => leftwm_core::Command::FocusNextTag,
-            BaseCommand::FocusPreviousTag => leftwm_core::Command::FocusPreviousTag,
-            BaseCommand::FocusWindowUp => leftwm_core::Command::FocusWindowUp,
-            BaseCommand::FocusWindowDown => leftwm_core::Command::FocusWindowDown,
-            BaseCommand::FocusWindowTop => {
-                leftwm_core::Command::FocusWindowTop(if self.value.is_empty() {
-                    false
-                } else {
-                    bool::from_str(&self.value)
-                        .context("invalid boolean value for FocusWindowTop")?
-                })
+            BaseCommand::FocusWindowTop if value_is_some => {
+                bool::from_str(&self.value).context("invalid boolean value for FocusWindowTop")?;
             }
-            BaseCommand::FocusWorkspaceNext => leftwm_core::Command::FocusWorkspaceNext,
-            BaseCommand::FocusWorkspacePrevious => leftwm_core::Command::FocusWorkspacePrevious,
-            BaseCommand::MoveToTag => leftwm_core::Command::SendWindowToTag {
-                window: None,
-                tag: usize::from_str(&self.value)
-                    .context("invalid index value for SendWindowToTag")?,
-            },
-            BaseCommand::MoveToLastWorkspace => leftwm_core::Command::MoveWindowToLastWorkspace,
-            BaseCommand::MoveWindowToNextWorkspace => {
-                leftwm_core::Command::MoveWindowToNextWorkspace
+            BaseCommand::MoveToTag => {
+                usize::from_str(&self.value).context("invalid index value for SendWindowToTag")?;
             }
-            BaseCommand::MoveWindowToPreviousWorkspace => {
-                leftwm_core::Command::MoveWindowToPreviousWorkspace
-            }
-            BaseCommand::MouseMoveWindow => leftwm_core::Command::MouseMoveWindow,
-            BaseCommand::NextLayout => leftwm_core::Command::NextLayout,
-            BaseCommand::PreviousLayout => leftwm_core::Command::PreviousLayout,
-            BaseCommand::SetLayout => leftwm_core::Command::SetLayout(
+            BaseCommand::SetLayout => {
                 Layout::from_str(&self.value)
-                    .context("could not parse layout for command SetLayout")?,
-            ),
-            BaseCommand::RotateTag => leftwm_core::Command::RotateTag,
-            BaseCommand::IncreaseMainWidth => leftwm_core::Command::IncreaseMainWidth(
-                i8::from_str(&self.value).context("invalid width value for IncreaseMainWidth")?,
-            ),
-            BaseCommand::DecreaseMainWidth => leftwm_core::Command::DecreaseMainWidth(
-                i8::from_str(&self.value).context("invalid width value for DecreaseMainWidth")?,
-            ),
-            BaseCommand::SetMarginMultiplier => leftwm_core::Command::SetMarginMultiplier(
-                f32::from_str(&self.value)
-                    .context("invalid margin multiplier for SetMarginMultiplier")?,
-            ),
-            BaseCommand::UnloadTheme => leftwm_core::Command::Other("UnloadTheme".into()),
-            BaseCommand::LoadTheme => {
-                leftwm_core::Command::Other(format!("LoadTheme {}", ensure_non_empty!(&self.value)))
+                    .context("could not parse layout for command SetLayout")?;
             }
-        };
+            BaseCommand::IncreaseMainWidth => {
+                i8::from_str(&self.value).context("invalid width value for IncreaseMainWidth")?;
+            }
+            BaseCommand::DecreaseMainWidth => {
+                i8::from_str(&self.value).context("invalid width value for DecreaseMainWidth")?;
+            }
+            BaseCommand::SetMarginMultiplier => {
+                f32::from_str(&self.value)
+                    .context("invalid margin multiplier for SetMarginMultiplier")?;
+            }
+            _ => {}
+        }
 
-        Ok(leftwm_core::Keybind {
-            command,
+        let mut command: String = self.command.into();
+        if !self.value.is_empty() {
+            let args = match &self.command {
+                BaseCommand::GotoTag => {
+                    format!(" {} {}", self.value, config.disable_current_tag_swap)
+                }
+                _ => format!(" {}", self.value),
+            };
+            command.push_str(&args);
+        }
+        Ok(lefthk_core::config::Keybind {
+            command: lefthk_core::config::Command::Execute(command),
             modifier: self
                 .modifier
                 .as_ref()

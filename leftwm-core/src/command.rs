@@ -37,7 +37,6 @@ pub enum Command {
     MoveWindowToLastWorkspace,
     MoveWindowToNextWorkspace,
     MoveWindowToPreviousWorkspace,
-    MouseMoveWindow,
     NextLayout,
     PreviousLayout,
     SetLayout(Layout),

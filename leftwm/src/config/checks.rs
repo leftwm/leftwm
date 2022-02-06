@@ -50,7 +50,7 @@ impl Config {
             if verbose {
                 println!("Keybind: {:?} {}", keybind, keybind.value.is_empty());
             }
-            if let Err(err) = keybind.try_convert_to_core_keybind(self) {
+            if let Err(err) = keybind.try_convert_to_lefthk_keybind(self) {
                 returns.push((Some(keybind.clone()), err.to_string()));
             }
             if xkeysym_lookup::into_keysym(&keybind.key).is_none() {
