@@ -40,13 +40,21 @@ where
 #[cfg(feature = "slog-term")]
 #[allow(dead_code, clippy::module_name_repetitions)]
 pub fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
-    use chrono::Local;
+    // use chrono::Local;
     use std::fs;
     use std::fs::OpenOptions;
-    let date = Local::now();
+    // let date = Local::now();
+    let date = time::OffsetDateTime::now_local().expect("Localtime: ");
     let path = "/tmp/leftwm";
     let _droppable = fs::create_dir_all(path);
-    let log_path = format!("{}/leftwm-{}.log", path, date.format("%Y%m%d%H%M"));
+    let log_path = format!(
+        "{}/leftwm-{}.log",
+        path,
+        date.format(time::macros::format_description!(
+            "[year][month][day][hour][minute]"
+        ))
+        .expect("Formated localtime: ")
+    );
     let file = OpenOptions::new()
         .create(true)
         .write(true)
@@ -100,14 +108,15 @@ pub fn setup_logging() -> slog_scope::GlobalLoggerGuard {
     slog_scope::set_global_logger(logger)
 }
 
-#[cfg(feature = "slog-term")]
+#[cfg(feature = "slog-journald")]
 #[allow(dead_code)]
-fn dyn_logger() {
+pub fn dyn_logger() {
     // atomic variable controlling logging level
     let on = Arc::new(atomic::AtomicBool::new(false));
 
-    let decorator = slog_term::TermDecorator::new().build();
-    let drain = slog_term::FullFormat::new(decorator).build();
+    // let decorator = slog_term::TermDecorator::new().build();
+    // let drain = slog_term::FullFormat::new(decorator).build();
+    let drain = slog_journald::JournaldDrain.ignore_res();
     let drain = RuntimeLevelFilter {
         drain,
         on: on.clone(),
@@ -119,4 +128,5 @@ fn dyn_logger() {
 
     // switch level in your code
     on.store(true, Ordering::Relaxed);
+    log::info!("Logging with dyn-logger.");
 }
