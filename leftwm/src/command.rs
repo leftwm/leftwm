@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 // Because this is temporary, we will allow this clippy lint to be bypassed
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub enum BaseCommand {
     Execute,
     CloseWindow,
@@ -31,6 +31,7 @@ pub enum BaseCommand {
     FocusPreviousTag,
     FocusWindowUp,
     FocusWindowDown,
+    FocusWindowTop,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     MoveToTag,

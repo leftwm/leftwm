@@ -34,7 +34,7 @@ impl ThemeSetting {
 
 impl Default for ThemeSetting {
     fn default() -> Self {
-        ThemeSetting {
+        Self {
             border_width: 1,
             margin: CustomMargins::Int(10),
             workspace_margin: Some(CustomMargins::Int(10)),

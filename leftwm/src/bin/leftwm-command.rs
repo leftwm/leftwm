@@ -1,5 +1,6 @@
+use anyhow::{Context, Result};
 use clap::{App, Arg};
-use leftwm_core::errors::Result;
+use leftwm_core::CommandPipe;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use xdg::BaseDirectories;
@@ -24,13 +25,14 @@ async fn main() -> Result<()> {
         )
         .get_matches();
 
+    let file_name = CommandPipe::pipe_name();
     let file_path = BaseDirectories::with_prefix("leftwm")?
-        .find_runtime_file("commands.pipe")
-        .expect("ERROR: Couldn't find commands.pipe");
+        .find_runtime_file(&file_name)
+        .with_context(|| format!("ERROR: Couldn't find {}", file_name.display()))?;
     let mut file = OpenOptions::new()
         .append(true)
         .open(file_path)
-        .expect("ERROR: Couldn't open commands.pipe");
+        .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
     if let Some(commands) = matches.values_of("command") {
         for command in commands {
             if let Err(e) = writeln!(file, "{}", command) {
@@ -47,20 +49,24 @@ async fn main() -> Result<()> {
         Available Commands:
 
         Commands without arguments:
-        
+
         UnloadTheme
         SoftReload
         ToggleFullScreen
+        ToggleSticky
         SwapScreens
         MoveWindowToLastWorkspace
+        MoveWindowToNextWorkspace
+        MoveWindowToPreviousWorkspace
         FloatingToTile
         TileToFloating
         ToggleFloating
         MoveWindowUp
         MoveWindowDown
-        FocusWindowUp
         MoveWindowTop
+        FocusWindowUp
         FocusWindowDown
+        FocusWindowTop
         FocusNextTag
         FocusPreviousTag
         FocusWorkspaceNext
@@ -74,13 +80,13 @@ async fn main() -> Result<()> {
             Use quotations for the command and arguments, like this:
             leftwm-command \"<command> <args>\"
 
-        LoadTheme              Args: <Path_to/theme.toml> 
+        LoadTheme              Args: <Path_to/theme.toml>
         ToggleScratchPad       Args: <ScratchpadName>
         SendWorkspaceToTag     Args: <workspaxe_index> <tag_index> (int)
         SendWindowToTag        Args: <tag_index> (int)
         SetLayout              Args: <LayoutName>
         SetMarginMultiplier    Args: <multiplier-value> (float)
-        
+
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands
          "

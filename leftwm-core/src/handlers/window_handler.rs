@@ -19,6 +19,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             return false;
         }
 
+        // Setup any predifined hooks.
+        self.config.setup_predefined_window(&mut window);
         let mut is_first = false;
         let mut on_same_tag = true;
         //Random value
@@ -31,14 +33,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut is_first,
             &mut on_same_tag,
         );
-        window.load_config(&self.config);
+        self.config.load_window(&mut window);
         insert_window(&mut self.state, &mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
             && on_same_tag;
         //let the DS know we are managing this window
-        let act = DisplayAction::AddedWindow(window.handle, follow_mouse);
+        let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
         self.state.actions.push_back(act);
 
         //let the DS know the correct desktop to find this window
@@ -64,8 +66,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn window_destroyed_handler(&mut self, handle: &WindowHandle) -> bool {
-        //Find the next or previous window on the workspace
+        // Find the next or previous window on the workspace.
         let new_handle = self.get_next_or_previous(handle);
+        // If there is a parent we would want to focus it.
+        let (transient, floating) = match self.state.windows.iter().find(|w| &w.handle == handle) {
+            Some(window) => (window.transient, window.floating()),
+            None => (None, false),
+        };
         self.state
             .focus_manager
             .tags_last_window
@@ -81,10 +88,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             if self.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
-            } else if let Some(h) = new_handle {
-                self.state.focus_window(&h);
+            } else if let Some(parent) =
+                find_transient_parent(&self.state.windows, transient).map(|p| p.handle)
+            {
+                self.state.focus_window(&parent);
+            } else if let Some(handle) = new_handle {
+                self.state.focus_window(&handle);
             } else {
-                let act = DisplayAction::Unfocus(Some(*handle));
+                let act = DisplayAction::Unfocus(Some(*handle), floating);
                 self.state.actions.push_back(act);
                 self.state.focus_manager.window_history.push_front(None);
             }
@@ -108,27 +119,19 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 let change_contains = states.contains(&WindowState::Fullscreen);
                 fullscreen_changed = change_contains || window.is_fullscreen();
             }
-            let is_floating_change = change.floating.is_some();
-            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
-            changed = change.update(window);
-            // Reposition a dialog after a resize.
-            if window.r#type == WindowType::Dialog
-                || window.transient.is_some() && is_floating_change
-            {
-                if let Some(ws) = self
+            let container = match find_transient_parent(&windows, window.transient) {
+                Some(parent) => Some(parent.exact_xyhw()),
+                None if window.r#type == WindowType::Dialog => self
                     .state
                     .workspaces
                     .iter()
                     .find(|ws| ws.has_tag(&window.tags[0]))
-                {
-                    let transient = window.transient;
-                    match find_transient_parent(&windows, transient) {
-                        Some(parent) => set_relative_floating(window, ws, parent.exact_xyhw()),
-                        None => set_relative_floating(window, ws, ws.xyhw),
-                    }
-                }
-            }
+                    .map(|ws| ws.xyhw),
+                _ => None,
+            };
 
+            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
+            changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
                 self.update_workspace_avoid_list();
                 // Don't let changes from docks re-render the worker. This will result in an
@@ -220,9 +223,9 @@ fn setup_window(
     is_first: &mut bool,
     on_same_tag: &mut bool,
 ) {
-    //When adding a window we add to the workspace under the cursor, This isn't necessarily the
-    //focused workspace. If the workspace is empty, it might not have received focus. This is so
-    //the workspace that has windows on its is still active not the empty workspace.
+    // When adding a window we add to the workspace under the cursor, This isn't necessarily the
+    // focused workspace. If the workspace is empty, it might not have received focus. This is so
+    // the workspace that has windows on its is still active not the empty workspace.
     let ws: Option<&Workspace> = state
         .workspaces
         .iter()
@@ -236,13 +239,12 @@ fn setup_window(
         let for_active_workspace =
             |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
         *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
-        window.tags = find_terminal(state, window.pid).map_or_else(
-            || ws.tags.clone(),
-            |terminal| {
-                *on_same_tag = ws.tags == terminal.tags;
-                terminal.tags.clone()
-            },
-        );
+        // May have been set by a predefined tag.
+        if window.tags.is_empty() {
+            window.tags = find_terminal(state, window.pid)
+                .map_or_else(|| ws.tags.clone(), |terminal| terminal.tags.clone());
+        }
+        *on_same_tag = ws.tags == window.tags;
         *layout = ws.layout;
 
         if is_scratchpad(state, window) {
@@ -360,7 +362,11 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         || ws.center_halfed(),
         |mut requested| {
             requested.center_relative(outer, window.border);
-            requested
+            if ws.xyhw.contains_xyhw(&requested) {
+                requested
+            } else {
+                ws.center_halfed()
+            }
         },
     );
     window.set_floating_exact(xyhw);
@@ -436,15 +442,17 @@ pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
     .into()
 }
 
-fn sane_dimension(config_value: Option<Size>, default_percent: f32, max_pixel: i32) -> i32 {
+fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32) -> i32 {
     match config_value {
-        Some(size) => match size {
-            Size::Percentage(percentage) if (0.0..0.9).contains(&percentage) => {
-                size.into_absolute(100.0) as i32 * max_pixel / 100
-            }
-            Size::Pixel(pixel) if (0..(max_pixel as f32 * 0.9) as i32).contains(&pixel) => pixel,
-            _ => (default_percent * max_pixel as f32) as i32,
-        },
-        _ => (default_percent * max_pixel as f32) as i32,
+        Some(Size::Ratio(ratio)) if (0.0..=1.0).contains(&ratio) => {
+            // This is to allow for better rust version compatibility.
+            Size::Ratio(ratio).into_absolute(max_pixel)
+            // When rust 1.56 becomes widely availible change the match to
+            // Some(size @ Size::Ration(ratio)) ...
+            // Also change to this:
+            // // size.into_absolute(max_pixel)
+        }
+        Some(Size::Pixel(pixel)) if (0..=max_pixel).contains(&pixel) => pixel,
+        _ => Size::Ratio(default_ratio).into_absolute(max_pixel),
     }
 }

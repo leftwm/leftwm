@@ -4,7 +4,6 @@ use x11_dl::xlib;
 // Specifications can be found here:
 // https://specifications.freedesktop.org/wm-spec/1.3/ar01s03.html
 
-//#![allow(non_snake_case)]
 #[derive(Clone, Debug)]
 #[allow(non_snake_case)]
 pub struct XAtom {
@@ -117,146 +116,58 @@ impl XAtom {
         ]
     }
 
-    #[allow(clippy::too_many_lines)]
-    // TODO: Use a match statement.
     pub const fn get_name(&self, atom: xlib::Atom) -> &str {
-        if atom == self.WMProtocols {
-            return "WM_PROTOCOLS";
-        }
-        if atom == self.WMDelete {
-            return "WM_DELETE_WINDOW";
-        }
-        if atom == self.WMState {
-            return "WM_STATE";
-        }
-        if atom == self.WMClass {
-            return "WM_CLASS";
-        }
-        if atom == self.WMTakeFocus {
-            return "WM_TAKE_FOCUS";
-        }
-        if atom == self.NetActiveWindow {
-            return "_NET_ACTIVE_WINDOW";
-        }
-        if atom == self.NetSupported {
-            return "_NET_SUPPORTED";
-        }
-        if atom == self.NetWMName {
-            return "_NET_WM_NAME";
-        }
-        if atom == self.NetWMState {
-            return "_NET_WM_STATE";
-        }
-        if atom == self.NetWMAction {
-            return "_NET_WM_ALLOWED_ACTIONS";
-        }
-        if atom == self.NetWMPid {
-            return "_NET_WM_PID";
-        }
+        match atom {
+            a if a == self.WMProtocols => "WM_PROTOCOLS",
+            a if a == self.WMDelete => "WM_DELETE_WINDOW",
+            a if a == self.WMState => "WM_STATE",
+            a if a == self.WMClass => "WM_CLASS",
+            a if a == self.WMTakeFocus => "WM_TAKE_FOCUS",
+            a if a == self.NetActiveWindow => "_NET_ACTIVE_WINDOW",
+            a if a == self.NetSupported => "_NET_SUPPORTED",
+            a if a == self.NetWMName => "_NET_WM_NAME",
+            a if a == self.NetWMState => "_NET_WM_STATE",
+            a if a == self.NetWMAction => "_NET_WM_ALLOWED_ACTIONS",
+            a if a == self.NetWMPid => "_NET_WM_PID",
 
-        if atom == self.NetWMStateModal {
-            return "NetWMStateModal";
-        }
-        if atom == self.NetWMStateSticky {
-            return "NetWMStateSticky";
-        }
-        if atom == self.NetWMStateMaximizedVert {
-            return "NetWMStateMaximizedVert";
-        }
-        if atom == self.NetWMStateMaximizedHorz {
-            return "NetWMStateMaximizedHorz";
-        }
-        if atom == self.NetWMStateShaded {
-            return "NetWMStateShaded";
-        }
-        if atom == self.NetWMStateSkipTaskbar {
-            return "NetWMStateSkipTaskbar";
-        }
-        if atom == self.NetWMStateSkipPager {
-            return "NetWMStateSkipPager";
-        }
-        if atom == self.NetWMStateHidden {
-            return "NetWMStateHidden";
-        }
-        if atom == self.NetWMStateFullscreen {
-            return "NetWMStateFullscreen";
-        }
-        if atom == self.NetWMStateAbove {
-            return "NetWMStateAbove";
-        }
-        if atom == self.NetWMStateBelow {
-            return "NetWMStateBelow";
-        }
+            a if a == self.NetWMStateModal => "NetWMStateModal",
+            a if a == self.NetWMStateSticky => "NetWMStateSticky",
+            a if a == self.NetWMStateMaximizedVert => "NetWMStateMaximizedVert",
+            a if a == self.NetWMStateMaximizedHorz => "NetWMStateMaximizedHorz",
+            a if a == self.NetWMStateShaded => "NetWMStateShaded",
+            a if a == self.NetWMStateSkipTaskbar => "NetWMStateSkipTaskbar",
+            a if a == self.NetWMStateSkipPager => "NetWMStateSkipPager",
+            a if a == self.NetWMStateHidden => "NetWMStateHidden",
+            a if a == self.NetWMStateFullscreen => "NetWMStateFullscreen",
+            a if a == self.NetWMStateAbove => "NetWMStateAbove",
+            a if a == self.NetWMStateBelow => "NetWMStateBelow",
 
-        if atom == self.NetWMActionMove {
-            return "_NET_WM_ACTION_MOVE";
-        }
-        if atom == self.NetWMActionResize {
-            return "_NET_WM_ACTION_RESIZE";
-        }
-        if atom == self.NetWMActionMinimize {
-            return "_NET_WM_ACTION_MINIMIZE";
-        }
-        if atom == self.NetWMActionShade {
-            return "_NET_WM_ACTION_SHADE";
-        }
-        if atom == self.NetWMActionStick {
-            return "_NET_WM_ACTION_STICK";
-        }
-        if atom == self.NetWMActionMaximizeHorz {
-            return "_NET_WM_ACTION_MAXIMIZE_HORZ";
-        }
-        if atom == self.NetWMActionMaximizeVert {
-            return "_NET_WM_ACTION_MAXIMIZE_VERT";
-        }
-        if atom == self.NetWMActionFullscreen {
-            return "_NET_WM_ACTION_FULLSCREEN";
-        }
-        if atom == self.NetWMActionChangeDesktop {
-            return "_NET_WM_ACTION_CHANGE_DESKTOP";
-        }
-        if atom == self.NetWMActionClose {
-            return "_NET_WM_ACTION_CLOSE";
-        }
+            a if a == self.NetWMActionMove => "_NET_WM_ACTION_MOVE",
+            a if a == self.NetWMActionResize => "_NET_WM_ACTION_RESIZE",
+            a if a == self.NetWMActionMinimize => "_NET_WM_ACTION_MINIMIZE",
+            a if a == self.NetWMActionShade => "_NET_WM_ACTION_SHADE",
+            a if a == self.NetWMActionStick => "_NET_WM_ACTION_STICK",
+            a if a == self.NetWMActionMaximizeHorz => "_NET_WM_ACTION_MAXIMIZE_HORZ",
+            a if a == self.NetWMActionMaximizeVert => "_NET_WM_ACTION_MAXIMIZE_VERT",
+            a if a == self.NetWMActionFullscreen => "_NET_WM_ACTION_FULLSCREEN",
+            a if a == self.NetWMActionChangeDesktop => "_NET_WM_ACTION_CHANGE_DESKTOP",
+            a if a == self.NetWMActionClose => "_NET_WM_ACTION_CLOSE",
 
-        if atom == self.NetWMWindowType {
-            return "_NET_WM_WINDOW_TYPE";
-        }
-        if atom == self.NetWMWindowTypeDialog {
-            return "_NET_WM_WINDOW_TYPE_DIALOG";
-        }
-        if atom == self.NetWMWindowTypeDock {
-            return "_NET_WM_WINDOW_TYPE_DOCK";
-        }
-        if atom == self.NetClientList {
-            return "_NET_CLIENT_LIST";
-        }
-        if atom == self.NetDesktopViewport {
-            return "_NET_DESKTOP_VIEWPORT";
-        }
-        if atom == self.NetNumberOfDesktops {
-            return "_NET_NUMBER_OF_DESKTOPS";
-        }
-        if atom == self.NetCurrentDesktop {
-            return "_NET_CURRENT_DESKTOP";
-        }
-        if atom == self.NetDesktopNames {
-            return "_NET_DESKTOP_NAMES";
-        }
-        if atom == self.NetWMDesktop {
-            return "_NET_WM_DESKTOP";
-        }
-        if atom == self.NetWMStrutPartial {
-            return "_NET_WM_STRUT_PARTIAL";
-        }
-        if atom == self.NetWMStrut {
-            return "_NET_WM_STRUT";
-        }
+            a if a == self.NetWMWindowType => "_NET_WM_WINDOW_TYPE",
+            a if a == self.NetWMWindowTypeDialog => "_NET_WM_WINDOW_TYPE_DIALOG",
+            a if a == self.NetWMWindowTypeDock => "_NET_WM_WINDOW_TYPE_DOCK",
+            a if a == self.NetClientList => "_NET_CLIENT_LIST",
+            a if a == self.NetDesktopViewport => "_NET_DESKTOP_VIEWPORT",
+            a if a == self.NetNumberOfDesktops => "_NET_NUMBER_OF_DESKTOPS",
+            a if a == self.NetCurrentDesktop => "_NET_CURRENT_DESKTOP",
+            a if a == self.NetDesktopNames => "_NET_DESKTOP_NAMES",
+            a if a == self.NetWMDesktop => "_NET_WM_DESKTOP",
+            a if a == self.NetWMStrutPartial => "_NET_WM_STRUT_PARTIAL",
+            a if a == self.NetWMStrut => "_NET_WM_STRUT",
 
-        if atom == self.UTF8String {
-            return "UTF8_STRING";
+            a if a == self.UTF8String => "UTF8_STRING",
+            _ => "(UNKNOWN)",
         }
-        "(UNKNOWN)"
     }
 
     pub fn new(xlib: &xlib::Xlib, dpy: *mut xlib::Display) -> Self {

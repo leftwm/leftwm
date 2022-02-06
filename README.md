@@ -88,7 +88,7 @@ author of the theme and could be different.
 
 List of LeftWM dependencies:  
 
-- xorg (runtime, build):(specifically libx11, xrandr, xorg-server, libxinerama)  
+- xorg (runtime, build): specifically libx11, xrandr, xorg-server, libxinerama  
 - sh (runtime): any posix-compliant shell for starting up and down files
 - rust (build): >= 1.56.0
 - bash (optional): Most of the themes available use bash, though the scrips maybe converted to any posix-compliant shell
@@ -130,19 +130,41 @@ List of common dependencies for themes:
 
 # Installation (with package manager)
 
-Archlinux ([AUR])
+#### Gentoo ([GURU])
+```sh
+sudo layman -a guru && sudo emerge --sync 
+sudo emerge --ask --verbose x11-wm/leftwm
+```
+
+#### Archlinux ([AUR])
 ```sh
 paru -S leftwm
 ```
 
 [paru] is an AUR helper like [yay], but written in [Rust].
 
-Fedora ([copr])
+#### Fedora ([copr])
 ```sh
 sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
 ```
 
-Cargo ([crates.io])
+#### NetBSD ([Official repositories])
+```sh
+pkgin install leftwm
+```
+
+or, if you prefer to build it from source
+```sh
+cd /usr/pkgsrc/wm/leftwm
+make install
+```
+
+#### Void ([XBPS])
+```sh
+sudo xbps-install -S leftwm
+```
+
+#### Cargo ([crates.io])
 ```sh
 cargo install leftwm
 ```
@@ -154,7 +176,10 @@ sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 ```
 
 [AUR]: https://aur.archlinux.org/packages/leftwm
+[GURU]: https://gitweb.gentoo.org/repo/proj/guru.git/tree/x11-wm/leftwm
 [copr]: https://copr.fedorainfracloud.org/coprs/atim/leftwm/
+[Official repositories]: https://pkgsrc.se/wm/leftwm/
+[XBPS]: https://voidlinux.org/packages/?arch=x86_64&q=leftwm
 [crates.io]: https://crates.io/crates/leftwm
 [paru]: https://github.com/Morganamilo/paru
 [yay]: https://github.com/Jguer/yay
@@ -277,8 +302,8 @@ For conveniece we also have a Makefile with the following rules:
 
 Make sure this is at the end of your .xinitrc file:
 
-```
-bash .xinitrc
+```bash 
+# .xinitrc
 exec dbus-launch leftwm
 ```
 
@@ -447,6 +472,30 @@ Example:
 ```toml
 layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain"]
 ```
+
+Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.
+
+Example:
+```toml
+[[workspaces]]
+id = 0
+x = 0
+y = 480
+width = 3840
+height = 1600
+layouts = ["CenterMain", "CenterMainBalanced", "EvenHorizontal"]
+
+[[workspaces]]
+id = 1
+x = 3840
+y = 0
+width = 1440
+height = 2560
+layouts = ["MainAndHorizontalStack", "EvenVertical"]
+```
+
+**NOTE**
+When defining layouts per workspace, you will need to define workspace IDs explicitely.
 
 [More detailed configuration information can be found in the Wiki.][config-wiki]
 

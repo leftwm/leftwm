@@ -1,12 +1,12 @@
 use anyhow::{bail, Result};
 use clap::{App, Arg};
-use leftwm::{Config, Keybind, ThemeSetting};
-use leftwm_core::config::Workspace;
-use leftwm_core::utils;
-use std::collections::HashMap;
-use std::convert::TryFrom;
+use leftwm::{Config, ThemeSetting};
+use std::env;
 use std::fs;
+use std::fs::File;
+use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::path::PathBuf;
 use xdg::BaseDirectories;
 
@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
     );
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
-        git_version::git_version!(fallback = "NONE")
+        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
@@ -48,8 +48,9 @@ async fn main() -> Result<()> {
             if verbose {
                 dbg!(&config);
             }
-            check_workspace_ids(config.workspaces, verbose);
-            check_keybinds(config.keybind, verbose);
+            config.check_mousekey(verbose);
+            config.check_workspace_ids(verbose);
+            config.check_keybinds(verbose);
         }
         Err(e) => {
             println!("Configuration failed. Reason: {:?}", e);
@@ -81,107 +82,20 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     if verbose {
         dbg!(&config_filename);
     }
-    let contents = fs::read_to_string(config_filename)?;
-    if verbose {
-        dbg!(&contents);
-    }
-    Ok(toml::from_str(&contents)?)
-}
-
-/// Checks defined workspaces to ensure no ID collisions occur.
-fn check_workspace_ids(workspaces: Option<Vec<Workspace>>, verbose: bool) -> bool {
-    workspaces.map_or(true, |wss|
-    {
+    if Path::new(&config_filename).exists() {
+        let contents = fs::read_to_string(config_filename)?;
         if verbose {
-            println!("Checking config for valid workspace definitions.");
-        }
-        let ids = leftwm::get_workspace_ids(&wss);
-        if ids.iter().any(std::option::Option::is_some) {
-            if !leftwm::all_ids_some(&ids)
-            {
-                println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
-                false
-            } else if leftwm::all_ids_unique(&ids) {
-                true
-            } else {
-                println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
-                false
-            }
-        } else {
-            true
-        }
-    }
-    )
-}
-
-/// Check all keybinds to ensure that required values are provided
-/// Checks to see if value is provided (if required)
-/// Checks to see if keys are valid against Xkeysym
-/// Ideally, we will pass this to the command handler with a dummy config
-fn check_keybinds(keybinds: Vec<Keybind>, verbose: bool) -> bool {
-    let mut returns = Vec::new();
-    println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
-    let mut bindings = HashMap::new();
-    for keybind in keybinds {
-        if verbose {
-            println!("Keybind: {:?} {}", keybind, keybind.value.is_none());
-        }
-        if let Err(err) = leftwm_core::Keybind::try_from(keybind.clone()) {
-            returns.push((Some(keybind.clone()), err.to_string()));
-        }
-        if utils::xkeysym_lookup::into_keysym(&keybind.key).is_none() {
-            returns.push((
-                Some(keybind.clone()),
-                format!("Key `{}` is not valid", keybind.key),
-            ));
+            dbg!(&contents);
         }
 
-        for m in &keybind.modifier {
-            if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(m) == 0 {
-                returns.push((
-                    Some(keybind.clone()),
-                    format!("Modifier `{}` is not valid", m),
-                ));
-            }
-        }
-        let mut modkey = keybind.modifier.clone();
-        modkey.sort();
-        if let Some(conflict_key) = bindings.get(&(modkey.clone(), keybind.key.clone())) {
-            returns.push((
-                None,
-                format!(
-                    "\x1b[0m\x1b[1mMultiple commands bound to key combination {} + {}:\
-                    \n\x1b[1;91m    -> {:?}\
-                    \n    -> {:?}\
-                    \n\x1b[0mHelp: change one of the keybindings to something else.\n",
-                    keybind.modifier.join(" + "),
-                    keybind.key,
-                    conflict_key,
-                    keybind.command,
-                ),
-            ));
-        } else {
-            bindings.insert((modkey, keybind.key), keybind.command);
-        }
-    }
-    if returns.is_empty() {
-        println!("\x1b[0;92m    -> All keybinds OK\x1b[0m");
-        true
+        let config = toml::from_str(&contents)?;
+        Ok(config)
     } else {
-        for error in returns {
-            match error.0 {
-                Some(binding) => {
-                    println!(
-                        "\x1b[1;91mERROR: {} for keybind {:?}\x1b[0m",
-                        error.1, binding
-                    );
-                }
-                None => {
-                    println!("\x1b[1;91mERROR: {} \x1b[0m", error.1);
-                }
-            }
-        }
-        false
+        let config = Config::default();
+        let toml = toml::to_string(&config).unwrap();
+        let mut file = File::create(&config_filename)?;
+        file.write_all(toml.as_bytes())?;
+        Ok(config)
     }
 }
 
@@ -197,7 +111,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
                 println!(":: XDG_RUNTIME_DIR: {}, LOGINCTL OKAY", val);
             }
 
-            println!("\x1b[0;92m    -> Environment OK \x1b[0;92m");
+            println!("\x1b[0;92m    -> Environment OK \x1b[0m");
 
             Ok(())
         }
@@ -206,7 +120,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
                 println!(":: XDG_RUNTIME_DIR: {}, LOGINCTL not installed", val);
             }
 
-            println!("\x1b[0;92m    -> Environment OK (has XDG_RUNTIME_DIR) \x1b[0;92m");
+            println!("\x1b[0;92m    -> Environment OK (has XDG_RUNTIME_DIR) \x1b[0m");
 
             Ok(())
         }
@@ -260,16 +174,17 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     let mut returns = Vec::new();
     let missing_files = missing_expected_file(&filepaths);
 
-    if !missing_files.is_empty() {
-        missing_files
-            .into_iter()
-            .for_each(|file| returns.push(format!("File not found: {}", file)));
+    for missing_file in missing_files {
+        returns.push(format!("File not found: {}", missing_file));
     }
 
     for filepath in filepaths {
         match filepath {
             f if f.ends_with("up") => match check_permissions(f, verbose) {
-                Ok(_fp) => continue,
+                Ok(fp) => match check_up_file(fp) {
+                    Ok(_) => continue,
+                    Err(e) => returns.push(e.to_string()),
+                },
                 Err(e) => returns.push(e.to_string()),
             },
             f if f.ends_with("down") => match check_permissions(f, verbose) {
@@ -285,7 +200,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     }
 
     if returns.is_empty() {
-        println!("\x1b[0;92m    -> Theme OK \x1b[0;92m");
+        println!("\x1b[0;92m    -> Theme OK \x1b[0m");
         true
     } else {
         for error in &returns {
@@ -295,11 +210,10 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     }
 }
 
-fn missing_expected_file<'a>(filepaths: &[PathBuf]) -> Vec<&'a str> {
-    vec!["up", "down", "theme.toml"]
-        .into_iter()
-        .filter(|f| !filepaths.iter().any(|fp| fp.ends_with(f)))
-        .collect()
+fn missing_expected_file<'a>(filepaths: &'a [PathBuf]) -> impl Iterator<Item = &&'a str> {
+    ["up", "down", "theme.toml"]
+        .iter()
+        .filter(move |f| !filepaths.iter().any(|fp| fp.ends_with(f)))
 }
 
 fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<&PathBuf> {
@@ -340,6 +254,15 @@ fn check_permissions(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             filepath.display(),
         );
     }
+}
+
+fn check_up_file(filepath: PathBuf) -> Result<()> {
+    let contents = fs::read_to_string(filepath)?;
+    // Deprecate commands.pipe after 97de790. See #652 for details.
+    if contents.contains("leftwm/commands.pipe") {
+        bail!("`commands.pipe` is deprecated. See https://github.com/leftwm/leftwm/issues/652 for workaround.");
+    }
+    Ok(())
 }
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {

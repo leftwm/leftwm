@@ -184,12 +184,10 @@ impl Workspace {
     /// while accounting for the optional `max_window_width` configuration
     #[must_use]
     pub fn width_limited(&self, column_count: usize) -> i32 {
+        let width = self.width();
         match self.max_window_width {
-            Some(size) => std::cmp::min(
-                (size.into_absolute(self.width() as f32) * column_count as f32).floor() as i32,
-                self.width(),
-            ),
-            None => self.width(),
+            Some(size) => std::cmp::min(size.into_absolute(width) * column_count as i32, width),
+            None => width,
         }
     }
 

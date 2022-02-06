@@ -8,6 +8,9 @@ use std::os::raw::c_long;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
+    if !xw.managed_windows.contains(&event.window) {
+        return None;
+    }
     let atom_name = xw.atoms.get_name(event.message_type);
     log::trace!("ClientMessage: {} : {:?}", event.window, atom_name);
 
@@ -15,7 +18,11 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         let value = event.data.get_long(0);
         match usize::try_from(value) {
             Ok(index) => {
-                return Some(DisplayEvent::SendCommand(Command::GotoTag(index + 1)));
+                let event = DisplayEvent::SendCommand(Command::GoToTag {
+                    tag: index + 1,
+                    swap: false,
+                });
+                return Some(event);
             }
             Err(err) => {
                 log::debug!(
@@ -26,6 +33,31 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
                 return None;
             }
         }
+    }
+    if event.message_type == xw.atoms.NetWMDesktop {
+        let value = event.data.get_long(0);
+        match usize::try_from(value) {
+            Ok(index) => {
+                let event = DisplayEvent::SendCommand(Command::SendWindowToTag {
+                    window: Some(WindowHandle::XlibHandle(event.window)),
+                    tag: index + 1,
+                });
+                return Some(event);
+            }
+            Err(err) => {
+                log::debug!(
+                    "Received invalid value for current desktop new index ({}): {}",
+                    value,
+                    err,
+                );
+                return None;
+            }
+        }
+    }
+    if event.message_type == xw.atoms.NetActiveWindow {
+        return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
+            event.window,
+        )));
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too

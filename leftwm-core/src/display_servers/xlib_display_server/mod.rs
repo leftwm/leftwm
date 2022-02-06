@@ -2,14 +2,15 @@ use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::Screen;
+use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
 use crate::models::Workspace;
-use crate::state::State;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
+use crate::Keybind;
 use futures::prelude::*;
 use std::pin::Pin;
 use x11_dl::xlib;
@@ -22,6 +23,8 @@ mod xwrap;
 pub use xwrap::XWrap;
 
 use event_translate::XEvent;
+
+use self::xwrap::ICONIC_STATE;
 mod xcursor;
 
 pub struct XlibDisplayServer {
@@ -50,44 +53,22 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn load_config(&mut self, config: &impl Config) {
-        self.xw.load_config(config);
+    fn load_config(
+        &mut self,
+        config: &impl Config,
+        focused: Option<&Option<WindowHandle>>,
+        windows: &[Window],
+    ) {
+        self.xw.load_config(config, focused, windows);
     }
 
-    fn update_windows(
-        &self,
-        windows: Vec<&Window>,
-        focused_window: Option<&Window>,
-        state: &State,
-    ) {
-        let max_tag_index = state
-            .workspaces
-            .iter()
-            .flat_map(|w| &w.tags)
-            .max()
-            .map_or(0, std::borrow::ToOwned::to_owned);
-
-        let to_the_right = state
-            .screens
-            .iter()
-            .map(|s| s.bbox.width + s.bbox.x + 100)
-            .max();
-        let max_screen_width = state.screens.iter().map(|s| s.bbox.width).max();
-
+    fn update_windows(&self, windows: Vec<&Window>) {
         for window in &windows {
-            let is_focused = match focused_window {
-                Some(f) => f.handle == window.handle,
-                None => false,
-            };
-
-            let hide_offset = right_offset(max_tag_index, to_the_right, window)
-                .unwrap_or_else(|| left_offset(max_screen_width, window));
-
-            self.xw.update_window(window, is_focused, hide_offset);
+            self.xw.update_window(window);
         }
     }
 
-    fn update_workspaces(&self, _workspaces: Vec<&Workspace>, focused: Option<&Workspace>) {
+    fn update_workspaces(&self, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
             self.xw.set_current_desktop(&focused.tags);
         }
@@ -102,9 +83,9 @@ impl DisplayServer for XlibDisplayServer {
             }
         }
 
-        let event_in_queue = self.xw.queue_len();
+        let events_in_queue = self.xw.queue_len();
 
-        for _ in 0..event_in_queue {
+        for _ in 0..events_in_queue {
             let xlib_event = self.xw.get_next_event();
             let event = XEvent(&mut self.xw, xlib_event).into();
             if let Some(e) = event {
@@ -122,133 +103,33 @@ impl DisplayServer for XlibDisplayServer {
         events
     }
 
-    // TODO: Split function up.
-    #[allow(clippy::too_many_lines)]
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
         log::trace!("DisplayAction: {:?}", act);
+        let xw = &mut self.xw;
         let event: Option<DisplayEvent> = match act {
-            DisplayAction::KillWindow(w) => {
-                self.xw.kill_window(&w);
-                None
-            }
-            DisplayAction::AddedWindow(w, follow_mouse) => {
-                self.xw.setup_managed_window(w, follow_mouse)
-            }
-            DisplayAction::MoveMouseOver(handle) => {
-                if let WindowHandle::XlibHandle(win) = handle {
-                    let _ = self.xw.move_cursor_to_window(win);
-                }
-                None
-            }
-            DisplayAction::MoveMouseOverPoint(point) => {
-                let _ = self.xw.move_cursor_to_point(point);
-                None
-            }
-            DisplayAction::DestroyedWindow(w) => {
-                self.xw.teardown_managed_window(&w);
-                None
-            }
+            DisplayAction::KillWindow(h) => from_kill_window(xw, h),
+            DisplayAction::AddedWindow(h, f, fm) => from_added_window(xw, h, f, fm),
+            DisplayAction::MoveMouseOver(h) => from_move_mouse_over(xw, h),
+            DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
+            DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
+            DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
+            DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
+            DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, &ws),
+            DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
+            DisplayAction::ReadyToMoveWindow(h) => from_ready_to_move_window(xw, h),
+            DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
+            DisplayAction::SetCurrentTags(ts) => from_set_current_tags(xw, &ts),
+            DisplayAction::SetWindowTags(h, ts) => from_set_window_tags(xw, h, &ts),
+            DisplayAction::ReloadKeyGrabs(ks) => from_reload_key_grabs(xw, &ks),
+            DisplayAction::ConfigureXlibWindow(w) => from_configure_xlib_window(xw, &w),
+
             DisplayAction::WindowTakeFocus {
                 window,
-                previous_handle,
-            } => {
-                self.xw.window_take_focus(&window, previous_handle);
-                None
-            }
-            DisplayAction::Unfocus(handle) => {
-                self.xw.unfocus(handle);
-                None
-            }
-            DisplayAction::SetState(h, toggle_to, window_state) => {
-                // TODO: impl from for windowstate and xlib::Atom
-                let state = match window_state {
-                    WindowState::Modal => self.xw.atoms.NetWMStateModal,
-                    WindowState::Sticky => self.xw.atoms.NetWMStateSticky,
-                    WindowState::MaximizedVert => self.xw.atoms.NetWMStateMaximizedVert,
-                    WindowState::MaximizedHorz => self.xw.atoms.NetWMStateMaximizedHorz,
-                    WindowState::Shaded => self.xw.atoms.NetWMStateShaded,
-                    WindowState::SkipTaskbar => self.xw.atoms.NetWMStateSkipTaskbar,
-                    WindowState::SkipPager => self.xw.atoms.NetWMStateSkipPager,
-                    WindowState::Hidden => self.xw.atoms.NetWMStateHidden,
-                    WindowState::Fullscreen => self.xw.atoms.NetWMStateFullscreen,
-                    WindowState::Above => self.xw.atoms.NetWMStateAbove,
-                    WindowState::Below => self.xw.atoms.NetWMStateBelow,
-                };
-                self.xw.set_state(h, toggle_to, state);
-                None
-            }
-            DisplayAction::SetWindowOrder(windows) => {
-                // The windows we are managing should be behind unmanaged windows. Unless they are
-                // fullscreen, or their children.
-                let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
-                    windows.iter().partition(|w| w.is_fullscreen());
-                // Fullscreen windows.
-                let level2: Vec<WindowHandle> =
-                    fullscreen_windows.iter().map(|w| w.handle).collect();
-                let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) =
-                    other.iter().partition(|w| {
-                        level2.contains(&w.transient.unwrap_or(WindowHandle::XlibHandle(0)))
-                    });
-                // Fullscreen windows children.
-                let level1: Vec<WindowHandle> =
-                    fullscreen_children.iter().map(|w| w.handle).collect();
-                // Left over managed windows.
-                let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
-                // Unmanaged windows.
-                let level3: Vec<WindowHandle> = self
-                    .xw
-                    .get_all_windows()
-                    .unwrap_or_default()
-                    .iter()
-                    .filter(|&w| *w != self.root)
-                    .map(|w| WindowHandle::XlibHandle(*w))
-                    .filter(|&h| !windows.iter().any(|w| w.handle == h))
-                    .collect();
-                let all: Vec<WindowHandle> = level1
-                    .iter()
-                    .chain(level2.iter())
-                    .chain(level3.iter())
-                    .chain(level4.iter())
-                    .copied()
-                    .collect();
-                self.xw.restack(all);
-                None
-            }
-            DisplayAction::MoveToTop(handle) => {
-                self.xw.move_to_top(&handle);
-                None
-            }
-            DisplayAction::FocusWindowUnderCursor => {
-                let point = self.xw.get_cursor_point().ok()?;
-                let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
-                Some(evt)
-            }
-            DisplayAction::StartMovingWindow(w) => {
-                self.xw.set_mode(Mode::MovingWindow(w));
-                None
-            }
-            DisplayAction::StartResizingWindow(w) => {
-                self.xw.set_mode(Mode::ResizingWindow(w));
-                None
-            }
-            DisplayAction::NormalMode => {
-                self.xw.set_mode(Mode::Normal);
-                None
-            }
-            DisplayAction::SetCurrentTags(tags) => {
-                self.xw.set_current_desktop(&tags);
-                None
-            }
-            DisplayAction::SetWindowTags(handle, tag) => {
-                if let WindowHandle::XlibHandle(window) = handle {
-                    self.xw.set_window_desktop(window, &tag);
-                }
-                None
-            }
-            DisplayAction::ReloadKeyGrabs(keybinds) => {
-                self.xw.reset_grabs(&keybinds);
-                None
-            }
+                previous_window,
+            } => from_window_take_focus(xw, &window, &previous_window),
+
+            DisplayAction::FocusWindowUnderCursor => from_focus_window_under_cursor(xw),
+            DisplayAction::NormalMode => from_normal_mode(xw),
         };
         if event.is_some() {
             log::trace!("DisplayEvent: {:?}", event);
@@ -295,33 +176,28 @@ impl XlibDisplayServer {
             }
         }
 
-        // tell manager about existing windows
-        self.find_all_windows().into_iter().for_each(|w| {
-            let cursor = self.xw.get_cursor_point().ok().unwrap_or_default();
-            let e = DisplayEvent::WindowCreate(w, cursor.0, cursor.1);
-            events.push(e);
-        });
+        // Tell manager about existing windows.
+        events.append(&mut self.find_all_windows());
 
         events
     }
 
-    fn find_all_windows(&self) -> Vec<Window> {
-        let mut all: Vec<Window> = Vec::new();
+    fn find_all_windows(&self) -> Vec<DisplayEvent> {
+        let mut all: Vec<DisplayEvent> = Vec::new();
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
                 let attrs = match self.xw.get_window_attrs(handle) {
                     Ok(x) => x,
                     Err(_) => return,
                 };
-                let managed = match self.xw.get_transient_for(handle) {
-                    Some(_) => attrs.map_state == 2,
-                    None => attrs.override_redirect <= 0 && attrs.map_state == 2,
+                let state = match self.xw.get_wm_state(handle) {
+                    Some(state) => state,
+                    None => return,
                 };
-                if managed {
-                    let name = self.xw.get_window_name(handle);
-                    let pid = self.xw.get_window_pid(handle);
-                    let w = Window::new(WindowHandle::XlibHandle(handle), name, pid);
-                    all.push(w);
+                if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
+                    if let Some(event) = self.xw.setup_window(handle) {
+                        all.push(event);
+                    }
                 }
             }),
             Err(err) => {
@@ -332,27 +208,162 @@ impl XlibDisplayServer {
     }
 }
 
-//return an offset to hide the window in the right, if it should be hidden on the right
-fn right_offset(
-    max_tag_index: usize,
-    max_right_screen: Option<i32>,
-    window: &Window,
-) -> Option<i32> {
-    let max_right_screen = max_right_screen?;
-    for tag in &window.tags {
-        if tag > &max_tag_index {
-            return Some(max_right_screen + window.x());
-        }
+// Display actions.
+fn from_kill_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.kill_window(&handle);
+    None
+}
+
+fn from_added_window(
+    xw: &mut XWrap,
+    handle: WindowHandle,
+    floating: bool,
+    follow_mouse: bool,
+) -> Option<DisplayEvent> {
+    xw.setup_managed_window(handle, floating, follow_mouse)
+}
+
+fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    if let WindowHandle::XlibHandle(win) = handle {
+        let _ = xw.move_cursor_to_window(win);
     }
     None
 }
 
-//return an offset to hide the window on the left
-fn left_offset(max_screen_width: Option<i32>, window: &Window) -> i32 {
-    let mut left = -(window.width());
-    if let Some(screen_width) = max_screen_width {
-        let best_left = window.x() - screen_width;
-        left = std::cmp::min(best_left, left);
+fn from_move_mouse_over_point(xw: &mut XWrap, point: (i32, i32)) -> Option<DisplayEvent> {
+    let _ = xw.move_cursor_to_point(point);
+    None
+}
+
+fn from_destroyed_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.teardown_managed_window(&handle);
+    None
+}
+
+fn from_unfocus(
+    xw: &mut XWrap,
+    handle: Option<WindowHandle>,
+    floating: bool,
+) -> Option<DisplayEvent> {
+    xw.unfocus(handle, floating);
+    None
+}
+
+fn from_set_state(
+    xw: &mut XWrap,
+    handle: WindowHandle,
+    toggle_to: bool,
+    window_state: WindowState,
+) -> Option<DisplayEvent> {
+    // TODO: impl from for windowstate and xlib::Atom
+    let state = match window_state {
+        WindowState::Modal => xw.atoms.NetWMStateModal,
+        WindowState::Sticky => xw.atoms.NetWMStateSticky,
+        WindowState::MaximizedVert => xw.atoms.NetWMStateMaximizedVert,
+        WindowState::MaximizedHorz => xw.atoms.NetWMStateMaximizedHorz,
+        WindowState::Shaded => xw.atoms.NetWMStateShaded,
+        WindowState::SkipTaskbar => xw.atoms.NetWMStateSkipTaskbar,
+        WindowState::SkipPager => xw.atoms.NetWMStateSkipPager,
+        WindowState::Hidden => xw.atoms.NetWMStateHidden,
+        WindowState::Fullscreen => xw.atoms.NetWMStateFullscreen,
+        WindowState::Above => xw.atoms.NetWMStateAbove,
+        WindowState::Below => xw.atoms.NetWMStateBelow,
+    };
+    xw.set_state(handle, toggle_to, state);
+    None
+}
+
+fn from_set_window_order(xw: &mut XWrap, windows: &[Window]) -> Option<DisplayEvent> {
+    // The windows we are managing should be behind unmanaged windows. Unless they are
+    // fullscreen, or their children.
+    let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
+        windows.iter().partition(|w| w.is_fullscreen());
+    // Fullscreen windows.
+    let level2: Vec<WindowHandle> = fullscreen_windows.iter().map(|w| w.handle).collect();
+    let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) = other
+        .iter()
+        .partition(|w| level2.contains(&w.transient.unwrap_or(WindowHandle::XlibHandle(0))));
+    // Fullscreen windows children.
+    let level1: Vec<WindowHandle> = fullscreen_children.iter().map(|w| w.handle).collect();
+    // Left over managed windows.
+    let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+    // Unmanaged windows.
+    let level3: Vec<WindowHandle> = xw
+        .get_all_windows()
+        .unwrap_or_default()
+        .iter()
+        .filter(|&w| *w != xw.get_default_root())
+        .map(|w| WindowHandle::XlibHandle(*w))
+        .filter(|&h| !windows.iter().any(|w| w.handle == h))
+        .collect();
+    let all: Vec<WindowHandle> = level1
+        .iter()
+        .chain(level2.iter())
+        .chain(level3.iter())
+        .chain(level4.iter())
+        .copied()
+        .collect();
+    xw.restack(all);
+    None
+}
+
+fn from_move_to_top(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.move_to_top(&handle);
+    None
+}
+
+fn from_ready_to_move_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.set_mode(Mode::ReadyToMove(handle));
+    None
+}
+
+fn from_ready_to_resize_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+    xw.set_mode(Mode::ReadyToResize(handle));
+    None
+}
+
+fn from_set_current_tags(xw: &mut XWrap, tags: &[TagId]) -> Option<DisplayEvent> {
+    xw.set_current_desktop(tags);
+    None
+}
+
+fn from_set_window_tags(
+    xw: &mut XWrap,
+    handle: WindowHandle,
+    tags: &[TagId],
+) -> Option<DisplayEvent> {
+    if let WindowHandle::XlibHandle(window) = handle {
+        xw.set_window_desktop(window, tags);
     }
-    left
+    None
+}
+
+fn from_reload_key_grabs(xw: &mut XWrap, keybinds: &[Keybind]) -> Option<DisplayEvent> {
+    xw.reset_grabs(keybinds);
+    None
+}
+
+fn from_configure_xlib_window(xw: &mut XWrap, window: &Window) -> Option<DisplayEvent> {
+    xw.configure_window(window);
+    None
+}
+
+fn from_window_take_focus(
+    xw: &mut XWrap,
+    window: &Window,
+    previous_window: &Option<Window>,
+) -> Option<DisplayEvent> {
+    xw.window_take_focus(window, previous_window.as_ref());
+    None
+}
+
+fn from_focus_window_under_cursor(xw: &mut XWrap) -> Option<DisplayEvent> {
+    let point = xw.get_cursor_point().ok()?;
+    let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
+    Some(evt)
+}
+
+fn from_normal_mode(xw: &mut XWrap) -> Option<DisplayEvent> {
+    xw.set_mode(Mode::Normal);
+    None
 }

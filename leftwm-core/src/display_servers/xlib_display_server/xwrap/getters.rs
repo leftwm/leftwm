@@ -1,9 +1,9 @@
 //! `XWrap` getters.
-use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN};
+use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN, MOUSEMASK};
 use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
 use std::ffi::CString;
-use std::os::raw::{c_int, c_long, c_uchar, c_uint, c_ulong};
+use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
 use x11_dl::xlib;
 
@@ -180,6 +180,20 @@ impl XWrap {
         None
     }
 
+    /// Returns the next `Xevent` that matches the mask of the xserver.
+    // `XMaskEvent`: https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XMaskEvent.html
+    pub fn get_mask_event(&self) -> xlib::XEvent {
+        unsafe {
+            let mut event: xlib::XEvent = std::mem::zeroed();
+            (self.xlib.XMaskEvent)(
+                self.display,
+                MOUSEMASK | xlib::SubstructureRedirectMask | xlib::ExposureMask,
+                &mut event,
+            );
+            event
+        }
+    }
+
     /// Returns the next `Xevent` of the xserver.
     // `XNextEvent`: https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XNextEvent.html
     #[must_use]
@@ -309,6 +323,30 @@ impl XWrap {
         Ok(attrs)
     }
 
+    /// Returns a windows class `WM_CLASS`
+    // `XGetClassHint`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetClassHint.html
+    #[must_use]
+    pub fn get_window_class(&self, window: xlib::Window) -> Option<(String, String)> {
+        unsafe {
+            let mut class_return: xlib::XClassHint = std::mem::zeroed();
+            let status = (self.xlib.XGetClassHint)(self.display, window, &mut class_return);
+            if status == 0 {
+                return None;
+            }
+            let res_name =
+                match CString::from_raw(class_return.res_name.cast::<c_char>()).into_string() {
+                    Ok(s) => s,
+                    Err(_) => return None,
+                };
+            let res_class =
+                match CString::from_raw(class_return.res_class.cast::<c_char>()).into_string() {
+                    Ok(s) => s,
+                    Err(_) => return None,
+                };
+            Some((res_name, res_class))
+        }
+    }
+
     /// Returns the geometry of a window as a `XyhwChange` struct.
     /// # Errors
     ///
@@ -353,6 +391,15 @@ impl XWrap {
         if let Ok(text) = self.get_text_prop(window, self.atoms.NetWMName) {
             return Some(text);
         }
+        if let Ok(text) = self.get_text_prop(window, xlib::XA_WM_NAME) {
+            return Some(text);
+        }
+        None
+    }
+
+    /// Returns a `WM_NAME` (not `_NET`windows name).
+    #[must_use]
+    pub fn get_window_legacy_name(&self, window: xlib::Window) -> Option<String> {
         if let Ok(text) = self.get_text_prop(window, xlib::XA_WM_NAME) {
             return Some(text);
         }
@@ -481,6 +528,17 @@ impl XWrap {
         }
     }
 
+    /// Returns the `WM_STATE` of a window.
+    pub fn get_wm_state(&self, window: xlib::Window) -> Option<c_long> {
+        let (prop_return, nitems_return) = self
+            .get_property(window, self.atoms.WMState, self.atoms.WMState)
+            .ok()?;
+        if nitems_return == 0 {
+            return None;
+        }
+        Some(unsafe { *prop_return.cast::<c_long>() })
+    }
+
     /// Returns the name of a `XAtom`.
     /// # Errors
     ///
@@ -575,7 +633,7 @@ impl XWrap {
             if status == 0 {
                 return Err(XlibError::FailedStatus);
             }
-            if let Ok(s) = CString::from_raw(text_prop.value.cast::<i8>()).into_string() {
+            if let Ok(s) = CString::from_raw(text_prop.value.cast::<c_char>()).into_string() {
                 return Ok(s);
             }
         };
