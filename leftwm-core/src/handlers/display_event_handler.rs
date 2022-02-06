@@ -1,4 +1,4 @@
-use super::{CommandBuilder, Config, DisplayEvent, Manager, Mode};
+use super::{Config, DisplayEvent, Manager, Mode};
 use crate::display_servers::DisplayServer;
 use crate::models::WindowHandle;
 use crate::State;
@@ -17,13 +17,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 false
             }
 
-            DisplayEvent::KeyGrabReload => {
-                self.state
-                    .actions
-                    .push_back(DisplayAction::ReloadKeyGrabs(self.config.mapped_bindings()));
-                false
-            }
-
             DisplayEvent::MoveFocusTo(x, y) => {
                 self.state.move_focus_to_point(x, y);
                 false
@@ -39,13 +32,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
 
             DisplayEvent::WindowDestroy(handle) => self.window_destroyed_handler(&handle),
-
-            DisplayEvent::KeyCombo(mod_mask, xkeysym) => {
-                //look through the config and build a command if its defined in the config
-                let build = CommandBuilder::<C>::new(&self.config);
-                let command = build.xkeyevent(mod_mask, xkeysym);
-                command.map_or(false, |cmd| self.command_handler(cmd))
-            }
 
             DisplayEvent::SendCommand(command) => self.command_handler(&command),
 

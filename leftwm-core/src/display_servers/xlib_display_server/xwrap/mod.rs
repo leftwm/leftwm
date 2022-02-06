@@ -11,7 +11,7 @@ use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
 use crate::config::Config;
 use crate::models::{FocusBehaviour, Mode};
-use crate::utils::xkeysym_lookup::ModMask;
+use crate::utils::modmask_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
@@ -22,7 +22,6 @@ use x11_dl::xlib;
 use x11_dl::xrandr::Xrandr;
 
 mod getters;
-mod keyboard;
 mod mouse;
 mod setters;
 mod window;
@@ -224,11 +223,6 @@ impl XWrap {
             1
         }
 
-        // Setup cached keymap/modifier information, otherwise MappingNotify might never be called
-        // from:
-        // https://stackoverflow.com/questions/35569562/how-to-catch-keyboard-layout-change-event-and-get-current-new-keyboard-layout-on
-        xw.keysym_to_keycode(x11_dl::keysym::XK_F1);
-
         unsafe { (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib)) };
         xw.sync();
         xw
@@ -241,10 +235,9 @@ impl XWrap {
         windows: &[Window],
     ) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
+        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
         self.load_colors(config, focused, Some(windows));
         self.tag_labels = config.create_list_of_tag_labels();
-        self.reset_grabs(&config.mapped_bindings());
     }
 
     /// Initialize the xwrapper.
@@ -253,7 +246,7 @@ impl XWrap {
     // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
+        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
 
         let root = self.root;
         self.load_colors(config, None, None);
@@ -290,8 +283,6 @@ impl XWrap {
         // EWMH compliance for desktops.
         self.tag_labels = config.create_list_of_tag_labels();
         self.init_desktops_hints();
-
-        self.reset_grabs(&config.mapped_bindings());
 
         self.sync();
     }

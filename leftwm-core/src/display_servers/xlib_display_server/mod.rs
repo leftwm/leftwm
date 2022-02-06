@@ -10,7 +10,6 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
-use crate::Keybind;
 use futures::prelude::*;
 use std::pin::Pin;
 use x11_dl::xlib;
@@ -120,7 +119,6 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
             DisplayAction::SetCurrentTags(ts) => from_set_current_tags(xw, &ts),
             DisplayAction::SetWindowTags(h, ts) => from_set_window_tags(xw, h, &ts),
-            DisplayAction::ReloadKeyGrabs(ks) => from_reload_key_grabs(xw, &ks),
             DisplayAction::ConfigureXlibWindow(w) => from_configure_xlib_window(xw, &w),
 
             DisplayAction::WindowTakeFocus {
@@ -335,11 +333,6 @@ fn from_set_window_tags(
     if let WindowHandle::XlibHandle(window) = handle {
         xw.set_window_desktop(window, tags);
     }
-    None
-}
-
-fn from_reload_key_grabs(xw: &mut XWrap, keybinds: &[Keybind]) -> Option<DisplayEvent> {
-    xw.reset_grabs(keybinds);
     None
 }
 

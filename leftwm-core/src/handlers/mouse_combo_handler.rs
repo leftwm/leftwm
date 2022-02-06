@@ -2,8 +2,8 @@ use crate::models::Mode;
 use crate::models::WindowHandle;
 use crate::state::State;
 use crate::utils;
-use crate::utils::xkeysym_lookup::Button;
-use crate::utils::xkeysym_lookup::ModMask;
+use crate::utils::modmask_lookup::Button;
+use crate::utils::modmask_lookup::ModMask;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 use x11_dl::xlib;
 
@@ -18,7 +18,7 @@ impl State {
     ) -> bool {
         if let Some(window) = self.windows.iter().find(|w| w.handle == handle) {
             if !self.disable_tile_drag || window.floating() {
-                let modifier = utils::xkeysym_lookup::into_modmask(&self.mousekey);
+                let modifier = utils::modmask_lookup::into_modmask(&self.mousekey);
                 // Build the display to say whether we are ready to move/resize.
                 let act = self.build_action(modmask, button, handle, modifier);
                 if let Some(act) = act {

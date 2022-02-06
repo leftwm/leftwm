@@ -1,5 +1,5 @@
 use super::Config;
-use leftwm_core::utils;
+use lefthk_core::xkeysym_lookup;
 use std::collections::HashSet;
 
 impl Config {
@@ -53,7 +53,7 @@ impl Config {
             if let Err(err) = keybind.try_convert_to_core_keybind(self) {
                 returns.push((Some(keybind.clone()), err.to_string()));
             }
-            if utils::xkeysym_lookup::into_keysym(&keybind.key).is_none() {
+            if xkeysym_lookup::into_keysym(&keybind.key).is_none() {
                 returns.push((
                     Some(keybind.clone()),
                     format!("Key `{}` is not valid", keybind.key),
@@ -62,7 +62,7 @@ impl Config {
 
             let mut modkey = keybind.modifier.as_ref().unwrap_or(&"None".into()).clone();
             for m in &modkey.clone() {
-                if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(&m) == 0 {
+                if m != "modkey" && m != "mousekey" && xkeysym_lookup::into_mod(&m) == 0 {
                     returns.push((
                         Some(keybind.clone()),
                         format!("Modifier `{}` is not valid", m),

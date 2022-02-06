@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum Command {
-    Execute(String),
     CloseWindow,
     SwapScreens,
     SoftReload,

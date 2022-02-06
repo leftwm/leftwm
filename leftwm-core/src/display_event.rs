@@ -1,4 +1,4 @@
-use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask, XKeysym};
+use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask};
 use crate::models::WindowChange;
 use crate::Command;
 
@@ -6,8 +6,6 @@ use crate::Command;
 #[derive(Debug)]
 pub enum DisplayEvent {
     Movement(WindowHandle, i32, i32),
-    KeyCombo(ModMask, XKeysym),
-    KeyGrabReload, // Reloads keys for when keyboard changes.
     MouseCombo(ModMask, Button, WindowHandle, i32, i32),
     WindowCreate(Window, i32, i32),
     WindowChange(WindowChange),
