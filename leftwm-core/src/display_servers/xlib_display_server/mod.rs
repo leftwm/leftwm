@@ -12,6 +12,7 @@ use crate::DisplayEvent;
 use crate::DisplayServer;
 use crate::Keybind;
 use futures::prelude::*;
+use std::os::raw::c_uint;
 use std::pin::Pin;
 use x11_dl::xlib;
 
@@ -113,7 +114,7 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
             DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
-            DisplayAction::ReplayClick(h) => from_replay_click(xw, h),
+            DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
             DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, &ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
@@ -250,9 +251,9 @@ fn from_unfocus(
     None
 }
 
-fn from_replay_click(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
+fn from_replay_click(xw: &mut XWrap, handle: WindowHandle, button: c_uint) -> Option<DisplayEvent> {
     if let WindowHandle::XlibHandle(handle) = handle {
-        xw.replay_click(handle);
+        xw.replay_click(handle, button);
     }
     None
 }

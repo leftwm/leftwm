@@ -66,7 +66,7 @@ impl State {
                 if self.focus_manager.behaviour == FocusBehaviour::ClickTo =>
             {
                 self.focus_window(&window);
-                Some(DisplayAction::ReplayClick(window))
+                Some(DisplayAction::ReplayClick(window, button))
             }
             _ => None,
         }

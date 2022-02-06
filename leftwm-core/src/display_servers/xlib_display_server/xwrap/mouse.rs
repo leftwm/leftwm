@@ -2,7 +2,7 @@
 use super::{XlibError, MOUSEMASK};
 use crate::display_servers::xlib_display_server::xwrap::BUTTONMASK;
 use crate::XWrap;
-use std::os::raw::{c_int, c_ulong};
+use std::os::raw::{c_int, c_uint, c_ulong};
 use x11_dl::xlib;
 
 impl XWrap {
@@ -125,10 +125,10 @@ impl XWrap {
 
     /// Replay a click on a window.
     // `XQueryPointer`: https://tronche.com/gui/x/xlib/window-information/XQueryPointer.html
-    pub fn replay_click(&self, focused_window: xlib::Window) {
+    pub fn replay_click(&self, focused_window: xlib::Window, button: c_uint) {
         unsafe {
             let mut event: xlib::XButtonEvent = std::mem::zeroed();
-            event.button = xlib::Button1;
+            event.button = button;
             event.same_screen = xlib::True;
             event.subwindow = self.get_default_root();
 
