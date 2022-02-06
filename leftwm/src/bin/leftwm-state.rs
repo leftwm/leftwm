@@ -170,8 +170,7 @@ fn template_handler(
             liquid::model::Value::scalar(display.window_title),
         );
         globals.insert("workspace".into(), liquid::model::Value::Object(workspace));
-        //liquid only does time in utc. BUG: https://github.com/cobalt-org/liquid-rust/issues/332
-        //as a workaround we are setting a time locally
+        // The localtime feature is deprecated due to rare use, missing configurability and opening us to RUSTSEC-2020-0071 https://rustsec.org/advisories/RUSTSEC-2020-0071
         globals.insert(
             "localtime".into(),
             liquid::model::Value::scalar(get_localtime()),
@@ -198,8 +197,10 @@ fn template_handler(
 }
 
 fn get_localtime() -> String {
-    let now = chrono::Local::now();
-    now.format("%m/%d/%Y %l:%M %p").to_string()
+    // let now = chrono::Local::now();
+    // now.format("%m/%d/%Y %l:%M %p").to_string()
+    log::info!("The `{{ localtime }}` feature is deprecated, please use another source like this little program from the epitaph theme https://github.com/VentGrey/Epitaph/blob/90a4a799001d8896beff5226143dddaf34e9b3f4/scripts/lemonbar/time.c");
+    "DEPRECATED_LOCALTIME".to_string()
 }
 
 async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
