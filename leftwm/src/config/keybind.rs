@@ -58,7 +58,7 @@ impl Keybind {
             if !self.value.is_empty() {
                 let args = match &self.command {
                     BaseCommand::GotoTag => {
-                        format!(" {} {}", self.value, config.disable_current_tag_swap)
+                        format!(" {} {}", self.value, !config.disable_current_tag_swap)
                     }
                     _ => format!(" {}", self.value),
                 };
