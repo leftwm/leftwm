@@ -197,9 +197,20 @@ fn template_handler(
     Ok(())
 }
 
+/// Returns the local time in m/d/y h/m/s string.
+///
+/// # Errors
+///
+/// - Will return "TIME ERROR!" if time cannot be derived.
 fn get_localtime() -> String {
-    let now = chrono::Local::now();
-    now.format("%m/%d/%Y %l:%M %p").to_string()
+    if let Ok(now) = time::OffsetDateTime::now_local() {
+        if let Ok(ret) = now.format(time::macros::format_description!(
+            "[month]/[day]/[year] [hour]:[minute]:[second]"
+        )) {
+            return ret;
+        }
+    }
+    String::from("TIME ERROR!")
 }
 
 async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
