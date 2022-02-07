@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
             if verbose {
                 dbg!(&config);
             }
-            config.mapped_bindings();
+            println!("{:?}", config.mapped_bindings());
             config.check_mousekey(verbose);
             config.check_workspace_ids(verbose);
             config.check_keybinds(verbose);

@@ -64,7 +64,7 @@ impl Keybind {
                 };
                 command_parts.push_str(&args);
             }
-            head.push_str(&format!("\"{}\"", command_parts));
+            head.push_str(&format!("'{}'", command_parts));
             head
         };
         Ok(lefthk_core::config::Keybind {

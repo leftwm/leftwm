@@ -62,19 +62,16 @@ fn main() {
                 .spawn()
                 .expect("failed to start leftwm");
 
-            let mut lefthk = Command::new(&lefthk_path)
+            let mut lefthk = Command::new("lefthk-worker")
                 .spawn()
                 .expect("failed to start lefthk");
+            children.insert(lefthk);
 
             // Wait until worker exits.
             while worker
                 .try_wait()
                 .expect("failed to wait on worker")
                 .is_none()
-                && lefthk
-                    .try_wait()
-                    .expect("failed to wait on lefthk")
-                    .is_none()
             {
                 // Not worker, then it might be autostart programs.
                 children.reap();
