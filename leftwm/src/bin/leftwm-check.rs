@@ -1,6 +1,5 @@
 use anyhow::{bail, Result};
 use clap::{App, Arg};
-use lefthk_core::config::Config as lefthk_config;
 use leftwm::{Config, ThemeSetting};
 use std::env;
 use std::fs;
@@ -49,7 +48,6 @@ async fn main() -> Result<()> {
             if verbose {
                 dbg!(&config);
             }
-            println!("{:?}", config.mapped_bindings());
             config.check_mousekey(verbose);
             config.check_workspace_ids(verbose);
             config.check_keybinds(verbose);

@@ -62,10 +62,9 @@ fn main() {
                 .spawn()
                 .expect("failed to start leftwm");
 
-            let mut lefthk = Command::new("lefthk-worker")
+            let mut lefthk = Command::new(&lefthk_path)
                 .spawn()
                 .expect("failed to start lefthk");
-            children.insert(lefthk);
 
             // Wait until worker exits.
             while worker
@@ -81,6 +80,8 @@ fn main() {
                 }
                 // Either worker or autostart program exited.
             }
+            // Kill off lefthk when reloading.
+            lefthk.kill().expect("failed to kill lefthk");
 
             // TODO: either add more details or find a better workaround.
             //
