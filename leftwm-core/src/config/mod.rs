@@ -82,9 +82,6 @@ pub struct TestConfig {
 
 #[cfg(test)]
 impl Config for TestConfig {
-    fn mapped_bindings(&self) -> Vec<Keybind> {
-        unimplemented!()
-    }
     fn create_list_of_tag_labels(&self) -> Vec<String> {
         self.tags.clone()
     }

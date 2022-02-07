@@ -14,7 +14,7 @@ fn main() {
         let config_file = path
             .place_config_file("config.toml")
             .expect("ERROR: could not find config file");
-        let mut worker = Worker::new(config.mapped_bindings(), config_file.clone());
+        let mut worker = Worker::new(config.mapped_bindings(), config_file);
 
         rt.block_on(worker.event_loop());
     });
