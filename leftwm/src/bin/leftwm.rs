@@ -7,11 +7,14 @@ use clap::{crate_version, App, AppSettings, SubCommand};
 use leftwm_core::child_process::{self, Nanny};
 use std::collections::BTreeMap;
 use std::env;
+use std::fs;
+use std::io::Write;
 use std::process::{exit, Command};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+use xdg::BaseDirectories;
 
 fn main() {
     let mut subcommands = BTreeMap::new();
@@ -81,7 +84,8 @@ fn main() {
                 // Either worker or autostart program exited.
             }
             // Kill off lefthk when reloading.
-            lefthk.kill().expect("failed to kill lefthk");
+            send_lefthk_command("Kill");
+            while lefthk.try_wait().expect("failed to reap lefthk").is_none() {}
 
             // TODO: either add more details or find a better workaround.
             //
@@ -184,4 +188,16 @@ fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &s
         app = app.subcommand(SubCommand::with_name(subcommand).about(description));
     }
     app.get_matches_from(args);
+}
+
+fn send_lefthk_command(command: &str) {
+    let path = BaseDirectories::with_prefix("lefthk").expect("couldn't find base directory");
+    let pipe_file = path
+        .place_runtime_file("commands.pipe")
+        .expect("couldn't find commands.pipe");
+    let mut pipe = fs::OpenOptions::new()
+        .write(true)
+        .open(&pipe_file)
+        .expect("couldn't open file");
+    writeln!(pipe, "{}", command).expect("couldn't write to file");
 }
