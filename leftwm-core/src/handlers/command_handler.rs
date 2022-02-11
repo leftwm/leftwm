@@ -224,8 +224,14 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     };
 
     let handle = window.or(*manager.state.focus_manager.window_history.get(0)?)?;
-    //Focus the next or previous window on the workspace
-    let new_handle = manager.get_next_or_previous(&handle);
+    // Only handle the focus when moving the focused window.
+    let handle_focus = window.is_none();
+    // Focus the next or previous window on the workspace.
+    let new_handle = if handle_focus {
+        manager.get_next_or_previous(&handle)
+    } else {
+        None
+    };
 
     let window = manager
         .state
@@ -240,12 +246,14 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     manager.state.actions.push_back(act);
 
     manager.state.sort_windows();
-    if let Some(new_handle) = new_handle {
-        manager.state.focus_window(&new_handle);
-    } else {
-        let act = DisplayAction::Unfocus(Some(handle), false);
-        manager.state.actions.push_back(act);
-        manager.state.focus_manager.window_history.push_front(None);
+    if handle_focus {
+        if let Some(new_handle) = new_handle {
+            manager.state.focus_window(&new_handle);
+        } else {
+            let act = DisplayAction::Unfocus(Some(handle), false);
+            manager.state.actions.push_back(act);
+            manager.state.focus_manager.window_history.push_front(None);
+        }
     }
     Some(true)
 }

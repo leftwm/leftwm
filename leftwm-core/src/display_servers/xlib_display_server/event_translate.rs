@@ -145,11 +145,13 @@ fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent> {
 }
 
 fn from_enter_notify(x_event: &XEvent) -> Option<DisplayEvent> {
-    let event = xlib::XEnterWindowEvent::from(x_event.1);
-    let crossing = xlib::XCrossingEvent::from(x_event.1);
-    if crossing.detail == xlib::NotifyInferior && crossing.window != x_event.0.get_default_root() {
+    let event = xlib::XCrossingEvent::from(x_event.1);
+    if (event.mode != xlib::NotifyNormal || event.detail == xlib::NotifyInferior)
+        && event.window != x_event.0.get_default_root()
+    {
         return None;
     }
+
     let h = WindowHandle::XlibHandle(event.window);
     Some(DisplayEvent::WindowTakeFocus(h))
 }
