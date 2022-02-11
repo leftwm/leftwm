@@ -56,7 +56,15 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         }
     }
     if event.message_type == xw.atoms.NetActiveWindow {
-        if xw.focus_behaviour == FocusBehaviour::Sloppy {
+        let is_sloppy = xw.focus_behaviour == FocusBehaviour::Sloppy;
+        // Prevents centering cursor when the cursor is already on the window.
+        match xw.get_cursor_window() {
+            Ok(WindowHandle::XlibHandle(window)) if is_sloppy && window == event.window => {
+                return None
+            }
+            _ => {}
+        }
+        if is_sloppy {
             let _ = xw.move_cursor_to_window(event.window);
             return None;
         }
