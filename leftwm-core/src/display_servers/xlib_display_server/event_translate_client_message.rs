@@ -1,5 +1,6 @@
 use super::DisplayEvent;
 use super::XWrap;
+use crate::config::FocusBehaviour;
 use crate::models::WindowChange;
 use crate::models::WindowHandle;
 use crate::Command;
@@ -8,7 +9,7 @@ use std::os::raw::c_long;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
-    if !xw.managed_windows.contains(&event.window) {
+    if !xw.managed_windows.contains(&event.window) && event.window != xw.get_default_root() {
         return None;
     }
     let atom_name = xw.atoms.get_name(event.message_type);
@@ -55,6 +56,10 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         }
     }
     if event.message_type == xw.atoms.NetActiveWindow {
+        if xw.focus_behaviour == FocusBehaviour::Sloppy {
+            let _ = xw.move_cursor_to_window(event.window);
+            return None;
+        }
         return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
             event.window,
         )));
