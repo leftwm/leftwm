@@ -48,6 +48,7 @@ impl Keybind {
             BaseCommand::MoveWindowTop => leftwm_core::Command::MoveWindowTop,
             BaseCommand::FocusNextTag => leftwm_core::Command::FocusNextTag,
             BaseCommand::FocusPreviousTag => leftwm_core::Command::FocusPreviousTag,
+            BaseCommand::FocusWindow => leftwm_core::Command::FocusWindow(self.value.clone()),
             BaseCommand::FocusWindowUp => leftwm_core::Command::FocusWindowUp,
             BaseCommand::FocusWindowDown => leftwm_core::Command::FocusWindowDown,
             BaseCommand::FocusWindowTop => {

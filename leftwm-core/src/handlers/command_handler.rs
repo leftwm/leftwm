@@ -64,6 +64,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::FocusNextTag => focus_tag_change(state, 1),
         Command::FocusPreviousTag => focus_tag_change(state, -1),
+        Command::FocusWindow(param) => focus_window(state, param),
         Command::FocusWindowUp => move_focus_common_vars(focus_window_change, state, -1),
         Command::FocusWindowDown => move_focus_common_vars(focus_window_change, state, 1),
         Command::FocusWindowTop(toggle) => focus_window_top(state, *toggle),
@@ -282,6 +283,94 @@ fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Opti
         input_tag
     };
     state.goto_tag_handler(destination_tag)
+}
+
+fn focus_window(state: &mut State, param: &str) -> Option<bool> {
+    match param.parse::<usize>() {
+        Ok(index) if index > 0 => {
+            //1-based index seems more user-friendly to me in this context
+            let handle = state
+                .windows
+                .iter()
+                .filter(|w| w.visible())
+                .nth(index - 1)?
+                .handle;
+
+            handle_focus(state, handle);
+            None
+        }
+        Err(_) => focus_window_by_class(state, param),
+        Ok(_) => None,
+    }
+}
+
+fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> {
+    let is_target = |w: &Window| -> bool {
+        w.res_name
+            .as_ref()
+            .zip(w.res_class.as_ref())
+            .map_or(false, |(res_name, res_class)| {
+                window_class == res_name || window_class == res_class
+            })
+    };
+
+    let current_window = state.focus_manager.window(&state.windows)?;
+    let target_window = if is_target(current_window) {
+        let previous_window_handle = state.focus_manager.window_history.get(1);
+        state
+            .windows
+            .iter()
+            .find(|w| Some(&Some(w.handle)) == previous_window_handle)
+            .cloned()
+    } else {
+        state.windows.iter().find(|w| is_target(*w)).cloned()
+    }?;
+
+    let handle = target_window.handle;
+
+    if target_window.visible() {
+        handle_focus(state, handle);
+        return None;
+    }
+
+    let tag_id = target_window.tags.first()?;
+    state.goto_tag_handler(*tag_id)?;
+
+    match state
+        .focus_manager
+        .workspace(&state.workspaces)
+        .map(|ws| ws.layout)
+    {
+        Some(layout) if layout == Layout::Monocle || layout == Layout::MainAndDeck => {
+            let mut windows = helpers::vec_extract(&mut state.windows, |w| {
+                w.has_tag(tag_id) && !w.is_unmanaged() && !w.floating()
+            });
+
+            let cycle = |wins: &mut Vec<Window>, s: &mut State| {
+                let window_index = wins.iter().position(|w| w.handle == handle).unwrap_or(0);
+                let _ = helpers::cycle_vec(wins, -(window_index as i32));
+                s.windows.append(wins);
+            };
+
+            if layout == Layout::Monocle && windows.len() > 1 {
+                cycle(&mut windows, state);
+            } else if layout == Layout::MainAndDeck && windows.len() > 2 {
+                let main_window = windows.remove(0);
+                state.windows.push(main_window);
+                cycle(&mut windows, state);
+            } else {
+                state.windows.append(&mut windows);
+            }
+
+            handle_focus(state, handle);
+            Some(true)
+        }
+        Some(_) => {
+            handle_focus(state, handle);
+            Some(true)
+        }
+        None => None,
+    }
 }
 
 /// Focus the adjacent tags, depending on the delta.
