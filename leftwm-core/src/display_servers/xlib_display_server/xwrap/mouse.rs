@@ -10,7 +10,8 @@ impl XWrap {
     pub fn grab_mouse_clicks(&self, handle: xlib::Window, is_focused: bool) {
         self.ungrab_buttons(handle);
         if !is_focused {
-            self.grab_buttons(handle, xlib::AnyButton as u32, xlib::AnyModifier);
+            self.grab_buttons(handle, xlib::Button1 as u32, xlib::AnyModifier);
+            self.grab_buttons(handle, xlib::Button3 as u32, xlib::AnyModifier);
         }
         self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
         self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
