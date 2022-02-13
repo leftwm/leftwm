@@ -31,11 +31,12 @@ fn main() {
 fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
     use std::fs;
     use std::fs::OpenOptions;
-    use time::{macros::format_description, OffsetDateTime};
+    use time_leftwm::{format_description, OffsetDateTime};
     let date = OffsetDateTime::now_local();
     let path = "/tmp/leftwm";
     let _droppable = fs::create_dir_all(path);
-    let format_string = format_description!("[year][month][day][hour][minute]");
+    let format_string =
+        format_description::parse("[year][month][day][hour][minute]").expect("Error with Time");
     let date_formatted: String = if let Ok(df) = date {
         df.format(&format_string)
             .unwrap_or_else(|_| String::from("time-parse-error"))

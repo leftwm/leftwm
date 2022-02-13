@@ -34,7 +34,7 @@ slog-scope = "4.3.0"
 slog-stdlog = "4.0.0"
 slog-term = { version = "2.5.0", optional = true }
 thiserror = "1.0.30"
-time = {version = "0.3.7", features = ["macros", "formatting", "local-offset"]}
+time_leftwm = {package = "time", version = "0.3.7", features = ["macros", "formatting", "local-offset"]}
 tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 toml = "0.5.5"
 x11-dl = "2.18.4"

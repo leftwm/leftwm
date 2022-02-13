@@ -179,7 +179,11 @@ fn template_handler(
         globals
     } else {
         let json = serde_json::to_string(&display)?;
-        let globals: liquid::model::Object = serde_json::from_str(&json)?;
+        let mut globals: liquid::model::Object = serde_json::from_str(&json)?;
+        globals.insert(
+            "localtime".into(),
+            liquid::model::Value::scalar(get_localtime()),
+        );
         globals
     };
 
@@ -203,13 +207,17 @@ fn template_handler(
 ///
 /// - Will return "TIME ERROR!" if time cannot be derived.
 fn get_localtime() -> String {
-    if let Ok(now) = time::OffsetDateTime::now_local() {
-        if let Ok(ret) = now.format(time::macros::format_description!(
-            "[month]/[day]/[year] [hour]:[minute]:[second]"
-        )) {
+    if let Ok(now) = time_leftwm::OffsetDateTime::now_local() {
+        if let Ok(ret) = now.format(
+            &time_leftwm::format_description::parse(
+                "[month]/[day]/[year] [hour]:[minute]:[second]",
+            )
+            .expect("Error with Time"),
+        ) {
             return ret;
         }
     }
+    dbg!(time_leftwm::OffsetDateTime::now_local());
     String::from("TIME ERROR!")
 }
 
