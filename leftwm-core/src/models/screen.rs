@@ -79,7 +79,7 @@ impl From<&Workspace> for Screen {
 impl From<&xlib::XWindowAttributes> for Screen {
     fn from(root: &xlib::XWindowAttributes) -> Self {
         Self {
-            root: WindowHandle::XlibHandle(root.root),
+            root: root.root.into(),
             bbox: BBox {
                 height: root.height,
                 width: root.width,

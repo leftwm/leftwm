@@ -6,6 +6,16 @@ use crate::state::State;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 impl State {
+    pub fn handle_window_focus(&mut self, handle: &WindowHandle) {
+        match self.focus_manager.behaviour {
+            FocusBehaviour::Sloppy => {
+                let act = DisplayAction::MoveMouseOver(*handle, false);
+                self.actions.push_back(act);
+            }
+            _ => self.focus_window(handle),
+        }
+    }
+
     /// Focuses the given window.
     pub fn focus_window(&mut self, handle: &WindowHandle) {
         let window = match self.focus_window_work(handle) {
@@ -32,6 +42,7 @@ impl State {
             let _ = self.focus_tag_work(tag);
         }
     }
+
     /// Focuses the given workspace.
     // NOTE: Should only be called externally from this file.
     pub fn focus_workspace(&mut self, workspace: &Workspace) {
@@ -66,7 +77,7 @@ impl State {
             self.focus_workspace_work(ws.id);
         }
         // Make sure the focused window is on this workspace.
-        if self.focus_manager.behaviour == FocusBehaviour::Sloppy {
+        if self.focus_manager.behaviour.is_sloppy() {
             let act = DisplayAction::FocusWindowUnderCursor;
             self.actions.push_back(act);
         } else if let Some(handle) = self.focus_manager.tags_last_window.get(tag).copied() {

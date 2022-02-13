@@ -1,9 +1,5 @@
-use super::DisplayEvent;
-use super::XWrap;
-use crate::config::FocusBehaviour;
-use crate::models::WindowChange;
-use crate::models::WindowHandle;
-use crate::Command;
+use super::{DisplayEvent, XWrap};
+use crate::{models::WindowChange, Command};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
 use x11_dl::xlib;
@@ -40,7 +36,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         match usize::try_from(value) {
             Ok(index) => {
                 let event = DisplayEvent::SendCommand(Command::SendWindowToTag {
-                    window: Some(WindowHandle::XlibHandle(event.window)),
+                    window: Some(event.window.into()),
                     tag: index + 1,
                 });
                 return Some(event);
@@ -56,21 +52,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         }
     }
     if event.message_type == xw.atoms.NetActiveWindow {
-        let is_sloppy = xw.focus_behaviour == FocusBehaviour::Sloppy;
-        // Prevents centering cursor when the cursor is already on the window.
-        match xw.get_cursor_window() {
-            Ok(WindowHandle::XlibHandle(window)) if is_sloppy && window == event.window => {
-                return None
-            }
-            _ => {}
-        }
-        if is_sloppy {
-            let _ = xw.move_cursor_to_window(event.window);
-            return None;
-        }
-        return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
-            event.window,
-        )));
+        return Some(DisplayEvent::HandleWindowFocus(event.window.into()));
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too
@@ -101,7 +83,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
 
     //update the window states
     if event.message_type == xw.atoms.NetWMState {
-        let handle = WindowHandle::XlibHandle(event.window);
+        let handle = event.window.into();
         let mut change = WindowChange::new(handle);
         let states = xw.get_window_states(event.window);
         change.states = Some(states);

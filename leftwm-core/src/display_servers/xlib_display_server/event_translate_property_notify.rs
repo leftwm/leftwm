@@ -1,9 +1,5 @@
-use super::DisplayEvent;
-use super::XWrap;
-use crate::models::WindowChange;
-use crate::models::WindowHandle;
-use crate::models::WindowType;
-use crate::models::Xyhw;
+use super::{DisplayEvent, XWrap};
+use crate::models::{WindowChange, WindowType, Xyhw};
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
@@ -20,14 +16,12 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {
             let window_type = xw.get_window_type(event.window);
-            let handle = WindowHandle::XlibHandle(event.window);
+            let handle = event.window.into();
             let mut change = WindowChange::new(handle);
             if window_type != WindowType::Normal {
                 let trans = xw.get_transient_for(event.window);
                 match trans {
-                    Some(trans) => {
-                        change.transient = Some(Some(WindowHandle::XlibHandle(trans)));
-                    }
+                    Some(trans) => change.transient = Some(Some(trans.into())),
                     None => change.transient = Some(None),
                 }
             }
@@ -38,7 +32,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
         }
         xlib::XA_WM_HINTS => match xw.get_wmhints(event.window) {
             Some(hints) if hints.flags & xlib::InputHint != 0 => {
-                let handle = WindowHandle::XlibHandle(event.window);
+                let handle = event.window.into();
                 let mut change = WindowChange::new(handle);
                 change.never_focus = Some(hints.input == 0);
                 Some(DisplayEvent::WindowChange(change))
@@ -62,7 +56,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
             }
 
             if event.atom == xw.atoms.NetWMState {
-                let handle = WindowHandle::XlibHandle(event.window);
+                let handle = event.window.into();
                 let mut change = WindowChange::new(handle);
                 let states = xw.get_window_states(event.window);
                 change.states = Some(states);
@@ -75,7 +69,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
 }
 
 fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
-    let handle = WindowHandle::XlibHandle(window);
+    let handle = window.into();
     let mut change = WindowChange::new(handle);
     let r#type = xw.get_window_type(window);
 
@@ -103,7 +97,7 @@ fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Opti
 }
 
 fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
-    let handle = WindowHandle::XlibHandle(window);
+    let handle = window.into();
     let mut change = WindowChange::new(handle);
     let hint = xw.get_hint_sizing_as_xyhw(window)?;
     if hint.x.is_none() && hint.y.is_none() && hint.w.is_none() && hint.h.is_none() {
@@ -118,7 +112,7 @@ fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<Windo
 
 fn update_title(xw: &XWrap, window: xlib::Window) -> DisplayEvent {
     let title = xw.get_window_name(window);
-    let handle = WindowHandle::XlibHandle(window);
+    let handle = window.into();
     let mut change = WindowChange::new(handle);
     change.name = Some(title);
     DisplayEvent::WindowChange(change)

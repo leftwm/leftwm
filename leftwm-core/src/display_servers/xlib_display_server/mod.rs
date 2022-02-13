@@ -79,7 +79,7 @@ impl DisplayServer for XlibDisplayServer {
 
         if let Some(initial_events) = self.initial_events.take() {
             for e in initial_events {
-                (&mut events).push(e);
+                events.push(e);
             }
         }
 
@@ -109,7 +109,7 @@ impl DisplayServer for XlibDisplayServer {
         let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(h) => from_kill_window(xw, h),
             DisplayAction::AddedWindow(h, f, fm) => from_added_window(xw, h, f, fm),
-            DisplayAction::MoveMouseOver(h) => from_move_mouse_over(xw, h),
+            DisplayAction::MoveMouseOver(h, f) => from_move_mouse_over(xw, h, f),
             DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
             DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
@@ -169,7 +169,7 @@ impl XlibDisplayServer {
             } else {
                 for wsc in &workspaces {
                     let mut screen = Screen::from(wsc);
-                    screen.root = WindowHandle::XlibHandle(self.root);
+                    screen.root = self.root.into();
                     let e = DisplayEvent::ScreenCreate(screen);
                     events.push(e);
                 }
@@ -223,9 +223,13 @@ fn from_added_window(
     xw.setup_managed_window(handle, floating, follow_mouse)
 }
 
-fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
-    if let WindowHandle::XlibHandle(win) = handle {
-        let _ = xw.move_cursor_to_window(win);
+fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle, force: bool) -> Option<DisplayEvent> {
+    let window = handle.xlib_handle()?;
+    match xw.get_cursor_window() {
+        Ok(WindowHandle::XlibHandle(cursor_window)) if force || cursor_window != window => {
+            let _ = xw.move_cursor_to_window(window);
+        }
+        _ => {}
     }
     None
 }
@@ -282,7 +286,7 @@ fn from_set_window_order(xw: &mut XWrap, windows: &[Window]) -> Option<DisplayEv
     let level2: Vec<WindowHandle> = fullscreen_windows.iter().map(|w| w.handle).collect();
     let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) = other
         .iter()
-        .partition(|w| level2.contains(&w.transient.unwrap_or(WindowHandle::XlibHandle(0))));
+        .partition(|w| level2.contains(&w.transient.unwrap_or_else(|| 0.into())));
     // Fullscreen windows children.
     let level1: Vec<WindowHandle> = fullscreen_children.iter().map(|w| w.handle).collect();
     // Left over managed windows.
@@ -293,7 +297,7 @@ fn from_set_window_order(xw: &mut XWrap, windows: &[Window]) -> Option<DisplayEv
         .unwrap_or_default()
         .iter()
         .filter(|&w| *w != xw.get_default_root())
-        .map(|w| WindowHandle::XlibHandle(*w))
+        .map(|&w| w.into())
         .filter(|&h| !windows.iter().any(|w| w.handle == h))
         .collect();
     let all: Vec<WindowHandle> = level1
@@ -332,9 +336,8 @@ fn from_set_window_tags(
     handle: WindowHandle,
     tags: &[TagId],
 ) -> Option<DisplayEvent> {
-    if let WindowHandle::XlibHandle(window) = handle {
-        xw.set_window_desktop(window, tags);
-    }
+    let window = handle.xlib_handle()?;
+    xw.set_window_desktop(window, tags);
     None
 }
 
