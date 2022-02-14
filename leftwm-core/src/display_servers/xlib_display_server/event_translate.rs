@@ -2,7 +2,7 @@ use super::{
     event_translate_client_message, event_translate_property_notify, xwrap::WITHDRAWN_STATE,
     DisplayEvent, XWrap,
 };
-use crate::models::{FocusBehaviour, Mode, WindowChange, WindowHandle, WindowType, XyhwChange};
+use crate::models::{Mode, WindowChange, WindowType, XyhwChange};
 use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
@@ -12,7 +12,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     fn from(x_event: XEvent) -> Self {
         let raw_event = x_event.1;
         let normal_mode = x_event.0.mode == Mode::Normal;
-        let sloppy_behaviour = x_event.0.focus_behaviour == FocusBehaviour::Sloppy;
+        let sloppy_behaviour = x_event.0.focus_behaviour.is_sloppy();
 
         match raw_event.get_type() {
             // New window is mapped.
@@ -57,7 +57,7 @@ fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
         // Set WM_STATE to withdrawn state.
         xw.set_wm_states(event.window, &[WITHDRAWN_STATE]);
         if event.send_event == xlib::False {
-            let h = WindowHandle::XlibHandle(event.window);
+            let h = event.window.into();
             xw.teardown_managed_window(&h);
             return Some(DisplayEvent::WindowDestroy(h));
         }
@@ -69,7 +69,7 @@ fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XDestroyWindowEvent::from(x_event.1);
     if xw.managed_windows.contains(&event.window) {
-        let h = WindowHandle::XlibHandle(event.window);
+        let h = event.window.into();
         xw.teardown_managed_window(&h);
         return Some(DisplayEvent::WindowDestroy(h));
     }
@@ -119,7 +119,7 @@ fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent> {
     }
     let window_type = xw.get_window_type(event.window);
     let trans = xw.get_transient_for(event.window);
-    let handle = WindowHandle::XlibHandle(event.window);
+    let handle = event.window.into();
     if window_type == WindowType::Normal && trans.is_none() {
         return Some(DisplayEvent::ConfigureXlibWindow(handle));
     }
@@ -152,7 +152,7 @@ fn from_enter_notify(x_event: &XEvent) -> Option<DisplayEvent> {
         return None;
     }
 
-    let h = WindowHandle::XlibHandle(event.window);
+    let h = event.window.into();
     Some(DisplayEvent::WindowTakeFocus(h))
 }
 
@@ -165,7 +165,7 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
         && event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong)
     {
         xw.motion_event_limiter = event.time;
-        let event_h = WindowHandle::XlibHandle(event.window);
+        let event_h = event.window.into();
         let offset_x = event.x_root - xw.mode_origin.0;
         let offset_y = event.y_root - xw.mode_origin.1;
         let display_event = match xw.mode {
@@ -179,7 +179,7 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
                 DisplayEvent::ResizeWindow(h, offset_x, offset_y)
             }
             Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(h, offset_x, offset_y),
-            Mode::Normal if xw.focus_behaviour == FocusBehaviour::Sloppy => {
+            Mode::Normal if xw.focus_behaviour.is_sloppy() => {
                 DisplayEvent::Movement(event_h, event.x_root, event.y_root)
             }
             Mode::Normal => return None,
@@ -192,7 +192,7 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
 
 fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent {
     let event = xlib::XButtonPressedEvent::from(raw_event);
-    let h = WindowHandle::XlibHandle(event.window);
+    let h = event.window.into();
     let mut mod_mask = event.state;
     mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
     DisplayEvent::MouseCombo(mod_mask, event.button, h, event.x, event.y)

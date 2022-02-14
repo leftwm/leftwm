@@ -92,9 +92,10 @@ impl Keybind {
                     .context("invalid margin multiplier for SetMarginMultiplier")?,
             ),
             BaseCommand::UnloadTheme => leftwm_core::Command::Other("UnloadTheme".into()),
-            BaseCommand::LoadTheme => {
-                leftwm_core::Command::Other(format!("LoadTheme {}", ensure_non_empty!(&self.value)))
-            }
+            BaseCommand::LoadTheme => leftwm_core::Command::Other(format!(
+                "LoadTheme {}",
+                ensure_non_empty!(self.value.clone())
+            )),
         };
 
         Ok(leftwm_core::Keybind {

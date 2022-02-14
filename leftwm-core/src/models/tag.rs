@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{layouts::Layout, models::WindowHandle, Window, Workspace};
+use crate::{layouts::Layout, Window, Workspace};
 
 use super::TagId;
 
@@ -241,7 +241,7 @@ impl Tag {
         }
     }
 
-    pub fn update_windows(&self, windows: &mut Vec<Window>, workspace: &Workspace) {
+    pub fn update_windows(&self, windows: &mut [Window], workspace: &Workspace) {
         if let Some(window) = windows
             .iter_mut()
             .find(|w| w.has_tag(&self.id) && w.is_fullscreen())
@@ -253,7 +253,7 @@ impl Tag {
                 .iter_mut()
                 .filter(|w| {
                     w.has_tag(&self.id)
-                        && w.transient.unwrap_or(WindowHandle::XlibHandle(0)) == handle
+                        && w.transient.unwrap_or_else(|| 0.into()) == handle
                         && !w.is_unmanaged()
                 })
                 .for_each(|w| {

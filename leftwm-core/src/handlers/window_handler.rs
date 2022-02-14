@@ -1,4 +1,5 @@
 use super::{Manager, Window, WindowChange, WindowType, Workspace};
+use crate::child_process::exec_shell;
 use crate::config::{Config, ScratchPad};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
@@ -6,7 +7,6 @@ use crate::layouts::Layout;
 use crate::models::{Size, WindowHandle, WindowState, Xyhw, XyhwBuilder};
 use crate::state::State;
 use crate::utils::helpers;
-use crate::{child_process::exec_shell, models::FocusBehaviour};
 use std::env;
 use std::str::FromStr;
 
@@ -37,7 +37,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         insert_window(&mut self.state, &mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
-            && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
+            && self.state.focus_manager.behaviour.is_sloppy()
             && on_same_tag;
         //let the DS know we are managing this window
         let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
@@ -85,7 +85,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let focused = self.state.focus_manager.window_history.get(0);
         //make sure focus is recalculated if we closed the currently focused window
         if focused == Some(&Some(*handle)) {
-            if self.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
+            if self.state.focus_manager.behaviour.is_sloppy() {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
             } else if let Some(parent) =
@@ -229,10 +229,7 @@ fn setup_window(
     let ws: Option<&Workspace> = state
         .workspaces
         .iter()
-        .find(|ws| {
-            ws.xyhw.contains_point(xy.0, xy.1)
-                && state.focus_manager.behaviour == FocusBehaviour::Sloppy
-        })
+        .find(|ws| ws.xyhw.contains_point(xy.0, xy.1) && state.focus_manager.behaviour.is_sloppy())
         .or_else(|| state.focus_manager.workspace(&state.workspaces)); //backup plan
 
     if let Some(ws) = ws {

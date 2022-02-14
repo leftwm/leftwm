@@ -174,7 +174,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                 manager.state.actions.push_back(act);
                 manager.state.sort_windows();
                 if let Some(h) = handle {
-                    handle_focus(&mut manager.state, h);
+                    manager.state.handle_window_focus(&h);
                     if !is_visible {
                         manager.state.move_to_top(&h);
                     }
@@ -203,7 +203,7 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let toggle_to = !window.has_state(&window_state);
     let act = DisplayAction::SetState(handle, toggle_to, window_state);
     state.actions.push_back(act);
-    handle_focus(state, handle);
+    state.handle_window_focus(&handle);
     match window_state {
         WindowState::Fullscreen => Some(true),
         _ => Some(false),
@@ -296,7 +296,7 @@ fn focus_window(state: &mut State, param: &str) -> Option<bool> {
                 .nth(index - 1)?
                 .handle;
 
-            handle_focus(state, handle);
+            state.handle_window_focus(&handle);
             None
         }
         Err(_) => focus_window_by_class(state, param),
@@ -329,7 +329,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
     let handle = target_window.handle;
 
     if target_window.visible() {
-        handle_focus(state, handle);
+        state.handle_window_focus(&handle);
         return None;
     }
 
@@ -362,11 +362,11 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
                 state.windows.append(&mut windows);
             }
 
-            handle_focus(state, handle);
+            state.handle_window_focus(&handle);
             Some(true)
         }
         Some(_) => {
-            handle_focus(state, handle);
+            state.handle_window_focus(&handle);
             Some(true)
         }
         None => None,
@@ -514,7 +514,7 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     if window.snap_to_workspace(workspace) {
         state.sort_windows();
     }
-    handle_focus(state, handle);
+    state.handle_window_focus(&handle);
     Some(true)
 }
 
@@ -597,7 +597,7 @@ fn move_window_change(
         let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
     state.windows.append(&mut to_reorder);
-    handle_focus(state, handle);
+    state.handle_window_focus(&handle);
     Some(true)
 }
 
@@ -629,7 +629,7 @@ fn move_window_top(
     state.windows.append(&mut to_reorder);
     // focus follows the window if it was not already on top of the stack
     if index > 0 {
-        handle_focus(state, handle);
+        state.handle_window_focus(&handle);
     }
     Some(true)
 }
@@ -668,7 +668,7 @@ fn focus_window_change(
         handle = new_focused.handle;
     }
     state.windows.append(&mut to_reorder);
-    handle_focus(state, handle);
+    state.handle_window_focus(&handle);
     Some(layout == Some(Layout::Monocle))
 }
 
@@ -683,8 +683,10 @@ fn focus_window_top(state: &mut State, toggle: bool) -> Option<bool> {
         .map(|w| w.handle);
 
     match (next, cur, prev) {
-        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => handle_focus(state, prev),
-        (Some(next), Some(cur), _) if next != cur => handle_focus(state, next),
+        (Some(next), Some(cur), Some(prev)) if next == cur && toggle => {
+            state.handle_window_focus(&prev);
+        }
+        (Some(next), Some(cur), _) if next != cur => state.handle_window_focus(&next),
         _ => {}
     }
     None
@@ -694,14 +696,14 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let current = state.focus_manager.workspace(&state.workspaces)?;
     let workspace = helpers::relative_find(&state.workspaces, |w| w == current, val, true)?.clone();
 
-    if state.focus_manager.behaviour == FocusBehaviour::Sloppy {
+    if state.focus_manager.behaviour.is_sloppy() {
         let action = workspace
             .tags
             .first()
             .and_then(|tag| state.focus_manager.tags_last_window.get(tag))
             .map_or_else(
                 || DisplayAction::MoveMouseOverPoint(workspace.xyhw.center()),
-                |h| DisplayAction::MoveMouseOver(*h),
+                |h| DisplayAction::MoveMouseOver(*h, true),
             );
         state.actions.push_back(action);
     }
@@ -743,16 +745,6 @@ fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bo
         state.windows.append(&mut to_apply_margin_multiplier);
     }
     Some(true)
-}
-
-fn handle_focus(state: &mut State, handle: WindowHandle) {
-    match state.focus_manager.behaviour {
-        FocusBehaviour::Sloppy => {
-            let act = DisplayAction::MoveMouseOver(handle);
-            state.actions.push_back(act);
-        }
-        _ => state.focus_window(&handle),
-    }
 }
 
 fn send_workspace_to_tag(state: &mut State, ws_index: usize, tag_index: usize) -> bool {
