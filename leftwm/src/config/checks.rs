@@ -1,5 +1,7 @@
 use super::Config;
+#[cfg(feature = "lefthk")]
 use lefthk_core::xkeysym_lookup;
+#[cfg(feature = "lefthk")]
 use std::collections::HashSet;
 
 impl Config {
@@ -42,6 +44,7 @@ impl Config {
     /// Checks to see if value is provided (if required)
     /// Checks to see if keys are valid against Xkeysym
     /// Ideally, we will pass this to the command handler with a dummy config
+    #[cfg(feature = "lefthk")]
     pub fn check_keybinds(&self, verbose: bool) {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");

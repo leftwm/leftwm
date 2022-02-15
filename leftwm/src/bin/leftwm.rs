@@ -7,13 +7,16 @@ use clap::{crate_version, App, AppSettings, SubCommand};
 use leftwm_core::child_process::{self, Nanny};
 use std::collections::BTreeMap;
 use std::env;
+#[cfg(feature = "lefthk")]
 use std::fs;
+#[cfg(feature = "lefthk")]
 use std::io::Write;
 use std::process::{exit, Command};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+#[cfg(feature = "lefthk")]
 use xdg::BaseDirectories;
 
 fn main() {
@@ -58,14 +61,16 @@ fn main() {
         env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
 
         let worker_path = current_exe.with_file_name("leftwm-worker");
-        let lefthk_path = current_exe.with_file_name("lefthk-worker");
+        #[cfg(feature = "lefthk")]
+        let hotkey_path = current_exe.with_file_name("lefthk-worker");
 
         loop {
             let mut worker = Command::new(&worker_path)
                 .spawn()
                 .expect("failed to start leftwm");
 
-            let mut lefthk = Command::new(&lefthk_path)
+            #[cfg(feature = "lefthk")]
+            let mut hotkey = Command::new(&hotkey_path)
                 .spawn()
                 .expect("failed to start lefthk");
 
@@ -84,8 +89,10 @@ fn main() {
                 // Either worker or autostart program exited.
             }
             // Kill off lefthk when reloading.
-            send_lefthk_command("Kill");
-            while lefthk.try_wait().expect("failed to reap lefthk").is_none() {}
+            #[cfg(feature = "lefthk")]
+            send_hotkey_command("Kill");
+            #[cfg(feature = "lefthk")]
+            while hotkey.try_wait().expect("failed to reap lefthk").is_none() {}
 
             // TODO: either add more details or find a better workaround.
             //
@@ -190,7 +197,9 @@ fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &s
     app.get_matches_from(args);
 }
 
-fn send_lefthk_command(command: &str) {
+// Sends a command to lefthk.
+#[cfg(feature = "lefthk")]
+fn send_hotkey_command(command: &str) {
     let path = BaseDirectories::with_prefix("lefthk").expect("couldn't find base directory");
     let pipe_file = path
         .place_runtime_file("commands.pipe")

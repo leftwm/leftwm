@@ -6,7 +6,10 @@ mod keybind;
 
 use self::keybind::Modifier;
 
-use super::{BaseCommand, ThemeSetting};
+#[cfg(feature = "lefthk")]
+use super::BaseCommand;
+use super::ThemeSetting;
+#[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
@@ -92,11 +95,12 @@ pub struct Config {
     pub layout_mode: LayoutMode,
     pub scratchpad: Option<Vec<ScratchPad>>,
     pub window_rules: Option<Vec<WindowHook>>,
-    //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
+    // If you are on tag "1" and you goto tag "1" this takes you to the previous tag.
     pub disable_current_tag_swap: bool,
     pub disable_tile_drag: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
+    #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
 
@@ -187,6 +191,7 @@ pub fn is_program_in_path(program: &str) -> bool {
 }
 
 /// Returns a terminal to set for the default mod+shift+enter keybind.
+#[cfg(feature = "lefthk")]
 fn default_terminal<'s>() -> &'s str {
     // order from least common to most common.
     // the thinking is if a machine has an uncommon terminal installed, it is intentional
@@ -223,6 +228,7 @@ fn default_terminal<'s>() -> &'s str {
 // whether it is implemented on non-systemd machines,so we instead look
 // to see if loginctl is in the path. If it isn't then we default to
 // `pkill leftwm`, which may leave zombie processes on a machine.
+#[cfg(feature = "lefthk")]
 fn exit_strategy<'s>() -> &'s str {
     if is_program_in_path("loginctl") {
         return "loginctl kill-session $XDG_SESSION_ID";
@@ -235,6 +241,7 @@ fn absolute_path(path: &str) -> Option<PathBuf> {
     std::fs::canonicalize(exp_path.as_ref()).ok()
 }
 
+#[cfg(feature = "lefthk")]
 impl lefthk_core::config::Config for Config {
     fn mapped_bindings(&self) -> Vec<lefthk_core::config::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".

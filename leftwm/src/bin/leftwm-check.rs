@@ -50,6 +50,7 @@ async fn main() -> Result<()> {
             }
             config.check_mousekey(verbose);
             config.check_workspace_ids(verbose);
+            #[cfg(feature = "lefthk")]
             config.check_keybinds(verbose);
         }
         Err(e) => {

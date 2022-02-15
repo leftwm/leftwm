@@ -1,11 +1,17 @@
+#[cfg(feature = "lefthk")]
 use super::BaseCommand;
+#[cfg(feature = "lefthk")]
 use crate::Config;
+#[cfg(feature = "lefthk")]
 use anyhow::{ensure, Context, Result};
+#[cfg(feature = "lefthk")]
 use leftwm_core::layouts::Layout;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "lefthk")]
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg(feature = "lefthk")]
 pub struct Keybind {
     pub command: BaseCommand,
     #[serde(default)]
@@ -14,6 +20,7 @@ pub struct Keybind {
     pub key: String,
 }
 
+#[cfg(feature = "lefthk")]
 impl Keybind {
     pub fn try_convert_to_lefthk_keybind(
         &self,
