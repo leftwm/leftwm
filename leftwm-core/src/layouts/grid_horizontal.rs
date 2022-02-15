@@ -21,7 +21,7 @@ use crate::models::Workspace;
 /// |   |   |   |
 /// +---+---+---+
 /// ```
-pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) {
+pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
     let window_count = windows.len() as i32;
 
     // choose the number of columns so that we get close to an even NxN grid.

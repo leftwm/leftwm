@@ -25,6 +25,7 @@ pub enum Command {
     MoveWindowTop,
     FocusNextTag,
     FocusPreviousTag,
+    FocusWindow(String),
     FocusWindowUp,
     FocusWindowDown,
     FocusWindowTop(bool),

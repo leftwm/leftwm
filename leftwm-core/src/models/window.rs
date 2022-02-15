@@ -17,6 +17,21 @@ pub enum WindowHandle {
     XlibHandle(xlib::Window),
 }
 
+impl std::convert::From<xlib::Window> for WindowHandle {
+    fn from(window: xlib::Window) -> Self {
+        WindowHandle::XlibHandle(window)
+    }
+}
+
+impl WindowHandle {
+    pub fn xlib_handle(self) -> Option<xlib::Window> {
+        match self {
+            WindowHandle::MockHandle(_) => None,
+            WindowHandle::XlibHandle(h) => Some(h),
+        }
+    }
+}
+
 /// Store Window information.
 // We allow this as we're not managing state directly. This could be refactored in the future.
 // TODO: Refactor floating
