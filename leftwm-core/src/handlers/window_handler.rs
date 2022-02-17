@@ -338,11 +338,14 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
         }
     }
 
-    // If a window is a dialog, splash, or scractchpad we want it to be at the top.
+    // If a window is a dialog, splash, or scractchpad,
+    // or move_new_windows_to_top is set in the config,
+    // we want it to be at the top.
     if window.r#type == WindowType::Dialog
         || window.r#type == WindowType::Splash
         || window.r#type == WindowType::Utility
         || is_scratchpad(state, window)
+        || state.insert_new_windows_on_top
     {
         state.windows.insert(0, window.clone());
         return;

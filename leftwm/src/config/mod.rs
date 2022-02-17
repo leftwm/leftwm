@@ -97,6 +97,7 @@ pub struct Config {
     pub disable_tile_drag: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
+    pub insert_new_windows_on_top: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
 
@@ -310,6 +311,10 @@ impl leftwm_core::Config for Config {
 
     fn focus_new_windows(&self) -> bool {
         self.focus_new_windows
+    }
+
+    fn insert_new_windows_on_top(&self) -> bool {
+        self.insert_new_windows_on_top
     }
 
     fn command_handler<SERVER: DisplayServer>(

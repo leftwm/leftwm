@@ -31,6 +31,8 @@ pub trait Config {
 
     fn focus_new_windows(&self) -> bool;
 
+    fn insert_new_windows_on_top(&self) -> bool;
+
     fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
     where
         SERVER: DisplayServer,
@@ -112,6 +114,9 @@ impl Config for TestConfig {
         LayoutMode::Workspace
     }
     fn focus_new_windows(&self) -> bool {
+        false
+    }
+    fn insert_new_windows_on_top(&self) -> bool {
         false
     }
     fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool

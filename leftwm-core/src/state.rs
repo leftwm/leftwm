@@ -31,6 +31,7 @@ pub struct State {
     pub default_width: i32,
     pub default_height: i32,
     pub disable_tile_drag: bool,
+    pub insert_new_windows_on_top: bool,
 }
 
 impl State {
@@ -59,6 +60,7 @@ impl State {
             default_width: config.default_width(),
             default_height: config.default_height(),
             disable_tile_drag: config.disable_tile_drag(),
+            insert_new_windows_on_top: config.insert_new_windows_on_top(),
         }
     }
 
