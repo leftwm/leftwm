@@ -7,3 +7,9 @@ pub enum InsertBehavior {
     BeforeCurrent,
     AfterCurrent,
 }
+
+impl Default for InsertBehavior {
+    fn default() -> Self {
+        InsertBehavior::Bottom
+    }
+}

@@ -87,6 +87,7 @@ pub struct TestConfig {
     pub tags: Vec<String>,
     pub layouts: Vec<Layout>,
     pub workspaces: Option<Vec<Workspace>>,
+    pub insert_behavior: InsertBehavior,
 }
 
 #[cfg(test)]
@@ -115,6 +116,11 @@ impl Config for TestConfig {
     fn layout_mode(&self) -> LayoutMode {
         LayoutMode::Workspace
     }
+
+    fn insert_behavior(&self) -> InsertBehavior {
+        self.insert_behavior
+    }
+
     fn focus_new_windows(&self) -> bool {
         false
     }
