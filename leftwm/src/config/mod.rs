@@ -10,7 +10,7 @@ use super::{BaseCommand, ThemeSetting};
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
-    config::{ScratchPad, Workspace, InsertBehavior},
+    config::{InsertBehavior, ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
     state::State,

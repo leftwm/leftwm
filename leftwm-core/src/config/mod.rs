@@ -1,17 +1,17 @@
+mod insert_behavior;
 mod keybind;
 mod scratchpad;
 mod workspace_config;
-mod insert_behavior;
 
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
 use crate::models::{LayoutMode, Manager, Window, WindowType};
 use crate::state::State;
+pub use insert_behavior::InsertBehavior;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use workspace_config::Workspace;
-pub use insert_behavior::InsertBehavior;
 
 pub trait Config {
     /// Returns a collection of bindings with the mod key mapped.
@@ -31,7 +31,9 @@ pub trait Config {
 
     fn layout_mode(&self) -> LayoutMode;
 
-    fn insert_behavior(&self) -> InsertBehavior;    fn focus_new_windows(&self) -> bool;
+    fn insert_behavior(&self) -> InsertBehavior;
+
+    fn focus_new_windows(&self) -> bool;
 
     fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
     where
