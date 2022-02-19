@@ -11,7 +11,10 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        let config = leftwm::load();
+        let mut config = leftwm::load();
+        // Clear the keybinds so leftwm is not storing them.
+        // TODO: Make this more elegant.
+        config.keybind = vec![];
 
         let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
         manager.register_child_hook();

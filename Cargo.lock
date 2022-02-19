@@ -400,12 +400,12 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "lefthk-core"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff26a244f8b4938d00f746227aa06e4daaee881ed57c839398f990c3267723da"
+checksum = "5e7168024e270d5a7d3343c29bd5a882e708a141fb80563773929835ff993d56"
 dependencies = [
  "log",
- "mio 0.7.14",
+ "mio 0.8.0",
  "nix",
  "thiserror",
  "tokio",

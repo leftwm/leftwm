@@ -200,9 +200,12 @@ fn handle_help_or_version_flags(args: &[String], subcommands: &BTreeMap<&str, &s
 // Sends a command to lefthk.
 #[cfg(feature = "lefthk")]
 fn send_hotkey_command(command: &str) {
-    let path = BaseDirectories::with_prefix("lefthk").expect("couldn't find base directory");
+    use lefthk_core::ipc::Pipe;
+
+    let path = BaseDirectories::with_prefix("leftwm-lefthk").expect("couldn't find base directory");
+    let pipe_name = Pipe::pipe_name();
     let pipe_file = path
-        .place_runtime_file("commands.pipe")
+        .place_runtime_file(pipe_name)
         .expect("couldn't find commands.pipe");
     let mut pipe = fs::OpenOptions::new()
         .write(true)

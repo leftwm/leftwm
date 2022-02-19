@@ -13,12 +13,9 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
         let config = leftwm::load();
-        let path =
-            BaseDirectories::with_prefix("leftwm").expect("ERROR: could not find base directory");
-        let config_file = path
-            .place_config_file("config.toml")
-            .expect("ERROR: could not find config file");
-        let mut worker = Worker::new(config.mapped_bindings(), config_file);
+        let path = BaseDirectories::with_prefix("leftwm-lefthk")
+            .expect("ERROR: could not find base directory");
+        let mut worker = Worker::new(config.mapped_bindings(), path);
 
         rt.block_on(worker.event_loop());
     });
