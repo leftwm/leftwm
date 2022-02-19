@@ -1,6 +1,6 @@
 use super::{Manager, Window, WindowChange, WindowType, Workspace};
 use crate::child_process::exec_shell;
-use crate::config::{Config, ScratchPad};
+use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
@@ -298,10 +298,11 @@ fn setup_window(
 }
 
 fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
+    let for_active_workspace =
+        |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
+
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
-        let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
         // Only minimize when the new window is type normal.
         if let Some(fsw) = state
             .windows
@@ -348,8 +349,27 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
         return;
     }
 
-    // Past special cases we just push the winodw to the bottom.
-    state.windows.push(window.clone());
+    let current_index = state
+        .focus_manager
+        .window(&state.windows)
+        .and_then(|current| {
+            state
+                .windows
+                .iter()
+                .position(|w| w.handle == current.handle)
+        })
+        .unwrap_or(0);
+
+    // Past special cases we just insert the window based on the configured insert behavior
+    match state.insert_behavior {
+        InsertBehavior::Top => state.windows.insert(0, window.clone()),
+        InsertBehavior::Bottom => state.windows.push(window.clone()),
+        InsertBehavior::BeforeCurrent => state.windows.insert(current_index, window.clone()),
+        InsertBehavior::AfterCurrent if current_index < state.windows.len() => {
+            state.windows.insert(current_index + 1, window.clone())
+        }
+        InsertBehavior::AfterCurrent => state.windows.insert(current_index, window.clone()),
+    }
 }
 
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {

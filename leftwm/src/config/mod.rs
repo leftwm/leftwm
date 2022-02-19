@@ -10,7 +10,7 @@ use super::{BaseCommand, ThemeSetting};
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
-    config::{ScratchPad, Workspace},
+    config::{ScratchPad, Workspace, InsertBehavior},
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
     state::State,
@@ -90,6 +90,7 @@ pub struct Config {
     pub max_window_width: Option<Size>,
     pub layouts: Vec<Layout>,
     pub layout_mode: LayoutMode,
+    pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
     pub window_rules: Option<Vec<WindowHook>>,
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
@@ -306,6 +307,10 @@ impl leftwm_core::Config for Config {
 
     fn layout_mode(&self) -> LayoutMode {
         self.layout_mode
+    }
+
+    fn insert_behavior(&self) -> InsertBehavior {
+        self.insert_behavior
     }
 
     fn focus_new_windows(&self) -> bool {
