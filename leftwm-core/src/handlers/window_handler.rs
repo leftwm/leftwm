@@ -472,3 +472,122 @@ fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32
         _ => Size::Ratio(default_ratio).into_absolute(max_pixel),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Screen;
+    use crate::Manager;
+
+    #[test]
+    fn insert_behavior_bottom_add_window_at_the_end_of_the_stack() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.state.insert_behavior = InsertBehavior::Bottom;
+
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = vec![WindowHandle::MockHandle(1), WindowHandle::MockHandle(2)];
+
+        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn insert_behavior_top_add_window_at_the_top_of_the_stack() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.state.insert_behavior = InsertBehavior::Top;
+
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = vec![WindowHandle::MockHandle(2), WindowHandle::MockHandle(1)];
+        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn insert_behavior_after_current_add_window_after_the_current_window() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.state.insert_behavior = InsertBehavior::AfterCurrent;
+
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(3), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = vec![
+            WindowHandle::MockHandle(1),
+            WindowHandle::MockHandle(3),
+            WindowHandle::MockHandle(2),
+        ];
+        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn insert_behavior_before_current_add_window_before_the_current_window() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.state.insert_behavior = InsertBehavior::BeforeCurrent;
+
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(3), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = vec![
+            WindowHandle::MockHandle(2),
+            WindowHandle::MockHandle(3),
+            WindowHandle::MockHandle(1),
+        ];
+        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+
+        assert_eq!(actual, expected);
+    }
+}
