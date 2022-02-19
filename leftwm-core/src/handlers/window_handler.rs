@@ -298,11 +298,10 @@ fn setup_window(
 }
 
 fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
-    let for_active_workspace =
-        |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
-
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
+        let for_active_workspace =
+            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
         // Only minimize when the new window is type normal.
         if let Some(fsw) = state
             .windows
