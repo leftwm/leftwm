@@ -27,11 +27,13 @@ fi
 
 
 index=0
-monitor="$(polybar -m | grep +0+0 | sed s/:.*// | tac)"
+monitors="$(polybar -m | sed s/:.*//)"
 leftwm-state -q -n -t $SCRIPTPATH/sizes.liquid | sed -r '/^\s*$/d' | while read -r width x y
 do
+  let index1=index+1
+  monitor=$(sed "$index1!d" <<<"$monitors")
   barname="mainbar$index"
-  monitor=$monitor offsetx=$x width=$width polybar -c $SCRIPTPATH/polybar.config $barname &> /dev/null &
-  let index=index+1
+  monitor=$monitor offset=$x width=$width polybar -c $SCRIPTPATH/polybar.config $barname &> /dev/null &
+  let index=index1
 done
 
