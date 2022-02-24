@@ -1,12 +1,13 @@
 #[cfg(feature = "lefthk")]
 use lefthk_core::{config::Config, worker::Worker};
-#[cfg(feature = "lefthk")]
+#[cfg(feature = "logging")]
 use slog::{o, Drain};
 #[cfg(feature = "lefthk")]
 use xdg::BaseDirectories;
 
 #[cfg(feature = "lefthk")]
 fn main() {
+    #[cfg(feature = "logging")]
     let _log_guard = setup_logging();
     log::info!("lefthk-worker booted!");
     let completed = std::panic::catch_unwind(|| {
@@ -32,7 +33,7 @@ fn main() {}
 
 /// Log to both stdout and journald.
 #[allow(dead_code)]
-#[cfg(feature = "lefthk")]
+#[cfg(feature = "logging")]
 fn setup_logging() -> slog_scope::GlobalLoggerGuard {
     #[cfg(feature = "slog-journald")]
     let journald = slog_journald::JournaldDrain.ignore_res();

@@ -37,15 +37,16 @@ slog-term = { version = "2.5.0", optional = true }
 thiserror = "1.0.30"
 tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 toml = "0.5.5"
-x11-dl = "2.18.4"
 xdg = "2.2.0"
 
 [dev-dependencies]
 tempfile = "3.2.0"
 
 [features]
-default = ["slog-term", "lefthk"]
-journald = ["slog-journald", "slow-dm-fix"]
+default = ["term", "lefthk"]
+term = ["slog-term", "logging"]
+journald = ["slog-journald", "slow-dm-fix", "logging"]
+logging = []
 lefthk = ["lefthk-core"]
 
 # Sleep on restart
