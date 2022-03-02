@@ -172,10 +172,6 @@ fn template_handler(
         globals.insert("workspace".into(), liquid::model::Value::Object(workspace));
         //liquid only does time in utc. BUG: https://github.com/cobalt-org/liquid-rust/issues/332
         //as a workaround we are setting a time locally
-        globals.insert(
-            "localtime".into(),
-            liquid::model::Value::scalar(get_localtime()),
-        );
         globals
     } else {
         let json = serde_json::to_string(&display)?;
@@ -195,11 +191,6 @@ fn template_handler(
         println!("{}", output);
     }
     Ok(())
-}
-
-fn get_localtime() -> String {
-    let now = chrono::Local::now();
-    now.format("%m/%d/%Y %l:%M %p").to_string()
 }
 
 async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
