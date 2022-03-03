@@ -170,8 +170,6 @@ fn template_handler(
             liquid::model::Value::scalar(display.window_title),
         );
         globals.insert("workspace".into(), liquid::model::Value::Object(workspace));
-        //liquid only does time in utc. BUG: https://github.com/cobalt-org/liquid-rust/issues/332
-        //as a workaround we are setting a time locally
         globals
     } else {
         let json = serde_json::to_string(&display)?;
