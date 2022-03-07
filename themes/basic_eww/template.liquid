@@ -12,7 +12,7 @@
 {{visible_open}}{{workspace.index | append: ' ' | append: tag.index | append: '\"" `'}}{{ tag.name }}{{close}}
 {% elsif tag.busy  %}
 {{busy_open}}{{workspace.index | append: ' ' | append: tag.index | append: '\"" `'}}{{ tag.name }}{{close}}
-{% else tag.visible  %}
+{% else %}
 {{unoccupied}}{{workspace.index | append: ' ' | append: tag.index | append: '\"" `'}}{{ "·" }}{{close}}
 {% endif %}
 {% endfor %}
