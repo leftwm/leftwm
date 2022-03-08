@@ -468,9 +468,8 @@ impl leftwm_core::Config for Config {
                     hook.spawn_floating,
                 );
                 return true;
-            } else {
-                return false;
             }
+            return false;
         }
         false
     }
