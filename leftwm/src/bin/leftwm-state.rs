@@ -217,6 +217,6 @@ mod tests {
             .filter(|f_n| is_partial_filename(f_n))
             .collect::<Vec<&OsStr>>();
 
-        assert!(partials == vec![OsStr::new("_partial.liquid")])
+        assert!(partials == vec![OsStr::new("_partial.liquid")]);
     }
 }
