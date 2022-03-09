@@ -18,7 +18,7 @@ pub enum DisplayAction {
     AddedWindow(WindowHandle, bool, bool),
 
     /// Makes sure the mouse is over a given window.
-    MoveMouseOver(WindowHandle),
+    MoveMouseOver(WindowHandle, bool),
 
     /// Makes sure the mouse is over a given point.
     MoveMouseOverPoint((i32, i32)),

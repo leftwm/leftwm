@@ -1,10 +1,10 @@
+use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::WindowHandle;
 use crate::state::State;
 use crate::utils;
 use crate::utils::xkeysym_lookup::Button;
 use crate::utils::xkeysym_lookup::ModMask;
-use crate::{display_action::DisplayAction, models::FocusBehaviour};
 use x11_dl::xlib;
 
 impl State {
@@ -26,7 +26,7 @@ impl State {
                     return false;
                 }
             }
-        } else if self.focus_manager.behaviour == FocusBehaviour::ClickTo {
+        } else if self.focus_manager.behaviour.is_clickto() {
             if let xlib::Button1 | xlib::Button3 = button {
                 if self.screens.iter().any(|s| s.root == handle) {
                     self.focus_workspace_under_cursor(x, y);
@@ -62,9 +62,7 @@ impl State {
                 self.mode = Mode::ReadyToResize(window);
                 Some(DisplayAction::ReadyToResizeWindow(window))
             }
-            xlib::Button1 | xlib::Button3
-                if self.focus_manager.behaviour == FocusBehaviour::ClickTo =>
-            {
+            xlib::Button1 | xlib::Button3 if self.focus_manager.behaviour.is_clickto() => {
                 self.focus_window(&window);
                 None
             }

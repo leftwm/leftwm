@@ -109,7 +109,7 @@ impl XWrap {
                 )
             };
             if success > 0 {
-                return Ok(WindowHandle::XlibHandle(child_return));
+                return Ok(child_return.into());
             }
         }
         Err(XlibError::RootWindowNotFound)

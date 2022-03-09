@@ -19,6 +19,20 @@ impl Default for FocusBehaviour {
     }
 }
 
+impl FocusBehaviour {
+    pub fn is_sloppy(self) -> bool {
+        self == FocusBehaviour::Sloppy
+    }
+
+    pub fn is_clickto(self) -> bool {
+        self == FocusBehaviour::ClickTo
+    }
+
+    pub fn is_driven(self) -> bool {
+        self == FocusBehaviour::Driven
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FocusManager {
     pub behaviour: FocusBehaviour,
@@ -54,7 +68,7 @@ impl FocusManager {
     /// Return the currently focused workspace.
     pub fn workspace_mut<'a, 'b>(
         &self,
-        workspaces: &'a mut Vec<Workspace>,
+        workspaces: &'a mut [Workspace],
     ) -> Option<&'b mut Workspace>
     where
         'a: 'b,
@@ -83,7 +97,7 @@ impl FocusManager {
     }
 
     /// Return the currently focused window.
-    pub fn window_mut<'a, 'b>(&self, windows: &'a mut Vec<Window>) -> Option<&'b mut Window>
+    pub fn window_mut<'a, 'b>(&self, windows: &'a mut [Window]) -> Option<&'b mut Window>
     where
         'a: 'b,
     {

@@ -1,6 +1,6 @@
 //! Xlib calls related to a window.
 use super::{Window, WindowHandle, ICONIC_STATE, NORMAL_STATE, ROOT_EVENT_MASK};
-use crate::models::{FocusBehaviour, WindowChange, WindowType, Xyhw, XyhwChange};
+use crate::models::{WindowChange, WindowType, Xyhw, XyhwChange};
 use crate::{DisplayEvent, XWrap};
 use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
@@ -15,7 +15,7 @@ impl XWrap {
             }
             _ => return None,
         };
-        let handle = WindowHandle::XlibHandle(window);
+        let handle = window.into();
         // Gather info about the window from xlib.
         let name = self.get_window_name(window);
         let legacy_name = self.get_window_legacy_name(window);
@@ -39,7 +39,7 @@ impl XWrap {
         w.r#type = r#type.clone();
         w.set_states(states);
         if let Some(trans) = trans {
-            w.transient = Some(WindowHandle::XlibHandle(trans));
+            w.transient = Some(trans.into());
         }
         // Initialise the windows floating with the pre-mapped settings.
         let xyhw = XyhwChange {
@@ -95,59 +95,58 @@ impl XWrap {
         floating: bool,
         follow_mouse: bool,
     ) -> Option<DisplayEvent> {
-        if let WindowHandle::XlibHandle(handle) = h {
-            self.subscribe_to_window_events(handle);
-            self.managed_windows.push(handle);
-            // Make sure the window is mapped.
-            unsafe { (self.xlib.XMapWindow)(self.display, handle) };
-            // Let Xlib know we are managing this window.
-            let list = vec![handle as c_long];
-            self.append_property_long(self.root, self.atoms.NetClientList, xlib::XA_WINDOW, &list);
+        let handle = h.xlib_handle()?;
+        self.subscribe_to_window_events(handle);
+        self.managed_windows.push(handle);
+        // Make sure the window is mapped.
+        unsafe { (self.xlib.XMapWindow)(self.display, handle) };
+        // Let Xlib know we are managing this window.
+        let list = vec![handle as c_long];
+        self.append_property_long(self.root, self.atoms.NetClientList, xlib::XA_WINDOW, &list);
 
-            // Make sure there is at least an empty list of _NET_WM_STATE.
-            let states = self.get_window_states_atoms(handle);
-            self.set_window_states_atoms(handle, &states);
-            // Set WM_STATE to normal state to allow window sharing.
-            self.set_wm_states(handle, &[NORMAL_STATE]);
+        // Make sure there is at least an empty list of _NET_WM_STATE.
+        let states = self.get_window_states_atoms(handle);
+        self.set_window_states_atoms(handle, &states);
+        // Set WM_STATE to normal state to allow window sharing.
+        self.set_wm_states(handle, &[NORMAL_STATE]);
 
-            let r#type = self.get_window_type(handle);
-            if r#type == WindowType::Dock || r#type == WindowType::Desktop {
-                if let Some(dock_area) = self.get_window_strut_array(handle) {
-                    let dems = self.get_screens_area_dimensions();
-                    let screen = self
-                        .get_screens()
-                        .iter()
-                        .find(|s| s.contains_dock_area(dock_area, dems))?
-                        .clone();
+        let r#type = self.get_window_type(handle);
+        if r#type == WindowType::Dock || r#type == WindowType::Desktop {
+            if let Some(dock_area) = self.get_window_strut_array(handle) {
+                let dems = self.get_screens_area_dimensions();
+                let screen = self
+                    .get_screens()
+                    .iter()
+                    .find(|s| s.contains_dock_area(dock_area, dems))?
+                    .clone();
 
-                    if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
-                        let mut change = WindowChange::new(h);
-                        change.strut = Some(xyhw.into());
-                        change.r#type = Some(r#type);
-                        return Some(DisplayEvent::WindowChange(change));
-                    }
-                } else if let Ok(geo) = self.get_window_geometry(handle) {
-                    let mut xyhw = Xyhw::default();
-                    geo.update(&mut xyhw);
+                if let Some(xyhw) = dock_area.as_xyhw(dems.0, dems.1, &screen) {
                     let mut change = WindowChange::new(h);
                     change.strut = Some(xyhw.into());
                     change.r#type = Some(r#type);
                     return Some(DisplayEvent::WindowChange(change));
                 }
+            } else if let Ok(geo) = self.get_window_geometry(handle) {
+                let mut xyhw = Xyhw::default();
+                geo.update(&mut xyhw);
+                let mut change = WindowChange::new(h);
+                change.strut = Some(xyhw.into());
+                change.r#type = Some(r#type);
+                return Some(DisplayEvent::WindowChange(change));
+            }
+        } else {
+            let color = if floating {
+                self.colors.floating
             } else {
-                let color = if floating {
-                    self.colors.floating
-                } else {
-                    self.colors.normal
-                };
-                self.set_window_border_color(handle, color);
+                self.colors.normal
+            };
+            self.set_window_border_color(handle, color);
 
-                if follow_mouse {
-                    let _ = self.move_cursor_to_window(handle);
-                }
-                if self.focus_behaviour == FocusBehaviour::ClickTo {
-                    self.grab_mouse_clicks(handle, false);
-                }
+            if follow_mouse {
+                let _ = self.move_cursor_to_window(handle);
+            }
+            if self.focus_behaviour.is_clickto() {
+                self.grab_mouse_clicks(handle, false);
             }
         }
         None
@@ -227,7 +226,7 @@ impl XWrap {
     pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             // Play a click when in ClickToFocus.
-            if self.focus_behaviour == FocusBehaviour::ClickTo {
+            if self.focus_behaviour.is_clickto() {
                 self.replay_click();
             }
             // Update previous window.
@@ -240,7 +239,7 @@ impl XWrap {
                     };
                     self.set_window_border_color(previous_handle, color);
                     // Open up button1 clicking on the previously focused window.
-                    if self.focus_behaviour == FocusBehaviour::ClickTo {
+                    if self.focus_behaviour.is_clickto() {
                         self.grab_mouse_clicks(previous_handle, false);
                     }
                 }
@@ -269,7 +268,7 @@ impl XWrap {
             }
             // This fixes windows that process the `WMTakeFocus` event too slow.
             // See: https://github.com/leftwm/leftwm/pull/563
-            if self.focus_behaviour != FocusBehaviour::Sloppy {
+            if !self.focus_behaviour.is_sloppy() {
                 // Tell the window to take focus
                 self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
             }

@@ -29,13 +29,25 @@ fn main() {
 // outputs to /tmp/leftwm/leftwm-XXXXXXXXXXXX.log
 #[allow(dead_code)]
 fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
-    use chrono::Local;
     use std::fs;
     use std::fs::OpenOptions;
-    let date = Local::now();
+    use time_leftwm::{format_description, OffsetDateTime};
+    let date = OffsetDateTime::now_local();
     let path = "/tmp/leftwm";
     let _droppable = fs::create_dir_all(path);
-    let log_path = format!("{}/leftwm-{}.log", path, date.format("%Y%m%d%H%M"));
+    let format_string =
+        format_description::parse("[year][month][day][hour][minute]").expect("Error with Time");
+    let date_formatted: String = if let Ok(df) = date {
+        df.format(&format_string)
+            .unwrap_or_else(|_| String::from("time-parse-error"))
+    } else {
+        let mut d = OffsetDateTime::now_utc()
+            .format(&format_string)
+            .unwrap_or_else(|_| String::from("time-parse-error"));
+        d.push_str("UTC");
+        d
+    };
+    let log_path = format!("{}/leftwm-{}.log", path, date_formatted);
     let file = OpenOptions::new()
         .create(true)
         .write(true)
