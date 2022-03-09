@@ -3,7 +3,7 @@ name = "leftwm"
 version = "0.3.0"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["window manager"]
-edition = "2018"
+edition = "2021"
 keywords = ["wm", "window", "manager"]
 license = "MIT"
 readme = "README.md"
@@ -14,7 +14,7 @@ description = "A window manager for Adventurers"
 anyhow = "1.0.48"
 clap = "2.33.0"
 dirs-next = "2.0.0"
-futures = "0.3.12"
+futures = "0.3.21"
 git-version = "0.3.4"
 leftwm-core = { path = "../leftwm-core", version = '0.3.0' }
 liquid = "0.24.0"
