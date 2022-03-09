@@ -1,8 +1,8 @@
 use super::{CommandBuilder, Config, DisplayEvent, Manager, Mode};
+use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::models::WindowHandle;
 use crate::State;
-use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
@@ -14,6 +14,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
             DisplayEvent::WindowTakeFocus(handle) => {
                 self.state.focus_window(&handle);
+                false
+            }
+            DisplayEvent::HandleWindowFocus(handle) => {
+                self.state.handle_window_focus(&handle);
                 false
             }
 
@@ -32,7 +36,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             // This is a request to validate focus. Double check that we are focused on the correct
             // window.
             DisplayEvent::VerifyFocusedAt(handle) => {
-                if self.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
+                if self.state.focus_manager.behaviour.is_sloppy() {
                     self.state.validate_focus_at(&handle);
                 }
                 false

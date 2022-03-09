@@ -4,7 +4,7 @@ use crate::models::Workspace;
 // use crate::models::WindowState;
 
 /// Layout which gives only one window with the full desktop realestate. A monocle mode.
-pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut Vec<&mut Window>) {
+pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
     let window_count = windows.len();
 
     if window_count == 0 {

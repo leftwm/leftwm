@@ -1,14 +1,11 @@
-use super::DisplayEvent;
-use super::XWrap;
-use crate::models::WindowChange;
-use crate::models::WindowHandle;
-use crate::Command;
+use super::{DisplayEvent, XWrap};
+use crate::{models::WindowChange, Command};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
-    if !xw.managed_windows.contains(&event.window) {
+    if !xw.managed_windows.contains(&event.window) && event.window != xw.get_default_root() {
         return None;
     }
     let atom_name = xw.atoms.get_name(event.message_type);
@@ -39,7 +36,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         match usize::try_from(value) {
             Ok(index) => {
                 let event = DisplayEvent::SendCommand(Command::SendWindowToTag {
-                    window: Some(WindowHandle::XlibHandle(event.window)),
+                    window: Some(event.window.into()),
                     tag: index + 1,
                 });
                 return Some(event);
@@ -55,9 +52,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         }
     }
     if event.message_type == xw.atoms.NetActiveWindow {
-        return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
-            event.window,
-        )));
+        return Some(DisplayEvent::HandleWindowFocus(event.window.into()));
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too
@@ -88,7 +83,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
 
     //update the window states
     if event.message_type == xw.atoms.NetWMState {
-        let handle = WindowHandle::XlibHandle(event.window);
+        let handle = event.window.into();
         let mut change = WindowChange::new(handle);
         let states = xw.get_window_states(event.window);
         change.states = Some(states);

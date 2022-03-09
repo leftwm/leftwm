@@ -1,6 +1,6 @@
 //! Save and restore manager state.
 
-use crate::config::{Config, ScratchPad};
+use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::Layout;
 use crate::models::Screen;
 use crate::models::Size;
@@ -31,6 +31,7 @@ pub struct State {
     pub default_width: i32,
     pub default_height: i32,
     pub disable_tile_drag: bool,
+    pub insert_behavior: InsertBehavior,
 }
 
 impl State {
@@ -59,6 +60,7 @@ impl State {
             default_width: config.default_width(),
             default_height: config.default_height(),
             disable_tile_drag: config.disable_tile_drag(),
+            insert_behavior: config.insert_behavior(),
         }
     }
 

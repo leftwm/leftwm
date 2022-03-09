@@ -45,19 +45,27 @@ impl Keybind {
             BaseCommand::ToggleFloating => leftwm_core::Command::ToggleFloating,
             BaseCommand::MoveWindowUp => leftwm_core::Command::MoveWindowUp,
             BaseCommand::MoveWindowDown => leftwm_core::Command::MoveWindowDown,
-            BaseCommand::MoveWindowTop => leftwm_core::Command::MoveWindowTop,
+            BaseCommand::MoveWindowTop => leftwm_core::Command::MoveWindowTop {
+                swap: if self.value.is_empty() {
+                    true
+                } else {
+                    bool::from_str(&self.value)
+                        .context("invalid boolean value for MoveWindowTop")?
+                },
+            },
             BaseCommand::FocusNextTag => leftwm_core::Command::FocusNextTag,
             BaseCommand::FocusPreviousTag => leftwm_core::Command::FocusPreviousTag,
+            BaseCommand::FocusWindow => leftwm_core::Command::FocusWindow(self.value.clone()),
             BaseCommand::FocusWindowUp => leftwm_core::Command::FocusWindowUp,
             BaseCommand::FocusWindowDown => leftwm_core::Command::FocusWindowDown,
-            BaseCommand::FocusWindowTop => {
-                leftwm_core::Command::FocusWindowTop(if self.value.is_empty() {
+            BaseCommand::FocusWindowTop => leftwm_core::Command::FocusWindowTop {
+                swap: if self.value.is_empty() {
                     false
                 } else {
                     bool::from_str(&self.value)
                         .context("invalid boolean value for FocusWindowTop")?
-                })
-            }
+                },
+            },
             BaseCommand::FocusWorkspaceNext => leftwm_core::Command::FocusWorkspaceNext,
             BaseCommand::FocusWorkspacePrevious => leftwm_core::Command::FocusWorkspacePrevious,
             BaseCommand::MoveToTag => leftwm_core::Command::SendWindowToTag {
@@ -91,9 +99,10 @@ impl Keybind {
                     .context("invalid margin multiplier for SetMarginMultiplier")?,
             ),
             BaseCommand::UnloadTheme => leftwm_core::Command::Other("UnloadTheme".into()),
-            BaseCommand::LoadTheme => {
-                leftwm_core::Command::Other(format!("LoadTheme {}", ensure_non_empty!(&self.value)))
-            }
+            BaseCommand::LoadTheme => leftwm_core::Command::Other(format!(
+                "LoadTheme {}",
+                ensure_non_empty!(self.value.clone())
+            )),
         };
 
         Ok(leftwm_core::Keybind {

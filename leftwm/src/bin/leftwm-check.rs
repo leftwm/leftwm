@@ -92,7 +92,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         Ok(config)
     } else {
         let config = Config::default();
-        let toml = toml::to_string(&config).unwrap();
+        let toml = toml::to_string(&config)?;
         let mut file = File::create(&config_filename)?;
         file.write_all(toml.as_bytes())?;
         Ok(config)

@@ -7,10 +7,12 @@ use thiserror::Error;
 
 mod center_main;
 mod center_main_balanced;
+mod center_main_fluid;
 mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
 mod grid_horizontal;
+mod left_main;
 mod main_and_deck;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
@@ -26,8 +28,10 @@ pub enum Layout {
     EvenHorizontal,
     EvenVertical,
     Fibonacci,
+    LeftMain,
     CenterMain,
     CenterMainBalanced,
+    CenterMainFluid,
     Monocle,
     RightWiderLeftStack,
     LeftWiderRightStack,
@@ -41,8 +45,10 @@ pub const LAYOUTS: &[Layout] = &[
     Layout::EvenHorizontal,
     Layout::EvenVertical,
     Layout::Fibonacci,
+    Layout::LeftMain,
     Layout::CenterMain,
     Layout::CenterMainBalanced,
+    Layout::CenterMainFluid,
     Layout::Monocle,
     Layout::RightWiderLeftStack,
     Layout::LeftWiderRightStack,
@@ -56,7 +62,7 @@ impl Default for Layout {
 
 // This is tedious, but simple and effective.
 impl Layout {
-    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>, tag: &Tag) {
+    pub fn update_windows(&self, workspace: &Workspace, windows: &mut [&mut Window], tag: &Tag) {
         match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
                 main_and_vert_stack::update(workspace, tag, windows);
@@ -69,8 +75,10 @@ impl Layout {
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),
             Self::Fibonacci => fibonacci::update(workspace, tag, windows),
+            Self::LeftMain => left_main::update(workspace, tag, windows),
             Self::CenterMain => center_main::update(workspace, tag, windows),
             Self::CenterMainBalanced => center_main_balanced::update(workspace, tag, windows),
+            Self::CenterMainFluid => center_main_fluid::update(workspace, tag, windows),
             Self::Monocle => monocle::update(workspace, windows),
             Self::RightWiderLeftStack => {
                 right_main_and_vert_stack::update(workspace, tag, windows);
@@ -116,8 +124,10 @@ impl FromStr for Layout {
             "EvenHorizontal" => Ok(Self::EvenHorizontal),
             "EvenVertical" => Ok(Self::EvenVertical),
             "Fibonacci" => Ok(Self::Fibonacci),
+            "LeftMain" => Ok(Self::LeftMain),
             "CenterMain" => Ok(Self::CenterMain),
             "CenterMainBalanced" => Ok(Self::CenterMainBalanced),
+            "CenterMainFluid" => Ok(Self::CenterMainFluid),
             "Monocle" => Ok(Self::Monocle),
             "RightWiderLeftStack" => Ok(Self::RightWiderLeftStack),
             "LeftWiderRightStack" => Ok(Self::LeftWiderRightStack),
@@ -153,7 +163,6 @@ mod tests {
         w.border = 0;
         w.margin = Margins::new(0);
         let mut windows = vec![&mut w];
-        // let mut windows_filters: Vec<&mut Window> = windows.iter_mut().filter(|_f| true).collect();
         even_horizontal::update(&ws, &mut windows);
         assert!(
             w.height() == 600,
@@ -164,7 +173,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let layout_strs: [&str; 12] = [
+        let layout_strs: [&str; 14] = [
             "MainAndVertStack",
             "MainAndHorizontalStack",
             "MainAndDeck",
@@ -172,8 +181,10 @@ mod tests {
             "EvenHorizontal",
             "EvenVertical",
             "Fibonacci",
+            "LeftMain",
             "CenterMain",
             "CenterMainBalanced",
+            "CenterMainFluid",
             "Monocle",
             "RightWiderLeftStack",
             "LeftWiderRightStack",

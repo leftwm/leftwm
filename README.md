@@ -90,11 +90,10 @@ List of LeftWM dependencies:
 
 - xorg (runtime, build): specifically libx11, xrandr, xorg-server, libxinerama  
 - sh (runtime): any posix-compliant shell for starting up and down files
-- rust (build): >= 1.52.0
+- rust (build): >= 1.56.0
 - bash (optional): Most of the themes available use bash, though the scrips maybe converted to any posix-compliant shell
 
 List of common dependencies for themes:
-
 
 | Dependency<br>(git) | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS |
 |--------------------------|-----------|-------------------|-----------|--------------------------|
@@ -124,50 +123,57 @@ List of common dependencies for themes:
 [dmenu-git]: https://git.suckless.org/dmenu
 [dmenu-pkg]: https://pkgs.org/download/dmenu
 
-
 > \* You can use whichever AUR wrapper you like. See [paru] and [yay].  
 > \*\* See the git page (link in first column) for how to install these manually
 
 # Installation (with package manager)
 
-#### Gentoo ([GURU])
+## Gentoo ([GURU])
+
 ```sh
 sudo layman -a guru && sudo emerge --sync 
 sudo emerge --ask --verbose x11-wm/leftwm
 ```
 
-#### Archlinux ([AUR])
+## Archlinux ([AUR])
+
 ```sh
 paru -S leftwm
 ```
 
 [paru] is an AUR helper like [yay], but written in [Rust].
 
-#### Fedora ([copr])
+## Fedora ([copr])
+
 ```sh
 sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
 ```
 
-#### NetBSD ([Official repositories])
+## NetBSD ([Official repositories])
+
 ```sh
 pkgin install leftwm
 ```
 
 or, if you prefer to build it from source
+
 ```sh
 cd /usr/pkgsrc/wm/leftwm
 make install
 ```
 
-#### Void ([XBPS])
+## Void ([XBPS])
+
 ```sh
 sudo xbps-install -S leftwm
 ```
 
-#### Cargo ([crates.io])
+## Cargo ([crates.io])
+
 ```sh
 cargo install leftwm
 ```
+
 If you install LeftWM with crates.io, you will need to link to the xsession desktop file if you want
 to be able to login to LeftWM from a display manager (GDM, SSDM, LightDM, etc.):
 
@@ -191,28 +197,28 @@ sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 1. Dependencies: Rust, Cargo
 2. Clone the repository and cd into the directory
 
-```bash
-git clone https://github.com/leftwm/leftwm.git
-cd leftwm
-```
+   ```bash
+   git clone https://github.com/leftwm/leftwm.git
+   cd leftwm
+   ```
 
 3. Build leftwm
 
-```bash
-cargo build --release
-```
+   ```bash
+   cargo build --release
+   ```
 
 4. Copy leftwm executables to the /usr/bin folder
 
-```bash
-sudo install -s -Dm755 ./target/release/leftwm ./target/release/leftwm-worker ./target/release/leftwm-state ./target/release/leftwm-check ./target/release/leftwm-command -t /usr/bin
-```
+   ```bash
+   sudo install -s -Dm755 ./target/release/leftwm ./target/release/leftwm-worker ./target/release/leftwm-state ./target/release/leftwm-check ./target/release/leftwm-command -t /usr/bin
+   ```
 
 5. Copy leftwm.desktop to xsessions folder
 
-```bash
-sudo cp leftwm.desktop /usr/share/xsessions/
-```
+   ```bash
+   sudo cp leftwm.desktop /usr/share/xsessions/
+   ```
 
 You should now see LeftWM in your list of available window managers.  At this point, expect only a
 simple black screen on login.  For a more customized look, install a theme.
@@ -226,63 +232,63 @@ way, make sure you do not move the build directory as it will break your install
 1. Dependencies: Rust, Cargo
 2. Clone the repository and cd into the directory
 
-```bash
-git clone https://github.com/leftwm/leftwm.git
-cd leftwm
-```
+   ```bash
+   git clone https://github.com/leftwm/leftwm.git
+   cd leftwm
+   ```
 
 3. Build leftwm
 
-```bash
-# Without systemd logging
-cargo build --release
-
-# OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
-cargo build --release --features=journald
-```
+   ```bash
+   # Without systemd logging
+   cargo build --release
+ 
+   # OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
+   cargo build --release --features=journald
+   ```
 
 4. Create the symlinks
 
-```bash
-sudo ln -s "$(pwd)"/target/release/leftwm /usr/bin/leftwm
-sudo ln -s "$(pwd)"/target/release/leftwm-worker /usr/bin/leftwm-worker
-sudo ln -s "$(pwd)"/target/release/leftwm-state /usr/bin/leftwm-state
-sudo ln -s "$(pwd)"/target/release/leftwm-check /usr/bin/leftwm-check
-sudo ln -s "$(pwd)"/target/release/leftwm-command /usr/bin/leftwm-command
-```
+   ```bash
+   sudo ln -s "$(pwd)"/target/release/leftwm /usr/bin/leftwm
+   sudo ln -s "$(pwd)"/target/release/leftwm-worker /usr/bin/leftwm-worker
+   sudo ln -s "$(pwd)"/target/release/leftwm-state /usr/bin/leftwm-state
+   sudo ln -s "$(pwd)"/target/release/leftwm-check /usr/bin/leftwm-check
+   sudo ln -s "$(pwd)"/target/release/leftwm-command /usr/bin/leftwm-command
+   ```
 
 5. Copy leftwm.desktop to xsessions folder
 
-```bash
-sudo cp leftwm.desktop /usr/share/xsessions/
-```
+   ```bash
+   sudo cp leftwm.desktop /usr/share/xsessions/
+   ```
 
 You should now see LeftWM in your list of available window managers.  At this point, expect only a
 simple black screen on login.  For a more customized look, install a theme.
 
 ### Rebuilding the development installation
 
-1.  Now if you want to get the newest version of leftwm run this command from your build directory:  
+1. Now if you want to get the newest version of leftwm run this command from your build directory:  
 
-```bash
-git pull origin main
-```
+   ```bash
+   git pull origin main
+   ```
 
 2. Build leftwm
 
-```bash
-# Without systemd logging
-cargo build --release
-
-# OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
-cargo build --release --features=journald
-```
+   ```bash
+   # Without systemd logging
+   cargo build --release
+ 
+   # OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
+   cargo build --release --features=journald
+   ```
 
 3. And press the following keybind to reload leftwm
 
-```bash
-Mod + Shift + R
-```
+   ```bash
+   Mod + Shift + R
+   ```
 
 ## Using the Makefile
 
@@ -302,7 +308,7 @@ For conveniece we also have a Makefile with the following rules:
 
 Make sure this is at the end of your .xinitrc file:
 
-```bash 
+```bash
 # .xinitrc
 exec dbus-launch leftwm
 ```
@@ -344,7 +350,7 @@ The settings file to change key bindings and the default mod key can be found at
 ~/.config/leftwm/config.toml
 ```
 
-the file is automatically generated when leftwm or leftwm-check is run for the first time. 
+the file is automatically generated when leftwm or leftwm-check is run for the first time.
 
 ## Default keys
 
@@ -381,12 +387,11 @@ presented):
 9. XTerm
 10. Terminator
 11. Terminology
-10. Gnome Terminal
-12. XFCE4 Terminal
-13. Konsole
-14. UXTerm
-15. Guake
- 
+12. Gnome Terminal
+13. XFCE4 Terminal
+14. Konsole
+15. UXTerm
+16. Guake
 
 ## Floating Windows
 
@@ -427,6 +432,7 @@ x = 1720
 height = 1440
 width = 1720
 ```
+
 You may optionally specify an ID for your defined workspaces. This is helpful if you want to assign different gutter settings to each workspace in your theme.
 
 ```toml
@@ -444,6 +450,7 @@ height = 1440
 width = 1720
 id = 0
 ```
+
 ---
 **NOTE**
 You do not have to define an ID for each workspace, but if you assign an ID to one workspace all subsequently defined workspaces without an ID will be assigned an ID incrementing from the largest ID currently assigned to any workspace. In the above example if the second workspace was not defined with ID = 0 it would be assigned ID = 2. Keep this in mind when creating or customizing themes.
@@ -469,13 +476,15 @@ enabling the ones you use. To do this add a layout section to your config.toml f
 only the layouts you specify.
 
 Example:
+
 ```toml
-layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain"]
+layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"]
 ```
 
 Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.
 
 Example:
+
 ```toml
 [[workspaces]]
 id = 0
@@ -516,4 +525,4 @@ The default layouts are [all of the kinds](leftwm-core/src/layouts/mod.rs#L21) d
 
 ## Support
 
-LeftWM now has a [Discord](https://discord.gg/c9rB3wDnVs) channel for faster help. 
+LeftWM now has a [Discord](https://discord.gg/c9rB3wDnVs) channel for faster help.

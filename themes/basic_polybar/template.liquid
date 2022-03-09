@@ -9,9 +9,9 @@
 %{A}
 {% elsif tag.busy %}
 %{A1:$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}:}
-%{F#FFB52A}   {{tag.name}}   %{F-}
+%{F#FFB52A}  {{tag.name}}  %{F-}
 %{A}
-{% else tag.visible  %}
+{% else %}
 %{A1:$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}:}
 %{F#FFFFFF}  {{tag.name}}  %{F-}
 %{A}

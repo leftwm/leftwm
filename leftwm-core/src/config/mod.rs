@@ -1,3 +1,4 @@
+mod insert_behavior;
 mod keybind;
 mod scratchpad;
 mod workspace_config;
@@ -7,6 +8,7 @@ use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
 use crate::models::{LayoutMode, Manager, Window, WindowType};
 use crate::state::State;
+pub use insert_behavior::InsertBehavior;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use workspace_config::Workspace;
@@ -28,6 +30,8 @@ pub trait Config {
     fn layouts(&self) -> Vec<Layout>;
 
     fn layout_mode(&self) -> LayoutMode;
+
+    fn insert_behavior(&self) -> InsertBehavior;
 
     fn focus_new_windows(&self) -> bool;
 
@@ -83,6 +87,7 @@ pub struct TestConfig {
     pub tags: Vec<String>,
     pub layouts: Vec<Layout>,
     pub workspaces: Option<Vec<Workspace>>,
+    pub insert_behavior: InsertBehavior,
 }
 
 #[cfg(test)]
@@ -111,6 +116,11 @@ impl Config for TestConfig {
     fn layout_mode(&self) -> LayoutMode {
         LayoutMode::Workspace
     }
+
+    fn insert_behavior(&self) -> InsertBehavior {
+        self.insert_behavior
+    }
+
     fn focus_new_windows(&self) -> bool {
         false
     }

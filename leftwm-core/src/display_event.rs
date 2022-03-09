@@ -13,6 +13,7 @@ pub enum DisplayEvent {
     WindowChange(WindowChange),
     WindowDestroy(WindowHandle),
     WindowTakeFocus(WindowHandle),
+    HandleWindowFocus(WindowHandle),
     VerifyFocusedAt(WindowHandle), // Request focus validation for this window.
     MoveFocusTo(i32, i32),         // Focus the nearest window to this point.
     MoveWindow(WindowHandle, i32, i32),

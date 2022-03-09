@@ -2,9 +2,9 @@ use crate::models::Tag;
 use crate::models::Window;
 use crate::models::Workspace;
 
-/// Layout which splits the workspace into three columns.
-/// Gives first window all of the center column.
-/// Gives second window all of the left column.
+/// Similar to `CenterMain`, but keep the main column on the left
+/// Gives first window all of the left column.
+/// Gives second window all of the middle column.
 /// Divides the right column among all the other windows.
 ///
 /// 1 window
@@ -22,40 +22,40 @@ use crate::models::Workspace;
 /// +-----------+-----------+
 /// |           |           |
 /// |           |           |
-/// |      2    |     1     |
+/// |      1    |     2     |
 /// |           |           |
 /// |           |           |
 /// +-----------+-----------+
 /// ```
 /// 3 windows
 /// ```text
-/// +-----+-----------+-----+
-/// |     |           |     |
-/// |     |           |     |
-/// |  2  |     1     |  3  |
-/// |     |           |     |
-/// |     |           |     |
-/// +-----+-----------+-----+
+/// +-----------+-----+-----+
+/// |           |     |     |
+/// |           |     |     |
+/// |     1     |  2  |  3  |
+/// |           |     |     |
+/// |           |     |     |
+/// +-----------+-----+-----+
 /// ```
 /// 4 windows
 /// ```text
-/// +-----+-----------+-----+
-/// |     |           |  3  |
-/// |     |           |     |
-/// |  2  |     1     +-----+
-/// |     |           |  4  |
-/// |     |           |     |
-/// +-----+-----------+-----+
+/// +-----------+-----+-----+
+/// |           |     |  3  |
+/// |           |     |     |
+/// |     1     |  2  +-----+
+/// |           |     |  4  |
+/// |           |     |     |
+/// +-----------+-----+-----+
 /// ```
 /// 5 windows
 /// ```text
-/// +-----+-----------+-----+
-/// |     |           |  3  |
-/// |     |           +-----+
-/// |  2  |     1     |  4  |
-/// |     |           +-----+
-/// |     |           |  5  |
-/// +-----+-----------+-----+
+/// +-----------+-----+-----+
+/// |           |     |  3  |
+/// |           |     +-----+
+/// |     1     |  2  |  4  |
+/// |           |     +-----+
+/// |           |     |  5  |
+/// +-----------+-----+-----+
 /// ```
 pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
     let window_count = windows.len();
@@ -87,22 +87,23 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
         2 => {
             let (px, sx);
             if tag.flipped_horizontal {
-                px = workspace_x;
-                sx = workspace_x + primary_width;
-            } else {
                 px = workspace_x + secondary_width;
                 sx = workspace_x;
+            } else {
+                px = workspace_x;
+                sx = workspace_x + primary_width;
             }
             (px, sx, 0)
         }
         _ => {
-            let px = workspace_x + secondary_width;
-            let (sx, stx);
+            let (px, sx, stx);
             if tag.flipped_horizontal {
-                sx = workspace_x + primary_width + secondary_width;
+                px = workspace_x + secondary_width + secondary_width;
+                sx = workspace_x + secondary_width;
                 stx = workspace_x;
             } else {
-                sx = workspace_x;
+                px = workspace_x;
+                sx = workspace_x + primary_width;
                 stx = workspace_x + primary_width + secondary_width;
             }
             (px, sx, stx)
