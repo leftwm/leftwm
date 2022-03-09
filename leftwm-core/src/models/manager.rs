@@ -44,12 +44,12 @@ impl<C, SERVER> Manager<C, SERVER> {
     }
 }
 
-impl<C, SERVER> Manager<C, SERVER>
-where
-    C: Config,
-{
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Reload the configuration of the running [`Manager`].
     pub fn reload_config(&mut self) -> bool {
+        let focused = self.state.focus_manager.window_history.front();
+        self.display_server
+            .load_config(&self.config, focused, &self.state.windows);
         self.state.load_config(&self.config);
         true
     }
@@ -58,6 +58,10 @@ where
 #[cfg(test)]
 impl Manager<crate::config::TestConfig, crate::display_servers::MockDisplayServer> {
     pub fn new_test(tags: Vec<String>) -> Self {
-        Self::new(crate::config::TestConfig { tags })
+        use crate::config::TestConfig;
+        Self::new(TestConfig {
+            tags,
+            ..TestConfig::default()
+        })
     }
 }

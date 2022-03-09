@@ -9,7 +9,7 @@ pub struct Margins {
 }
 
 impl Margins {
-    pub fn new(size: u32) -> Self {
+    pub const fn new(size: u32) -> Self {
         Self {
             top: size,
             right: size,
@@ -18,7 +18,7 @@ impl Margins {
         }
     }
 
-    pub fn new_from_pair(top_and_bottom: u32, left_and_right: u32) -> Self {
+    pub const fn new_from_pair(top_and_bottom: u32, left_and_right: u32) -> Self {
         Self {
             top: top_and_bottom,
             right: left_and_right,
@@ -27,7 +27,7 @@ impl Margins {
         }
     }
 
-    pub fn new_from_triple(top: u32, left_and_right: u32, bottom: u32) -> Self {
+    pub const fn new_from_triple(top: u32, left_and_right: u32, bottom: u32) -> Self {
         Self {
             top,
             right: left_and_right,

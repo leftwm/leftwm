@@ -26,10 +26,11 @@ pub struct State {
     pub active_scratchpads: HashMap<String, Option<u32>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
-    pub mousekey: String,
+    pub mousekey: Vec<String>,
     pub max_window_width: Option<Size>,
     pub default_width: i32,
     pub default_height: i32,
+    pub disable_tile_drag: bool,
 }
 
 impl State {
@@ -37,7 +38,7 @@ impl State {
         let layout_manager = LayoutManager::new(config);
         let mut tags = Tags::new();
         config.create_list_of_tag_labels().iter().for_each(|label| {
-            tags.add_new(label.as_str(), layout_manager.new_layout());
+            tags.add_new(label.as_str(), layout_manager.new_layout(None));
         });
         tags.add_new_hidden("NSP");
 
@@ -57,6 +58,7 @@ impl State {
             mousekey: config.mousekey(),
             default_width: config.default_width(),
             default_height: config.default_height(),
+            disable_tile_drag: config.disable_tile_drag(),
         }
     }
 
@@ -124,7 +126,7 @@ impl State {
         self.mousekey = config.mousekey();
         self.max_window_width = config.max_window_width();
         for win in &mut self.windows {
-            win.load_config(config);
+            config.load_window(win);
         }
         for ws in &mut self.workspaces {
             ws.load_config(config);
@@ -132,7 +134,7 @@ impl State {
     }
 
     /// Apply saved state to a running manager.
-    pub fn restore_state(&mut self, state: &State) {
+    pub fn restore_state(&mut self, state: &Self) {
         // Restore tags.
         for old_tag in state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {
@@ -182,6 +184,10 @@ impl State {
                 new_window.set_states(old_window.states());
                 ordered.push(new_window.clone());
                 self.windows.remove(index);
+
+                // Make the x server aware of any tag changes for the window.
+                let act = DisplayAction::SetWindowTags(new_window.handle, new_window.tags.clone());
+                self.actions.push_back(act);
             }
         });
         if had_strut {

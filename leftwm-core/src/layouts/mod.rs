@@ -53,13 +53,13 @@ pub const LAYOUTS: &[Layout] = &[
 
 impl Default for Layout {
     fn default() -> Self {
-        Layout::MainAndVertStack
+        Self::MainAndVertStack
     }
 }
 
 // This is tedious, but simple and effective.
 impl Layout {
-    pub fn update_windows(&self, workspace: &Workspace, windows: &mut Vec<&mut Window>, tag: &Tag) {
+    pub fn update_windows(&self, workspace: &Workspace, windows: &mut [&mut Window], tag: &Tag) {
         match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
                 main_and_vert_stack::update(workspace, tag, windows);
@@ -158,7 +158,6 @@ mod tests {
         w.border = 0;
         w.margin = Margins::new(0);
         let mut windows = vec![&mut w];
-        // let mut windows_filters: Vec<&mut Window> = windows.iter_mut().filter(|_f| true).collect();
         even_horizontal::update(&ws, &mut windows);
         assert!(
             w.height() == 600,

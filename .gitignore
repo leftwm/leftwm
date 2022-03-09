@@ -3,4 +3,8 @@
 leftwm.logs
 .idea/
 
+result
+.direnv
+.envrc
+
 sweep.timestamp

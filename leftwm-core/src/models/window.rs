@@ -2,7 +2,6 @@
 #![allow(clippy::module_name_repetitions)]
 use super::WindowState;
 use super::WindowType;
-use crate::config::Config;
 use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
@@ -18,6 +17,21 @@ pub enum WindowHandle {
     XlibHandle(xlib::Window),
 }
 
+impl std::convert::From<xlib::Window> for WindowHandle {
+    fn from(window: xlib::Window) -> Self {
+        WindowHandle::XlibHandle(window)
+    }
+}
+
+impl WindowHandle {
+    pub fn xlib_handle(self) -> Option<xlib::Window> {
+        match self {
+            WindowHandle::MockHandle(_) => None,
+            WindowHandle::XlibHandle(h) => Some(h),
+        }
+    }
+}
+
 /// Store Window information.
 // We allow this as we're not managing state directly. This could be refactored in the future.
 // TODO: Refactor floating
@@ -29,11 +43,12 @@ pub struct Window {
     visible: bool,
     pub can_resize: bool,
     is_floating: bool,
-    must_float: bool,
+    pub(crate) must_float: bool,
     floating: Option<Xyhw>,
     pub never_focus: bool,
     pub debugging: bool,
     pub name: Option<String>,
+    pub legacy_name: Option<String>,
     pub pid: Option<u32>,
     pub r#type: WindowType,
     pub tags: Vec<TagId>,
@@ -46,6 +61,9 @@ pub struct Window {
     pub start_loc: Option<Xyhw>,
     pub container_size: Option<Xyhw>,
     pub strut: Option<Xyhw>,
+    // Two strings that are within a XClassHint, kept separate for simpler comparing.
+    pub res_name: Option<String>,
+    pub res_class: Option<String>,
 }
 
 impl Window {
@@ -62,6 +80,7 @@ impl Window {
             never_focus: false,
             name,
             pid,
+            legacy_name: None,
             r#type: WindowType::Normal,
             tags: Vec::new(),
             border: 1,
@@ -74,17 +93,8 @@ impl Window {
             start_loc: None,
             container_size: None,
             strut: None,
-        }
-    }
-
-    pub(crate) fn load_config(&mut self, config: &impl Config) {
-        if self.r#type == WindowType::Normal {
-            self.margin = config.margin();
-            self.border = config.border_width();
-            self.must_float = config.always_float();
-        } else {
-            self.margin = Margins::new(0);
-            self.border = 0;
+            res_name: None,
+            res_class: None,
         }
     }
 
@@ -97,7 +107,6 @@ impl Window {
         self.visible
             || self.r#type == WindowType::Menu
             || self.r#type == WindowType::Splash
-            || self.r#type == WindowType::Dialog
             || self.r#type == WindowType::Toolbar
     }
 

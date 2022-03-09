@@ -2,7 +2,7 @@ use crate::models::Window;
 use crate::models::Workspace;
 
 /// Layout which gives each window full height, but splits the workspace width among them all.
-pub fn update(workspace: &Workspace, windows: &mut Vec<&mut Window>) {
+pub fn update(workspace: &Workspace, windows: &mut [&mut Window]) {
     let window_count = windows.len();
     let width_f = workspace.width_limited(window_count) as f32 / windows.len() as f32;
     let width = width_f.floor() as i32;

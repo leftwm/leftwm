@@ -12,7 +12,7 @@
 {{visible_open}}  {{ tag.name }}  {{visible_close}}
 {% elsif tag.busy  %}
 {{busy_open}}  {{ tag.name }}  {{busy_close}}
-{% else tag.visible  %}
+{% else %}
   {{ tag.name }}  
 {% endif %}
 {% endfor %}
