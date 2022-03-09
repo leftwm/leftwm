@@ -170,12 +170,6 @@ fn template_handler(
             liquid::model::Value::scalar(display.window_title),
         );
         globals.insert("workspace".into(), liquid::model::Value::Object(workspace));
-        //liquid only does time in utc. BUG: https://github.com/cobalt-org/liquid-rust/issues/332
-        //as a workaround we are setting a time locally
-        globals.insert(
-            "localtime".into(),
-            liquid::model::Value::scalar(get_localtime()),
-        );
         globals
     } else {
         let json = serde_json::to_string(&display)?;
@@ -197,11 +191,6 @@ fn template_handler(
     Ok(())
 }
 
-fn get_localtime() -> String {
-    let now = chrono::Local::now();
-    now.format("%m/%d/%Y %l:%M %p").to_string()
-}
-
 async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
     let base = BaseDirectories::with_prefix("leftwm")?;
     let socket_file = base.place_runtime_file("current_state.sock")?;
@@ -218,7 +207,7 @@ mod tests {
         let file_names = vec![
             "main.liquid",
             "_partial.liquid",
-            "߀nonascii-in-filename.liquid", // first char U07C0
+            "\u{7c0}nonascii-in-filename.liquid", // first char U07C0
             "1_partial.liquid",
             "_liquid.txt",
         ];
@@ -228,6 +217,6 @@ mod tests {
             .filter(|f_n| is_partial_filename(f_n))
             .collect::<Vec<&OsStr>>();
 
-        assert!(partials == vec![OsStr::new("_partial.liquid")])
+        assert!(partials == vec![OsStr::new("_partial.liquid")]);
     }
 }

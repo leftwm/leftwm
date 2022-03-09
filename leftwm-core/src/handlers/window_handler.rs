@@ -1,12 +1,12 @@
 use super::{Manager, Window, WindowChange, WindowType, Workspace};
-use crate::config::{Config, ScratchPad};
+use crate::child_process::exec_shell;
+use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::{Size, WindowHandle, WindowState, Xyhw, XyhwBuilder};
 use crate::state::State;
 use crate::utils::helpers;
-use crate::{child_process::exec_shell, models::FocusBehaviour};
 use std::env;
 use std::str::FromStr;
 
@@ -19,6 +19,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             return false;
         }
 
+        // Setup any predifined hooks.
+        self.config.setup_predefined_window(&mut window);
         let mut is_first = false;
         let mut on_same_tag = true;
         //Random value
@@ -31,14 +33,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut is_first,
             &mut on_same_tag,
         );
-        window.load_config(&self.config);
+        self.config.load_window(&mut window);
         insert_window(&mut self.state, &mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
-            && self.state.focus_manager.behaviour == FocusBehaviour::Sloppy
+            && self.state.focus_manager.behaviour.is_sloppy()
             && on_same_tag;
         //let the DS know we are managing this window
-        let act = DisplayAction::AddedWindow(window.handle, follow_mouse);
+        let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
         self.state.actions.push_back(act);
 
         //let the DS know the correct desktop to find this window
@@ -67,15 +69,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         // Find the next or previous window on the workspace.
         let new_handle = self.get_next_or_previous(handle);
         // If there is a parent we would want to focus it.
-        let transient = match self
-            .state
-            .windows
-            .iter()
-            .find(|w| &w.handle == handle)
-            .map(|w| w.transient)
-        {
-            Some(transient) => transient,
-            None => None,
+        let (transient, floating) = match self.state.windows.iter().find(|w| &w.handle == handle) {
+            Some(window) => (window.transient, window.floating()),
+            None => (None, false),
         };
         self.state
             .focus_manager
@@ -89,7 +85,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let focused = self.state.focus_manager.window_history.get(0);
         //make sure focus is recalculated if we closed the currently focused window
         if focused == Some(&Some(*handle)) {
-            if self.state.focus_manager.behaviour == FocusBehaviour::Sloppy {
+            if self.state.focus_manager.behaviour.is_sloppy() {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
             } else if let Some(parent) =
@@ -99,7 +95,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             } else if let Some(handle) = new_handle {
                 self.state.focus_window(&handle);
             } else {
-                let act = DisplayAction::Unfocus(Some(*handle));
+                let act = DisplayAction::Unfocus(Some(*handle), floating);
                 self.state.actions.push_back(act);
                 self.state.focus_manager.window_history.push_front(None);
             }
@@ -227,29 +223,25 @@ fn setup_window(
     is_first: &mut bool,
     on_same_tag: &mut bool,
 ) {
-    //When adding a window we add to the workspace under the cursor, This isn't necessarily the
-    //focused workspace. If the workspace is empty, it might not have received focus. This is so
-    //the workspace that has windows on its is still active not the empty workspace.
+    // When adding a window we add to the workspace under the cursor, This isn't necessarily the
+    // focused workspace. If the workspace is empty, it might not have received focus. This is so
+    // the workspace that has windows on its is still active not the empty workspace.
     let ws: Option<&Workspace> = state
         .workspaces
         .iter()
-        .find(|ws| {
-            ws.xyhw.contains_point(xy.0, xy.1)
-                && state.focus_manager.behaviour == FocusBehaviour::Sloppy
-        })
+        .find(|ws| ws.xyhw.contains_point(xy.0, xy.1) && state.focus_manager.behaviour.is_sloppy())
         .or_else(|| state.focus_manager.workspace(&state.workspaces)); //backup plan
 
     if let Some(ws) = ws {
         let for_active_workspace =
             |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
         *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
-        window.tags = find_terminal(state, window.pid).map_or_else(
-            || ws.tags.clone(),
-            |terminal| {
-                *on_same_tag = ws.tags == terminal.tags;
-                terminal.tags.clone()
-            },
-        );
+        // May have been set by a predefined tag.
+        if window.tags.is_empty() {
+            window.tags = find_terminal(state, window.pid)
+                .map_or_else(|| ws.tags.clone(), |terminal| terminal.tags.clone());
+        }
+        *on_same_tag = ws.tags == window.tags;
         *layout = ws.layout;
 
         if is_scratchpad(state, window) {
@@ -356,8 +348,27 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
         return;
     }
 
-    // Past special cases we just push the winodw to the bottom.
-    state.windows.push(window.clone());
+    let current_index = state
+        .focus_manager
+        .window(&state.windows)
+        .and_then(|current| {
+            state
+                .windows
+                .iter()
+                .position(|w| w.handle == current.handle)
+        })
+        .unwrap_or(0);
+
+    // Past special cases we just insert the window based on the configured insert behavior
+    match state.insert_behavior {
+        InsertBehavior::Top => state.windows.insert(0, window.clone()),
+        InsertBehavior::Bottom => state.windows.push(window.clone()),
+        InsertBehavior::BeforeCurrent => state.windows.insert(current_index, window.clone()),
+        InsertBehavior::AfterCurrent if current_index < state.windows.len() => {
+            state.windows.insert(current_index + 1, window.clone());
+        }
+        InsertBehavior::AfterCurrent => state.windows.insert(current_index, window.clone()),
+    }
 }
 
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
@@ -367,7 +378,11 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         || ws.center_halfed(),
         |mut requested| {
             requested.center_relative(outer, window.border);
-            requested
+            if ws.xyhw.contains_xyhw(&requested) {
+                requested
+            } else {
+                ws.center_halfed()
+            }
         },
     );
     window.set_floating_exact(xyhw);
@@ -455,5 +470,124 @@ fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32
         }
         Some(Size::Pixel(pixel)) if (0..=max_pixel).contains(&pixel) => pixel,
         _ => Size::Ratio(default_ratio).into_absolute(max_pixel),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Screen;
+    use crate::Manager;
+
+    #[test]
+    fn insert_behavior_bottom_add_window_at_the_end_of_the_stack() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.state.insert_behavior = InsertBehavior::Bottom;
+
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = vec![WindowHandle::MockHandle(1), WindowHandle::MockHandle(2)];
+
+        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn insert_behavior_top_add_window_at_the_top_of_the_stack() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.state.insert_behavior = InsertBehavior::Top;
+
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = vec![WindowHandle::MockHandle(2), WindowHandle::MockHandle(1)];
+        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn insert_behavior_after_current_add_window_after_the_current_window() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.state.insert_behavior = InsertBehavior::AfterCurrent;
+
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(3), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = vec![
+            WindowHandle::MockHandle(1),
+            WindowHandle::MockHandle(3),
+            WindowHandle::MockHandle(2),
+        ];
+        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn insert_behavior_before_current_add_window_before_the_current_window() {
+        let mut manager = Manager::new_test(vec![]);
+        manager.state.insert_behavior = InsertBehavior::BeforeCurrent;
+
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(3), None, None),
+            -1,
+            -1,
+        );
+
+        let expected = vec![
+            WindowHandle::MockHandle(2),
+            WindowHandle::MockHandle(3),
+            WindowHandle::MockHandle(1),
+        ];
+        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+
+        assert_eq!(actual, expected);
     }
 }

@@ -2,6 +2,7 @@
 use crate::layouts::Layout;
 use crate::models::TagId;
 use crate::Command;
+use std::env;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tokio::fs;
@@ -54,6 +55,15 @@ impl CommandPipe {
         Ok(Self { pipe_file, rx })
     }
 
+    pub fn pipe_name() -> PathBuf {
+        let display = env::var("DISPLAY")
+            .ok()
+            .and_then(|d| d.rsplit_once(':').map(|(_, r)| r.to_owned()))
+            .unwrap_or_else(|| "0".to_string());
+
+        PathBuf::from(format!("command-{}.pipe", display))
+    }
+
     pub async fn read_command(&mut self) -> Option<Command> {
         self.rx.recv().await
     }
@@ -92,7 +102,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleFloating" => Ok(Command::ToggleFloating),
         "MoveWindowUp" => Ok(Command::MoveWindowUp),
         "MoveWindowDown" => Ok(Command::MoveWindowDown),
-        "MoveWindowTop" => Ok(Command::MoveWindowTop),
+        "MoveWindowTop" => build_move_window_top(s),
         "FocusWindowUp" => Ok(Command::FocusWindowUp),
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
         "FocusWindowTop" => build_focus_window_top(s),
@@ -124,7 +134,10 @@ fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Er
     let headless = without_head(raw, "SendWindowToTag ");
     let parts: Vec<&str> = headless.split(' ').collect();
     let tag_id: TagId = parts.get(0).ok_or("missing argument tag_id")?.parse()?;
-    Ok(Command::SendWindowToTag(tag_id))
+    Ok(Command::SendWindowToTag {
+        window: None,
+        tag: tag_id,
+    })
 }
 
 fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
@@ -155,8 +168,15 @@ fn build_set_margin_multiplier(raw: &str) -> Result<Command, Box<dyn std::error:
 fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "FocusWindowTop ");
     let parts: Vec<&str> = headless.split(' ').collect();
-    let toggle = bool::from_str(parts.get(0).unwrap_or(&"false"))?;
-    Ok(Command::FocusWindowTop(toggle))
+    let swap = bool::from_str(parts.get(0).unwrap_or(&"false"))?;
+    Ok(Command::FocusWindowTop { swap })
+}
+
+fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "MoveWindowTop ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let swap = bool::from_str(parts.get(0).unwrap_or(&"true"))?;
+    Ok(Command::MoveWindowTop { swap })
 }
 
 fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {

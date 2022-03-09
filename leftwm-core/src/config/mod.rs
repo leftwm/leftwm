@@ -1,3 +1,4 @@
+mod insert_behavior;
 mod keybind;
 mod scratchpad;
 mod workspace_config;
@@ -5,8 +6,9 @@ mod workspace_config;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
-use crate::models::{LayoutMode, Manager};
+use crate::models::{LayoutMode, Manager, Window, WindowType};
 use crate::state::State;
+pub use insert_behavior::InsertBehavior;
 pub use keybind::Keybind;
 pub use scratchpad::ScratchPad;
 pub use workspace_config::Workspace;
@@ -21,13 +23,15 @@ pub trait Config {
 
     fn focus_behaviour(&self) -> FocusBehaviour;
 
-    fn mousekey(&self) -> String;
+    fn mousekey(&self) -> Vec<String>;
 
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
 
     fn layouts(&self) -> Vec<Layout>;
 
     fn layout_mode(&self) -> LayoutMode;
+
+    fn insert_behavior(&self) -> InsertBehavior;
 
     fn focus_new_windows(&self) -> bool;
 
@@ -49,6 +53,7 @@ pub trait Config {
     fn on_new_window_cmd(&self) -> Option<String>;
     fn get_list_of_gutters(&self) -> Vec<Gutter>;
     fn max_window_width(&self) -> Option<Size>;
+    fn disable_tile_drag(&self) -> bool;
 
     /// Attempt to write current state to a file.
     ///
@@ -59,12 +64,30 @@ pub trait Config {
 
     /// Load saved state if it exists.
     fn load_state(&self, state: &mut State);
+
+    /// Handle window placement based on `WM_CLASS`
+    fn setup_predefined_window(&self, window: &mut Window) -> bool;
+
+    fn load_window(&self, window: &mut Window) {
+        if window.r#type == WindowType::Normal {
+            window.margin = self.margin();
+            window.border = self.border_width();
+            window.must_float = self.always_float();
+        } else {
+            window.margin = Margins::new(0);
+            window.border = 0;
+        }
+    }
 }
 
 #[cfg(test)]
 #[allow(clippy::module_name_repetitions)]
+#[derive(Default)]
 pub struct TestConfig {
     pub tags: Vec<String>,
+    pub layouts: Vec<Layout>,
+    pub workspaces: Option<Vec<Workspace>>,
+    pub insert_behavior: InsertBehavior,
 }
 
 #[cfg(test)]
@@ -76,23 +99,28 @@ impl Config for TestConfig {
         self.tags.clone()
     }
     fn workspaces(&self) -> Option<Vec<Workspace>> {
-        unimplemented!()
+        self.workspaces.clone()
     }
     fn focus_behaviour(&self) -> FocusBehaviour {
         FocusBehaviour::ClickTo
     }
-    fn mousekey(&self) -> String {
-        "Mod4".to_string()
+    fn mousekey(&self) -> Vec<String> {
+        vec!["Mod4".to_owned()]
     }
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
         vec![]
     }
     fn layouts(&self) -> Vec<Layout> {
-        vec![]
+        self.layouts.clone()
     }
     fn layout_mode(&self) -> LayoutMode {
         LayoutMode::Workspace
     }
+
+    fn insert_behavior(&self) -> InsertBehavior {
+        self.insert_behavior
+    }
+
     fn focus_new_windows(&self) -> bool {
         false
     }
@@ -147,11 +175,22 @@ impl Config for TestConfig {
     fn max_window_width(&self) -> Option<Size> {
         None
     }
+    fn disable_tile_drag(&self) -> bool {
+        false
+    }
     fn save_state(&self, _state: &State) {
         unimplemented!()
     }
     fn load_state(&self, _state: &mut State) {
         unimplemented!()
+    }
+    fn setup_predefined_window(&self, window: &mut Window) -> bool {
+        if window.res_class == Some("ShouldGoToTag2".to_string()) {
+            window.tags = vec![2];
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -159,6 +198,8 @@ impl Config for TestConfig {
 mod tests {
     use super::*;
     use crate::models::Screen;
+    use crate::models::Window;
+    use crate::models::WindowHandle;
 
     #[test]
     fn ensure_command_handler_trait_boundary() {
@@ -166,5 +207,15 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         assert!(TestConfig::command_handler("GoToTag2", &mut manager));
         assert_eq!(manager.state.focus_manager.tag_history, &[2, 1]);
+    }
+
+    #[test]
+    fn check_wm_class_is_associated_with_predefined_tag() {
+        let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
+        manager.screen_create_handler(Screen::default());
+        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
+        subject.res_class = Some("ShouldGoToTag2".to_string());
+        manager.window_created_handler(subject, 0, 0);
+        assert!(manager.state.windows.iter().all(|w| w.has_tag(&2)));
     }
 }

@@ -7,10 +7,10 @@ if [ -x "$(command -v feh)" ]; then
   feh --bg-scale $SCRIPTPATH/down.jpg
 fi
 
-echo "UnloadTheme" > $XDG_RUNTIME_DIR/leftwm/commands.pipe
+leftwm-command "UnloadTheme"
 
 pkill lemonbar
 pkill compton
-pkill picom 
+pkill picom
 pkill lemonbar
 

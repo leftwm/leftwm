@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{layouts::Layout, models::WindowHandle, Window, Workspace};
+use crate::{layouts::Layout, Window, Workspace};
 
 use super::TagId;
 
@@ -48,8 +48,8 @@ pub struct Tags {
 
 impl Tags {
     /// Create a new empty Taglist
-    pub fn new() -> Self {
-        Tags {
+    pub const fn new() -> Self {
+        Self {
             normal: vec![],
             hidden: vec![],
         }
@@ -111,7 +111,7 @@ impl Tags {
     }
 
     /// Get all normal tags
-    pub fn normal(&self) -> &Vec<Tag> {
+    pub const fn normal(&self) -> &Vec<Tag> {
         &self.normal
     }
 
@@ -228,8 +228,8 @@ pub struct Tag {
 
 impl Tag {
     #[must_use]
-    pub fn new(id: TagId, label: &str, layout: Layout) -> Tag {
-        Tag {
+    pub fn new(id: TagId, label: &str, layout: Layout) -> Self {
+        Self {
             id,
             label: label.to_owned(),
             hidden: false,
@@ -241,7 +241,7 @@ impl Tag {
         }
     }
 
-    pub fn update_windows(&self, windows: &mut Vec<Window>, workspace: &Workspace) {
+    pub fn update_windows(&self, windows: &mut [Window], workspace: &Workspace) {
         if let Some(window) = windows
             .iter_mut()
             .find(|w| w.has_tag(&self.id) && w.is_fullscreen())
@@ -253,7 +253,7 @@ impl Tag {
                 .iter_mut()
                 .filter(|w| {
                     w.has_tag(&self.id)
-                        && w.transient.unwrap_or(WindowHandle::XlibHandle(0)) == handle
+                        && w.transient.unwrap_or_else(|| 0.into()) == handle
                         && !w.is_unmanaged()
                 })
                 .for_each(|w| {
