@@ -12,6 +12,7 @@ mod even_horizontal;
 mod even_vertical;
 mod fibonacci;
 mod grid_horizontal;
+mod left_main;
 mod main_and_deck;
 mod main_and_horizontal_stack;
 mod main_and_vert_stack;
@@ -27,6 +28,7 @@ pub enum Layout {
     EvenHorizontal,
     EvenVertical,
     Fibonacci,
+    LeftMain,
     CenterMain,
     CenterMainBalanced,
     CenterMainFluid,
@@ -43,6 +45,7 @@ pub const LAYOUTS: &[Layout] = &[
     Layout::EvenHorizontal,
     Layout::EvenVertical,
     Layout::Fibonacci,
+    Layout::LeftMain,
     Layout::CenterMain,
     Layout::CenterMainBalanced,
     Layout::CenterMainFluid,
@@ -72,6 +75,7 @@ impl Layout {
             Self::EvenHorizontal => even_horizontal::update(workspace, windows),
             Self::EvenVertical => even_vertical::update(workspace, windows),
             Self::Fibonacci => fibonacci::update(workspace, tag, windows),
+            Self::LeftMain => left_main::update(workspace, tag, windows),
             Self::CenterMain => center_main::update(workspace, tag, windows),
             Self::CenterMainBalanced => center_main_balanced::update(workspace, tag, windows),
             Self::CenterMainFluid => center_main_fluid::update(workspace, tag, windows),
@@ -120,6 +124,7 @@ impl FromStr for Layout {
             "EvenHorizontal" => Ok(Self::EvenHorizontal),
             "EvenVertical" => Ok(Self::EvenVertical),
             "Fibonacci" => Ok(Self::Fibonacci),
+            "LeftMain" => Ok(Self::LeftMain),
             "CenterMain" => Ok(Self::CenterMain),
             "CenterMainBalanced" => Ok(Self::CenterMainBalanced),
             "CenterMainFluid" => Ok(Self::CenterMainFluid),
@@ -168,7 +173,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let layout_strs: [&str; 13] = [
+        let layout_strs: [&str; 14] = [
             "MainAndVertStack",
             "MainAndHorizontalStack",
             "MainAndDeck",
@@ -176,6 +181,7 @@ mod tests {
             "EvenHorizontal",
             "EvenVertical",
             "Fibonacci",
+            "LeftMain",
             "CenterMain",
             "CenterMainBalanced",
             "CenterMainFluid",
