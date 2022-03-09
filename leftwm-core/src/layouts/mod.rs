@@ -173,7 +173,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let layout_strs: [&str; 13] = [
+        let layout_strs: [&str; 14] = [
             "MainAndVertStack",
             "MainAndHorizontalStack",
             "MainAndDeck",
