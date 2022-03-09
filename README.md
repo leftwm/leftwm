@@ -478,7 +478,7 @@ only the layouts you specify.
 Example:
 
 ```toml
-layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain"]
+layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"]
 ```
 
 Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.

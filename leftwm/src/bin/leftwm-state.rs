@@ -207,7 +207,7 @@ mod tests {
         let file_names = vec![
             "main.liquid",
             "_partial.liquid",
-            "߀nonascii-in-filename.liquid", // first char U07C0
+            "\u{7c0}nonascii-in-filename.liquid", // first char U07C0
             "1_partial.liquid",
             "_liquid.txt",
         ];
