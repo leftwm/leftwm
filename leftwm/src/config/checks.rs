@@ -44,8 +44,7 @@ impl Config {
     /// Checks to see if value is provided (if required)
     /// Checks to see if keys are valid against Xkeysym
     /// Ideally, we will pass this to the command handler with a dummy config
-    #[must_use]
-    pub fn check_keybinds(&self, verbose: bool) -> bool {
+    pub fn check_keybinds(&self, verbose: bool) {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
         let mut bindings = HashSet::new();
