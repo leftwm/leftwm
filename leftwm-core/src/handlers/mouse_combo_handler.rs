@@ -64,7 +64,7 @@ impl State {
             }
             xlib::Button1 | xlib::Button3 if self.focus_manager.behaviour.is_clickto() => {
                 self.focus_window(&window);
-                None
+                Some(DisplayAction::ReplayClick(window, button))
             }
             _ => None,
         }
