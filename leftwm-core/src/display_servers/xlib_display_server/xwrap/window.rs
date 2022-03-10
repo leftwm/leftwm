@@ -212,7 +212,7 @@ impl XWrap {
             // Make sure the window is mapped.
             unsafe { (self.xlib.XMapWindow)(self.display, window) };
             // Regrab the mouse clicks.
-            if self.focus_behaviour == FocusBehaviour::ClickTo {
+            if self.focus_behaviour.is_clickto() {
                 self.grab_mouse_clicks(window, false);
             }
         } else {
@@ -232,15 +232,12 @@ impl XWrap {
     pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             // Play a click when in ClickToFocus.
-<<<<<<< dirty_clickto_fix
-            // if self.focus_behaviour == FocusBehaviour::ClickTo {
-            //     self.replay_click(handle);
+
+            // fix by commenting line
+            // if self.focus_behaviour.is_clickto() {
+            //     self.replay_click();
             // }
-=======
-            if self.focus_behaviour.is_clickto() {
-                self.replay_click();
-            }
->>>>>>> main
+
             // Update previous window.
             if let Some(previous) = previous {
                 if let WindowHandle::XlibHandle(previous_handle) = previous.handle {
@@ -250,13 +247,8 @@ impl XWrap {
                         self.colors.normal
                     };
                     self.set_window_border_color(previous_handle, color);
-<<<<<<< dirty_clickto_fix
-                    // Open up clicking on the previously focused window.
-                    if self.focus_behaviour == FocusBehaviour::ClickTo {
-=======
                     // Open up button1 clicking on the previously focused window.
                     if self.focus_behaviour.is_clickto() {
->>>>>>> main
                         self.grab_mouse_clicks(previous_handle, false);
                     }
                 }
