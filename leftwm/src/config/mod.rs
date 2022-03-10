@@ -13,7 +13,7 @@ use super::ThemeSetting;
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
-    config::{ScratchPad, Workspace},
+    config::{InsertBehavior, ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
     state::State,
@@ -93,6 +93,7 @@ pub struct Config {
     pub max_window_width: Option<Size>,
     pub layouts: Vec<Layout>,
     pub layout_mode: LayoutMode,
+    pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
     pub window_rules: Option<Vec<WindowHook>>,
     // If you are on tag "1" and you goto tag "1" this takes you to the previous tag.
@@ -319,6 +320,10 @@ impl leftwm_core::Config for Config {
         self.layout_mode
     }
 
+    fn insert_behavior(&self) -> InsertBehavior {
+        self.insert_behavior
+    }
+
     fn focus_new_windows(&self) -> bool {
         self.focus_new_windows
     }
@@ -474,9 +479,8 @@ impl leftwm_core::Config for Config {
                     hook.spawn_floating,
                 );
                 return true;
-            } else {
-                return false;
             }
+            return false;
         }
         false
     }

@@ -2,6 +2,7 @@ use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
+use crate::utils::xkeysym_lookup::Button;
 use serde::{Deserialize, Serialize};
 
 /// These are responses from the Window manager.
@@ -47,6 +48,8 @@ pub enum DisplayAction {
 
     /// To the window under the cursor to take the focus.
     FocusWindowUnderCursor,
+
+    ReplayClick(WindowHandle, Button),
 
     /// Tell the DM we are ready to resize this window.
     ReadyToResizeWindow(WindowHandle),

@@ -22,13 +22,17 @@ pub enum Command {
     ToggleFloating,
     MoveWindowUp,
     MoveWindowDown,
-    MoveWindowTop,
+    MoveWindowTop {
+        swap: bool,
+    },
     FocusNextTag,
     FocusPreviousTag,
     FocusWindow(String),
     FocusWindowUp,
     FocusWindowDown,
-    FocusWindowTop(bool),
+    FocusWindowTop {
+        swap: bool,
+    },
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     SendWindowToTag {

@@ -211,7 +211,13 @@ impl XWrap {
             self.set_wm_states(window, &[NORMAL_STATE]);
             // Make sure the window is mapped.
             unsafe { (self.xlib.XMapWindow)(self.display, window) };
+            // Regrab the mouse clicks.
+            if self.focus_behaviour.is_clickto() {
+                self.grab_mouse_clicks(window, false);
+            }
         } else {
+            // Ungrab the mouse clicks.
+            self.ungrab_buttons(window);
             // Make sure the window is unmapped.
             unsafe { (self.xlib.XUnmapWindow)(self.display, window) };
             // Set WM_STATE to iconic state.
@@ -226,9 +232,12 @@ impl XWrap {
     pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             // Play a click when in ClickToFocus.
-            if self.focus_behaviour.is_clickto() {
-                self.replay_click();
-            }
+
+            // fix by commenting line
+            // if self.focus_behaviour.is_clickto() {
+            //     self.replay_click();
+            // }
+
             // Update previous window.
             if let Some(previous) = previous {
                 if let WindowHandle::XlibHandle(previous_handle) = previous.handle {
@@ -272,6 +281,7 @@ impl XWrap {
                 // Tell the window to take focus
                 self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
             }
+            self.sync();
         }
     }
 

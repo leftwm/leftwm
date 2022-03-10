@@ -212,7 +212,8 @@ impl Default for Config {
             disable_tile_drag: false,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
             focus_new_windows: true, // default behaviour: focuses windows on creation
-            modkey: "Mod4".to_owned(), //win key
+            insert_behavior: leftwm_core::config::InsertBehavior::Bottom,
+            modkey: "Mod4".to_owned(),     //win key
             mousekey: Some("Mod4".into()), //win key
             #[cfg(feature = "lefthk")]
             keybind: commands,
