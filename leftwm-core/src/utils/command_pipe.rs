@@ -262,4 +262,45 @@ mod test {
             assert!(!pipe_file.exists());
         }
     }
+
+    #[test]
+    fn build_toggle_scratchpad_without_parameter() {
+        assert!(build_toggle_scratchpad("").is_err());
+    }
+
+    #[test]
+    fn build_send_window_to_tag_without_parameter() {
+        assert!(build_send_window_to_tag("").is_err());
+    }
+
+    #[test]
+    fn build_send_workspace_to_tag_without_parameter() {
+        assert!(build_send_workspace_to_tag("").is_err());
+    }
+
+    #[test]
+    fn build_set_layout_without_parameter() {
+        assert!(build_set_layout("").is_err());
+    }
+
+    #[test]
+    fn build_set_margin_multiplier_without_parameter() {
+        assert!(build_set_margin_multiplier("").is_err());
+    }
+
+    #[test]
+    fn build_move_window_top_without_parameter() {
+        assert_eq!(
+            build_move_window_top("").unwrap(),
+            Command::MoveWindowTop { swap: true }
+        );
+    }
+
+    #[test]
+    fn build_focus_window_top_without_parameter() {
+        assert_eq!(
+            build_focus_window_top("").unwrap(),
+            Command::FocusWindowTop { swap: false }
+        );
+    }
 }
