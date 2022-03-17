@@ -118,7 +118,8 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SetMarginMultiplier(multiplier) => set_margin_multiplier(state, *multiplier),
         Command::SendWorkspaceToTag(ws_index, tag_index) => {
             Some(send_workspace_to_tag(state, *ws_index, *tag_index))
-        }
+        },
+        Command::CloseAllOtherWindows => close_all_other_windows(state),
         Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
 }
@@ -689,6 +690,24 @@ fn focus_window_top(state: &mut State, swap: bool) -> Option<bool> {
         _ => {}
     }
     None
+}
+
+fn close_all_other_windows(state: &mut State) -> Option<bool> {
+    let current_window: Option<WindowHandle> = state.focus_manager.window(&state.windows).map(|w| w.handle);
+    let current_workspace = state.focus_manager.workspace(&state.workspaces);
+
+    if current_window.is_none() {
+        return Some(false);
+    }
+
+    for window in &state.windows {
+        if window.handle.ne(&current_window.unwrap()) && current_workspace.unwrap().is_displaying(&window) {
+            let act = DisplayAction::KillWindow(window.handle);
+            state.actions.push_back(act);
+        }
+
+    }
+    Some(true)
 }
 
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
