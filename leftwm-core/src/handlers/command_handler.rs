@@ -64,7 +64,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowTop { swap } => move_focus_common_vars!(move_window_top(state, *swap)),
 
         Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
-        Command::GoToPreviousTag => goto_previous_tag(state),
+        Command::ReturnToLastTag => return_to_last_tag(state),
 
         Command::CloseWindow => close_window(state),
         Command::SwapScreens => swap_tags(state),
@@ -301,7 +301,7 @@ fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Opti
     state.goto_tag_handler(destination_tag)
 }
 
-fn goto_previous_tag(state: &mut State) -> Option<bool> {
+fn return_to_last_tag(state: &mut State) -> Option<bool> {
     let previous_tag = state.focus_manager.tag(1).unwrap_or_default();
     state.goto_tag_handler(previous_tag)
 }
@@ -769,7 +769,7 @@ mod tests {
     use crate::models::Tags;
 
     #[test]
-    fn go_to_previous_tag_should_go_to_previous_tag() {
+    fn return_to_last_tag_should_go_back_to_last_tag() {
         let mut manager = Manager::new_test(vec![
             "A15".to_string(),
             "B24".to_string(),
@@ -795,7 +795,7 @@ mod tests {
         let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
         assert_eq!(current_tag, 2);
 
-        manager.command_handler(&Command::GoToPreviousTag);
+        manager.command_handler(&Command::ReturnToLastTag);
         let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
         assert_eq!(current_tag, 1);
     }
