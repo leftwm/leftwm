@@ -65,7 +65,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
         Command::GoToPreviousTag => goto_previous_tag(state),
-        
+
         Command::CloseWindow => close_window(state),
         Command::SwapScreens => swap_tags(state),
         Command::MoveWindowToLastWorkspace => move_to_last_workspace(state),
