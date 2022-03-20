@@ -241,7 +241,7 @@ impl XWrap {
             // Update previous window.
             if let Some(previous) = previous {
                 if let WindowHandle::XlibHandle(previous_handle) = previous.handle {
-                    let color = if window.floating() {
+                    let color = if previous.floating() {
                         self.colors.floating
                     } else {
                         self.colors.normal
