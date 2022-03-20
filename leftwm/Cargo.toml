@@ -45,6 +45,7 @@ tempfile = "3.2.0"
 [features]
 default = ["slog-term"]
 journald = ["slog-journald", "slow-dm-fix"]
+localtime = []
 
 # Sleep on restart
 slow-dm-fix = []

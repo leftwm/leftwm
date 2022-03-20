@@ -170,6 +170,13 @@ fn template_handler(
             liquid::model::Value::scalar(display.window_title),
         );
         globals.insert("workspace".into(), liquid::model::Value::Object(workspace));
+
+        #[cfg(feature = "localtime")]
+        globals.insert(
+            "localtime".into(),
+            liquid::model::Value::scalar(get_localtime()),
+        );
+
         globals
     } else {
         let json = serde_json::to_string(&display)?;
@@ -196,6 +203,17 @@ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
     let socket_file = base.place_runtime_file("current_state.sock")?;
     let stream = UnixStream::connect(socket_file).await?;
     Ok(BufReader::new(stream).lines())
+}
+
+#[cfg(feature = "localtime")]
+fn get_localtime() -> String {
+    let format = time_leftwm::format_description::parse(r"[month]/[day]/[year] [hour]:[minute]:[second] [offset_hour sign:mandatory]:[offset_minute]").unwrap();
+    match time_leftwm::OffsetDateTime::now_local() {
+        Ok(time) => time
+            .format(&format)
+            .unwrap_or(String::from("Failed to format time.")),
+        Err(err) => String::from(format!("Failed to get time. {:?}", err)),
+    }
 }
 
 #[cfg(test)]
