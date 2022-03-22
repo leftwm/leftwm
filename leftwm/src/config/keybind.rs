@@ -40,6 +40,7 @@ impl Keybind {
                 tag: usize::from_str(&self.value).context("invalid index value for GotoTag")?,
                 swap: !config.disable_current_tag_swap,
             },
+            BaseCommand::ReturnToLastTag => leftwm_core::Command::ReturnToLastTag,
             BaseCommand::FloatingToTile => leftwm_core::Command::FloatingToTile,
             BaseCommand::TileToFloating => leftwm_core::Command::TileToFloating,
             BaseCommand::ToggleFloating => leftwm_core::Command::ToggleFloating,
