@@ -698,7 +698,10 @@ fn close_all_other_windows(state: &mut State) -> Option<bool> {
     let current_workspace = state.focus_manager.workspace(&state.workspaces);
 
     for window in &state.windows {
-        if window.handle.ne(&current_window?) && current_workspace?.is_displaying(window) {
+        if window.handle.ne(&current_window?)
+            && current_workspace?.is_displaying(window)
+            && window.r#type.ne(&WindowType::Normal)
+        {
             let act = DisplayAction::KillWindow(window.handle);
             state.actions.push_back(act);
         }
