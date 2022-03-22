@@ -119,6 +119,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "SendWindowToTag" => build_send_window_to_tag(rest),
         "SetLayout" => build_set_layout(rest),
         "SetMarginMultiplier" => build_set_margin_multiplier(rest),
+        "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
         _ => Ok(Command::Other(s.into())),
     }
 }
