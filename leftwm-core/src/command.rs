@@ -18,6 +18,7 @@ pub enum Command {
         tag: TagId,
         swap: bool,
     },
+    ReturnToLastTag,
     FloatingToTile,
     TileToFloating,
     ToggleFloating,

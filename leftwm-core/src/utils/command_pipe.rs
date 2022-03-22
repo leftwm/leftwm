@@ -88,7 +88,7 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
 }
 
 fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let head = *s.split(' ').collect::<Vec<&str>>().get(0).unwrap_or(&"");
+    let (head, rest) = s.split_once(' ').unwrap_or((s, ""));
     match head {
         "SoftReload" => Ok(Command::SoftReload),
         "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
@@ -102,10 +102,10 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleFloating" => Ok(Command::ToggleFloating),
         "MoveWindowUp" => Ok(Command::MoveWindowUp),
         "MoveWindowDown" => Ok(Command::MoveWindowDown),
-        "MoveWindowTop" => build_move_window_top(s),
+        "MoveWindowTop" => build_move_window_top(rest),
         "FocusWindowUp" => Ok(Command::FocusWindowUp),
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
-        "FocusWindowTop" => build_focus_window_top(s),
+        "FocusWindowTop" => build_focus_window_top(rest),
         "FocusNextTag" => Ok(Command::FocusNextTag),
         "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
@@ -114,27 +114,31 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "PreviousLayout" => Ok(Command::PreviousLayout),
         "RotateTag" => Ok(Command::RotateTag),
         "CloseWindow" => Ok(Command::CloseWindow),
-        "ToggleScratchPad" => build_toggle_scratchpad(s),
-        "SendWorkspaceToTag" => build_send_workspace_to_tag(s),
-        "SendWindowToTag" => build_send_window_to_tag(s),
-        "SetLayout" => build_set_layout(s),
-        "SetMarginMultiplier" => build_set_margin_multiplier(s),
+        "ToggleScratchPad" => build_toggle_scratchpad(rest),
+        "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
+        "SendWindowToTag" => build_send_window_to_tag(rest),
+        "SetLayout" => build_set_layout(rest),
+        "SetMarginMultiplier" => build_set_margin_multiplier(rest),
         "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
         _ => Ok(Command::Other(s.into())),
     }
 }
 
 fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "ToggleScratchPad ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let name = *parts.get(0).ok_or("missing argument scratchpad's name")?;
+    let name = if raw.is_empty() {
+        return Err("missing argument scratchpad's name".into());
+    } else {
+        raw
+    };
     Ok(Command::ToggleScratchPad(name.to_string()))
 }
 
 fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "SendWindowToTag ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let tag_id: TagId = parts.get(0).ok_or("missing argument tag_id")?.parse()?;
+    let tag_id = if raw.is_empty() {
+        return Err("missing argument tag_id".into());
+    } else {
+        TagId::from_str(raw)?
+    };
     Ok(Command::SendWindowToTag {
         window: None,
         tag: tag_id,
@@ -142,49 +146,52 @@ fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Er
 }
 
 fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "SendWorkspaceToTag ");
-    let parts: Vec<&str> = headless.split(' ').collect();
+    if raw.is_empty() {
+        return Err("missing argument workspace index".into());
+    }
+    let mut parts = raw.split(' ');
     let ws_index: usize = parts
-        .get(0)
-        .ok_or("missing argument workspace index")?
+        .next()
+        .expect("split() always returns an array of at least 1 element")
         .parse()?;
-    let tag_index: usize = parts.get(1).ok_or("missing argument tag index")?.parse()?;
+    let tag_index: usize = parts.next().ok_or("missing argument tag index")?.parse()?;
     Ok(Command::SendWorkspaceToTag(ws_index, tag_index))
 }
 
 fn build_set_layout(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "SetLayout ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let layout_name = *parts.get(0).ok_or("missing layout name")?;
+    let layout_name = if raw.is_empty() {
+        return Err("missing layout name".into());
+    } else {
+        raw
+    };
     Ok(Command::SetLayout(Layout::from_str(layout_name)?))
 }
 
 fn build_set_margin_multiplier(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "SetMarginMultiplier ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let margin_multiplier = f32::from_str(parts.get(0).ok_or("missing argument multiplier")?)?;
+    let margin_multiplier = if raw.is_empty() {
+        return Err("missing argument multiplier".into());
+    } else {
+        f32::from_str(raw)?
+    };
     Ok(Command::SetMarginMultiplier(margin_multiplier))
 }
 
 fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "FocusWindowTop ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let swap = bool::from_str(parts.get(0).unwrap_or(&"false"))?;
+    let swap = if raw.is_empty() {
+        false
+    } else {
+        bool::from_str(raw)?
+    };
     Ok(Command::FocusWindowTop { swap })
 }
 
 fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "MoveWindowTop ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let swap = bool::from_str(parts.get(0).unwrap_or(&"true"))?;
+    let swap = if raw.is_empty() {
+        true
+    } else {
+        bool::from_str(raw)?
+    };
     Ok(Command::MoveWindowTop { swap })
-}
-
-fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
-    if !s.starts_with(head) {
-        return s;
-    }
-    &s[head.len()..]
 }
 
 #[cfg(test)]
@@ -262,5 +269,46 @@ mod test {
         {
             assert!(!pipe_file.exists());
         }
+    }
+
+    #[test]
+    fn build_toggle_scratchpad_without_parameter() {
+        assert!(build_toggle_scratchpad("").is_err());
+    }
+
+    #[test]
+    fn build_send_window_to_tag_without_parameter() {
+        assert!(build_send_window_to_tag("").is_err());
+    }
+
+    #[test]
+    fn build_send_workspace_to_tag_without_parameter() {
+        assert!(build_send_workspace_to_tag("").is_err());
+    }
+
+    #[test]
+    fn build_set_layout_without_parameter() {
+        assert!(build_set_layout("").is_err());
+    }
+
+    #[test]
+    fn build_set_margin_multiplier_without_parameter() {
+        assert!(build_set_margin_multiplier("").is_err());
+    }
+
+    #[test]
+    fn build_move_window_top_without_parameter() {
+        assert_eq!(
+            build_move_window_top("").unwrap(),
+            Command::MoveWindowTop { swap: true }
+        );
+    }
+
+    #[test]
+    fn build_focus_window_top_without_parameter() {
+        assert_eq!(
+            build_focus_window_top("").unwrap(),
+            Command::FocusWindowTop { swap: false }
+        );
     }
 }
