@@ -21,6 +21,7 @@ pub enum BaseCommand {
     ToggleFullScreen,
     ToggleSticky,
     GotoTag,
+    ReturnToLastTag,
     FloatingToTile,
     TileToFloating,
     ToggleFloating,
@@ -49,6 +50,7 @@ pub enum BaseCommand {
     // Custom commands
     UnloadTheme,
     LoadTheme,
+    CloseAllOtherWindows,
 }
 
 impl std::convert::From<BaseCommand> for String {

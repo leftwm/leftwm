@@ -61,6 +61,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowTop { swap } => move_focus_common_vars!(move_window_top(state, *swap)),
 
         Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
+        Command::ReturnToLastTag => return_to_last_tag(state),
 
         Command::CloseWindow => close_window(state),
         Command::SwapScreens => swap_tags(state),
@@ -114,6 +115,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SendWorkspaceToTag(ws_index, tag_index) => {
             Some(send_workspace_to_tag(state, *ws_index, *tag_index))
         }
+        Command::CloseAllOtherWindows => close_all_other_windows(state),
         Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
 }
@@ -288,6 +290,11 @@ fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Opti
         input_tag
     };
     state.goto_tag_handler(destination_tag)
+}
+
+fn return_to_last_tag(state: &mut State) -> Option<bool> {
+    let previous_tag = state.focus_manager.tag(1).unwrap_or_default();
+    state.goto_tag_handler(previous_tag)
 }
 
 fn focus_window(state: &mut State, param: &str) -> Option<bool> {
@@ -681,6 +688,23 @@ fn focus_window_top(state: &mut State, swap: bool) -> Option<bool> {
     None
 }
 
+fn close_all_other_windows(state: &mut State) -> Option<bool> {
+    let current_window: Option<WindowHandle> =
+        state.focus_manager.window(&state.windows).map(|w| w.handle);
+    let current_workspace = state.focus_manager.workspace(&state.workspaces);
+
+    for window in &state.windows {
+        if window.handle.ne(&current_window?)
+            && current_workspace?.is_displaying(window)
+            && window.r#type.ne(&WindowType::Normal)
+        {
+            let act = DisplayAction::KillWindow(window.handle);
+            state.actions.push_back(act);
+        }
+    }
+    Some(true)
+}
+
 fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let current = state.focus_manager.workspace(&state.workspaces)?;
     let workspace = helpers::relative_find(&state.workspaces, |w| w == current, val, true)?.clone();
@@ -751,6 +775,38 @@ fn send_workspace_to_tag(state: &mut State, ws_index: usize, tag_index: usize) -
 mod tests {
     use super::*;
     use crate::models::Tags;
+
+    #[test]
+    fn return_to_last_tag_should_go_back_to_last_tag() {
+        let mut manager = Manager::new_test(vec![
+            "A15".to_string(),
+            "B24".to_string(),
+            "C".to_string(),
+            "6D4".to_string(),
+            "E39".to_string(),
+            "F67".to_string(),
+        ]);
+        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default());
+
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 1,
+            swap: false
+        }));
+        let current_tag = manager.state.focus_manager.tag(0).unwrap();
+        assert_eq!(current_tag, 1);
+
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 2,
+            swap: false
+        }));
+        let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
+        assert_eq!(current_tag, 2);
+
+        manager.command_handler(&Command::ReturnToLastTag);
+        let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default();
+        assert_eq!(current_tag, 1);
+    }
 
     #[test]
     fn go_to_tag_should_return_false_if_no_screen_is_created() {

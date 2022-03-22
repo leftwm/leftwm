@@ -54,6 +54,7 @@ impl Keybind {
                 f32::from_str(&self.value)
                     .context("invalid margin multiplier for SetMarginMultiplier")?;
             }
+            BaseCommand::CloseAllOtherWindows => leftwm_core::Command::CloseAllOtherWindows,
             _ => {}
         }
 
