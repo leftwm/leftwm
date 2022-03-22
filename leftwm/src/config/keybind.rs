@@ -103,7 +103,7 @@ impl Keybind {
                 "LoadTheme {}",
                 ensure_non_empty!(self.value.clone())
             )),
-            BaseCommand::CloseAllOtherWindows => { leftwm_core::Command::CloseAllOtherWindows }
+            BaseCommand::CloseAllOtherWindows => leftwm_core::Command::CloseAllOtherWindows,
         };
 
         Ok(leftwm_core::Keybind {

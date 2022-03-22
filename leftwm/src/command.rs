@@ -50,5 +50,5 @@ pub enum BaseCommand {
     // Custom commands
     UnloadTheme,
     LoadTheme,
-    CloseAllOtherWindows
+    CloseAllOtherWindows,
 }
