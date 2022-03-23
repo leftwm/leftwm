@@ -66,6 +66,11 @@ When introducing new commands or config options it is helpful to provide some us
 
 If possible please provide a snippet for the relevant wiki-article/section, so this can be updated accordingly as quick as possible.
 
+Here are the wiki pages that must be updated once the PR is merged in `main` branch, if applicable:
+
+- [External commands wiki page](https://github.com/leftwm/leftwm/wiki/External-Commands)
+- [Config wiki page](https://github.com/leftwm/leftwm/wiki/Config)
+
 #### Manual Page
 
 If possible, please document your newly added commands/configuration options to the `leftwm` manual page, as this will help users
