@@ -21,9 +21,7 @@ See [CONTRIBUTING.md User Documentation section](../CONTRIBUTING.md#user-documen
 
 # Checklist:
 
-- [ ] Tests pass with `cargo test --all-targets --all-features`
-- [ ] Code is formatted with `cargo fmt -- --check`
-- [ ] Code is reviewed with `cargo clippy --release`
+- [ ] Ran `make test` locally with no errors or warnings reported
 - [ ] Enhanced review is performed with `cargo clippy -- -W clippy::pedantic -A clippy::must_use_candidate -A clippy::cast_precision_loss -A clippy::cast_possible_truncation -A clippy::cast_possible_wrap -A clippy::cast_sign_loss -A clippy::mut_mut`
 - [ ] Manual page has been updated accordingly
 - [ ] Wiki pages have been updated accordingly (to perform **after** merge)
