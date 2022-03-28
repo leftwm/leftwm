@@ -49,16 +49,19 @@ fn generate_new_config() -> Result<()> {
     let path = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
 
     if Path::new(&path).exists() {
-        println!("\x1b[0;94m::\x1b[0m A config file already exists, do you want to override it? [y/N]");
+        println!(
+            "\x1b[0;94m::\x1b[0m A config file already exists, do you want to override it? [y/N]"
+        );
         let mut line = String::new();
-        let _ = std::io::stdin().read_line(&mut line).expect("Failed to read line");
-        if line.contains('y') || line.contains('Y'){
+        let _ = std::io::stdin()
+            .read_line(&mut line)
+            .expect("Failed to read line");
+        if line.contains('y') || line.contains('Y') {
             let config = Config::default();
             let toml = toml::to_string(&config)?;
             let mut file = File::create(&path)?;
             file.write_all(toml.as_bytes())?;
         }
-
     }
 
     Ok(())
@@ -74,7 +77,7 @@ fn run_editor() -> Result<()> {
     let mut process = Command::new(&editor).arg(config_path).spawn()?;
     match process.wait()?.success() {
         true => Ok(()),
-        false =>  Err(anyhow::Error::msg(format!("Failed to run {}", &editor)))
+        false => Err(anyhow::Error::msg(format!("Failed to run {}", &editor))),
     }?;
 
     Ok(())
