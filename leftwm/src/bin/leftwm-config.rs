@@ -10,7 +10,7 @@ use xdg::BaseDirectories;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = App::new("LeftWM Check")
+    let matches = App::new("LeftWM Config")
         .author("Lex Childs <lex.childs@gmail.com>")
         .version(env!("CARGO_PKG_VERSION"))
         .about("Edit the config with the default editor")
