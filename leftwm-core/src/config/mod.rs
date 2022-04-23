@@ -54,6 +54,7 @@ pub trait Config {
     fn get_list_of_gutters(&self) -> Vec<Gutter>;
     fn max_window_width(&self) -> Option<Size>;
     fn disable_tile_drag(&self) -> bool;
+    fn disable_window_snap(&self) -> bool;
 
     /// Attempt to write current state to a file.
     ///
@@ -176,6 +177,9 @@ impl Config for TestConfig {
         None
     }
     fn disable_tile_drag(&self) -> bool {
+        false
+    }
+    fn disable_window_snap(&self) -> bool {
         false
     }
     fn save_state(&self, _state: &State) {

@@ -96,6 +96,7 @@ pub struct Config {
     //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
     pub disable_tile_drag: bool,
+    pub disable_window_snap: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
@@ -381,6 +382,10 @@ impl leftwm_core::Config for Config {
 
     fn floating_border_color(&self) -> String {
         self.theme_setting.floating_border_color.clone()
+    }
+
+    fn disable_window_snap(&self) -> bool {
+        self.disable_window_snap
     }
 
     fn always_float(&self) -> bool {
