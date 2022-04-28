@@ -1,0 +1,27 @@
+# Description
+
+Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
+
+Fixes #(issue)
+
+## Type of change
+
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] This change requires a documentation update
+
+## Updated user documentation:
+
+Please insert user documentation that should be updated (as in the wiki).
+
+See [CONTRIBUTING.md User Documentation section](../CONTRIBUTING.md#user-documentation) for further details.
+
+**Note: Manual page changes must be performed in a commit, not in this PR section.**
+
+# Checklist:
+
+- [ ] Ran `make test` locally with no errors or warnings reported
+- [ ] Enhanced review is performed with `cargo clippy -- -W clippy::pedantic -A clippy::must_use_candidate -A clippy::cast_precision_loss -A clippy::cast_possible_truncation -A clippy::cast_possible_wrap -A clippy::cast_sign_loss -A clippy::mut_mut`
+- [ ] Manual page has been updated accordingly
+- [ ] Wiki pages have been updated accordingly (to perform **after** merge)
