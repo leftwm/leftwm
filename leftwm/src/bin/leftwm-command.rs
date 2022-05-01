@@ -55,6 +55,8 @@ async fn main() -> Result<()> {
         ToggleFullScreen
         ToggleSticky
         SwapScreens
+        MoveWindowToNextTag
+        MoveWindowToPreviousTag
         MoveWindowToLastWorkspace
         MoveWindowToNextWorkspace
         MoveWindowToPreviousWorkspace

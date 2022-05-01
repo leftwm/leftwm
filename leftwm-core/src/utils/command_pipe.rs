@@ -94,6 +94,8 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
         "ToggleSticky" => Ok(Command::ToggleSticky),
         "SwapScreens" => Ok(Command::SwapScreens),
+        "MoveWindowToNextTag" => build_move_window_to_next_tag(rest),
+        "MoveWindowToPreviousTag" => build_move_window_to_previous_tag(rest),
         "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
         "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),
         "MoveWindowToPreviousWorkspace" => Ok(Command::MoveWindowToPreviousWorkspace),
@@ -194,6 +196,24 @@ fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     Ok(Command::MoveWindowTop { swap })
 }
 
+fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let follow = if raw.is_empty() {
+        true
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::MoveWindowToNextTag { follow })
+}
+
+fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let follow = if raw.is_empty() {
+        true
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::MoveWindowToPreviousTag { follow })
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -265,10 +285,7 @@ mod test {
         // Let the OS close the write end of the pipe before shutting down the listener.
         time::sleep(time::Duration::from_millis(100)).await;
 
-        // NOTE: clippy is drunk
-        {
-            assert!(!pipe_file.exists());
-        }
+        assert!(!pipe_file.exists());
     }
 
     #[test]
@@ -309,6 +326,22 @@ mod test {
         assert_eq!(
             build_focus_window_top("").unwrap(),
             Command::FocusWindowTop { swap: false }
+        );
+    }
+
+    #[test]
+    fn build_move_window_to_next_tag_without_parameter() {
+        assert_eq!(
+            build_move_window_to_next_tag("").unwrap(),
+            Command::MoveWindowToNextTag { follow: true }
+        );
+    }
+
+    #[test]
+    fn build_move_window_to_previous_tag_without_parameter() {
+        assert_eq!(
+            build_move_window_to_previous_tag("").unwrap(),
+            Command::MoveWindowToPreviousTag { follow: true }
         );
     }
 }
