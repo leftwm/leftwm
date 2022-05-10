@@ -52,7 +52,8 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         }
     }
     if event.message_type == xw.atoms.NetActiveWindow {
-        return Some(DisplayEvent::HandleWindowFocus(event.window.into()));
+        xw.set_window_urgency(event.window, true);
+        return None;
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too

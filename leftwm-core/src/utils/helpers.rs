@@ -44,7 +44,7 @@ where
     T: Clone,
 {
     let v = &mut **list;
-    let change = shift.abs() as usize;
+    let change = shift.unsigned_abs() as usize;
     if v.len() < change {
         return None;
     }
@@ -114,7 +114,7 @@ where
     let reference_index = list.iter().position(reference_finder)?;
     let loops = if shift.is_negative() {
         // check if shift is larger than there are elements on the left
-        shift.abs() as usize > reference_index
+        shift.unsigned_abs() as usize > reference_index
     } else {
         // check if shift is larger than there are elements on the right
         shift as usize > len as usize - (reference_index + 1)

@@ -254,6 +254,7 @@ impl XWrap {
                 }
             }
             self.grab_mouse_clicks(handle, true);
+            self.set_window_urgency(handle, false);
 
             if !window.never_focus {
                 self.set_window_border_color(handle, self.colors.active);
