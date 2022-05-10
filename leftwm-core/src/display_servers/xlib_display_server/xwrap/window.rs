@@ -255,9 +255,9 @@ impl XWrap {
             }
             self.grab_mouse_clicks(handle, true);
             self.set_window_urgency(handle, false);
+            self.set_window_border_color(handle, self.colors.active);
 
             if !window.never_focus {
-                self.set_window_border_color(handle, self.colors.active);
                 // Mark this window as the `_NET_ACTIVE_WINDOW`
                 unsafe {
                     (self.xlib.XSetInputFocus)(
@@ -278,10 +278,8 @@ impl XWrap {
             }
             // This fixes windows that process the `WMTakeFocus` event too slow.
             // See: https://github.com/leftwm/leftwm/pull/563
-            if !self.focus_behaviour.is_sloppy() {
-                // Tell the window to take focus
-                self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
-            }
+            // Tell the window to take focus
+            self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
             self.sync();
         }
     }

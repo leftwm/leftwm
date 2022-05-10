@@ -187,12 +187,14 @@ impl XWrap {
 
     pub fn set_window_urgency(&self, window: xlib::Window, is_urgent: bool) {
         if let Some(mut wmh) = self.get_wmhints(window) {
+            if ((wmh.flags & xlib::XUrgencyHint) != 0) == is_urgent {
+                return;
+            }
             wmh.flags = if is_urgent {
                 wmh.flags | xlib::XUrgencyHint
             } else {
                 wmh.flags & !xlib::XUrgencyHint
             };
-            log::info!("{}, {:?}", is_urgent, wmh);
             self.set_wmhints(window, &mut wmh);
         }
     }
