@@ -10,7 +10,7 @@ use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{TagId, WindowState};
+use crate::models::{LayoutMode, TagId, WindowState};
 use crate::state::State;
 use crate::utils::helpers::relative_find;
 use crate::utils::{child_process::exec_shell, helpers};
@@ -510,14 +510,22 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
         }
     }
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
-    workspace.layout = layout;
     let tag = state.tags.get_mut(tag_id)?;
-    match layout {
-        Layout::RightWiderLeftStack | Layout::LeftWiderRightStack => {
-            tag.set_layout(layout, layout.main_width());
+
+    // If user changed the main_width_percentage we'd like to keep it
+    // Otherwise, we set it to the layout's default
+    if state.layout_manager.mode == LayoutMode::Workspace {
+        if workspace.layout.main_width() == workspace.main_width_percentage {
+            workspace.main_width_percentage = layout.main_width();
         }
-        _ => tag.set_layout(layout, workspace.main_width_percentage),
+        tag.set_layout(layout, workspace.main_width_percentage);
+    } else {
+        if workspace.layout.main_width() == tag.main_width_percentage {
+            tag.main_width_percentage = layout.main_width();
+        }
+        tag.set_layout(layout, tag.main_width_percentage);
     }
+    workspace.layout = layout;
     Some(true)
 }
 
@@ -1048,5 +1056,91 @@ mod tests {
 
         manager.command_handler(&Command::MoveWindowTop { swap: true });
         assert_eq!(manager.state.windows[0].handle, expected.handle);
+    }
+
+    #[test]
+    fn setting_layout_should_update_correct_main_width_percentage() {
+        let mut manager = Manager::new_test(vec!["ABC".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        // When layout mode is Workspace it should update workspace's main width
+        manager.state.layout_manager.mode = LayoutMode::Workspace;
+
+        let current_workspace = |manager: &Manager<_, _>| {
+            let workspace_id = manager.state.focus_manager.workspace_history[0];
+            manager.state.workspaces.get(workspace_id).unwrap().clone()
+        };
+
+        manager.command_handler(&Command::SetLayout(Layout::MainAndVertStack));
+        assert_eq!(
+            current_workspace(&manager).main_width_percentage,
+            Layout::MainAndVertStack.main_width()
+        );
+        manager.command_handler(&Command::SetLayout(Layout::LeftWiderRightStack));
+        assert_eq!(
+            current_workspace(&manager).main_width_percentage,
+            Layout::LeftWiderRightStack.main_width()
+        );
+
+        // When layout mode is Tag it should update tag's main width
+        manager.state.layout_manager.mode = LayoutMode::Tag;
+
+        let current_tag = |manager: &Manager<_, _>| {
+            let tag_id = manager.state.focus_manager.tag(0).unwrap();
+            manager.state.tags.get(tag_id).unwrap().clone()
+        };
+
+        manager.command_handler(&Command::SetLayout(Layout::MainAndVertStack));
+
+        assert_eq!(
+            current_tag(&manager).main_width_percentage,
+            Layout::MainAndVertStack.main_width()
+        );
+        manager.command_handler(&Command::SetLayout(Layout::LeftWiderRightStack));
+        assert_eq!(
+            current_tag(&manager).main_width_percentage,
+            Layout::LeftWiderRightStack.main_width()
+        );
+    }
+
+    #[test]
+    fn setting_layout_should_only_update_main_width_if_not_overridden_by_user() {
+        let mut manager = Manager::new_test(vec!["ABC".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        manager.state.layout_manager.mode = LayoutMode::Tag;
+        manager.command_handler(&Command::SetLayout(Layout::MainAndVertStack));
+        manager.command_handler(&Command::IncreaseMainWidth(10));
+
+        manager.command_handler(&Command::SetLayout(Layout::LeftWiderRightStack));
+
+        let tag_id = manager.state.focus_manager.tag(0).unwrap();
+        let tag = manager.state.tags.get(tag_id).unwrap();
+        assert_eq!(
+            tag.main_width_percentage,
+            Layout::MainAndVertStack.main_width() + 10
+        );
     }
 }

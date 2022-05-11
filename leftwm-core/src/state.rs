@@ -108,6 +108,7 @@ impl State {
         Some(())
     }
 
+    /// Update all static windows
     pub fn update_static(&mut self) {
         let workspaces = self.workspaces.clone();
         self.windows
