@@ -55,6 +55,7 @@ pub trait Config {
     fn max_window_width(&self) -> Option<Size>;
     fn disable_tile_drag(&self) -> bool;
     fn disable_window_snap(&self) -> bool;
+    fn mouse_follows_focus(&self) -> bool;
 
     /// Attempt to write current state to a file.
     ///
@@ -195,6 +196,9 @@ impl Config for TestConfig {
         } else {
             false
         }
+    }
+    fn mouse_follows_focus(&self) -> bool {
+        true
     }
 }
 

@@ -44,7 +44,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 // is currently focused.
                 _ = timeout(100), if event_buffer.is_empty()
                     && self.state.focus_manager.behaviour.is_sloppy() => {
-                    if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
+                    if let Some(verify_event) = self.display_server.generate_verify_focus_event(&mut self.state.focus_manager) {
                         event_buffer.push(verify_event);
                     }
                     continue;

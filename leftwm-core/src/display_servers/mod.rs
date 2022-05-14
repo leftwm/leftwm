@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::display_action::DisplayAction;
+use crate::models::FocusManager;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
@@ -39,5 +40,5 @@ pub trait DisplayServer {
 
     fn flush(&self);
 
-    fn generate_verify_focus_event(&self) -> Option<DisplayEvent>;
+    fn generate_verify_focus_event(&self, focus_manager: &mut FocusManager) -> Option<DisplayEvent>;
 }

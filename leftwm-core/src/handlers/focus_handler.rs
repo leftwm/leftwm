@@ -8,7 +8,7 @@ use crate::{display_action::DisplayAction, models::FocusBehaviour};
 impl State {
     pub fn handle_window_focus(&mut self, handle: &WindowHandle) {
         match self.focus_manager.behaviour {
-            FocusBehaviour::Sloppy => {
+            FocusBehaviour::Sloppy if self.focus_manager.mouse_follows_focus => {
                 let act = DisplayAction::MoveMouseOver(*handle, false);
                 self.actions.push_back(act);
             }

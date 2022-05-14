@@ -1,6 +1,7 @@
 use super::Config;
 use super::DisplayEvent;
 use super::DisplayServer;
+use crate::models::FocusManager;
 use crate::models::Screen;
 
 #[derive(Clone)]
@@ -26,7 +27,7 @@ impl DisplayServer for MockDisplayServer {
         unimplemented!()
     }
 
-    fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
+    fn generate_verify_focus_event(&self, _: &mut FocusManager) -> Option<DisplayEvent> {
         unimplemented!()
     }
 }
