@@ -14,8 +14,6 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
         let normal_mode = x_event.0.mode == Mode::Normal;
         let sloppy_behaviour = x_event.0.focus_behaviour.is_sloppy();
 
-        // log::info!("Raw: {:?}", raw_event);
-
         match raw_event.get_type() {
             // New window is mapped.
             xlib::MapRequest => from_map_request(x_event),
@@ -56,13 +54,16 @@ fn from_map_request(x_event: XEvent) -> Option<DisplayEvent> {
 fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XUnmapEvent::from(x_event.1);
+    log::info!("Unmap: {:?}", event);
     if xw.managed_windows.contains(&event.window) {
-        // Set WM_STATE to withdrawn state.
-        xw.set_wm_states(event.window, &[WITHDRAWN_STATE]);
+        log::info!("Removed: {:?}", event);
         if event.send_event == xlib::False {
             let h = event.window.into();
-            xw.teardown_managed_window(&h);
+            xw.teardown_managed_window(&h, false);
             return Some(DisplayEvent::WindowDestroy(h));
+        } else {
+            // Set WM_STATE to withdrawn state.
+            xw.set_wm_states(event.window, &[WITHDRAWN_STATE]);
         }
     }
     None
@@ -71,9 +72,11 @@ fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
 fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XDestroyWindowEvent::from(x_event.1);
+    log::info!("Destroy: {:?}", event);
     if xw.managed_windows.contains(&event.window) {
+        log::info!("Removed: {:?}", event);
         let h = event.window.into();
-        xw.teardown_managed_window(&h);
+        xw.teardown_managed_window(&h, true);
         return Some(DisplayEvent::WindowDestroy(h));
     }
     None

@@ -1,5 +1,5 @@
 //! Xlib calls related to a window.
-use super::{Window, WindowHandle, ICONIC_STATE, NORMAL_STATE, ROOT_EVENT_MASK};
+use super::{Window, WindowHandle, ICONIC_STATE, NORMAL_STATE, ROOT_EVENT_MASK, WITHDRAWN_STATE};
 use crate::models::{WindowChange, WindowType, Xyhw, XyhwChange};
 use crate::{DisplayEvent, XWrap};
 use std::os::raw::{c_long, c_ulong};
@@ -155,16 +155,20 @@ impl XWrap {
     /// Teardown a managed window when it is destroyed.
     // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
-    pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
+    pub fn teardown_managed_window(&mut self, h: &WindowHandle, destroyed: bool) {
         if let WindowHandle::XlibHandle(handle) = h {
-            unsafe {
-                (self.xlib.XGrabServer)(self.display);
-                self.managed_windows.retain(|x| *x != *handle);
-                self.set_client_list();
-                self.ungrab_buttons(*handle);
-                self.sync();
-                (self.xlib.XUngrabServer)(self.display);
+            if !destroyed {
+                unsafe {
+                    (self.xlib.XGrabServer)(self.display);
+                    self.managed_windows.retain(|x| *x != *handle);
+                    self.ungrab_buttons(*handle);
+                    // Set WM_STATE to withdrawn state.
+                    self.set_wm_states(*handle, &[WITHDRAWN_STATE]);
+                    self.sync();
+                    (self.xlib.XUngrabServer)(self.display);
+                }
             }
+            self.set_client_list();
         }
     }
 

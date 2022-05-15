@@ -242,7 +242,7 @@ fn from_move_mouse_over_point(xw: &mut XWrap, point: (i32, i32)) -> Option<Displ
 }
 
 fn from_destroyed_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
-    xw.teardown_managed_window(&handle);
+    xw.teardown_managed_window(&handle, true);
     None
 }
 
