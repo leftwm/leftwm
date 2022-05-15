@@ -355,6 +355,13 @@ fn from_window_take_focus(
 }
 
 fn from_focus_window_under_cursor(xw: &mut XWrap) -> Option<DisplayEvent> {
+    if let Ok(mut window) = xw.get_cursor_window() {
+        if window == WindowHandle::XlibHandle(0) {
+            window = xw.get_default_root_handle();
+        }
+        log::info!("Window: {:?}", window);
+        return Some(DisplayEvent::WindowTakeFocus(window));
+    }
     let point = xw.get_cursor_point().ok()?;
     let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
     Some(evt)

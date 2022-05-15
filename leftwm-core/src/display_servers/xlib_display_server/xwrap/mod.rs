@@ -42,16 +42,46 @@ pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
 
+const X_CONFIGUREWINDOW: u8 = 12;
+const X_GRABBUTTON: u8 = 28;
+const X_GRABKEY: u8 = 33;
+const X_SETINPUTFOCUS: u8 = 42;
+const X_COPYAREA: u8 = 62;
+const X_POLYSEGMENT: u8 = 66;
+const X_POLYFILLRECTANGLE: u8 = 70;
+const X_POLYTEXT8: u8 = 74;
+
 // This is allowed for now as const extern fns
 // are not yet stable (1.56.0, 16 Sept 2021)
 // see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
 #[allow(clippy::missing_const_for_fn)]
-extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
+pub extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
     let err = unsafe { *er };
-    // Ignore bad window errors.
-    if err.error_code == xlib::BadWindow {
+    let ec = err.error_code;
+    let rc = err.request_code;
+    let ba = ec == xlib::BadAccess;
+    let bd = ec == xlib::BadDrawable;
+    let bm = ec == xlib::BadMatch;
+
+    if ec == xlib::BadWindow
+        || (rc == X_CONFIGUREWINDOW && bm)
+        || (rc == X_GRABBUTTON && ba)
+        || (rc == X_GRABKEY && ba)
+        || (rc == X_SETINPUTFOCUS && bm)
+        || (rc == X_COPYAREA && bd)
+        || (rc == X_POLYSEGMENT && bd)
+        || (rc == X_POLYFILLRECTANGLE && bd)
+        || (rc == X_POLYTEXT8 && bd)
+    {
         return 0;
     }
+    1
+}
+
+pub extern "C" fn on_error_from_xlib_dummy(
+    _: *mut xlib::Display,
+    _: *mut xlib::XErrorEvent,
+) -> c_int {
     1
 }
 

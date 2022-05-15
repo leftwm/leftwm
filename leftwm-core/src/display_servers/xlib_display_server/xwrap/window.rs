@@ -1,5 +1,8 @@
 //! Xlib calls related to a window.
-use super::{Window, WindowHandle, ICONIC_STATE, NORMAL_STATE, ROOT_EVENT_MASK, WITHDRAWN_STATE};
+use super::{
+    on_error_from_xlib, on_error_from_xlib_dummy, Window, WindowHandle, ICONIC_STATE, NORMAL_STATE,
+    ROOT_EVENT_MASK, WITHDRAWN_STATE,
+};
 use crate::models::{WindowChange, WindowType, Xyhw, XyhwChange};
 use crate::{DisplayEvent, XWrap};
 use std::os::raw::{c_long, c_ulong};
@@ -157,14 +160,15 @@ impl XWrap {
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn teardown_managed_window(&mut self, h: &WindowHandle, destroyed: bool) {
         if let WindowHandle::XlibHandle(handle) = h {
+            self.managed_windows.retain(|x| *x != *handle);
             if !destroyed {
                 unsafe {
                     (self.xlib.XGrabServer)(self.display);
-                    self.managed_windows.retain(|x| *x != *handle);
+                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib_dummy));
                     self.ungrab_buttons(*handle);
-                    // Set WM_STATE to withdrawn state.
                     self.set_wm_states(*handle, &[WITHDRAWN_STATE]);
                     self.sync();
+                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
                     (self.xlib.XUngrabServer)(self.display);
                 }
             }
@@ -389,14 +393,16 @@ impl XWrap {
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
-            //nicely ask the window to close
+            // Nicely ask the window to close.
             if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
-                //force kill the app
+                // Force kill the window.
                 unsafe {
                     (self.xlib.XGrabServer)(self.display);
+                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib_dummy));
                     (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
                     (self.xlib.XKillClient)(self.display, *handle);
                     self.sync();
+                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
                     (self.xlib.XUngrabServer)(self.display);
                 }
             }
