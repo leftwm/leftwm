@@ -298,7 +298,7 @@ fn from_set_window_order(
         .iter()
         .filter(|&w| *w != xw.get_default_root())
         .map(|&w| w.into())
-        .filter(|&h| !windows.iter().any(|&w| w == h))
+        .filter(|&h| !windows.iter().any(|&w| w == h) || !fullscreen.iter().any(|&w| w == h))
         .collect();
     let all: Vec<WindowHandle> = [fullscreen, unmanaged, windows].concat();
     xw.restack(all);
@@ -359,7 +359,6 @@ fn from_focus_window_under_cursor(xw: &mut XWrap) -> Option<DisplayEvent> {
         if window == WindowHandle::XlibHandle(0) {
             window = xw.get_default_root_handle();
         }
-        log::info!("Window: {:?}", window);
         return Some(DisplayEvent::WindowTakeFocus(window));
     }
     let point = xw.get_cursor_point().ok()?;

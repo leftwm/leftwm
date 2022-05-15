@@ -100,6 +100,7 @@ impl State {
             partition_windows(other.iter(), |w| w.r#type == WindowType::Normal);
 
         // Last docks.
+        let level6: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
 
         self.windows = [
             fullscreen_children,
@@ -112,7 +113,7 @@ impl State {
         .concat();
 
         let fullscreen: Vec<WindowHandle> = [level1, level2].concat();
-        let handles: Vec<WindowHandle> = [level3, level4, level5].concat();
+        let handles: Vec<WindowHandle> = [level3, level4, level5, level6].concat();
         let act = DisplayAction::SetWindowOrder(fullscreen, handles);
         self.actions.push_back(act);
     }
