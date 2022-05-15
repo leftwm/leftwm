@@ -249,43 +249,39 @@ impl XWrap {
                     }
                 }
             }
+            self.focused_window = handle;
             self.grab_mouse_clicks(handle, true);
             self.set_window_urgency(handle, false);
             self.set_window_border_color(handle, self.colors.active);
-            self.focus(handle);
+            self.focus(handle, window.never_focus);
             self.sync();
         }
     }
 
     /// Focuses a window.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn focus(&mut self, window: xlib::Window) {
-        self.focused_window = window;
-        if let Some(hint) = self.get_wmhints(window) {
-            let never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
-
-            if !never_focus {
-                unsafe {
-                    (self.xlib.XSetInputFocus)(
-                        self.display,
-                        window,
-                        xlib::RevertToPointerRoot,
-                        xlib::CurrentTime,
-                    );
-                    let list = vec![window as c_long];
-                    // Mark this window as the `_NET_ACTIVE_WINDOW`
-                    self.replace_property_long(
-                        self.root,
-                        self.atoms.NetActiveWindow,
-                        xlib::XA_WINDOW,
-                        &list,
-                    );
-                    std::mem::forget(list);
-                }
+    pub fn focus(&mut self, window: xlib::Window, never_focus: bool) {
+        if !never_focus {
+            unsafe {
+                (self.xlib.XSetInputFocus)(
+                    self.display,
+                    window,
+                    xlib::RevertToPointerRoot,
+                    xlib::CurrentTime,
+                );
+                let list = vec![window as c_long];
+                // Mark this window as the `_NET_ACTIVE_WINDOW`
+                self.replace_property_long(
+                    self.root,
+                    self.atoms.NetActiveWindow,
+                    xlib::XA_WINDOW,
+                    &list,
+                );
+                std::mem::forget(list);
             }
-            // Tell the window to take focus
-            self.send_xevent_atom(window, self.atoms.WMTakeFocus);
         }
+        // Tell the window to take focus
+        self.send_xevent_atom(window, self.atoms.WMTakeFocus);
     }
 
     /// Unfocuses all windows.

@@ -42,6 +42,19 @@ pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
 
+// This is allowed for now as const extern fns
+// are not yet stable (1.56.0, 16 Sept 2021)
+// see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
+#[allow(clippy::missing_const_for_fn)]
+extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
+    let err = unsafe { *er };
+    // Ignore bad window errors.
+    if err.error_code == xlib::BadWindow {
+        return 0;
+    }
+    1
+}
+
 pub struct Colors {
     normal: c_ulong,
     floating: c_ulong,
@@ -209,22 +222,6 @@ impl XWrap {
             (xw.xlib.XSelectInput)(xw.display, root, xlib::SubstructureRedirectMask);
         };
         xw.sync();
-
-        // This is allowed for now as const extern fns
-        // are not yet stable (1.56.0, 16 Sept 2021)
-        // see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
-        #[allow(clippy::missing_const_for_fn)]
-        extern "C" fn on_error_from_xlib(
-            _: *mut xlib::Display,
-            er: *mut xlib::XErrorEvent,
-        ) -> c_int {
-            let err = unsafe { *er };
-            // Ignore bad window errors.
-            if err.error_code == xlib::BadWindow {
-                return 0;
-            }
-            1
-        }
 
         // Setup cached keymap/modifier information, otherwise MappingNotify might never be called
         // from:
