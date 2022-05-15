@@ -14,6 +14,8 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
         let normal_mode = x_event.0.mode == Mode::Normal;
         let sloppy_behaviour = x_event.0.focus_behaviour.is_sloppy();
 
+        // log::info!("Raw: {:?}", raw_event);
+
         match raw_event.get_type() {
             // New window is mapped.
             xlib::MapRequest => from_map_request(x_event),
@@ -21,6 +23,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::UnmapNotify => from_unmap_event(x_event),
             // Window is destroyed.
             xlib::DestroyNotify => from_destroy_notify(x_event),
+            xlib::FocusIn => from_focus_in(x_event),
             // Window client message.
             xlib::ClientMessage if normal_mode => from_client_message(&x_event),
             // Window property notify.
@@ -72,6 +75,17 @@ fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
         let h = event.window.into();
         xw.teardown_managed_window(&h);
         return Some(DisplayEvent::WindowDestroy(h));
+    }
+    None
+}
+
+fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
+    let xw = x_event.0;
+    let event = xlib::XFocusChangeEvent::from(x_event.1);
+    if let Ok(crate::models::WindowHandle::XlibHandle(w)) = xw.get_cursor_window() {
+        if w != event.window {
+            xw.focus(w);
+        }
     }
     None
 }
