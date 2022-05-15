@@ -64,39 +64,56 @@ impl State {
         }
     }
 
-    //sorts the windows and puts them in order of importance
-    //keeps the order for each importance level
+    // Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
         use crate::models::WindowType;
-        //first dialogs and modals
-        let (level1, other): (Vec<&Window>, Vec<&Window>) = self.windows.iter().partition(|w| {
-            w.r#type == WindowType::Dialog
-                || w.r#type == WindowType::Splash
-                || w.r#type == WindowType::Utility
-                || w.r#type == WindowType::Menu
-        });
+        // The windows we are managing should be behind unmanaged windows. Unless they are
+        // fullscreen, or their children.
+        // Fullscreen windows.
+        let (level2, fullscreen_windows, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
+            partition_windows(self.windows.iter(), Window::is_fullscreen);
 
-        //next floating
-        let (level2, other): (Vec<&Window>, Vec<&Window>) = other
-            .iter()
-            .partition(|w| w.r#type == WindowType::Normal && w.floating());
+        // Fullscreen windows children.
+        let (level1, fullscreen_children, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
+            partition_windows(other.iter(), |w| {
+                level2.contains(&w.transient.unwrap_or_else(|| 0.into()))
+            });
 
-        //then normal windows
-        let (level3, other): (Vec<&Window>, Vec<&Window>) =
-            other.iter().partition(|w| w.r#type == WindowType::Normal);
+        // Left over managed windows.
+        // Dialogs and modals.
+        let (level3, dialogs, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
+            partition_windows(other.iter(), |w| {
+                w.r#type == WindowType::Dialog
+                    || w.r#type == WindowType::Splash
+                    || w.r#type == WindowType::Utility
+                    || w.r#type == WindowType::Menu
+            });
 
-        //last docks
-        //other is all the reset
+        // Floating windows.
+        let (level4, floating, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
+            partition_windows(other.iter(), |w| {
+                w.r#type == WindowType::Normal && w.floating()
+            });
 
-        //build the updated window list
-        self.windows = level1
-            .iter()
-            .chain(level2.iter())
-            .chain(level3.iter())
-            .chain(other.iter())
-            .map(|&w| w.clone())
-            .collect();
-        let act = DisplayAction::SetWindowOrder(self.windows.clone());
+        // Tiled windows.
+        let (level5, tiled, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
+            partition_windows(other.iter(), |w| w.r#type == WindowType::Normal);
+
+        // Last docks.
+
+        self.windows = [
+            fullscreen_children,
+            fullscreen_windows,
+            dialogs,
+            floating,
+            tiled,
+            other,
+        ]
+        .concat();
+
+        let fullscreen: Vec<WindowHandle> = [level1, level2].concat();
+        let handles: Vec<WindowHandle> = [level3, level4, level5].concat();
+        let act = DisplayAction::SetWindowOrder(fullscreen, handles);
         self.actions.push_back(act);
     }
 
@@ -247,4 +264,33 @@ impl State {
         };
         self.focus_tag(&tag_id);
     }
+}
+
+fn partition_windows<'a, I, F>(windows: I, f: F) -> (Vec<WindowHandle>, Vec<Window>, Vec<Window>)
+where
+    I: Iterator<Item = &'a Window>,
+    F: FnMut(&Window) -> bool + 'a,
+{
+    #[inline]
+    fn extend<'a>(
+        mut f: impl FnMut(&Window) -> bool + 'a,
+        handles: &'a mut Vec<WindowHandle>,
+        left: &'a mut Vec<Window>,
+        right: &'a mut Vec<Window>,
+    ) -> impl FnMut((), &Window) + 'a {
+        move |(), x| {
+            if f(x) {
+                handles.push(x.handle);
+                left.push(x.clone());
+            } else {
+                right.push(x.clone());
+            }
+        }
+    }
+
+    let mut handles: Vec<WindowHandle> = Default::default();
+    let mut left: Vec<Window> = Default::default();
+    let mut right: Vec<Window> = Default::default();
+    windows.fold((), extend(f, &mut handles, &mut left, &mut right));
+    (handles, left, right)
 }

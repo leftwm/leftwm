@@ -116,7 +116,7 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
             DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
-            DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, &ws),
+            DisplayAction::SetWindowOrder(fs, ws) => from_set_window_order(xw, fs, ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
             DisplayAction::ReadyToMoveWindow(h) => from_ready_to_move_window(xw, h),
             DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
@@ -286,36 +286,21 @@ fn from_set_state(
     None
 }
 
-fn from_set_window_order(xw: &mut XWrap, windows: &[Window]) -> Option<DisplayEvent> {
-    // The windows we are managing should be behind unmanaged windows. Unless they are
-    // fullscreen, or their children.
-    let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
-        windows.iter().partition(|w| w.is_fullscreen());
-    // Fullscreen windows.
-    let level2: Vec<WindowHandle> = fullscreen_windows.iter().map(|w| w.handle).collect();
-    let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) = other
-        .iter()
-        .partition(|w| level2.contains(&w.transient.unwrap_or_else(|| 0.into())));
-    // Fullscreen windows children.
-    let level1: Vec<WindowHandle> = fullscreen_children.iter().map(|w| w.handle).collect();
-    // Left over managed windows.
-    let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+fn from_set_window_order(
+    xw: &mut XWrap,
+    fullscreen: Vec<WindowHandle>,
+    windows: Vec<WindowHandle>,
+) -> Option<DisplayEvent> {
     // Unmanaged windows.
-    let level3: Vec<WindowHandle> = xw
+    let unmanaged: Vec<WindowHandle> = xw
         .get_all_windows()
         .unwrap_or_default()
         .iter()
         .filter(|&w| *w != xw.get_default_root())
         .map(|&w| w.into())
-        .filter(|&h| !windows.iter().any(|w| w.handle == h))
+        .filter(|&h| !windows.iter().any(|&w| w == h))
         .collect();
-    let all: Vec<WindowHandle> = level1
-        .iter()
-        .chain(level2.iter())
-        .chain(level3.iter())
-        .chain(level4.iter())
-        .copied()
-        .collect();
+    let all: Vec<WindowHandle> = [fullscreen, unmanaged, windows].concat();
     xw.restack(all);
     None
 }

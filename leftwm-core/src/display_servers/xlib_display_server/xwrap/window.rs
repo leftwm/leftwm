@@ -231,13 +231,6 @@ impl XWrap {
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
-            // Play a click when in ClickToFocus.
-
-            // fix by commenting line
-            // if self.focus_behaviour.is_clickto() {
-            //     self.replay_click();
-            // }
-
             // Update previous window.
             if let Some(previous) = previous {
                 if let WindowHandle::XlibHandle(previous_handle) = previous.handle {
@@ -278,8 +271,10 @@ impl XWrap {
             }
             // This fixes windows that process the `WMTakeFocus` event too slow.
             // See: https://github.com/leftwm/leftwm/pull/563
-            // Tell the window to take focus
-            self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
+            if window.never_focus || !self.focus_behaviour.is_sloppy() {
+                // Tell the window to take focus
+                self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
+            }
             self.sync();
         }
     }

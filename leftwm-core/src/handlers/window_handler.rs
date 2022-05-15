@@ -140,8 +140,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
         if fullscreen_changed {
             // Reorder windows.
-            let act = DisplayAction::SetWindowOrder(self.state.windows.clone());
-            self.state.actions.push_back(act);
+            self.state.sort_windows();
         }
         if strut_changed {
             self.state.update_static();
