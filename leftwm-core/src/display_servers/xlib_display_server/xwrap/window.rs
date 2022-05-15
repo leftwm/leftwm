@@ -232,7 +232,6 @@ impl XWrap {
     }
 
     /// Makes a window take focus.
-    // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
             // Update previous window.
@@ -258,7 +257,10 @@ impl XWrap {
         }
     }
 
-    pub fn focus(&self, window: xlib::Window) {
+    /// Focuses a window.
+    // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
+    pub fn focus(&mut self, window: xlib::Window) {
+        self.focused_window = window;
         if let Some(hint) = self.get_wmhints(window) {
             let never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
 

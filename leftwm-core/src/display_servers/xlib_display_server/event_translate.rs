@@ -21,6 +21,7 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::UnmapNotify => from_unmap_event(x_event),
             // Window is destroyed.
             xlib::DestroyNotify => from_destroy_notify(x_event),
+            // Window is taking focus.
             xlib::FocusIn => from_focus_in(x_event),
             // Window client message.
             xlib::ClientMessage if normal_mode => from_client_message(&x_event),
@@ -54,9 +55,7 @@ fn from_map_request(x_event: XEvent) -> Option<DisplayEvent> {
 fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XUnmapEvent::from(x_event.1);
-    log::info!("Unmap: {:?}", event);
     if xw.managed_windows.contains(&event.window) {
-        log::info!("Removed: {:?}", event);
         if event.send_event == xlib::False {
             let h = event.window.into();
             xw.teardown_managed_window(&h, false);
@@ -72,9 +71,7 @@ fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
 fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XDestroyWindowEvent::from(x_event.1);
-    log::info!("Destroy: {:?}", event);
     if xw.managed_windows.contains(&event.window) {
-        log::info!("Removed: {:?}", event);
         let h = event.window.into();
         xw.teardown_managed_window(&h, true);
         return Some(DisplayEvent::WindowDestroy(h));
@@ -85,10 +82,9 @@ fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
 fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XFocusChangeEvent::from(x_event.1);
-    if let Ok(crate::models::WindowHandle::XlibHandle(w)) = xw.get_cursor_window() {
-        if w != event.window {
-            xw.focus(w);
-        }
+    // Check that if a window is taking focus, that it should be.
+    if xw.focused_window != event.window {
+        xw.focus(xw.focused_window);
     }
     None
 }
