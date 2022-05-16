@@ -172,6 +172,7 @@ impl XWrap {
                     (self.xlib.XUngrabServer)(self.display);
                 }
             }
+            self.unfocus(Some(*h), false);
             self.set_client_list();
         }
     }

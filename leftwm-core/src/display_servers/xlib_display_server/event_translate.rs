@@ -55,9 +55,7 @@ fn from_map_request(x_event: XEvent) -> Option<DisplayEvent> {
 fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XUnmapEvent::from(x_event.1);
-    log::info!("Unmap: {:?}", event);
     if xw.managed_windows.contains(&event.window) {
-        log::info!("Removed: {:?}", event);
         if event.send_event == xlib::False {
             let h = event.window.into();
             xw.teardown_managed_window(&h, false);
@@ -72,9 +70,7 @@ fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
 fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XDestroyWindowEvent::from(x_event.1);
-    log::info!("Destroy: {:?}", event);
     if xw.managed_windows.contains(&event.window) {
-        log::info!("Removed: {:?}", event);
         let h = event.window.into();
         xw.teardown_managed_window(&h, true);
         return Some(DisplayEvent::WindowDestroy(h));
