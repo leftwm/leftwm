@@ -169,7 +169,6 @@ fn from_enter_notify(x_event: &XEvent) -> Option<DisplayEvent> {
         return None;
     }
 
-    // log::info!("Event: {:?}", event);
     let h = event.window.into();
     Some(DisplayEvent::WindowTakeFocus(h))
 }
