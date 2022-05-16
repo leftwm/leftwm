@@ -40,5 +40,6 @@ pub trait DisplayServer {
 
     fn flush(&self);
 
-    fn generate_verify_focus_event(&self, focus_manager: &mut FocusManager) -> Option<DisplayEvent>;
+    fn generate_verify_focus_event(&self, focus_manager: &mut FocusManager)
+        -> Option<DisplayEvent>;
 }

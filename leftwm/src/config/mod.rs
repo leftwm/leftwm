@@ -80,6 +80,7 @@ impl WindowHook {
 }
 
 /// General configuration
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {

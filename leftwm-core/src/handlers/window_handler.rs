@@ -86,7 +86,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let focused = self.state.focus_manager.window_history.get(0);
         //make sure focus is recalculated if we closed the currently focused window
         if focused == Some(&Some(*handle)) {
-            if self.state.focus_manager.behaviour.is_sloppy() && self.state.focus_manager.mouse_follows_focus {
+            if self.state.focus_manager.behaviour.is_sloppy()
+                && self.state.focus_manager.mouse_follows_focus
+            {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
             } else if let Some(parent) =

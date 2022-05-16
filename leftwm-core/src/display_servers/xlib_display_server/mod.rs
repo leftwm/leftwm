@@ -159,7 +159,7 @@ impl DisplayServer for XlibDisplayServer {
         // Avoid focusing the window just behind the cursor if requested
         if !focus_manager.mouse_follows_focus {
             let current_pos = self.xw.get_cursor_point().ok();
-            let old_pos = focus_manager.last_mouse_position.clone();
+            let old_pos = focus_manager.last_mouse_position;
             focus_manager.last_mouse_position = current_pos;
 
             if let (Some(old_pos), Some(current_pos)) = (old_pos, current_pos) {
