@@ -85,7 +85,7 @@ fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
     if xw.focused_window != event.window {
         let never_focus = match xw.get_wmhints(xw.focused_window) {
             Some(hint) => hint.flags & xlib::InputHint != 0 && hint.input == 0,
-            None => false
+            None => false,
         };
         xw.focus(xw.focused_window, never_focus);
     }
