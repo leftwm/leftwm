@@ -83,10 +83,10 @@ fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
     let event = xlib::XFocusChangeEvent::from(x_event.1);
     // Check that if a window is taking focus, that it should be.
     if xw.focused_window != event.window {
-        let mut never_focus = false;
-        if let Some(hint) = xw.get_wmhints(xw.focused_window) {
-            never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
-        }
+        let never_focus = match xw.get_wmhints(xw.focused_window) {
+            Some(hint) => hint.flags & xlib::InputHint != 0 && hint.input == 0,
+            None => false
+        };
         xw.focus(xw.focused_window, never_focus);
     }
     None
