@@ -102,6 +102,12 @@ impl State {
     }
 
     fn focus_window_work(&mut self, handle: &WindowHandle) -> Option<Window> {
+        if self.screens.iter().any(|s| &s.root == handle) {
+            let act = DisplayAction::Unfocus(None, false);
+            self.actions.push_back(act);
+            self.focus_manager.window_history.push_front(None);
+            return None;
+        }
         // Find the handle in our managed windows.
         let found: &Window = self.windows.iter().find(|w| &w.handle == handle)?;
         // Docks don't want to get focus. If they do weird things happen. They don't get events...

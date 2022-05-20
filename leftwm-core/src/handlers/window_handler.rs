@@ -143,8 +143,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
         if fullscreen_changed {
             // Reorder windows.
-            let act = DisplayAction::SetWindowOrder(self.state.windows.clone());
-            self.state.actions.push_back(act);
+            self.state.sort_windows();
         }
         if strut_changed {
             self.state.update_static();
@@ -366,11 +365,12 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
     match state.insert_behavior {
         InsertBehavior::Top => state.windows.insert(0, window.clone()),
         InsertBehavior::Bottom => state.windows.push(window.clone()),
-        InsertBehavior::BeforeCurrent => state.windows.insert(current_index, window.clone()),
         InsertBehavior::AfterCurrent if current_index < state.windows.len() => {
             state.windows.insert(current_index + 1, window.clone());
         }
-        InsertBehavior::AfterCurrent => state.windows.insert(current_index, window.clone()),
+        InsertBehavior::AfterCurrent | InsertBehavior::BeforeCurrent => {
+            state.windows.insert(current_index, window.clone());
+        }
     }
 }
 

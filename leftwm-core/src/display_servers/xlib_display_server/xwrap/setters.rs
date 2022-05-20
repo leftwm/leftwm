@@ -185,6 +185,25 @@ impl XWrap {
         self.replace_property_long(window, self.atoms.NetWMState, xlib::XA_ATOM, &data);
     }
 
+    pub fn set_window_urgency(&self, window: xlib::Window, is_urgent: bool) {
+        if let Some(mut wmh) = self.get_wmhints(window) {
+            if ((wmh.flags & xlib::XUrgencyHint) != 0) == is_urgent {
+                return;
+            }
+            wmh.flags = if is_urgent {
+                wmh.flags | xlib::XUrgencyHint
+            } else {
+                wmh.flags & !xlib::XUrgencyHint
+            };
+            self.set_wmhints(window, &mut wmh);
+        }
+    }
+
+    /// Sets the `XWMHints` of a window.
+    pub fn set_wmhints(&self, window: xlib::Window, wmh: &mut xlib::XWMHints) {
+        unsafe { (self.xlib.XSetWMHints)(self.display, window, wmh) };
+    }
+
     /// Sets the `WM_STATE` of a window.
     pub fn set_wm_states(&self, window: xlib::Window, states: &[c_long]) {
         self.replace_property_long(window, self.atoms.WMState, self.atoms.WMState, states);
