@@ -256,6 +256,21 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         .windows
         .iter_mut()
         .find(|w| w.handle == handle)?;
+
+    // check if window is in active scratchpad
+    let scratchpad_name = manager
+        .state
+        .active_scratchpads
+        .iter_mut()
+        .find(|(_, id)| window.pid == **id)
+        .map(|(name, _)| name.clone());
+
+    // if we found window in scratchpad, remove it from active_scratchpads
+    if let Some(name) = scratchpad_name {
+        log::debug!("Found window in active scratchpad: {}", name);
+        manager.state.active_scratchpads.remove(&name);
+    }
+
     window.clear_tags();
     window.set_floating(false);
     window.tag(&tag.id);
