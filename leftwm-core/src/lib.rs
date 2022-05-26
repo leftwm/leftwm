@@ -32,7 +32,7 @@ use utils::xkeysym_lookup::Button;
 use utils::xkeysym_lookup::ModMask;
 use utils::xkeysym_lookup::XKeysym;
 
-pub use command::Command;
+pub use command::{Command, ReleaseScratchPadOption};
 pub use config::{Config, Keybind};
 pub use display_action::DisplayAction;
 pub use display_event::DisplayEvent;

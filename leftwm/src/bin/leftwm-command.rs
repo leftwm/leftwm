@@ -81,6 +81,7 @@ async fn main() -> Result<()> {
             leftwm-command \"<command> <args>\"
 
         LoadTheme              Args: <Path_to/theme.toml>
+        ReleaseScratchPad      Args: <tag_index> or <ScratchpadName>
         ToggleScratchPad       Args: <ScratchpadName>
         SendWorkspaceToTag     Args: <workspaxe_index> <tag_index> (int)
         SendWindowToTag        Args: <tag_index> (int)

@@ -7,6 +7,7 @@
 
 use super::*;
 use crate::child_process::Children;
+use crate::command::ReleaseScratchPadOption;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
@@ -52,6 +53,9 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::Execute(shell_command) => execute(&mut manager.children, shell_command),
 
         Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
+        Command::ReleaseScratchPad { window, tag } => {
+            release_scratchpad(window.clone(), *tag, manager)
+        }
 
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
@@ -214,6 +218,85 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     None
 }
 
+/// Release a scratchpad to become a normal window. When tag is None, use current active tag as the
+/// destination. Window can be a handle to select a specific window, the name of a scratchpad or
+/// none to select the current window.
+fn release_scratchpad<C: Config, SERVER: DisplayServer>(
+    window: ReleaseScratchPadOption,
+    tag: Option<TagId>,
+    manager: &mut Manager<C, SERVER>,
+) -> Option<bool> {
+    let destination_tag =
+        tag.or_else(|| manager.state.focus_manager.tag_history.get(0).copied())?;
+
+    // if None, replace with current window
+    let window = if window == ReleaseScratchPadOption::None {
+        ReleaseScratchPadOption::Handle(
+            manager
+                .state
+                .focus_manager
+                .window_history
+                .get(0)?
+                .as_ref()
+                .copied()?,
+        )
+    } else {
+        window
+    };
+
+    match window {
+        ReleaseScratchPadOption::Handle(window_handle) => {
+            // check if window is in active scratchpad
+            let window = manager
+                .state
+                .windows
+                .iter_mut()
+                .find(|w| w.handle == window_handle)?;
+
+            let scratchpad_name = manager
+                .state
+                .active_scratchpads
+                .iter_mut()
+                .find(|(_, id)| window.pid == **id)
+                .map(|(name, _)| name.clone())?;
+
+            log::debug!(
+                "Releasing scratchpad {} to tag {}",
+                scratchpad_name,
+                destination_tag
+            );
+
+            // if we found window in scratchpad, remove it from active_scratchpads
+            manager.state.active_scratchpads.remove(&scratchpad_name);
+
+            move_to_tag(Some(window_handle), destination_tag, manager)
+        }
+        ReleaseScratchPadOption::ScrathpadName(scratchpad_name) => {
+            // remove and get value from active_scratchpad
+            let window_pid = manager
+                .state
+                .active_scratchpads
+                .remove(&scratchpad_name)??;
+
+            let window_handle = manager
+                .state
+                .windows
+                .iter()
+                .find(|w| w.pid == Some(window_pid))
+                .map(|w| w.handle);
+
+            log::debug!(
+                "Releasing scratchpad {} to tag {}",
+                scratchpad_name,
+                destination_tag
+            );
+
+            move_to_tag(window_handle, destination_tag, manager)
+        }
+        ReleaseScratchPadOption::None => panic!("Invalid state"), // should not be possible
+    }
+}
+
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     let handle = window.handle;
@@ -256,20 +339,6 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         .windows
         .iter_mut()
         .find(|w| w.handle == handle)?;
-
-    // check if window is in active scratchpad
-    let scratchpad_name = manager
-        .state
-        .active_scratchpads
-        .iter_mut()
-        .find(|(_, id)| window.pid == **id)
-        .map(|(name, _)| name.clone());
-
-    // if we found window in scratchpad, remove it from active_scratchpads
-    if let Some(name) = scratchpad_name {
-        log::debug!("Found window in active scratchpad: {}", name);
-        manager.state.active_scratchpads.remove(&name);
-    }
 
     window.clear_tags();
     window.set_floating(false);

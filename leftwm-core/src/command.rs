@@ -11,6 +11,10 @@ pub enum Command {
     SwapScreens,
     SoftReload,
     HardReload,
+    ReleaseScratchPad {
+        window: ReleaseScratchPadOption,
+        tag: Option<TagId>,
+    },
     ToggleScratchPad(String),
     ToggleFullScreen,
     ToggleSticky,
@@ -55,4 +59,11 @@ pub enum Command {
     SendWorkspaceToTag(usize, usize),
     CloseAllOtherWindows,
     Other(String),
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub enum ReleaseScratchPadOption {
+    Handle(WindowHandle),
+    ScrathpadName(String),
+    None,
 }

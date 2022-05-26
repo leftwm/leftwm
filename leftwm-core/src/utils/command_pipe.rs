@@ -1,7 +1,7 @@
 //! Creates a pipe to listen for external commands.
 use crate::layouts::Layout;
 use crate::models::TagId;
-use crate::Command;
+use crate::{Command, ReleaseScratchPadOption};
 use std::env;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -115,12 +115,32 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "RotateTag" => Ok(Command::RotateTag),
         "CloseWindow" => Ok(Command::CloseWindow),
         "ToggleScratchPad" => build_toggle_scratchpad(rest),
+        "ReleaseScratchPad" => build_release_scratchpad(rest),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SendWindowToTag" => build_send_window_to_tag(rest),
         "SetLayout" => build_set_layout(rest),
         "SetMarginMultiplier" => build_set_margin_multiplier(rest),
         "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
         _ => Ok(Command::Other(s.into())),
+    }
+}
+
+fn build_release_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    if raw.is_empty() {
+        Ok(Command::ReleaseScratchPad {
+            window: ReleaseScratchPadOption::None,
+            tag: None,
+        })
+    } else if let Ok(tag_id) = usize::from_str(raw) {
+        Ok(Command::ReleaseScratchPad {
+            window: ReleaseScratchPadOption::None,
+            tag: Some(tag_id),
+        })
+    } else {
+        Ok(Command::ReleaseScratchPad {
+            window: ReleaseScratchPadOption::ScrathpadName(raw.to_string()),
+            tag: None,
+        })
     }
 }
 

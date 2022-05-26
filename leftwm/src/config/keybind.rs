@@ -31,6 +31,32 @@ impl Keybind {
             BaseCommand::SwapTags => leftwm_core::Command::SwapScreens,
             BaseCommand::SoftReload => leftwm_core::Command::SoftReload,
             BaseCommand::HardReload => leftwm_core::Command::HardReload,
+            BaseCommand::ReleaseScratchPad => {
+                if self.value.is_empty() {
+                    leftwm_core::Command::ReleaseScratchPad {
+                        window: leftwm_core::ReleaseScratchPadOption::None,
+                        tag: None,
+                    }
+                } else if let Ok(tag) = usize::from_str(&self.value) {
+                    leftwm_core::Command::ReleaseScratchPad {
+                        window: leftwm_core::ReleaseScratchPadOption::None,
+                        tag: Some(tag),
+                    }
+                } else if let Some(Some(scratchpad)) = config
+                    .scratchpad
+                    .as_ref()
+                    .map(|s| s.iter().find(|s| s.name == self.value))
+                {
+                    leftwm_core::Command::ReleaseScratchPad {
+                        window: leftwm_core::ReleaseScratchPadOption::ScrathpadName(
+                            scratchpad.name.to_owned(),
+                        ),
+                        tag: None,
+                    }
+                } else {
+                    anyhow::bail!("The value for ReleaseScratchPad was not a valid tag number or scratchpad name");
+                }
+            }
             BaseCommand::ToggleScratchPad => {
                 leftwm_core::Command::ToggleScratchPad(ensure_non_empty!(self.value.clone()))
             }
