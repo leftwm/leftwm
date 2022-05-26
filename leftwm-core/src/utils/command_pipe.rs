@@ -115,7 +115,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "RotateTag" => Ok(Command::RotateTag),
         "CloseWindow" => Ok(Command::CloseWindow),
         "ToggleScratchPad" => build_toggle_scratchpad(rest),
-        "ReleaseScratchPad" => build_release_scratchpad(rest),
+        "ReleaseScratchPad" => Ok(build_release_scratchpad(rest)),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SendWindowToTag" => build_send_window_to_tag(rest),
         "SetLayout" => build_set_layout(rest),
@@ -125,22 +125,22 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
     }
 }
 
-fn build_release_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_release_scratchpad(raw: &str) -> Command {
     if raw.is_empty() {
-        Ok(Command::ReleaseScratchPad {
+        Command::ReleaseScratchPad {
             window: ReleaseScratchPadOption::None,
             tag: None,
-        })
+        }
     } else if let Ok(tag_id) = usize::from_str(raw) {
-        Ok(Command::ReleaseScratchPad {
+        Command::ReleaseScratchPad {
             window: ReleaseScratchPadOption::None,
             tag: Some(tag_id),
-        })
+        }
     } else {
-        Ok(Command::ReleaseScratchPad {
+        Command::ReleaseScratchPad {
             window: ReleaseScratchPadOption::ScrathpadName(raw.to_string()),
             tag: None,
-        })
+        }
     }
 }
 
