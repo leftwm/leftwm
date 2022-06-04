@@ -13,6 +13,7 @@ pub enum Command {
     HardReload,
     ToggleScratchPad(String),
     ToggleFullScreen,
+    ToggleMargin,
     ToggleSticky,
     GoToTag {
         tag: TagId,

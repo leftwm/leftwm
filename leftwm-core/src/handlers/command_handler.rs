@@ -53,6 +53,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
 
+        Command::ToggleMargin => toggle_margin(state),
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
 
@@ -212,6 +213,17 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     }
     log::warn!("unable to find NSP tag");
     None
+}
+
+fn toggle_margin(state: &mut State) -> Option<bool> {
+    let ws = state.focus_manager.workspace_mut(&mut state.workspaces)?;
+    let margin = ws.margin_multiplier();
+    if margin > 0.0 {
+        set_margin_multiplier(state, 0.0);
+    } else {
+        set_margin_multiplier(state, 1.0);
+    }
+    Some(true)
 }
 
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {

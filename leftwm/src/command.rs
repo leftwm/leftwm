@@ -19,6 +19,7 @@ pub enum BaseCommand {
     HardReload,
     ToggleScratchPad,
     ToggleFullScreen,
+    ToggleMargin,
     ToggleSticky,
     GotoTag,
     ReturnToLastTag,

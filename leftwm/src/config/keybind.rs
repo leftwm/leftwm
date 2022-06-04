@@ -35,6 +35,7 @@ impl Keybind {
                 leftwm_core::Command::ToggleScratchPad(ensure_non_empty!(self.value.clone()))
             }
             BaseCommand::ToggleFullScreen => leftwm_core::Command::ToggleFullScreen,
+            BaseCommand::ToggleMargin => leftwm_core::Command::ToggleMargin,
             BaseCommand::ToggleSticky => leftwm_core::Command::ToggleSticky,
             BaseCommand::GotoTag => leftwm_core::Command::GoToTag {
                 tag: usize::from_str(&self.value).context("invalid index value for GotoTag")?,

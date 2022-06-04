@@ -53,6 +53,7 @@ async fn main() -> Result<()> {
         UnloadTheme
         SoftReload
         ToggleFullScreen
+        ToggleMargin
         ToggleSticky
         SwapScreens
         MoveWindowToLastWorkspace
