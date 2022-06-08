@@ -1,6 +1,5 @@
 use crate::config::Config;
 use crate::display_action::DisplayAction;
-use crate::models::FocusManager;
 use crate::models::Mode;
 use crate::models::Screen;
 use crate::models::TagId;
@@ -152,23 +151,7 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     /// Creates a verify focus event for the cursors current window.
-    fn generate_verify_focus_event(
-        &self,
-        focus_manager: &mut FocusManager,
-    ) -> Option<DisplayEvent> {
-        // Avoid focusing the window just behind the cursor if requested
-        if !focus_manager.mouse_follows_focus {
-            let current_pos = self.xw.get_cursor_point().ok();
-            let old_pos = focus_manager.last_mouse_position;
-            focus_manager.last_mouse_position = current_pos;
-
-            if let (Some(old_pos), Some(current_pos)) = (old_pos, current_pos) {
-                if old_pos == current_pos {
-                    return None;
-                }
-            }
-        }
-
+    fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
         let handle = self.xw.get_cursor_window().ok()?;
         Some(DisplayEvent::VerifyFocusedAt(handle))
     }
