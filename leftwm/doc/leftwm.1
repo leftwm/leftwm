@@ -151,11 +151,16 @@ Default: \f[C]mousekey = \[dq]Mod4\[dq]\f[R] (windows key)
 .SS Focus Behaviour
 .PP
 LeftWM has 3 focusing behaviours (Sloppy, ClickTo, and Driven) and
-one option (focus_new_windows), which alter the way focus is handled.
-These encompass 3 different patterns:
+2 options (focus_new_windows, sloppy_mouse_follows_focus), which alter the way focus is handled.
+These encompass 5 different patterns:
 .IP "1." 3
 Sloppy Focus.
 Focus follows the mouse, hovering over a window brings it to focus.
+This behaviour have a variant which is toggled with the sloppy_mouse_follows_focus option:
+.IP "-" 4
+When true, the cursor will follow the focus and teleport to the window that takes focus.
+.IP "-" 4
+When false, the cursor isn't moved by LeftWM at all.
 .IP "2." 3
 Click-to-Focus.
 Focus follows the mouse, but only clicks change focus.
@@ -169,6 +174,7 @@ Default:
 \f[C]
 focus_behaviour = \[dq]Sloppy\[dq] # Can be Sloppy, ClickTo, or Driven
 focus_new_windows = true
+sloppy_mouse_follows_focus = true # Only active with the Sloppy behaviour
 \f[R]
 .fi
 .SS Layouts
