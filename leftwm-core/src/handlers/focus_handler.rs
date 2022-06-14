@@ -77,7 +77,8 @@ impl State {
             self.focus_workspace_work(ws.id);
         }
         // Make sure the focused window is on this workspace.
-        if self.focus_manager.behaviour.is_sloppy() && self.focus_manager.sloppy_mouse_follows_focus {
+        if self.focus_manager.behaviour.is_sloppy() && self.focus_manager.sloppy_mouse_follows_focus
+        {
             let act = DisplayAction::FocusWindowUnderCursor;
             self.actions.push_back(act);
         } else if let Some(handle) = self.focus_manager.tags_last_window.get(tag).copied() {
