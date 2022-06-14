@@ -719,7 +719,7 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let current = state.focus_manager.workspace(&state.workspaces)?;
     let workspace = helpers::relative_find(&state.workspaces, |w| w == current, val, true)?.clone();
 
-    if state.focus_manager.behaviour.is_sloppy() && state.focus_manager.mouse_follows_focus {
+    if state.focus_manager.behaviour.is_sloppy() && state.focus_manager.sloppy_mouse_follows_focus {
         let action = workspace
             .tags
             .first()

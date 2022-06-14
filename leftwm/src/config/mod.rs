@@ -102,7 +102,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
-    pub mouse_follows_focus: bool,
+    pub sloppy_mouse_follows_focus: bool,
 
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
@@ -481,8 +481,8 @@ impl leftwm_core::Config for Config {
         false
     }
 
-    fn mouse_follows_focus(&self) -> bool {
-        self.mouse_follows_focus
+    fn sloppy_mouse_follows_focus(&self) -> bool {
+        self.sloppy_mouse_follows_focus
     }
 }
 

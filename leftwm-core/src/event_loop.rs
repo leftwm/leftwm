@@ -43,7 +43,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 // once the button is released. This is to double check that we know which window
                 // is currently focused.
                 _ = timeout(100), if event_buffer.is_empty()
-                    && self.state.focus_manager.mouse_follows_focus
+                    && self.state.focus_manager.sloppy_mouse_follows_focus
                     && self.state.focus_manager.behaviour.is_sloppy() => {
                     if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
                         event_buffer.push(verify_event);

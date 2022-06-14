@@ -41,7 +41,7 @@ pub struct FocusManager {
     pub window_history: VecDeque<MaybeWindowHandle>,
     pub tag_history: VecDeque<TagId>,
     pub tags_last_window: HashMap<TagId, WindowHandle>,
-    pub mouse_follows_focus: bool,
+    pub sloppy_mouse_follows_focus: bool,
     pub last_mouse_position: Option<(i32, i32)>,
 }
 
@@ -54,7 +54,7 @@ impl FocusManager {
             window_history: Default::default(),
             tag_history: Default::default(),
             tags_last_window: Default::default(),
-            mouse_follows_focus: config.mouse_follows_focus(),
+            sloppy_mouse_follows_focus: config.sloppy_mouse_follows_focus(),
             last_mouse_position: None,
         }
     }
