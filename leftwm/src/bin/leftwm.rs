@@ -21,6 +21,7 @@ fn main() {
     subcommands.insert("command", "Send external commands to LeftWM");
     subcommands.insert("state", "Print the current state of LeftWM");
     subcommands.insert("theme", "Manage LeftWM themes");
+    subcommands.insert("config", "Edit the config with the default editor");
 
     let subcommand_names: Vec<&str> = subcommands.keys().copied().collect();
 
