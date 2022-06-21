@@ -41,6 +41,12 @@ pub enum Command {
         window: Option<WindowHandle>,
         tag: TagId,
     },
+    MoveWindowToNextTag {
+        follow: bool,
+    },
+    MoveWindowToPreviousTag {
+        follow: bool,
+    },
     MoveWindowToLastWorkspace,
     MoveWindowToNextWorkspace,
     MoveWindowToPreviousWorkspace,
