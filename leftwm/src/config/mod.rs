@@ -80,6 +80,7 @@ impl WindowHook {
 }
 
 /// General configuration
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {
@@ -101,6 +102,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
     pub state: Option<PathBuf>,
+    pub sloppy_mouse_follows_focus: bool,
 
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
@@ -477,6 +479,10 @@ impl leftwm_core::Config for Config {
             return false;
         }
         false
+    }
+
+    fn sloppy_mouse_follows_focus(&self) -> bool {
+        self.sloppy_mouse_follows_focus
     }
 }
 

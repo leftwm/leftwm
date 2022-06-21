@@ -38,6 +38,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour.is_sloppy()
+            && self.state.focus_manager.sloppy_mouse_follows_focus
             && on_same_tag;
         //let the DS know we are managing this window
         let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
@@ -85,7 +86,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let focused = self.state.focus_manager.window_history.get(0);
         //make sure focus is recalculated if we closed the currently focused window
         if focused == Some(&Some(*handle)) {
-            if self.state.focus_manager.behaviour.is_sloppy() {
+            if self.state.focus_manager.behaviour.is_sloppy()
+                && self.state.focus_manager.sloppy_mouse_follows_focus
+            {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
             } else if let Some(parent) =
