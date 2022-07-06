@@ -100,6 +100,14 @@ impl Keybind {
                 tag: usize::from_str(&self.value)
                     .context("invalid index value for SendWindowToTag")?,
             },
+            BaseCommand::MoveWindowToNextTag => leftwm_core::Command::MoveWindowToNextTag {
+                follow: bool::from_str(&self.value)
+                    .context("invalid boolean value for MoveWindowToNextTag")?,
+            },
+            BaseCommand::MoveWindowToPreviousTag => leftwm_core::Command::MoveWindowToPreviousTag {
+                follow: bool::from_str(&self.value)
+                    .context("invalid boolean value for MoveWindowToPreviousTag")?,
+            },
             BaseCommand::MoveToLastWorkspace => leftwm_core::Command::MoveWindowToLastWorkspace,
             BaseCommand::MoveWindowToNextWorkspace => {
                 leftwm_core::Command::MoveWindowToNextWorkspace
