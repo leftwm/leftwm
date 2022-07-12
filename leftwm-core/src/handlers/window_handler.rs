@@ -251,7 +251,7 @@ fn setup_window(
             if let Some((scratchpad_name, _)) = state
                 .active_scratchpads
                 .iter()
-                .find(|(_, &id)| id == window.pid)
+                .find(|(_, id)| id.front() == window.pid.as_ref())
             {
                 if let Some(s) = state
                     .scratchpads
@@ -395,7 +395,7 @@ fn is_scratchpad(state: &State, window: &Window) -> bool {
     state
         .active_scratchpads
         .iter()
-        .any(|(_, &id)| window.pid == id)
+        .any(|(_, id)| id.iter().any(|id| window.pid == Some(*id)))
 }
 
 fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {

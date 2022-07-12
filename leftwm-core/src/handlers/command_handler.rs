@@ -5,6 +5,8 @@
 // allow shadow should be removed once it is resolved
 // https://github.com/rust-lang/rust-clippy/issues/6563
 
+use std::collections::VecDeque;
+
 use super::*;
 use crate::child_process::Children;
 use crate::command::ReleaseScratchPadOption;
@@ -56,6 +58,9 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::Execute(shell_command) => execute(&mut manager.children, shell_command),
 
         Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
+        Command::AttachScratchPad { window, scratchpad } => {
+            attach_scratchpad(*window, scratchpad.clone(), manager)
+        }
         Command::ReleaseScratchPad { window, tag } => {
             release_scratchpad(window.clone(), *tag, manager)
         }
@@ -148,7 +153,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         .state
         .scratchpads
         .iter()
-        .find(|s| name == s.name.clone())?
+        .find(|s| name == s.name)?
         .clone();
 
     let mut handle = None;
@@ -167,7 +172,12 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
 
     if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
         if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
-            if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
+            if let Some(window) = manager
+                .state
+                .windows
+                .iter_mut()
+                .find(|w| w.pid.as_ref() == id.front())
+            {
                 let previous_tag = window.tags[0];
                 let is_visible = window.has_tag(current_tag);
                 window.clear_tags();
@@ -215,11 +225,61 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             scratchpad.name
         );
         let name = scratchpad.name.clone();
-        let pid = exec_shell(&scratchpad.value, &mut manager.children);
-        manager.state.active_scratchpads.insert(name, pid);
+        let pid = exec_shell(&scratchpad.value, &mut manager.children)?;
+        //manager.state.active_scratchpads.insert(name, pid);
+        match manager.state.active_scratchpads.get_mut(&scratchpad.value) {
+            Some(windows) => {
+                windows.push_front(pid);
+            }
+            None => {
+                manager
+                    .state
+                    .active_scratchpads
+                    .insert(name, VecDeque::from([pid]));
+            }
+        }
         return None;
     }
     log::warn!("unable to find NSP tag");
+    None
+}
+
+/// TODO: Implement proper solution
+fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
+    window: Option<WindowHandle>,
+    scratchpad: String,
+    manager: &mut Manager<C, SERVER>,
+) -> Option<bool> {
+    // if None, replace with current window
+    let window_handle = match window {
+        Some(w) => w,
+        None => manager
+            .state
+            .focus_manager
+            .window_history
+            .get(0)?
+            .as_ref()
+            .copied()?,
+    };
+
+    let window_pid = manager
+        .state
+        .windows
+        .iter_mut()
+        .find(|w| w.handle == window_handle)?
+        .pid?;
+
+    if let Some(windows) = manager.state.active_scratchpads.get_mut(&scratchpad) {
+        log::debug!("Scratchpad {} already active, push scratchpad", &scratchpad);
+        windows.push_front(window_pid);
+    } else {
+        log::debug!("Scratchpad {} not active yet, open scratchpad", &scratchpad);
+        manager
+            .state
+            .active_scratchpads
+            .insert(scratchpad, VecDeque::from([window_pid]));
+    }
+
     None
 }
 
@@ -262,7 +322,7 @@ fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .state
                 .active_scratchpads
                 .iter_mut()
-                .find(|(_, id)| window.pid == **id)
+                .find(|(_, id)| window.pid.as_ref() == id.front())
                 .map(|(name, _)| name.clone())?;
 
             log::debug!(
@@ -272,7 +332,20 @@ fn release_scratchpad<C: Config, SERVER: DisplayServer>(
             );
 
             // if we found window in scratchpad, remove it from active_scratchpads
-            manager.state.active_scratchpads.remove(&scratchpad_name);
+            if let Some(windows) = manager.state.active_scratchpads.get_mut(&scratchpad_name) {
+                if windows.len() > 1 {
+                    // if more than 1, pop of the stack
+                    log::debug!("Popped 1 window from scratchpad {}", &scratchpad_name);
+                    windows.pop_front()?;
+                } else {
+                    // if only 1, remove entire vec, not needed anymore
+                    log::debug!(
+                        "Empty scratchpad {}, removing from active_scratchpads",
+                        &scratchpad_name
+                    );
+                    manager.state.active_scratchpads.remove(&scratchpad_name);
+                }
+            }
 
             move_to_tag(Some(window_handle), destination_tag, manager)
         }
@@ -281,13 +354,14 @@ fn release_scratchpad<C: Config, SERVER: DisplayServer>(
             let window_pid = manager
                 .state
                 .active_scratchpads
-                .remove(&scratchpad_name)??;
+                .get_mut(&scratchpad_name)?
+                .front()?;
 
             let window_handle = manager
                 .state
                 .windows
                 .iter()
-                .find(|w| w.pid == Some(window_pid))
+                .find(|w| w.pid == Some(*window_pid))
                 .map(|w| w.handle);
 
             log::debug!(

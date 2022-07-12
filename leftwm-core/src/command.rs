@@ -11,6 +11,10 @@ pub enum Command {
     SwapScreens,
     SoftReload,
     HardReload,
+    AttachScratchPad {
+        window: Option<WindowHandle>,
+        scratchpad: String,
+    },
     ReleaseScratchPad {
         window: ReleaseScratchPadOption,
         tag: Option<TagId>,

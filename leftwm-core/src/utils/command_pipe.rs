@@ -117,6 +117,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "RotateTag" => Ok(Command::RotateTag),
         "CloseWindow" => Ok(Command::CloseWindow),
         "ToggleScratchPad" => build_toggle_scratchpad(rest),
+        "AttachScratchPad" => build_attach_scratchpad(rest),
         "ReleaseScratchPad" => Ok(build_release_scratchpad(rest)),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SendWindowToTag" => build_send_window_to_tag(rest),
@@ -125,6 +126,18 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
         _ => Ok(Command::Other(s.into())),
     }
+}
+
+fn build_attach_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let name = if raw.is_empty() {
+        return Err("missing argument scratchpad's name".into());
+    } else {
+        raw
+    };
+    Ok(Command::AttachScratchPad {
+        scratchpad: name.to_string(),
+        window: None,
+    })
 }
 
 fn build_release_scratchpad(raw: &str) -> Command {

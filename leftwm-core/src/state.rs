@@ -23,7 +23,7 @@ pub struct State {
     pub mode: Mode,
     pub layouts: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,
-    pub active_scratchpads: HashMap<String, Option<u32>>,
+    pub active_scratchpads: HashMap<String, VecDeque<u32>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
     pub mousekey: Vec<String>,
@@ -243,7 +243,8 @@ impl State {
 
         // Restore scratchpads.
         for (scratchpad, id) in &state.active_scratchpads {
-            self.active_scratchpads.insert(scratchpad.clone(), *id);
+            self.active_scratchpads
+                .insert(scratchpad.clone(), id.clone());
         }
 
         // Restore focus.
