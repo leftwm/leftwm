@@ -1299,4 +1299,144 @@ mod tests {
         );
         assert_eq!(manager.state.windows[0].handle, initial.handle);
     }
+
+    #[test]
+    /// Test release scratchpad command for 1 window in the scratchpad
+    /// After releasing, the scratchpad should not be active anymore (no more windows)
+    fn release_scratchpad_test() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+
+        // setup
+        let mock_window1 = 1_u32;
+        let scratchpad_name = "Alacritty";
+        manager
+            .state
+            .active_scratchpads
+            .insert(scratchpad_name.to_owned(), VecDeque::from([mock_window1]));
+        manager.window_created_handler(
+            Window::new(
+                WindowHandle::MockHandle(mock_window1 as i32),
+                None,
+                Some(mock_window1),
+            ),
+            -1,
+            -1,
+        );
+
+        let expected_tag = manager.state.tags.get(1).unwrap().id;
+
+        // Release Scratchpad
+        manager.command_handler(&Command::ReleaseScratchPad {
+            window: ReleaseScratchPadOption::Handle(WindowHandle::MockHandle(mock_window1 as i32)),
+            tag: Some(expected_tag),
+        });
+
+        // assert
+        assert!(manager
+            .state
+            .active_scratchpads
+            .get(scratchpad_name)
+            .is_none());
+        assert_eq!(
+            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            expected_tag
+        );
+    }
+
+    #[test]
+    /// Testing release scratchpad command with more than 1 window in a scratchpad
+    /// After releasing 1 window, the rest should still be in the scratchpad
+    fn release_scratchpad_multiple_windows_test() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+
+        // setup
+        let mock_window1 = 1_u32;
+        let mock_window2 = 2_u32;
+        let mock_window3 = 3_u32;
+        let scratchpad_name = "Alacritty";
+        manager.state.active_scratchpads.insert(
+            scratchpad_name.to_owned(),
+            VecDeque::from([mock_window1, mock_window2, mock_window3]),
+        );
+        for window in [mock_window1, mock_window2, mock_window3] {
+            manager.window_created_handler(
+                Window::new(
+                    WindowHandle::MockHandle(window as i32),
+                    None,
+                    Some(mock_window1),
+                ),
+                -1,
+                -1,
+            );
+        }
+
+        let expected_tag = manager.state.tags.get(1).unwrap().id;
+
+        // Release Scratchpad
+        manager.command_handler(&Command::ReleaseScratchPad {
+            window: ReleaseScratchPadOption::Handle(WindowHandle::MockHandle(mock_window1 as i32)),
+            tag: Some(expected_tag),
+        });
+
+        // assert
+        let scratchpad = manager
+            .state
+            .active_scratchpads
+            .get_mut(scratchpad_name)
+            .unwrap();
+        assert_eq!(scratchpad.pop_front(), Some(mock_window2));
+        assert_eq!(scratchpad.pop_front(), Some(mock_window3));
+        assert_eq!(scratchpad.pop_front(), None);
+
+        assert_eq!(
+            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            expected_tag
+        );
+    }
+
+    #[test]
+    fn attach_scratchpad_test() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+
+        // setup
+        let mock_window1 = 1_u32;
+        let mock_window2 = 2_u32;
+        let mock_window3 = 3_u32;
+        let scratchpad_name = "Alacritty";
+        manager.state.active_scratchpads.insert(
+            scratchpad_name.to_owned(),
+            VecDeque::from([mock_window2, mock_window3]),
+        );
+        for window in [mock_window1, mock_window2, mock_window3] {
+            manager.window_created_handler(
+                Window::new(
+                    WindowHandle::MockHandle(window as i32),
+                    None,
+                    Some(mock_window1),
+                ),
+                -1,
+                -1,
+            );
+        }
+
+        // Release Scratchpad
+        manager.command_handler(&Command::AttachScratchPad {
+            window: Some(WindowHandle::MockHandle(mock_window1 as i32)),
+            scratchpad: scratchpad_name.to_owned(),
+        });
+
+        // assert
+        let scratchpad = manager
+            .state
+            .active_scratchpads
+            .get_mut(scratchpad_name)
+            .unwrap();
+        assert_eq!(scratchpad.pop_front(), Some(mock_window1));
+        assert_eq!(scratchpad.pop_front(), Some(mock_window2));
+        assert_eq!(scratchpad.pop_front(), Some(mock_window3));
+        assert_eq!(scratchpad.pop_front(), None);
+    }
 }
