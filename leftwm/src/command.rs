@@ -17,6 +17,7 @@ pub enum BaseCommand {
     SwapTags,
     SoftReload,
     HardReload,
+    AttachScratchPad,
     ReleaseScratchPad,
     ToggleScratchPad,
     ToggleFullScreen,

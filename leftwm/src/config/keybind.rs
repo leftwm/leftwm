@@ -31,6 +31,22 @@ impl Keybind {
             BaseCommand::SwapTags => leftwm_core::Command::SwapScreens,
             BaseCommand::SoftReload => leftwm_core::Command::SoftReload,
             BaseCommand::HardReload => leftwm_core::Command::HardReload,
+            BaseCommand::AttachScratchPad => {
+                if let Some(Some(scratchpad)) = config
+                    .scratchpad
+                    .as_ref()
+                    .map(|s| s.iter().find(|s| s.name == self.value))
+                {
+                    leftwm_core::Command::AttachScratchPad {
+                        window: None,
+                        scratchpad: scratchpad.name.to_owned(),
+                    }
+                } else {
+                    anyhow::bail!(
+                        "The value for AttachScratchPad should be a valid scratchpad name"
+                    );
+                }
+            }
             BaseCommand::ReleaseScratchPad => {
                 if self.value.is_empty() {
                     leftwm_core::Command::ReleaseScratchPad {
