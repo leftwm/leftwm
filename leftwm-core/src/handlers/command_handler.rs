@@ -144,6 +144,98 @@ fn execute(children: &mut Children, shell_command: &str) -> Option<bool> {
     None
 }
 
+/// Hide scratchpad window:
+/// Expects that the window handle is a valid handle to a visible scratchpad window
+fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
+    scratchpad_window: &WindowHandle,
+) -> Result<(), &'static str> {
+    let nsp_tag = manager
+        .state
+        .tags
+        .get_hidden_by_label("NSP")
+        .ok_or("Could not find NSP tag")?;
+    let window = manager
+        .state
+        .windows
+        .iter_mut()
+        .find(|w| w.handle == *scratchpad_window)
+        .ok_or("Could not find window from scratchpad_window")?;
+
+    window.clear_tags();
+    // Hide the scratchpad.
+    window.tag(&nsp_tag.id);
+
+    // send tag changement to X
+    let act = DisplayAction::SetWindowTags(*scratchpad_window, window.tags.clone());
+    manager.state.actions.push_back(act);
+    manager.state.sort_windows();
+
+    // Make sure when changing focus the scratchpad is currently focused.
+    let handle =
+        if Some(&Some(*scratchpad_window)) != manager.state.focus_manager.window_history.get(0) {
+            None
+        } else if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
+            Some(*prev)
+        } else if let Some(ws) = manager
+            .state
+            .focus_manager
+            .workspace(&manager.state.workspaces)
+        {
+            manager
+                .state
+                .windows
+                .iter()
+                .find(|w| ws.is_managed(w))
+                .map(|w| w.handle)
+        } else {
+            None
+        };
+    if let Some(handle) = handle {
+        manager.state.handle_window_focus(&handle);
+    }
+
+    Ok(())
+}
+
+fn show_scratchpad<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
+    scratchpad_window: &WindowHandle,
+) -> Result<(), &'static str> {
+    let current_tag = &manager
+        .state
+        .focus_manager
+        .tag(0)
+        .ok_or("Could not retrieve the current tag")?;
+    let window = manager
+        .state
+        .windows
+        .iter_mut()
+        .find(|w| w.handle == *scratchpad_window)
+        .ok_or("Could not find window from scratchpad_window")?;
+    let previous_tag = window.tags[0];
+    window.clear_tags();
+
+    // Remove the entry for the previous tag to prevent the scratchpad being
+    // refocused.
+    manager
+        .state
+        .focus_manager
+        .tags_last_window
+        .remove(&previous_tag);
+    // Show the scratchpad.
+    window.tag(current_tag);
+
+    // send tag changement to X
+    let act = DisplayAction::SetWindowTags(*scratchpad_window, window.tags.clone());
+    manager.state.actions.push_back(act);
+    manager.state.sort_windows();
+    manager.state.handle_window_focus(scratchpad_window);
+    manager.state.move_to_top(scratchpad_window);
+
+    Ok(())
+}
+
 fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     name: &str,
@@ -156,91 +248,46 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         .find(|s| name == s.name)?
         .clone();
 
-    let mut handle = None;
-    if let Some(ws) = manager
-        .state
-        .focus_manager
-        .workspace(&manager.state.workspaces)
-    {
-        handle = manager
+    if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
+        let first_in_scratchpad = id.front();
+        if let Some((is_visible, window_handle)) = manager
             .state
             .windows
             .iter()
-            .find(|w| ws.is_managed(w))
-            .map(|w| w.handle);
+            .find(|w| w.pid.as_ref() == first_in_scratchpad)
+            .map(|w| (w.has_tag(current_tag), w.handle))
+        {
+            if is_visible {
+                // window is visible => Hide the scratchpad.
+                hide_scratchpad(manager, &window_handle).ok()?;
+            } else {
+                // window is hidden => show the scratchpad
+                show_scratchpad(manager, &window_handle).ok()?;
+            }
+
+            return Some(true);
+        }
     }
 
-    if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
-        if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
-            if let Some(window) = manager
+    log::debug!(
+        "no active scratchpad found for name {:?}. creating a new one",
+        scratchpad.name
+    );
+    let name = scratchpad.name.clone();
+    let pid = exec_shell(&scratchpad.value, &mut manager.children)?;
+    //manager.state.active_scratchpads.insert(name, pid);
+    match manager.state.active_scratchpads.get_mut(&scratchpad.value) {
+        Some(windows) => {
+            windows.push_front(pid);
+        }
+        None => {
+            manager
                 .state
-                .windows
-                .iter_mut()
-                .find(|w| w.pid.as_ref() == id.front())
-            {
-                let previous_tag = window.tags[0];
-                let is_visible = window.has_tag(current_tag);
-                window.clear_tags();
-                if is_visible {
-                    // Hide the scratchpad.
-                    window.tag(&nsp_tag.id);
-                    // Make sure when changing focus the scratchpad is currently focused.
-                    if Some(&Some(window.handle))
-                        != manager.state.focus_manager.window_history.get(0)
-                    {
-                        handle = None;
-                    } else if let Some(Some(prev)) =
-                        manager.state.focus_manager.window_history.get(1)
-                    {
-                        handle = Some(*prev);
-                    }
-                } else {
-                    // Remove the entry for the previous tag to prevent the scratchpad being
-                    // refocused.
-                    manager
-                        .state
-                        .focus_manager
-                        .tags_last_window
-                        .remove(&previous_tag);
-                    // Show the scratchpad.
-                    window.tag(current_tag);
-                    handle = Some(window.handle);
-                }
-                let act = DisplayAction::SetWindowTags(window.handle, window.tags.clone());
-                manager.state.actions.push_back(act);
-                manager.state.sort_windows();
-                if let Some(h) = handle {
-                    manager.state.handle_window_focus(&h);
-                    if !is_visible {
-                        manager.state.move_to_top(&h);
-                    }
-                }
-
-                return Some(true);
-            }
+                .active_scratchpads
+                .insert(name, VecDeque::from([pid]));
         }
-
-        log::debug!(
-            "no active scratchpad found for name {:?}. creating a new one",
-            scratchpad.name
-        );
-        let name = scratchpad.name.clone();
-        let pid = exec_shell(&scratchpad.value, &mut manager.children)?;
-        //manager.state.active_scratchpads.insert(name, pid);
-        match manager.state.active_scratchpads.get_mut(&scratchpad.value) {
-            Some(windows) => {
-                windows.push_front(pid);
-            }
-            None => {
-                manager
-                    .state
-                    .active_scratchpads
-                    .insert(name, VecDeque::from([pid]));
-            }
-        }
-        return None;
     }
-    log::warn!("unable to find NSP tag");
+
     None
 }
 
@@ -355,13 +402,13 @@ fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .state
                 .active_scratchpads
                 .get_mut(&scratchpad_name)?
-                .front()?;
+                .pop_front()?;
 
             let window_handle = manager
                 .state
                 .windows
                 .iter()
-                .find(|w| w.pid == Some(*window_pid))
+                .find(|w| w.pid == Some(window_pid))
                 .map(|w| w.handle);
 
             log::debug!(
@@ -972,7 +1019,7 @@ fn send_workspace_to_tag(state: &mut State, ws_index: usize, tag_index: usize) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::Tags;
+    use crate::{config::ScratchPad, models::Tags};
 
     #[test]
     fn return_to_last_tag_should_go_back_to_last_tag() {
@@ -1301,6 +1348,126 @@ mod tests {
     }
 
     #[test]
+    fn show_scratchpad_test() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+        let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
+        let first_tag = manager.state.tags.get(1).unwrap().id;
+
+        let mock_window = 1_u32;
+        let window_handle = WindowHandle::MockHandle(mock_window as i32);
+        manager.window_created_handler(
+            Window::new(window_handle.clone(), None, Some(mock_window)),
+            -1,
+            -1,
+        );
+        // make sure the window is on the first tag
+        manager.command_handler(&Command::SendWindowToTag {
+            window: None,
+            tag: first_tag,
+        });
+
+        show_scratchpad(&mut manager, &window_handle).unwrap();
+
+        let window = manager
+            .state
+            .windows
+            .iter_mut()
+            .find(|w| w.pid == Some(mock_window))
+            .unwrap();
+
+        assert!(!window.tags.iter().any(|tag| *tag == nsp_tag));
+    }
+
+    #[test]
+    fn hide_scratchpad_test() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+        let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
+        let first_tag = manager.state.tags.get(1).unwrap().id;
+
+        let mock_window = 1_u32;
+        let window_handle = WindowHandle::MockHandle(mock_window as i32);
+        manager.window_created_handler(
+            Window::new(window_handle.clone(), None, Some(mock_window)),
+            -1,
+            -1,
+        );
+        // make sure the window is on the first tag
+        manager.command_handler(&Command::SendWindowToTag {
+            window: None,
+            tag: first_tag,
+        });
+
+        hide_scratchpad(&mut manager, &window_handle).unwrap();
+
+        let window = manager
+            .state
+            .windows
+            .iter_mut()
+            .find(|w| w.pid == Some(mock_window))
+            .unwrap();
+
+        assert!(window.tags.iter().any(|tag| *tag == nsp_tag));
+    }
+
+    #[test]
+    fn toggle_scratchpad_test() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+        let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
+
+        let mock_window = 1_u32;
+        let window_handle = WindowHandle::MockHandle(mock_window as i32);
+        let scratchpad_name = "Alacritty";
+        manager.window_created_handler(
+            Window::new(window_handle.clone(), None, Some(mock_window)),
+            -1,
+            -1,
+        );
+        manager.state.scratchpads.push(ScratchPad {
+            name: scratchpad_name.to_owned(),
+            value: "".to_string(),
+            x: None,
+            y: None,
+            height: None,
+            width: None,
+        });
+        manager
+            .state
+            .active_scratchpads
+            .insert(scratchpad_name.to_owned(), VecDeque::from([mock_window]));
+
+        manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.to_owned()));
+
+        // assert window is hidden
+        {
+            let window = manager
+                .state
+                .windows
+                .iter_mut()
+                .find(|w| w.pid == Some(mock_window))
+                .unwrap();
+
+            assert!(window.tags.iter().any(|tag| *tag == nsp_tag));
+        }
+
+        manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.to_owned()));
+
+        // assert window is hidden
+        {
+            let window = manager
+                .state
+                .windows
+                .iter_mut()
+                .find(|w| w.pid == Some(mock_window))
+                .unwrap();
+
+            assert!(!window.tags.iter().any(|tag| *tag == nsp_tag));
+        }
+    }
+
+    #[test]
     /// Test release scratchpad command for 1 window in the scratchpad
     /// After releasing, the scratchpad should not be active anymore (no more windows)
     fn release_scratchpad_test() {
@@ -1308,7 +1475,7 @@ mod tests {
         manager.screen_create_handler(Default::default());
 
         // setup
-        let mock_window1 = 1_u32;
+        let mock_window1 = 10_u32;
         let scratchpad_name = "Alacritty";
         manager
             .state
