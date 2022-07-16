@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         )
         .arg(
             Arg::with_name("verbose")
-                .short('v')
+                .short("v")
                 .long("verbose")
                 .help("Outputs received configuration file."),
         )

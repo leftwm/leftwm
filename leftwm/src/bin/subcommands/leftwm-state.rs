@@ -19,7 +19,7 @@ async fn main() -> Result<()> {
         .about("prints out the current state of LeftWM")
         .arg(
             Arg::with_name("template")
-                .short('t')
+                .short("t")
                 .long("template")
                 .value_name("FILE")
                 .help("A liquid template to use for the output")
@@ -27,7 +27,7 @@ async fn main() -> Result<()> {
         )
         .arg(
             Arg::with_name("string")
-                .short('s')
+                .short("s")
                 .long("string")
                 .value_name("STRING")
                 .help("Use a liquid template string literal to use for the output")
@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
         )
         .arg(
             Arg::with_name("workspace")
-                .short('w')
+                .short("w")
                 .long("workspace")
                 .value_name("WS_NUM")
                 .help("render only info about a given workspace [0..]")
@@ -43,13 +43,13 @@ async fn main() -> Result<()> {
         )
         .arg(
             Arg::with_name("newline")
-                .short('n')
+                .short("n")
                 .long("newline")
                 .help("Print new lines in the output"),
         )
         .arg(
             Arg::with_name("quit")
-                .short('q')
+                .short("q")
                 .long("quit")
                 .help("Prints the state once and quits"),
         )
