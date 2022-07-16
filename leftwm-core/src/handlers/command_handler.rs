@@ -150,6 +150,7 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     scratchpad_window: &WindowHandle,
 ) -> Result<(), &'static str> {
+    log::trace!("Hide scratchpad window {:?}", scratchpad_window);
     let nsp_tag = manager
         .state
         .tags
@@ -202,6 +203,7 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     scratchpad_window: &WindowHandle,
 ) -> Result<(), &'static str> {
+    log::trace!("Show scratchpad window {:?}", scratchpad_window);
     let current_tag = &manager
         .state
         .focus_manager
@@ -318,7 +320,16 @@ fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
 
     if let Some(windows) = manager.state.active_scratchpads.get_mut(&scratchpad) {
         log::debug!("Scratchpad {} already active, push scratchpad", &scratchpad);
+        let previous_scratchpad_handle = manager
+            .state
+            .windows
+            .iter()
+            .find(|w| w.pid.as_ref() == windows.front())
+            .map(|w| w.handle);
         windows.push_front(window_pid);
+        if let Some(previous_scratchpad_handle) = previous_scratchpad_handle {
+            hide_scratchpad(manager, &previous_scratchpad_handle).ok()?; // first hide current scratchpad window
+        }
     } else {
         log::debug!("Scratchpad {} not active yet, open scratchpad", &scratchpad);
         manager
@@ -1517,6 +1528,7 @@ mod tests {
     fn release_scratchpad_multiple_windows_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
         manager.screen_create_handler(Default::default());
+        let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
         // setup
         let mock_window1 = 1_u32;
@@ -1529,11 +1541,7 @@ mod tests {
         );
         for window in [mock_window1, mock_window2, mock_window3] {
             manager.window_created_handler(
-                Window::new(
-                    WindowHandle::MockHandle(window as i32),
-                    None,
-                    Some(mock_window1),
-                ),
+                Window::new(WindowHandle::MockHandle(window as i32), None, Some(window)),
                 -1,
                 -1,
             );
@@ -1553,8 +1561,25 @@ mod tests {
             .active_scratchpads
             .get_mut(scratchpad_name)
             .unwrap();
-        assert_eq!(scratchpad.pop_front(), Some(mock_window2));
-        assert_eq!(scratchpad.pop_front(), Some(mock_window3));
+
+        assert!(manager
+            .state
+            .windows
+            .iter()
+            .find(|w| w.pid == Some(mock_window1))
+            .map(|w| !w.has_tag(&nsp_tag))
+            .unwrap());
+        for mock_window_pid in [mock_window2, mock_window3] {
+            let window_pid = scratchpad.pop_front();
+            assert_eq!(window_pid, Some(mock_window_pid));
+            assert!(!manager
+                .state
+                .windows
+                .iter()
+                .find(|w| w.pid == window_pid)
+                .map(|w| w.has_tag(&nsp_tag))
+                .unwrap());
+        }
         assert_eq!(scratchpad.pop_front(), None);
 
         assert_eq!(
@@ -1567,6 +1592,7 @@ mod tests {
     fn attach_scratchpad_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
         manager.screen_create_handler(Default::default());
+        let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
         // setup
         let mock_window1 = 1_u32;
@@ -1577,19 +1603,20 @@ mod tests {
             scratchpad_name.to_owned(),
             VecDeque::from([mock_window2, mock_window3]),
         );
-        for window in [mock_window1, mock_window2, mock_window3] {
-            manager.window_created_handler(
-                Window::new(
-                    WindowHandle::MockHandle(window as i32),
-                    None,
-                    Some(mock_window1),
-                ),
-                -1,
-                -1,
+        for mock_window in [mock_window1, mock_window2, mock_window3] {
+            let mut window = Window::new(
+                WindowHandle::MockHandle(mock_window as i32),
+                None,
+                Some(mock_window),
             );
+            if mock_window != mock_window1 {
+                window.tag(&nsp_tag);
+            }
+
+            manager.window_created_handler(window, -1, -1);
         }
 
-        // Release Scratchpad
+        // Attach Scratchpad
         manager.command_handler(&Command::AttachScratchPad {
             window: Some(WindowHandle::MockHandle(mock_window1 as i32)),
             scratchpad: scratchpad_name.to_owned(),
@@ -1601,9 +1628,26 @@ mod tests {
             .active_scratchpads
             .get_mut(scratchpad_name)
             .unwrap();
+
         assert_eq!(scratchpad.pop_front(), Some(mock_window1));
-        assert_eq!(scratchpad.pop_front(), Some(mock_window2));
-        assert_eq!(scratchpad.pop_front(), Some(mock_window3));
+        assert!(manager
+            .state
+            .windows
+            .iter()
+            .find(|w| w.pid == Some(mock_window1))
+            .map(|w| !w.has_tag(&nsp_tag))
+            .unwrap());
+        for mock_window_pid in [mock_window2, mock_window3] {
+            let window_pid = scratchpad.pop_front();
+            assert_eq!(window_pid, Some(mock_window_pid));
+            assert!(manager
+                .state
+                .windows
+                .iter()
+                .find(|w| w.pid == window_pid)
+                .map(|w| dbg!(w.has_tag(&nsp_tag)))
+                .unwrap());
+        }
         assert_eq!(scratchpad.pop_front(), None);
     }
 }
