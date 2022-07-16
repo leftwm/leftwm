@@ -22,6 +22,7 @@ macro_rules! ensure_non_empty {
 }
 
 impl Keybind {
+    #![allow(clippy::too_many_lines)]
     pub fn try_convert_to_core_keybind(&self, config: &Config) -> Result<leftwm_core::Keybind> {
         let command = match &self.command {
             BaseCommand::Execute => {
