@@ -3,7 +3,7 @@ use crate::{config::Config, layouts::Layout, Workspace};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutMode {
     Tag,
     Workspace,

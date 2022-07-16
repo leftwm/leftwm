@@ -11,7 +11,7 @@ use x11_dl::xlib;
 
 type MockHandle = i32;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
