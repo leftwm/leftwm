@@ -6,14 +6,14 @@
 use clap::{command, crate_version};
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::{exit, Child, Command};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
 
-type Subcommand = String;
+type Subcommand<'a> = &'a str;
 type SubcommandArgs = Vec<String>;
 type LeftwmArgs = Vec<String>;
 
@@ -38,7 +38,7 @@ fn main() {
 
     let has_subcommands = args.len() > 1;
     if has_subcommands {
-        parse_subcommands(args);
+        parse_subcommands(&args);
     }
 
     start_leftwm();
@@ -102,14 +102,14 @@ fn is_subcommand(subcommand: &str) -> bool {
 
 /// Tries to parse the subcommands from the arguments of leftwm and executes them if suitalbe.
 /// Otherwise it's calling the help-page.
-fn parse_subcommands(args: LeftwmArgs) -> ! {
+fn parse_subcommands(args: &LeftwmArgs) -> ! {
     const SUBCOMMAND_INDEX: usize = 1;
     const SUBCOMMAND_ARGS_INDEX: usize = 2;
 
-    let subcommand = args[SUBCOMMAND_INDEX].to_string();
+    let subcommand = &args[SUBCOMMAND_INDEX];
     let subcommand_args = args[SUBCOMMAND_ARGS_INDEX..].to_vec();
 
-    if is_subcommand(&subcommand) {
+    if is_subcommand(subcommand) {
         execute_subcommand(subcommand, subcommand_args);
     } else {
         print_help_page();
@@ -136,7 +136,7 @@ fn start_leftwm() {
     let mut children = Nanny::autostart();
 
     let flag = get_sigchld_flag();
-    let mut leftwm_session = start_leftwm_session(current_exe);
+    let mut leftwm_session = start_leftwm_session(&current_exe);
     while leftwm_is_still_running(&mut leftwm_session) {
         // remove all child processes which finished
         children.remove_finished_children();
@@ -166,7 +166,7 @@ fn leftwm_is_still_running(leftwm_session: &mut Child) -> bool {
 }
 
 /// starts the leftwm session and returns the process/leftwm-session
-fn start_leftwm_session(current_exe: PathBuf) -> Child {
+fn start_leftwm_session(current_exe: &Path) -> Child {
     let worker_file = current_exe.with_file_name("leftwm-worker");
 
     Command::new(&worker_file)
