@@ -17,8 +17,8 @@ type Subcommand = String;
 type SubcommandArgs = Vec<String>;
 type LeftwmArgs = Vec<String>;
 
-const SUBCOMMAND_PREFIX: &'static str = "leftwm-";
-const APP_VERSION: &'static str = const_format::formatcp!(
+const SUBCOMMAND_PREFIX: &str = "leftwm-";
+const APP_VERSION: &str = const_format::formatcp!(
     "{}, Git-Hash: {}",
     crate_version!(),
     git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
@@ -26,7 +26,7 @@ const APP_VERSION: &'static str = const_format::formatcp!(
 
 const SUBCOMMAND_NAME_INDEX: usize = 0;
 const SUBCOMMAND_DESCRIPTION_INDEX: usize = 1;
-const AVAILABLE_SUBCOMMANDS: [[&'static str; 2]; 4] = [
+const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 4] = [
     ["check", "Check syntax of the configuration file"],
     ["command", "Send external commands to LeftWM"],
     ["state", "Print the current state of LeftWM"],
@@ -95,10 +95,9 @@ fn print_help_page() {
 
 /// Checks if the given subcommand-string is a `leftwm-{subcommand}`
 fn is_subcommand(subcommand: &str) -> bool {
-    return AVAILABLE_SUBCOMMANDS
+    AVAILABLE_SUBCOMMANDS
         .into_iter()
-        .find(|entry| entry[SUBCOMMAND_NAME_INDEX] == subcommand)
-        .is_some();
+        .any(|entry| entry[SUBCOMMAND_NAME_INDEX] == subcommand)
 }
 
 /// Tries to parse the subcommands from the arguments of leftwm and executes them if suitalbe.
@@ -187,7 +186,6 @@ fn get_sigchld_flag() -> Arc<AtomicBool> {
 }
 
 /// Looks, if leftwm can be suspended at the moment.
-/// 
 /// ## Returns
 /// - `true` if leftwm doesn't need to do anything at them moment
 /// - `false` if leftwm needs to refresh its state
