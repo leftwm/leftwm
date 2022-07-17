@@ -25,7 +25,7 @@ const APP_VERSION: &'static str = const_format::formatcp!(
 );
 
 const SUBCOMMAND_NAME_INDEX: usize = 0;
-const SUBCOMMAND_DESCRIPTION_INDEX: usize = 0;
+const SUBCOMMAND_DESCRIPTION_INDEX: usize = 1;
 const AVAILABLE_SUBCOMMANDS: [[&'static str; 2]; 4] = [
     ["check", "Check syntax of the configuration file"],
     ["command", "Send external commands to LeftWM"],
