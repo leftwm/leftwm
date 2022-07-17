@@ -107,7 +107,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             });
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {
-                self.children.reap();
+                self.children.remove_finished_children();
             }
 
             if self.reload_requested {

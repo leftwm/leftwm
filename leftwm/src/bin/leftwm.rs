@@ -3,10 +3,11 @@
 //! If no arguments are passed, starts `leftwm-worker`. If arguments are passed, starts
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
-use clap::{command, crate_version, App, Arg, ArgMatches};
+use clap::{command, crate_version};
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
-use std::process::{exit, Command};
+use std::path::PathBuf;
+use std::process::{exit, Child, Command};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -14,8 +15,8 @@ use std::sync::{
 
 type Subcommand = String;
 type SubcommandArgs = Vec<String>;
+type LeftwmArgs = Vec<String>;
 
-const APP_ARG_NAME: &'static str = "trailing";
 const SUBCOMMAND_PREFIX: &'static str = "leftwm-";
 const APP_VERSION: &'static str = const_format::formatcp!(
     "{}, Git-Hash: {}",
@@ -24,6 +25,7 @@ const APP_VERSION: &'static str = const_format::formatcp!(
 );
 
 const SUBCOMMAND_NAME_INDEX: usize = 0;
+const SUBCOMMAND_DESCRIPTION_INDEX: usize = 0;
 const AVAILABLE_SUBCOMMANDS: [[&'static str; 2]; 4] = [
     ["check", "Check syntax of the configuration file"],
     ["command", "Send external commands to LeftWM"],
@@ -31,67 +33,15 @@ const AVAILABLE_SUBCOMMANDS: [[&'static str; 2]; 4] = [
     ["theme", "Manage LeftWM themes"],
 ];
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum SubcommandStatus {
-    ExitSuccess,
-    ExitFailure,
-}
-
 fn main() {
-    let app = get_app();
-    let app_matches = app.get_matches();
+    let args: LeftwmArgs = env::args().collect();
 
-    if let Some((subcommand, subcommand_args)) = get_subcommand_with_args(&app_matches) {
-        match execute_subcommand(subcommand, subcommand_args) {
-            SubcommandStatus::ExitSuccess => exit(0),
-            SubcommandStatus::ExitFailure => exit(1),
-        }
+    let has_subcommands = args.len() > 1;
+    if has_subcommands {
+        parse_subcommands(args);
     }
 
-    if let Ok(current_exe) = std::env::current_exe() {
-        // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
-        env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
-        let mut children = Nanny::autostart();
-
-        let flag = Arc::new(AtomicBool::new(false));
-        child_process::register_child_hook(flag.clone());
-
-        // Fix for Java apps so they repaint correctly
-        env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
-
-        let worker_path = current_exe.with_file_name("leftwm-worker");
-
-        loop {
-            let mut worker = Command::new(&worker_path)
-                .spawn()
-                .expect("failed to start leftwm");
-
-            // Wait until worker exits.
-            while worker
-                .try_wait()
-                .expect("failed to wait on worker")
-                .is_none()
-            {
-                // Not worker, then it might be autostart programs.
-                children.reap();
-                // Wait for SIGCHLD signal flag to be set.
-                while !flag.swap(false, Ordering::SeqCst) {
-                    nix::unistd::pause();
-                }
-                // Either worker or autostart program exited.
-            }
-
-            // TODO: either add more details or find a better workaround.
-            //
-            // Left is too fast for some logging managers. We need to
-            // wait to give the logging manager a second to boot.
-            #[cfg(feature = "slow-dm-fix")]
-            {
-                let delay = std::time::Duration::from_millis(2000);
-                std::thread::sleep(delay);
-            }
-        }
-    }
+    start_leftwm();
 }
 
 /// Executes a subcommand.
@@ -102,26 +52,35 @@ fn main() {
 ///
 /// # Arguments
 ///
-/// + `args` - The command line arguments leftwm was called with. Must be length >= 2, or this will
-///   panic.
-/// + `subcommands` - A list of subcommands that should be considered valid. Subcommands not in this
-///   list will not be executed.
-fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -> SubcommandStatus {
+/// - `subcommand`: The `leftwm-{subcommand}` which should be executed
+/// - `subcommand_args`: The arguments which should be given to the `leftwm-{subcommand}`
+fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -> ! {
     let subcommand_file = format!("{}{}", SUBCOMMAND_PREFIX, subcommand);
     match &mut Command::new(&subcommand_file).args(subcommand_args).spawn() {
         Ok(child) => {
-            // Wait for process to end, otherwise it may continue to run in the background.
-            child.wait().expect("Failed to wait for child.");
-            SubcommandStatus::ExitSuccess
+            let status = child.wait().expect("Failed to wait for child.");
+            exit(status.code().unwrap_or(0));
         }
         Err(e) => {
             eprintln!("Failed to execute {}. {}", subcommand, e);
-            SubcommandStatus::ExitFailure
+            exit(1);
         }
-    }
+    };
 }
 
-fn get_app() -> App<'static> {
+/// Prints the help page of leftwm (the output of `leftwm --help`)
+fn print_help_page() {
+    let subcommands = {
+        let mut subcommands = Vec::new();
+        for entry in AVAILABLE_SUBCOMMANDS {
+            let subcommand_name = entry[SUBCOMMAND_NAME_INDEX];
+            let subcommand_description = entry[SUBCOMMAND_DESCRIPTION_INDEX];
+
+            subcommands.push(clap::Command::new(subcommand_name).about(subcommand_description));
+        }
+        subcommands
+    };
+
     command!()
         .long_about(
             "Starts LeftWM if no arguments are supplied. If a subcommand is given, executes the \
@@ -129,30 +88,109 @@ fn get_app() -> App<'static> {
              it is installed.",
         )
         .version(APP_VERSION)
-        .arg(Arg::new(APP_ARG_NAME).multiple_values(true))
-        .trailing_var_arg(true)
+        .subcommands(subcommands)
+        .print_help()
+        .unwrap();
 }
 
-fn get_subcommand_with_args(app_matches: &ArgMatches) -> Option<(Subcommand, SubcommandArgs)> {
-    if let Some(args) = app_matches.get_many::<String>(APP_ARG_NAME) {
-        let mut args2 = args.clone();
+/// Checks if the given subcommand-string is a `leftwm-{subcommand}`
+fn is_subcommand(subcommand: &str) -> bool {
+    return AVAILABLE_SUBCOMMANDS
+        .into_iter()
+        .find(|entry| entry[SUBCOMMAND_NAME_INDEX] == subcommand)
+        .is_some();
+}
 
-        let subcommand = args2.next().unwrap().to_string();
-        let subcommand_args = args2.map(|entry| (*entry).clone()).collect::<Vec<String>>();
+/// Tries to parse the subcommands from the arguments of leftwm and executes them if suitalbe.
+/// Otherwise it's calling the help-page.
+fn parse_subcommands(args: LeftwmArgs) -> ! {
+    const SUBCOMMAND_INDEX: usize = 1;
+    const SUBCOMMAND_ARGS_INDEX: usize = 2;
 
-        if is_subcommand(&subcommand) {
-            Some((subcommand, subcommand_args))
-        } else {
-            None
-        }
+    let subcommand = args[SUBCOMMAND_INDEX].to_string();
+    let subcommand_args = args[SUBCOMMAND_ARGS_INDEX..].to_vec();
+
+    if is_subcommand(&subcommand) {
+        execute_subcommand(subcommand, subcommand_args);
     } else {
-        None
+        print_help_page();
+    }
+
+    exit(0);
+}
+
+/// Sets some relevant environment variables for leftwm
+fn set_env_vars() {
+    env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
+
+    // Fix for Java apps so they repaint correctly
+    env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
+}
+
+/// The main-entry-point. The leftwm-session is prepared here
+fn start_leftwm() {
+    let current_exe = std::env::current_exe().expect("can't get path to leftwm-binary");
+
+    set_env_vars();
+
+    // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
+    let mut children = Nanny::autostart();
+
+    let flag = get_sigchld_flag();
+    let mut leftwm_session = start_leftwm_session(current_exe);
+    while leftwm_is_still_running(&mut leftwm_session) {
+        // remove all child processes which finished
+        children.remove_finished_children();
+
+        while is_suspending(&flag) {
+            nix::unistd::pause();
+        }
+    }
+
+    // TODO: either add more details or find a better workaround.
+    //
+    // Left is too fast for some logging managers. We need to
+    // wait to give the logging manager a second to boot.
+    #[cfg(feature = "slow-dm-fix")]
+    {
+        let delay = std::time::Duration::from_millis(2000);
+        std::thread::sleep(delay);
     }
 }
 
-fn is_subcommand<T: AsRef<str>>(subcommand: T) -> bool {
-    return AVAILABLE_SUBCOMMANDS
-        .into_iter()
-        .find(|entry| entry[SUBCOMMAND_NAME_INDEX] == (subcommand.as_ref()))
-        .is_some();
+/// checks if leftwm is still running
+fn leftwm_is_still_running(leftwm_session: &mut Child) -> bool {
+    leftwm_session
+        .try_wait()
+        .expect("failed to wait on worker")
+        .is_none()
+}
+
+/// starts the leftwm session and returns the process/leftwm-session
+fn start_leftwm_session(current_exe: PathBuf) -> Child {
+    let worker_file = current_exe.with_file_name("leftwm-worker");
+
+    Command::new(&worker_file)
+        .spawn()
+        .expect("failed to start leftwm")
+}
+
+/// The SIGCHLD can be set by the children of leftwm if their window need a refresh for example.
+/// So we're returning the flag to check when leftwm can be suspended and when not.
+/// Click [here](https://frameboxxindore.com/linux/what-is-sigchld-in-linux.html) for an
+/// example-description.
+fn get_sigchld_flag() -> Arc<AtomicBool> {
+    let flag = Arc::new(AtomicBool::new(false));
+    child_process::register_child_hook(flag.clone());
+
+    flag
+}
+
+/// Looks, if leftwm can be suspended at the moment.
+/// 
+/// ## Returns
+/// - `true` if leftwm doesn't need to do anything at them moment
+/// - `false` if leftwm needs to refresh its state
+fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
+    !flag.swap(false, Ordering::SeqCst)
 }
