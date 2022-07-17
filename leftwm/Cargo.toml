@@ -13,6 +13,7 @@ description = "A window manager for Adventurers"
 [dependencies]
 anyhow = "1.0.48"
 clap = { version =  "3.2.12", features = ["cargo"]}
+const_format = "0.2.26"
 once_cell = "1.13.0"
 dirs-next = "2.0.0"
 futures = "0.3.21"
