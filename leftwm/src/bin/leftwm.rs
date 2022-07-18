@@ -18,11 +18,6 @@ type SubcommandArgs = Vec<String>;
 type LeftwmArgs = Vec<String>;
 
 const SUBCOMMAND_PREFIX: &str = "leftwm-";
-const APP_VERSION: &str = const_format::formatcp!(
-    "{}, Git-Hash: {}",
-    crate_version!(),
-    git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
-);
 
 const SUBCOMMAND_NAME_INDEX: usize = 0;
 const SUBCOMMAND_DESCRIPTION_INDEX: usize = 1;
@@ -70,6 +65,10 @@ fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -
 
 /// Prints the help page of leftwm (the output of `leftwm --help`)
 fn print_help_page() {
+    let version = format!("{}, Git-Hash: {}",
+                          crate_version!(),
+                          git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE")));
+
     let subcommands = {
         let mut subcommands = Vec::new();
         for entry in AVAILABLE_SUBCOMMANDS {
@@ -87,7 +86,7 @@ fn print_help_page() {
              the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
              it is installed.",
         )
-        .version(APP_VERSION)
+        .version(version.as_str())
         .subcommands(subcommands)
         .print_help()
         .unwrap();
