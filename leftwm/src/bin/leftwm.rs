@@ -65,9 +65,11 @@ fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -
 
 /// Prints the help page of leftwm (the output of `leftwm --help`)
 fn print_help_page() {
-    let version = format!("{}, Git-Hash: {}",
-                          crate_version!(),
-                          git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE")));
+    let version = format!(
+        "{}, Git-Hash: {}",
+        crate_version!(),
+        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
+    );
 
     let subcommands = {
         let mut subcommands = Vec::new();
