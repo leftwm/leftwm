@@ -130,10 +130,16 @@ pub fn load() -> Config {
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
     let path = BaseDirectories::with_prefix("leftwm")?;
+    #[cfg(feature = "toml-config")]
     let config_filename = path.place_config_file("config.toml")?;
+    #[cfg(feature = "ron-config")]
+    let config_filename = path.place_config_file("config.ron")?;
     if Path::new(&config_filename).exists() {
         let contents = fs::read_to_string(config_filename)?;
+        #[cfg(feature = "toml-config")]
         let config = toml::from_str(&contents)?;
+        #[cfg(feature = "ron-config")]
+        let config = ron::from_str(&contents)?;
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
@@ -142,9 +148,15 @@ fn load_from_file() -> Result<Config> {
         }
     } else {
         let config = Config::default();
+        #[cfg(feature = "toml-config")]
         let toml = toml::to_string(&config).unwrap();
+        #[cfg(feature = "ron-config")]
+        let ron = ron::to_string(&config).unwrap();
         let mut file = File::create(&config_filename)?;
+        #[cfg(feature = "toml-config")]
         file.write_all(toml.as_bytes())?;
+        #[cfg(feature = "ron-config")]
+        file.write_all(ron.as_bytes())?;
         Ok(config)
     }
 }

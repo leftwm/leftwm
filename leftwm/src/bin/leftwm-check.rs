@@ -77,7 +77,10 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             PathBuf::from(fspath)
         }
 
+        #[cfg(feature = "toml-config")]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
+        #[cfg(feature = "ron-config")]
+        None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?,
     };
     if verbose {
         dbg!(&config_filename);
@@ -88,13 +91,22 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             dbg!(&contents);
         }
 
+        #[cfg(feature = "toml-config")]
         let config = toml::from_str(&contents)?;
+        #[cfg(feature = "ron-config")]
+        let config = ron::from_str(&contents)?;
         Ok(config)
     } else {
         let config = Config::default();
+        #[cfg(feature = "toml-config")]
         let toml = toml::to_string(&config)?;
+        #[cfg(feature = "ron-config")]
+        let ron = ron::to_string(&config)?;
         let mut file = File::create(&config_filename)?;
+        #[cfg(feature = "toml-config")]
         file.write_all(toml.as_bytes())?;
+        #[cfg(feature = "ron-config")]
+        file.write_all(ron.as_bytes())?;
         Ok(config)
     }
 }
@@ -191,7 +203,13 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
                 Ok(_fp) => continue,
                 Err(e) => returns.push(e.to_string()),
             },
+            #[cfg(feature = "toml-config")]
             f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => returns.push(e.to_string()),
+            },
+            #[cfg(feature = "ron-config")]
+            f if f.ends_with("theme.ron") => match check_theme_ron(f, verbose) {
                 Ok(_fp) => continue,
                 Err(e) => returns.push(e.to_string()),
             },
@@ -265,6 +283,7 @@ fn check_up_file(filepath: PathBuf) -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "toml-config")]
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
     let contents = fs::read_to_string(&filepath.as_path())?;
@@ -285,5 +304,33 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
         }
     } else {
         bail!("No `theme.toml` found at path: {}", filepath.display());
+    }
+}
+
+#[cfg(feature = "ron-config")]
+fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
+    let metadata = fs::metadata(&filepath)?;
+    let contents = fs::read_to_string(&filepath.as_path())?;
+
+    if metadata.is_file() {
+        if verbose {
+            println!("Found: {}", filepath.display());
+        }
+
+        match ron::from_str::<ThemeSetting>(&contents) {
+            Ok(_) => {
+                if verbose {
+                    println!("The theme file looks OK.");
+                }
+                Ok(filepath)
+            }
+            Err(err) => bail!("Could not parse theme file: {}", err),
+        }
+    } else {
+        bail!(
+            "No `theme.ron
+        ` found at path: {}",
+            filepath.display()
+        )
     }
 }

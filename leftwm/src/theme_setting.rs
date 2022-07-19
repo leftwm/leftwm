@@ -52,7 +52,10 @@ impl Default for ThemeSetting {
 
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
+    #[cfg(feature = "toml-config")]
     let from_file: ThemeSetting = toml::from_str(&contents)?;
+    #[cfg(feature = "ron-config")]
+    let from_file: ThemeSetting = ron::from_str(&contents)?;
     Ok(from_file)
 }
 
@@ -87,6 +90,7 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
     }
 }
 
+#[cfg(feature = "toml-config")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -111,6 +115,58 @@ side = "Top"
 value = 0
 "#;
         let config: ThemeSetting = toml::from_str(config).unwrap();
+
+        assert_eq!(
+            config,
+            ThemeSetting {
+                border_width: 0,
+                margin: CustomMargins::Int(5),
+                workspace_margin: Some(CustomMargins::Int(5)),
+                default_width: Some(400),
+                default_height: Some(400),
+                always_float: Some(true),
+                gutter: Some(vec![Gutter {
+                    side: Side::Top,
+                    value: 0,
+                    wsid: None,
+                }]),
+                default_border_color: "#222222".to_string(),
+                floating_border_color: "#005500".to_string(),
+                focused_border_color: "#FFB53A".to_string(),
+                on_new_window_cmd: Some("echo Hello World".to_string()),
+            }
+        );
+    }
+}
+
+#[cfg(feature = "ron-config")]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use leftwm_core::models::Side;
+
+    #[test]
+    fn deserialize_custom_theme_config() {
+        let config = r##"
+(
+    border_width: 0,
+    default_width: Some(400),
+    default_height: Some(400),
+    always_float: Some(true),
+    margin: 5,
+    workspace_margin: Some(5),
+    default_border_color: "#222222",
+    floating_border_color: "#005500",
+    focused_border_color: "#FFB53A",
+    on_new_window: Some("echo Hello World"),
+
+    gutter: Some([Gutter (
+        side: Top,
+        value: 0,
+        )]
+    )
+)"##;
+        let config: ThemeSetting = ron::from_str(config).unwrap();
 
         assert_eq!(
             config,

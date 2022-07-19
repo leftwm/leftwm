@@ -221,3 +221,15 @@ impl Default for Config {
         }
     }
 }
+
+#[cfg(feature = "toml-config")]
+#[cfg(test)]
+mod tests {
+    use crate::Config;
+
+    #[test]
+    fn serialize_default_config() {
+        let config = Config::default();
+        assert!(toml::to_string(&config).is_ok());
+    }
+}
