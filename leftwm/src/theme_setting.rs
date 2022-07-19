@@ -90,14 +90,14 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
     }
 }
 
-#[cfg(feature = "toml-config")]
 #[cfg(test)]
 mod tests {
     use super::*;
     use leftwm_core::models::Side;
 
+    #[cfg(feature = "toml-config")]
     #[test]
-    fn deserialize_custom_theme_config() {
+    fn deserialize_custom_theme_config_toml() {
         let config = r#"
 border_width = 0
 default_width = 400
@@ -137,16 +137,10 @@ value = 0
             }
         );
     }
-}
 
-#[cfg(feature = "ron-config")]
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use leftwm_core::models::Side;
-
+    #[cfg(feature = "ron-config")]
     #[test]
-    fn deserialize_custom_theme_config() {
+    fn deserialize_custom_theme_config_ron() {
         let config = r##"
 (
     border_width: 0,

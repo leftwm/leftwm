@@ -79,6 +79,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
 
         #[cfg(feature = "toml-config")]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
+
         #[cfg(feature = "ron-config")]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?,
     };
