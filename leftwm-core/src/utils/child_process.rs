@@ -232,10 +232,6 @@ impl DesktopEntry {
 }
 
 /// A struct managing children processes.
-///
-/// The `reap` method could be called at any place the user wants to.
-/// `register_child_hook` provides a hook that sets a flag. User may use the
-/// flag to do a epoch-based reaping.
 #[derive(Debug, Default)]
 pub struct Children {
     inner: HashMap<ChildID, Child>,
