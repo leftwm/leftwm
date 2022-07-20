@@ -414,8 +414,12 @@ fn release_scratchpad<C: Config, SERVER: DisplayServer>(
             if let Some(windows) = manager.state.active_scratchpads.get_mut(&scratchpad_name) {
                 if windows.len() > 1 {
                     // if more than 1, pop of the stack
-                    log::debug!("Popped 1 window from scratchpad {}", &scratchpad_name);
-                    windows.pop_front()?;
+                    log::debug!("Removed 1 window from scratchpad {}", &scratchpad_name);
+                    windows.remove(
+                        windows
+                            .iter()
+                            .position(|w| Some(w) == window.pid.as_ref())?,
+                    );
                 } else {
                     // if only 1, remove entire vec, not needed anymore
                     log::debug!(
@@ -1388,11 +1392,7 @@ mod tests {
 
         let mock_window = 1_u32;
         let window_handle = WindowHandle::MockHandle(mock_window as i32);
-        manager.window_created_handler(
-            Window::new(window_handle.clone(), None, Some(mock_window)),
-            -1,
-            -1,
-        );
+        manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
         // make sure the window is on the first tag
         manager.command_handler(&Command::SendWindowToTag {
             window: None,
@@ -1420,11 +1420,7 @@ mod tests {
 
         let mock_window = 1_u32;
         let window_handle = WindowHandle::MockHandle(mock_window as i32);
-        manager.window_created_handler(
-            Window::new(window_handle.clone(), None, Some(mock_window)),
-            -1,
-            -1,
-        );
+        manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
         // make sure the window is on the first tag
         manager.command_handler(&Command::SendWindowToTag {
             window: None,
@@ -1452,11 +1448,7 @@ mod tests {
         let mock_window = 1_u32;
         let window_handle = WindowHandle::MockHandle(mock_window as i32);
         let scratchpad_name = "Alacritty";
-        manager.window_created_handler(
-            Window::new(window_handle.clone(), None, Some(mock_window)),
-            -1,
-            -1,
-        );
+        manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.to_owned(),
             value: "".to_string(),
