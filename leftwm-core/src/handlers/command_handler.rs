@@ -7,6 +7,7 @@
 
 use std::collections::VecDeque;
 
+use super::window_handler::scratchpad_xyhw;
 use super::*;
 use crate::child_process::Children;
 use crate::command::ReleaseScratchPadOption;
@@ -293,30 +294,48 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     None
 }
 
-/// TODO: Implement proper solution
+/// Attaches the `WindowHandle` or the currently selected window to the selected `scratchpad`
 fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
     window: Option<WindowHandle>,
     scratchpad: String,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
     // if None, replace with current window
-    let window_handle = match window {
-        Some(w) => w,
-        None => manager
+    let window_handle = window.or(manager
+        .state
+        .focus_manager
+        .window_history
+        .get(0)?
+        .as_ref()
+        .copied())?;
+
+    // retrieve and prepare window information
+    let window_pid = {
+        let ws = manager
             .state
             .focus_manager
-            .window_history
-            .get(0)?
-            .as_ref()
-            .copied()?,
-    };
+            .workspace(&manager.state.workspaces)?;
+        let to_scratchpad = manager
+            .state
+            .scratchpads
+            .iter()
+            .find(|s| s.name == scratchpad)?;
+        let new_float_exact = scratchpad_xyhw(&ws.xyhw, to_scratchpad);
 
-    let window_pid = manager
-        .state
-        .windows
-        .iter_mut()
-        .find(|w| w.handle == window_handle)?
-        .pid?;
+        let window = manager
+            .state
+            .windows
+            .iter_mut()
+            .find(|w| w.handle == window_handle)?;
+
+        // Put window in correct position
+        window.set_floating(true);
+        window.normal = ws.xyhw;
+        window.set_floating_exact(new_float_exact);
+        log::debug!("Set window to floating: {:?}", window);
+
+        window.pid?
+    };
 
     if let Some(windows) = manager.state.active_scratchpads.get_mut(&scratchpad) {
         log::debug!("Scratchpad {} already active, push scratchpad", &scratchpad);
@@ -326,6 +345,7 @@ fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .iter()
             .find(|w| w.pid.as_ref() == windows.front())
             .map(|w| w.handle);
+
         windows.push_front(window_pid);
         if let Some(previous_scratchpad_handle) = previous_scratchpad_handle {
             hide_scratchpad(manager, &previous_scratchpad_handle).ok()?; // first hide current scratchpad window
@@ -337,8 +357,9 @@ fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .active_scratchpads
             .insert(scratchpad, VecDeque::from([window_pid]));
     }
+    manager.state.sort_windows();
 
-    None
+    Some(true)
 }
 
 /// Release a scratchpad to become a normal window. When tag is None, use current active tag as the
@@ -1599,6 +1620,14 @@ mod tests {
         let mock_window2 = 2_u32;
         let mock_window3 = 3_u32;
         let scratchpad_name = "Alacritty";
+        manager.state.scratchpads.push(ScratchPad {
+            name: scratchpad_name.to_owned(),
+            value: "scratchpad".to_string(),
+            x: None,
+            y: None,
+            height: None,
+            width: None,
+        });
         manager.state.active_scratchpads.insert(
             scratchpad_name.to_owned(),
             VecDeque::from([mock_window2, mock_window3]),
