@@ -77,10 +77,9 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             PathBuf::from(fspath)
         }
 
-        #[cfg(feature = "toml-config")]
+        #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
-
-        #[cfg(feature = "ron-config")]
+        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?,
     };
     if verbose {
@@ -92,10 +91,12 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             dbg!(&contents);
         }
 
-        #[cfg(feature = "toml-config")]
+        #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
         let config = toml::from_str(&contents)?;
-        #[cfg(feature = "ron-config")]
+        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
         let config = ron::from_str(&contents)?;
+
+        #[cfg(any(feature = "ron-config", feature = "toml-config"))]
         Ok(config)
     } else {
         let config = Config::default();
@@ -108,6 +109,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         file.write_all(toml.as_bytes())?;
         #[cfg(feature = "ron-config")]
         file.write_all(ron.as_bytes())?;
+
         Ok(config)
     }
 }
