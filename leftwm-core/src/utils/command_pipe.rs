@@ -90,21 +90,20 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
 fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let (head, rest) = s.split_once(' ').unwrap_or((s, ""));
     match head {
+        // General
+        "CloseWindow" => Ok(Command::CloseWindow),
+        "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
         "SoftReload" => Ok(Command::SoftReload),
-        "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
-        "ToggleSticky" => Ok(Command::ToggleSticky),
-        "SwapScreens" => Ok(Command::SwapScreens),
-        "MoveWindowToNextTag" => build_move_window_to_next_tag(rest),
-        "MoveWindowToPreviousTag" => build_move_window_to_previous_tag(rest),
+        "ToggleScratchPad" => build_toggle_scratchpad(rest),
+        // Move Window
+        "MoveWindowDown" => Ok(Command::MoveWindowDown),
+        "MoveWindowTop" => build_move_window_top(rest),
+        "MoveWindowUp" => Ok(Command::MoveWindowUp),
         "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
         "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),
         "MoveWindowToPreviousWorkspace" => Ok(Command::MoveWindowToPreviousWorkspace),
-        "FloatingToTile" => Ok(Command::FloatingToTile),
-        "TileToFloating" => Ok(Command::TileToFloating),
-        "ToggleFloating" => Ok(Command::ToggleFloating),
-        "MoveWindowUp" => Ok(Command::MoveWindowUp),
-        "MoveWindowDown" => Ok(Command::MoveWindowDown),
-        "MoveWindowTop" => build_move_window_top(rest),
+        "SendWindowToTag" => build_send_window_to_tag(rest),
+        // Focus Navigation
         "FocusWindowUp" => Ok(Command::FocusWindowUp),
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
         "FocusWindowTop" => build_focus_window_top(rest),
@@ -112,16 +111,23 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
+        // Layout
+        "DecreaseMainWidth" => build_decrease_main_width(rest),
+        "IncreaseMainWidth" => build_increase_main_width(rest),
         "NextLayout" => Ok(Command::NextLayout),
         "PreviousLayout" => Ok(Command::PreviousLayout),
-        "RotateTag" => Ok(Command::RotateTag),
-        "CloseWindow" => Ok(Command::CloseWindow),
-        "ToggleScratchPad" => build_toggle_scratchpad(rest),
-        "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
-        "SendWindowToTag" => build_send_window_to_tag(rest),
         "SetLayout" => build_set_layout(rest),
         "SetMarginMultiplier" => build_set_margin_multiplier(rest),
-        "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
+        "FloatingToTile" => Ok(Command::FloatingToTile),
+        "TileToFloating" => Ok(Command::TileToFloating),
+        "ToggleFloating" => Ok(Command::ToggleFloating),
+        // Workspace/Tag
+        "GoToTag" => build_go_to_tag(rest),
+        "RotateTag" => Ok(Command::RotateTag),
+        "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
+        "SwapScreens" => Ok(Command::SwapScreens),
+        "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
+        "ToggleSticky" => Ok(Command::ToggleSticky),
         _ => Ok(Command::Other(s.into())),
     }
 }
@@ -133,6 +139,14 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
         raw
     };
     Ok(Command::ToggleScratchPad(name.to_string()))
+}
+
+fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "GoToTag ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let tag: TagId = parts.get(0).ok_or("missing argument tag_id")?.parse()?;
+    let swap: bool = parts.get(1).ok_or("missing argument swap")?.parse()?;
+    Ok(Command::GoToTag { tag, swap })
 }
 
 fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
@@ -196,22 +210,25 @@ fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     Ok(Command::MoveWindowTop { swap })
 }
 
-fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let follow = if raw.is_empty() {
-        true
-    } else {
-        bool::from_str(raw)?
-    };
-    Ok(Command::MoveWindowToNextTag { follow })
+fn build_increase_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "IncreaseMainWidth ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let change: i8 = parts.get(0).ok_or("missing argument change")?.parse()?;
+    Ok(Command::IncreaseMainWidth(change))
 }
 
-fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let follow = if raw.is_empty() {
-        true
-    } else {
-        bool::from_str(raw)?
-    };
-    Ok(Command::MoveWindowToPreviousTag { follow })
+fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "DecreaseMainWidth ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let change: i8 = parts.get(0).ok_or("missing argument change")?.parse()?;
+    Ok(Command::DecreaseMainWidth(change))
+}
+
+fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
+    if !s.starts_with(head) {
+        return s;
+    }
+    &s[head.len()..]
 }
 
 #[cfg(test)]
@@ -285,7 +302,10 @@ mod test {
         // Let the OS close the write end of the pipe before shutting down the listener.
         time::sleep(time::Duration::from_millis(100)).await;
 
-        assert!(!pipe_file.exists());
+        // NOTE: clippy is drunk
+        {
+            assert!(!pipe_file.exists());
+        }
     }
 
     #[test]
@@ -326,22 +346,6 @@ mod test {
         assert_eq!(
             build_focus_window_top("").unwrap(),
             Command::FocusWindowTop { swap: false }
-        );
-    }
-
-    #[test]
-    fn build_move_window_to_next_tag_without_parameter() {
-        assert_eq!(
-            build_move_window_to_next_tag("").unwrap(),
-            Command::MoveWindowToNextTag { follow: true }
-        );
-    }
-
-    #[test]
-    fn build_move_window_to_previous_tag_without_parameter() {
-        assert_eq!(
-            build_move_window_to_previous_tag("").unwrap(),
-            Command::MoveWindowToPreviousTag { follow: true }
         );
     }
 }
