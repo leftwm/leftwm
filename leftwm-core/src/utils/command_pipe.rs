@@ -90,11 +90,6 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
 fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let (head, rest) = s.split_once(' ').unwrap_or((s, ""));
     match head {
-        // General
-        "CloseWindow" => Ok(Command::CloseWindow),
-        "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
-        "SoftReload" => Ok(Command::SoftReload),
-        "ToggleScratchPad" => build_toggle_scratchpad(rest),
         // Move Window
         "MoveWindowDown" => Ok(Command::MoveWindowDown),
         "MoveWindowTop" => build_move_window_top(rest),
@@ -116,18 +111,24 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "IncreaseMainWidth" => build_increase_main_width(rest),
         "NextLayout" => Ok(Command::NextLayout),
         "PreviousLayout" => Ok(Command::PreviousLayout),
+        "RotateTag" => Ok(Command::RotateTag),
         "SetLayout" => build_set_layout(rest),
         "SetMarginMultiplier" => build_set_margin_multiplier(rest),
+        // Floating
         "FloatingToTile" => Ok(Command::FloatingToTile),
         "TileToFloating" => Ok(Command::TileToFloating),
         "ToggleFloating" => Ok(Command::ToggleFloating),
         // Workspace/Tag
         "GoToTag" => build_go_to_tag(rest),
-        "RotateTag" => Ok(Command::RotateTag),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SwapScreens" => Ok(Command::SwapScreens),
         "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
         "ToggleSticky" => Ok(Command::ToggleSticky),
+        // General
+        "CloseWindow" => Ok(Command::CloseWindow),
+        "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
+        "SoftReload" => Ok(Command::SoftReload),
+        "ToggleScratchPad" => build_toggle_scratchpad(rest),
         _ => Ok(Command::Other(s.into())),
     }
 }
