@@ -101,7 +101,7 @@ pub struct Config {
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub keybind: Vec<Keybind>,
-    pub state: Option<PathBuf>,
+    pub state_path: Option<PathBuf>,
     pub sloppy_mouse_follows_focus: bool,
 
     #[serde(skip)]
@@ -488,7 +488,7 @@ impl leftwm_core::Config for Config {
 
 impl Config {
     fn state_file(&self) -> &Path {
-        self.state
+        self.state_path
             .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
     }
