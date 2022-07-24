@@ -100,7 +100,7 @@ List of common dependencies for themes:
 | [feh][feh-git]           | feh       | feh               | feh       | [feh][feh-pkg]           |
 | [compton][compton-git]   | compton   | picom             | compton   | [compton][compton-pkg]   |
 | [picom][picom-git]       | manual ** | picom             | picom     | [picom][picom-pkg]       |
-| [polybar][polybar-git]   | manual ** | paru -S polybar*  | polybar   | [polybar][polybar-pkg]   |
+| [polybar][polybar-git]   | manual ** | polybar           | polybar   | [polybar][polybar-pkg]   |
 | [xmobar][xmobar-git]     | xmobar    | xmobar            | xmobar    | [xmobar][xmobar-pkg]     |
 | [lemonbar][lemonbar-git] | lemonbar  | paru -S lemonbar* | manual ** | [lemonbar][lemonbar-pkg] |
 | [conky][conky-git]       | conky     | conky             | conky     | [conky][conky-pkg]       |
