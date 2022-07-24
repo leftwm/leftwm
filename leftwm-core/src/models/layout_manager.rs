@@ -114,7 +114,7 @@ impl LayoutManager {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::TestConfig;
+    use crate::config::tests::TestConfig;
     use crate::models::BBox;
 
     use super::*;
