@@ -10,6 +10,8 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{atomic::AtomicBool, Arc};
 use xdg::BaseDirectories;
 
+type ChildID = u32;
+
 #[derive(Default)]
 pub struct Nanny {}
 
@@ -230,13 +232,9 @@ impl DesktopEntry {
 }
 
 /// A struct managing children processes.
-///
-/// The `reap` method could be called at any place the user wants to.
-/// `register_child_hook` provides a hook that sets a flag. User may use the
-/// flag to do a epoch-based reaping.
 #[derive(Debug, Default)]
 pub struct Children {
-    inner: HashMap<u32, Child>,
+    inner: HashMap<ChildID, Child>,
 }
 
 impl Children {
@@ -250,23 +248,24 @@ impl Children {
     }
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.inner.len() == 0
+        self.inner.is_empty()
     }
     /// Insert a `Child` in the `Children`.
-    /// If this `Children` did not have this value present, true is returned.
-    /// If this `Children` did have this value present, false is returned.
+    ///
+    /// # Returns
+    /// - `true` if `child` is a new child-process
+    /// - `false` if `child` is already known
     pub fn insert(&mut self, child: Child) -> bool {
-        // Not possible to have duplication!
         self.inner.insert(child.id(), child).is_none()
     }
+
     /// Merge another `Children` into this `Children`.
     pub fn merge(&mut self, reaper: Self) {
         self.inner.extend(reaper.inner.into_iter());
     }
-    /// Try reaping all the children processes managed by this struct.
-    pub fn reap(&mut self) {
-        // The `try_wait` needs `child` to be `mut`, but only `HashMap::retain`
-        // allows modifying the value. Here `id` is not needed.
+
+    /// Remove all children precosses which finished
+    pub fn remove_finished_children(&mut self) {
         self.inner
             .retain(|_, child| child.try_wait().map_or(true, |ret| ret.is_none()));
     }
