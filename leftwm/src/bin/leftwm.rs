@@ -147,16 +147,16 @@ fn start_leftwm() {
                 nix::unistd::pause();
             }
         }
-    }
 
-    // TODO: either add more details or find a better workaround.
-    //
-    // Left is too fast for some logging managers. We need to
-    // wait to give the logging manager a second to boot.
-    #[cfg(feature = "slow-dm-fix")]
-    {
-        let delay = std::time::Duration::from_millis(2000);
-        std::thread::sleep(delay);
+        // TODO: either add more details or find a better workaround.
+        //
+        // Left is too fast for some logging managers. We need to
+        // wait to give the logging manager a second to boot.
+        #[cfg(feature = "slow-dm-fix")]
+        {
+            let delay = std::time::Duration::from_millis(2000);
+            std::thread::sleep(delay);
+        }
     }
 }
 
