@@ -157,7 +157,11 @@ fn load_from_file() -> Result<Config> {
         #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
         let toml = toml::to_string(&config).unwrap();
         #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
-        let ron = ron::to_string(&config).unwrap();
+        let ron_pretty_conf = ron::ser::PrettyConfig::new()
+            .depth_limit(2)
+            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
+        let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
 
         let mut file = File::create(&config_filename)?;
         #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]

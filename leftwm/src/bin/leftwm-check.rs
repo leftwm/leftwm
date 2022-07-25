@@ -103,7 +103,12 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         #[cfg(feature = "toml-config")]
         let toml = toml::to_string(&config)?;
         #[cfg(feature = "ron-config")]
-        let ron = ron::to_string(&config)?;
+        let ron_pretty_conf = ron::ser::PrettyConfig::new()
+            .depth_limit(2)
+            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+        #[cfg(feature = "ron-config")]
+        let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
+
         let mut file = File::create(&config_filename)?;
         #[cfg(feature = "toml-config")]
         file.write_all(toml.as_bytes())?;
