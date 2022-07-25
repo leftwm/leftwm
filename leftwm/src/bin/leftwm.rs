@@ -137,24 +137,27 @@ fn start_leftwm() {
     let mut children = Nanny::autostart();
 
     let flag = get_sigchld_flag();
-    let mut leftwm_session = start_leftwm_session(&current_exe);
-    while leftwm_is_still_running(&mut leftwm_session) {
-        // remove all child processes which finished
-        children.remove_finished_children();
 
-        while is_suspending(&flag) {
-            nix::unistd::pause();
+    loop {
+        let mut leftwm_session = start_leftwm_session(&current_exe);
+        while leftwm_is_still_running(&mut leftwm_session) {
+            // remove all child processes which finished
+            children.remove_finished_children();
+
+            while is_suspending(&flag) {
+                nix::unistd::pause();
+            }
         }
-    }
 
-    // TODO: either add more details or find a better workaround.
-    //
-    // Left is too fast for some logging managers. We need to
-    // wait to give the logging manager a second to boot.
-    #[cfg(feature = "slow-dm-fix")]
-    {
-        let delay = std::time::Duration::from_millis(2000);
-        std::thread::sleep(delay);
+        // TODO: either add more details or find a better workaround.
+        //
+        // Left is too fast for some logging managers. We need to
+        // wait to give the logging manager a second to boot.
+        #[cfg(feature = "slow-dm-fix")]
+        {
+            let delay = std::time::Duration::from_millis(2000);
+            std::thread::sleep(delay);
+        }
     }
 }
 
