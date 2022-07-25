@@ -133,11 +133,12 @@ fn start_leftwm() {
 
     set_env_vars();
 
-    loop {
-        // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
-        let mut children = Nanny::autostart();
+    // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
+    let mut children = Nanny::autostart();
 
-        let flag = get_sigchld_flag();
+    let flag = get_sigchld_flag();
+
+    loop {
         let mut leftwm_session = start_leftwm_session(&current_exe);
         while leftwm_is_still_running(&mut leftwm_session) {
             // remove all child processes which finished
