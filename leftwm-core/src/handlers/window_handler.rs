@@ -266,6 +266,9 @@ fn setup_window(
         }
         if window.r#type == WindowType::Normal {
             window.apply_margin_multiplier(ws.margin_multiplier);
+            if window.floating() {
+                set_relative_floating(window, ws, ws.xyhw);
+            }
         }
         // Center dialogs and modal in workspace
         if window.r#type == WindowType::Dialog {
