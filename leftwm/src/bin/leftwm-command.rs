@@ -85,6 +85,8 @@ async fn main() -> Result<()> {
         LoadTheme              Args: <Path_to/theme.toml>
         AttachScratchPad       Args: <ScratchpadName>
         ReleaseScratchPad      Args: <tag_index> or <ScratchpadName>
+        NextScratchPadWindow   Args: <ScratchpadName>
+        PrevScratchPadWindow   Args: <ScratchpadName>
         ToggleScratchPad       Args: <ScratchpadName>
         SendWorkspaceToTag     Args: <workspaxe_index> <tag_index> (int)
         SendWindowToTag        Args: <tag_index> (int)
