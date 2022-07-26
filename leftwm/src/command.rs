@@ -19,6 +19,8 @@ pub enum BaseCommand {
     HardReload,
     AttachScratchPad,
     ReleaseScratchPad,
+    NextScratchPadWindow,
+    PrevScratchPadWindow,
     ToggleScratchPad,
     ToggleFullScreen,
     ToggleSticky,

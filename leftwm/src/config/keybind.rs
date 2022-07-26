@@ -23,6 +23,14 @@ macro_rules! ensure_non_empty {
 
 impl Keybind {
     pub fn try_convert_to_core_keybind(&self, config: &Config) -> Result<leftwm_core::Keybind> {
+        fn is_valid_scratchpad_name(config: &Config, scratchpad_name: &str) -> bool {
+            config
+                .scratchpad
+                .as_ref()
+                .and_then(|scratchpads| scratchpads.iter().find(|s| s.name == scratchpad_name))
+                .is_some()
+        }
+
         let command = match &self.command {
             BaseCommand::Execute => {
                 leftwm_core::Command::Execute(ensure_non_empty!(self.value.clone()))
@@ -32,14 +40,10 @@ impl Keybind {
             BaseCommand::SoftReload => leftwm_core::Command::SoftReload,
             BaseCommand::HardReload => leftwm_core::Command::HardReload,
             BaseCommand::AttachScratchPad => {
-                if let Some(Some(scratchpad)) = config
-                    .scratchpad
-                    .as_ref()
-                    .map(|s| s.iter().find(|s| s.name == self.value))
-                {
+                if is_valid_scratchpad_name(config, self.value.as_str()) {
                     leftwm_core::Command::AttachScratchPad {
                         window: None,
-                        scratchpad: scratchpad.name.to_owned(),
+                        scratchpad: self.value.to_owned(),
                     }
                 } else {
                     anyhow::bail!(
@@ -58,19 +62,33 @@ impl Keybind {
                         window: leftwm_core::ReleaseScratchPadOption::None,
                         tag: Some(tag),
                     }
-                } else if let Some(Some(scratchpad)) = config
-                    .scratchpad
-                    .as_ref()
-                    .map(|s| s.iter().find(|s| s.name == self.value))
-                {
+                } else if is_valid_scratchpad_name(config, self.value.as_str()) {
                     leftwm_core::Command::ReleaseScratchPad {
                         window: leftwm_core::ReleaseScratchPadOption::ScrathpadName(
-                            scratchpad.name.to_owned(),
+                            self.value.to_owned(),
                         ),
                         tag: None,
                     }
                 } else {
                     anyhow::bail!("The value for ReleaseScratchPad was not a valid tag number or scratchpad name");
+                }
+            }
+            BaseCommand::NextScratchPadWindow => {
+                if is_valid_scratchpad_name(config, self.value.as_str()) {
+                    leftwm_core::Command::NextScratchPadWindow {
+                        scratchpad: self.value.to_owned(),
+                    }
+                } else {
+                    anyhow::bail!("Value must contain a valid scratchpad name");
+                }
+            }
+            BaseCommand::PrevScratchPadWindow => {
+                if is_valid_scratchpad_name(config, self.value.as_str()) {
+                    leftwm_core::Command::PrevScratchPadWindow {
+                        scratchpad: self.value.to_owned(),
+                    }
+                } else {
+                    anyhow::bail!("Value must contain a valid scratchpad name");
                 }
             }
             BaseCommand::ToggleScratchPad => {

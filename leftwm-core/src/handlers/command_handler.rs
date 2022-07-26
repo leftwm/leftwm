@@ -66,6 +66,13 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
             release_scratchpad(window.clone(), *tag, manager)
         }
 
+        Command::NextScratchPadWindow { scratchpad } => {
+            cycle_scratchpad_window(manager, scratchpad.as_str(), Direction::Forward)
+        }
+        Command::PrevScratchPadWindow { scratchpad } => {
+            cycle_scratchpad_window(manager, scratchpad.as_str(), Direction::Backward)
+        }
+
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
 
@@ -261,6 +268,56 @@ fn next_valid_scratchpad_pid(
     None
 }
 
+fn prev_valid_scratchpad_pid(
+    scratchpad_windows: &mut VecDeque<u32>,
+    managed_windows: &[Window],
+) -> Option<u32> {
+    while let Some(window) = scratchpad_windows.pop_back() {
+        if managed_windows.iter().any(|w| w.pid == Some(window)) {
+            scratchpad_windows.push_back(window);
+            return Some(window);
+        }
+
+        log::info!(
+            "Dead window in scratchpad found, discard: window PID: {}",
+            window
+        );
+    }
+
+    None
+}
+
+fn is_scratchpad_visible<C: Config, SERVER: DisplayServer>(
+    manager: &Manager<C, SERVER>,
+    scratchpad: &str,
+) -> bool {
+    let current_tag = if let Some(tag) = manager.state.focus_manager.tag(0) {
+        tag
+    } else {
+        return false;
+    };
+
+    // Can be seen as a pipeline where each failure should short circuit the next of the steps,
+    // clippy thinks this is redundant, but when first_pid is None and is directly compared with a pid
+    // from a window with no pid, it will match while it most certainly is not what we are looking
+    // for.
+    #[allow(clippy::redundant_closure_for_method_calls)]
+    manager
+        .state
+        .active_scratchpads
+        .get(scratchpad)
+        .and_then(|pids| pids.front())
+        .and_then(|first_pid| {
+            manager
+                .state
+                .windows
+                .iter()
+                .find(|w| w.pid == Some(*first_pid))
+        })
+        .map(|window| window.has_tag(&current_tag))
+        .is_some()
+}
+
 fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     name: &str,
@@ -274,23 +331,32 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         .clone();
 
     if let Some(id) = manager.state.active_scratchpads.get_mut(&scratchpad.name) {
-        let first_in_scratchpad = next_valid_scratchpad_pid(id, &manager.state.windows);
-        if let Some((is_visible, window_handle)) = manager
-            .state
-            .windows
-            .iter()
-            .find(|w| w.pid == first_in_scratchpad)
-            .map(|w| (w.has_tag(current_tag), w.handle))
+        if let Some(first_in_scratchpad) =
+            dbg!(next_valid_scratchpad_pid(id, &manager.state.windows))
         {
-            if is_visible {
-                // window is visible => Hide the scratchpad.
-                hide_scratchpad(manager, &window_handle).ok()?;
-            } else {
-                // window is hidden => show the scratchpad
-                show_scratchpad(manager, &window_handle).ok()?;
-            }
+            if let Some((is_visible, window_handle)) = manager
+                .state
+                .windows
+                .iter()
+                .find(|w| w.pid == Some(first_in_scratchpad))
+                .map(|w| (w.has_tag(current_tag), w.handle))
+            {
+                if dbg!(is_visible) {
+                    // window is visible => Hide the scratchpad.
+                    if let Err(msg) = hide_scratchpad(manager, &window_handle) {
+                        log::error!("{}", msg);
+                        return Some(false);
+                    }
+                } else {
+                    // window is hidden => show the scratchpad
+                    if let Err(msg) = show_scratchpad(manager, &window_handle) {
+                        log::error!("{}", msg);
+                        return Some(false);
+                    }
+                }
 
-            return Some(true);
+                return Some(true);
+            }
         }
     }
 
@@ -367,6 +433,11 @@ fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .iter()
             .find(|w| w.pid.as_ref() == windows.front())
             .map(|w| w.handle);
+
+        // check if window already in scratchpad
+        if windows.iter().any(|pid| *pid == window_pid) {
+            return Some(false);
+        }
 
         windows.push_front(window_pid);
         if let Some(previous_scratchpad_handle) = previous_scratchpad_handle {
@@ -484,6 +555,70 @@ fn release_scratchpad<C: Config, SERVER: DisplayServer>(
         }
         ReleaseScratchPadOption::None => unreachable!(), // should not be possible
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Direction {
+    Forward,
+    Backward,
+}
+
+fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
+    scratchpad_name: &str,
+    direction: Direction,
+) -> Option<bool> {
+    // prevent cycles when scratchpad is not visible
+    if !is_scratchpad_visible(manager, scratchpad_name) {
+        return Some(false);
+    }
+
+    let scratchpad = dbg!(manager.state.active_scratchpads.get_mut(scratchpad_name)?);
+    // get a handle to the currently visible window, so we can hide it later
+    let visible_window_handle = manager
+        .state
+        .windows
+        .iter()
+        .find(|w| w.pid.as_ref() == scratchpad.front()) // scratchpad.front() ok because checked in is_scratchpad_visible
+        .map(|w| w.handle);
+
+    // reorder the scratchpads
+    match direction {
+        Direction::Forward => {
+            next_valid_scratchpad_pid(scratchpad, &manager.state.windows)?;
+            let front = scratchpad.pop_front()?;
+            scratchpad.push_back(front);
+        }
+        Direction::Backward => {
+            prev_valid_scratchpad_pid(scratchpad, &manager.state.windows)?;
+            let back = scratchpad.pop_back()?;
+            scratchpad.push_front(back);
+        }
+    };
+    let new_window_pid = *scratchpad.front()?;
+
+    // hide the previous visible window
+    if let Err(msg) = hide_scratchpad(manager, &visible_window_handle?) {
+        log::error!("{}", msg);
+        return Some(false);
+    }
+
+    // show the new front window
+    let new_window_handle = manager
+        .state
+        .windows
+        .iter()
+        .find(|w| w.pid == Some(new_window_pid))
+        .map(|w| w.handle)?;
+    if let Err(msg) = show_scratchpad(manager, &new_window_handle) {
+        log::error!("{}", msg);
+        return Some(false);
+    }
+
+    // communicate changes to the rest of manager
+    manager.state.sort_windows();
+
+    Some(true)
 }
 
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
@@ -1731,5 +1866,176 @@ mod tests {
             Some(3)
         );
         assert_eq!(scratchpad.len(), 2);
+    }
+
+    #[test]
+    fn prev_valid_pid_test() {
+        // setup
+        let mock_window1 = 1_u32;
+        let mock_window2 = 2_u32;
+        let mock_window3 = 3_u32;
+        let mock_window4 = 4_u32;
+
+        let mut managed_windows = vec![mock_window1, mock_window2, mock_window3, mock_window4]
+            .iter()
+            .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
+            .collect::<Vec<Window>>();
+        let mut scratchpad =
+            VecDeque::from([mock_window1, mock_window2, mock_window3, mock_window4]);
+
+        assert_eq!(
+            prev_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            Some(4)
+        );
+
+        managed_windows.remove(2);
+        assert_eq!(
+            prev_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            Some(4)
+        );
+
+        scratchpad.pop_back();
+        assert_eq!(
+            prev_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            Some(2)
+        );
+        assert_eq!(scratchpad.len(), 2);
+    }
+
+    #[test]
+    #[allow(clippy::too_many_lines)]
+    fn cycle_scratchpad_window_test() {
+        fn is_visible<C: Config, SERVER: DisplayServer>(
+            manager: &Manager<C, SERVER>,
+            pid: u32,
+            nsp_tag: TagId,
+        ) -> bool {
+            manager
+                .state
+                .windows
+                .iter()
+                .find(|w| w.pid == Some(pid))
+                .map(|w| !w.has_tag(&nsp_tag))
+                .unwrap()
+        }
+        fn is_only_first_visible<C: Config, SERVER: DisplayServer>(
+            manager: &Manager<C, SERVER>,
+            mut pids: impl Iterator<Item = u32>,
+            nsp_tag: TagId,
+        ) -> bool {
+            if !is_visible(manager, pids.next().unwrap(), nsp_tag) {
+                return false;
+            }
+            for pid in pids {
+                if is_visible(manager, pid, nsp_tag) {
+                    return false;
+                }
+            }
+
+            true
+        }
+
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+        let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
+
+        // setup
+        let mock_window1 = 1_u32;
+        let mock_window2 = 2_u32;
+        let mock_window3 = 3_u32;
+        let scratchpad_name = "Alacritty";
+
+        for mock_window in [mock_window1, mock_window2, mock_window3] {
+            let mut window = Window::new(
+                WindowHandle::MockHandle(mock_window as i32),
+                None,
+                Some(mock_window),
+            );
+            if mock_window != mock_window1 {
+                window.tag(&nsp_tag);
+            }
+
+            manager.window_created_handler(window, -1, -1);
+        }
+        manager.state.scratchpads.push(ScratchPad {
+            name: scratchpad_name.to_owned(),
+            value: "scratchpad".to_string(),
+            x: None,
+            y: None,
+            height: None,
+            width: None,
+        });
+        manager.state.active_scratchpads.insert(
+            scratchpad_name.to_owned(),
+            VecDeque::from([mock_window1, mock_window2, mock_window3]),
+        );
+
+        cycle_scratchpad_window(&mut manager, scratchpad_name, Direction::Forward);
+        let mut scratchpad_iterator = manager
+            .state
+            .active_scratchpads
+            .get(scratchpad_name)
+            .unwrap()
+            .iter();
+        assert!(is_only_first_visible(
+            &manager,
+            scratchpad_iterator.clone().copied(),
+            nsp_tag
+        ));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
+        assert_eq!(scratchpad_iterator.next(), None);
+
+        cycle_scratchpad_window(&mut manager, scratchpad_name, Direction::Forward);
+        let mut scratchpad_iterator = manager
+            .state
+            .active_scratchpads
+            .get(scratchpad_name)
+            .unwrap()
+            .iter();
+        assert!(is_only_first_visible(
+            &manager,
+            scratchpad_iterator.clone().copied(),
+            nsp_tag
+        ));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
+        assert_eq!(scratchpad_iterator.next(), None);
+
+        cycle_scratchpad_window(&mut manager, scratchpad_name, Direction::Backward);
+        let mut scratchpad_iterator = manager
+            .state
+            .active_scratchpads
+            .get(scratchpad_name)
+            .unwrap()
+            .iter();
+        assert!(is_only_first_visible(
+            &manager,
+            scratchpad_iterator.clone().copied(),
+            nsp_tag
+        ));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
+        assert_eq!(scratchpad_iterator.next(), None);
+
+        cycle_scratchpad_window(&mut manager, scratchpad_name, Direction::Backward);
+        let mut scratchpad_iterator = manager
+            .state
+            .active_scratchpads
+            .get(scratchpad_name)
+            .unwrap()
+            .iter();
+        assert!(is_only_first_visible(
+            &manager,
+            scratchpad_iterator.clone().copied(),
+            nsp_tag
+        ));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
+        assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
+        assert_eq!(scratchpad_iterator.next(), None);
     }
 }

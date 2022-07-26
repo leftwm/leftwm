@@ -19,6 +19,12 @@ pub enum Command {
         window: ReleaseScratchPadOption,
         tag: Option<TagId>,
     },
+    PrevScratchPadWindow {
+        scratchpad: String,
+    },
+    NextScratchPadWindow {
+        scratchpad: String,
+    },
     ToggleScratchPad(String),
     ToggleFullScreen,
     ToggleSticky,

@@ -119,6 +119,12 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleScratchPad" => build_toggle_scratchpad(rest),
         "AttachScratchPad" => build_attach_scratchpad(rest),
         "ReleaseScratchPad" => Ok(build_release_scratchpad(rest)),
+        "NextScratchPadWindow" => Ok(Command::NextScratchPadWindow {
+            scratchpad: rest.to_owned(),
+        }),
+        "PrevScratchPadWindow" => Ok(Command::PrevScratchPadWindow {
+            scratchpad: rest.to_owned(),
+        }),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SendWindowToTag" => build_send_window_to_tag(rest),
         "SetLayout" => build_set_layout(rest),
