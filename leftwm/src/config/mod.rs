@@ -100,10 +100,14 @@ pub struct Config {
     pub disable_window_snap: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
+    pub sloppy_mouse_follows_focus: bool,
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
     pub sloppy_mouse_follows_focus: bool,
 
+    // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
+    //       at least when `TOML` is used as config language
+    
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
 }

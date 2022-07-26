@@ -56,9 +56,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 }
 
 #[cfg(test)]
-impl Manager<crate::config::TestConfig, crate::display_servers::MockDisplayServer> {
+impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDisplayServer> {
     pub fn new_test(tags: Vec<String>) -> Self {
-        use crate::config::TestConfig;
+        use crate::config::tests::TestConfig;
         Self::new(TestConfig {
             tags,
             ..TestConfig::default()
