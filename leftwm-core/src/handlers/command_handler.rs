@@ -239,6 +239,28 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
     Ok(())
 }
 
+/// With the introduction of `VecDeque` for scratchpads, it is possible that a window gets destroyed
+/// in the middle of the `VecDeque`. This is an abstraction to retrieve the next valid pid from a
+/// scratchpad. While walking the scratchpad windows, invalid pids will get removed.
+fn next_valid_scratchpad_pid(
+    scratchpad_windows: &mut VecDeque<u32>,
+    managed_windows: &[Window],
+) -> Option<u32> {
+    while let Some(window) = scratchpad_windows.pop_front() {
+        if managed_windows.iter().any(|w| w.pid == Some(window)) {
+            scratchpad_windows.push_front(window);
+            return Some(window);
+        }
+
+        log::info!(
+            "Dead window in scratchpad found, discard: window PID: {}",
+            window
+        );
+    }
+
+    None
+}
+
 fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     name: &str,
@@ -251,13 +273,13 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         .find(|s| name == s.name)?
         .clone();
 
-    if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
-        let first_in_scratchpad = id.front();
+    if let Some(id) = manager.state.active_scratchpads.get_mut(&scratchpad.name) {
+        let first_in_scratchpad = next_valid_scratchpad_pid(id, &manager.state.windows);
         if let Some((is_visible, window_handle)) = manager
             .state
             .windows
             .iter()
-            .find(|w| w.pid.as_ref() == first_in_scratchpad)
+            .find(|w| w.pid == first_in_scratchpad)
             .map(|w| (w.has_tag(current_tag), w.handle))
         {
             if is_visible {
@@ -437,8 +459,13 @@ fn release_scratchpad<C: Config, SERVER: DisplayServer>(
             let window_pid = manager
                 .state
                 .active_scratchpads
+                .get_mut(&scratchpad_name)
+                .and_then(|pids| next_valid_scratchpad_pid(pids, &manager.state.windows))?;
+            manager // we found already a working pid, discard from scratchpad
+                .state
+                .active_scratchpads
                 .get_mut(&scratchpad_name)?
-                .pop_front()?;
+                .pop_front();
 
             let window_handle = manager
                 .state
@@ -455,7 +482,7 @@ fn release_scratchpad<C: Config, SERVER: DisplayServer>(
 
             move_to_tag(window_handle, destination_tag, manager)
         }
-        ReleaseScratchPadOption::None => panic!("Invalid state"), // should not be possible
+        ReleaseScratchPadOption::None => unreachable!(), // should not be possible
     }
 }
 
@@ -1670,5 +1697,39 @@ mod tests {
                 .unwrap());
         }
         assert_eq!(scratchpad.pop_front(), None);
+    }
+
+    #[test]
+    fn next_valid_pid_test() {
+        // setup
+        let mock_window1 = 1_u32;
+        let mock_window2 = 2_u32;
+        let mock_window3 = 3_u32;
+        let mock_window4 = 4_u32;
+
+        let mut managed_windows = vec![mock_window1, mock_window2, mock_window3, mock_window4]
+            .iter()
+            .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
+            .collect::<Vec<Window>>();
+        let mut scratchpad =
+            VecDeque::from([mock_window1, mock_window2, mock_window3, mock_window4]);
+
+        assert_eq!(
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            Some(1)
+        );
+
+        managed_windows.remove(1);
+        assert_eq!(
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            Some(1)
+        );
+
+        scratchpad.pop_front();
+        assert_eq!(
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            Some(3)
+        );
+        assert_eq!(scratchpad.len(), 2);
     }
 }
