@@ -331,9 +331,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         .clone();
 
     if let Some(id) = manager.state.active_scratchpads.get_mut(&scratchpad.name) {
-        if let Some(first_in_scratchpad) =
-            dbg!(next_valid_scratchpad_pid(id, &manager.state.windows))
-        {
+        if let Some(first_in_scratchpad) = next_valid_scratchpad_pid(id, &manager.state.windows) {
             if let Some((is_visible, window_handle)) = manager
                 .state
                 .windows
@@ -341,7 +339,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                 .find(|w| w.pid == Some(first_in_scratchpad))
                 .map(|w| (w.has_tag(current_tag), w.handle))
             {
-                if dbg!(is_visible) {
+                if is_visible {
                     // window is visible => Hide the scratchpad.
                     if let Err(msg) = hide_scratchpad(manager, &window_handle) {
                         log::error!("{}", msg);
@@ -573,7 +571,7 @@ fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
         return Some(false);
     }
 
-    let scratchpad = dbg!(manager.state.active_scratchpads.get_mut(scratchpad_name)?);
+    let scratchpad = manager.state.active_scratchpads.get_mut(scratchpad_name)?;
     // get a handle to the currently visible window, so we can hide it later
     let visible_window_handle = manager
         .state
@@ -1828,7 +1826,7 @@ mod tests {
                 .windows
                 .iter()
                 .find(|w| w.pid == window_pid)
-                .map(|w| dbg!(w.has_tag(&nsp_tag)))
+                .map(|w| w.has_tag(&nsp_tag))
                 .unwrap());
         }
         assert_eq!(scratchpad.pop_front(), None);
