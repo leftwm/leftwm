@@ -50,6 +50,7 @@ impl Default for ThemeSetting {
     }
 }
 
+#[allow(clippy::used_underscore_binding)]
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
     #[cfg(feature = "toml-config")]

@@ -129,6 +129,7 @@ pub fn load() -> Config {
 /// etc.).
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
+#[allow(clippy::used_underscore_binding, clippy::let_unit_value)]
 fn load_from_file() -> Result<Config> {
     // underscore prefixes in  `_config_filename` and `_config` are temporary
     // as long as we need to carry toml and ron in parallel
