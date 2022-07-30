@@ -19,6 +19,7 @@ pub struct ManagerState {
     pub viewports: Vec<Viewport>,
     pub active_desktop: Vec<String>,
     pub working_tags: Vec<String>,
+    pub urgent_tags: Vec<String>,
 }
 
 #[allow(clippy::struct_excessive_bools)]
@@ -29,6 +30,7 @@ pub struct TagsForWorkspace {
     pub mine: bool,
     pub visible: bool,
     pub focused: bool,
+    pub urgent: bool,
     pub busy: bool,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -60,6 +62,7 @@ impl From<ManagerState> for DisplayState {
                     &m.active_desktop,
                     &visible,
                     &m.working_tags,
+                    &m.urgent_tags,
                     vp,
                     i,
                 )
@@ -77,6 +80,7 @@ fn viewport_into_display_workspace(
     focused: &[String],
     visible: &[String],
     working_tags: &[String],
+    urgent_tags: &[String],
     viewport: &Viewport,
     ws_index: usize,
 ) -> DisplayWorkspace {
@@ -89,6 +93,7 @@ fn viewport_into_display_workspace(
             mine: viewport.tags.contains(t),
             visible: visible.contains(t),
             focused: focused.contains(t),
+            urgent: urgent_tags.contains(t),
             busy: working_tags.contains(t),
         })
         .collect();
@@ -112,6 +117,13 @@ impl From<&State> for ManagerState {
             .all()
             .iter()
             .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id)))
+            .map(|t| t.label.clone())
+            .collect();
+        let urgent_tags = state
+            .tags
+            .all()
+            .iter()
+            .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id) && w.urgent))
             .map(|t| t.label.clone())
             .collect();
         for ws in &state.workspaces {
@@ -153,6 +165,7 @@ impl From<&State> for ManagerState {
                 .collect(),
             viewports,
             active_desktop,
+            urgent_tags,
             working_tags,
         }
     }

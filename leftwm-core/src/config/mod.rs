@@ -83,131 +83,129 @@ pub trait Config {
 }
 
 #[cfg(test)]
-#[allow(clippy::module_name_repetitions)]
-#[derive(Default)]
-pub struct TestConfig {
-    pub tags: Vec<String>,
-    pub layouts: Vec<Layout>,
-    pub workspaces: Option<Vec<Workspace>>,
-    pub insert_behavior: InsertBehavior,
-}
-
-#[cfg(test)]
-impl Config for TestConfig {
-    fn mapped_bindings(&self) -> Vec<Keybind> {
-        unimplemented!()
-    }
-    fn create_list_of_tag_labels(&self) -> Vec<String> {
-        self.tags.clone()
-    }
-    fn workspaces(&self) -> Option<Vec<Workspace>> {
-        self.workspaces.clone()
-    }
-    fn focus_behaviour(&self) -> FocusBehaviour {
-        FocusBehaviour::ClickTo
-    }
-    fn mousekey(&self) -> Vec<String> {
-        vec!["Mod4".to_owned()]
-    }
-    fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
-        vec![]
-    }
-    fn layouts(&self) -> Vec<Layout> {
-        self.layouts.clone()
-    }
-    fn layout_mode(&self) -> LayoutMode {
-        LayoutMode::Workspace
-    }
-
-    fn insert_behavior(&self) -> InsertBehavior {
-        self.insert_behavior
-    }
-
-    fn focus_new_windows(&self) -> bool {
-        false
-    }
-    fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
-    where
-        SERVER: DisplayServer,
-    {
-        match command {
-            "GoToTag2" => manager.command_handler(&crate::Command::GoToTag {
-                tag: 2,
-                swap: false,
-            }),
-            _ => unimplemented!("custom command handler: {:?}", command),
-        }
-    }
-    fn always_float(&self) -> bool {
-        false
-    }
-    fn default_width(&self) -> i32 {
-        1000
-    }
-    fn default_height(&self) -> i32 {
-        800
-    }
-    fn border_width(&self) -> i32 {
-        0
-    }
-    fn margin(&self) -> Margins {
-        Margins::new(0)
-    }
-    fn workspace_margin(&self) -> Option<Margins> {
-        None
-    }
-    fn gutter(&self) -> Option<Vec<Gutter>> {
-        unimplemented!()
-    }
-    fn default_border_color(&self) -> String {
-        unimplemented!()
-    }
-    fn floating_border_color(&self) -> String {
-        unimplemented!()
-    }
-    fn focused_border_color(&self) -> String {
-        unimplemented!()
-    }
-    fn on_new_window_cmd(&self) -> Option<String> {
-        None
-    }
-    fn get_list_of_gutters(&self) -> Vec<Gutter> {
-        Default::default()
-    }
-    fn max_window_width(&self) -> Option<Size> {
-        None
-    }
-    fn disable_tile_drag(&self) -> bool {
-        false
-    }
-    fn disable_window_snap(&self) -> bool {
-        false
-    }
-    fn save_state(&self, _state: &State) {
-        unimplemented!()
-    }
-    fn load_state(&self, _state: &mut State) {
-        unimplemented!()
-    }
-    fn setup_predefined_window(&self, window: &mut Window) -> bool {
-        if window.res_class == Some("ShouldGoToTag2".to_string()) {
-            window.tags = vec![2];
-            true
-        } else {
-            false
-        }
-    }
-    fn sloppy_mouse_follows_focus(&self) -> bool {
-        true
-    }
-}
-
-#[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::models::Screen;
     use crate::models::Window;
     use crate::models::WindowHandle;
+
+    #[allow(clippy::module_name_repetitions)]
+    #[derive(Default)]
+    pub struct TestConfig {
+        pub tags: Vec<String>,
+        pub layouts: Vec<Layout>,
+        pub workspaces: Option<Vec<Workspace>>,
+        pub insert_behavior: InsertBehavior,
+    }
+
+    impl Config for TestConfig {
+        fn mapped_bindings(&self) -> Vec<Keybind> {
+            unimplemented!()
+        }
+        fn create_list_of_tag_labels(&self) -> Vec<String> {
+            self.tags.clone()
+        }
+        fn workspaces(&self) -> Option<Vec<Workspace>> {
+            self.workspaces.clone()
+        }
+        fn focus_behaviour(&self) -> FocusBehaviour {
+            FocusBehaviour::ClickTo
+        }
+        fn mousekey(&self) -> Vec<String> {
+            vec!["Mod4".to_owned()]
+        }
+        fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
+            vec![]
+        }
+        fn layouts(&self) -> Vec<Layout> {
+            self.layouts.clone()
+        }
+        fn layout_mode(&self) -> LayoutMode {
+            LayoutMode::Workspace
+        }
+
+        fn insert_behavior(&self) -> InsertBehavior {
+            self.insert_behavior
+        }
+
+        fn focus_new_windows(&self) -> bool {
+            false
+        }
+        fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
+        where
+            SERVER: DisplayServer,
+        {
+            match command {
+                "GoToTag2" => manager.command_handler(&crate::Command::GoToTag {
+                    tag: 2,
+                    swap: false,
+                }),
+                _ => unimplemented!("custom command handler: {:?}", command),
+            }
+        }
+        fn always_float(&self) -> bool {
+            false
+        }
+        fn default_width(&self) -> i32 {
+            1000
+        }
+        fn default_height(&self) -> i32 {
+            800
+        }
+        fn border_width(&self) -> i32 {
+            0
+        }
+        fn margin(&self) -> Margins {
+            Margins::new(0)
+        }
+        fn workspace_margin(&self) -> Option<Margins> {
+            None
+        }
+        fn gutter(&self) -> Option<Vec<Gutter>> {
+            unimplemented!()
+        }
+        fn default_border_color(&self) -> String {
+            unimplemented!()
+        }
+        fn floating_border_color(&self) -> String {
+            unimplemented!()
+        }
+        fn focused_border_color(&self) -> String {
+            unimplemented!()
+        }
+        fn on_new_window_cmd(&self) -> Option<String> {
+            None
+        }
+        fn get_list_of_gutters(&self) -> Vec<Gutter> {
+            Default::default()
+        }
+        fn max_window_width(&self) -> Option<Size> {
+            None
+        }
+        fn disable_tile_drag(&self) -> bool {
+            false
+        }
+        fn disable_window_snap(&self) -> bool {
+            false
+        }
+        fn save_state(&self, _state: &State) {
+            unimplemented!()
+        }
+        fn load_state(&self, _state: &mut State) {
+            unimplemented!()
+        }
+        fn setup_predefined_window(&self, window: &mut Window) -> bool {
+            if window.res_class == Some("ShouldGoToTag2".to_string()) {
+                window.tags = vec![2];
+                true
+            } else {
+                false
+            }
+        }
+        fn sloppy_mouse_follows_focus(&self) -> bool {
+            true
+        }
+    }
 
     #[test]
     fn ensure_command_handler_trait_boundary() {

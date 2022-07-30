@@ -216,7 +216,7 @@ impl Default for Config {
             keybind: commands,
             theme_setting: ThemeSetting::default(),
             max_window_width: None,
-            state: None,
+            state_path: None,
             sloppy_mouse_follows_focus: true,
         }
     }

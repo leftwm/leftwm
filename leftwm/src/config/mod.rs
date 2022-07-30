@@ -26,7 +26,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
-/// Path to file where state will be dumper upon soft reload.
+/// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
 
 /// Selecting by `WM_CLASS` and/or window title, allow the user to define if a
@@ -94,7 +94,7 @@ pub struct Config {
     pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
     pub window_rules: Option<Vec<WindowHook>>,
-    //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
+    // If you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
     pub disable_tile_drag: bool,
     pub disable_window_snap: bool,
@@ -102,7 +102,8 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub sloppy_mouse_follows_focus: bool,
     pub keybind: Vec<Keybind>,
-    pub state: Option<PathBuf>,
+    pub state_path: Option<PathBuf>,
+
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
     //       at least when `TOML` is used as config language
     #[serde(skip)]
@@ -516,7 +517,7 @@ impl leftwm_core::Config for Config {
 
 impl Config {
     fn state_file(&self) -> &Path {
-        self.state
+        self.state_path
             .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
     }

@@ -13,6 +13,7 @@ pub struct WindowChange {
     pub handle: WindowHandle,
     pub transient: Option<MaybeWindowHandle>,
     pub never_focus: Option<bool>,
+    pub urgent: Option<bool>,
     pub name: Option<MaybeName>,
     pub r#type: Option<WindowType>,
     pub floating: Option<XyhwChange>,
@@ -30,6 +31,7 @@ impl WindowChange {
             never_focus: None,
             name: None,
             r#type: None,
+            urgent: None,
             floating: None,
             strut: None,
             requested: None,
@@ -53,6 +55,11 @@ impl WindowChange {
             let changed_nf = window.never_focus != nf;
             changed = changed || changed_nf;
             window.never_focus = nf;
+        }
+        if let Some(urgent) = self.urgent {
+            let changed_urgent = window.urgent != urgent;
+            changed = changed || changed_urgent;
+            window.urgent = urgent;
         }
         if let Some(mut floating_change) = self.floating {
             // Reposition if dialog or modal.
