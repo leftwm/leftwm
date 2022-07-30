@@ -129,44 +129,46 @@ pub fn load() -> Config {
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
+    // underscore prefixes in  `_config_filename` and `_config` are temporary
+    // as long as we need to carry toml and ron in parallel
     let path = BaseDirectories::with_prefix("leftwm")?;
 
-    #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
-    let config_filename = path.place_config_file("config.toml")?;
-    #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
-    let config_filename = path.place_config_file("config.ron")?;
+    #[cfg(any(feature = "toml-config", feature = "all-features"))]
+    let _config_filename = path.place_config_file("config.toml")?;
+    #[cfg(any(feature = "ron-config", feature = "all-features"))]
+    let _config_filename = path.place_config_file("config.ron")?;
 
     #[cfg(any(feature = "ron-config", feature = "toml-config"))]
-    if Path::new(&config_filename).exists() {
-        let contents = fs::read_to_string(config_filename)?;
+    if Path::new(&_config_filename).exists() {
+        let contents = fs::read_to_string(_config_filename)?;
 
-        #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
-        let config = toml::from_str(&contents)?;
-        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
-        let config = ron::from_str(&contents)?;
+        #[cfg(any(feature = "toml-config", feature = "all-features"))]
+        let _config = toml::from_str(&contents)?;
+        #[cfg(any(feature = "ron-config", feature = "all-features"))]
+        let _config = ron::from_str(&contents)?;
 
         #[cfg(any(feature = "ron-config", feature = "toml-config"))]
-        if check_workspace_ids(&config) {
-            Ok(config)
+        if check_workspace_ids(&_config) {
+            Ok(_config)
         } else {
             log::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
             Ok(Config::default())
         }
     } else {
         let config = Config::default();
-        #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
+        #[cfg(any(feature = "toml-config", feature = "all-features"))]
         let toml = toml::to_string(&config).unwrap();
-        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
+        #[cfg(any(feature = "ron-config", feature = "all-features"))]
         let ron_pretty_conf = ron::ser::PrettyConfig::new()
             .depth_limit(2)
             .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
-        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
+        #[cfg(any(feature = "ron-config", feature = "all-features"))]
         let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
 
-        let mut file = File::create(&config_filename)?;
-        #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
+        let mut file = File::create(&_config_filename)?;
+        #[cfg(any(feature = "toml-config", feature = "all-features"))]
         file.write_all(toml.as_bytes())?;
-        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
+        #[cfg(any(feature = "ron-config", feature = "all-features"))]
         file.write_all(ron.as_bytes())?;
 
         #[cfg(any(feature = "ron-config", feature = "toml-config"))]

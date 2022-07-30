@@ -53,10 +53,12 @@ impl Default for ThemeSetting {
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
     #[cfg(feature = "toml-config")]
-    let from_file: ThemeSetting = toml::from_str(&contents)?;
+    // underscore prefixe in  `_from_file` is  temporary
+    // as long as we need to carry toml and ron in parallel
+    let _from_file: ThemeSetting = toml::from_str(&contents)?;
     #[cfg(feature = "ron-config")]
-    let from_file: ThemeSetting = ron::from_str(&contents)?;
-    Ok(from_file)
+    let _from_file: ThemeSetting = ron::from_str(&contents)?;
+    Ok(_from_file)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

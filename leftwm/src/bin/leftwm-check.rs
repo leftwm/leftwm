@@ -70,16 +70,19 @@ async fn main() -> Result<()> {
 /// Errors if file cannot be read. Indicates filesystem error
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
+#[allow(unreachable_patterns)] // this is to suffice testing with `--all-features` in CI as long as we have toml and ron in parallel
 pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
+    // underscore prefixes in  `_config_filename` and `_config` are temporary
+    // as long as we need to carry toml and ron in parallel
     let config_filename = match fspath {
         Some(fspath) => {
             println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
             PathBuf::from(fspath)
         }
 
-        #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
+        #[cfg(any(feature = "toml-config", feature = "all-features"))]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
-        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
+        #[cfg(any(feature = "ron-config", feature = "all-features"))]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?,
     };
     if verbose {
@@ -91,16 +94,16 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             dbg!(&contents);
         }
 
-        #[cfg(all(feature = "toml-config", not(feature = "ron-config")))]
-        let config = toml::from_str(&contents)?;
-        #[cfg(all(feature = "ron-config", not(feature = "toml-config")))]
-        let config = ron::from_str(&contents)?;
+        #[cfg(any(feature = "toml-config", feature = "all-features"))]
+        let _config = toml::from_str(&contents)?;
+        #[cfg(any(feature = "ron-config", feature = "all-features"))]
+        let _config = ron::from_str(&contents)?;
 
         #[cfg(any(feature = "ron-config", feature = "toml-config"))]
-        Ok(config)
+        Ok(_config)
     } else {
         let config = Config::default();
-        #[cfg(feature = "toml-config")]
+        #[cfg(any(feature = "toml-config", feature = "all-features"))]
         let toml = toml::to_string(&config)?;
         #[cfg(feature = "ron-config")]
         let ron_pretty_conf = ron::ser::PrettyConfig::new()
