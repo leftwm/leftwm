@@ -6,6 +6,7 @@ use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
+use crate::Workspace;
 use serde::{Deserialize, Serialize};
 use x11_dl::xlib;
 
@@ -159,21 +160,21 @@ impl Window {
     pub fn must_float(&self) -> bool {
         self.must_float
             || self.transient.is_some()
-            || self.is_unmanaged()
+            || !self.is_managed()
             || self.r#type == WindowType::Splash
     }
     #[must_use]
     pub fn can_move(&self) -> bool {
-        !self.is_unmanaged()
+        self.is_managed()
     }
     #[must_use]
     pub fn can_resize(&self) -> bool {
-        self.can_resize && !self.is_unmanaged()
+        self.can_resize && self.is_managed()
     }
 
     #[must_use]
     pub fn can_focus(&self) -> bool {
-        !self.never_focus && !self.is_unmanaged() && self.visible()
+        !self.never_focus && self.is_managed() && self.visible()
     }
 
     pub fn set_width(&mut self, width: i32) {
@@ -230,7 +231,7 @@ impl Window {
             Some(requested) if requested.minw() > 0 && self.floating() => requested.minw(),
             _ => 100,
         };
-        if value < limit && !self.is_unmanaged() {
+        if value < limit && self.is_managed() {
             value = limit;
         }
         value
@@ -253,7 +254,7 @@ impl Window {
             Some(requested) if requested.minh() > 0 && self.floating() => requested.minh(),
             _ => 100,
         };
-        if value < limit && !self.is_unmanaged() {
+        if value < limit && self.is_managed() {
             value = limit;
         }
         value
@@ -345,8 +346,31 @@ impl Window {
     }
 
     #[must_use]
-    pub fn is_unmanaged(&self) -> bool {
-        self.r#type == WindowType::Desktop || self.r#type == WindowType::Dock
+    pub fn is_managed(&self) -> bool {
+        self.r#type != WindowType::Desktop && self.r#type != WindowType::Dock
+    }
+
+    pub fn snap_to_workspace(&mut self, workspace: &Workspace) -> bool {
+        self.set_floating(false);
+
+        //we are reparenting
+        if self.tags != workspace.tags {
+            self.tags = workspace.tags.clone();
+            let mut offset = self.get_floating_offsets().unwrap_or_default();
+            let mut start_loc = self.start_loc.unwrap_or_default();
+            let x = offset.x() + self.normal.x();
+            let y = offset.y() + self.normal.y();
+            offset.set_x(x - workspace.xyhw.x());
+            offset.set_y(y - workspace.xyhw.y());
+            self.set_floating_offsets(Some(offset));
+
+            let x = start_loc.x() + self.normal.x();
+            let y = start_loc.y() + self.normal.y();
+            start_loc.set_x(x - workspace.xyhw.x());
+            start_loc.set_y(y - workspace.xyhw.y());
+            self.start_loc = Some(start_loc);
+        }
+        true
     }
 }
 

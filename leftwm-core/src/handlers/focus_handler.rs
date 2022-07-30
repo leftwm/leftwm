@@ -112,7 +112,7 @@ impl State {
         // Find the handle in our managed windows.
         let found: &Window = self.windows.iter().find(|w| &w.handle == handle)?;
         // Docks don't want to get focus. If they do weird things happen. They don't get events...
-        if found.is_unmanaged() {
+        if !found.is_managed() {
             return None;
         }
         let previous = self.focus_manager.window(&self.windows);

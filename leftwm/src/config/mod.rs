@@ -303,7 +303,7 @@ impl leftwm_core::Config for Config {
         if let Some(scratchpads) = &self.scratchpad {
             return scratchpads.clone();
         }
-        return vec![];
+        vec![]
     }
 
     fn layouts(&self) -> Vec<Layout> {

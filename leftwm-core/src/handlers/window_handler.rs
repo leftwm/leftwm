@@ -81,7 +81,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state.windows.retain(|w| &w.handle != handle);
 
         //make sure the workspaces do not draw on the docks
-        self.update_workspace_avoid_list();
+        update_workspace_avoid_list(&mut self.state);
 
         let focused = self.state.focus_manager.window_history.get(0);
         //make sure focus is recalculated if we closed the currently focused window
@@ -136,7 +136,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
             changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
-                self.update_workspace_avoid_list();
+                update_workspace_avoid_list(&mut self.state);
                 // Don't let changes from docks re-render the worker. This will result in an
                 // infinite loop. Just be patient a rerender will occur.
             }
@@ -149,31 +149,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.update_static();
         }
         changed
-    }
-
-    pub fn update_workspace_avoid_list(&mut self) {
-        let mut avoid = vec![];
-        self.state
-            .windows
-            .iter()
-            .filter(|w| w.r#type == WindowType::Dock)
-            .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
-            .for_each(|(handle, to_avoid)| {
-                log::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
-                avoid.push(to_avoid);
-            });
-        for ws in &mut self.state.workspaces {
-            let struts = avoid
-                .clone()
-                .into_iter()
-                .filter(|s| {
-                    let (x, y) = s.center();
-                    ws.contains_point(x, y)
-                })
-                .collect();
-            ws.avoid = struts;
-            ws.update_avoided_areas();
-        }
     }
 
     /// Find the next or previous window on the currently focused workspace.
@@ -189,31 +164,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .map(|w| w.handle);
         self.state.windows.append(&mut windows_on_workspace);
         new_handle
-    }
-}
-
-impl Window {
-    pub fn snap_to_workspace(&mut self, workspace: &Workspace) -> bool {
-        self.set_floating(false);
-
-        //we are reparenting
-        if self.tags != workspace.tags {
-            self.tags = workspace.tags.clone();
-            let mut offset = self.get_floating_offsets().unwrap_or_default();
-            let mut start_loc = self.start_loc.unwrap_or_default();
-            let x = offset.x() + self.normal.x();
-            let y = offset.y() + self.normal.y();
-            offset.set_x(x - workspace.xyhw.x());
-            offset.set_y(y - workspace.xyhw.y());
-            self.set_floating_offsets(Some(offset));
-
-            let x = start_loc.x() + self.normal.x();
-            let y = start_loc.y() + self.normal.y();
-            start_loc.set_x(x - workspace.xyhw.x());
-            start_loc.set_y(y - workspace.xyhw.y());
-            self.start_loc = Some(start_loc);
-        }
-        true
     }
 }
 
@@ -236,7 +186,7 @@ fn setup_window(
 
     if let Some(ws) = ws {
         let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && !x.is_unmanaged() };
+            |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && x.is_managed() };
         *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
         // May have been set by a predefined tag.
         if window.tags.is_empty() {
@@ -261,43 +211,45 @@ fn setup_window(
                     let new_float_exact = scratchpad_xyhw(&ws.xyhw, s);
                     window.normal = ws.xyhw;
                     window.set_floating_exact(new_float_exact);
+                    return;
                 }
             }
-        }
-        if window.r#type == WindowType::Normal {
-            window.apply_margin_multiplier(ws.margin_multiplier);
-            if window.floating() {
-                set_relative_floating(window, ws, ws.xyhw);
-            }
-        }
-        // Center dialogs and modal in workspace
-        if window.r#type == WindowType::Dialog {
-            if window.can_resize() {
-                window.set_floating(true);
-                let new_float_exact = ws.center_halfed();
-                window.normal = ws.xyhw;
-                window.set_floating_exact(new_float_exact);
-            } else {
-                set_relative_floating(window, ws, ws.xyhw);
-            }
-        }
-        if window.r#type == WindowType::Splash {
-            set_relative_floating(window, ws, ws.xyhw);
         }
         if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
             // This is currently for vlc, this probably will need to be more general if another
             // case comes up where we don't want to move the window.
             if window.r#type != WindowType::Utility {
                 set_relative_floating(window, ws, parent.exact_xyhw());
+                return;
             }
         }
-    } else {
-        window.tags = vec![1];
-        if is_scratchpad(state, window) {
-            if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
-                window.tag(&scratchpad_tag.id);
-                window.set_floating(true);
+        match window.r#type {
+            WindowType::Normal => {
+                window.apply_margin_multiplier(ws.margin_multiplier);
+                if window.floating() {
+                    set_relative_floating(window, ws, ws.xyhw);
+                }
             }
+            WindowType::Dialog => {
+                if window.can_resize() {
+                    window.set_floating(true);
+                    let new_float_exact = ws.center_halfed();
+                    window.normal = ws.xyhw;
+                    window.set_floating_exact(new_float_exact);
+                } else {
+                    set_relative_floating(window, ws, ws.xyhw);
+                }
+            }
+            WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
+            _ => {}
+        }
+        return;
+    }
+    window.tags = vec![1];
+    if is_scratchpad(state, window) {
+        if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
+            window.tag(&scratchpad_tag.id);
+            window.set_floating(true);
         }
     }
 }
@@ -306,7 +258,7 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
         let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && !x.is_unmanaged() };
+            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && x.is_managed() };
         // Only minimize when the new window is type normal.
         if let Some(fsw) = state
             .windows
@@ -483,6 +435,30 @@ fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32
     }
 }
 
+pub fn update_workspace_avoid_list(state: &mut State) {
+    let mut avoid = vec![];
+    state
+        .windows
+        .iter()
+        .filter(|w| w.r#type == WindowType::Dock)
+        .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
+        .for_each(|(handle, to_avoid)| {
+            log::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
+            avoid.push(to_avoid);
+        });
+    for ws in &mut state.workspaces {
+        let struts = avoid
+            .clone()
+            .into_iter()
+            .filter(|s| {
+                let (x, y) = s.center();
+                ws.contains_point(x, y)
+            })
+            .collect();
+        ws.avoid = struts;
+        ws.update_avoided_areas();
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

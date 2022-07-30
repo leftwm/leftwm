@@ -39,7 +39,7 @@ macro_rules! move_focus_common_vars {
         let (tags, layout) = (vec![tag_id], Some(tag.layout));
 
         let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
+            |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && x.is_managed() };
 
         let to_reorder = helpers::vec_extract(&mut $state.windows, for_active_workspace);
         $func($state, handle, layout, to_reorder, $($arg),*)
@@ -375,7 +375,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
             .find(|w| Some(&Some(w.handle)) == previous_window_handle)
             .cloned()
     } else {
-        state.windows.iter().find(|w| is_target(*w)).cloned()
+        state.windows.iter().find(|w| is_target(w)).cloned()
     }?;
 
     let handle = target_window.handle;
@@ -395,7 +395,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
     {
         Some(layout) if layout == Layout::Monocle || layout == Layout::MainAndDeck => {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
-                w.has_tag(tag_id) && !w.is_unmanaged() && !w.floating()
+                w.has_tag(tag_id) && w.is_managed() && !w.floating()
             });
 
             let cycle = |wins: &mut Vec<Window>, s: &mut State| {
@@ -461,7 +461,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
 
 fn close_window(state: &mut State) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
-    if !window.is_unmanaged() {
+    if window.is_managed() {
         let act = DisplayAction::KillWindow(window.handle);
         state.actions.push_back(act);
     }
@@ -473,7 +473,7 @@ fn move_to_last_workspace(state: &mut State) -> Option<bool> {
         let index = *state.focus_manager.workspace_history.get(1)?;
         let wp_tags = &state.workspaces.get(index)?.tags.clone();
         let window = state.focus_manager.window_mut(&mut state.windows)?;
-        window.tags = vec![*wp_tags.get(0)?];
+        window.tags = vec![*wp_tags.first()?];
         return Some(true);
     }
     None
@@ -513,13 +513,13 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
                 to_focus = state
                     .windows
                     .iter()
-                    .find(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .find(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating())
                     .cloned();
             } else if layout == Layout::MainAndDeck {
                 let tags_windows = state
                     .windows
                     .iter()
-                    .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .filter(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating())
                     .collect::<Vec<&Window>>();
                 if let (Some(mw), Some(tdw)) = (tags_windows.get(0), tags_windows.get(1)) {
                     // If the focused window is the main or the top of the deck, we don't do
@@ -715,7 +715,7 @@ fn focus_window_top(state: &mut State, swap: bool) -> Option<bool> {
     let next = state
         .windows
         .iter()
-        .find(|x| x.tags.contains(&tag) && !x.floating() && !x.is_unmanaged())
+        .find(|x| x.tags.contains(&tag) && !x.floating() && x.is_managed())
         .map(|w| w.handle);
 
     match (next, cur, prev) {

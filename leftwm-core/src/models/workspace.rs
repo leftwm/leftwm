@@ -131,7 +131,7 @@ impl Workspace {
     /// Returns true if the workspace is to update the locations info of this window.
     #[must_use]
     pub fn is_managed(&self, window: &Window) -> bool {
-        self.is_displaying(window) && !window.is_unmanaged()
+        self.is_displaying(window) && window.is_managed()
     }
 
     /// Returns the original x position of the workspace,

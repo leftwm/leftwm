@@ -77,7 +77,7 @@ impl WindowChange {
             let changed_type = &window.r#type != r#type;
             changed = changed || changed_type;
             window.r#type = r#type.clone();
-            if window.is_unmanaged() {
+            if !window.is_managed() {
                 window.border = 0;
                 window.margin = Margins::new(0);
             }
