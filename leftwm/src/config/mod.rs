@@ -26,7 +26,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
-/// Path to file where state will be dumped upon soft reload.
+/// Path to file where state will be dumper upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
 
 /// Selecting by `WM_CLASS` and/or window title, allow the user to define if a
@@ -94,7 +94,7 @@ pub struct Config {
     pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
     pub window_rules: Option<Vec<WindowHook>>,
-    // If you are on tag "1" and you goto tag "1" this takes you to the previous tag
+    //of you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
     pub disable_tile_drag: bool,
     pub disable_window_snap: bool,
@@ -103,7 +103,6 @@ pub struct Config {
     pub sloppy_mouse_follows_focus: bool,
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
-
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
     //       at least when `TOML` is used as config language
     #[serde(skip)]
@@ -129,7 +128,7 @@ pub fn load() -> Config {
 /// etc.).
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
-#[allow(clippy::used_underscore_binding, clippy::let_unit_value)]
+#[allow(clippy::used_underscore_binding, clippy::let_unit_value)] // this is to suffice testing with `--all-features` in CI as long as we have toml and ron in parallel
 fn load_from_file() -> Result<Config> {
     // underscore prefixes in  `_config_filename` and `_config` are temporary
     // as long as we need to carry toml and ron in parallel

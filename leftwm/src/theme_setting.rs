@@ -50,7 +50,7 @@ impl Default for ThemeSetting {
     }
 }
 
-#[allow(clippy::used_underscore_binding)]
+#[allow(clippy::used_underscore_binding, clippy::let_unit_value)] // this is to suffice testing with `--all-features` in CI as long as we have toml and ron in parallel
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
     #[cfg(feature = "toml-config")]
