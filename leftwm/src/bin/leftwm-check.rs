@@ -70,7 +70,11 @@ async fn main() -> Result<()> {
 /// Errors if file cannot be read. Indicates filesystem error
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
-#[allow(unreachable_patterns, clippy::used_underscore_binding)] // this is to suffice testing with `--all-features` in CI as long as we have toml and ron in parallel
+#[allow(
+    unreachable_patterns,
+    clippy::used_underscore_binding,
+    clippy::let_unit_value
+)] // this is to suffice testing with `--all-features` in CI as long as we have toml and ron in parallel
 pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     // underscore prefixes in  `_config_filename` and `_config` are temporary
     // as long as we need to carry toml and ron in parallel
