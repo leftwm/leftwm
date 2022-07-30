@@ -251,7 +251,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     let handle_focus = window.is_none();
     // Focus the next or previous window on the workspace.
     let new_handle = if handle_focus {
-        manager.get_next_or_previous(&handle)
+        manager.get_next_or_previous_handle(&handle)
     } else {
         None
     };

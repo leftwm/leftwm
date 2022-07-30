@@ -68,7 +68,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Returns true if changes need to be rendered.
     pub fn window_destroyed_handler(&mut self, handle: &WindowHandle) -> bool {
         // Find the next or previous window on the workspace.
-        let new_handle = self.get_next_or_previous(handle);
+        let new_handle = self.get_next_or_previous_handle(handle);
         // If there is a parent we would want to focus it.
         let (transient, floating) = match self.state.windows.iter().find(|w| &w.handle == handle) {
             Some(window) => (window.transient, window.floating()),
@@ -153,7 +153,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
     /// Find the next or previous window on the currently focused workspace.
     /// May return `None` if no other window is present.
-    pub fn get_next_or_previous(&mut self, handle: &WindowHandle) -> Option<WindowHandle> {
+    pub fn get_next_or_previous_handle(&mut self, handle: &WindowHandle) -> Option<WindowHandle> {
         let focused_workspace = self.state.focus_manager.workspace(&self.state.workspaces)?;
         let on_focused_workspace = |x: &Window| -> bool { focused_workspace.is_managed(x) };
         let mut windows_on_workspace =
