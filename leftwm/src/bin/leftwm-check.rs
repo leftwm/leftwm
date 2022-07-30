@@ -70,23 +70,16 @@ async fn main() -> Result<()> {
 /// Errors if file cannot be read. Indicates filesystem error
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
-#[allow(
-    unreachable_patterns,
-    clippy::used_underscore_binding,
-    clippy::let_unit_value
-)] // this is to suffice testing with `--all-features` in CI as long as we have toml and ron in parallel
 pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
-    // underscore prefixes in  `_config_filename` and `_config` are temporary
-    // as long as we need to carry toml and ron in parallel
     let config_filename = match fspath {
         Some(fspath) => {
             println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
             PathBuf::from(fspath)
         }
 
-        #[cfg(any(feature = "toml-config", feature = "all-features"))]
+        #[cfg(feature = "toml-config")]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
-        #[cfg(any(feature = "ron-config", feature = "all-features"))]
+        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
         None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?,
     };
     if verbose {
@@ -98,28 +91,27 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             dbg!(&contents);
         }
 
-        #[cfg(any(feature = "toml-config", feature = "all-features"))]
-        let _config = toml::from_str(&contents)?;
-        #[cfg(any(feature = "ron-config", feature = "all-features"))]
-        let _config = ron::from_str(&contents)?;
+        #[cfg(feature = "toml-config")]
+        let config = toml::from_str(&contents)?;
+        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
+        let config = ron::from_str(&contents)?;
 
-        #[cfg(any(feature = "ron-config", feature = "toml-config"))]
-        Ok(_config)
+        Ok(config)
     } else {
         let config = Config::default();
-        #[cfg(any(feature = "toml-config", feature = "all-features"))]
+        #[cfg(feature = "toml-config")]
         let toml = toml::to_string(&config)?;
-        #[cfg(feature = "ron-config")]
+        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
         let ron_pretty_conf = ron::ser::PrettyConfig::new()
             .depth_limit(2)
             .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
-        #[cfg(feature = "ron-config")]
+        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
         let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
 
         let mut file = File::create(&config_filename)?;
         #[cfg(feature = "toml-config")]
         file.write_all(toml.as_bytes())?;
-        #[cfg(feature = "ron-config")]
+        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
         file.write_all(ron.as_bytes())?;
 
         Ok(config)

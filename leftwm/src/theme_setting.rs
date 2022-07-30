@@ -50,16 +50,13 @@ impl Default for ThemeSetting {
     }
 }
 
-#[allow(clippy::used_underscore_binding, clippy::let_unit_value)] // this is to suffice testing with `--all-features` in CI as long as we have toml and ron in parallel
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(path)?;
     #[cfg(feature = "toml-config")]
-    // underscore prefixe in  `_from_file` is  temporary
-    // as long as we need to carry toml and ron in parallel
-    let _from_file: ThemeSetting = toml::from_str(&contents)?;
-    #[cfg(feature = "ron-config")]
-    let _from_file: ThemeSetting = ron::from_str(&contents)?;
-    Ok(_from_file)
+    let from_file: ThemeSetting = toml::from_str(&contents)?;
+    #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
+    let from_file: ThemeSetting = ron::from_str(&contents)?;
+    Ok(from_file)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
