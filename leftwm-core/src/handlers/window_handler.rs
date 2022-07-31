@@ -14,7 +14,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn window_created_handler(&mut self, mut window: Window, x: i32, y: i32) -> bool {
-        //don't add the window if the manager already knows about it
+        // Don't add the window if the manager already knows about it.
         if self.state.windows.iter().any(|w| w.handle == window.handle) {
             return false;
         }
@@ -23,7 +23,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.config.setup_predefined_window(&mut window);
         let mut is_first = false;
         let mut on_same_tag = true;
-        //Random value
+        // Random value
         let mut layout: Layout = Layout::MainAndVertStack;
         setup_window(
             &mut self.state,
@@ -40,18 +40,18 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             && self.state.focus_manager.behaviour.is_sloppy()
             && self.state.focus_manager.sloppy_mouse_follows_focus
             && on_same_tag;
-        //let the DS know we are managing this window
+        // Let the DS know we are managing this window.
         let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
         self.state.actions.push_back(act);
 
-        //let the DS know the correct desktop to find this window
+        // Let the DS know the correct desktop to find this window.
         if !window.tags.is_empty() {
             let act = DisplayAction::SetWindowTags(window.handle, window.tags);
             self.state.actions.push_back(act);
         }
 
         // Tell the WM the new display order of the windows.
-        self.state.sort_windows();
+        self.state.sort_windows(); // Is this needed??
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
@@ -70,21 +70,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         // Find the next or previous window on the workspace.
         let new_handle = self.get_next_or_previous_handle(handle);
         // If there is a parent we would want to focus it.
-        let (transient, floating) = match self.state.windows.iter().find(|w| &w.handle == handle) {
-            Some(window) => (window.transient, window.floating()),
-            None => (None, false),
-        };
+        let (transient, floating, visible) =
+            match self.state.windows.iter().find(|w| &w.handle == handle) {
+                Some(window) => (window.transient, window.floating(), window.visible()),
+                None => return false,
+            };
         self.state
             .focus_manager
             .tags_last_window
             .retain(|_, h| h != handle);
         self.state.windows.retain(|w| &w.handle != handle);
 
-        //make sure the workspaces do not draw on the docks
+        // Make sure the workspaces do not draw on the docks.
         update_workspace_avoid_list(&mut self.state);
 
         let focused = self.state.focus_manager.window_history.get(0);
-        //make sure focus is recalculated if we closed the currently focused window
+        // Make sure focus is recalculated if we closed the currently focused window
         if focused == Some(&Some(*handle)) {
             if self.state.focus_manager.behaviour.is_sloppy()
                 && self.state.focus_manager.sloppy_mouse_follows_focus
@@ -104,7 +105,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
         }
 
-        true
+        // Only update windows if this window is visible.
+        visible
     }
 
     pub fn window_changed_handler(&mut self, change: WindowChange) -> bool {
@@ -167,6 +169,182 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 }
 
+// Helper functions.
+
+fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {
+    // Get $SHELL, e.g. /bin/zsh
+    let shell_path = env::var("SHELL").ok()?;
+    // Remove /bin/
+    let shell = shell_path.split('/').last()?;
+    // Try and find the shell that launched this app, if such a thing exists.
+    let is_terminal = |pid: u32| -> Option<bool> {
+        let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
+        let parent_bytes = parent.split(|&c| c == b' ').next()?;
+        let parent_str = std::str::from_utf8(parent_bytes).ok()?.strip_suffix('\n')?;
+        Some(parent_str == shell)
+    };
+
+    let get_parent = |pid: u32| -> Option<u32> {
+        let stat = std::fs::read(format!("/proc/{}/stat", pid)).ok()?;
+        let ppid_bytes = stat.split(|&c| c == b' ').nth(3)?;
+        let ppid_str = std::str::from_utf8(ppid_bytes).ok()?;
+        let ppid_u32 = u32::from_str(ppid_str).ok()?;
+        Some(ppid_u32)
+    };
+
+    let pid = pid?;
+    let shell_id = get_parent(pid)?;
+    if is_terminal(shell_id)? {
+        let terminal = get_parent(shell_id)?;
+        return state.windows.iter().find(|w| w.pid == Some(terminal));
+    }
+
+    None
+}
+
+fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) -> Option<&Window> {
+    let mut transient = transient?;
+    loop {
+        transient = if let Some(found) = windows
+            .iter()
+            .find(|x| x.handle == transient)
+            .and_then(|x| x.transient)
+        {
+            found
+        } else {
+            return windows.iter().find(|x| x.handle == transient);
+        };
+    }
+}
+
+fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
+    let mut was_fullscreen = false;
+    if window.r#type == WindowType::Normal {
+        let for_active_workspace =
+            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && x.is_managed() };
+        // Only minimize when the new window is type normal.
+        if let Some(fsw) = state
+            .windows
+            .iter_mut()
+            .find(|w| for_active_workspace(w) && w.is_fullscreen())
+        {
+            let act =
+                DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
+            state.actions.push_back(act);
+            was_fullscreen = true;
+        }
+        if matches!(layout, Layout::Monocle | Layout::MainAndDeck) {
+            // Extract the current windows on the same workspace.
+            let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
+            if layout == Layout::Monocle || to_reorder.is_empty() {
+                // When in monocle we want the new window to be fullscreen if the previous window was
+                // fullscreen.
+                if was_fullscreen {
+                    let act = DisplayAction::SetState(
+                        window.handle,
+                        !window.is_fullscreen(),
+                        WindowState::Fullscreen,
+                    );
+                    state.actions.push_back(act);
+                }
+                // Place the window above the other windows on the workspace.
+                to_reorder.insert(0, window.clone());
+            } else {
+                // Place the window second within the other windows on the workspace.
+                to_reorder.insert(1, window.clone());
+            }
+            state.windows.append(&mut to_reorder);
+            return;
+        }
+    }
+
+    // If a window is a dialog, splash, or scractchpad we want it to be at the top.
+    if window.r#type == WindowType::Dialog
+        || window.r#type == WindowType::Splash
+        || window.r#type == WindowType::Utility
+        || is_scratchpad(state, window)
+    {
+        state.windows.insert(0, window.clone());
+        return;
+    }
+
+    let current_index = state
+        .focus_manager
+        .window(&state.windows)
+        .and_then(|current| {
+            state
+                .windows
+                .iter()
+                .position(|w| w.handle == current.handle)
+        })
+        .unwrap_or(0);
+
+    // Past special cases we just insert the window based on the configured insert behavior
+    match state.insert_behavior {
+        InsertBehavior::Top => state.windows.insert(0, window.clone()),
+        InsertBehavior::Bottom => state.windows.push(window.clone()),
+        InsertBehavior::AfterCurrent if current_index < state.windows.len() => {
+            state.windows.insert(current_index + 1, window.clone());
+        }
+        InsertBehavior::AfterCurrent | InsertBehavior::BeforeCurrent => {
+            state.windows.insert(current_index, window.clone());
+        }
+    }
+}
+
+fn is_scratchpad(state: &State, window: &Window) -> bool {
+    state
+        .active_scratchpads
+        .iter()
+        .any(|(_, &id)| window.pid == id)
+}
+
+fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32) -> i32 {
+    match config_value {
+        Some(size @ Size::Ratio(r)) if (0.0..=1.0).contains(&r) => size.into_absolute(max_pixel),
+        Some(Size::Pixel(pixel)) if (0..=max_pixel).contains(&pixel) => pixel,
+        _ => Size::Ratio(default_ratio).into_absolute(max_pixel),
+    }
+}
+
+// Get size and position of scratchpad from config and workspace size.
+fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
+    let x_sane = sane_dimension(scratch_pad.x, 0.25, xyhw.w());
+    let y_sane = sane_dimension(scratch_pad.y, 0.25, xyhw.h());
+    let height_sane = sane_dimension(scratch_pad.height, 0.50, xyhw.h());
+    let width_sane = sane_dimension(scratch_pad.width, 0.50, xyhw.w());
+
+    XyhwBuilder {
+        x: xyhw.x() + x_sane,
+        y: xyhw.y() + y_sane,
+        h: height_sane,
+        w: width_sane,
+        ..XyhwBuilder::default()
+    }
+    .into()
+}
+
+fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
+    window.set_floating(true);
+    window.normal = ws.xyhw;
+    let xyhw = window.requested.map_or_else(
+        || ws.center_halfed(),
+        |mut requested| {
+            if ws.xyhw.contains_xyhw(&requested) {
+                requested
+            } else {
+                requested.center_relative(outer, window.border);
+                if ws.xyhw.contains_xyhw(&requested) {
+                    requested
+                } else {
+                    ws.center_halfed()
+                }
+            }
+        },
+    );
+    window.set_floating_exact(xyhw);
+}
+
 fn setup_window(
     state: &mut State,
     window: &mut Window,
@@ -182,7 +360,7 @@ fn setup_window(
         .workspaces
         .iter()
         .find(|ws| ws.xyhw.contains_point(xy.0, xy.1) && state.focus_manager.behaviour.is_sloppy())
-        .or_else(|| state.focus_manager.workspace(&state.workspaces)); //backup plan
+        .or_else(|| state.focus_manager.workspace(&state.workspaces)); // Backup plan.
 
     if let Some(ws) = ws {
         let for_active_workspace =
@@ -254,188 +432,7 @@ fn setup_window(
     }
 }
 
-fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
-    let mut was_fullscreen = false;
-    if window.r#type == WindowType::Normal {
-        let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && x.is_managed() };
-        // Only minimize when the new window is type normal.
-        if let Some(fsw) = state
-            .windows
-            .iter_mut()
-            .find(|w| for_active_workspace(w) && w.is_fullscreen())
-        {
-            let act =
-                DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
-            state.actions.push_back(act);
-            was_fullscreen = true;
-        }
-        if matches!(layout, Layout::Monocle | Layout::MainAndDeck) {
-            // Extract the current windows on the same workspace.
-            let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
-            if layout == Layout::Monocle || to_reorder.is_empty() {
-                // When in monocle we want the new window to be fullscreen if a window was
-                // fullscreen.
-                if was_fullscreen {
-                    let act = DisplayAction::SetState(
-                        window.handle,
-                        !window.is_fullscreen(),
-                        WindowState::Fullscreen,
-                    );
-                    state.actions.push_back(act);
-                }
-                // Place the window above the other windows on the workspace.
-                to_reorder.insert(0, window.clone());
-            } else {
-                // Place the window second within the other windows on the workspace.
-                to_reorder.insert(1, window.clone());
-            }
-            state.windows.append(&mut to_reorder);
-            return;
-        }
-    }
-
-    // If a window is a dialog, splash, or scractchpad we want it to be at the top.
-    if window.r#type == WindowType::Dialog
-        || window.r#type == WindowType::Splash
-        || window.r#type == WindowType::Utility
-        || is_scratchpad(state, window)
-    {
-        state.windows.insert(0, window.clone());
-        return;
-    }
-
-    let current_index = state
-        .focus_manager
-        .window(&state.windows)
-        .and_then(|current| {
-            state
-                .windows
-                .iter()
-                .position(|w| w.handle == current.handle)
-        })
-        .unwrap_or(0);
-
-    // Past special cases we just insert the window based on the configured insert behavior
-    match state.insert_behavior {
-        InsertBehavior::Top => state.windows.insert(0, window.clone()),
-        InsertBehavior::Bottom => state.windows.push(window.clone()),
-        InsertBehavior::AfterCurrent if current_index < state.windows.len() => {
-            state.windows.insert(current_index + 1, window.clone());
-        }
-        InsertBehavior::AfterCurrent | InsertBehavior::BeforeCurrent => {
-            state.windows.insert(current_index, window.clone());
-        }
-    }
-}
-
-fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
-    window.set_floating(true);
-    window.normal = ws.xyhw;
-    let xyhw = window.requested.map_or_else(
-        || ws.center_halfed(),
-        |mut requested| {
-            if ws.xyhw.contains_xyhw(&requested) {
-                requested
-            } else {
-                requested.center_relative(outer, window.border);
-                if ws.xyhw.contains_xyhw(&requested) {
-                    requested
-                } else {
-                    ws.center_halfed()
-                }
-            }
-        },
-    );
-    window.set_floating_exact(xyhw);
-}
-
-fn is_scratchpad(state: &State, window: &Window) -> bool {
-    state
-        .active_scratchpads
-        .iter()
-        .any(|(_, &id)| window.pid == id)
-}
-
-fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {
-    // Get $SHELL, e.g. /bin/zsh
-    let shell_path = env::var("SHELL").ok()?;
-    // Remove /bin/
-    let shell = shell_path.split('/').last()?;
-    // Try and find the shell that launched this app, if such a thing exists.
-    let is_terminal = |pid: u32| -> Option<bool> {
-        let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
-        let parent_bytes = parent.split(|&c| c == b' ').next()?;
-        let parent_str = std::str::from_utf8(parent_bytes).ok()?.strip_suffix('\n')?;
-        Some(parent_str == shell)
-    };
-
-    let get_parent = |pid: u32| -> Option<u32> {
-        let stat = std::fs::read(format!("/proc/{}/stat", pid)).ok()?;
-        let ppid_bytes = stat.split(|&c| c == b' ').nth(3)?;
-        let ppid_str = std::str::from_utf8(ppid_bytes).ok()?;
-        let ppid_u32 = u32::from_str(ppid_str).ok()?;
-        Some(ppid_u32)
-    };
-
-    let pid = pid?;
-    let shell_id = get_parent(pid)?;
-    if is_terminal(shell_id)? {
-        let terminal = get_parent(shell_id)?;
-        return state.windows.iter().find(|w| w.pid == Some(terminal));
-    }
-
-    None
-}
-
-fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) -> Option<&Window> {
-    let mut transient = transient?;
-    loop {
-        transient = if let Some(found) = windows
-            .iter()
-            .find(|x| x.handle == transient)
-            .and_then(|x| x.transient)
-        {
-            found
-        } else {
-            return windows.iter().find(|x| x.handle == transient);
-        };
-    }
-}
-
-// Get size and position of scratchpad from config and workspace size
-pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
-    let x_sane = sane_dimension(scratch_pad.x, 0.25, xyhw.w());
-    let y_sane = sane_dimension(scratch_pad.y, 0.25, xyhw.h());
-    let height_sane = sane_dimension(scratch_pad.height, 0.50, xyhw.h());
-    let width_sane = sane_dimension(scratch_pad.width, 0.50, xyhw.w());
-
-    XyhwBuilder {
-        x: xyhw.x() + x_sane,
-        y: xyhw.y() + y_sane,
-        h: height_sane,
-        w: width_sane,
-        ..XyhwBuilder::default()
-    }
-    .into()
-}
-
-fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32) -> i32 {
-    match config_value {
-        Some(Size::Ratio(ratio)) if (0.0..=1.0).contains(&ratio) => {
-            // This is to allow for better rust version compatibility.
-            Size::Ratio(ratio).into_absolute(max_pixel)
-            // When rust 1.56 becomes widely availible change the match to
-            // Some(size @ Size::Ration(ratio)) ...
-            // Also change to this:
-            // // size.into_absolute(max_pixel)
-        }
-        Some(Size::Pixel(pixel)) if (0..=max_pixel).contains(&pixel) => pixel,
-        _ => Size::Ratio(default_ratio).into_absolute(max_pixel),
-    }
-}
-
-pub fn update_workspace_avoid_list(state: &mut State) {
+fn update_workspace_avoid_list(state: &mut State) {
     let mut avoid = vec![];
     state
         .windows
@@ -459,6 +456,7 @@ pub fn update_workspace_avoid_list(state: &mut State) {
         ws.update_avoided_areas();
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

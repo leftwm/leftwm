@@ -6,6 +6,7 @@ use crate::state::State;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
 impl State {
+    /// Focuses a window based upon the `FocusBehaviour`
     pub fn handle_window_focus(&mut self, handle: &WindowHandle) {
         match self.focus_manager.behaviour {
             FocusBehaviour::Sloppy if self.focus_manager.sloppy_mouse_follows_focus => {
@@ -102,6 +103,91 @@ impl State {
         }
     }
 
+    /// Focuses the workspace containing a given point.
+    pub fn focus_workspace_with_point(&mut self, x: i32, y: i32) {
+        let focused_id = match self.focus_manager.workspace(&self.workspaces) {
+            Some(fws) => fws.id,
+            None => None,
+        };
+        if let Some(ws) = self
+            .workspaces
+            .iter()
+            .find(|ws| ws.contains_point(x, y) && ws.id != focused_id)
+            .cloned()
+        {
+            self.focus_workspace(&ws);
+        }
+    }
+
+    /// Focuses the window containing a given point.
+    pub fn focus_window_with_point(&mut self, x: i32, y: i32) {
+        let handle_found: Option<WindowHandle> = self
+            .windows
+            .iter()
+            .filter(|x| x.can_focus())
+            .find(|w| w.contains_point(x, y))
+            .map(|w| w.handle);
+        match handle_found {
+            Some(found) => self.focus_window(&found),
+            //backup plan, move focus closest window in workspace
+            None => self.focus_closest_window(x, y),
+        }
+    }
+
+    /// Validates that the given window is focused.
+    pub fn validate_focus_at(&mut self, handle: &WindowHandle) {
+        // If the window is already focused do nothing.
+        if let Some(current) = self.focus_manager.window(&self.windows) {
+            if &current.handle == handle {
+                return;
+            }
+        }
+        // Focus the window only if it is also focusable.
+        if self
+            .windows
+            .iter()
+            .any(|w| w.can_focus() && &w.handle == handle)
+        {
+            self.focus_window(handle);
+        }
+    }
+
+    // Helper function.
+
+    fn focus_closest_window(&mut self, x: i32, y: i32) {
+        let ws = match self.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
+            Some(ws) => ws,
+            None => return,
+        };
+        let mut dists: Vec<(i32, &Window)> = self
+            .windows
+            .iter()
+            .filter(|x| ws.is_managed(x) && x.can_focus())
+            .map(|w| (distance(w, x, y), w))
+            .collect();
+        dists.sort_by(|a, b| (a.0).cmp(&b.0));
+        if let Some(first) = dists.get(0) {
+            let handle = first.1.handle;
+            self.focus_window(&handle);
+        }
+    }
+
+    fn focus_tag_work(&mut self, tag: TagId) -> bool {
+        if let Some(current_tag) = self.focus_manager.tag(0) {
+            if current_tag == tag {
+                return false;
+            }
+        };
+        // Clean old history.
+        self.focus_manager.tag_history.truncate(10);
+        // Add this focus to the history.
+        self.focus_manager.tag_history.push_front(tag);
+
+        let act = DisplayAction::SetCurrentTags(vec![tag]);
+        self.actions.push_back(act);
+        true
+    }
+
     fn focus_window_work(&mut self, handle: &WindowHandle) -> Option<Window> {
         if self.screens.iter().any(|s| &s.root == handle) {
             let act = DisplayAction::Unfocus(None, false);
@@ -158,86 +244,6 @@ impl State {
             return true;
         }
         false
-    }
-
-    fn focus_tag_work(&mut self, tag: TagId) -> bool {
-        if let Some(current_tag) = self.focus_manager.tag(0) {
-            if current_tag == tag {
-                return false;
-            }
-        };
-        // Clean old history.
-        self.focus_manager.tag_history.truncate(10);
-        // Add this focus to the history.
-        self.focus_manager.tag_history.push_front(tag);
-
-        let act = DisplayAction::SetCurrentTags(vec![tag]);
-        self.actions.push_back(act);
-        true
-    }
-
-    pub fn focus_workspace_under_cursor(&mut self, x: i32, y: i32) {
-        let focused_id = match self.focus_manager.workspace(&self.workspaces) {
-            Some(fws) => fws.id,
-            None => None,
-        };
-        if let Some(w) = self
-            .workspaces
-            .iter()
-            .find(|ws| ws.contains_point(x, y) && ws.id != focused_id)
-            .cloned()
-        {
-            self.focus_workspace(&w);
-        }
-    }
-
-    pub fn validate_focus_at(&mut self, handle: &WindowHandle) {
-        // If the window is already focused do nothing.
-        if let Some(current) = self.focus_manager.window(&self.windows) {
-            if &current.handle == handle {
-                return;
-            }
-        }
-        // Focus the window only if it is also focusable.
-        if self
-            .windows
-            .iter()
-            .any(|w| w.can_focus() && &w.handle == handle)
-        {
-            self.focus_window(handle);
-        }
-    }
-
-    pub fn move_focus_to_point(&mut self, x: i32, y: i32) {
-        let handle_found: Option<WindowHandle> = self
-            .windows
-            .iter()
-            .filter(|x| x.can_focus())
-            .find(|w| w.contains_point(x, y))
-            .map(|w| w.handle);
-        match handle_found {
-            Some(found) => self.focus_window(&found),
-            //backup plan, move focus closest window in workspace
-            None => self.focus_closest_window(x, y),
-        }
-    }
-
-    fn focus_closest_window(&mut self, x: i32, y: i32) {
-        let ws = match self.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-            Some(ws) => ws,
-            None => return,
-        };
-        let mut dists: Vec<(i32, &Window)> = self
-            .windows
-            .iter()
-            .filter(|x| ws.is_managed(x) && x.can_focus())
-            .map(|w| (distance(w, x, y), w))
-            .collect();
-        dists.sort_by(|a, b| (a.0).cmp(&b.0));
-        if let Some(first) = dists.get(0) {
-            let handle = first.1.handle;
-            self.focus_window(&handle);
-        }
     }
 
     fn unfocus_current_window(&mut self) {
