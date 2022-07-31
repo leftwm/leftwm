@@ -29,7 +29,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
 
             DisplayEvent::MoveFocusTo(x, y) => {
-                self.state.move_focus_to_point(x, y);
+                self.state.focus_window_with_point(x, y);
                 false
             }
 
@@ -70,7 +70,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             DisplayEvent::Movement(handle, x, y) => {
                 if self.state.screens.iter().any(|s| s.root == handle) {
-                    self.state.focus_workspace_under_cursor(x, y);
+                    self.state.focus_workspace_with_point(x, y);
                 }
                 false
             }
