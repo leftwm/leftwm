@@ -185,6 +185,7 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
         let event_h = event.window.into();
         let offset_x = event.x_root - xw.mode_origin.0;
         let offset_y = event.y_root - xw.mode_origin.1;
+        // log::info!("x, y: {:?}, {:?}", offset_x, offset_y);
         let display_event = match xw.mode {
             Mode::ReadyToMove(h) => {
                 xw.set_mode(Mode::MovingWindow(h));

@@ -6,7 +6,6 @@ impl State {
             return Some(false);
         }
 
-        //let tag_id = self.tags[tag_num - 1].label.clone();
         let new_tags = vec![tag_num];
         // No focus safety check.
         let old_tags = self.focus_manager.workspace(&self.workspaces)?.tags.clone();

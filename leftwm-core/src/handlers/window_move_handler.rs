@@ -1,6 +1,7 @@
 use super::{Manager, Window, WindowHandle, Workspace};
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
+use crate::models::Xyhw;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn window_move_handler(
@@ -9,21 +10,11 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         offset_x: i32,
         offset_y: i32,
     ) -> bool {
-        let margin_multiplier = match self
-            .state
-            .windows
-            .iter()
-            .find(|other| other.has_tag(&self.state.focus_manager.tag(0).unwrap_or_default()))
-        {
-            Some(w) => w.margin_multiplier(),
-            None => 1.0,
-        };
-        let disable_swap = &self.config.disable_window_snap();
+        let disable_snap = &self.config.disable_window_snap();
         match self.state.windows.iter_mut().find(|w| w.handle == *handle) {
             Some(w) => {
                 process_window(w, offset_x, offset_y);
-                w.apply_margin_multiplier(margin_multiplier);
-                if !disable_swap && snap_to_workspaces(w, &self.state.workspaces) {
+                if !disable_snap && snap_to_workspace(w, &self.state.workspaces) {
                     self.state.sort_windows();
                 }
                 true
@@ -34,7 +25,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 }
 
 fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
-    window.set_floating(true);
     let mut offset = window.get_floating_offsets().unwrap_or_default();
     let start = window.start_loc.unwrap_or_default();
     offset.set_x(start.x() + offset_x);
@@ -42,46 +32,43 @@ fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
     window.set_floating_offsets(Some(offset));
 }
 
-//if the windows is really close to a workspace, snap to it
-fn snap_to_workspaces(window: &mut Window, workspaces: &[Workspace]) -> bool {
-    workspaces
-        .iter()
-        .any(|workspace| should_snap(window, workspace))
+// Update the window for the workspace it is currently on.
+fn snap_to_workspace(window: &mut Window, workspaces: &[Workspace]) -> bool {
+    // Check that the workspace contains the window.
+    let loc = window.calculated_xyhw();
+    let (x, y) = loc.center();
+
+    if let Some(workspace) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
+        return should_snap(window, workspace, loc);
+    }
+    false
 }
 
-//to be snapable, the window must be inside the workspace AND the a side must be close to
-//the workspaces edge
-fn should_snap(window: &mut Window, workspace: &Workspace) -> bool {
+// To be snapable, the window must be inside the workspace AND the a side must be close to
+// the workspaces edge.
+fn should_snap(window: &mut Window, workspace: &Workspace, loc: Xyhw) -> bool {
     if window.must_float() {
         return false;
     }
-    let loc = window.calculated_xyhw();
     // Get window sides.
     let win_left = loc.x();
     let win_right = win_left + window.width();
     let win_top = loc.y();
     let win_bottom = win_top + window.height();
-    // Check for conatins.
-    let (center_x, center_y) = loc.center();
-    if !workspace.contains_point(center_x, center_y) {
-        return false;
-    }
-
     // Check for close edge.
     let dist = 10;
     let ws_left = workspace.x();
     let ws_right = workspace.x() + workspace.width();
     let ws_top = workspace.y();
     let ws_bottom = workspace.y() + workspace.height();
-    if vec![
+    if [
         win_top - ws_top,
         win_bottom - ws_bottom,
         win_left - ws_left,
         win_right - ws_right,
     ]
     .iter()
-    .map(|x| x.abs())
-    .any(|x| x < dist)
+    .any(|x| x.abs() < dist)
     {
         return window.snap_to_workspace(workspace);
     }

@@ -60,6 +60,34 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             DisplayEvent::ChangeToNormalMode => {
                 match self.state.mode {
                     Mode::MovingWindow(h) | Mode::ResizingWindow(h) => {
+                        // We want to update the windows tag once it is done moving. This means
+                        // when the window is re-tiled it is on the correct workspace. This also
+                        // prevents the focus switching between the floating window and the
+                        // workspace behind. We will also apply the margin_multiplier here so that
+                        // it is only called once the window has stopped moving.
+                        if let Some(window) = self.state.windows.iter_mut().find(|w| w.handle == h)
+                        {
+                            let loc = window.calculated_xyhw();
+                            let (x, y) = loc.center();
+                            let (margin_multiplier, tags, normal) = match self
+                                .state
+                                .workspaces
+                                .iter()
+                                .find(|ws| ws.contains_point(x, y))
+                            {
+                                Some(ws) => (ws.margin_multiplier(), ws.tags.clone(), ws.xyhw),
+                                None => (1.0, vec![1], window.normal),
+                            };
+                            let mut offset = window.get_floating_offsets().unwrap_or_default();
+                            // Re-adjust the floating offsets to the new workspace.
+                            let exact = window.normal + offset;
+                            offset = exact - normal;
+                            window.set_floating_offsets(Some(offset));
+                            window.tags = tags.clone();
+                            window.apply_margin_multiplier(margin_multiplier);
+                            let act = DisplayAction::SetWindowTags(window.handle, tags);
+                            self.state.actions.push_back(act);
+                        }
                         self.state.focus_window(&h);
                     }
                     _ => {}
