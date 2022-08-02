@@ -369,4 +369,20 @@ mod test {
             Command::FocusWindowTop { swap: false }
         );
     }
+
+    #[test]
+    fn build_move_window_to_next_tag_without_parameter() {
+        assert_eq!(
+            build_move_window_to_next_tag("").unwrap(),
+            Command::MoveWindowToNextTag { follow: true }
+        );
+    }
+
+    #[test]
+    fn build_move_window_to_previous_tag_without_parameter() {
+        assert_eq!(
+            build_move_window_to_previous_tag("").unwrap(),
+            Command::MoveWindowToPreviousTag { follow: true }
+        );
+    }
 }
