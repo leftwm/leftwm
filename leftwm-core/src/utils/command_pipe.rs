@@ -213,6 +213,24 @@ fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     Ok(Command::MoveWindowTop { swap })
 }
 
+fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let follow = if raw.is_empty() {
+        true
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::MoveWindowToNextTag { follow })
+}
+
+fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let follow = if raw.is_empty() {
+        true
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::MoveWindowToPreviousTag { follow })
+}
+
 fn build_increase_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "IncreaseMainWidth ");
     let parts: Vec<&str> = headless.split(' ').collect();
