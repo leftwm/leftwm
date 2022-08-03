@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
-use crate::models::{Manager, Tag};
+use crate::models::Manager;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /*
@@ -12,27 +12,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state
             .windows
             .iter_mut()
-            .for_each(|w| w.set_visible(w.tags.is_empty()));
+            .for_each(|w| w.set_visible(w.tag.is_none()));
 
         for ws in &self.state.workspaces {
             let windows = &mut self.state.windows;
             let all_tags = &self.state.tags;
-            let tags: Vec<&Tag> = ws
-                .tags
-                .iter()
-                .filter_map(|tag_id| all_tags.get(*tag_id))
-                .collect();
-            for tag in &tags {
+            if let Some(Some(tag)) = ws.tag.map(|tag_id| all_tags.get(tag_id)) {
                 tag.update_windows(windows, ws);
             }
         }
 
-        self.state
-            .windows
-            .iter()
-            .filter(|x| x.debugging)
-            .for_each(|w| {
-                println!("{:?}", w);
-            });
+        // self.state
+        //     .windows
+        //     .iter()
+        //     .filter(|x| x.debugging)
+        //     .for_each(|w| {
+        //         println!("{:?}", w);
+        //     });
     }
 }

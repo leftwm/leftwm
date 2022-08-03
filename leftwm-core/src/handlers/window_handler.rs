@@ -45,8 +45,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state.actions.push_back(act);
 
         // Let the DS know the correct desktop to find this window.
-        if !window.tags.is_empty() {
-            let act = DisplayAction::SetWindowTags(window.handle, window.tags);
+        if window.tag.is_some() {
+            let act = DisplayAction::SetWindowTag(window.handle, window.tag);
             self.state.actions.push_back(act);
         }
 
@@ -130,7 +130,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                     .state
                     .workspaces
                     .iter()
-                    .find(|ws| ws.has_tag(&window.tags[0]))
+                    .find(|ws| ws.tag == window.tag)
                     .map(|ws| ws.xyhw),
                 _ => None,
             };
@@ -220,8 +220,7 @@ fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) ->
 fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
-        let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&window.tags, &x.tags) && x.is_managed() };
+        let for_active_workspace = |x: &Window| -> bool { window.tag == x.tag && x.is_managed() };
         // Only minimize when the new window is type normal.
         if let Some(fsw) = state
             .windows
@@ -363,15 +362,14 @@ fn setup_window(
         .or_else(|| state.focus_manager.workspace(&state.workspaces)); // Backup plan.
 
     if let Some(ws) = ws {
-        let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&ws.tags, &x.tags) && x.is_managed() };
+        let for_active_workspace = |x: &Window| -> bool { ws.tag == x.tag && x.is_managed() };
         *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
         // May have been set by a predefined tag.
-        if window.tags.is_empty() {
-            window.tags = find_terminal(state, window.pid)
-                .map_or_else(|| ws.tags.clone(), |terminal| terminal.tags.clone());
+        if window.tag.is_none() {
+            window.tag =
+                find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
         }
-        *on_same_tag = ws.tags == window.tags;
+        *on_same_tag = ws.tag == window.tag;
         *layout = ws.layout;
 
         if is_scratchpad(state, window) {
@@ -423,7 +421,7 @@ fn setup_window(
         }
         return;
     }
-    window.tags = vec![1];
+    window.tag = Some(1);
     if is_scratchpad(state, window) {
         if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
             window.tag(&scratchpad_tag.id);

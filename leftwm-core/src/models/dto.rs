@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Viewport {
-    pub tags: Vec<String>,
+    pub tag: String,
     pub h: u32,
     pub w: u32,
     pub x: i32,
@@ -49,7 +49,7 @@ pub struct DisplayState {
 
 impl From<ManagerState> for DisplayState {
     fn from(m: ManagerState) -> Self {
-        let visible: Vec<String> = m.viewports.iter().flat_map(|vp| vp.tags.clone()).collect();
+        let visible: Vec<String> = m.viewports.iter().map(|vp| vp.tag.clone()).collect();
         let workspaces = m
             .viewports
             .iter()
@@ -86,7 +86,7 @@ fn viewport_into_display_workspace(
         .map(|(index, t)| TagsForWorkspace {
             name: t.clone(),
             index,
-            mine: viewport.tags.contains(t),
+            mine: viewport.tag == *t,
             visible: visible.contains(t),
             focused: focused.contains(t),
             busy: working_tags.contains(t),
@@ -115,15 +115,14 @@ impl From<&State> for ManagerState {
             .map(|t| t.label.clone())
             .collect();
         for ws in &state.workspaces {
-            let tag_labels = ws
-                .tags
-                .iter()
-                .map(|&tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
-                .map(std::option::Option::unwrap)
-                .collect();
+            let tag_label = ws
+                .tag
+                .map(|tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
+                .unwrap()
+                .unwrap();
 
             viewports.push(Viewport {
-                tags: tag_labels,
+                tag: tag_label,
                 x: ws.xyhw.x(),
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
@@ -133,7 +132,7 @@ impl From<&State> for ManagerState {
         }
         let active_desktop = match state.focus_manager.workspace(&state.workspaces) {
             Some(ws) => ws
-                .tags
+                .tag
                 .iter()
                 .map(|&tag_id| state.tags.get(tag_id).unwrap().label.clone())
                 .collect(),

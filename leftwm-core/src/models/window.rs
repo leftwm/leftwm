@@ -52,7 +52,7 @@ pub struct Window {
     pub legacy_name: Option<String>,
     pub pid: Option<u32>,
     pub r#type: WindowType,
-    pub tags: Vec<TagId>,
+    pub tag: Option<TagId>,
     pub border: i32,
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -83,7 +83,7 @@ impl Window {
             pid,
             legacy_name: None,
             r#type: WindowType::Normal,
-            tags: Vec::new(),
+            tag: None,
             border: 1,
             margin: Margins::new(10),
             margin_multiplier: 1.0,
@@ -327,22 +327,16 @@ impl Window {
     }
 
     pub fn tag(&mut self, tag: &TagId) {
-        if !self.tags.contains(tag) {
-            self.tags.push(*tag);
-        }
-    }
-
-    pub fn clear_tags(&mut self) {
-        self.tags = vec![];
+        self.tag = Some(*tag);
     }
 
     #[must_use]
     pub fn has_tag(&self, tag: &TagId) -> bool {
-        self.tags.contains(tag)
+        self.tag == Some(*tag)
     }
 
-    pub fn untag(&mut self, tag: &TagId) {
-        self.tags.retain(|t| t != tag);
+    pub fn untag(&mut self) {
+        self.tag = None;
     }
 
     #[must_use]
@@ -353,9 +347,9 @@ impl Window {
     pub fn snap_to_workspace(&mut self, workspace: &Workspace) -> bool {
         self.set_floating(false);
 
-        //we are reparenting
-        if self.tags != workspace.tags {
-            self.tags = workspace.tags.clone();
+        // We are reparenting.
+        if self.tag != workspace.tag {
+            self.tag = workspace.tag;
             let mut offset = self.get_floating_offsets().unwrap_or_default();
             let mut start_loc = self.start_loc.unwrap_or_default();
             let x = offset.x() + self.normal.x();
@@ -389,7 +383,7 @@ mod tests {
     fn should_be_able_to_untag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
         subject.tag(&1);
-        subject.untag(&1);
+        subject.untag();
         assert!(!subject.has_tag(&1), "was unable to untag the window");
     }
 }

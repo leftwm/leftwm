@@ -137,7 +137,7 @@ impl State {
                     None => w.calculated_xyhw().center(),
                 };
                 if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-                    w.tags = ws.tags.clone();
+                    w.tag = ws.tag;
                 }
             });
     }
@@ -188,16 +188,15 @@ impl State {
                 new_window.pid = old_window.pid;
                 new_window.normal = old_window.normal;
                 if are_tags_equal {
-                    new_window.tags = old_window.tags.clone();
+                    new_window.tag = old_window.tag;
                 } else {
-                    let mut new_tags = old_window.tags.clone();
+                    let mut new_tags = old_window.tag;
                     // Only retain the tags, that still exist.
-                    new_tags.retain(|&tag_id| self.tags.get(tag_id).is_some());
-                    // If there are no tags, add tag '1', so the window will not be lost.
-                    if new_tags.is_empty() {
-                        new_tags.push(1);
+                    match new_tags {
+                        Some(tag) if self.tags.get(tag).is_some() => {}
+                        _ => new_tags = Some(1),
                     }
-                    new_window.clear_tags();
+                    new_window.untag();
                     new_tags.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
                 new_window.strut = old_window.strut;
@@ -206,7 +205,7 @@ impl State {
                 self.windows.remove(index);
 
                 // Make the x server aware of any tag changes for the window.
-                let act = DisplayAction::SetWindowTags(new_window.handle, new_window.tags.clone());
+                let act = DisplayAction::SetWindowTag(new_window.handle, new_window.tag);
                 self.actions.push_back(act);
             }
         });
@@ -225,18 +224,17 @@ impl State {
                 workspace.main_width_percentage = old_workspace.main_width_percentage;
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
                 if are_tags_equal {
-                    workspace.tags = old_workspace.tags.clone();
+                    workspace.tag = old_workspace.tag;
                 } else {
-                    let mut new_tags = old_workspace.tags.clone();
+                    let mut new_tags = old_workspace.tag;
                     // Only retain the tags, that still exist.
-                    new_tags.retain(|&tag_id| tags.get(tag_id).is_some());
-                    // If there are no tags, add tag '1', so the workspace has a tag.
-                    if new_tags.is_empty() {
-                        new_tags.push(1);
+                    match new_tags {
+                        Some(tag) if tags.get(tag).is_some() => {}
+                        _ => new_tags = Some(1),
                     }
                     new_tags
                         .iter()
-                        .for_each(|&tag_id| workspace.tags = vec![tag_id]);
+                        .for_each(|&tag_id| workspace.tag = Some(tag_id));
                 }
             }
         }
@@ -258,9 +256,9 @@ impl State {
             Some(_) => 1,
             // If we don't have any tag history (We should), focus the tag on workspace 1.
             None => match self.workspaces.first() {
-                Some(ws) => ws.tags[0],
+                Some(ws) => ws.tag.unwrap_or(1),
                 // This should never happen.
-                None => 1,
+                _ => 1,
             },
         };
         self.focus_tag(&tag_id);

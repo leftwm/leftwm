@@ -91,19 +91,19 @@ fn from_change_to_normal_mode(state: &mut State) -> bool {
             if let Some(window) = state.windows.iter_mut().find(|w| w.handle == h) {
                 let loc = window.calculated_xyhw();
                 let (x, y) = loc.center();
-                let (margin_multiplier, tags, normal) =
+                let (margin_multiplier, tag, normal) =
                     match state.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-                        Some(ws) => (ws.margin_multiplier(), ws.tags.clone(), ws.xyhw),
-                        None => (1.0, vec![1], window.normal),
+                        Some(ws) => (ws.margin_multiplier(), ws.tag, ws.xyhw),
+                        None => (1.0, Some(1), window.normal),
                     };
                 let mut offset = window.get_floating_offsets().unwrap_or_default();
                 // Re-adjust the floating offsets to the new workspace.
                 let exact = window.normal + offset;
                 offset = exact - normal;
                 window.set_floating_offsets(Some(offset));
-                window.tags = tags.clone();
+                window.tag = tag;
                 window.apply_margin_multiplier(margin_multiplier);
-                let act = DisplayAction::SetWindowTags(window.handle, tags);
+                let act = DisplayAction::SetWindowTag(window.handle, tag);
                 state.actions.push_back(act);
             }
             state.focus_window(&h);

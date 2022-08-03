@@ -25,21 +25,17 @@ impl State {
         };
 
         // Make sure the focused window's workspace is focused.
-        let (focused_window_tag, workspace_id) =
-            match self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
-                Some(ws) => (
-                    ws.tags.iter().find(|t| window.has_tag(t)).copied(),
-                    Some(ws.id),
-                ),
-                None => (None, None),
-            };
-
-        if let Some(workspace_id) = workspace_id {
+        if let Some(workspace_id) = self
+            .workspaces
+            .iter()
+            .find(|ws| ws.is_displaying(&window))
+            .map(|ws| ws.id)
+        {
             let _ = self.focus_workspace_work(workspace_id);
         }
 
         // Make sure the focused window's tag is focused.
-        if let Some(tag) = focused_window_tag {
+        if let Some(tag) = window.tag {
             let _ = self.focus_tag_work(tag);
         }
     }
@@ -49,7 +45,7 @@ impl State {
     pub fn focus_workspace(&mut self, workspace: &Workspace) {
         if self.focus_workspace_work(workspace.id) {
             // Make sure this workspaces tag is focused.
-            workspace.tags.iter().for_each(|t| {
+            workspace.tag.iter().for_each(|t| {
                 self.focus_tag_work(*t);
 
                 if let Some(handle) = self.focus_manager.tags_last_window.get(t).copied() {
@@ -97,7 +93,7 @@ impl State {
 
         // Unfocus last window if the target tag is empty
         if let Some(window) = self.focus_manager.window(&self.windows) {
-            if !window.tags.contains(tag) {
+            if window.tag != Some(*tag) {
                 self.unfocus_current_window();
             }
         }
@@ -183,7 +179,7 @@ impl State {
         // Add this focus to the history.
         self.focus_manager.tag_history.push_front(tag);
 
-        let act = DisplayAction::SetCurrentTags(vec![tag]);
+        let act = DisplayAction::SetCurrentTags(Some(tag));
         self.actions.push_back(act);
         true
     }
@@ -208,7 +204,7 @@ impl State {
                 // Return some so we still update the visuals.
                 return Some(found.clone());
             }
-            for tag_id in &previous.tags {
+            if let Some(tag_id) = &previous.tag {
                 self.focus_manager
                     .tags_last_window
                     .insert(*tag_id, previous.handle);
@@ -253,7 +249,7 @@ impl State {
                 window.floating(),
             ));
             self.focus_manager.window_history.push_front(None);
-            for tag_id in &window.tags {
+            if let Some(tag_id) = &window.tag {
                 self.focus_manager
                     .tags_last_window
                     .insert(*tag_id, window.handle);
