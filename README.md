@@ -313,6 +313,22 @@ Make sure this is at the end of your .xinitrc file:
 exec dbus-launch leftwm
 ```
 
+Note: If you are running Arch and use `exec dbus-launch leftwm` some services like gnome-keyring won't work.
+
+### Arch Linux
+As per [the Arch docs](https://wiki.archlinux.org/title/Xinit#xinitrc), copy the default xinitrc into your home directory:
+
+```bash
+cp /etc/X11/xinit/xinitrc ~/.xinitrc
+```
+
+Then edit the ~/.xinitrc file and make sure this at the end of your .xinitrc file:
+
+```bash
+# .xinitrc
+exec leftwm
+```
+
 # Theming
 
 If you want to see more than a black screen when you login, select a theme:
