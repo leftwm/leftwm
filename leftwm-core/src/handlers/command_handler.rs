@@ -16,7 +16,10 @@ use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
-    /* Please also update src/bin/leftwm-check if any of the following apply after your update:
+    /* When adding a command
+     * please update src/utils/command_pipe and leftwm/src/command if:
+     * - a command is introduced or renamed
+     * please also update src/bin/leftwm-check if any of the following apply after your update:
      * - a command now requires a value
      * - a command no longer requires a value
      * - a new command is introduced that requires a value
@@ -54,6 +57,9 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
 
         Command::SendWindowToTag { window, tag } => move_to_tag(*window, *tag, manager),
+        Command::MoveWindowToNextTag { follow } => move_to_tag_relative(manager, *follow, 1),
+        Command::MoveWindowToPreviousTag { follow } => move_to_tag_relative(manager, *follow, -1),
+        Command::MoveWindowToLastWorkspace => move_to_last_workspace(state),
         Command::MoveWindowToNextWorkspace => move_window_to_workspace_change(manager, 1),
         Command::MoveWindowToPreviousWorkspace => move_window_to_workspace_change(manager, -1),
         Command::MoveWindowUp => move_focus_common_vars!(move_window_change(state, -1)),
@@ -65,7 +71,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::CloseWindow => close_window(state),
         Command::SwapScreens => swap_tags(state),
-        Command::MoveWindowToLastWorkspace => move_to_last_workspace(state),
         Command::NextLayout => next_layout(state),
         Command::PreviousLayout => previous_layout(state),
 
@@ -266,6 +271,31 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     Some(true)
 }
 
+/// Move currently focused window to tag relative to current tag
+///
+/// Conditionally allow focus to follow the window to the target tag
+fn move_to_tag_relative<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
+    follow: bool,
+    delta: i32,
+) -> Option<bool> {
+    // Map indexing from 1..len to 0..(len - 1)
+    let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default() - 1;
+    // apply euclidean division reminder to the result of offseting to wrap around tags vector
+    // and add 1 to remap back to 1..len indexing
+    let tags_len = manager.state.tags.normal().len() as isize;
+    let desired_tag = (current_tag as isize + delta as isize).rem_euclid(tags_len) + 1;
+    let desired_tag = desired_tag as usize;
+
+    move_to_tag(None, desired_tag, manager);
+    if follow {
+        let moved_window = *manager.state.focus_manager.window_history.get(1)?;
+        manager.state.goto_tag_handler(desired_tag);
+        manager.state.handle_window_focus(&moved_window?);
+    }
+    Some(true)
+}
+
 fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     delta: i32,
@@ -335,7 +365,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
             .find(|w| Some(&Some(w.handle)) == previous_window_handle)
             .cloned()
     } else {
-        state.windows.iter().find(|w| is_target(*w)).cloned()
+        state.windows.iter().find(|w| is_target(w)).cloned()
     }?;
 
     let handle = target_window.handle;
@@ -433,7 +463,7 @@ fn move_to_last_workspace(state: &mut State) -> Option<bool> {
         let index = *state.focus_manager.workspace_history.get(1)?;
         let wp_tags = &state.workspaces.get(index)?.tags.clone();
         let window = state.focus_manager.window_mut(&mut state.windows)?;
-        window.tags = vec![*wp_tags.get(0)?];
+        window.tags = vec![*wp_tags.first()?];
         return Some(true);
     }
     None
@@ -709,7 +739,7 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let current = state.focus_manager.workspace(&state.workspaces)?;
     let workspace = helpers::relative_find(&state.workspaces, |w| w == current, val, true)?.clone();
 
-    if state.focus_manager.behaviour.is_sloppy() {
+    if state.focus_manager.behaviour.is_sloppy() && state.focus_manager.sloppy_mouse_follows_focus {
         let action = workspace
             .tags
             .first()
@@ -1038,5 +1068,67 @@ mod tests {
 
         manager.command_handler(&Command::MoveWindowTop { swap: true });
         assert_eq!(manager.state.windows[0].handle, expected.handle);
+    }
+
+    #[test]
+    fn move_window_to_next_or_prev_tag_should_be_able_to_cycle() {
+        let mut manager = Manager::new_test(vec![
+            "AO".to_string(),
+            "EU".to_string(),
+            "ID".to_string(),
+            "HT".to_string(),
+            "NS".to_string(),
+        ]);
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+
+        let first_tag = manager.state.tags.get(1).unwrap().id;
+        let third_tag = manager.state.tags.get(3).unwrap().id;
+        let last_tag = manager.state.tags.get(5).unwrap().id;
+
+        assert!(manager.state.windows[0].has_tag(&first_tag));
+
+        manager.command_handler(&Command::MoveWindowToPreviousTag { follow: true });
+        assert!(manager.state.windows[0].has_tag(&last_tag));
+
+        (0..3).for_each(|_| {
+            manager.command_handler(&Command::MoveWindowToNextTag { follow: false });
+            manager.command_handler(&Command::FocusNextTag);
+        });
+        assert!(manager.state.windows[0].has_tag(&third_tag));
+    }
+
+    #[test]
+    fn move_window_to_next_or_prev_tag_should_be_able_to_keep_window_focused() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+        let expected_tag = manager.state.tags.get(2).unwrap().id;
+        manager.command_handler(&Command::SendWindowToTag {
+            window: None,
+            tag: expected_tag,
+        });
+        let initial = manager.state.windows[0].clone();
+
+        manager.command_handler(&Command::MoveWindowToNextTag { follow: true });
+
+        assert_eq!(
+            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            expected_tag
+        );
+        assert_eq!(manager.state.windows[0].handle, initial.handle);
     }
 }

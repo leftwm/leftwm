@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
         .arg(
             Arg::with_name("list")
                 .help("Print a list of available commands with their arguments.")
-                .short("l")
+                .short('l')
                 .long("list"),
         )
         .get_matches();
@@ -55,6 +55,8 @@ async fn main() -> Result<()> {
         ToggleFullScreen
         ToggleSticky
         SwapScreens
+        MoveWindowToNextTag
+        MoveWindowToPreviousTag
         MoveWindowToLastWorkspace
         MoveWindowToNextWorkspace
         MoveWindowToPreviousWorkspace

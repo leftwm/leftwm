@@ -28,7 +28,7 @@ pub enum DisplayAction {
 
     /// Sets the "z-index" order of the windows
     /// first in the array is top most
-    SetWindowOrder(Vec<Window>),
+    SetWindowOrder(Vec<WindowHandle>, Vec<WindowHandle>),
 
     /// Raises a given window.
     MoveToTop(WindowHandle),

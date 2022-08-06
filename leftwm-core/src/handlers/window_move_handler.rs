@@ -18,11 +18,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Some(w) => w.margin_multiplier(),
             None => 1.0,
         };
+        let disable_swap = &self.config.disable_window_snap();
         match self.state.windows.iter_mut().find(|w| w.handle == *handle) {
             Some(w) => {
                 process_window(w, offset_x, offset_y);
                 w.apply_margin_multiplier(margin_multiplier);
-                if snap_to_workspaces(w, &self.state.workspaces) {
+                if !disable_swap && snap_to_workspaces(w, &self.state.workspaces) {
                     self.state.sort_windows();
                 }
                 true

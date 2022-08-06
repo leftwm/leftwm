@@ -8,7 +8,7 @@ use crate::{display_action::DisplayAction, models::FocusBehaviour};
 impl State {
     pub fn handle_window_focus(&mut self, handle: &WindowHandle) {
         match self.focus_manager.behaviour {
-            FocusBehaviour::Sloppy => {
+            FocusBehaviour::Sloppy if self.focus_manager.sloppy_mouse_follows_focus => {
                 let act = DisplayAction::MoveMouseOver(*handle, false);
                 self.actions.push_back(act);
             }
@@ -77,7 +77,8 @@ impl State {
             self.focus_workspace_work(ws.id);
         }
         // Make sure the focused window is on this workspace.
-        if self.focus_manager.behaviour.is_sloppy() {
+        if self.focus_manager.behaviour.is_sloppy() && self.focus_manager.sloppy_mouse_follows_focus
+        {
             let act = DisplayAction::FocusWindowUnderCursor;
             self.actions.push_back(act);
         } else if let Some(handle) = self.focus_manager.tags_last_window.get(tag).copied() {
@@ -102,6 +103,12 @@ impl State {
     }
 
     fn focus_window_work(&mut self, handle: &WindowHandle) -> Option<Window> {
+        if self.screens.iter().any(|s| &s.root == handle) {
+            let act = DisplayAction::Unfocus(None, false);
+            self.actions.push_back(act);
+            self.focus_manager.window_history.push_front(None);
+            return None;
+        }
         // Find the handle in our managed windows.
         let found: &Window = self.windows.iter().find(|w| &w.handle == handle)?;
         // Docks don't want to get focus. If they do weird things happen. They don't get events...

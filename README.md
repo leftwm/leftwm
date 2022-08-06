@@ -91,16 +91,16 @@ List of LeftWM dependencies:
 - xorg (runtime, build): specifically libx11, xrandr, xorg-server, libxinerama  
 - sh (runtime): any posix-compliant shell for starting up and down files
 - rust (build): >= 1.56.0
-- bash (optional): Most of the themes available use bash, though the scrips maybe converted to any posix-compliant shell
+- bash (optional): Most of the themes available use bash, though the scripts maybe converted to any posix-compliant shell
 
 List of common dependencies for themes:
 
 | Dependency<br>(git) | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS |
 |--------------------------|-----------|-------------------|-----------|--------------------------|
 | [feh][feh-git]           | feh       | feh               | feh       | [feh][feh-pkg]           |
-| [compton][compton-git]   | compton   | paru -S picom*    | compton   | [compton][compton-pkg]   |
+| [compton][compton-git]   | compton   | picom             | compton   | [compton][compton-pkg]   |
 | [picom][picom-git]       | manual ** | picom             | picom     | [picom][picom-pkg]       |
-| [polybar][polybar-git]   | manual ** | paru -S polybar*  | polybar   | [polybar][polybar-pkg]   |
+| [polybar][polybar-git]   | manual ** | polybar           | polybar   | [polybar][polybar-pkg]   |
 | [xmobar][xmobar-git]     | xmobar    | xmobar            | xmobar    | [xmobar][xmobar-pkg]     |
 | [lemonbar][lemonbar-git] | lemonbar  | paru -S lemonbar* | manual ** | [lemonbar][lemonbar-pkg] |
 | [conky][conky-git]       | conky     | conky             | conky     | [conky][conky-pkg]       |

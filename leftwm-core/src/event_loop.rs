@@ -22,10 +22,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .await
             .unwrap_or_else(|_| panic!("ERROR: couldn't connect to {}", file_name.display()));
 
-        //start the current theme
+        // Start the current theme.
         let after_first_loop: Once = Once::new();
 
-        //main event loop
+        // Main event loop.
         let mut event_buffer = vec![];
         loop {
             if self.state.mode == Mode::Normal {
@@ -43,6 +43,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 // once the button is released. This is to double check that we know which window
                 // is currently focused.
                 _ = timeout(100), if event_buffer.is_empty()
+                    && self.state.focus_manager.sloppy_mouse_follows_focus
                     && self.state.focus_manager.behaviour.is_sloppy() => {
                     if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
                         event_buffer.push(verify_event);
@@ -66,13 +67,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 match self.state.mode {
                     // When (resizing / moving) only deal with the single window.
                     Mode::ResizingWindow(h) | Mode::MovingWindow(h) => {
-                        let windows: Vec<&Window> = self
-                            .state
-                            .windows
-                            .iter()
-                            .filter(|w| w.handle == h)
-                            .collect();
-                        self.display_server.update_windows(windows);
+                        if let Some(window) = self.state.windows.iter().find(|w| w.handle == h) {
+                            self.display_server.update_windows(vec![window]);
+                        }
                     }
                     _ => {
                         let windows: Vec<&Window> = self.state.windows.iter().collect();
@@ -81,7 +78,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 }
             }
 
-            //preform any actions requested by the handler
+            // Perform any actions requested by the handler.
             while !self.state.actions.is_empty() {
                 if let Some(act) = self.state.actions.pop_front() {
                     if let Some(event) = self.display_server.execute_action(act) {
@@ -90,8 +87,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 }
             }
 
-            //after the very first loop run the 'up' scripts (global and theme). we need the unix
-            //socket to already exist.
+            // After the very first loop run the 'up' scripts (global and theme). As we need the unix
+            // socket to already exist.
             after_first_loop.call_once(|| {
                 match Nanny::run_global_up_script() {
                     Ok(child) => {
@@ -110,7 +107,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             });
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {
-                self.children.reap();
+                self.children.remove_finished_children();
             }
 
             if self.reload_requested {

@@ -3,7 +3,7 @@ use crate::{config::Config, layouts::Layout, Workspace};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutMode {
     Tag,
     Workspace,
@@ -114,7 +114,7 @@ impl LayoutManager {
 
 #[cfg(test)]
 mod tests {
-    use crate::config::TestConfig;
+    use crate::config::tests::TestConfig;
     use crate::models::BBox;
 
     use super::*;

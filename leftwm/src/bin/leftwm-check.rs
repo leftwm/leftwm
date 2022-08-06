@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         )
         .arg(
             Arg::with_name("verbose")
-                .short("v")
+                .short('v')
                 .long("verbose")
                 .help("Outputs received configuration file."),
         )
@@ -211,7 +211,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     }
 }
 
-fn missing_expected_file<'a>(filepaths: &'a [PathBuf]) -> impl Iterator<Item = &&'a str> {
+fn missing_expected_file(filepaths: &[PathBuf]) -> impl Iterator<Item = &&str> {
     ["up", "down", "theme.toml"]
         .iter()
         .filter(move |f| !filepaths.iter().any(|fp| fp.ends_with(f)))

@@ -29,7 +29,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
-/// Path to file where state will be dumper upon soft reload.
+/// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
 
 /// Selecting by `WM_CLASS` and/or window title, allow the user to define if a
@@ -83,6 +83,7 @@ impl WindowHook {
 }
 
 /// General configuration
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {
@@ -96,15 +97,19 @@ pub struct Config {
     pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
     pub window_rules: Option<Vec<WindowHook>>,
-    // If you are on tag "1" and you goto tag "1" this takes you to the previous tag.
+    // If you are on tag "1" and you goto tag "1" this takes you to the previous tag
     pub disable_current_tag_swap: bool,
     pub disable_tile_drag: bool,
+    pub disable_window_snap: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
+    pub sloppy_mouse_follows_focus: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
-    pub state: Option<PathBuf>,
+    pub state_path: Option<PathBuf>,
 
+    // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
+    //       at least when `TOML` is used as config language
     #[serde(skip)]
     pub theme_setting: ThemeSetting,
 }
@@ -309,7 +314,7 @@ impl leftwm_core::Config for Config {
         if let Some(scratchpads) = &self.scratchpad {
             return scratchpads.clone();
         }
-        return vec![];
+        vec![]
     }
 
     fn layouts(&self) -> Vec<Layout> {
@@ -392,6 +397,10 @@ impl leftwm_core::Config for Config {
 
     fn floating_border_color(&self) -> String {
         self.theme_setting.floating_border_color.clone()
+    }
+
+    fn disable_window_snap(&self) -> bool {
+        self.disable_window_snap
     }
 
     fn always_float(&self) -> bool {
@@ -484,11 +493,15 @@ impl leftwm_core::Config for Config {
         }
         false
     }
+
+    fn sloppy_mouse_follows_focus(&self) -> bool {
+        self.sloppy_mouse_follows_focus
+    }
 }
 
 impl Config {
     fn state_file(&self) -> &Path {
-        self.state
+        self.state_path
             .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
     }

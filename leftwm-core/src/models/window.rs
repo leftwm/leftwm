@@ -11,7 +11,7 @@ use x11_dl::xlib;
 
 type MockHandle = i32;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
@@ -46,6 +46,7 @@ pub struct Window {
     pub(crate) must_float: bool,
     floating: Option<Xyhw>,
     pub never_focus: bool,
+    pub urgent: bool,
     pub debugging: bool,
     pub name: Option<String>,
     pub legacy_name: Option<String>,
@@ -78,6 +79,7 @@ impl Window {
             must_float: false,
             debugging: false,
             never_focus: false,
+            urgent: false,
             name,
             pid,
             legacy_name: None,

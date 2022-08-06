@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeSetting {
     pub border_width: i32,
     pub margin: CustomMargins,
@@ -56,7 +56,7 @@ fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     Ok(from_file)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum CustomMargins {
     Int(u32),

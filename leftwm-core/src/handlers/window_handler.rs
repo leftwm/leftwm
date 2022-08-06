@@ -38,6 +38,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour.is_sloppy()
+            && self.state.focus_manager.sloppy_mouse_follows_focus
             && on_same_tag;
         //let the DS know we are managing this window
         let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
@@ -85,7 +86,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let focused = self.state.focus_manager.window_history.get(0);
         //make sure focus is recalculated if we closed the currently focused window
         if focused == Some(&Some(*handle)) {
-            if self.state.focus_manager.behaviour.is_sloppy() {
+            if self.state.focus_manager.behaviour.is_sloppy()
+                && self.state.focus_manager.sloppy_mouse_follows_focus
+            {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
             } else if let Some(parent) =
@@ -140,8 +143,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
         if fullscreen_changed {
             // Reorder windows.
-            let act = DisplayAction::SetWindowOrder(self.state.windows.clone());
-            self.state.actions.push_back(act);
+            self.state.sort_windows();
         }
         if strut_changed {
             self.state.update_static();
@@ -264,6 +266,9 @@ fn setup_window(
         }
         if window.r#type == WindowType::Normal {
             window.apply_margin_multiplier(ws.margin_multiplier);
+            if window.floating() {
+                set_relative_floating(window, ws, ws.xyhw);
+            }
         }
         // Center dialogs and modal in workspace
         if window.r#type == WindowType::Dialog {
@@ -363,11 +368,12 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
     match state.insert_behavior {
         InsertBehavior::Top => state.windows.insert(0, window.clone()),
         InsertBehavior::Bottom => state.windows.push(window.clone()),
-        InsertBehavior::BeforeCurrent => state.windows.insert(current_index, window.clone()),
         InsertBehavior::AfterCurrent if current_index < state.windows.len() => {
             state.windows.insert(current_index + 1, window.clone());
         }
-        InsertBehavior::AfterCurrent => state.windows.insert(current_index, window.clone()),
+        InsertBehavior::AfterCurrent | InsertBehavior::BeforeCurrent => {
+            state.windows.insert(current_index, window.clone());
+        }
     }
 }
 
@@ -377,11 +383,15 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     let xyhw = window.requested.map_or_else(
         || ws.center_halfed(),
         |mut requested| {
-            requested.center_relative(outer, window.border);
             if ws.xyhw.contains_xyhw(&requested) {
                 requested
             } else {
-                ws.center_halfed()
+                requested.center_relative(outer, window.border);
+                if ws.xyhw.contains_xyhw(&requested) {
+                    requested
+                } else {
+                    ws.center_halfed()
+                }
             }
         },
     );

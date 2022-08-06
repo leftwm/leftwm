@@ -210,6 +210,7 @@ impl Default for Config {
             window_rules: Some(vec![]),
             disable_current_tag_swap: false,
             disable_tile_drag: false,
+            disable_window_snap: true,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
             focus_new_windows: true, // default behaviour: focuses windows on creation
             insert_behavior: leftwm_core::config::InsertBehavior::Bottom,
@@ -219,7 +220,8 @@ impl Default for Config {
             keybind: commands,
             theme_setting: ThemeSetting::default(),
             max_window_width: None,
-            state: None,
+            state_path: None,
+            sloppy_mouse_follows_focus: true,
         }
     }
 }

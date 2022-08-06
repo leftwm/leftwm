@@ -30,16 +30,10 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
         xlib::XA_WM_NORMAL_HINTS => {
             build_change_for_size_hints(xw, event.window).map(DisplayEvent::WindowChange)
         }
-        xlib::XA_WM_HINTS => match xw.get_wmhints(event.window) {
-            Some(hints) if hints.flags & xlib::InputHint != 0 => {
-                let handle = event.window.into();
-                let mut change = WindowChange::new(handle);
-                change.never_focus = Some(hints.input == 0);
-                Some(DisplayEvent::WindowChange(change))
-            }
-            Some(_hints) => None,
-            None => None,
-        },
+        xlib::XA_WM_HINTS => xw
+            .get_wmhints(event.window)
+            .map(|hints| build_change_hints(event, hints))
+            .map(DisplayEvent::WindowChange),
         xlib::XA_WM_NAME => Some(update_title(xw, event.window)),
         _ => {
             if event.atom == xw.atoms.NetWMName {
@@ -66,6 +60,16 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
             None
         }
     }
+}
+
+fn build_change_hints(event: xlib::XPropertyEvent, hints: xlib::XWMHints) -> WindowChange {
+    let handle = event.window.into();
+    let mut change = WindowChange::new(handle);
+
+    change.never_focus = Some(hints.flags & xlib::InputHint != 0 && hints.input == 0);
+    change.urgent = Some(hints.flags & xlib::XUrgencyHint != 0);
+
+    change
 }
 
 fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
