@@ -6,15 +6,12 @@
 use clap::{command, crate_version};
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
-use std::fs;
-use std::io::Write;
 use std::path::Path;
 use std::process::{exit, Child, Command};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use xdg::BaseDirectories;
 
 type Subcommand<'a> = &'a str;
 type SubcommandArgs = Vec<String>;
@@ -140,11 +137,12 @@ fn start_leftwm() {
     let mut children = Nanny::autostart();
 
     let flag = get_sigchld_flag();
-
-    let lefthk_file = current_exe.with_file_name("lefthk-worker");
+    #[cfg(feature = "lefthk")]
+    let hotkey_file = current_exe.with_file_name("lefthk-worker");
     loop {
         let mut leftwm_session = start_leftwm_session(&current_exe);
-        let mut lefthk = Command::new(&lefthk_file)
+        #[cfg(feature = "lefthk")]
+        let mut hotkey = Command::new(&hotkey_file)
             .spawn()
             .expect("failed to start lefthk");
         while leftwm_is_still_running(&mut leftwm_session) {
@@ -157,8 +155,11 @@ fn start_leftwm() {
         }
 
         // Kill off lefthk when reloading.
-        send_lefthk_command("Kill");
-        while lefthk.try_wait().expect("failed to reap lefthk").is_none() {}
+        #[cfg(feature = "lefthk")]
+        if let Ok(_) = hotkey.kill() {
+            while hotkey.try_wait().expect("failed to reap lefthk").is_none() {}
+        }
+        // while lefthk.try_wait().expect("failed to reap lefthk").is_none() {}
 
         // TODO: either add more details or find a better workaround.
         //
@@ -206,16 +207,4 @@ fn get_sigchld_flag() -> Arc<AtomicBool> {
 /// - `false` if leftwm needs to refresh its state
 fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
     !flag.swap(false, Ordering::SeqCst)
-}
-
-fn send_lefthk_command(command: &str) {
-    let path = BaseDirectories::with_prefix("lefthk").expect("couldn't find base directory");
-    let pipe_file = path
-        .place_runtime_file("commands.pipe")
-        .expect("couldn't find commands.pipe");
-    let mut pipe = fs::OpenOptions::new()
-        .write(true)
-        .open(&pipe_file)
-        .expect("couldn't open file");
-    writeln!(pipe, "{}", command).expect("couldn't write to file");
 }
