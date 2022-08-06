@@ -156,7 +156,7 @@ fn start_leftwm() {
 
         // Kill off lefthk when reloading.
         #[cfg(feature = "lefthk")]
-        if let Ok(_) = hotkey.kill() {
+        if hotkey.kill().is_ok() {
             while hotkey.try_wait().expect("failed to reap lefthk").is_none() {}
         }
         // while lefthk.try_wait().expect("failed to reap lefthk").is_none() {}
