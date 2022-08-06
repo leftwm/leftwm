@@ -16,7 +16,7 @@ clap = "2.33.0"
 dirs-next = "2.0.0"
 futures = "0.3.21"
 git-version = "0.3.4"
-lefthk-core = { version = "0.1.4", optional = true }
+lefthk-core = { git = "https://github.com/leftwm/lefthk", branch = "simplify_and_get_ready", optional = true }
 leftwm-core = { path = "../leftwm-core", version = '0.3.0' }
 liquid = "0.24.0"
 log = "0.4.8"
