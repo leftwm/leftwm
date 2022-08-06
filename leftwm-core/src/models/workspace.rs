@@ -9,10 +9,9 @@ use std::fmt;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: Option<i32>,
-    /// Active layout
     pub layout: Layout,
     pub main_width_percentage: u8,
-    pub tag: Option<TagId>,
+    pub tag: Option<TagId>, // TODO: Make this a list.
     pub margin: Margins,
     pub margin_multiplier: f32,
     pub gutters: Vec<Gutter>,

@@ -362,6 +362,7 @@ fn setup_window(
         .or_else(|| state.focus_manager.workspace(&state.workspaces)); // Backup plan.
 
     if let Some(ws) = ws {
+        // Setup basic variables.
         let for_active_workspace = |x: &Window| -> bool { ws.tag == x.tag && x.is_managed() };
         *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
         // May have been set by a predefined tag.
@@ -372,25 +373,26 @@ fn setup_window(
         *on_same_tag = ws.tag == window.tag;
         *layout = ws.layout;
 
-        if is_scratchpad(state, window) {
+        // Setup a scratchpad window.
+        if let Some((scratchpad_name, _)) = state
+            .active_scratchpads
+            .iter()
+            .find(|(_, &id)| id == window.pid)
+        {
             window.set_floating(true);
-            if let Some((scratchpad_name, _)) = state
-                .active_scratchpads
+            if let Some(s) = state
+                .scratchpads
                 .iter()
-                .find(|(_, &id)| id == window.pid)
+                .find(|s| *scratchpad_name == s.name)
             {
-                if let Some(s) = state
-                    .scratchpads
-                    .iter()
-                    .find(|s| *scratchpad_name == s.name)
-                {
-                    let new_float_exact = scratchpad_xyhw(&ws.xyhw, s);
-                    window.normal = ws.xyhw;
-                    window.set_floating_exact(new_float_exact);
-                    return;
-                }
+                let new_float_exact = scratchpad_xyhw(&ws.xyhw, s);
+                window.normal = ws.xyhw;
+                window.set_floating_exact(new_float_exact);
+                return;
             }
         }
+
+        // Setup a child window.
         if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
             // This is currently for vlc, this probably will need to be more general if another
             // case comes up where we don't want to move the window.
@@ -399,6 +401,8 @@ fn setup_window(
                 return;
             }
         }
+
+        // Setup window based on type.
         match window.r#type {
             WindowType::Normal => {
                 window.apply_margin_multiplier(ws.margin_multiplier);
@@ -421,6 +425,8 @@ fn setup_window(
         }
         return;
     }
+
+    // Setup a window is workspace is `None`. This shouldn't really happen.
     window.tag = Some(1);
     if is_scratchpad(state, window) {
         if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
