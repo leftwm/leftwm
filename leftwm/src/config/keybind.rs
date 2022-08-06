@@ -8,6 +8,8 @@ use anyhow::{ensure, Context, Result};
 use leftwm_core::layouts::Layout;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "lefthk")]
+use std::fmt::Write;
+#[cfg(feature = "lefthk")]
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -71,7 +73,7 @@ impl Keybind {
                 };
                 command_parts.push_str(&args);
             }
-            head.push_str(&format!("'{}'", command_parts));
+            let _ = writeln!(head, "'{}'", command_parts);
             head
         };
         Ok(lefthk_core::config::Keybind {
