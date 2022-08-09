@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 pub enum BaseCommand {
     Execute,
     CloseWindow,
+    CloseAllOtherWindows,
     SwapTags,
     SoftReload,
     HardReload,
@@ -52,48 +53,18 @@ pub enum BaseCommand {
     // Custom commands
     UnloadTheme,
     LoadTheme,
-    CloseAllOtherWindows,
 }
 
 impl std::convert::From<BaseCommand> for String {
     fn from(command: BaseCommand) -> Self {
-        let r#str = match command {
-            BaseCommand::CloseWindow => "CloseWindow",
-            BaseCommand::SwapTags => "SwapScreens",
-            BaseCommand::SoftReload => "SoftReload",
-            BaseCommand::ToggleScratchPad => "ToggleScratchPad",
-            BaseCommand::ToggleFullScreen => "ToggleFullScreen",
-            BaseCommand::ToggleSticky => "ToggleSticky",
-            BaseCommand::GotoTag => "GoToTag",
-            BaseCommand::FloatingToTile => "FloatingToTile",
-            BaseCommand::TileToFloating => "TileToFloating",
-            BaseCommand::ToggleFloating => "ToggleFloating",
-            BaseCommand::MoveWindowUp => "MoveWindowUp",
-            BaseCommand::MoveWindowDown => "MoveWindowDown",
-            BaseCommand::MoveWindowTop => "MoveWindowTop",
-            BaseCommand::FocusNextTag => "FocusNextTag",
-            BaseCommand::FocusPreviousTag => "FocusPreviousTag",
-            BaseCommand::FocusWindowUp => "FocusWindowUp",
-            BaseCommand::FocusWindowDown => "FocusWindowDown",
-            BaseCommand::FocusWindowTop => "FocusWindowTop",
-            BaseCommand::FocusWorkspaceNext => "FocusWorkspaceNext",
-            BaseCommand::FocusWorkspacePrevious => "FocusWorkspacePrevious",
-            BaseCommand::MoveToTag => "SendWindowToTag",
-            BaseCommand::MoveToLastWorkspace => "MoveWindowToLastWorkspace",
-            BaseCommand::MoveWindowToNextWorkspace => "MoveWindowToNextWorkspace",
-            BaseCommand::MoveWindowToPreviousWorkspace => "MoveWindowToPreviousWorkspace",
-            BaseCommand::NextLayout => "NextLayout",
-            BaseCommand::PreviousLayout => "PreviousLayout",
-            BaseCommand::SetLayout => "SetLayout",
-            BaseCommand::RotateTag => "RotateTag",
-            BaseCommand::IncreaseMainWidth => "IncreaseMainWidth",
-            BaseCommand::DecreaseMainWidth => "DecreaseMainWidth",
-            BaseCommand::SetMarginMultiplier => "SetMarginMultiplier",
-            // Custom commands
-            BaseCommand::UnloadTheme => "UnloadTheme",
-            BaseCommand::LoadTheme => "LoadTheme",
-            _ => "",
-        };
-        r#str.to_owned()
+        match command {
+            // Special cases that have different names.
+            BaseCommand::SwapTags => "SwapScreens".to_owned(),
+            BaseCommand::GotoTag => "GoToTag".to_owned(),
+            BaseCommand::MoveToTag => "SendWindowToTag".to_owned(),
+            BaseCommand::MoveToLastWorkspace => "MoveWindowToLastWorkspace".to_owned(),
+            BaseCommand::Execute => "".to_owned(),
+            _ => format!("{:?}", command),
+        }
     }
 }
