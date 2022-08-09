@@ -2,7 +2,7 @@ use crate::models::Window;
 use crate::models::Xyhw;
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Copy)]
 pub struct XyhwChange {
     pub x: Option<i32>,
     pub y: Option<i32>,

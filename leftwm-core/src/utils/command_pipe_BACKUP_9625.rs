@@ -114,9 +114,8 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "NextLayout" => Ok(Command::NextLayout),
         "PreviousLayout" => Ok(Command::PreviousLayout),
         "RotateTag" => Ok(Command::RotateTag),
-        "SetLayout" => build_set_layout(rest),
-        "SetMarginMultiplier" => build_set_margin_multiplier(rest),
-        // Scratchpad
+<<<<<<< HEAD
+        "CloseWindow" => Ok(Command::CloseWindow),
         "ToggleScratchPad" => build_toggle_scratchpad(rest),
         "AttachScratchPad" => build_attach_scratchpad(rest),
         "ReleaseScratchPad" => Ok(build_release_scratchpad(rest)),
@@ -126,6 +125,12 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "PrevScratchPadWindow" => Ok(Command::PrevScratchPadWindow {
             scratchpad: rest.to_owned(),
         }),
+        "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
+        "SendWindowToTag" => build_send_window_to_tag(rest),
+=======
+>>>>>>> b2e98600e33f8ace715aff12bc659eb6a7f23297
+        "SetLayout" => build_set_layout(rest),
+        "SetMarginMultiplier" => build_set_margin_multiplier(rest),
         // Floating
         "FloatingToTile" => Ok(Command::FloatingToTile),
         "TileToFloating" => Ok(Command::TileToFloating),
@@ -140,6 +145,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "CloseWindow" => Ok(Command::CloseWindow),
         "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
         "SoftReload" => Ok(Command::SoftReload),
+        "ToggleScratchPad" => build_toggle_scratchpad(rest),
         _ => Ok(Command::Other(s.into())),
     }
 }

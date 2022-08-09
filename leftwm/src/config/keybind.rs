@@ -22,6 +22,7 @@ macro_rules! ensure_non_empty {
 }
 
 impl Keybind {
+    #![allow(clippy::too_many_lines)]
     pub fn try_convert_to_core_keybind(&self, config: &Config) -> Result<leftwm_core::Keybind> {
         fn is_valid_scratchpad_name(config: &Config, scratchpad_name: &str) -> bool {
             config
@@ -43,7 +44,7 @@ impl Keybind {
                 if is_valid_scratchpad_name(config, self.value.as_str()) {
                     leftwm_core::Command::AttachScratchPad {
                         window: None,
-                        scratchpad: self.value.to_owned(),
+                        scratchpad: self.value.clone(),
                     }
                 } else {
                     anyhow::bail!(
@@ -65,7 +66,7 @@ impl Keybind {
                 } else if is_valid_scratchpad_name(config, self.value.as_str()) {
                     leftwm_core::Command::ReleaseScratchPad {
                         window: leftwm_core::ReleaseScratchPadOption::ScrathpadName(
-                            self.value.to_owned(),
+                            self.value.clone(),
                         ),
                         tag: None,
                     }
@@ -76,7 +77,7 @@ impl Keybind {
             BaseCommand::NextScratchPadWindow => {
                 if is_valid_scratchpad_name(config, self.value.as_str()) {
                     leftwm_core::Command::NextScratchPadWindow {
-                        scratchpad: self.value.to_owned(),
+                        scratchpad: self.value.clone(),
                     }
                 } else {
                     anyhow::bail!("Value must contain a valid scratchpad name");
@@ -85,7 +86,7 @@ impl Keybind {
             BaseCommand::PrevScratchPadWindow => {
                 if is_valid_scratchpad_name(config, self.value.as_str()) {
                     leftwm_core::Command::PrevScratchPadWindow {
-                        scratchpad: self.value.to_owned(),
+                        scratchpad: self.value.clone(),
                     }
                 } else {
                     anyhow::bail!("Value must contain a valid scratchpad name");

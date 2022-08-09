@@ -79,6 +79,9 @@ impl XWrap {
         if let Some(hint) = wm_hint {
             w.never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
         }
+        if let Some(hint) = wm_hint {
+            w.urgent = hint.flags & xlib::XUrgencyHint != 0;
+        }
         // Is this needed? Made it so it doens't overwrite prior sizing.
         if w.floating() && sizing_hint.is_none() {
             if let Ok(geo) = self.get_window_geometry(window) {
