@@ -499,8 +499,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "lefthk-core"
-version = "0.1.4"
-source = "git+https://github.com/leftwm/lefthk?branch=simplify_and_get_ready#11c5dce670fdb7b828e285ba2f40fecf734591a4"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "915118966d0a371736882c108836f4b9498bf6942065938d0bc31a9a98b4ed5a"
 dependencies = [
  "log",
  "mio",
