@@ -12,13 +12,13 @@ description = "A window manager for Adventurers"
 
 [dependencies]
 anyhow = "1.0.48"
-clap = { version =  "3.2.12", features = ["cargo"]}
+clap = { version = "3.2.12", features = ["cargo"] }
 const_format = "0.2.26"
 once_cell = "1.13.0"
 dirs-next = "2.0.0"
 futures = "0.3.21"
 git-version = "0.3.4"
-lefthk-core = { version = '0.1', optional = true }
+lefthk-core = { path = "../../lefthk/lefthk-core", version = '0.1', optional = true }
 leftwm-core = { path = "../leftwm-core", version = '0.3.0' }
 liquid = "0.24.0"
 log = "0.4.8"
@@ -36,8 +36,20 @@ slog-scope = "4.3.0"
 slog-stdlog = "4.0.0"
 slog-term = { version = "2.5.0", optional = true }
 thiserror = "1.0.30"
-time_leftwm = {package = "time", version = "0.3.7", features = ["macros", "formatting", "local-offset"]}
-tokio = { version = "1.2.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
+time_leftwm = { package = "time", version = "0.3.7", features = [
+  "macros",
+  "formatting",
+  "local-offset",
+] }
+tokio = { version = "1.2.0", features = [
+  "fs",
+  "io-util",
+  "macros",
+  "net",
+  "rt-multi-thread",
+  "sync",
+  "time",
+] }
 toml = "0.5.5"
 xdg = "2.2.0"
 
