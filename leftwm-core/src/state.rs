@@ -190,7 +190,7 @@ impl State {
                 if are_tags_equal {
                     new_window.tag = old_window.tag;
                 } else {
-                    let mut new_tags = old_window.tag;
+                    let mut new_tag = old_window.tag;
                     // Only retain the tags, that still exist.
                     match new_tags {
                         Some(tag) if self.tags.get(tag).is_some() => {}
