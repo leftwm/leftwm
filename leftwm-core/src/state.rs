@@ -215,7 +215,7 @@ impl State {
         self.windows.append(&mut ordered);
 
         // This is needed due to mutable/immutable borrows.
-        let tags = &self.tags;
+        let all_tags = &self.tags;
 
         // Restore workspaces.
         for workspace in &mut self.workspaces {
@@ -229,7 +229,7 @@ impl State {
                     let mut new_tags = old_workspace.tag;
                     // Only retain the tags, that still exist.
                     match new_tags {
-                        Some(tag) if tags.get(tag).is_some() => {}
+                        Some(tag) if all_tags.get(tag).is_some() => {}
                         _ => new_tags = Some(1),
                     }
                     new_tags
@@ -248,7 +248,7 @@ impl State {
         self.focus_manager.tags_last_window = state.focus_manager.tags_last_window.clone();
         self.focus_manager
             .tags_last_window
-            .retain(|&id, _| tags.get(id).is_some());
+            .retain(|&id, _| all_tags.get(id).is_some());
         let tag_id = match state.focus_manager.tag(0) {
             // If the tag still exists it should be displayed on a workspace.
             Some(tag_id) if self.tags.get(tag_id).is_some() => tag_id,
