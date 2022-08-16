@@ -21,6 +21,5 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 tag.update_windows(windows, ws);
             }
         }
-
     }
 }
