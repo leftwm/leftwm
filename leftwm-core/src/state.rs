@@ -197,7 +197,7 @@ impl State {
                         _ => new_tag = Some(1),
                     }
                     new_window.untag();
-                    new_tags.iter().for_each(|&tag_id| new_window.tag(&tag_id));
+                    new_tag.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
                 new_window.strut = old_window.strut;
                 new_window.set_states(old_window.states());

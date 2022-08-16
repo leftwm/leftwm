@@ -37,7 +37,7 @@ impl fmt::Debug for Workspace {
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Self) -> bool {
-        self.id != None && self.id == other.id
+        self.id.is_some() && self.id == other.id
     }
 }
 
@@ -87,7 +87,7 @@ impl Workspace {
         config
             .get_list_of_gutters()
             .into_iter()
-            .filter(|gutter| gutter.wsid == self.id || gutter.wsid == None)
+            .filter(|gutter| gutter.wsid == self.id || gutter.wsid.is_none())
             .fold(vec![], |mut acc, gutter| {
                 match acc.iter().enumerate().find(|(_i, g)| g.side == gutter.side) {
                     Some((i, x)) => {
