@@ -190,11 +190,11 @@ impl State {
                 if are_tags_equal {
                     new_window.tag = old_window.tag;
                 } else {
-                    let mut new_tags = old_window.tag;
-                    // Only retain the tags, that still exist.
-                    match new_tags {
+                    let mut new_tag = old_window.tag;
+                    // Only retain the tag if it still exists, otherwise default to tag 1
+                    match new_tag {
                         Some(tag) if self.tags.get(tag).is_some() => {}
-                        _ => new_tags = Some(1),
+                        _ => new_tag = Some(1),
                     }
                     new_window.untag();
                     new_tags.iter().for_each(|&tag_id| new_window.tag(&tag_id));
@@ -226,13 +226,13 @@ impl State {
                 if are_tags_equal {
                     workspace.tag = old_workspace.tag;
                 } else {
-                    let mut new_tags = old_workspace.tag;
-                    // Only retain the tags, that still exist.
-                    match new_tags {
+                    let mut new_tag = old_workspace.tag;
+                    // Only retain the tag if it still exists, otherwise default to tag 1
+                    match new_tag {
                         Some(tag) if all_tags.get(tag).is_some() => {}
-                        _ => new_tags = Some(1),
+                        _ => new_tag = Some(1),
                     }
-                    new_tags
+                    new_tag
                         .iter()
                         .for_each(|&tag_id| workspace.tag = Some(tag_id));
                 }

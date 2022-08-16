@@ -22,12 +22,5 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
         }
 
-        // self.state
-        //     .windows
-        //     .iter()
-        //     .filter(|x| x.debugging)
-        //     .for_each(|w| {
-        //         println!("{:?}", w);
-        //     });
     }
 }
