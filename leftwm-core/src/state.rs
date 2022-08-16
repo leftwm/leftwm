@@ -192,9 +192,9 @@ impl State {
                 } else {
                     let mut new_tag = old_window.tag;
                     // Only retain the tag if it still exists, otherwise default to tag 1
-                    match new_tags {
+                    match new_tag {
                         Some(tag) if self.tags.get(tag).is_some() => {}
-                        _ => new_tags = Some(1),
+                        _ => new_tag = Some(1),
                     }
                     new_window.untag();
                     new_tags.iter().for_each(|&tag_id| new_window.tag(&tag_id));
