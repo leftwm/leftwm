@@ -227,7 +227,7 @@ impl State {
                     workspace.tag = old_workspace.tag;
                 } else {
                     let mut new_tag = old_workspace.tag;
-                    // Only retain the tags, that still exist.
+                    // Only retain the tag if it still exists, otherwise default to tag 1
                     match new_tags {
                         Some(tag) if tags.get(tag).is_some() => {}
                         _ => new_tags = Some(1),
