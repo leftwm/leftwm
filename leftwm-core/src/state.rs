@@ -226,7 +226,7 @@ impl State {
                 if are_tags_equal {
                     workspace.tag = old_workspace.tag;
                 } else {
-                    let mut new_tags = old_workspace.tag;
+                    let mut new_tag = old_workspace.tag;
                     // Only retain the tags, that still exist.
                     match new_tags {
                         Some(tag) if tags.get(tag).is_some() => {}
