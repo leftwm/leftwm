@@ -68,14 +68,11 @@ impl XWrap {
     }
 
     /// Sets the current desktop.
-    pub fn set_current_desktop(&self, current_tags: &[TagId]) {
-        let mut indexes: Vec<u32> = current_tags
-            .iter()
-            .map(|tag| tag.to_owned() as u32 - 1)
-            .collect();
-        if indexes.is_empty() {
-            indexes.push(0);
-        }
+    pub fn set_current_desktop(&self, current_tag: Option<TagId>) {
+        let indexes: Vec<u32> = match current_tag {
+            Some(tag) => vec![tag as u32 - 1],
+            None => vec![0],
+        };
         self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop);
     }
 
@@ -171,8 +168,8 @@ impl XWrap {
     }
 
     /// Sets what desktop a window is on.
-    pub fn set_window_desktop(&self, window: xlib::Window, current_tags: &[TagId]) {
-        let mut indexes: Vec<c_long> = current_tags.iter().map(|tag| (tag - 1) as c_long).collect();
+    pub fn set_window_desktop(&self, window: xlib::Window, current_tag: &TagId) {
+        let mut indexes: Vec<c_long> = vec![*current_tag as c_long - 1];
         if indexes.is_empty() {
             indexes.push(0);
         }

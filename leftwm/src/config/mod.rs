@@ -71,7 +71,7 @@ impl WindowHook {
 
     fn apply(&self, window: &mut Window) {
         if let Some(tag) = self.spawn_on_tag {
-            window.tags = vec![tag];
+            window.tag = Some(tag);
         }
         if let Some(should_float) = self.spawn_floating {
             window.set_floating(should_float);
@@ -303,7 +303,7 @@ impl leftwm_core::Config for Config {
         if let Some(scratchpads) = &self.scratchpad {
             return scratchpads.clone();
         }
-        return vec![];
+        vec![]
     }
 
     fn layouts(&self) -> Vec<Layout> {
