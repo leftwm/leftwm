@@ -5,6 +5,7 @@ use crate::{
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 
+/// Errors which can appear while running the event loop.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Error {
     #[error("Couldn't create the file: '{0}'")]
@@ -21,6 +22,10 @@ enum EventResponse {
 }
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+    /// Starts the event loop of leftwm
+    ///
+    /// # Errors
+    /// `EventResponse` if the initialisation of the command pipe or/and the state socket failed.
     pub async fn event_loop(mut self) -> Result<(), Error> {
         let mut state_socket = get_state_socket().await?;
         let mut command_pipe = get_command_pipe().await?;
@@ -81,7 +86,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut display_needs_refresh = false;
 
         event_buffer.drain(..).for_each(|event: DisplayEvent| {
-            display_needs_refresh = self.display_event_handler(event) || display_needs_refresh
+            display_needs_refresh = self.display_event_handler(event) || display_needs_refresh;
         });
 
         if display_needs_refresh {
