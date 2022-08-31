@@ -7,13 +7,13 @@ lazy_static! {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum CacherInitError {
+pub enum InitError {
     #[error("Couldn't open base directory.")]
     BaseDirError(#[from] BaseDirectoriesError),
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum CacherError {
+pub enum Error {
     #[error("IO Error: {0}")]
     IOError(String),
 }
@@ -44,17 +44,15 @@ impl Cacher {
     /// ```rust
     /// use crate::utils::Cacher;
     ///
-    /// fn main() {
-    ///     let cacher = Cacher::new().unwrap();
+    /// let cacher = Cacher::new().unwrap();
     ///
-    ///     // (for UNIX-based systems) creates the file `~/.cache/leftwm/yeet.rofl`
-    ///     cacher.get_file(PathBuf::from(r"yeet.rofl")).unwrap();
-    /// }
+    /// // (for UNIX-based systems) creates the file `~/.cache/leftwm/yeet.rofl`
+    /// cacher.get_file(PathBuf::from(r"yeet.rofl")).unwrap();
     /// ```
-    pub fn get_file(&self, path: PathBuf) -> Result<File, CacherError> {
+    pub fn get_file(&self, path: PathBuf) -> Result<File, Error> {
         let mut cache_file_path: PathBuf = self.cache_dir.clone();
         cache_file_path.push(path);
 
-        File::create(cache_file_path.as_path()).map_err(|err| CacherError::IOError(err.to_string()))
+        File::create(cache_file_path.as_path()).map_err(|err| Error::IOError(err.to_string()))
     }
 }

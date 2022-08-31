@@ -19,7 +19,7 @@ fn main() {
         let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
         manager.register_child_hook();
 
-        rt.block_on(manager.event_loop())
+        rt.block_on(manager.event_loop());
     });
 
     match completed {
