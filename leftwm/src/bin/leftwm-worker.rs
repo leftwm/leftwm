@@ -1,6 +1,6 @@
 use leftwm_core::{Manager, XlibDisplayServer};
+use std::{fs::File, panic};
 use xdg::BaseDirectories;
-use std::{panic, fs::File};
 
 const LOGGING_FILE: &str = "leftwm.log";
 
@@ -31,11 +31,11 @@ fn setup_logger() {
     use env_logger::{Builder, Target};
 
     let base_dir = BaseDirectories::new().unwrap();
-    let log_file_path = base_dir.place_cache_file(LOGGING_FILE)
+    let log_file_path = base_dir
+        .place_cache_file(LOGGING_FILE)
         .expect("Couldn't create logging file.");
 
-    let log_file = File::open(log_file_path)
-        .expect("Couldn't open log file.");
+    let log_file = File::open(log_file_path).expect("Couldn't open log file.");
 
     Builder::from_default_env()
         .target(Target::Pipe(Box::new(log_file)))
