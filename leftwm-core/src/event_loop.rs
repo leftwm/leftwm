@@ -36,7 +36,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut event_buffer: Vec<DisplayEvent> = vec![];
         while self.should_keep_running(&mut state_socket).await {
             self.update_manager_state(&mut state_socket).await;
-            self.display_server.flush(); // is that needed?
+            self.display_server.flush();
 
             let response: EventResponse = tokio::select! {
                 _ = self.display_server.wait_readable(), if event_buffer.is_empty()
