@@ -146,6 +146,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         if fullscreen_changed {
             // Reorder windows.
             self.state.sort_windows();
+
+            if let Some(windows) = self
+                .state
+                .windows
+                .iter()
+                .find(|w| w.r#type == WindowType::Dock)
+            {
+                self.display_server.update_windows(vec![windows]);
+            }
         }
         if strut_changed {
             self.state.update_static();
