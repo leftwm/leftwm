@@ -1,7 +1,8 @@
 use crate::{child_process::Nanny, config::Config};
-use crate::{CommandPipe, DisplayEvent, DisplayServer, Manager, Mode, StateSocket, Window, Command};
+use crate::{
+    Command, CommandPipe, DisplayEvent, DisplayServer, Manager, Mode, StateSocket, Window,
+};
 use std::path::{Path, PathBuf};
-use std::sync::Once;
 use std::sync::atomic::Ordering;
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
@@ -136,7 +137,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 }
             }
         }
-
     }
 
     fn call_up_scripts(&mut self) {
