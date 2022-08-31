@@ -444,6 +444,7 @@ dependencies = [
  "env_logger",
  "futures",
  "git-version",
+ "lazy_static",
  "leftwm-core",
  "liquid",
  "log",
