@@ -140,8 +140,10 @@ fn start_leftwm() {
 
     loop {
         let mut leftwm_session = start_leftwm_session(&current_exe);
-        while session_is_running(&mut leftwm_session) {
+        while leftwm_is_still_running(&mut leftwm_session) {
+            // remove all child processes which finished
             children.remove_finished_children();
+
             while is_suspending(&flag) {
                 nix::unistd::pause();
             }
@@ -149,7 +151,7 @@ fn start_leftwm() {
 
         // TODO: either add more details or find a better workaround.
         //
-        // Left is too fast for some logging managers. We need to
+        // Left is too fast for some login managers. We need to
         // wait to give the logging manager a second to boot.
         #[cfg(feature = "slow-dm-fix")]
         {
@@ -160,7 +162,7 @@ fn start_leftwm() {
 }
 
 /// checks if leftwm is still running
-fn session_is_running(leftwm_session: &mut Child) -> bool {
+fn leftwm_is_still_running(leftwm_session: &mut Child) -> bool {
     leftwm_session
         .try_wait()
         .expect("failed to wait on worker")
