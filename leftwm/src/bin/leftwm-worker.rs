@@ -3,11 +3,11 @@ use slog::{o, Drain};
 use std::panic;
 
 fn main() {
-    //let _log_guard = setup_logfile();
-    let _log_guard = setup_logging();
+    let _log_guard = setup_logfile();
+    // let _log_guard = setup_logging();
     log::info!("leftwm-worker booted!");
 
-    let completed = panic::catch_unwind(|| {
+    let exit_status = panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
@@ -15,11 +15,10 @@ fn main() {
 
         let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
         manager.register_child_hook();
-
-        rt.block_on(manager.event_loop());
+        rt.block_on(manager.event_loop())
     });
 
-    match completed {
+    match exit_status {
         Ok(_) => log::info!("Completed"),
         Err(err) => log::error!("Completed with error: {:?}", err),
     }

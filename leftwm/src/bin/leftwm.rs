@@ -140,10 +140,8 @@ fn start_leftwm() {
 
     loop {
         let mut leftwm_session = start_leftwm_session(&current_exe);
-        while leftwm_is_still_running(&mut leftwm_session) {
-            // remove all child processes which finished
+        while session_is_running(&mut leftwm_session) {
             children.remove_finished_children();
-
             while is_suspending(&flag) {
                 nix::unistd::pause();
             }
@@ -162,7 +160,7 @@ fn start_leftwm() {
 }
 
 /// checks if leftwm is still running
-fn leftwm_is_still_running(leftwm_session: &mut Child) -> bool {
+fn session_is_running(leftwm_session: &mut Child) -> bool {
     leftwm_session
         .try_wait()
         .expect("failed to wait on worker")

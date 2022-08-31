@@ -31,7 +31,7 @@ mod xcursor;
 pub struct XlibDisplayServer {
     xw: XWrap,
     root: xlib::Window,
-    initial_events: Option<Vec<DisplayEvent>>,
+    events: Vec<DisplayEvent>,
 }
 
 impl DisplayServer for XlibDisplayServer {
@@ -44,12 +44,12 @@ impl DisplayServer for XlibDisplayServer {
         let instance = Self {
             xw: wrap,
             root,
-            initial_events: None,
+            events: Vec::new(),
         };
         let initial_events = instance.initial_events(config);
 
         Self {
-            initial_events: Some(initial_events),
+            events: initial_events,
             ..instance
         }
     }
@@ -76,16 +76,9 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent> {
-        let mut events = vec![];
-
-        if let Some(initial_events) = self.initial_events.take() {
-            for e in initial_events {
-                events.push(e);
-            }
-        }
+        let mut events = std::mem::take(&mut self.events);
 
         let events_in_queue = self.xw.queue_len();
-
         for _ in 0..events_in_queue {
             let xlib_event = self.xw.get_next_event();
             let event = XEvent(&mut self.xw, xlib_event).into();
