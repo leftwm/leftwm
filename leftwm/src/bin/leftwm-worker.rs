@@ -1,7 +1,7 @@
-use leftwm_core::{Manager, XlibDisplayServer};
-use leftwm::CACHER;
-use std::{panic, path::PathBuf};
 use env_logger::Env;
+use leftwm::CACHER;
+use leftwm_core::{Manager, XlibDisplayServer};
+use std::{panic, path::PathBuf};
 
 const LOGGING_FILE: &str = "leftwm.log";
 
