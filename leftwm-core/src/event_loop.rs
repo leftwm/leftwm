@@ -24,31 +24,24 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut state_socket = get_state_socket().await?;
         let mut command_pipe = get_command_pipe().await?;
 
-        // Start the current theme.
-        let after_first_loop: Once = Once::new();
+        self.call_up_scripts();
 
         // Main event loop.
-        let mut event_buffer = vec![];
+        let mut event_buffer: Vec<DisplayEvent> = vec![];
         while self.should_keep_running(&mut state_socket).await {
             self.update_manager_state(&mut state_socket).await;
             self.display_server.flush(); // is that needed?
 
             let response: EventResponse = tokio::select! {
-                _ = self.display_server.wait_readable(), if event_buffer.is_empty() => {
-                    event_buffer.append(&mut self.display_server.get_next_events());
-                    EventResponse::None
-                },
+                _ = self.display_server.wait_readable(), if event_buffer.is_empty()
+                    => self.add_events(&mut event_buffer),
                 // When a mouse button is pressed or enter/motion notifies are blocked and only appear
                 // once the button is released. This is to double check that we know which window
                 // is currently focused.
-                // _ = timeout(100), if event_buffer.is_empty()
-                //     && self.state.focus_manager.sloppy_mouse_follows_focus
-                //     && self.state.focus_manager.behaviour.is_sloppy() => {
-                //     if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
-                //         event_buffer.push(verify_event);
-                //     }
-                //     EventResponse::None
-                // },
+                _ = timeout(100), if event_buffer.is_empty()
+                    && self.state.focus_manager.sloppy_mouse_follows_focus
+                    && self.state.focus_manager.behaviour.is_sloppy()
+                    => self.refresh_focus(&mut event_buffer),
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => self.execute_command(&cmd),
                 else => self.execute_display_events(&mut event_buffer),
             };
@@ -58,33 +51,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 EventResponse::DisplayRefreshNeeded => self.refresh_display(),
             };
 
-            // Perform any actions requested by the handler.
-            while !self.state.actions.is_empty() {
-                if let Some(act) = self.state.actions.pop_front() {
-                    if let Some(event) = self.display_server.execute_action(act) {
-                        event_buffer.push(event);
-                    }
-                }
-            }
-
-            // After the very first loop run the 'up' scripts (global and theme). As we need the unix
-            // socket to already exist.
-            after_first_loop.call_once(|| {
-                match Nanny::run_global_up_script() {
-                    Ok(child) => {
-                        child.map(|child| self.children.insert(child));
-                    }
-                    Err(err) => log::error!("Global up script faild: {}", err),
-                }
-                match Nanny::boot_current_theme() {
-                    Ok(child) => {
-                        child.map(|child| self.children.insert(child));
-                    }
-                    Err(err) => log::error!("Theme loading failed: {}", err),
-                }
-
-                self.config.load_state(&mut self.state);
-            });
+            self.execute_actions(&mut event_buffer);
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {
                 self.children.remove_finished_children();
@@ -146,6 +113,47 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         } else {
             EventResponse::None
         }
+    }
+
+    fn add_events(&mut self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
+        event_buffer.append(&mut self.display_server.get_next_events());
+        EventResponse::None
+    }
+
+    fn refresh_focus(&self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
+        if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
+            event_buffer.push(verify_event);
+        }
+        EventResponse::None
+    }
+
+    // Perform any actions requested by the handler.
+    fn execute_actions(&mut self, event_buffer: &mut Vec<DisplayEvent>) {
+        while !self.state.actions.is_empty() {
+            if let Some(act) = self.state.actions.pop_front() {
+                if let Some(event) = self.display_server.execute_action(act) {
+                    event_buffer.push(event);
+                }
+            }
+        }
+
+    }
+
+    fn call_up_scripts(&mut self) {
+        match Nanny::run_global_up_script() {
+            Ok(child) => {
+                child.map(|child| self.children.insert(child));
+            }
+            Err(err) => log::error!("Global up script faild: {}", err),
+        }
+        match Nanny::boot_current_theme() {
+            Ok(child) => {
+                child.map(|child| self.children.insert(child));
+            }
+            Err(err) => log::error!("Theme loading failed: {}", err),
+        }
+
+        self.config.load_state(&mut self.state);
     }
 }
 
