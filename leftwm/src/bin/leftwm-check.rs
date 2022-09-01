@@ -76,44 +76,45 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
             PathBuf::from(fspath)
         }
+        None => {
+            let ron_file =
+                BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
+            let toml_file =
+                BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
+            if Path::new(&ron_file).exists() {
+                ron_file
+            } else if Path::new(&toml_file).exists() {
+                println!(
+                    "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
+      Please consider migrating to RON or contact the theme creator about this topic.\x1b[0m"
+                );
+                toml_file
+            } else {
+                let config = Config::default();
+                let ron_pretty_conf = ron::ser::PrettyConfig::new()
+                    .depth_limit(2)
+                    .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+                let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf)?;
 
-        #[cfg(feature = "toml-config")]
-        None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
-        None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?,
+                let mut file = File::create(&ron_file)?;
+                file.write_all(ron.as_bytes())?;
+
+                return Ok(config);
+            }
+        }
     };
     if verbose {
         dbg!(&config_filename);
     }
-    if Path::new(&config_filename).exists() {
-        let contents = fs::read_to_string(config_filename)?;
-        if verbose {
-            dbg!(&contents);
-        }
-
-        #[cfg(feature = "toml-config")]
-        let config = toml::from_str(&contents)?;
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
+    let contents = fs::read_to_string(&config_filename)?;
+    if verbose {
+        dbg!(&contents);
+    }
+    if config_filename.as_path().extension() == Some(std::ffi::OsStr::new("ron")) {
         let config = ron::from_str(&contents)?;
-
         Ok(config)
     } else {
-        let config = Config::default();
-        #[cfg(feature = "toml-config")]
-        let toml = toml::to_string(&config)?;
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
-        let ron_pretty_conf = ron::ser::PrettyConfig::new()
-            .depth_limit(2)
-            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
-        let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
-
-        let mut file = File::create(&config_filename)?;
-        #[cfg(feature = "toml-config")]
-        file.write_all(toml.as_bytes())?;
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
-        file.write_all(ron.as_bytes())?;
-
+        let config = toml::from_str(&contents)?;
         Ok(config)
     }
 }
@@ -210,12 +211,10 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
                 Ok(_fp) => continue,
                 Err(e) => returns.push(e.to_string()),
             },
-            #[cfg(feature = "toml-config")]
             f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
                 Ok(_fp) => continue,
                 Err(e) => returns.push(e.to_string()),
             },
-            #[cfg(feature = "ron-config")]
             f if f.ends_with("theme.ron") => match check_theme_ron(f, verbose) {
                 Ok(_fp) => continue,
                 Err(e) => returns.push(e.to_string()),
@@ -290,7 +289,6 @@ fn check_up_file(filepath: PathBuf) -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "toml-config")]
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
     let contents = fs::read_to_string(&filepath.as_path())?;
@@ -305,6 +303,10 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
                 if verbose {
                     println!("The theme file looks OK.");
                 }
+                println!(
+                    "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
+      Please consider migrating to RON or contact the theme creator about this topic.\x1b[0m"
+                );
                 Ok(filepath)
             }
             Err(err) => bail!("Could not parse theme file: {}", err),
@@ -314,7 +316,6 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     }
 }
 
-#[cfg(feature = "ron-config")]
 fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
     let contents = fs::read_to_string(&filepath.as_path())?;
@@ -334,10 +335,6 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             Err(err) => bail!("Could not parse theme file: {}", err),
         }
     } else {
-        bail!(
-            "No `theme.ron
-        ` found at path: {}",
-            filepath.display()
-        )
+        bail!("No `theme.ron` found at path: {}", filepath.display())
     }
 }

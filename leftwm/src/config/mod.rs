@@ -34,7 +34,16 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 ///
 /// # Example
 ///
-/// In `config.toml`
+///
+/// In `config.ron`
+///
+/// ```ron
+/// window_rules: [
+///     (window_class: "krita", spawn_on_tag: 3, spawn_floating: farse),   
+/// ]
+/// ```
+///
+/// In the deprecated `config.toml`
 ///
 /// ```toml
 /// [[window_config_by_class]]
@@ -131,39 +140,39 @@ pub fn load() -> Config {
 fn load_from_file() -> Result<Config> {
     let path = BaseDirectories::with_prefix("leftwm")?;
 
-    #[cfg(feature = "toml-config")]
-    let config_filename = path.place_config_file("config.toml")?;
-    #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
-    let config_filename = path.place_config_file("config.ron")?;
+    // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
+    let config_file_ron = path.place_config_file("config.ron")?;
+    let config_file_toml = path.place_config_file("config.toml")?;
 
-    if Path::new(&config_filename).exists() {
-        let contents = fs::read_to_string(config_filename)?;
-        #[cfg(feature = "toml-config")]
-        let config = toml::from_str(&contents)?;
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
+    if Path::new(&config_file_ron).exists() {
+        let contents = fs::read_to_string(config_file_ron)?;
         let config = ron::from_str(&contents)?;
 
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
-            log::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
+            log::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
+            Ok(Config::default())
+        }
+    } else if Path::new(&config_file_toml).exists() {
+        let contents = fs::read_to_string(config_file_toml)?;
+        let config = toml::from_str(&contents)?;
+        log::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+
+        if check_workspace_ids(&config) {
+            Ok(config)
+        } else {
+            log::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
             Ok(Config::default())
         }
     } else {
         let config = Config::default();
-        #[cfg(feature = "toml-config")]
-        let toml = toml::to_string(&config).unwrap();
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
         let ron_pretty_conf = ron::ser::PrettyConfig::new()
             .depth_limit(2)
             .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
         let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
 
-        let mut file = File::create(&config_filename)?;
-        #[cfg(feature = "toml-config")]
-        file.write_all(toml.as_bytes())?;
-        #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
+        let mut file = File::create(&config_file_ron)?;
         file.write_all(ron.as_bytes())?;
 
         Ok(config)

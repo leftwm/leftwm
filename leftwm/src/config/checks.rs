@@ -31,10 +31,10 @@ impl Config {
             if ids.iter().any(std::option::Option::is_some) {
                 if crate::all_ids_some(&ids) {
                     if !crate::all_ids_unique(&ids) {
-                        println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
+                        println!("Your config file contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
                     }
                 } else {
-                    println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
+                    println!("Your config file specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
                 }
             }
         }

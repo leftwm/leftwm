@@ -51,12 +51,14 @@ impl Default for ThemeSetting {
 }
 
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
-    let contents = fs::read_to_string(path)?;
-    #[cfg(feature = "toml-config")]
-    let from_file: ThemeSetting = toml::from_str(&contents)?;
-    #[cfg(any(all(feature = "ron-config", not(feature = "toml-config")),))]
-    let from_file: ThemeSetting = ron::from_str(&contents)?;
-    Ok(from_file)
+    let contents = fs::read_to_string(&path)?;
+    if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
+        let from_file: ThemeSetting = ron::from_str(&contents)?;
+        Ok(from_file)
+    } else {
+        let from_file: ThemeSetting = toml::from_str(&contents)?;
+        Ok(from_file)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -95,7 +97,6 @@ mod tests {
     use super::*;
     use leftwm_core::models::Side;
 
-    #[cfg(feature = "toml-config")]
     #[test]
     fn deserialize_custom_theme_config_toml() {
         let config = r#"
@@ -138,7 +139,6 @@ value = 0
         );
     }
 
-    #[cfg(feature = "ron-config")]
     #[test]
     fn deserialize_custom_theme_config_ron() {
         let config = r##"
