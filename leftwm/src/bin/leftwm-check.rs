@@ -39,17 +39,6 @@ async fn main() -> Result<()> {
     let config_file = matches.value_of("INPUT");
     let verbose = matches.occurrences_of("verbose") >= 1;
 
-    if matches.occurrences_of("migrate") >= 1 {
-        let path = BaseDirectories::with_prefix("leftwm")?;
-        let ron_file = path.place_config_file("config.ron")?;
-        let toml_file_path = path.place_config_file("config.toml")?;
-        let toml_file_str = toml_file_path.as_os_str().to_str();
-        let config = load_from_file(toml_file_str, verbose)?;
-        write_to_file(&ron_file, &config)?;
-
-        return Ok(());
-    }
-
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
         env!("CARGO_PKG_VERSION")
@@ -58,6 +47,20 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
+    if matches.occurrences_of("migrate") >= 1 {
+        println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
+        let path = BaseDirectories::with_prefix("leftwm")?;
+        let ron_file = path.place_config_file("config.ron")?;
+        let toml_file_path = path.place_config_file("config.toml")?;
+        let toml_file_str = toml_file_path.as_os_str().to_str();
+
+        let config = load_from_file(toml_file_str, verbose)?;
+
+        write_to_file(&ron_file, &config)?;
+
+        return Ok(());
+    }
+
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
         Ok(config) => {
