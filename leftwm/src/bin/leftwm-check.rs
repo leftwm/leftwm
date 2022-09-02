@@ -28,10 +28,27 @@ async fn main() -> Result<()> {
                 .long("verbose")
                 .help("Outputs received configuration file."),
         )
+        .arg(
+            Arg::with_name("migrate")
+                .short('m')
+                .long("migrate-toml-to-ron")
+                .help("Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
+        )
         .get_matches();
 
     let config_file = matches.value_of("INPUT");
     let verbose = matches.occurrences_of("verbose") >= 1;
+
+    if matches.occurrences_of("migrate") >= 1 {
+        let path = BaseDirectories::with_prefix("leftwm")?;
+        let ron_file = path.place_config_file("config.ron")?;
+        let toml_file_path = path.place_config_file("config.toml")?;
+        let toml_file_str = toml_file_path.as_os_str().to_str();
+        let config = load_from_file(toml_file_str, verbose)?;
+        write_to_file(ron_file, &config)?;
+
+        return Ok(());
+    }
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
@@ -91,14 +108,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
                 toml_file
             } else {
                 let config = Config::default();
-                let ron_pretty_conf = ron::ser::PrettyConfig::new()
-                    .depth_limit(2)
-                    .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
-                let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf)?;
-
-                let mut file = File::create(&ron_file)?;
-                file.write_all(ron.as_bytes())?;
-
+                write_to_file(ron_file, &config)?;
                 return Ok(config);
             }
         }
@@ -117,6 +127,29 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         let config = toml::from_str(&contents)?;
         Ok(config)
     }
+}
+
+fn write_to_file(ron_file: PathBuf, config: &Config) -> Result<(), anyhow::Error> {
+    let ron_pretty_conf = ron::ser::PrettyConfig::new()
+        .depth_limit(2)
+        .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+    let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf)?;
+    let comment_header = String::from(
+        r#"//  _        ___                                      ___ _
+// | |      / __)_                                   / __|_)
+// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
+// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
+// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
+// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
+// A WindowManager for Adventurers                         (____/
+// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
+
+"#,
+    );
+    let ron_with_header = comment_header + &ron;
+    let mut file = File::create(&ron_file)?;
+    file.write_all(ron_with_header.as_bytes())?;
+    Ok(())
 }
 
 fn check_elogind(verbose: bool) -> Result<()> {

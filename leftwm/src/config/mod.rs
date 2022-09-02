@@ -171,9 +171,22 @@ fn load_from_file() -> Result<Config> {
             .depth_limit(2)
             .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
         let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
+        let comment_header = String::from(
+            r#"//  _        ___                                      ___ _
+// | |      / __)_                                   / __|_)
+// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
+// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
+// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
+// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
+// A WindowManager for Adventurers                         (____/
+// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
+
+"#,
+        );
+        let ron_with_header = comment_header + &ron;
 
         let mut file = File::create(&config_file_ron)?;
-        file.write_all(ron.as_bytes())?;
+        file.write_all(ron_with_header.as_bytes())?;
 
         Ok(config)
     }
