@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
         let toml_file_path = path.place_config_file("config.toml")?;
         let toml_file_str = toml_file_path.as_os_str().to_str();
         let config = load_from_file(toml_file_str, verbose)?;
-        write_to_file(ron_file, &config)?;
+        write_to_file(&ron_file, &config)?;
 
         return Ok(());
     }
@@ -108,7 +108,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
                 toml_file
             } else {
                 let config = Config::default();
-                write_to_file(ron_file, &config)?;
+                write_to_file(&ron_file, &config)?;
                 return Ok(config);
             }
         }
@@ -129,7 +129,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     }
 }
 
-fn write_to_file(ron_file: PathBuf, config: &Config) -> Result<(), anyhow::Error> {
+fn write_to_file(ron_file: &PathBuf, config: &Config) -> Result<(), anyhow::Error> {
     let ron_pretty_conf = ron::ser::PrettyConfig::new()
         .depth_limit(2)
         .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
