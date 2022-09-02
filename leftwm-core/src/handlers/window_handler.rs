@@ -147,8 +147,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             // Reorder windows.
             self.state.sort_windows();
 
-            // Update `dock` windows once, so the can recieve mouse click events again
-            // this is necessary since we exclude them from the general update loop above
+            // Update `dock` windows once, so they can recieve mouse click events again.
+            // This is necessary, since we exclude them from the general update loop above.
             if let Some(windows) = self
                 .state
                 .windows
