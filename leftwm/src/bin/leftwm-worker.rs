@@ -3,8 +3,8 @@ use slog::{o, Drain};
 use std::panic;
 
 fn main() {
-    let _log_guard = setup_logfile();
-    // let _log_guard = setup_logging();
+    // let _log_guard = setup_logfile();
+    let _log_guard = setup_logging();
     log::info!("leftwm-worker booted!");
 
     let exit_status = panic::catch_unwind(|| {
