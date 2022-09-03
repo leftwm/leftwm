@@ -138,6 +138,8 @@ pub fn load() -> Config {
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
+    log::debug!("Loading config file");
+
     let path = BaseDirectories::with_prefix("leftwm")?;
 
     // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
@@ -145,6 +147,7 @@ fn load_from_file() -> Result<Config> {
     let config_file_toml = path.place_config_file("config.toml")?;
 
     if Path::new(&config_file_ron).exists() {
+        log::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
         let contents = fs::read_to_string(config_file_ron)?;
         let config = ron::from_str(&contents)?;
 
@@ -155,6 +158,7 @@ fn load_from_file() -> Result<Config> {
             Ok(Config::default())
         }
     } else if Path::new(&config_file_toml).exists() {
+        log::debug!("Config file '{}' found.", config_file_toml.to_string_lossy());
         let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
         log::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
@@ -166,6 +170,8 @@ fn load_from_file() -> Result<Config> {
             Ok(Config::default())
         }
     } else {
+        log::debug!("Config file not found. Using default config file.");
+
         let config = Config::default();
         let ron_pretty_conf = ron::ser::PrettyConfig::new()
             .depth_limit(2)
