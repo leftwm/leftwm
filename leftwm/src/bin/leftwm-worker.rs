@@ -8,7 +8,7 @@ const LOGGING_FILE: &str = "leftwm.log";
 fn main() {
     setup_logger();
 
-    log::debug!("starting leftwm-worker");
+    log::info!("starting leftwm-worker");
 
     let completed = panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
