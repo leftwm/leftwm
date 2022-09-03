@@ -27,12 +27,18 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// # Errors
     /// `EventResponse` if the initialisation of the command pipe or/and the state socket failed.
     pub async fn event_loop(mut self) -> Result<(), Error> {
-        let mut state_socket = get_state_socket().await?;
-        let mut command_pipe = get_command_pipe().await?;
+        let state_socket = get_state_socket().await?;
+        let command_pipe = get_command_pipe().await?;
 
         self.call_up_scripts();
+        self.start_event_loop(state_socket, command_pipe).await
+    }
 
-        // Main event loop.
+    async fn start_event_loop(
+        &mut self,
+        mut state_socket: StateSocket,
+        mut command_pipe: CommandPipe,
+    ) -> Result<(), Error> {
         let mut event_buffer: Vec<DisplayEvent> = vec![];
         while self.should_keep_running(&mut state_socket).await {
             self.update_manager_state(&mut state_socket).await;
