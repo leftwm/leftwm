@@ -51,10 +51,9 @@ async fn main() -> Result<()> {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
         let path = BaseDirectories::with_prefix("leftwm")?;
         let ron_file = path.place_config_file("config.ron")?;
-        let toml_file_path = path.place_config_file("config.toml")?;
-        let toml_file_str = toml_file_path.as_os_str().to_str();
+        let toml_file = path.place_config_file("config.toml")?;
 
-        let config = load_from_file(toml_file_str, verbose)?;
+        let config = load_from_file(toml_file.as_os_str().to_str(), verbose)?;
 
         write_to_file(&ron_file, &config)?;
 
