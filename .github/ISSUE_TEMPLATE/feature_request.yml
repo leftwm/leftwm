@@ -1,0 +1,43 @@
+name: ✨ Request a new feature
+description: Propose a new feature that you think LeftWM is missing
+labels: ["feature"]
+body:
+    - type: markdown
+      attributes:
+        value: |
+            ## :bulb: Consider brainstorming ideas in Discussions
+            If your feature request is very unspecific and you are not sure about the details, please consider posting it in the [Discussions Tab](https://github.com/leftwm/leftwm/discussions) first.
+
+    - type: textarea
+      id: description
+      attributes:
+        label: Describe the feature
+        description: A clear and concise description of what the feature is, including screenshots (if relevant).
+        placeholder: eg. "Implement a new command that closes all windows.."
+      validations:
+        required: true
+    
+    - type: dropdown
+      id: importance
+      attributes:
+        label: How important is this feature to you?
+        description: Please be honest about your answer, this is just to get a feeling. Exaggerating its importance will not automatically make it higher priority.
+        options:
+          - It is just an idea
+          - Would be nice to have
+          - My workflow is impaired without it
+          - LeftWM is unusable without it
+      validations:
+        required: true
+    
+    - type: dropdown
+      id: importance-others
+      attributes:
+        label: How important do you think is this feature for the average LeftWM user?
+        options:
+          - I don't know, may be a niche edge-case
+          - Would probably be nice to have
+          - Their workflow is likely impaired without it
+          - No one uses LeftWM because this is missing
+      validations:
+        required: true
