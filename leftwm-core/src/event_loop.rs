@@ -69,7 +69,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.execute_actions(&mut event_buffer);
 
             // We need to run once through all of the loop to properly initialize the state
-            // before we can restore the previos state
+            // before we can restore the previous state
             after_first_loop.call_once(|| {
                 self.config.load_state(&mut self.state);
             });
