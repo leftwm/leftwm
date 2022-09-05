@@ -3,7 +3,7 @@ use crate::{
     Command, CommandPipe, DisplayEvent, DisplayServer, Manager, Mode, StateSocket, Window,
 };
 use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
+use std::sync::{atomic::Ordering, Once};
 
 /// Errors which can appear while running the event loop.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
@@ -18,6 +18,7 @@ pub enum Error {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum EventResponse {
     None,
+    Continue,
     DisplayRefreshNeeded,
 }
 
@@ -39,6 +40,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         mut state_socket: StateSocket,
         mut command_pipe: CommandPipe,
     ) -> Result<(), Error> {
+        let after_first_loop: Once = Once::new();
         let mut event_buffer: Vec<DisplayEvent> = vec![];
         while self.should_keep_running(&mut state_socket).await {
             self.update_manager_state(&mut state_socket).await;
@@ -60,10 +62,17 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             match response {
                 EventResponse::None => (),
+                EventResponse::Continue => continue,
                 EventResponse::DisplayRefreshNeeded => self.refresh_display(),
             };
 
             self.execute_actions(&mut event_buffer);
+
+            // We need to run once through all of the loop to properly initialize the state
+            // before we can restore the previos state
+            after_first_loop.call_once(|| {
+                self.config.load_state(&mut self.state);
+            });
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {
                 self.children.remove_finished_children();
@@ -123,20 +132,20 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         if self.command_handler(command) {
             EventResponse::DisplayRefreshNeeded
         } else {
-            EventResponse::None
+            EventResponse::Continue
         }
     }
 
     fn add_events(&mut self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
         event_buffer.append(&mut self.display_server.get_next_events());
-        EventResponse::None
+        EventResponse::Continue
     }
 
     fn refresh_focus(&self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
         if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
             event_buffer.push(verify_event);
         }
-        EventResponse::None
+        EventResponse::Continue
     }
 
     // Perform any actions requested by the handler.
@@ -163,8 +172,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
             Err(err) => log::error!("Theme loading failed: {}", err),
         }
-
-        self.config.load_state(&mut self.state);
     }
 }
 
