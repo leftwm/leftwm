@@ -61,6 +61,7 @@ default = ["term", "lefthk"]
 term = ["slog-term", "logging"]
 journald = ["slog-journald", "slow-dm-fix", "logging"]
 logging = []
+log-to-file = ["term"]
 lefthk = ["lefthk-core"]
 
 # Sleep on restart

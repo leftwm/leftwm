@@ -4,7 +4,8 @@ use slog::{o, Drain};
 use std::panic;
 
 fn main() {
-    // let _log_guard = setup_logfile();
+    #[cfg(feature = "log-to-file")]
+    let _log_guard = setup_logfile();
     #[cfg(feature = "logging")]
     let _log_guard = setup_logging();
     log::info!("leftwm-worker booted!");
@@ -32,7 +33,7 @@ fn main() {
 // Very basic logging used when developing.
 // outputs to /tmp/leftwm/leftwm-XXXXXXXXXXXX.log
 #[allow(dead_code)]
-#[cfg(all(feature = "logging", feature = "slog-term"))]
+#[cfg(feature = "log-to-file")]
 fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
     use std::fs;
     use std::fs::OpenOptions;
