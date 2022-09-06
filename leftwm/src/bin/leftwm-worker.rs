@@ -5,6 +5,7 @@ use std::panic;
 
 fn main() {
     // let _log_guard = setup_logfile();
+    #[cfg(feature = "logging")]
     let _log_guard = setup_logging();
     log::info!("leftwm-worker booted!");
 
