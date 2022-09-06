@@ -16,9 +16,8 @@ fn main() {
         let config = leftwm::load();
         let path = BaseDirectories::with_prefix("leftwm-lefthk")
             .expect("ERROR: could not find base directory");
-        let mut worker = Worker::new(config.mapped_bindings(), path);
 
-        rt.block_on(worker.event_loop());
+        rt.block_on(Worker::new(config.mapped_bindings(), path).event_loop());
     });
 
     match completed {
