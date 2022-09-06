@@ -16,4 +16,4 @@ jobs:
       - uses: actions/add-to-project@v0.3.0
         with:
           project-url: https://github.com/orgs/leftwm/projects/1
-          github-token: ${{ secrets.GH_PROJECT }}
+          github-token: ${{ secrets.PROJECT_AUTOMATION_TOKEN }}
