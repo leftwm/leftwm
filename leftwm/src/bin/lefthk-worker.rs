@@ -10,7 +10,8 @@ fn main() {
     #[cfg(feature = "logging")]
     let _log_guard = setup_logging();
     log::info!("lefthk-worker booted!");
-    let completed = std::panic::catch_unwind(|| {
+
+    let exit_status = std::panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
         let config = leftwm::load();
@@ -20,7 +21,7 @@ fn main() {
         rt.block_on(Worker::new(config.mapped_bindings(), path).event_loop());
     });
 
-    match completed {
+    match exit_status {
         Ok(_) => log::info!("Completed"),
         Err(err) => log::error!("Completed with error: {:?}", err),
     }
