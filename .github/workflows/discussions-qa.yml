@@ -9,7 +9,7 @@ jobs:
     steps:
       - name: Discord notification
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_QA_WEBHOOK }}
         uses: Ilshidur/action-discord@0.3.2
         with:
           args: |
@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Discord notification
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_QA_WEBHOOK }}
         uses: Ilshidur/action-discord@0.3.2
         with:
           args: |
