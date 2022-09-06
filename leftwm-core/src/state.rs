@@ -137,7 +137,7 @@ impl State {
                     None => w.calculated_xyhw().center(),
                 };
                 if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-                    w.tags = ws.tags.clone();
+                    w.tag = ws.tag;
                 }
             });
     }
@@ -154,9 +154,9 @@ impl State {
     }
 
     /// Apply saved state to a running manager.
-    pub fn restore_state(&mut self, state: &Self) {
+    pub fn restore_state(&mut self, old_state: &Self) {
         // Restore tags.
-        for old_tag in state.tags.all() {
+        for old_tag in old_state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {
                 tag.hidden = old_tag.hidden;
                 tag.layout = old_tag.layout;
@@ -167,12 +167,12 @@ impl State {
             }
         }
 
-        let are_tags_equal = self.tags.all().eq(&state.tags.all());
+        let are_tags_equal = self.tags.all().eq(&old_state.tags.all());
 
         // Restore windows.
         let mut ordered = vec![];
         let mut had_strut = false;
-        state.windows.iter().for_each(|old_window| {
+        old_state.windows.iter().for_each(|old_window| {
             if let Some((index, new_window)) = self
                 .windows
                 .clone()
@@ -188,17 +188,16 @@ impl State {
                 new_window.pid = old_window.pid;
                 new_window.normal = old_window.normal;
                 if are_tags_equal {
-                    new_window.tags = old_window.tags.clone();
+                    new_window.tag = old_window.tag;
                 } else {
-                    let mut new_tags = old_window.tags.clone();
-                    // Only retain the tags, that still exist.
-                    new_tags.retain(|&tag_id| self.tags.get(tag_id).is_some());
-                    // If there are no tags, add tag '1', so the window will not be lost.
-                    if new_tags.is_empty() {
-                        new_tags.push(1);
+                    let mut new_tag = old_window.tag;
+                    // Only retain the tag if it still exists, otherwise default to tag 1
+                    match new_tag {
+                        Some(tag) if self.tags.get(tag).is_some() => {}
+                        _ => new_tag = Some(1),
                     }
-                    new_window.clear_tags();
-                    new_tags.iter().for_each(|&tag_id| new_window.tag(&tag_id));
+                    new_window.untag();
+                    new_tag.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
                 new_window.strut = old_window.strut;
                 new_window.set_states(old_window.states());
@@ -206,7 +205,7 @@ impl State {
                 self.windows.remove(index);
 
                 // Make the x server aware of any tag changes for the window.
-                let act = DisplayAction::SetWindowTags(new_window.handle, new_window.tags.clone());
+                let act = DisplayAction::SetWindowTag(new_window.handle, new_window.tag);
                 self.actions.push_back(act);
             }
         });
@@ -216,52 +215,52 @@ impl State {
         self.windows.append(&mut ordered);
 
         // This is needed due to mutable/immutable borrows.
-        let tags = &self.tags;
+        let all_tags = &self.tags;
 
         // Restore workspaces.
         for workspace in &mut self.workspaces {
-            if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {
+            if let Some(old_workspace) = old_state.workspaces.iter().find(|w| w.id == workspace.id)
+            {
                 workspace.layout = old_workspace.layout;
                 workspace.main_width_percentage = old_workspace.main_width_percentage;
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
                 if are_tags_equal {
-                    workspace.tags = old_workspace.tags.clone();
+                    workspace.tag = old_workspace.tag;
                 } else {
-                    let mut new_tags = old_workspace.tags.clone();
-                    // Only retain the tags, that still exist.
-                    new_tags.retain(|&tag_id| tags.get(tag_id).is_some());
-                    // If there are no tags, add tag '1', so the workspace has a tag.
-                    if new_tags.is_empty() {
-                        new_tags.push(1);
+                    let mut new_tag = old_workspace.tag;
+                    // Only retain the tag if it still exists, otherwise default to tag 1
+                    match new_tag {
+                        Some(tag) if all_tags.get(tag).is_some() => {}
+                        _ => new_tag = Some(1),
                     }
-                    new_tags
+                    new_tag
                         .iter()
-                        .for_each(|&tag_id| workspace.tags = vec![tag_id]);
+                        .for_each(|&tag_id| workspace.tag = Some(tag_id));
                 }
             }
         }
 
         // Restore scratchpads.
-        for (scratchpad, id) in &state.active_scratchpads {
+        for (scratchpad, id) in &old_state.active_scratchpads {
             self.active_scratchpads
                 .insert(scratchpad.clone(), id.clone());
         }
 
         // Restore focus.
-        self.focus_manager.tags_last_window = state.focus_manager.tags_last_window.clone();
+        self.focus_manager.tags_last_window = old_state.focus_manager.tags_last_window.clone();
         self.focus_manager
             .tags_last_window
-            .retain(|&id, _| tags.get(id).is_some());
-        let tag_id = match state.focus_manager.tag(0) {
+            .retain(|&id, _| all_tags.get(id).is_some());
+        let tag_id = match old_state.focus_manager.tag(0) {
             // If the tag still exists it should be displayed on a workspace.
             Some(tag_id) if self.tags.get(tag_id).is_some() => tag_id,
             // If the tag doesn't exist, tag 1 should be displayed on a workspace.
             Some(_) => 1,
             // If we don't have any tag history (We should), focus the tag on workspace 1.
             None => match self.workspaces.first() {
-                Some(ws) => ws.tags[0],
+                Some(ws) => ws.tag.unwrap_or(1),
                 // This should never happen.
-                None => 1,
+                _ => 1,
             },
         };
         self.focus_tag(&tag_id);

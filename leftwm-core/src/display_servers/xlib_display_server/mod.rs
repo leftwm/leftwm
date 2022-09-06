@@ -31,7 +31,7 @@ mod xcursor;
 pub struct XlibDisplayServer {
     xw: XWrap,
     root: xlib::Window,
-    initial_events: Option<Vec<DisplayEvent>>,
+    initial_events: Vec<DisplayEvent>,
 }
 
 impl DisplayServer for XlibDisplayServer {
@@ -44,12 +44,12 @@ impl DisplayServer for XlibDisplayServer {
         let instance = Self {
             xw: wrap,
             root,
-            initial_events: None,
+            initial_events: Vec::new(),
         };
         let initial_events = instance.initial_events(config);
 
         Self {
-            initial_events: Some(initial_events),
+            initial_events,
             ..instance
         }
     }
@@ -71,21 +71,14 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_workspaces(&self, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            self.xw.set_current_desktop(&focused.tags);
+            self.xw.set_current_desktop(focused.tag);
         }
     }
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent> {
-        let mut events = vec![];
-
-        if let Some(initial_events) = self.initial_events.take() {
-            for e in initial_events {
-                events.push(e);
-            }
-        }
+        let mut events = std::mem::take(&mut self.initial_events);
 
         let events_in_queue = self.xw.queue_len();
-
         for _ in 0..events_in_queue {
             let xlib_event = self.xw.get_next_event();
             let event = XEvent(&mut self.xw, xlib_event).into();
@@ -120,8 +113,8 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
             DisplayAction::ReadyToMoveWindow(h) => from_ready_to_move_window(xw, h),
             DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
-            DisplayAction::SetCurrentTags(ts) => from_set_current_tags(xw, &ts),
-            DisplayAction::SetWindowTags(h, ts) => from_set_window_tags(xw, h, &ts),
+            DisplayAction::SetCurrentTags(t) => from_set_current_tags(xw, t),
+            DisplayAction::SetWindowTag(h, t) => from_set_window_tag(xw, h, t),
             DisplayAction::ReloadKeyGrabs(ks) => from_reload_key_grabs(xw, &ks),
             DisplayAction::ConfigureXlibWindow(w) => from_configure_xlib_window(xw, &w),
 
@@ -320,18 +313,19 @@ fn from_ready_to_resize_window(xw: &mut XWrap, handle: WindowHandle) -> Option<D
     None
 }
 
-fn from_set_current_tags(xw: &mut XWrap, tags: &[TagId]) -> Option<DisplayEvent> {
-    xw.set_current_desktop(tags);
+fn from_set_current_tags(xw: &mut XWrap, tag: Option<TagId>) -> Option<DisplayEvent> {
+    xw.set_current_desktop(tag);
     None
 }
 
-fn from_set_window_tags(
+fn from_set_window_tag(
     xw: &mut XWrap,
     handle: WindowHandle,
-    tags: &[TagId],
+    tag: Option<TagId>,
 ) -> Option<DisplayEvent> {
     let window = handle.xlib_handle()?;
-    xw.set_window_desktop(window, tags);
+    let tag = tag?;
+    xw.set_window_desktop(window, &tag);
     None
 }
 

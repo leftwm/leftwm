@@ -77,7 +77,7 @@ pub enum Command {
     Other(String),
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub enum ReleaseScratchPadOption {
     Handle(WindowHandle),
     ScrathpadName(String),

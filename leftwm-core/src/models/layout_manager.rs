@@ -84,7 +84,7 @@ impl LayoutManager {
         mut tags: Vec<&mut Tag>,
     ) -> Option<bool> {
         for workspace in workspaces {
-            let tag = tags.iter_mut().find(|t| t.id == workspace.tags[0])?;
+            let tag = tags.iter_mut().find(|t| Some(t.id) == workspace.tag)?;
             match self.mode {
                 LayoutMode::Workspace => {
                     tag.set_layout(workspace.layout, workspace.main_width_percentage);

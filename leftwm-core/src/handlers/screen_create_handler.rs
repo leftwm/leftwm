@@ -3,7 +3,7 @@ use crate::config::Config;
 use crate::display_servers::DisplayServer;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
-    /// Process a collection of events, and apply them changes to a manager.
+    /// Process a collection of events, and apply the changes to a manager.
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
@@ -29,11 +29,11 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
         new_workspace.load_config(&self.config);
 
-        //make sure are enough tags for this new screen
+        // Make sure there are enough tags for this new screen.
         let next_id = if tag_len > tag_index {
             tag_index + 1
         } else {
-            // add a new tag for the workspace
+            // Add a new tag for the workspace.
             self.state
                 .tags
                 .add_new_unlabeled(self.state.layout_manager.new_layout(Some(workspace_id)))

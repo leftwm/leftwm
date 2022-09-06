@@ -40,10 +40,10 @@ macro_rules! move_focus_common_vars {
         let handle = $state.focus_manager.window(&$state.windows)?.handle;
         let tag_id = $state.focus_manager.tag(0)?;
         let tag = $state.tags.get(tag_id)?;
-        let (tags, layout) = (vec![tag_id], Some(tag.layout));
+        let layout = Some(tag.layout);
 
         let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
+            |x: &Window| -> bool { x.tag == Some(tag_id) && x.is_managed() };
 
         let to_reorder = helpers::vec_extract(&mut $state.windows, for_active_workspace);
         $func($state, handle, layout, to_reorder, $($arg),*)
@@ -113,10 +113,10 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::SoftReload => {
             // Make sure the currently focused window is saved for the tag.
-            if let Some((handle, tag)) = state
+            if let Some((handle, Some(tag))) = state
                 .focus_manager
                 .window(&state.windows)
-                .map(|w| (w.handle, w.tags[0]))
+                .map(|w| (w.handle, w.tag))
             {
                 let old_handle = state
                     .focus_manager
@@ -171,12 +171,12 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
         .find(|w| w.handle == *scratchpad_window)
         .ok_or("Could not find window from scratchpad_window")?;
 
-    window.clear_tags();
+    window.untag();
     // Hide the scratchpad.
     window.tag(&nsp_tag.id);
 
     // send tag changement to X
-    let act = DisplayAction::SetWindowTags(*scratchpad_window, window.tags.clone());
+    let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
     manager.state.actions.push_back(act);
     manager.state.sort_windows();
 
@@ -223,21 +223,23 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
         .iter_mut()
         .find(|w| w.handle == *scratchpad_window)
         .ok_or("Could not find window from scratchpad_window")?;
-    let previous_tag = window.tags[0];
-    window.clear_tags();
+    let previous_tag = window.tag;
+    window.untag();
 
     // Remove the entry for the previous tag to prevent the scratchpad being
     // refocused.
-    manager
-        .state
-        .focus_manager
-        .tags_last_window
-        .remove(&previous_tag);
+    if let Some(previous_tag) = previous_tag {
+        manager
+            .state
+            .focus_manager
+            .tags_last_window
+            .remove(&previous_tag);
+    }
     // Show the scratchpad.
     window.tag(current_tag);
 
     // send tag changement to X
-    let act = DisplayAction::SetWindowTags(*scratchpad_window, window.tags.clone());
+    let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
     manager.state.actions.push_back(act);
     manager.state.sort_windows();
     manager.state.handle_window_focus(scratchpad_window);
@@ -651,7 +653,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     let handle_focus = window.is_none();
     // Focus the next or previous window on the workspace.
     let new_handle = if handle_focus {
-        manager.get_next_or_previous(&handle)
+        manager.get_next_or_previous_handle(&handle)
     } else {
         None
     };
@@ -662,11 +664,11 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         .iter_mut()
         .find(|w| w.handle == handle)?;
 
-    window.clear_tags();
+    window.untag();
     window.set_floating(false);
     window.tag(&tag.id);
     window.apply_margin_multiplier(margin_multiplier);
-    let act = DisplayAction::SetWindowTags(window.handle, vec![tag.id]);
+    let act = DisplayAction::SetWindowTag(window.handle, Some(tag.id));
     manager.state.actions.push_back(act);
 
     manager.state.sort_windows();
@@ -718,8 +720,8 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
 
-    let tag_num = workspace.tags.first()?;
-    move_to_tag(None, *tag_num, manager)
+    let tag_num = workspace.tag?;
+    move_to_tag(None, tag_num, manager)
 }
 
 fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Option<bool> {
@@ -776,7 +778,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
             .find(|w| Some(&Some(w.handle)) == previous_window_handle)
             .cloned()
     } else {
-        state.windows.iter().find(|w| is_target(*w)).cloned()
+        state.windows.iter().find(|w| is_target(w)).cloned()
     }?;
 
     let handle = target_window.handle;
@@ -786,8 +788,8 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
         return None;
     }
 
-    let tag_id = target_window.tags.first()?;
-    state.goto_tag_handler(*tag_id)?;
+    let tag_id = target_window.tag?;
+    state.goto_tag_handler(tag_id)?;
 
     match state
         .focus_manager
@@ -796,7 +798,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
     {
         Some(layout) if layout == Layout::Monocle || layout == Layout::MainAndDeck => {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
-                w.has_tag(tag_id) && !w.is_unmanaged() && !w.floating()
+                w.has_tag(&tag_id) && w.is_managed() && !w.floating()
             });
 
             let cycle = |wins: &mut Vec<Window>, s: &mut State| {
@@ -841,10 +843,10 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         let hist_a = *state.focus_manager.workspace_history.get(0)?;
         let hist_b = *state.focus_manager.workspace_history.get(1)?;
         //Update workspace tags
-        let mut temp = vec![];
-        std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tags, &mut temp);
-        std::mem::swap(&mut state.workspaces.get_mut(hist_b)?.tags, &mut temp);
-        std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tags, &mut temp);
+        let mut temp = None;
+        std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tag, &mut temp);
+        std::mem::swap(&mut state.workspaces.get_mut(hist_b)?.tag, &mut temp);
+        std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tag, &mut temp);
         // Update dock tags and layouts.
         state.update_static();
         state
@@ -862,7 +864,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
 
 fn close_window(state: &mut State) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
-    if !window.is_unmanaged() {
+    if window.is_managed() {
         let act = DisplayAction::KillWindow(window.handle);
         state.actions.push_back(act);
     }
@@ -872,9 +874,9 @@ fn close_window(state: &mut State) -> Option<bool> {
 fn move_to_last_workspace(state: &mut State) -> Option<bool> {
     if state.workspaces.len() >= 2 && state.focus_manager.workspace_history.len() >= 2 {
         let index = *state.focus_manager.workspace_history.get(1)?;
-        let wp_tags = &state.workspaces.get(index)?.tags.clone();
+        let wp_tags = state.workspaces.get(index)?.tag;
         let window = state.focus_manager.window_mut(&mut state.windows)?;
-        window.tags = vec![*wp_tags.get(0)?];
+        window.tag = wp_tags;
         return Some(true);
     }
     None
@@ -914,13 +916,13 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
                 to_focus = state
                     .windows
                     .iter()
-                    .find(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .find(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating())
                     .cloned();
             } else if layout == Layout::MainAndDeck {
                 let tags_windows = state
                     .windows
                     .iter()
-                    .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .filter(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating())
                     .collect::<Vec<&Window>>();
                 if let (Some(mw), Some(tdw)) = (tags_windows.get(0), tags_windows.get(1)) {
                     // If the focused window is the main or the top of the deck, we don't do
@@ -1116,7 +1118,7 @@ fn focus_window_top(state: &mut State, swap: bool) -> Option<bool> {
     let next = state
         .windows
         .iter()
-        .find(|x| x.tags.contains(&tag) && !x.floating() && !x.is_unmanaged())
+        .find(|x| x.tag == Some(tag) && !x.floating() && x.is_managed())
         .map(|w| w.handle);
 
     match (next, cur, prev) {
@@ -1152,8 +1154,8 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
 
     if state.focus_manager.behaviour.is_sloppy() && state.focus_manager.sloppy_mouse_follows_focus {
         let action = workspace
-            .tags
-            .first()
+            .tag
+            .as_ref()
             .and_then(|tag| state.focus_manager.tags_last_window.get(tag))
             .map_or_else(
                 || DisplayAction::MoveMouseOverPoint(workspace.xyhw.center()),
@@ -1184,11 +1186,10 @@ fn change_main_width(state: &mut State, delta: i8, factor: i8) -> Option<bool> {
 fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bool> {
     let ws = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     ws.set_margin_multiplier(margin_multiplier);
-    let tags = ws.tags.clone();
+    let tag = ws.tag;
     if state.windows.iter().any(|w| w.r#type == WindowType::Normal) {
-        let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&tags, &x.tags) && x.r#type == WindowType::Normal
-        };
+        let for_active_workspace =
+            |x: &Window| -> bool { tag == x.tag && x.r#type == WindowType::Normal };
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut state.windows, for_active_workspace);
         for w in &mut to_apply_margin_multiplier {
@@ -1568,7 +1569,7 @@ mod tests {
             .find(|w| w.pid == Some(mock_window))
             .unwrap();
 
-        assert!(!window.tags.iter().any(|tag| *tag == nsp_tag));
+        assert!(window.tag != Some(nsp_tag));
     }
 
     #[test]
@@ -1596,7 +1597,7 @@ mod tests {
             .find(|w| w.pid == Some(mock_window))
             .unwrap();
 
-        assert!(window.tags.iter().any(|tag| *tag == nsp_tag));
+        assert!(window.tag == Some(nsp_tag));
     }
 
     #[test]
@@ -1633,7 +1634,7 @@ mod tests {
                 .find(|w| w.pid == Some(mock_window))
                 .unwrap();
 
-            assert!(window.tags.iter().any(|tag| *tag == nsp_tag));
+            assert!(window.tag == Some(nsp_tag));
         }
 
         manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.to_owned()));
@@ -1647,7 +1648,7 @@ mod tests {
                 .find(|w| w.pid == Some(mock_window))
                 .unwrap();
 
-            assert!(!window.tags.iter().any(|tag| *tag == nsp_tag));
+            assert!(window.tag != Some(nsp_tag));
         }
     }
 
@@ -1975,11 +1976,10 @@ mod tests {
             .get(scratchpad_name)
             .unwrap()
             .iter();
-        assert!(is_only_first_visible(
-            &manager,
-            scratchpad_iterator.clone().copied(),
-            nsp_tag
-        ));
+        assert!(
+            is_only_first_visible(&manager, scratchpad_iterator.clone().copied(), nsp_tag),
+            "On the first forward cycle, the first window is not visible or the other windows are visible"
+        );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
@@ -1996,7 +1996,9 @@ mod tests {
             &manager,
             scratchpad_iterator.clone().copied(),
             nsp_tag
-        ));
+        ),
+            "On the second forward cycle, the first window is not visible or the other windows are visible"
+        );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
@@ -2013,7 +2015,9 @@ mod tests {
             &manager,
             scratchpad_iterator.clone().copied(),
             nsp_tag
-        ));
+        ), 
+            "After 2 forward and 1 backward cycles, the first window is not visible or the other windows are visible"
+        );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
@@ -2030,7 +2034,9 @@ mod tests {
             &manager,
             scratchpad_iterator.clone().copied(),
             nsp_tag
-        ));
+        ), 
+            "After 2 forward and 2 backward cycles, the first window is not visible or the other windows are visible"
+        );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
