@@ -158,7 +158,10 @@ fn load_from_file() -> Result<Config> {
             Ok(Config::default())
         }
     } else if Path::new(&config_file_toml).exists() {
-        log::debug!("Config file '{}' found.", config_file_toml.to_string_lossy());
+        log::debug!(
+            "Config file '{}' found.",
+            config_file_toml.to_string_lossy()
+        );
         let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
         log::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
