@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
             config.check_workspace_ids(verbose);
             #[cfg(not(feature = "lefthk"))]
             println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
-           #[cfg(feature = "lefthk")]
+            #[cfg(feature = "lefthk")]
             config.check_keybinds(verbose);
         }
         Err(e) => {
