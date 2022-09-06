@@ -1,0 +1,92 @@
+name: 🐞 Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+    - type: markdown
+      attributes:
+        value: |
+            ## :bulb: Consider asking questions in Discussions
+            If you are unsure about what is going wrong, you are not sure whether LeftWM is actually at fault or you have questions about how to configure LeftWM, please consider asking it in the [Discussions Tab](https://github.com/leftwm/leftwm/discussions) first.
+
+    - type: textarea
+      id: description
+      attributes:
+        label: Describe the bug
+        description: A clear and concise description of what the bug is including screenshots (if relevant).
+        placeholder: eg. "When snapping the window to the edge of the screen it disappears.."
+      validations:
+        required: true
+    
+    - type: textarea
+      id: expected
+      attributes:
+        label: Expected behavior (optional)
+        description: A clear and concise description of what you expected to happen.
+        placeholder: eg. "The window should snap to the tiles and be displayed at the position where it will end up when let go.."
+    
+    - type: textarea
+      id: reproduce
+      attributes:
+        label: Steps to reproduce (optional)
+        description: Steps to reproduce the issue
+        placeholder: |
+          eg.
+          1. Go to '...'
+          2. Click on '....'
+          3. Scroll down to '....'
+          4. See error
+
+    - type: textarea
+      id: logs
+      attributes:
+        label: Relevant log output (optional)
+        description: Paste the relevant part of the log if you have any. Text will be formatted as code block automatically, not backticks necessary.
+        placeholder: |
+          eg.
+          Sep 04 21:28:10 arch kernel: audit: type=1334 audit(1662319690.064:317): prog-id=0 op=UNLOAD
+          Sep 04 21:28:10 arch kernel: audit: type=1334 audit(1662319690.064:318): prog-id=0 op=UNLOAD
+          Sep 04 21:28:10 arch audit: BPF prog-id=0 op=UNLOAD
+          Sep 04 21:28:10 arch audit: BPF prog-id=0 op=UNLOAD
+          Sep 04 21:28:10 arch audit: BPF prog-id=0 op=UNLOAD
+        render: text
+
+    - type: input
+      id: os
+      attributes:
+        label: OS / Distro
+        description: Enter your OS and distribution (or simply the output of `uname -a`)
+        placeholder: eg. "Linux arch-desktop 5.19.4-arch1-1"
+      validations:
+        required: true
+    
+    - type: textarea
+      id: systeminfo
+      attributes:
+        label: Additional System Information (optional)
+        description: Enter any other relevant system information
+        placeholder: |
+          eg.
+          Using systemd and starting leftwm via .xinitrc
+          I have an AMD GPU and the latest 'amdgpu' drivers
+        render: text
+    
+    - type: textarea
+      id: leftwm-check
+      attributes:
+        label: LeftWM Check
+        description: Enter the output of `leftwm-check`
+        placeholder: |
+            :: LeftWM version: 0.3.0
+            :: LeftWM git hash: 1ae83d8
+            :: Loading configuration . . .
+                -> Configuration loaded OK
+            :: Checking keybinds . . .
+                -> All keybinds OK
+            :: Checking environment . . .
+                -> Environment OK
+            :: Checking theme . . .
+                -> Theme OK
+        render: text
+      validations:
+        required: true
+
