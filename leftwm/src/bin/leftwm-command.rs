@@ -76,6 +76,7 @@ async fn main() -> Result<()> {
         NextLayout
         PreviousLayout
         RotateTag
+        ReturnToLastTag
         CloseWindow
 
         Commands with arguments:

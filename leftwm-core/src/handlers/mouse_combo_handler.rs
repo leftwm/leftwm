@@ -29,7 +29,7 @@ impl State {
         } else if self.focus_manager.behaviour.is_clickto() {
             if let xlib::Button1 | xlib::Button3 = button {
                 if self.screens.iter().any(|s| s.root == handle) {
-                    self.focus_workspace_under_cursor(x, y);
+                    self.focus_workspace_with_point(x, y);
                     return false;
                 }
             }

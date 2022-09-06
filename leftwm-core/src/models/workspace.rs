@@ -9,10 +9,9 @@ use std::fmt;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: Option<i32>,
-    /// Active layout
     pub layout: Layout,
     pub main_width_percentage: u8,
-    pub tags: Vec<TagId>,
+    pub tag: Option<TagId>, // TODO: Make this a list.
     pub margin: Margins,
     pub margin_multiplier: f32,
     pub gutters: Vec<Gutter>,
@@ -29,7 +28,7 @@ impl fmt::Debug for Workspace {
             f,
             "Workspace {{ id: {:?}, tags: {:?}, x: {}, y: {} }}",
             self.id,
-            self.tags,
+            self.tag,
             self.xyhw.x(),
             self.xyhw.y()
         )
@@ -38,7 +37,7 @@ impl fmt::Debug for Workspace {
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Self) -> bool {
-        self.id != None && self.id == other.id
+        self.id.is_some() && self.id == other.id
     }
 }
 
@@ -54,7 +53,7 @@ impl Workspace {
             id,
             layout,
             main_width_percentage: layout.main_width(),
-            tags: vec![],
+            tag: None,
             margin: Margins::new(10),
             margin_multiplier: 1.0,
             gutters: vec![],
@@ -88,7 +87,7 @@ impl Workspace {
         config
             .get_list_of_gutters()
             .into_iter()
-            .filter(|gutter| gutter.wsid == self.id || gutter.wsid == None)
+            .filter(|gutter| gutter.wsid == self.id || gutter.wsid.is_none())
             .fold(vec![], |mut acc, gutter| {
                 match acc.iter().enumerate().find(|(_i, g)| g.side == gutter.side) {
                     Some((i, x)) => {
@@ -103,8 +102,7 @@ impl Workspace {
     }
 
     pub fn show_tag(&mut self, tag: &TagId) {
-        // todo: display multiple tags?
-        self.tags = vec![*tag];
+        self.tag = Some(*tag);
     }
 
     #[must_use]
@@ -114,16 +112,14 @@ impl Workspace {
 
     #[must_use]
     pub fn has_tag(&self, tag: &TagId) -> bool {
-        self.tags.contains(tag)
+        self.tag == Some(*tag)
     }
 
     /// Returns true if the workspace is displays a given window.
     #[must_use]
     pub fn is_displaying(&self, window: &Window) -> bool {
-        for wd_t in &window.tags {
-            if self.has_tag(wd_t) {
-                return true;
-            }
+        if let Some(tag) = &window.tag {
+            return self.has_tag(tag);
         }
         false
     }
@@ -131,7 +127,7 @@ impl Workspace {
     /// Returns true if the workspace is to update the locations info of this window.
     #[must_use]
     pub fn is_managed(&self, window: &Window) -> bool {
-        self.is_displaying(window) && !window.is_unmanaged()
+        self.is_displaying(window) && window.is_managed()
     }
 
     /// Returns the original x position of the workspace,

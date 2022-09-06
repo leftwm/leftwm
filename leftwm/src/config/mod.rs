@@ -74,7 +74,7 @@ impl WindowHook {
 
     fn apply(&self, window: &mut Window) {
         if let Some(tag) = self.spawn_on_tag {
-            window.tags = vec![tag];
+            window.tag = Some(tag);
         }
         if let Some(should_float) = self.spawn_floating {
             window.set_floating(should_float);
@@ -134,9 +134,13 @@ pub fn load() -> Config {
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
+    log::debug!("Loading config file");
+
     let path = BaseDirectories::with_prefix("leftwm")?;
     let config_filename = path.place_config_file("config.toml")?;
     if Path::new(&config_filename).exists() {
+        log::debug!("Config file '{}' found.", config_filename.to_string_lossy());
+
         let contents = fs::read_to_string(config_filename)?;
         let config = toml::from_str(&contents)?;
         if check_workspace_ids(&config) {
@@ -146,6 +150,8 @@ fn load_from_file() -> Result<Config> {
             Ok(Config::default())
         }
     } else {
+        log::debug!("Config file not found. Using default config file.");
+
         let config = Config::default();
         let toml = toml::to_string(&config).unwrap();
         let mut file = File::create(&config_filename)?;

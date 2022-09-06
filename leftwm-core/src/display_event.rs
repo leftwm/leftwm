@@ -3,7 +3,7 @@ use crate::models::WindowChange;
 use crate::Command;
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DisplayEvent {
     Movement(WindowHandle, i32, i32),
     MouseCombo(ModMask, Button, WindowHandle, i32, i32),

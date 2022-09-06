@@ -188,7 +188,7 @@ pub(crate) mod tests {
         }
         fn setup_predefined_window(&self, window: &mut Window) -> bool {
             if window.res_class == Some("ShouldGoToTag2".to_string()) {
-                window.tags = vec![2];
+                window.tag = Some(2);
                 true
             } else {
                 false
