@@ -144,9 +144,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
         }
         if fullscreen_changed {
-            // Reorder windows.
-            self.state.sort_windows();
-
             // Update `dock` windows once, so they can recieve mouse click events again.
             // This is necessary, since we exclude them from the general update loop above.
             if let Some(windows) = self
@@ -157,6 +154,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             {
                 self.display_server.update_windows(vec![windows]);
             }
+
+            // Reorder windows.
+            self.state.sort_windows();
         }
         if strut_changed {
             self.state.update_static();
