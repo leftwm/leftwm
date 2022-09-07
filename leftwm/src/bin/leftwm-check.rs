@@ -105,7 +105,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             } else if Path::new(&toml_file).exists() {
                 println!(
                     "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON or contact the theme creator about this topic.\x1b[0m"
+      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
                 );
                 toml_file
             } else {
@@ -340,7 +340,8 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
                 }
                 println!(
                     "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON or contact the theme creator about this topic.\x1b[0m"
+      Please consider migrating to RON or contact the theme creator about this topic.
+      Note: make sure the `up` script is loading the correct theme file.\x1b[0m"
                 );
                 Ok(filepath)
             }
