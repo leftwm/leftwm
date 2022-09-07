@@ -174,32 +174,51 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
     window.untag();
     // Hide the scratchpad.
     window.tag(&nsp_tag.id);
+    window.set_visible(false);
 
     // send tag changement to X
     let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
     manager.state.actions.push_back(act);
     manager.state.sort_windows();
 
-    // Make sure when changing focus the scratchpad is currently focused.
-    let handle =
-        if Some(&Some(*scratchpad_window)) != manager.state.focus_manager.window_history.get(0) {
-            None
-        } else if let Some(Some(prev)) = manager.state.focus_manager.window_history.get(1) {
-            Some(*prev)
-        } else if let Some(ws) = manager
-            .state
-            .focus_manager
-            .workspace(&manager.state.workspaces)
-        {
-            manager
+    // Will ignore current window handler because we just set it invisible
+    let last_focused_still_visible = manager
+        .state
+        .focus_manager
+        .window_history
+        .iter()
+        .find(|handle| {
+            if let Some(visibilty) = manager
                 .state
                 .windows
                 .iter()
-                .find(|w| ws.is_managed(w))
-                .map(|w| w.handle)
-        } else {
-            None
-        };
+                .find(|window| Some(window.handle) == **handle)
+                .map(Window::visible)
+            {
+                visibilty
+            } else {
+                false
+            }
+        })
+        .copied();
+
+    // Make sure when changing focus the lastly focused window is focused
+    let handle = if let Some(prev) = last_focused_still_visible {
+        prev
+    } else if let Some(ws) = manager
+        .state
+        .focus_manager
+        .workspace(&manager.state.workspaces)
+    {
+        manager
+            .state
+            .windows
+            .iter()
+            .find(|w| ws.is_managed(w))
+            .map(|w| w.handle)
+    } else {
+        None
+    };
     if let Some(handle) = handle {
         manager.state.handle_window_focus(&handle);
     }
@@ -237,6 +256,7 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
     }
     // Show the scratchpad.
     window.tag(current_tag);
+    window.set_visible(true);
 
     // send tag changement to X
     let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
@@ -289,9 +309,11 @@ fn prev_valid_scratchpad_pid(
     None
 }
 
+/// Check if the scratchpad is visible on the current tag.
+/// If the name of the scratchpad is incorrect, false will be returned
 fn is_scratchpad_visible<C: Config, SERVER: DisplayServer>(
     manager: &Manager<C, SERVER>,
-    scratchpad: &str,
+    scratchpad_name: &str,
 ) -> bool {
     let current_tag = if let Some(tag) = manager.state.focus_manager.tag(0) {
         tag
@@ -299,25 +321,19 @@ fn is_scratchpad_visible<C: Config, SERVER: DisplayServer>(
         return false;
     };
 
-    // Can be seen as a pipeline where each failure should short circuit the next of the steps,
-    // clippy thinks this is redundant, but when first_pid is None and is directly compared with a pid
-    // from a window with no pid, it will match while it most certainly is not what we are looking
-    // for.
-    #[allow(clippy::redundant_closure_for_method_calls)]
-    manager
-        .state
-        .active_scratchpads
-        .get(scratchpad)
-        .and_then(|pids| pids.front())
-        .and_then(|first_pid| {
-            manager
-                .state
-                .windows
-                .iter()
-                .find(|w| w.pid == Some(*first_pid))
-        })
-        .map(|window| window.has_tag(&current_tag))
-        .is_some()
+    let scratchpad = if let Some(scratchpad) = manager.state.active_scratchpads.get(scratchpad_name)
+    {
+        scratchpad
+    } else {
+        return false;
+    };
+
+    // Filter out all the non existing windows (invalid pid) and map to window
+    // Check if any of them is in the current tag
+    scratchpad
+        .iter()
+        .filter_map(|pid| manager.state.windows.iter().find(|w| w.pid == Some(*pid)))
+        .any(|window| window.has_tag(&current_tag))
 }
 
 fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
@@ -585,12 +601,16 @@ fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
     // reorder the scratchpads
     match direction {
         Direction::Forward => {
+            // clean scratchpad and exit if no next exists
             next_valid_scratchpad_pid(scratchpad, &manager.state.windows)?;
+            // perform cycle
             let front = scratchpad.pop_front()?;
             scratchpad.push_back(front);
         }
         Direction::Backward => {
+            // clean scratchpad and exit if no prev exists
             prev_valid_scratchpad_pid(scratchpad, &manager.state.windows)?;
+            // perform cycle
             let back = scratchpad.pop_back()?;
             scratchpad.push_front(back);
         }
@@ -1569,7 +1589,14 @@ mod tests {
             .find(|w| w.pid == Some(mock_window))
             .unwrap();
 
-        assert!(window.tag != Some(nsp_tag));
+        assert!(
+            !window.has_tag(&nsp_tag),
+            "Scratchpad window is still in hidden NSP tag"
+        );
+        assert!(
+            window.visible(),
+            "Scratchpad window still is marked as visible"
+        );
     }
 
     #[test]
@@ -1597,7 +1624,14 @@ mod tests {
             .find(|w| w.pid == Some(mock_window))
             .unwrap();
 
-        assert!(window.tag == Some(nsp_tag));
+        assert!(
+            window.has_tag(&nsp_tag),
+            "Scratchpad window is not in hidden NSP tag"
+        );
+        assert!(
+            !window.visible(),
+            "Scratchpad window is not marked as invisible"
+        );
     }
 
     #[test]
@@ -1634,12 +1668,16 @@ mod tests {
                 .find(|w| w.pid == Some(mock_window))
                 .unwrap();
 
-            assert!(window.tag == Some(nsp_tag));
+            assert!(
+                window.has_tag(&nsp_tag),
+                "Scratchpad window is not in hidden NSP tag"
+            );
+            assert!(!window.visible(), "Scratchpad is still marked as visible");
         }
 
         manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.to_owned()));
 
-        // assert window is hidden
+        // assert window is revealed
         {
             let window = manager
                 .state
@@ -1648,7 +1686,14 @@ mod tests {
                 .find(|w| w.pid == Some(mock_window))
                 .unwrap();
 
-            assert!(window.tag != Some(nsp_tag));
+            assert!(
+                !window.has_tag(&nsp_tag),
+                "Scratchpad window should not be in the hidden NSP tag"
+            );
+            assert!(
+                window.visible(),
+                "Scratchpad window is still marked as invisible"
+            );
         }
     }
 
@@ -1914,7 +1959,7 @@ mod tests {
                 .windows
                 .iter()
                 .find(|w| w.pid == Some(pid))
-                .map(|w| !w.has_tag(&nsp_tag))
+                .map(|w| w.visible() && !w.has_tag(&nsp_tag))
                 .unwrap()
         }
         fn is_only_first_visible<C: Config, SERVER: DisplayServer>(
@@ -2015,7 +2060,7 @@ mod tests {
             &manager,
             scratchpad_iterator.clone().copied(),
             nsp_tag
-        ), 
+        ),
             "After 2 forward and 1 backward cycles, the first window is not visible or the other windows are visible"
         );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
@@ -2034,7 +2079,7 @@ mod tests {
             &manager,
             scratchpad_iterator.clone().copied(),
             nsp_tag
-        ), 
+        ),
             "After 2 forward and 2 backward cycles, the first window is not visible or the other windows are visible"
         );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));
