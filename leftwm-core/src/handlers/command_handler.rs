@@ -2087,4 +2087,188 @@ mod tests {
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
         assert_eq!(scratchpad_iterator.next(), None);
     }
+
+    #[test]
+    fn change_focus_with_open_scratchpad_test() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+
+        // setup
+        let mock_window1 = 1_u32;
+        let mock_window2 = 2_u32;
+        let mock_window3 = 3_u32;
+        let scratchpad_name = "Alacritty";
+
+        for mock_window in [mock_window1, mock_window2, mock_window3] {
+            let mut window = Window::new(
+                WindowHandle::MockHandle(mock_window as i32),
+                None,
+                Some(mock_window),
+            );
+            window.set_visible(true);
+            window.tag(&1);
+
+            manager.window_created_handler(window, -1, -1);
+        }
+        manager.state.scratchpads.push(ScratchPad {
+            name: scratchpad_name.to_owned(),
+            value: "scratchpad".to_string(),
+            x: None,
+            y: None,
+            height: None,
+            width: None,
+        });
+        manager
+            .state
+            .active_scratchpads
+            .insert(scratchpad_name.to_owned(), VecDeque::from([mock_window3]));
+
+        // Focus first window
+        let focus_window_handler = manager.state.windows[0].handle;
+        manager.state.handle_window_focus(&focus_window_handler);
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(1),
+            "Initially the first window (1) should be focused"
+        );
+
+        manager.command_handler(&Command::FocusWindowDown);
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(2),
+            "After 1 down window (2) should be focused"
+        );
+
+        manager.command_handler(&Command::FocusWindowDown);
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(3),
+            "After 2 down window (3) should be focused"
+        );
+
+        manager.command_handler(&Command::FocusWindowDown);
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(1),
+            "After 3 down window (1) should be focused (cycle back)"
+        );
+
+        manager.command_handler(&Command::FocusWindowUp);
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(3),
+            "After 3 down and 1 up window (3) should be focused (cycle back)"
+        );
+
+        manager.command_handler(&Command::FocusWindowUp);
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(2),
+            "After 3 down and 2 up window (2) should be focused"
+        );
+    }
+
+    #[test]
+    fn focus_top_from_scratchpad_test() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Default::default());
+
+        // setup
+        let mock_window1 = 1_u32;
+        let mock_window2 = 2_u32;
+        let mock_window3 = 3_u32;
+        let scratchpad_name = "Alacritty";
+
+        for mock_window in [mock_window1, mock_window2, mock_window3] {
+            let mut window = Window::new(
+                WindowHandle::MockHandle(mock_window as i32),
+                None,
+                Some(mock_window),
+            );
+            window.set_visible(true);
+            window.tag(&1);
+
+            manager.window_created_handler(window, -1, -1);
+        }
+        manager.state.scratchpads.push(ScratchPad {
+            name: scratchpad_name.to_owned(),
+            value: "scratchpad".to_string(),
+            x: None,
+            y: None,
+            height: None,
+            width: None,
+        });
+        manager
+            .state
+            .active_scratchpads
+            .insert(scratchpad_name.to_owned(), VecDeque::from([mock_window3]));
+
+        // Focus first window
+        let focus_window_handler = manager.state.windows[0].handle;
+        manager.state.handle_window_focus(&focus_window_handler);
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(1),
+            "Initially the first window (1) should be focused"
+        );
+
+        manager.command_handler(&Command::FocusWindowUp);
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(3),
+            "After 1 up window (3) should be focused (scratchpad window)"
+        );
+
+        manager.command_handler(&Command::FocusWindowTop { swap: false });
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .unwrap()
+                .handle,
+            WindowHandle::MockHandle(1),
+            "After focusing the scratchpad and then focusing the top, window (1) should be focused"
+        );
+    }
 }
