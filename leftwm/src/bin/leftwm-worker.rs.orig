@@ -6,11 +6,21 @@ use std::{panic, path::PathBuf};
 const LOGGING_FILE: &str = "leftwm.log";
 
 fn main() {
+<<<<<<< HEAD
     setup_logger();
 
     log::debug!("starting leftwm-worker");
+||||||| e2517de
+    //let _log_guard = setup_logfile();
+    let _log_guard = setup_logging();
+    log::info!("leftwm-worker booted!");
+=======
+    // let _log_guard = setup_logfile();
+    let _log_guard = setup_logging();
+    log::info!("leftwm-worker booted!");
+>>>>>>> main
 
-    let completed = panic::catch_unwind(|| {
+    let exit_status = panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
