@@ -150,7 +150,7 @@ fn start_leftwm() {
             }
         }
 
-        no_error_appeared = check_exited_session(&mut leftwm_session);
+        no_error_appeared = session_exited_successfully(&mut leftwm_session);
 
         // TODO: either add more details or find a better workaround.
         //
@@ -205,10 +205,10 @@ fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
 }
 
 /// Evaluate the exit status of the session and return it.
-fn check_exited_session(leftwm_session: &mut Child) -> bool {
+fn session_exited_successfully(leftwm_session: &mut Child) -> bool {
     match leftwm_session.wait() {
         Ok(exit_status) => exit_status.success(),
-        Err(_) => false
+        Err(_) => false,
     }
 }
 
