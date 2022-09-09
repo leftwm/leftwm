@@ -48,17 +48,19 @@ xdg = "2.2.0"
 
 # logging
 tracing = "0.1.36"
-tracing-subscriber = {version = "0.3.15", optional = true}
+tracing-subscriber = "0.3.15"
 tracing-journald = {version = "0.3.0", optional = true}
+tracing-appender = {version = "0.2.2", optional = true}
 
 [dev-dependencies]
 tempfile = "3.2.0"
 
 [features]
-default = ["journald-log"]
+default = ["journald-log", "file-log"]
 
 # logging features
-journald-log = ["tracing-subscriber", "tracing-journald"]
+journald-log = ["tracing-journald"]
+file-log = ["tracing-appender"]
 
 # Sleep on restart
 slow-dm-fix = []
