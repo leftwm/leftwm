@@ -158,7 +158,7 @@ fn start_leftwm() {
             }
         }
 
-        no_error_occured = evaluate_session(&leftwm_session) != SessionStatus::Error;
+        no_error_occured = evaluate_session(&mut leftwm_session) != SessionStatus::Error;
 
         // TODO: either add more details or find a better workaround.
         //
@@ -169,6 +169,10 @@ fn start_leftwm() {
             let delay = std::time::Duration::from_millis(2000);
             std::thread::sleep(delay);
         }
+    }
+
+    if !no_error_occured {
+        print_crash_message();
     }
 }
 
@@ -208,7 +212,7 @@ fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
     !flag.swap(false, Ordering::SeqCst)
 }
 
-fn evaluate_session(leftwm_session: &Child) -> SessionStatus {
+fn evaluate_session(leftwm_session: &mut Child) -> SessionStatus {
     if let Ok(exit_status) = leftwm_session.wait() {
         if exit_status.success() {
             SessionStatus::Success
@@ -218,4 +222,11 @@ fn evaluate_session(leftwm_session: &Child) -> SessionStatus {
     } else {
         SessionStatus::DidNotStart
     }
+}
+
+fn print_crash_message() {
+    println!("Leftwm crashed due to an unexpected error.");
+    println!("Please create a new issue and post its log if possible.");
+    println!("");
+    println!("NOTE: You can restart leftwm with `startx`.");
 }
