@@ -138,8 +138,8 @@ fn start_leftwm() {
 
     let flag = get_sigchld_flag();
 
-    let mut error_appeared = false;
-    while !error_appeared {
+    let mut error_occured = false;
+    while !error_occured {
         let mut leftwm_session = start_leftwm_session(&current_exe);
         while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
@@ -150,7 +150,7 @@ fn start_leftwm() {
             }
         }
 
-        error_appeared = session_failed(&mut leftwm_session);
+        error_occured = session_failed(&mut leftwm_session);
 
         // TODO: either add more details or find a better workaround.
         //
@@ -163,7 +163,7 @@ fn start_leftwm() {
         }
     }
 
-    if error_appeared {
+    if error_occured {
         print_crash_message();
     }
 }
