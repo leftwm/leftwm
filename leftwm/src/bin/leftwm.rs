@@ -28,6 +28,14 @@ const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 4] = [
     ["theme", "Manage LeftWM themes"],
 ];
 
+/// Represents the different exit-statuses of a session
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum SessionStatus {
+    Success,
+    Error,
+    DidNotStart,
+}
+
 fn main() {
     let args: LeftwmArgs = env::args().collect();
 
@@ -138,9 +146,10 @@ fn start_leftwm() {
 
     let flag = get_sigchld_flag();
 
-    loop {
+    let mut no_error_occured = true;
+    while no_error_occured {
         let mut leftwm_session = start_leftwm_session(&current_exe);
-        while leftwm_is_still_running(&mut leftwm_session) {
+        while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
             children.remove_finished_children();
 
@@ -148,6 +157,8 @@ fn start_leftwm() {
                 nix::unistd::pause();
             }
         }
+
+        no_error_occured = evaluate_session(&leftwm_session) != SessionStatus::Error;
 
         // TODO: either add more details or find a better workaround.
         //
@@ -162,7 +173,7 @@ fn start_leftwm() {
 }
 
 /// checks if leftwm is still running
-fn leftwm_is_still_running(leftwm_session: &mut Child) -> bool {
+fn session_is_running(leftwm_session: &mut Child) -> bool {
     leftwm_session
         .try_wait()
         .expect("failed to wait on worker")
@@ -195,4 +206,16 @@ fn get_sigchld_flag() -> Arc<AtomicBool> {
 /// - `false` if leftwm needs to refresh its state
 fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
     !flag.swap(false, Ordering::SeqCst)
+}
+
+fn evaluate_session(leftwm_session: &Child) -> SessionStatus {
+    if let Ok(exit_status) = leftwm_session.wait() {
+        if exit_status.success() {
+            SessionStatus::Success
+        } else {
+            SessionStatus::Error
+        }
+    } else {
+        SessionStatus::DidNotStart
+    }
 }
