@@ -5,6 +5,7 @@ mod file;
 
 pub fn setup_logging() {
     let subscribers = get_subscribers();
+
     tracing::subscriber::set_global_default(subscribers)
         .expect("Couldn't setup global subscriber (logger)");
 }

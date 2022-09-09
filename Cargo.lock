@@ -455,7 +455,6 @@ dependencies = [
  "git-version",
  "leftwm-core",
  "liquid",
- "log",
  "mio",
  "nix",
  "once_cell",
