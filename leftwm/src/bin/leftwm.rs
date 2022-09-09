@@ -138,8 +138,8 @@ fn start_leftwm() {
 
     let flag = get_sigchld_flag();
 
-    let mut no_error_appeared = true;
-    while no_error_appeared {
+    let mut error_appeared = false;
+    while !error_appeared {
         let mut leftwm_session = start_leftwm_session(&current_exe);
         while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
@@ -150,7 +150,7 @@ fn start_leftwm() {
             }
         }
 
-        no_error_appeared = session_exited_successfully(&mut leftwm_session);
+        error_appeared = session_failed(&mut leftwm_session);
 
         // TODO: either add more details or find a better workaround.
         //
@@ -163,7 +163,7 @@ fn start_leftwm() {
         }
     }
 
-    if !no_error_appeared {
+    if error_appeared {
         print_crash_message();
     }
 }
@@ -204,11 +204,11 @@ fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
     !flag.swap(false, Ordering::SeqCst)
 }
 
-/// Evaluate the exit status of the session and return it.
-fn session_exited_successfully(leftwm_session: &mut Child) -> bool {
+/// Evaluates the exit status of the leftwm session.
+fn session_failed(leftwm_session: &mut Child) -> bool {
     match leftwm_session.wait() {
-        Ok(exit_status) => exit_status.success(),
-        Err(_) => false,
+        Ok(exit_status) => !exit_status.success(),
+        Err(_) => true,
     }
 }
 
