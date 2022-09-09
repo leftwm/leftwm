@@ -227,6 +227,6 @@ fn evaluate_session(leftwm_session: &mut Child) -> SessionStatus {
 fn print_crash_message() {
     println!("Leftwm crashed due to an unexpected error.");
     println!("Please create a new issue and post its log if possible.");
-    println!("");
+    println!();
     println!("NOTE: You can restart leftwm with `startx`.");
 }
