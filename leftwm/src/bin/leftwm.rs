@@ -28,14 +28,6 @@ const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 4] = [
     ["theme", "Manage LeftWM themes"],
 ];
 
-/// Represents the different exit-statuses of a session
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum SessionStatus {
-    Success,
-    Error,
-    DidNotStart,
-}
-
 fn main() {
     let args: LeftwmArgs = env::args().collect();
 
@@ -146,8 +138,8 @@ fn start_leftwm() {
 
     let flag = get_sigchld_flag();
 
-    let mut no_error_occured = true;
-    while no_error_occured {
+    let mut no_error_appeared = true;
+    while no_error_appeared {
         let mut leftwm_session = start_leftwm_session(&current_exe);
         while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
@@ -158,7 +150,7 @@ fn start_leftwm() {
             }
         }
 
-        no_error_occured = evaluate_session(&mut leftwm_session) != SessionStatus::Error;
+        no_error_appeared = check_exited_session(&mut leftwm_session);
 
         // TODO: either add more details or find a better workaround.
         //
@@ -171,7 +163,7 @@ fn start_leftwm() {
         }
     }
 
-    if !no_error_occured {
+    if !no_error_appeared {
         print_crash_message();
     }
 }
@@ -212,21 +204,19 @@ fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
     !flag.swap(false, Ordering::SeqCst)
 }
 
-fn evaluate_session(leftwm_session: &mut Child) -> SessionStatus {
-    if let Ok(exit_status) = leftwm_session.wait() {
-        if exit_status.success() {
-            SessionStatus::Success
-        } else {
-            SessionStatus::Error
-        }
-    } else {
-        SessionStatus::DidNotStart
+/// Evaluate the exit status of the session and return it.
+fn check_exited_session(leftwm_session: &mut Child) -> bool {
+    match leftwm_session.wait() {
+        Ok(exit_status) => exit_status.success(),
+        Err(_) => false
     }
 }
 
 fn print_crash_message() {
-    println!("Leftwm crashed due to an unexpected error.");
-    println!("Please create a new issue and post its log if possible.");
-    println!();
-    println!("NOTE: You can restart leftwm with `startx`.");
+    println!(concat!(
+        "Leftwm crashed due to an unexpected error.\n",
+        "Please create a new issue and post its log if possible.\n",
+        "\n",
+        "NOTE: You can restart leftwm with `startx`."
+    ));
 }
