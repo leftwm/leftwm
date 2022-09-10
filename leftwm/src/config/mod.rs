@@ -26,6 +26,8 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
+use tracing::{error, debug, warn};
+
 /// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
 
@@ -130,23 +132,23 @@ pub fn load() -> Config {
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
-    log::debug!("Loading config file");
+    debug!("Loading config file");
 
     let path = BaseDirectories::with_prefix("leftwm")?;
     let config_filename = path.place_config_file("config.toml")?;
     if Path::new(&config_filename).exists() {
-        log::debug!("Config file '{}' found.", config_filename.to_string_lossy());
+        debug!("Config file '{}' found.", config_filename.to_string_lossy());
 
         let contents = fs::read_to_string(config_filename)?;
         let config = toml::from_str(&contents)?;
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
-            log::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
+            warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
             Ok(Config::default())
         }
     } else {
-        log::debug!("Config file not found. Using default config file.");
+        debug!("Config file not found. Using default config file.");
 
         let config = Config::default();
         let toml = toml::to_string(&config).unwrap();
@@ -273,7 +275,7 @@ impl leftwm_core::Config for Config {
             .filter_map(|keybind| match keybind.try_convert_to_core_keybind(self) {
                 Ok(internal_keybind) => Some(internal_keybind),
                 Err(err) => {
-                    log::error!("Invalid key binding: {}\n{:?}", err, keybind);
+                    error!("Invalid key binding: {}\n{:?}", err, keybind);
                     None
                 }
             })
@@ -338,7 +340,7 @@ impl leftwm_core::Config for Config {
                     if let Some(absolute) = absolute_path(value.trim()) {
                         manager.config.theme_setting.load(absolute);
                     } else {
-                        log::warn!("Path submitted does not exist.");
+                        warn!("Path submitted does not exist.");
                     }
                     return manager.reload_config();
                 }
@@ -347,7 +349,7 @@ impl leftwm_core::Config for Config {
                     return manager.reload_config();
                 }
                 _ => {
-                    log::warn!("Command not recognized: {}", command);
+                    warn!("Command not recognized: {}", command);
                     return false;
                 }
             }
@@ -363,7 +365,7 @@ impl leftwm_core::Config for Config {
         match self.theme_setting.margin.clone().try_into() {
             Ok(margins) => margins,
             Err(err) => {
-                log::warn!("Could not read margin: {}", err);
+                warn!("Could not read margin: {}", err);
                 Margins::new(0)
             }
         }
@@ -376,7 +378,7 @@ impl leftwm_core::Config for Config {
             .and_then(|custom_margin| match custom_margin.try_into() {
                 Ok(margins) => Some(margins),
                 Err(err) => {
-                    log::warn!("Could not read margin: {}", err);
+                    warn!("Could not read margin: {}", err);
                     None
                 }
             })
@@ -435,12 +437,12 @@ impl leftwm_core::Config for Config {
         let state_file = match File::create(&path) {
             Ok(file) => file,
             Err(err) => {
-                log::error!("Cannot create file at path {}: {}", path.display(), err);
+                error!("Cannot create file at path {}: {}", path.display(), err);
                 return;
             }
         };
         if let Err(err) = serde_json::to_writer(state_file, state) {
-            log::error!("Cannot save state: {}", err);
+            error!("Cannot save state: {}", err);
         }
     }
 
@@ -450,14 +452,14 @@ impl leftwm_core::Config for Config {
             Ok(file) => {
                 match serde_json::from_reader(file) {
                     Ok(old_state) => state.restore_state(&old_state),
-                    Err(err) => log::error!("Cannot load old state: {}", err),
+                    Err(err) => error!("Cannot load old state: {}", err),
                 }
                 // Clean old state.
                 if let Err(err) = std::fs::remove_file(&path) {
-                    log::error!("Cannot remove old state file: {}", err);
+                    error!("Cannot remove old state file: {}", err);
                 }
             }
-            Err(err) => log::error!("Cannot open old state: {}", err),
+            Err(err) => error!("Cannot open old state: {}", err),
         }
     }
 
@@ -473,7 +475,7 @@ impl leftwm_core::Config for Config {
                 .max_by_key(|(_wh, score)| *score);
             if let Some((hook, _)) = best_match {
                 hook.apply(window);
-                log::debug!(
+                debug!(
                     "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}",
                     window.name,
                     window.legacy_name,

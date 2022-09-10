@@ -3,13 +3,14 @@ use crate::{models::WindowChange, Command};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
 use x11_dl::xlib;
+use tracing::{trace, debug};
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
     if !xw.managed_windows.contains(&event.window) && event.window != xw.get_default_root() {
         return None;
     }
     let atom_name = xw.atoms.get_name(event.message_type);
-    log::trace!("ClientMessage: {} : {:?}", event.window, atom_name);
+    trace!("ClientMessage: {} : {:?}", event.window, atom_name);
 
     if event.message_type == xw.atoms.NetCurrentDesktop {
         let value = event.data.get_long(0);
@@ -22,7 +23,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
                 return Some(event);
             }
             Err(err) => {
-                log::debug!(
+                debug!(
                     "Received invalid value for current desktop new index ({}): {}",
                     value,
                     err,
@@ -42,7 +43,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
                 return Some(event);
             }
             Err(err) => {
-                log::debug!(
+                debug!(
                     "Received invalid value for current desktop new index ({}): {}",
                     value,
                     err,

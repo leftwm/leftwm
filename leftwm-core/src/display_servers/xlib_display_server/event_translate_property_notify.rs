@@ -1,6 +1,7 @@
 use super::{DisplayEvent, XWrap};
 use crate::models::{WindowChange, WindowType, Xyhw};
 use x11_dl::xlib;
+use tracing::trace;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
     if event.window == xw.get_default_root()
@@ -11,7 +12,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
     }
 
     let event_name = xw.get_xatom_name(event.atom).ok()?;
-    log::trace!("PropertyNotify: {} : {:?}", event_name, &event);
+    trace!("PropertyNotify: {} : {:?}", event_name, &event);
 
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {

@@ -47,19 +47,21 @@ xdg = "2.2.0"
 
 # logging
 tracing = "0.1.36"
-tracing-subscriber = "0.3.15"
+tracing-subscriber = {version = "0.3.15", features = ["env-filter"]}
 tracing-journald = {version = "0.3.0", optional = true}
 tracing-appender = {version = "0.2.2", optional = true}
+syslog-tracing = {version = "0.1.0", optional = true}
 
 [dev-dependencies]
 tempfile = "3.2.0"
 
 [features]
-default = ["journald-log", "file-log"]
+default = ["file-log", "sys-log"]
 
 # logging features
 journald-log = ["tracing-journald"]
 file-log = ["tracing-appender"]
+sys-log = ["syslog-tracing"]
 
 # Sleep on restart
 slow-dm-fix = []

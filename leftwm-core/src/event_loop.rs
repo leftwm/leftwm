@@ -5,6 +5,8 @@ use crate::{
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
+use tracing::error;
+
 /// Errors which can appear while running the event loop.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Error {
@@ -164,13 +166,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Ok(child) => {
                 child.map(|child| self.children.insert(child));
             }
-            Err(err) => log::error!("Global up script faild: {}", err),
+            Err(err) => error!("Global up script faild: {}", err),
         }
         match Nanny::boot_current_theme() {
             Ok(child) => {
                 child.map(|child| self.children.insert(child));
             }
-            Err(err) => log::error!("Theme loading failed: {}", err),
+            Err(err) => error!("Theme loading failed: {}", err),
         }
     }
 }

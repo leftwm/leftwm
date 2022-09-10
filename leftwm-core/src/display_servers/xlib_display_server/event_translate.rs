@@ -5,6 +5,7 @@ use super::{
 use crate::models::{Mode, WindowChange, WindowType, XyhwChange};
 use std::os::raw::c_ulong;
 use x11_dl::xlib;
+use tracing::debug;
 
 pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 
@@ -233,7 +234,7 @@ fn from_mapping_notify(x_event: XEvent) -> Option<DisplayEvent> {
     let mut event = xlib::XMappingEvent::from(x_event.1);
     if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
         // Refresh keyboard.
-        log::debug!("Updating keyboard");
+        debug!("Updating keyboard");
         xw.refresh_keyboard(&mut event).ok()?;
 
         // SoftReload keybinds.

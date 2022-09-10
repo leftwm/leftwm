@@ -15,6 +15,7 @@ use crate::state::State;
 use crate::utils::helpers::relative_find;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
+use tracing::{warn, debug};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /* When adding a command
@@ -208,7 +209,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             }
         }
 
-        log::debug!(
+        debug!(
             "no active scratchpad found for name {:?}. creating a new one",
             scratchpad.name
         );
@@ -217,7 +218,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         manager.state.active_scratchpads.insert(name, pid);
         return None;
     }
-    log::warn!("unable to find NSP tag");
+    warn!("unable to find NSP tag");
     None
 }
 

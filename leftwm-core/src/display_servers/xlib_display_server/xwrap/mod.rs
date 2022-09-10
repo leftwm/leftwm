@@ -20,6 +20,7 @@ use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
 use x11_dl::xlib;
 use x11_dl::xrandr::Xrandr;
+use tracing::{debug, warn};
 
 mod getters;
 mod keyboard;
@@ -165,7 +166,7 @@ impl XWrap {
             }
 
             if let Err(err) = poll.poll(&mut events, Some(timeout)) {
-                log::warn!("Xlib socket poll failed with {:?}", err);
+                warn!("Xlib socket poll failed with {:?}", err);
                 continue;
             }
 
@@ -217,7 +218,7 @@ impl XWrap {
             Err(_) => 60,
         };
 
-        log::debug!("Refresh Rate: {}", refresh_rate);
+        debug!("Refresh Rate: {}", refresh_rate);
 
         let xw = Self {
             xlib,

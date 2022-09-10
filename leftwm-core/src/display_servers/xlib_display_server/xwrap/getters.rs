@@ -7,6 +7,8 @@ use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
 use x11_dl::xlib;
 
+use tracing::debug;
+
 impl XWrap {
     // Public functions.
 
@@ -480,12 +482,12 @@ impl XWrap {
     pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
         // More modern structure.
         if let Some(d) = self.get_window_strut_array_strut_partial(window) {
-            log::debug!("STRUT:[{:?}] {:?}", window, d);
+            debug!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
         // Older structure.
         if let Some(d) = self.get_window_strut_array_strut(window) {
-            log::debug!("STRUT:[{:?}] {:?}", window, d);
+            debug!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
         None

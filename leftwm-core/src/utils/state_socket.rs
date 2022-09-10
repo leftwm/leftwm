@@ -6,6 +6,7 @@ use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::Mutex;
+use tracing::error;
 
 #[derive(Debug, Default)]
 struct State {
@@ -100,7 +101,7 @@ impl StateSocket {
                             state.peers.push(Some(peer));
                         }
                     }
-                    Err(e) => log::error!("accept failed = {:?}", e),
+                    Err(e) => error!("accept failed = {:?}", e),
                 }
             }
         }))

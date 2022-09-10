@@ -3,6 +3,7 @@ use leftwm_core::models::{Gutter, Margins};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use tracing::error;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeSetting {
@@ -26,7 +27,7 @@ impl ThemeSetting {
         match load_theme_file(path) {
             Ok(theme) => *self = theme,
             Err(err) => {
-                log::error!("Could not load theme at path {}: {}", path.display(), err);
+                error!("Could not load theme at path {}: {}", path.display(), err);
             }
         }
     }

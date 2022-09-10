@@ -9,6 +9,7 @@ use crate::models::XyhwBuilder;
 use crate::Workspace;
 use serde::{Deserialize, Serialize};
 use x11_dl::xlib;
+use tracing::warn;
 
 type MockHandle = i32;
 
@@ -204,7 +205,7 @@ impl Window {
     pub fn apply_margin_multiplier(&mut self, value: f32) {
         self.margin_multiplier = value.abs();
         if value < 0 as f32 {
-            log::warn!(
+            warn!(
                 "Negative margin multiplier detected. Will be applied as absolute: {:?}",
                 self.margin_multiplier()
             );

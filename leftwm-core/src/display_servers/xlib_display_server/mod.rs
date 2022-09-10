@@ -1,3 +1,12 @@
+mod event_translate;
+mod event_translate_client_message;
+mod event_translate_property_notify;
+mod xatom;
+mod xwrap;
+mod xcursor;
+
+pub use xwrap::XWrap;
+
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
@@ -15,18 +24,9 @@ use futures::prelude::*;
 use std::os::raw::c_uint;
 use std::pin::Pin;
 use x11_dl::xlib;
-
-mod event_translate;
-mod event_translate_client_message;
-mod event_translate_property_notify;
-mod xatom;
-mod xwrap;
-pub use xwrap::XWrap;
-
 use event_translate::XEvent;
-
 use self::xwrap::ICONIC_STATE;
-mod xcursor;
+use tracing::trace;
 
 pub struct XlibDisplayServer {
     xw: XWrap,
@@ -83,7 +83,7 @@ impl DisplayServer for XlibDisplayServer {
             let xlib_event = self.xw.get_next_event();
             let event = XEvent(&mut self.xw, xlib_event).into();
             if let Some(e) = event {
-                log::trace!("DisplayEvent: {:?}", e);
+                trace!("DisplayEvent: {:?}", e);
                 events.push(e);
             }
         }
@@ -98,7 +98,7 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
-        log::trace!("DisplayAction: {:?}", act);
+        trace!("DisplayAction: {:?}", act);
         let xw = &mut self.xw;
         let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(h) => from_kill_window(xw, h),
@@ -127,7 +127,7 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::NormalMode => from_normal_mode(xw),
         };
         if event.is_some() {
-            log::trace!("DisplayEvent: {:?}", event);
+            trace!("DisplayEvent: {:?}", event);
         }
         event
     }

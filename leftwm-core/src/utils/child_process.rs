@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{atomic::AtomicBool, Arc};
 use xdg::BaseDirectories;
+use tracing::error;
 
 type ChildID = u32;
 
@@ -293,7 +294,7 @@ impl Extend<Child> for Children {
 /// the flag will be set true. User needs to manually clear the flag.
 pub fn register_child_hook(flag: Arc<AtomicBool>) {
     let _ = signal_hook::flag::register(signal_hook::consts::signal::SIGCHLD, flag)
-        .map_err(|err| log::error!("Cannot register SIGCHLD signal handler: {:?}", err));
+        .map_err(|err| error!("Cannot register SIGCHLD signal handler: {:?}", err));
 }
 
 /// Sends command to shell for execution

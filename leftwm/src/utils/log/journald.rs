@@ -6,7 +6,11 @@ pub fn add_layer<S>(subscriber: S) -> impl Subscriber + for<'span> LookupSpan<'s
 where
     S: Subscriber + for<'span> LookupSpan<'span>,
 {
-    let layer = tracing_journald::layer()
-        .expect("Couldn't setup journald-logger. Are you sure journald is running?");
+    let layer = get_writer();
     subscriber.with(layer)
+}
+
+fn get_writer() -> tracing_journald::Layer {
+    tracing_journald::layer()
+        .expect("Couldn't setup journald-logger. Are you sure journald is running?")
 }

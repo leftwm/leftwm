@@ -9,6 +9,7 @@ use crate::state::State;
 use crate::utils::helpers;
 use std::env;
 use std::str::FromStr;
+use tracing::debug;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
@@ -135,7 +136,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 _ => None,
             };
 
-            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
+            debug!("WINDOW CHANGED {:?} {:?}", &window, change);
             changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
                 update_workspace_avoid_list(&mut self.state);
@@ -455,7 +456,7 @@ fn update_workspace_avoid_list(state: &mut State) {
         .filter(|w| w.r#type == WindowType::Dock)
         .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
         .for_each(|(handle, to_avoid)| {
-            log::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
+            debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
             avoid.push(to_avoid);
         });
     for ws in &mut state.workspaces {
