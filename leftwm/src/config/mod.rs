@@ -160,7 +160,7 @@ fn load_from_file() -> Result<Config> {
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
-            log::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
+            warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
             Ok(Config::default())
         }
     } else if Path::new(&config_file_toml).exists() {

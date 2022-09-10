@@ -57,7 +57,7 @@ syslog-tracing = {version = "0.1.0", optional = true}
 tempfile = "3.2.0"
 
 [features]
-default = ["journald-log"]
+default = ["journald-log", "lefthk"]
 lefthk = ["lefthk-core"]
 
 # logging features

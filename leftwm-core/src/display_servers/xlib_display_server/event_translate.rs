@@ -4,7 +4,6 @@ use super::{
 };
 use crate::models::{Mode, WindowChange, WindowType, XyhwChange};
 use std::os::raw::c_ulong;
-use tracing::debug;
 use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
