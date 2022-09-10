@@ -25,7 +25,8 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             Err(err) => {
                 tracing::debug!(
                     "Received invalid value for current desktop new index ({}): {}",
-                    value, err,
+                    value,
+                    err,
                 );
                 return None;
             }
@@ -44,7 +45,8 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             Err(err) => {
                 tracing::debug!(
                     "Received invalid value for current desktop new index ({}): {}",
-                    value, err,
+                    value,
+                    err,
                 );
                 return None;
             }

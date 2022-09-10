@@ -7,7 +7,6 @@ use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
 use x11_dl::xlib;
 
-
 impl XWrap {
     // Public functions.
 
