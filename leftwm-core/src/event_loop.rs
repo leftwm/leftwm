@@ -168,13 +168,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Ok(child) => {
                 child.map(|child| self.children.insert(child));
             }
-            Err(err) => error!("Global up script faild: {}", err),
+            Err(err) => tracing::error!("Global up script faild: {}", err),
         }
         match Nanny::boot_current_theme() {
             Ok(child) => {
                 child.map(|child| self.children.insert(child));
             }
-            Err(err) => error!("Theme loading failed: {}", err),
+            Err(err) => tracing::error!("Theme loading failed: {}", err),
         }
     }
 }

@@ -4,7 +4,7 @@ use std::panic;
 fn main() {
     leftwm::utils::log::setup_logging();
 
-    tracing::info!("leftwm-worker booted!");
+    tracing::tracing::info!("leftwm-worker booted!");
 
     let exit_status = panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
@@ -21,7 +21,7 @@ fn main() {
     });
 
     match exit_status {
-        Ok(_) => tracing::info!("Completed"),
-        Err(err) => tracing::info!("Completed with error: {:?}", err),
+        Ok(_) => tracing::tracing::info!("Completed"),
+        Err(err) => tracing::tracing::info!("Completed with error: {:?}", err),
     }
 }

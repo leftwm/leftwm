@@ -10,7 +10,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         return None;
     }
     let atom_name = xw.atoms.get_name(event.message_type);
-    trace!("ClientMessage: {} : {:?}", event.window, atom_name);
+    tracing::trace!("ClientMessage: {} : {:?}", event.window, atom_name);
 
     if event.message_type == xw.atoms.NetCurrentDesktop {
         let value = event.data.get_long(0);
@@ -23,7 +23,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
                 return Some(event);
             }
             Err(err) => {
-                debug!(
+                tracing::debug!(
                     "Received invalid value for current desktop new index ({}): {}",
                     value, err,
                 );
@@ -42,7 +42,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
                 return Some(event);
             }
             Err(err) => {
-                debug!(
+                tracing::debug!(
                     "Received invalid value for current desktop new index ({}): {}",
                     value, err,
                 );

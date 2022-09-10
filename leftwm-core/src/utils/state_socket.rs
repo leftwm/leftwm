@@ -101,7 +101,7 @@ impl StateSocket {
                             state.peers.push(Some(peer));
                         }
                     }
-                    Err(e) => error!("accept failed = {:?}", e),
+                    Err(e) => tracing::error!("accept failed = {:?}", e),
                 }
             }
         }))

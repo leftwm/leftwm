@@ -101,7 +101,7 @@ impl Tags {
             self.hidden.push(tag);
             Some(id)
         } else {
-            error!(
+            tracing::error!(
                 "tried creating a hidden tag with label {}, but a hidden tag with the same label already exists",
                 label
             );

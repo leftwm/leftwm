@@ -205,7 +205,7 @@ impl Window {
     pub fn apply_margin_multiplier(&mut self, value: f32) {
         self.margin_multiplier = value.abs();
         if value < 0 as f32 {
-            warn!(
+            tracing::warn!(
                 "Negative margin multiplier detected. Will be applied as absolute: {:?}",
                 self.margin_multiplier()
             );

@@ -482,12 +482,12 @@ impl XWrap {
     pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
         // More modern structure.
         if let Some(d) = self.get_window_strut_array_strut_partial(window) {
-            debug!("STRUT:[{:?}] {:?}", window, d);
+            tracing::debug!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
         // Older structure.
         if let Some(d) = self.get_window_strut_array_strut(window) {
-            debug!("STRUT:[{:?}] {:?}", window, d);
+            tracing::debug!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
         None

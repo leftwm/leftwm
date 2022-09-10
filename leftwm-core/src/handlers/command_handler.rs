@@ -199,7 +199,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             }
         }
 
-        debug!(
+        tracing::debug!(
             "no active scratchpad found for name {:?}. creating a new one",
             scratchpad.name
         );
@@ -208,7 +208,7 @@ fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         manager.state.active_scratchpads.insert(name, pid);
         return None;
     }
-    warn!("unable to find NSP tag");
+    tracing::warn!("unable to find NSP tag");
     None
 }
 

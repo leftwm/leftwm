@@ -144,7 +144,7 @@ pub fn load() -> Config {
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
-    debug!("Loading config file");
+    tracing::debug!("Loading config file");
 
     let path = BaseDirectories::with_prefix("leftwm")?;
 
@@ -153,33 +153,33 @@ fn load_from_file() -> Result<Config> {
     let config_file_toml = path.place_config_file("config.toml")?;
 
     if Path::new(&config_file_ron).exists() {
-        debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
+        tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
         let contents = fs::read_to_string(config_file_ron)?;
         let config = ron::from_str(&contents)?;
 
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
-            warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
+            tracing::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
             Ok(Config::default())
         }
     } else if Path::new(&config_file_toml).exists() {
-        debug!(
+        tracing::debug!(
             "Config file '{}' found.",
             config_file_toml.to_string_lossy()
         );
         let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
-        info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+        tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
 
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
-            warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
+            tracing::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
             Ok(Config::default())
         }
     } else {
-        debug!("Config file not found. Using default config file.");
+        tracing::debug!("Config file not found. Using default config file.");
 
         let config = Config::default();
         let ron_pretty_conf = ron::ser::PrettyConfig::new()
@@ -328,7 +328,7 @@ impl lefthk_core::config::Config for Config {
                 |keybind| match keybind.try_convert_to_lefthk_keybind(self) {
                     Ok(lefthk_keybind) => Some(lefthk_keybind),
                     Err(err) => {
-                        error!("Invalid key binding: {}\n{:?}", err, keybind);
+                        tracing::error!("Invalid key binding: {}\n{:?}", err, keybind);
                         None
                     }
                 },
@@ -396,7 +396,7 @@ impl leftwm_core::Config for Config {
                     if let Some(absolute) = absolute_path(value.trim()) {
                         manager.config.theme_setting.load(absolute);
                     } else {
-                        warn!("Path submitted does not exist.");
+                        tracing::warn!("Path submitted does not exist.");
                     }
                     return manager.reload_config();
                 }
@@ -405,7 +405,7 @@ impl leftwm_core::Config for Config {
                     return manager.reload_config();
                 }
                 _ => {
-                    warn!("Command not recognized: {}", command);
+                    tracing::warn!("Command not recognized: {}", command);
                     return false;
                 }
             }
@@ -421,7 +421,7 @@ impl leftwm_core::Config for Config {
         match self.theme_setting.margin.clone().try_into() {
             Ok(margins) => margins,
             Err(err) => {
-                warn!("Could not read margin: {}", err);
+                tracing::warn!("Could not read margin: {}", err);
                 Margins::new(0)
             }
         }
@@ -434,7 +434,7 @@ impl leftwm_core::Config for Config {
             .and_then(|custom_margin| match custom_margin.try_into() {
                 Ok(margins) => Some(margins),
                 Err(err) => {
-                    warn!("Could not read margin: {}", err);
+                    tracing::warn!("Could not read margin: {}", err);
                     None
                 }
             })
@@ -493,12 +493,12 @@ impl leftwm_core::Config for Config {
         let state_file = match File::create(&path) {
             Ok(file) => file,
             Err(err) => {
-                error!("Cannot create file at path {}: {}", path.display(), err);
+                tracing::error!("Cannot create file at path {}: {}", path.display(), err);
                 return;
             }
         };
         if let Err(err) = serde_json::to_writer(state_file, state) {
-            error!("Cannot save state: {}", err);
+            tracing::error!("Cannot save state: {}", err);
         }
     }
 
@@ -508,14 +508,14 @@ impl leftwm_core::Config for Config {
             Ok(file) => {
                 match serde_json::from_reader(file) {
                     Ok(old_state) => state.restore_state(&old_state),
-                    Err(err) => error!("Cannot load old state: {}", err),
+                    Err(err) => tracing::error!("Cannot load old state: {}", err),
                 }
                 // Clean old state.
                 if let Err(err) = std::fs::remove_file(&path) {
-                    error!("Cannot remove old state file: {}", err);
+                    tracing::error!("Cannot remove old state file: {}", err);
                 }
             }
-            Err(err) => error!("Cannot open old state: {}", err),
+            Err(err) => tracing::error!("Cannot open old state: {}", err),
         }
     }
 
@@ -531,7 +531,7 @@ impl leftwm_core::Config for Config {
                 .max_by_key(|(_wh, score)| *score);
             if let Some((hook, _)) = best_match {
                 hook.apply(window);
-                debug!(
+                tracing::debug!(
                     "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}",
                     window.name,
                     window.legacy_name,

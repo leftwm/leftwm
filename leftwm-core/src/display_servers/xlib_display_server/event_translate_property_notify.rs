@@ -12,7 +12,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
     }
 
     let event_name = xw.get_xatom_name(event.atom).ok()?;
-    trace!("PropertyNotify: {} : {:?}", event_name, &event);
+    tracing::trace!("PropertyNotify: {} : {:?}", event_name, &event);
 
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {
