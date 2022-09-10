@@ -9,7 +9,6 @@ use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
 
-
 /// Holds pipe file location and a receiver.
 #[derive(Debug)]
 pub struct CommandPipe {

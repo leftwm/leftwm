@@ -15,7 +15,6 @@ use crate::utils::helpers::relative_find;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
-
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /* When adding a command
      * please update src/utils/command_pipe and leftwm/src/command if:

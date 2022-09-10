@@ -30,7 +30,6 @@ use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
 
-
 /// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
 

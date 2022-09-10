@@ -2,7 +2,6 @@ use super::TagId;
 use crate::{layouts::Layout, Window, Workspace};
 use serde::{Deserialize, Serialize};
 
-
 /// Wrapper struct holding all the tags.
 /// This wrapper provides convenience methods to change the tag-list
 /// during its lifetime, while ensuring that all tags are in correct order

@@ -8,7 +8,6 @@ use std::slice;
 use x11_dl::xlib;
 
 
-
 impl XWrap {
     // Public functions.
 

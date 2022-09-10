@@ -10,7 +10,6 @@ use crate::utils::helpers;
 use std::env;
 use std::str::FromStr;
 
-
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.

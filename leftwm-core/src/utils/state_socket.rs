@@ -7,7 +7,6 @@ use tokio::io::AsyncWriteExt;
 use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::Mutex;
 
-
 #[derive(Debug, Default)]
 struct State {
     peers: Vec<Option<UnixStream>>,
