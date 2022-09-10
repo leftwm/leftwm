@@ -9,7 +9,7 @@ use crate::state::State;
 use crate::utils::helpers;
 use std::env;
 use std::str::FromStr;
-use tracing::debug;
+
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.

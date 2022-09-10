@@ -6,7 +6,7 @@ use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::net::{UnixListener, UnixStream};
 use tokio::sync::Mutex;
-use tracing::error;
+
 
 #[derive(Debug, Default)]
 struct State {

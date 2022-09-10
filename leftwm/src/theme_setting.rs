@@ -3,7 +3,7 @@ use leftwm_core::models::{Gutter, Margins};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use tracing::error;
+
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeSetting {

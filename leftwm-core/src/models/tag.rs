@@ -1,7 +1,7 @@
 use super::TagId;
 use crate::{layouts::Layout, Window, Workspace};
 use serde::{Deserialize, Serialize};
-use tracing::error;
+
 
 /// Wrapper struct holding all the tags.
 /// This wrapper provides convenience methods to change the tag-list

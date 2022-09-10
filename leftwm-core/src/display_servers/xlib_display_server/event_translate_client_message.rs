@@ -2,7 +2,7 @@ use super::{DisplayEvent, XWrap};
 use crate::{models::WindowChange, Command};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
-use tracing::{debug, trace};
+
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {

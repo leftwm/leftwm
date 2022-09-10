@@ -1,6 +1,6 @@
 use super::{DisplayEvent, XWrap};
 use crate::models::{WindowChange, WindowType, Xyhw};
-use tracing::trace;
+
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {

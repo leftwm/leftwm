@@ -8,7 +8,7 @@ use std::str::FromStr;
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
-use tracing::error;
+
 
 /// Holds pipe file location and a receiver.
 #[derive(Debug)]

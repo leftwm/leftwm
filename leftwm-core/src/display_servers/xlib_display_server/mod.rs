@@ -24,7 +24,7 @@ use event_translate::XEvent;
 use futures::prelude::*;
 use std::os::raw::c_uint;
 use std::pin::Pin;
-use tracing::trace;
+
 use x11_dl::xlib;
 
 pub struct XlibDisplayServer {
