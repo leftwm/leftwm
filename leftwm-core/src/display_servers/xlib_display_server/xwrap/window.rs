@@ -222,8 +222,9 @@ impl XWrap {
             self.set_wm_states(window, &[NORMAL_STATE]);
             // Make sure the window is mapped.
             unsafe { (self.xlib.XMapWindow)(self.display, window) };
-            // Regrab the mouse clicks.
-            if self.focus_behaviour.is_clickto() {
+            // Regrab the mouse clicks but ignore `dock` windows as some don't handle click events put on them
+            if self.focus_behaviour.is_clickto() && self.get_window_type(window) != WindowType::Dock
+            {
                 self.grab_mouse_clicks(window, false);
             }
         } else {

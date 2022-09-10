@@ -6,7 +6,10 @@ mod keybind;
 
 use self::keybind::Modifier;
 
-use super::{BaseCommand, ThemeSetting};
+#[cfg(feature = "lefthk")]
+use super::BaseCommand;
+use super::ThemeSetting;
+#[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
@@ -110,6 +113,7 @@ pub struct Config {
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub sloppy_mouse_follows_focus: bool,
+    #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
@@ -244,6 +248,7 @@ pub fn is_program_in_path(program: &str) -> bool {
 }
 
 /// Returns a terminal to set for the default mod+shift+enter keybind.
+#[cfg(feature = "lefthk")]
 fn default_terminal<'s>() -> &'s str {
     // order from least common to most common.
     // the thinking is if a machine has an uncommon terminal installed, it is intentional
@@ -280,6 +285,7 @@ fn default_terminal<'s>() -> &'s str {
 // whether it is implemented on non-systemd machines,so we instead look
 // to see if loginctl is in the path. If it isn't then we default to
 // `pkill leftwm`, which may leave zombie processes on a machine.
+#[cfg(feature = "lefthk")]
 fn exit_strategy<'s>() -> &'s str {
     if is_program_in_path("loginctl") {
         return "loginctl kill-session $XDG_SESSION_ID";
@@ -292,8 +298,9 @@ fn absolute_path(path: &str) -> Option<PathBuf> {
     std::fs::canonicalize(exp_path.as_ref()).ok()
 }
 
-impl leftwm_core::Config for Config {
-    fn mapped_bindings(&self) -> Vec<leftwm_core::Keybind> {
+#[cfg(feature = "lefthk")]
+impl lefthk_core::config::Config for Config {
+    fn mapped_bindings(&self) -> Vec<lefthk_core::config::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -315,16 +322,20 @@ impl leftwm_core::Config for Config {
 
                 keybind
             })
-            .filter_map(|keybind| match keybind.try_convert_to_core_keybind(self) {
-                Ok(internal_keybind) => Some(internal_keybind),
-                Err(err) => {
-                    log::error!("Invalid key binding: {}\n{:?}", err, keybind);
-                    None
-                }
-            })
+            .filter_map(
+                |keybind| match keybind.try_convert_to_lefthk_keybind(self) {
+                    Ok(lefthk_keybind) => Some(lefthk_keybind),
+                    Err(err) => {
+                        log::error!("Invalid key binding: {}\n{:?}", err, keybind);
+                        None
+                    }
+                },
+            )
             .collect()
     }
+}
 
+impl leftwm_core::Config for Config {
     fn create_list_of_tag_labels(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();

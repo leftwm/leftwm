@@ -1,9 +1,8 @@
-use crate::config::Keybind;
 use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
-use crate::utils::xkeysym_lookup::Button;
+use crate::utils::modmask_lookup::Button;
 use serde::{Deserialize, Serialize};
 
 /// These are responses from the Window manager.
@@ -67,9 +66,6 @@ pub enum DisplayAction {
     /// Tell the DM to return to normal mode if it is not (ie resize a
     /// window or moving a window).
     NormalMode,
-
-    /// SoftReload keygrabs, needed when keyboard changes.
-    ReloadKeyGrabs(Vec<Keybind>),
 
     /// Configure a xlib window.
     ConfigureXlibWindow(Window),

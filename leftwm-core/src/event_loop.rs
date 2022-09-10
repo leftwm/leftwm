@@ -3,7 +3,7 @@ use crate::{
     Command, CommandPipe, DisplayEvent, DisplayServer, Manager, Mode, StateSocket, Window,
 };
 use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
+use std::sync::{atomic::Ordering, Once};
 
 /// Errors which can appear while running the event loop.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
@@ -39,21 +39,26 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         mut state_socket: StateSocket,
         mut command_pipe: CommandPipe,
     ) -> Result<(), Error> {
+        let after_first_loop: Once = Once::new();
         let mut event_buffer: Vec<DisplayEvent> = vec![];
         while self.should_keep_running(&mut state_socket).await {
             self.update_manager_state(&mut state_socket).await;
             self.display_server.flush();
 
             let response: EventResponse = tokio::select! {
-                _ = self.display_server.wait_readable(), if event_buffer.is_empty()
-                    => self.add_events(&mut event_buffer),
+                _ = self.display_server.wait_readable(), if event_buffer.is_empty() => {
+                    self.add_events(&mut event_buffer);
+                    continue;
+                }
                 // When a mouse button is pressed or enter/motion notifies are blocked and only appear
                 // once the button is released. This is to double check that we know which window
                 // is currently focused.
                 _ = timeout(100), if event_buffer.is_empty()
                     && self.state.focus_manager.sloppy_mouse_follows_focus
-                    && self.state.focus_manager.behaviour.is_sloppy()
-                    => self.refresh_focus(&mut event_buffer),
+                    && self.state.focus_manager.behaviour.is_sloppy() => {
+                        self.refresh_focus(&mut event_buffer);
+                        continue;
+                    }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => self.execute_command(&cmd),
                 else => self.execute_display_events(&mut event_buffer),
             };
@@ -64,6 +69,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             };
 
             self.execute_actions(&mut event_buffer);
+
+            // We need to run once through all of the loop to properly initialize the state
+            // before we can restore the previous state
+            after_first_loop.call_once(|| {
+                self.config.load_state(&mut self.state);
+            });
 
             if self.reap_requested.swap(false, Ordering::SeqCst) {
                 self.children.remove_finished_children();
@@ -163,8 +174,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             }
             Err(err) => log::error!("Theme loading failed: {}", err),
         }
-
-        self.config.load_state(&mut self.state);
     }
 }
 

@@ -154,9 +154,9 @@ impl State {
     }
 
     /// Apply saved state to a running manager.
-    pub fn restore_state(&mut self, state: &Self) {
+    pub fn restore_state(&mut self, old_state: &Self) {
         // Restore tags.
-        for old_tag in state.tags.all() {
+        for old_tag in old_state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {
                 tag.hidden = old_tag.hidden;
                 tag.layout = old_tag.layout;
@@ -167,12 +167,12 @@ impl State {
             }
         }
 
-        let are_tags_equal = self.tags.all().eq(&state.tags.all());
+        let are_tags_equal = self.tags.all().eq(&old_state.tags.all());
 
         // Restore windows.
         let mut ordered = vec![];
         let mut had_strut = false;
-        state.windows.iter().for_each(|old_window| {
+        old_state.windows.iter().for_each(|old_window| {
             if let Some((index, new_window)) = self
                 .windows
                 .clone()
@@ -219,7 +219,8 @@ impl State {
 
         // Restore workspaces.
         for workspace in &mut self.workspaces {
-            if let Some(old_workspace) = state.workspaces.iter().find(|w| w.id == workspace.id) {
+            if let Some(old_workspace) = old_state.workspaces.iter().find(|w| w.id == workspace.id)
+            {
                 workspace.layout = old_workspace.layout;
                 workspace.main_width_percentage = old_workspace.main_width_percentage;
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
@@ -240,16 +241,16 @@ impl State {
         }
 
         // Restore scratchpads.
-        for (scratchpad, id) in &state.active_scratchpads {
+        for (scratchpad, id) in &old_state.active_scratchpads {
             self.active_scratchpads.insert(scratchpad.clone(), *id);
         }
 
         // Restore focus.
-        self.focus_manager.tags_last_window = state.focus_manager.tags_last_window.clone();
+        self.focus_manager.tags_last_window = old_state.focus_manager.tags_last_window.clone();
         self.focus_manager
             .tags_last_window
             .retain(|&id, _| all_tags.get(id).is_some());
-        let tag_id = match state.focus_manager.tag(0) {
+        let tag_id = match old_state.focus_manager.tag(0) {
             // If the tag still exists it should be displayed on a workspace.
             Some(tag_id) if self.tags.get(tag_id).is_some() => tag_id,
             // If the tag doesn't exist, tag 1 should be displayed on a workspace.
