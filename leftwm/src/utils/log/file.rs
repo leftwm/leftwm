@@ -12,7 +12,7 @@ pub fn add_layer<S>(subscriber: S) -> impl Subscriber + for<'span> LookupSpan<'s
 where
     S: Subscriber + for<'span> LookupSpan<'span>,
 {
-    prepare_path(&Path::new(LOG_PREFIX));
+    prepare_path(Path::new(LOG_PREFIX));
 
     let log_writer = get_log_writer();
     let layer = tracing_subscriber::fmt::layer().with_writer(log_writer);
@@ -20,7 +20,8 @@ where
 }
 
 fn prepare_path(path: &Path) {
-    std::fs::create_dir_all(path).expect(&format!("Couldn't create log directory: {}", LOG_PREFIX));
+    std::fs::create_dir_all(path)
+        .unwrap_or_else(|_| panic!("Couldn't create log directory: {}", LOG_PREFIX));
 }
 
 fn get_log_writer() -> RollingFileAppender {
