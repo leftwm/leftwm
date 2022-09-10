@@ -5,7 +5,6 @@ fn main() {
     leftwm::utils::log::setup_logging();
 
     tracing::info!("leftwm-worker booted!");
-    tracing::debug!("bitte");
 
     let exit_status = panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
