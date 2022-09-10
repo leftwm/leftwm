@@ -1,9 +1,12 @@
 use leftwm_core::{Manager, XlibDisplayServer};
+#[cfg(feature = "logging")]
 use slog::{o, Drain};
 use std::panic;
 
 fn main() {
-    // let _log_guard = setup_logfile();
+    #[cfg(feature = "log-to-file")]
+    let _log_guard = setup_logfile();
+    #[cfg(feature = "logging")]
     let _log_guard = setup_logging();
     log::info!("leftwm-worker booted!");
 
@@ -11,7 +14,10 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        let config = leftwm::load();
+        let mut config = leftwm::load();
+        // Clear the keybinds so leftwm is not storing them.
+        // TODO: Make this more elegant.
+        config.keybind = vec![];
 
         let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
         manager.register_child_hook();
@@ -27,6 +33,7 @@ fn main() {
 // Very basic logging used when developing.
 // outputs to /tmp/leftwm/leftwm-XXXXXXXXXXXX.log
 #[allow(dead_code)]
+#[cfg(feature = "log-to-file")]
 fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
     use std::fs;
     use std::fs::OpenOptions;
@@ -69,6 +76,7 @@ fn setup_logfile() -> slog_scope::GlobalLoggerGuard {
 
 /// Log to both stdout and journald.
 #[allow(dead_code)]
+#[cfg(feature = "logging")]
 fn setup_logging() -> slog_scope::GlobalLoggerGuard {
     #[cfg(feature = "slog-journald")]
     let journald = slog_journald::JournaldDrain.ignore_res();
