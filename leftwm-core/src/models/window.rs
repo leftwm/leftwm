@@ -8,8 +8,8 @@ use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
 use crate::Workspace;
 use serde::{Deserialize, Serialize};
-use x11_dl::xlib;
 use tracing::warn;
+use x11_dl::xlib;
 
 type MockHandle = i32;
 

@@ -1,7 +1,7 @@
 use super::{DisplayEvent, XWrap};
 use crate::models::{WindowChange, WindowType, Xyhw};
-use x11_dl::xlib;
 use tracing::trace;
+use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
     if event.window == xw.get_default_root()

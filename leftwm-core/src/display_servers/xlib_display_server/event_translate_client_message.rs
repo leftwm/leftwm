@@ -2,8 +2,8 @@ use super::{DisplayEvent, XWrap};
 use crate::{models::WindowChange, Command};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
+use tracing::{debug, trace};
 use x11_dl::xlib;
-use tracing::{trace, debug};
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
     if !xw.managed_windows.contains(&event.window) && event.window != xw.get_default_root() {
@@ -25,8 +25,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             Err(err) => {
                 debug!(
                     "Received invalid value for current desktop new index ({}): {}",
-                    value,
-                    err,
+                    value, err,
                 );
                 return None;
             }
@@ -45,8 +44,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             Err(err) => {
                 debug!(
                     "Received invalid value for current desktop new index ({}): {}",
-                    value,
-                    err,
+                    value, err,
                 );
                 return None;
             }

@@ -18,9 +18,9 @@ use std::sync::Arc;
 use std::{ptr, slice};
 use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
+use tracing::{debug, warn};
 use x11_dl::xlib;
 use x11_dl::xrandr::Xrandr;
-use tracing::{debug, warn};
 
 mod getters;
 mod keyboard;

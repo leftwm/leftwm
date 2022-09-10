@@ -2,11 +2,12 @@ mod event_translate;
 mod event_translate_client_message;
 mod event_translate_property_notify;
 mod xatom;
-mod xwrap;
 mod xcursor;
+mod xwrap;
 
 pub use xwrap::XWrap;
 
+use self::xwrap::ICONIC_STATE;
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
@@ -20,13 +21,12 @@ use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
 use crate::Keybind;
+use event_translate::XEvent;
 use futures::prelude::*;
 use std::os::raw::c_uint;
 use std::pin::Pin;
-use x11_dl::xlib;
-use event_translate::XEvent;
-use self::xwrap::ICONIC_STATE;
 use tracing::trace;
+use x11_dl::xlib;
 
 pub struct XlibDisplayServer {
     xw: XWrap,

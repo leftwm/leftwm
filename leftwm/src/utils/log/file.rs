@@ -2,7 +2,7 @@ use std::path::Path;
 
 use tracing::Subscriber;
 use tracing_appender::rolling::RollingFileAppender;
-use tracing_subscriber::{registry::LookupSpan, layer::SubscriberExt};
+use tracing_subscriber::{layer::SubscriberExt, registry::LookupSpan};
 use xdg::BaseDirectories;
 
 const LOG_PREFIX: &str = "leftwm";

@@ -26,7 +26,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
-use tracing::{error, debug, warn};
+use tracing::{debug, error, warn};
 
 /// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";

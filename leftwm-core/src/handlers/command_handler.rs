@@ -15,7 +15,7 @@ use crate::state::State;
 use crate::utils::helpers::relative_find;
 use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
-use tracing::{warn, debug};
+use tracing::{debug, warn};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /* When adding a command

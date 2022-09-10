@@ -8,8 +8,8 @@ use std::iter::{Extend, FromIterator};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{atomic::AtomicBool, Arc};
-use xdg::BaseDirectories;
 use tracing::error;
+use xdg::BaseDirectories;
 
 type ChildID = u32;
 

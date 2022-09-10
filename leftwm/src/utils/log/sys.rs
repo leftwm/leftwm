@@ -1,6 +1,6 @@
-use syslog_tracing::{Syslog, Options, Facility};
+use syslog_tracing::{Facility, Options, Syslog};
 use tracing::Subscriber;
-use tracing_subscriber::{registry::LookupSpan, layer::SubscriberExt};
+use tracing_subscriber::{layer::SubscriberExt, registry::LookupSpan};
 
 const IDENTITY: &[u8] = b"leftwm\0";
 

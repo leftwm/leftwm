@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use crate::{layouts::Layout, Window, Workspace};
 use super::TagId;
+use crate::{layouts::Layout, Window, Workspace};
+use serde::{Deserialize, Serialize};
 use tracing::error;
 
 /// Wrapper struct holding all the tags.
