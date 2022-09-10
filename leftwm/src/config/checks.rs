@@ -1,5 +1,7 @@
 use super::Config;
-use leftwm_core::utils;
+#[cfg(feature = "lefthk")]
+use lefthk_core::xkeysym_lookup;
+#[cfg(feature = "lefthk")]
 use std::collections::HashSet;
 
 impl Config {
@@ -31,10 +33,10 @@ impl Config {
             if ids.iter().any(std::option::Option::is_some) {
                 if crate::all_ids_some(&ids) {
                     if !crate::all_ids_unique(&ids) {
-                        println!("Your config.toml contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
+                        println!("Your config file contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
                     }
                 } else {
-                    println!("Your config.toml specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
+                    println!("Your config file specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
                 }
             }
         }
@@ -44,6 +46,7 @@ impl Config {
     /// Checks to see if value is provided (if required)
     /// Checks to see if keys are valid against Xkeysym
     /// Ideally, we will pass this to the command handler with a dummy config
+    #[cfg(feature = "lefthk")]
     pub fn check_keybinds(&self, verbose: bool) {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
@@ -52,10 +55,10 @@ impl Config {
             if verbose {
                 println!("Keybind: {:?} {}", keybind, keybind.value.is_empty());
             }
-            if let Err(err) = keybind.try_convert_to_core_keybind(self) {
+            if let Err(err) = keybind.try_convert_to_lefthk_keybind(self) {
                 returns.push((Some(keybind.clone()), err.to_string()));
             }
-            if utils::xkeysym_lookup::into_keysym(&keybind.key).is_none() {
+            if xkeysym_lookup::into_keysym(&keybind.key).is_none() {
                 returns.push((
                     Some(keybind.clone()),
                     format!("Key `{}` is not valid", keybind.key),
@@ -64,7 +67,7 @@ impl Config {
 
             let mut modkey = keybind.modifier.as_ref().unwrap_or(&"None".into()).clone();
             for m in &modkey.clone() {
-                if m != "modkey" && m != "mousekey" && utils::xkeysym_lookup::into_mod(&m) == 0 {
+                if m != "modkey" && m != "mousekey" && xkeysym_lookup::into_mod(&m) == 0 {
                     returns.push((
                         Some(keybind.clone()),
                         format!("Modifier `{}` is not valid", m),

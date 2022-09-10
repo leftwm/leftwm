@@ -20,7 +20,6 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
-use crate::Keybind;
 use event_translate::XEvent;
 use futures::prelude::*;
 use std::os::raw::c_uint;
@@ -115,7 +114,6 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
             DisplayAction::SetCurrentTags(t) => from_set_current_tags(xw, t),
             DisplayAction::SetWindowTag(h, t) => from_set_window_tag(xw, h, t),
-            DisplayAction::ReloadKeyGrabs(ks) => from_reload_key_grabs(xw, &ks),
             DisplayAction::ConfigureXlibWindow(w) => from_configure_xlib_window(xw, &w),
 
             DisplayAction::WindowTakeFocus {
@@ -326,11 +324,6 @@ fn from_set_window_tag(
     let window = handle.xlib_handle()?;
     let tag = tag?;
     xw.set_window_desktop(window, &tag);
-    None
-}
-
-fn from_reload_key_grabs(xw: &mut XWrap, keybinds: &[Keybind]) -> Option<DisplayEvent> {
-    xw.reset_grabs(keybinds);
     None
 }
 

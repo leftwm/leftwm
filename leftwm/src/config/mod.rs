@@ -6,7 +6,10 @@ mod keybind;
 
 use self::keybind::Modifier;
 
-use super::{BaseCommand, ThemeSetting};
+#[cfg(feature = "lefthk")]
+use super::BaseCommand;
+use super::ThemeSetting;
+#[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
@@ -26,7 +29,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 
 /// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
@@ -36,7 +39,16 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 ///
 /// # Example
 ///
-/// In `config.toml`
+///
+/// In `config.ron`
+///
+/// ```ron
+/// window_rules: [
+///     (window_class: "krita", spawn_on_tag: 3, spawn_floating: farse),   
+/// ]
+/// ```
+///
+/// In the deprecated `config.toml`
 ///
 /// ```toml
 /// [[window_config_by_class]]
@@ -103,9 +115,9 @@ pub struct Config {
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub sloppy_mouse_follows_focus: bool,
+    #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
-
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
     //       at least when `TOML` is used as config language
     #[serde(skip)]
@@ -135,12 +147,31 @@ fn load_from_file() -> Result<Config> {
     debug!("Loading config file");
 
     let path = BaseDirectories::with_prefix("leftwm")?;
-    let config_filename = path.place_config_file("config.toml")?;
-    if Path::new(&config_filename).exists() {
-        debug!("Config file '{}' found.", config_filename.to_string_lossy());
 
-        let contents = fs::read_to_string(config_filename)?;
+    // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
+    let config_file_ron = path.place_config_file("config.ron")?;
+    let config_file_toml = path.place_config_file("config.toml")?;
+
+    if Path::new(&config_file_ron).exists() {
+        debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
+        let contents = fs::read_to_string(config_file_ron)?;
+        let config = ron::from_str(&contents)?;
+
+        if check_workspace_ids(&config) {
+            Ok(config)
+        } else {
+            log::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
+            Ok(Config::default())
+        }
+    } else if Path::new(&config_file_toml).exists() {
+        debug!(
+            "Config file '{}' found.",
+            config_file_toml.to_string_lossy()
+        );
+        let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
+        info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
@@ -151,9 +182,27 @@ fn load_from_file() -> Result<Config> {
         debug!("Config file not found. Using default config file.");
 
         let config = Config::default();
-        let toml = toml::to_string(&config).unwrap();
-        let mut file = File::create(&config_filename)?;
-        file.write_all(toml.as_bytes())?;
+        let ron_pretty_conf = ron::ser::PrettyConfig::new()
+            .depth_limit(2)
+            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+        let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
+        let comment_header = String::from(
+            r#"//  _        ___                                      ___ _
+// | |      / __)_                                   / __|_)
+// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
+// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
+// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
+// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
+// A WindowManager for Adventurers                         (____/
+// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
+
+"#,
+        );
+        let ron_with_header = comment_header + &ron;
+
+        let mut file = File::create(&config_file_ron)?;
+        file.write_all(ron_with_header.as_bytes())?;
+
         Ok(config)
     }
 }
@@ -201,6 +250,7 @@ pub fn is_program_in_path(program: &str) -> bool {
 }
 
 /// Returns a terminal to set for the default mod+shift+enter keybind.
+#[cfg(feature = "lefthk")]
 fn default_terminal<'s>() -> &'s str {
     // order from least common to most common.
     // the thinking is if a machine has an uncommon terminal installed, it is intentional
@@ -237,6 +287,7 @@ fn default_terminal<'s>() -> &'s str {
 // whether it is implemented on non-systemd machines,so we instead look
 // to see if loginctl is in the path. If it isn't then we default to
 // `pkill leftwm`, which may leave zombie processes on a machine.
+#[cfg(feature = "lefthk")]
 fn exit_strategy<'s>() -> &'s str {
     if is_program_in_path("loginctl") {
         return "loginctl kill-session $XDG_SESSION_ID";
@@ -249,8 +300,9 @@ fn absolute_path(path: &str) -> Option<PathBuf> {
     std::fs::canonicalize(exp_path.as_ref()).ok()
 }
 
-impl leftwm_core::Config for Config {
-    fn mapped_bindings(&self) -> Vec<leftwm_core::Keybind> {
+#[cfg(feature = "lefthk")]
+impl lefthk_core::config::Config for Config {
+    fn mapped_bindings(&self) -> Vec<lefthk_core::config::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -272,16 +324,20 @@ impl leftwm_core::Config for Config {
 
                 keybind
             })
-            .filter_map(|keybind| match keybind.try_convert_to_core_keybind(self) {
-                Ok(internal_keybind) => Some(internal_keybind),
-                Err(err) => {
-                    error!("Invalid key binding: {}\n{:?}", err, keybind);
-                    None
-                }
-            })
+            .filter_map(
+                |keybind| match keybind.try_convert_to_lefthk_keybind(self) {
+                    Ok(lefthk_keybind) => Some(lefthk_keybind),
+                    Err(err) => {
+                        error!("Invalid key binding: {}\n{:?}", err, keybind);
+                        None
+                    }
+                },
+            )
             .collect()
     }
+}
 
+impl leftwm_core::Config for Config {
     fn create_list_of_tag_labels(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();
