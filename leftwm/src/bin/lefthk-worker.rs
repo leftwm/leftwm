@@ -9,7 +9,7 @@ use xdg::BaseDirectories;
 fn main() {
     #[cfg(feature = "logging")]
     let _log_guard = setup_logging();
-    tracing::tracing::info!("lefthk-worker booted!");
+    tracing::info!("lefthk-worker booted!");
 
     let exit_status = std::panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
@@ -22,8 +22,8 @@ fn main() {
     });
 
     match exit_status {
-        Ok(_) => tracing::tracing::info!("Completed"),
-        Err(err) => tracing::tracing::error!("Completed with error: {:?}", err),
+        Ok(_) => tracing::info!("Completed"),
+        Err(err) => tracing::error!("Completed with error: {:?}", err),
     }
 }
 
