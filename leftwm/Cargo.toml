@@ -24,6 +24,7 @@ liquid = "0.24.0"
 log = "0.4.8"
 mio = "0.8.0"
 nix = "0.23.0"
+ron = "0.7.0"
 serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
 shellexpand = "2.1"

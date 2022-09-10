@@ -37,7 +37,16 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 ///
 /// # Example
 ///
-/// In `config.toml`
+///
+/// In `config.ron`
+///
+/// ```ron
+/// window_rules: [
+///     (window_class: "krita", spawn_on_tag: 3, spawn_floating: farse),   
+/// ]
+/// ```
+///
+/// In the deprecated `config.toml`
 ///
 /// ```toml
 /// [[window_config_by_class]]
@@ -107,7 +116,6 @@ pub struct Config {
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
-
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
     //       at least when `TOML` is used as config language
     #[serde(skip)]
@@ -137,25 +145,62 @@ fn load_from_file() -> Result<Config> {
     log::debug!("Loading config file");
 
     let path = BaseDirectories::with_prefix("leftwm")?;
-    let config_filename = path.place_config_file("config.toml")?;
-    if Path::new(&config_filename).exists() {
-        log::debug!("Config file '{}' found.", config_filename.to_string_lossy());
 
-        let contents = fs::read_to_string(config_filename)?;
-        let config = toml::from_str(&contents)?;
+    // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
+    let config_file_ron = path.place_config_file("config.ron")?;
+    let config_file_toml = path.place_config_file("config.toml")?;
+
+    if Path::new(&config_file_ron).exists() {
+        log::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
+        let contents = fs::read_to_string(config_file_ron)?;
+        let config = ron::from_str(&contents)?;
+
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
-            log::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
+            log::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
+            Ok(Config::default())
+        }
+    } else if Path::new(&config_file_toml).exists() {
+        log::debug!(
+            "Config file '{}' found.",
+            config_file_toml.to_string_lossy()
+        );
+        let contents = fs::read_to_string(config_file_toml)?;
+        let config = toml::from_str(&contents)?;
+        log::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+
+        if check_workspace_ids(&config) {
+            Ok(config)
+        } else {
+            log::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
             Ok(Config::default())
         }
     } else {
         log::debug!("Config file not found. Using default config file.");
 
         let config = Config::default();
-        let toml = toml::to_string(&config).unwrap();
-        let mut file = File::create(&config_filename)?;
-        file.write_all(toml.as_bytes())?;
+        let ron_pretty_conf = ron::ser::PrettyConfig::new()
+            .depth_limit(2)
+            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+        let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
+        let comment_header = String::from(
+            r#"//  _        ___                                      ___ _
+// | |      / __)_                                   / __|_)
+// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
+// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
+// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
+// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
+// A WindowManager for Adventurers                         (____/
+// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
+
+"#,
+        );
+        let ron_with_header = comment_header + &ron;
+
+        let mut file = File::create(&config_file_ron)?;
+        file.write_all(ron_with_header.as_bytes())?;
+
         Ok(config)
     }
 }
