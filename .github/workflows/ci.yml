@@ -48,7 +48,7 @@ jobs:
       id: commit-id
       run: echo ::set-output name=commit-id::$(git log --format="%H" -n 1)
     - name: Push changes
-      run: git push
+      run: git push origin HEAD:${{ github.ref }}
 
   clippy:
     runs-on: ubuntu-latest
@@ -82,7 +82,7 @@ jobs:
       run: |
         git commit -am "Format code with rustfmt (${{ github.run_number }})" || :
     - name: Push changes
-      run: git push origin HEAD:main
+      run: git push origin HEAD:${{ github.ref }}
 
   msrv:
     name: msrv
