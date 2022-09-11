@@ -296,10 +296,11 @@ simple black screen on login.  For a more customized look, install a theme.
 
 For conveniece we also have a Makefile with the following rules:
 
-|make ... | info |
+| make ... | info |
 | - | - |
-|all | implies `build` and `test` |
-|test | runs same tests as CI on github |
+| all | implies `build` and `test` |
+| test | runs same tests as CI on github |
+| test-full | same as `test` but additionally with pedantic clippy lints |
 | build | builds with cargo flag `--release` |
 | clean | clean all buildfiles |
 | install | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/shar/xsession` and cleans build files |
