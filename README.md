@@ -345,15 +345,25 @@ For more information about themes check out our [theme guide][theme-guide] or th
 [theme-guide]: https://github.com/leftwm/leftwm/tree/main/themes
 [wiki]: https://github.com/leftwm/leftwm/wiki/Themes
 
+---
+**Note:** leftwm usese RON now as it's default config language. Please consider migrating you toml configs.
+
+---
+
 # Configuring
 
 The settings file to change key bindings and the default mod key can be found at
 
 ```bash
-~/.config/leftwm/config.toml
+~/.config/leftwm/config.ron
 ```
 
 the file is automatically generated when leftwm or leftwm-check is run for the first time.
+
+---
+**Note:** leftwm usese RON now as it's default config language. Please consider migrating you toml configs.
+
+---
 
 ## Default keys
 
@@ -415,43 +425,20 @@ might want to have two or even three workspaces on a single screen.
 
 Here is an example config changing the way workspaces are defined (~/.config/leftwm/config.toml)
 
----
-**NOTE**
-The line `workspaces = []` needs to be removed or commented out if a configuration like the
-following example is used.
-
----
-
-```toml
-[[workspaces]]
-y = 0
-x = 0
-height = 1440
-width = 1720
-
-[[workspaces]]
-y = 0
-x = 1720
-height = 1440
-width = 1720
+```rust
+workspaces: [
+    ( y: 0, x: 0, height: 1440, width: 1720 ),
+    ( y: 0, x: 1720, height: 1440, width: 1720 ),
+],
 ```
 
 You may optionally specify an ID for your defined workspaces. This is helpful if you want to assign different gutter settings to each workspace in your theme.
 
-```toml
-[[workspaces]]
-y = 0
-x = 1720
-height = 1440
-width = 1720
-id = 1
-
-[[workspaces]]
-y = 0
-x = 0
-height = 1440
-width = 1720
-id = 0
+```rust
+workspaces: [
+    ( y: 0, x: 0, height: 1440, width: 1720, id: 0 ),
+    ( y: 0, x: 1720, height: 1440, width: 1720, id: 1 ),
+],
 ```
 
 ---
@@ -468,8 +455,8 @@ list of tags.
 Here is an example config changing the list of available tags. NOTE: tag navigation (Mod + #)
 doesn't change based on the name of the tag.
 
-```toml
-tags = ["Web", "Code", "Shell", "Music", "Connect"]
+```rust
+tags = ["Web", "Code", "Shell", "Music", "Connect"],
 ```
 
 ## Layouts
@@ -480,30 +467,21 @@ only the layouts you specify.
 
 Example:
 
-```toml
-layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"]
+```rust
+layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"],
 ```
 
 Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.
 
 Example:
 
-```toml
-[[workspaces]]
-id = 0
-x = 0
-y = 480
-width = 3840
-height = 1600
-layouts = ["CenterMain", "CenterMainBalanced", "EvenHorizontal"]
-
-[[workspaces]]
-id = 1
-x = 3840
-y = 0
-width = 1440
-height = 2560
-layouts = ["MainAndHorizontalStack", "EvenVertical"]
+```rust
+workspaces: [
+    ( id: 0, y: 480, x: 0, height: 1600, width: 3840,
+      layouts = ["CenterMain", "CenterMainBalanced", "EvenHorizontal"]),
+    ( id: 1, y: 0, x: 3840, height: 2560, width: 1440,
+      layouts = ["MainAndHorizontalStack", "EvenVertical"]),
+],
 ```
 
 **NOTE**
