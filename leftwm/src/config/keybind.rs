@@ -42,11 +42,12 @@ impl Keybind {
                 ensure!(value_is_some, "value must not be empty");
             }
             BaseCommand::ToggleScratchPad
+            | BaseCommand::AttachScratchPad
             | BaseCommand::NextScratchPadWindow
             | BaseCommand::PrevScratchPadWindow => {
                 ensure!(
                     is_valid_scratchpad_name(config, self.value.as_str()),
-                    "Value must be a valid scratchpad name"
+                    "Value should be a correct scratchpad name"
                 );
             }
             BaseCommand::ReleaseScratchPad => {
@@ -54,7 +55,7 @@ impl Keybind {
                     self.value.is_empty()
                         || usize::from_str(&self.value).is_ok()
                         || is_valid_scratchpad_name(config, self.value.as_str()),
-                    "Value should be empty, contain a window id or a valid scratchpad name"
+                    "Value should be empty, a window number or a valid scratchpad name"
                 );
             }
             BaseCommand::GotoTag => {
