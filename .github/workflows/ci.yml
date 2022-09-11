@@ -11,6 +11,9 @@ env:
   RUSTFLAGS: -Dwarnings
   RUSTDOCFLAGS: -Dwarnings
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
