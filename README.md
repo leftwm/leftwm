@@ -128,6 +128,8 @@ List of common dependencies for themes:
 
 # Installation (with package manager)
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/leftwm.svg)](https://repology.org/project/leftwm/versions)
+
 ## Gentoo ([GURU])
 
 ```sh
