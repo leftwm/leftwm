@@ -1,3 +1,4 @@
+pub use crate::handlers::command_handler::ReleaseScratchPadOption;
 use crate::{
     layouts::Layout,
     models::{TagId, WindowHandle},
@@ -73,11 +74,4 @@ pub enum Command {
     SendWorkspaceToTag(usize, usize),
     CloseAllOtherWindows,
     Other(String),
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-pub enum ReleaseScratchPadOption {
-    Handle(WindowHandle),
-    ScrathpadName(String),
-    None,
 }
