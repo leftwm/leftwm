@@ -9,7 +9,6 @@ mod window_move_handler;
 mod window_resize_handler;
 
 use super::command::Command;
-use super::command_builder::CommandBuilder;
 use super::config::Config;
 use super::models::{
     Manager, Mode, Screen, Window, WindowChange, WindowHandle, WindowType, Workspace,

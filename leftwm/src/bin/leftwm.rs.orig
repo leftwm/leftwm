@@ -137,12 +137,28 @@ fn start_leftwm() {
     let mut children = Nanny::autostart();
 
     let flag = get_sigchld_flag();
+<<<<<<< HEAD
 
     let mut error_occured = false;
     let mut session_exit_status: Option<ExitStatus> = None;
     while !error_occured {
+||||||| 2840e5a
+
+    loop {
+=======
+    loop {
+>>>>>>> 7d6631537d0ad307b7a457caf76407fe5881426e
         let mut leftwm_session = start_leftwm_session(&current_exe);
+<<<<<<< HEAD
         while session_is_running(&mut leftwm_session) {
+||||||| 2840e5a
+        while leftwm_is_still_running(&mut leftwm_session) {
+=======
+        #[cfg(feature = "lefthk")]
+        let mut lefthk_session = start_lefthk_session(&current_exe);
+
+        while leftwm_is_still_running(&mut leftwm_session) {
+>>>>>>> 7d6631537d0ad307b7a457caf76407fe5881426e
             // remove all child processes which finished
             children.remove_finished_children();
 
@@ -151,9 +167,18 @@ fn start_leftwm() {
             }
         }
 
+<<<<<<< HEAD
         session_exit_status = get_exit_status(&mut leftwm_session);
         error_occured = check_error_occured(&session_exit_status);
 
+||||||| 2840e5a
+=======
+        #[cfg(feature = "lefthk")]
+        kill_lefthk_session(&mut lefthk_session);
+
+        // while lefthk.try_wait().expect("failed to reap lefthk").is_none() {}
+
+>>>>>>> 7d6631537d0ad307b7a457caf76407fe5881426e
         // TODO: either add more details or find a better workaround.
         //
         // Left is too fast for some login managers. We need to

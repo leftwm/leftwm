@@ -6,7 +6,6 @@
 // https://github.com/rust-lang/rust-clippy/issues/6563
 
 use super::*;
-use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
@@ -52,8 +51,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 ) -> Option<bool> {
     let state = &mut manager.state;
     match command {
-        Command::Execute(shell_command) => execute(&mut manager.children, shell_command),
-
         Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
 
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
@@ -92,8 +89,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
-        Command::MouseMoveWindow => None,
-
         Command::SoftReload => {
             // Make sure the currently focused window is saved for the tag.
             if let Some((handle, Some(tag))) = state
@@ -128,11 +123,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::CloseAllOtherWindows => close_all_other_windows(state),
         Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
-}
-
-fn execute(children: &mut Children, shell_command: &str) -> Option<bool> {
-    let _ = exec_shell(shell_command, children);
-    None
 }
 
 fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
