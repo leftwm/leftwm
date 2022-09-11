@@ -137,9 +137,11 @@ fn start_leftwm() {
     let mut children = Nanny::autostart();
 
     let flag = get_sigchld_flag();
-
     loop {
         let mut leftwm_session = start_leftwm_session(&current_exe);
+        #[cfg(feature = "lefthk")]
+        let mut lefthk_session = start_lefthk_session(&current_exe);
+
         while leftwm_is_still_running(&mut leftwm_session) {
             // remove all child processes which finished
             children.remove_finished_children();
@@ -148,6 +150,11 @@ fn start_leftwm() {
                 nix::unistd::pause();
             }
         }
+
+        #[cfg(feature = "lefthk")]
+        kill_lefthk_session(&mut lefthk_session);
+
+        // while lefthk.try_wait().expect("failed to reap lefthk").is_none() {}
 
         // TODO: either add more details or find a better workaround.
         //
@@ -176,6 +183,28 @@ fn start_leftwm_session(current_exe: &Path) -> Child {
     Command::new(&worker_file)
         .spawn()
         .expect("failed to start leftwm")
+}
+
+/// Starts the lefthk session and returns the process/lefthk-session
+#[cfg(feature = "lefthk")]
+fn start_lefthk_session(current_exe: &Path) -> Child {
+    let worker_file = current_exe.with_file_name("lefthk-worker");
+
+    Command::new(&worker_file)
+        .spawn()
+        .expect("failed to start lefthk")
+}
+
+/// Kills the lefthk session
+#[cfg(feature = "lefthk")]
+fn kill_lefthk_session(lefthk_session: &mut Child) {
+    if lefthk_session.kill().is_ok() {
+        while lefthk_session
+            .try_wait()
+            .expect("failed to reap lefthk")
+            .is_none()
+        {}
+    }
 }
 
 /// The SIGCHLD can be set by the children of leftwm if their window need a refresh for example.

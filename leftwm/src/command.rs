@@ -10,10 +10,11 @@ use serde::{Deserialize, Serialize};
 
 // Because this is temporary, we will allow this clippy lint to be bypassed
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum BaseCommand {
     Execute,
     CloseWindow,
+    CloseAllOtherWindows,
     SwapTags,
     SoftReload,
     HardReload,
@@ -46,7 +47,6 @@ pub enum BaseCommand {
     MoveToLastWorkspace,
     MoveWindowToNextWorkspace,
     MoveWindowToPreviousWorkspace,
-    MouseMoveWindow,
     NextLayout,
     PreviousLayout,
     SetLayout,
@@ -57,5 +57,18 @@ pub enum BaseCommand {
     // Custom commands
     UnloadTheme,
     LoadTheme,
-    CloseAllOtherWindows,
+}
+
+impl std::convert::From<BaseCommand> for String {
+    fn from(command: BaseCommand) -> Self {
+        match command {
+            // Special cases that have different names.
+            BaseCommand::SwapTags => "SwapScreens".to_owned(),
+            BaseCommand::GotoTag => "GoToTag".to_owned(),
+            BaseCommand::MoveToTag => "SendWindowToTag".to_owned(),
+            BaseCommand::MoveToLastWorkspace => "MoveWindowToLastWorkspace".to_owned(),
+            BaseCommand::Execute => "".to_owned(),
+            _ => format!("{:?}", command),
+        }
+    }
 }

@@ -28,6 +28,12 @@ async fn main() -> Result<()> {
                 .long("verbose")
                 .help("Outputs received configuration file."),
         )
+        .arg(
+            Arg::with_name("migrate")
+                .short('m')
+                .long("migrate-toml-to-ron")
+                .help("Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
+        )
         .get_matches();
 
     let config_file = matches.value_of("INPUT");
@@ -41,6 +47,19 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
+    if matches.occurrences_of("migrate") >= 1 {
+        println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
+        let path = BaseDirectories::with_prefix("leftwm")?;
+        let ron_file = path.place_config_file("config.ron")?;
+        let toml_file = path.place_config_file("config.toml")?;
+
+        let config = load_from_file(toml_file.as_os_str().to_str(), verbose)?;
+
+        write_to_file(&ron_file, &config)?;
+
+        return Ok(());
+    }
+
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
         Ok(config) => {
@@ -50,6 +69,9 @@ async fn main() -> Result<()> {
             }
             config.check_mousekey(verbose);
             config.check_workspace_ids(verbose);
+            #[cfg(not(feature = "lefthk"))]
+            println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
+            #[cfg(feature = "lefthk")]
             config.check_keybinds(verbose);
         }
         Err(e) => {
@@ -76,27 +98,63 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
             PathBuf::from(fspath)
         }
-
-        None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
+        None => {
+            let ron_file =
+                BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
+            let toml_file =
+                BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
+            if Path::new(&ron_file).exists() {
+                ron_file
+            } else if Path::new(&toml_file).exists() {
+                println!(
+                    "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
+      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
+                );
+                toml_file
+            } else {
+                let config = Config::default();
+                write_to_file(&ron_file, &config)?;
+                return Ok(config);
+            }
+        }
     };
     if verbose {
         dbg!(&config_filename);
     }
-    if Path::new(&config_filename).exists() {
-        let contents = fs::read_to_string(config_filename)?;
-        if verbose {
-            dbg!(&contents);
-        }
-
-        let config = toml::from_str(&contents)?;
+    let contents = fs::read_to_string(&config_filename)?;
+    if verbose {
+        dbg!(&contents);
+    }
+    if config_filename.as_path().extension() == Some(std::ffi::OsStr::new("ron")) {
+        let config = ron::from_str(&contents)?;
         Ok(config)
     } else {
-        let config = Config::default();
-        let toml = toml::to_string(&config)?;
-        let mut file = File::create(&config_filename)?;
-        file.write_all(toml.as_bytes())?;
+        let config = toml::from_str(&contents)?;
         Ok(config)
     }
+}
+
+fn write_to_file(ron_file: &PathBuf, config: &Config) -> Result<(), anyhow::Error> {
+    let ron_pretty_conf = ron::ser::PrettyConfig::new()
+        .depth_limit(2)
+        .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+    let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf)?;
+    let comment_header = String::from(
+        r#"//  _        ___                                      ___ _
+// | |      / __)_                                   / __|_)
+// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
+// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
+// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
+// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
+// A WindowManager for Adventurers                         (____/
+// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
+
+"#,
+    );
+    let ron_with_header = comment_header + &ron;
+    let mut file = File::create(&ron_file)?;
+    file.write_all(ron_with_header.as_bytes())?;
+    Ok(())
 }
 
 fn check_elogind(verbose: bool) -> Result<()> {
@@ -195,6 +253,10 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
                 Ok(_fp) => continue,
                 Err(e) => returns.push(e.to_string()),
             },
+            f if f.ends_with("theme.ron") => match check_theme_ron(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => returns.push(e.to_string()),
+            },
             _ => continue,
         }
     }
@@ -211,7 +273,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
 }
 
 fn missing_expected_file(filepaths: &[PathBuf]) -> impl Iterator<Item = &&str> {
-    ["up", "down", "theme.toml"]
+    ["up", "down", "theme.ron"]
         .iter()
         .filter(move |f| !filepaths.iter().any(|fp| fp.ends_with(f)))
 }
@@ -279,11 +341,39 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
                 if verbose {
                     println!("The theme file looks OK.");
                 }
+                println!(
+                    "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
+      Please consider migrating to RON or contact the theme creator about this topic.
+      Note: make sure the `up` script is loading the correct theme file.\x1b[0m"
+                );
                 Ok(filepath)
             }
             Err(err) => bail!("Could not parse theme file: {}", err),
         }
     } else {
         bail!("No `theme.toml` found at path: {}", filepath.display());
+    }
+}
+
+fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
+    let metadata = fs::metadata(&filepath)?;
+    let contents = fs::read_to_string(&filepath.as_path())?;
+
+    if metadata.is_file() {
+        if verbose {
+            println!("Found: {}", filepath.display());
+        }
+
+        match ron::from_str::<ThemeSetting>(&contents) {
+            Ok(_) => {
+                if verbose {
+                    println!("The theme file looks OK.");
+                }
+                Ok(filepath)
+            }
+            Err(err) => bail!("Could not parse theme file: {}", err),
+        }
+    } else {
+        bail!("No `theme.ron` found at path: {}", filepath.display())
     }
 }

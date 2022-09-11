@@ -83,7 +83,8 @@ async fn main() -> Result<()> {
             Use quotations for the command and arguments, like this:
             leftwm-command \"<command> <args>\"
 
-        LoadTheme              Args: <Path_to/theme.toml>
+        LoadTheme              Args: <Path_to/theme.ron>
+            Note: `theme.toml` will be deprecated but stays for backwards compatibility for a while 
         AttachScratchPad       Args: <ScratchpadName>
         ReleaseScratchPad      Args: <tag_index> or <ScratchpadName>
         NextScratchPadWindow   Args: <ScratchpadName>

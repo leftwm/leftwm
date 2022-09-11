@@ -1,0 +1,38 @@
+name: discussion-questions
+on:
+  discussion:
+    types: [created, answered]
+jobs:
+  new_question:
+    if: github.event.action == 'created' && github.event.discussion.category.is_answerable
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_QA_WEBHOOK }}
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: |
+            :thinking: *{{ EVENT_PAYLOAD.discussion.user.login }} asked a question*
+
+            **{{ EVENT_PAYLOAD.discussion.title }}**
+            {{ EVENT_PAYLOAD.discussion.body }}
+
+            {{ EVENT_PAYLOAD.discussion.html_url }}
+
+  question_answered:
+    if: github.event.action == 'answered'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_QA_WEBHOOK }}
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: |
+            :tada: *{{ EVENT_PAYLOAD.answer.user.login }} answered a question*
+
+            **Q**: {{ EVENT_PAYLOAD.discussion.title }}
+            **A**: *{{ EVENT_PAYLOAD.answer.body }}*
+
+            {{ EVENT_PAYLOAD.answer.html_url }}

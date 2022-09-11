@@ -1,7 +1,6 @@
-use super::{
-    default_terminal, exit_strategy, BaseCommand, Config, Default, FocusBehaviour, Keybind,
-    LayoutMode, ThemeSetting, LAYOUTS,
-};
+#[cfg(feature = "lefthk")]
+use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
+use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeSetting, LAYOUTS};
 
 impl Default for Config {
     // We allow this because this function would be difficult to reduce. If someone would like to
@@ -9,7 +8,9 @@ impl Default for Config {
     // considerably.
     #[allow(clippy::too_many_lines)]
     fn default() -> Self {
+        #[cfg(feature = "lefthk")]
         const WORKSPACES_NUM: usize = 10;
+        #[cfg(feature = "lefthk")]
         let mut commands = vec![
             // Mod + p => Open dmenu
             Keybind {
@@ -172,6 +173,7 @@ impl Default for Config {
         ];
 
         // add "goto workspace"
+        #[cfg(feature = "lefthk")]
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
                 command: BaseCommand::GotoTag,
@@ -182,6 +184,7 @@ impl Default for Config {
         }
 
         // and "move to workspace"
+        #[cfg(feature = "lefthk")]
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
                 command: BaseCommand::MoveToTag,
@@ -213,11 +216,23 @@ impl Default for Config {
             insert_behavior: leftwm_core::config::InsertBehavior::Bottom,
             modkey: "Mod4".to_owned(),     //win key
             mousekey: Some("Mod4".into()), //win key
+            #[cfg(feature = "lefthk")]
             keybind: commands,
             theme_setting: ThemeSetting::default(),
             max_window_width: None,
             state_path: None,
             sloppy_mouse_follows_focus: true,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Config;
+
+    #[test]
+    fn serialize_default_config() {
+        let config = Config::default();
+        assert!(ron::to_string(&config).is_ok());
     }
 }

@@ -1,8 +1,7 @@
-use super::{CommandBuilder, Config, DisplayEvent, Manager, Mode};
+use super::{Config, DisplayEvent, Manager, Mode};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::models::WindowHandle;
-use crate::utils::xkeysym_lookup::{ModMask, XKeysym};
 use crate::State;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
@@ -22,10 +21,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
             DisplayEvent::WindowTakeFocus(handle) => from_window_take_focus(state, handle),
             DisplayEvent::HandleWindowFocus(handle) => from_handle_window_focus(state, handle),
-            DisplayEvent::KeyGrabReload => from_key_grab_reload(self),
             DisplayEvent::MoveFocusTo(x, y) => from_move_focus_to(state, x, y),
             DisplayEvent::VerifyFocusedAt(handle) => from_verify_focus_at(state, handle),
-            DisplayEvent::KeyCombo(mod_mask, xkeysym) => from_key_combo(self, mod_mask, xkeysym),
             DisplayEvent::ChangeToNormalMode => from_change_to_normal_mode(state),
             DisplayEvent::Movement(handle, x, y) => from_movement(state, handle, x, y),
             DisplayEvent::MoveWindow(handle, x, y) => from_move_window(self, handle, x, y),
@@ -45,18 +42,6 @@ fn from_handle_window_focus(state: &mut State, handle: WindowHandle) -> bool {
     false
 }
 
-fn from_key_grab_reload<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-) -> bool {
-    manager
-        .state
-        .actions
-        .push_back(DisplayAction::ReloadKeyGrabs(
-            manager.config.mapped_bindings(),
-        ));
-    false
-}
-
 fn from_move_focus_to(state: &mut State, x: i32, y: i32) -> bool {
     state.focus_window_with_point(x, y);
     false
@@ -67,17 +52,6 @@ fn from_verify_focus_at(state: &mut State, handle: WindowHandle) -> bool {
         state.validate_focus_at(&handle);
     }
     false
-}
-
-fn from_key_combo<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    mod_mask: ModMask,
-    xkeysym: XKeysym,
-) -> bool {
-    // Look through the config and build a command if its defined in the config
-    let build = CommandBuilder::<C>::new(&manager.config);
-    let command = build.xkeyevent(mod_mask, xkeysym);
-    command.map_or(false, |cmd| manager.command_handler(cmd))
 }
 
 fn from_change_to_normal_mode(state: &mut State) -> bool {
