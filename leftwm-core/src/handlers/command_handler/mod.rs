@@ -1,12 +1,8 @@
 #![allow(clippy::wildcard_imports)]
-#![allow(clippy::shadow_unrelated)]
 
-// NOTE: there apears to be a clippy bug with shadow_unrelated and the (?) Operator
-// allow shadow should be removed once it is resolved
-// https://github.com/rust-lang/rust-clippy/issues/6563
 mod scratchpad_handler;
-// Make public to the rest of the crate without exposing other internal details of the scratchpad
-// handling code
+// Make public to the rest of the crate without exposing other internal
+// details of the scratchpad handling code
 pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
 
 use super::*;
