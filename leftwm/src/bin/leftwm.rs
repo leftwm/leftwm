@@ -152,7 +152,7 @@ fn start_leftwm() {
         }
 
         session_exit_status = get_exit_status(&mut leftwm_session);
-        error_occured = check_error_occured(&session_exit_status);
+        error_occured = check_error_occured(session_exit_status);
 
         // TODO: either add more details or find a better workaround.
         //
@@ -237,7 +237,7 @@ fn get_exit_status(leftwm_session: &mut Child) -> Option<ExitStatus> {
     leftwm_session.wait().ok()
 }
 
-fn check_error_occured(session_exit_status: &Option<ExitStatus>) -> bool {
+fn check_error_occured(session_exit_status: Option<ExitStatus>) -> bool {
     if let Some(exit_status) = session_exit_status {
         !exit_status.success()
     } else {
