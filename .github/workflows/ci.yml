@@ -25,10 +25,40 @@ jobs:
     - name: Run tests
       run: cargo test --all-targets --all-features
 
-  clippy:
+  clippy-fixes:
     runs-on: ubuntu-latest
+    outputs:
+      commit-id: ${{ steps.commit-id.outputs.commit-id }}
     steps:
     - uses: actions/checkout@v2
+    - name: apt update
+      run: sudo apt update
+    - name: apt install libsystemd-dev
+      run: sudo apt install -y --no-install-recommends libsystemd-dev
+    - name: Clippy fixes
+      run: cargo clippy --all-targets --all-features --fix
+    # Commit changes or do nothing
+    - name: Commit changes
+      run: |
+        git commit -am "Applied fixes with clippy (${{ github.run_number }})" || :
+    # Get the ID of the last commit. That will either be the commit that triggered
+    # this workflow, or, if there were fixes applied, the commit just made to apply
+    # those fixes.
+    - name: Get commit ID
+      id: commit-id
+      run: echo ::set-output name=commit-id::$(git log --format="%H" -n 1)
+    - name: Push changes
+      run: git push
+
+  clippy:
+    runs-on: ubuntu-latest
+    # Run clippy after any fixes were applied, in case some of the lints
+    # aren't relevant anymore.
+    needs: clippy-fixes
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ needs.clippy-fixes.outputs.commit-id }}
     - name: apt update
       run: sudo apt update
     - name: apt install libsystemd-dev
@@ -38,10 +68,21 @@ jobs:
 
   fmt:
     runs-on: ubuntu-latest
+    # This runs after clippy-fixes so that if any fixes were applied, they
+    # can be formatted too.
+    needs: clippy-fixes
     steps:
     - uses: actions/checkout@v2
+      with:
+        ref: ${{ needs.clippy-fixes.outputs.commit-id }}
     - name: Fmt
-      run: cargo fmt -- --check
+      run: cargo fmt
+    # Commit changes or do nothing
+    - name: Commit changes
+      run: |
+        git commit -am "Format code with rustfmt (${{ github.run_number }})" || :
+    - name: Push changes
+      run: git push origin HEAD:main
 
   msrv:
     name: msrv
