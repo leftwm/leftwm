@@ -456,7 +456,7 @@ Here is an example config changing the list of available tags. NOTE: tag navigat
 doesn't change based on the name of the tag.
 
 ```rust
-tags = ["Web", "Code", "Shell", "Music", "Connect"],
+tags: ["Web", "Code", "Shell", "Music", "Connect"],
 ```
 
 ## Layouts
@@ -468,7 +468,7 @@ only the layouts you specify.
 Example:
 
 ```rust
-layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"],
+layouts: ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"],
 ```
 
 Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.
