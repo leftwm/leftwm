@@ -5,6 +5,8 @@ use xdg::BaseDirectories;
 
 #[cfg(feature = "lefthk")]
 fn main() {
+    leftwm::utils::log::setup_logging();
+
     tracing::info!("lefthk-worker booted!");
 
     let exit_status = std::panic::catch_unwind(|| {
