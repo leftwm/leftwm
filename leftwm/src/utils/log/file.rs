@@ -1,4 +1,5 @@
-use std::path::Path;
+use std::fmt::Debug;
+use std::path::{Path, PathBuf};
 
 use tracing::Subscriber;
 use tracing_appender::rolling::RollingFileAppender;
@@ -12,20 +13,44 @@ pub fn add_layer<S>(subscriber: S) -> impl Subscriber + for<'span> LookupSpan<'s
 where
     S: Subscriber + for<'span> LookupSpan<'span>,
 {
-    prepare_path(Path::new(LOG_PREFIX));
+    let log_path = get_log_path();
 
-    let log_writer = get_log_writer();
+    let log_dir_path = get_log_dir(&log_path);
+    let log_file_name = get_log_file(&log_path);
+
+    create_dirs(&log_dir_path);
+
+    let log_writer = get_log_writer(log_dir_path, log_file_name);
     let layer = tracing_subscriber::fmt::layer().with_writer(log_writer);
     subscriber.with(layer)
 }
 
-fn prepare_path(path: &Path) {
-    std::fs::create_dir_all(path)
-        .unwrap_or_else(|_| panic!("Couldn't create log directory: {}", LOG_PREFIX));
+fn get_log_path() -> Box<Path> {
+    let cache_dir = BaseDirectories::with_prefix(LOG_PREFIX).unwrap();
+    cache_dir
+        .place_state_file(LOG_FILE_NAME)
+        .unwrap()
+        .into_boxed_path()
 }
 
-fn get_log_writer() -> RollingFileAppender {
-    let cache_dir = BaseDirectories::with_prefix(LOG_PREFIX).unwrap();
-    let log_path = cache_dir.place_state_file(LOG_FILE_NAME).unwrap();
-    tracing_appender::rolling::never(LOG_PREFIX, log_path)
+fn create_dirs<P: AsRef<Path> + Debug>(path: P) {
+    std::fs::create_dir_all(&path)
+        .unwrap_or_else(|_| panic!("Couldn't create directory-path: {:?}", path));
+}
+
+fn get_log_writer<P: AsRef<Path>>(log_dir: P, log_file: P) -> RollingFileAppender {
+    tracing_appender::rolling::never(log_dir, log_file)
+}
+
+fn get_log_dir<P: AsRef<Path> + Clone>(path: P) -> Box<Path> {
+    let mut log_dir = path.clone().as_ref().to_path_buf();
+    log_dir.pop();
+    log_dir.into_boxed_path()
+}
+
+fn get_log_file<P: AsRef<Path>>(path: P) -> Box<Path> {
+    let file_name = path.as_ref().file_name().unwrap().to_owned();
+
+    let file_name = PathBuf::from(file_name);
+    file_name.into_boxed_path()
 }
