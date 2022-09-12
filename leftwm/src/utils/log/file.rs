@@ -43,7 +43,7 @@ fn get_log_writer<P: AsRef<Path>>(log_dir: P, log_file: P) -> RollingFileAppende
 }
 
 fn get_log_dir<P: AsRef<Path> + Clone>(path: P) -> Box<Path> {
-    let mut log_dir = path.clone().as_ref().to_path_buf();
+    let mut log_dir = path.as_ref().to_path_buf();
     log_dir.pop();
     log_dir.into_boxed_path()
 }
