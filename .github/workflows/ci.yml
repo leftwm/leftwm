@@ -28,7 +28,7 @@ jobs:
     - name: Run tests
       run: cargo test --all-targets --all-features
 
-  clippy-fixes:
+  clippy:
     runs-on: ubuntu-latest
     outputs:
       commit-id: ${{ steps.commit-id.outputs.commit-id }}
@@ -52,21 +52,7 @@ jobs:
       run: echo ::set-output name=commit-id::$(git log --format="%H" -n 1)
     - name: Push changes
       run: git push origin HEAD:${{ github.ref }}
-
-  clippy:
-    runs-on: ubuntu-latest
-    # Run clippy after any fixes were applied, in case some of the lints
-    # aren't relevant anymore.
-    needs: clippy-fixes
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        ref: ${{ needs.clippy-fixes.outputs.commit-id }}
-    - name: apt update
-      run: sudo apt update
-    - name: apt install libsystemd-dev
-      run: sudo apt install -y --no-install-recommends libsystemd-dev
-    - name: Clippy
+    - name: Clippy analysis
       run: cargo clippy --all-targets --all-features
 
   fmt:
