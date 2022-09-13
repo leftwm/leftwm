@@ -19,6 +19,7 @@
         deps = with pkgs; [
           xorg.libX11
           xorg.libXinerama
+          xorg.libxcb # Lefthk uses x11-rb, which uses libxcb
         ];
 
         devToolchain = fenix.packages.${system}.stable;
@@ -34,7 +35,7 @@
               patchelf --set-rpath "${pkgs.lib.makeLibraryPath deps}" $p
             done
           '';
- 
+
           GIT_HASH = self.shortRev or "dirty";
         });
       in
