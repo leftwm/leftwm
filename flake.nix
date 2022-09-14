@@ -30,7 +30,7 @@
           src = ./.;
           buildInputs = deps;
           postFixup = ''
-            for p in $out/bin/leftwm*; do
+            for p in $out/bin/left*; do
               patchelf --set-rpath "${pkgs.lib.makeLibraryPath deps}" $p
             done
           '';
