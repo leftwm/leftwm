@@ -48,7 +48,6 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
     window.untag();
     // Hide the scratchpad.
     window.tag(&nsp_tag.id);
-    window.set_visible(false);
 
     // send tag changement to X
     let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
@@ -131,7 +130,6 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
     }
     // Show the scratchpad.
     window.tag(current_tag);
-    window.set_visible(true);
 
     // send tag changement to X
     let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
@@ -561,10 +559,6 @@ mod tests {
             !window.has_tag(&nsp_tag),
             "Scratchpad window is still in hidden NSP tag"
         );
-        assert!(
-            window.visible(),
-            "Scratchpad window still is marked as visible"
-        );
     }
 
     #[test]
@@ -595,10 +589,6 @@ mod tests {
         assert!(
             window.has_tag(&nsp_tag),
             "Scratchpad window is not in hidden NSP tag"
-        );
-        assert!(
-            !window.visible(),
-            "Scratchpad window is not marked as invisible"
         );
     }
 
@@ -640,7 +630,6 @@ mod tests {
                 window.has_tag(&nsp_tag),
                 "Scratchpad window is not in hidden NSP tag"
             );
-            assert!(!window.visible(), "Scratchpad is still marked as visible");
         }
 
         manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.to_owned()));
@@ -657,10 +646,6 @@ mod tests {
             assert!(
                 !window.has_tag(&nsp_tag),
                 "Scratchpad window should not be in the hidden NSP tag"
-            );
-            assert!(
-                window.visible(),
-                "Scratchpad window is still marked as invisible"
             );
         }
     }
@@ -927,7 +912,7 @@ mod tests {
                 .windows
                 .iter()
                 .find(|w| w.pid == Some(pid))
-                .map(|w| w.visible() && !w.has_tag(&nsp_tag))
+                .map(|w| !w.has_tag(&nsp_tag))
                 .unwrap()
         }
         fn is_only_first_visible<C: Config, SERVER: DisplayServer>(
@@ -1073,7 +1058,6 @@ mod tests {
                 None,
                 Some(mock_window),
             );
-            window.set_visible(true);
             window.tag(&1);
 
             manager.window_created_handler(window, -1, -1);
@@ -1183,7 +1167,6 @@ mod tests {
                 None,
                 Some(mock_window),
             );
-            window.set_visible(true);
             window.tag(&1);
 
             manager.window_created_handler(window, -1, -1);
