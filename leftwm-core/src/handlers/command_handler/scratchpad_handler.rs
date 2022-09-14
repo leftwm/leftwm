@@ -61,17 +61,12 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
         .window_history
         .iter()
         .find(|handle| {
-            if let Some(visibilty) = manager
+            manager
                 .state
                 .windows
                 .iter()
                 .find(|window| Some(window.handle) == **handle)
-                .map(Window::visible)
-            {
-                visibilty
-            } else {
-                false
-            }
+                .map_or(false, Window::visible)
         })
         .copied();
 
@@ -147,30 +142,19 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
 fn next_valid_scratchpad_pid(
     scratchpad_windows: &mut VecDeque<u32>,
     managed_windows: &[Window],
+    direction: Direction,
 ) -> Option<u32> {
-    while let Some(window) = scratchpad_windows.pop_front() {
+    while let Some(window) = if direction == Direction::Forward {
+        scratchpad_windows.pop_front()
+    } else {
+        scratchpad_windows.pop_back()
+    } {
         if managed_windows.iter().any(|w| w.pid == Some(window)) {
-            scratchpad_windows.push_front(window);
-            return Some(window);
-        }
-
-        log::info!(
-            "Dead window in scratchpad found, discard: window PID: {}",
-            window
-        );
-    }
-
-    None
-}
-
-/// Inverse of `next_valid_pid_test`
-fn prev_valid_scratchpad_pid(
-    scratchpad_windows: &mut VecDeque<u32>,
-    managed_windows: &[Window],
-) -> Option<u32> {
-    while let Some(window) = scratchpad_windows.pop_back() {
-        if managed_windows.iter().any(|w| w.pid == Some(window)) {
-            scratchpad_windows.push_back(window);
+            if direction == Direction::Forward {
+                scratchpad_windows.push_front(window);
+            } else {
+                scratchpad_windows.push_back(window);
+            }
             return Some(window);
         }
 
@@ -189,18 +173,18 @@ fn is_scratchpad_visible<C: Config, SERVER: DisplayServer>(
     manager: &Manager<C, SERVER>,
     scratchpad_name: &str,
 ) -> bool {
-    let current_tag = if let Some(tag) = manager.state.focus_manager.tag(0) {
-        tag
-    } else {
-        return false;
-    };
-
-    let scratchpad = if let Some(scratchpad) = manager.state.active_scratchpads.get(scratchpad_name)
-    {
-        scratchpad
-    } else {
-        return false;
-    };
+    // Like Try operator but returns false and only works on options
+    macro_rules! try_bool {
+        ($cond:expr) => {
+            if let Some(value) = $cond {
+                value
+            } else {
+                return false;
+            }
+        };
+    }
+    let current_tag = try_bool!(manager.state.focus_manager.tag(0));
+    let scratchpad = try_bool!(manager.state.active_scratchpads.get(scratchpad_name));
 
     // Filter out all the non existing windows (invalid pid) and map to window
     // Check if any of them is in the current tag
@@ -224,7 +208,9 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         .clone();
 
     if let Some(id) = manager.state.active_scratchpads.get_mut(&scratchpad.name) {
-        if let Some(first_in_scratchpad) = next_valid_scratchpad_pid(id, &manager.state.windows) {
+        if let Some(first_in_scratchpad) =
+            next_valid_scratchpad_pid(id, &manager.state.windows, Direction::Forward)
+        {
             if let Some((is_visible, window_handle)) = manager
                 .state
                 .windows
@@ -425,7 +411,9 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .state
                 .active_scratchpads
                 .get_mut(&scratchpad_name)
-                .and_then(|pids| next_valid_scratchpad_pid(pids, &manager.state.windows))?;
+                .and_then(|pids| {
+                    next_valid_scratchpad_pid(pids, &manager.state.windows, Direction::Forward)
+                })?;
             manager // we found already a working pid, discard from scratchpad
                 .state
                 .active_scratchpads
@@ -454,7 +442,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Direction {
     Forward,
     Backward,
@@ -482,17 +470,15 @@ pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
         .map(|w| w.handle);
 
     // reorder the scratchpads
+    // clean scratchpad and exit if no next exists
+    next_valid_scratchpad_pid(scratchpad, &manager.state.windows, direction)?;
     match direction {
         Direction::Forward => {
-            // clean scratchpad and exit if no next exists
-            next_valid_scratchpad_pid(scratchpad, &manager.state.windows)?;
             // perform cycle
             let front = scratchpad.pop_front()?;
             scratchpad.push_back(front);
         }
         Direction::Backward => {
-            // clean scratchpad and exit if no prev exists
-            prev_valid_scratchpad_pid(scratchpad, &manager.state.windows)?;
             // perform cycle
             let back = scratchpad.pop_back()?;
             scratchpad.push_front(back);
@@ -832,7 +818,7 @@ mod tests {
     }
 
     #[test]
-    fn next_valid_pid_test() {
+    fn next_valid_pid_forward_test() {
         // setup
         let mock_window1 = 1_u32;
         let mock_window2 = 2_u32;
@@ -847,26 +833,26 @@ mod tests {
             VecDeque::from([mock_window1, mock_window2, mock_window3, mock_window4]);
 
         assert_eq!(
-            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows, Direction::Forward),
             Some(1)
         );
 
         managed_windows.remove(1);
         assert_eq!(
-            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows, Direction::Forward),
             Some(1)
         );
 
         scratchpad.pop_front();
         assert_eq!(
-            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows, Direction::Forward),
             Some(3)
         );
         assert_eq!(scratchpad.len(), 2);
     }
 
     #[test]
-    fn prev_valid_pid_test() {
+    fn next_valid_pid_backward_test() {
         // setup
         let mock_window1 = 1_u32;
         let mock_window2 = 2_u32;
@@ -881,19 +867,19 @@ mod tests {
             VecDeque::from([mock_window1, mock_window2, mock_window3, mock_window4]);
 
         assert_eq!(
-            prev_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows, Direction::Backward),
             Some(4)
         );
 
         managed_windows.remove(2);
         assert_eq!(
-            prev_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows, Direction::Backward),
             Some(4)
         );
 
         scratchpad.pop_back();
         assert_eq!(
-            prev_valid_scratchpad_pid(&mut scratchpad, &managed_windows),
+            next_valid_scratchpad_pid(&mut scratchpad, &managed_windows, Direction::Backward),
             Some(2)
         );
         assert_eq!(scratchpad.len(), 2);
