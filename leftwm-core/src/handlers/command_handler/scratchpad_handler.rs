@@ -49,7 +49,7 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
     // Hide the scratchpad.
     window.tag(&nsp_tag.id);
 
-    // send tag changement to X
+    // Send tag changement to X
     let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
     manager.state.actions.push_back(act);
     manager.state.sort_windows();
@@ -94,7 +94,8 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
     Ok(())
 }
 
-/// Inverse of `hide_scratchpad` and makes the scratchpad visible
+/// Makes a scratchpad window visible:
+/// Expects that the window handle is a valid handle to an invisible scratchpad window
 fn show_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     scratchpad_window: &WindowHandle,
@@ -126,7 +127,7 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
     // Show the scratchpad.
     window.tag(current_tag);
 
-    // send tag changement to X
+    // Send tag changement to X
     let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
     manager.state.actions.push_back(act);
     manager.state.sort_windows();
@@ -173,7 +174,7 @@ fn is_scratchpad_visible<C: Config, SERVER: DisplayServer>(
     manager: &Manager<C, SERVER>,
     scratchpad_name: &str,
 ) -> bool {
-    // Like Try operator but returns false and only works on options
+    // Like Try operator but returns false and only works on `Option`s
     macro_rules! try_bool {
         ($cond:expr) => {
             if let Some(value) = $cond {
@@ -219,13 +220,13 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                 .map(|w| (w.has_tag(current_tag), w.handle))
             {
                 if is_visible {
-                    // window is visible => Hide the scratchpad.
+                    // Window is visible => Hide the scratchpad.
                     if let Err(msg) = hide_scratchpad(manager, &window_handle) {
                         log::error!("{}", msg);
                         return Some(false);
                     }
                 } else {
-                    // window is hidden => show the scratchpad
+                    // Window is hidden => show the scratchpad
                     if let Err(msg) = show_scratchpad(manager, &window_handle) {
                         log::error!("{}", msg);
                         return Some(false);
@@ -243,7 +244,7 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     );
     let name = scratchpad.name.clone();
     let pid = exec_shell(&scratchpad.value, &mut manager.children)?;
-    //manager.state.active_scratchpads.insert(name, pid);
+
     match manager.state.active_scratchpads.get_mut(&scratchpad.value) {
         Some(windows) => {
             windows.push_front(pid);
@@ -265,7 +266,7 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
     scratchpad: String,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    // if None, replace with current window
+    // If `None`, replace with current window
     let window_handle = window.or(manager
         .state
         .focus_manager
@@ -274,7 +275,7 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
         .as_ref()
         .copied())?;
 
-    // retrieve and prepare window information
+    // Retrieve and prepare window information
     let window_pid = {
         let ws = manager
             .state
@@ -311,7 +312,7 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .find(|w| w.pid.as_ref() == windows.front())
             .map(|w| w.handle);
 
-        // check if window already in scratchpad
+        // Check if window already in scratchpad
         if windows.iter().any(|pid| *pid == window_pid) {
             return Some(false);
         }
@@ -343,7 +344,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
     let destination_tag =
         tag.or_else(|| manager.state.focus_manager.tag_history.get(0).copied())?;
 
-    // if None, replace with current window
+    // If `None`, replace with current window
     let window = if window == ReleaseScratchPadOption::None {
         ReleaseScratchPadOption::Handle(
             manager
@@ -360,7 +361,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
 
     match window {
         ReleaseScratchPadOption::Handle(window_handle) => {
-            // check if window is in active scratchpad
+            // Check if window is in active scratchpad
             let window = manager
                 .state
                 .windows
@@ -380,10 +381,10 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 destination_tag
             );
 
-            // if we found window in scratchpad, remove it from active_scratchpads
+            // If we found window in scratchpad, remove it from active_scratchpads
             if let Some(windows) = manager.state.active_scratchpads.get_mut(&scratchpad_name) {
                 if windows.len() > 1 {
-                    // if more than 1, pop of the stack
+                    // If more than 1, pop of the stack
                     log::debug!("Removed 1 window from scratchpad {}", &scratchpad_name);
                     windows.remove(
                         windows
@@ -391,7 +392,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                             .position(|w| Some(w) == window.pid.as_ref())?,
                     );
                 } else {
-                    // if only 1, remove entire vec, not needed anymore
+                    // If only 1, remove entire vec, not needed anymore
                     log::debug!(
                         "Empty scratchpad {}, removing from active_scratchpads",
                         &scratchpad_name
@@ -406,7 +407,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
             }))
         }
         ReleaseScratchPadOption::ScrathpadName(scratchpad_name) => {
-            // remove and get value from active_scratchpad
+            // Remove and get value from active_scratchpad
             let window_pid = manager
                 .state
                 .active_scratchpads
@@ -414,7 +415,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .and_then(|pids| {
                     next_valid_scratchpad_pid(pids, &manager.state.windows, Direction::Forward)
                 })?;
-            manager // we found already a working pid, discard from scratchpad
+            manager // We found already a working pid, discard from scratchpad
                 .state
                 .active_scratchpads
                 .get_mut(&scratchpad_name)?
@@ -438,7 +439,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 tag: destination_tag,
             }))
         }
-        ReleaseScratchPadOption::None => unreachable!(), // should not be possible
+        ReleaseScratchPadOption::None => unreachable!(), // Should not be possible
     }
 }
 
@@ -455,13 +456,13 @@ pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
     scratchpad_name: &str,
     direction: Direction,
 ) -> Option<bool> {
-    // prevent cycles when scratchpad is not visible
+    // Prevent cycles when scratchpad is not visible
     if !is_scratchpad_visible(manager, scratchpad_name) {
         return Some(false);
     }
 
     let scratchpad = manager.state.active_scratchpads.get_mut(scratchpad_name)?;
-    // get a handle to the currently visible window, so we can hide it later
+    // Get a handle to the currently visible window, so we can hide it later
     let visible_window_handle = manager
         .state
         .windows
@@ -469,30 +470,30 @@ pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
         .find(|w| w.pid.as_ref() == scratchpad.front()) // scratchpad.front() ok because checked in is_scratchpad_visible
         .map(|w| w.handle);
 
-    // reorder the scratchpads
-    // clean scratchpad and exit if no next exists
+    // Reorder the scratchpads
+    // Clean scratchpad and exit if no next exists
     next_valid_scratchpad_pid(scratchpad, &manager.state.windows, direction)?;
     match direction {
         Direction::Forward => {
-            // perform cycle
+            // Perform cycle
             let front = scratchpad.pop_front()?;
             scratchpad.push_back(front);
         }
         Direction::Backward => {
-            // perform cycle
+            // Perform cycle
             let back = scratchpad.pop_back()?;
             scratchpad.push_front(back);
         }
     };
     let new_window_pid = *scratchpad.front()?;
 
-    // hide the previous visible window
+    // Hide the previous visible window
     if let Err(msg) = hide_scratchpad(manager, &visible_window_handle?) {
         log::error!("{}", msg);
         return Some(false);
     }
 
-    // show the new front window
+    // Show the new front window
     let new_window_handle = manager
         .state
         .windows
@@ -504,7 +505,7 @@ pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
         return Some(false);
     }
 
-    // communicate changes to the rest of manager
+    // Communicate changes to the rest of manager
     manager.state.sort_windows();
 
     Some(true)
@@ -526,7 +527,7 @@ mod tests {
         let mock_window = 1_u32;
         let window_handle = WindowHandle::MockHandle(mock_window as i32);
         manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
-        // make sure the window is on the first tag
+        // Make sure the window is on the first tag
         manager.command_handler(&Command::SendWindowToTag {
             window: None,
             tag: first_tag,
@@ -557,7 +558,7 @@ mod tests {
         let mock_window = 1_u32;
         let window_handle = WindowHandle::MockHandle(mock_window as i32);
         manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
-        // make sure the window is on the first tag
+        // Make sure the window is on the first tag
         manager.command_handler(&Command::SendWindowToTag {
             window: None,
             tag: first_tag,
@@ -603,7 +604,7 @@ mod tests {
 
         manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.to_owned()));
 
-        // assert window is hidden
+        // Assert window is hidden
         {
             let window = manager
                 .state
@@ -620,7 +621,7 @@ mod tests {
 
         manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.to_owned()));
 
-        // assert window is revealed
+        // Assert window is revealed
         {
             let window = manager
                 .state
@@ -643,7 +644,7 @@ mod tests {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
         manager.screen_create_handler(Default::default());
 
-        // setup
+        // Setup
         let mock_window1 = 10_u32;
         let scratchpad_name = "Alacritty";
         manager
@@ -668,7 +669,7 @@ mod tests {
             tag: Some(expected_tag),
         });
 
-        // assert
+        // Assert
         assert!(manager
             .state
             .active_scratchpads
@@ -688,7 +689,7 @@ mod tests {
         manager.screen_create_handler(Default::default());
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
-        // setup
+        // Setup
         let mock_window1 = 1_u32;
         let mock_window2 = 2_u32;
         let mock_window3 = 3_u32;
@@ -713,7 +714,7 @@ mod tests {
             tag: Some(expected_tag),
         });
 
-        // assert
+        // Assert
         let scratchpad = manager
             .state
             .active_scratchpads
@@ -752,7 +753,7 @@ mod tests {
         manager.screen_create_handler(Default::default());
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
-        // setup
+        // Setup
         let mock_window1 = 1_u32;
         let mock_window2 = 2_u32;
         let mock_window3 = 3_u32;
@@ -788,7 +789,7 @@ mod tests {
             scratchpad: scratchpad_name.to_owned(),
         });
 
-        // assert
+        // Assert
         let scratchpad = manager
             .state
             .active_scratchpads
@@ -819,7 +820,7 @@ mod tests {
 
     #[test]
     fn next_valid_pid_forward_test() {
-        // setup
+        // Setup
         let mock_window1 = 1_u32;
         let mock_window2 = 2_u32;
         let mock_window3 = 3_u32;
@@ -922,7 +923,7 @@ mod tests {
         manager.screen_create_handler(Default::default());
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
-        // setup
+        // Setup
         let mock_window1 = 1_u32;
         let mock_window2 = 2_u32;
         let mock_window3 = 3_u32;
@@ -1032,7 +1033,7 @@ mod tests {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
         manager.screen_create_handler(Default::default());
 
-        // setup
+        // Setup
         let mock_window1 = 1_u32;
         let mock_window2 = 2_u32;
         let mock_window3 = 3_u32;
@@ -1141,7 +1142,7 @@ mod tests {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
         manager.screen_create_handler(Default::default());
 
-        // setup
+        // Setup
         let mock_window1 = 1_u32;
         let mock_window2 = 2_u32;
         let mock_window3 = 3_u32;
