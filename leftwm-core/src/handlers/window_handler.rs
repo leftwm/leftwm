@@ -1,10 +1,10 @@
 use super::{Manager, Window, WindowChange, WindowType, Workspace};
 use crate::child_process::exec_shell;
-use crate::config::{Config, InsertBehavior, ScratchPad};
+use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{Size, WindowHandle, WindowState, Xyhw, XyhwBuilder};
+use crate::models::{WindowHandle, WindowState, Xyhw};
 use crate::state::State;
 use crate::utils::helpers;
 use std::env;
@@ -309,31 +309,6 @@ fn is_scratchpad(state: &State, window: &Window) -> bool {
         .any(|(_, id)| id.iter().any(|id| window.pid == Some(*id)))
 }
 
-fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32) -> i32 {
-    match config_value {
-        Some(size @ Size::Ratio(r)) if (0.0..=1.0).contains(&r) => size.into_absolute(max_pixel),
-        Some(Size::Pixel(pixel)) if (0..=max_pixel).contains(&pixel) => pixel,
-        _ => Size::Ratio(default_ratio).into_absolute(max_pixel),
-    }
-}
-
-// Get size and position of scratchpad from config and workspace size.
-pub fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
-    let x_sane = sane_dimension(scratch_pad.x, 0.25, xyhw.w());
-    let y_sane = sane_dimension(scratch_pad.y, 0.25, xyhw.h());
-    let height_sane = sane_dimension(scratch_pad.height, 0.50, xyhw.h());
-    let width_sane = sane_dimension(scratch_pad.width, 0.50, xyhw.w());
-
-    XyhwBuilder {
-        x: xyhw.x() + x_sane,
-        y: xyhw.y() + y_sane,
-        h: height_sane,
-        w: width_sane,
-        ..XyhwBuilder::default()
-    }
-    .into()
-}
-
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.set_floating(true);
     window.normal = ws.xyhw;
@@ -396,7 +371,7 @@ fn setup_window(
                 .iter()
                 .find(|s| *scratchpad_name == s.name)
             {
-                let new_float_exact = scratchpad_xyhw(&ws.xyhw, s);
+                let new_float_exact = s.xyhw(&ws.xyhw);
                 window.normal = ws.xyhw;
                 window.set_floating_exact(new_float_exact);
                 return;

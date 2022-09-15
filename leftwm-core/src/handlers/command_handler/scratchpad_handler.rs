@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     child_process::exec_shell,
-    handlers::window_handler::scratchpad_xyhw,
     models::{TagId, WindowHandle},
     Command, Config, DisplayAction, DisplayServer, Manager, Window,
 };
@@ -286,7 +285,7 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .scratchpads
             .iter()
             .find(|s| s.name == scratchpad)?;
-        let new_float_exact = scratchpad_xyhw(&ws.xyhw, to_scratchpad);
+        let new_float_exact = to_scratchpad.xyhw(&ws.xyhw);
 
         let window = manager
             .state
