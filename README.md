@@ -303,7 +303,7 @@ For conveniece we also have a Makefile with the following rules:
 | test-full | same as `test` but additionally with pedantic clippy lints |
 | build | builds with cargo flag `--release` |
 | clean | clean all buildfiles |
-| install | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/shar/xsession` and cleans build files |
+| install | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/share/xsession` and cleans build files |
 | install-dev | installs by symlinking, copies `leftwm.desktop`, no clean |
 | uninstall | removes `leftwm-*` files from `/usr/bin` and `leftwm.desktop` file |
 
