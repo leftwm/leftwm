@@ -2,10 +2,11 @@
 use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN, MOUSEMASK};
 use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
 use x11_dl::xlib;
+use x11_dl::xrandr::XRROutputInfo;
 
 impl XWrap {
     // Public functions.
@@ -214,7 +215,43 @@ impl XWrap {
     pub fn get_screens(&self) -> Vec<Screen> {
         use x11_dl::xinerama::XineramaScreenInfo;
         use x11_dl::xinerama::Xlib;
+        use x11_dl::xrandr::Xrandr;
         let xlib = Xlib::open().expect("Couldn't not connect to Xorg Server");
+
+        // Use randr for screen detection if possible, otherwise fall back to Xinerama.
+        // Only randr supports screen names.
+        if let Ok(xrandr) = Xrandr::open() {
+            unsafe {
+                let screen_resources = (xrandr.XRRGetScreenResources)(self.display, self.root);
+                let outputs = slice::from_raw_parts(
+                    (*screen_resources).outputs,
+                    (*screen_resources).noutput as usize,
+                );
+
+                return outputs
+                    .iter()
+                    .map(|output| {
+                        (xrandr.XRRGetOutputInfo)(self.display, screen_resources, *output)
+                    })
+                    .map(|output_info| {
+                        let crtc_info = (xrandr.XRRGetCrtcInfo)(
+                            self.display,
+                            screen_resources,
+                            (*output_info).crtc,
+                        );
+                        let mut s = Screen::from(*crtc_info);
+                        s.root = self.get_default_root_handle();
+                        s.output = Some(
+                            CStr::from_ptr((*output_info).name)
+                                .to_string_lossy()
+                                .into_owned(),
+                        );
+                        s
+                    })
+                    .collect();
+            }
+        }
+
         let xinerama = unsafe { (xlib.XineramaIsActive)(self.display) } > 0;
         if xinerama {
             let root = self.get_default_root_handle();

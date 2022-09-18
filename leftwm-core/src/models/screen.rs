@@ -7,6 +7,7 @@ use x11_dl::xlib;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Screen {
     pub root: WindowHandle,
+    pub output: Option<String>,
     #[serde(flatten)]
     pub bbox: BBox,
     pub wsid: Option<i32>,
@@ -27,6 +28,7 @@ impl Screen {
     pub const fn new(bbox: BBox) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
+            output: None,
             bbox,
             wsid: None,
             max_window_width: None,
@@ -64,6 +66,7 @@ impl From<&Workspace> for Screen {
     fn from(wsc: &Workspace) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
+            output: None,
             bbox: BBox {
                 height: wsc.height,
                 width: wsc.width,
@@ -76,10 +79,28 @@ impl From<&Workspace> for Screen {
     }
 }
 
+impl From<x11_dl::xrandr::XRRCrtcInfo> for Screen {
+    fn from(root: x11_dl::xrandr::XRRCrtcInfo) -> Self {
+        Self {
+            root: WindowHandle::MockHandle(0),
+            output: None,
+            bbox: BBox {
+                x: root.x,
+                y: root.y,
+                width: root.width as i32,
+                height: root.height as i32,
+            },
+            wsid: None,
+            max_window_width: None,
+        }
+    }
+}
+
 impl From<&xlib::XWindowAttributes> for Screen {
     fn from(root: &xlib::XWindowAttributes) -> Self {
         Self {
             root: root.root.into(),
+            output: None,
             bbox: BBox {
                 height: root.height,
                 width: root.width,
@@ -96,6 +117,7 @@ impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
     fn from(root: &x11_dl::xinerama::XineramaScreenInfo) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
+            output: None,
             bbox: BBox {
                 height: root.height.into(),
                 width: root.width.into(),
@@ -112,6 +134,7 @@ impl Default for Screen {
     fn default() -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
+            output: None,
             bbox: BBox {
                 height: 600,
                 width: 800,
