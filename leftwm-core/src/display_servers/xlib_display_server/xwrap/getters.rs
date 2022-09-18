@@ -6,7 +6,6 @@ use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
 use x11_dl::xlib;
-use x11_dl::xrandr::XRROutputInfo;
 
 impl XWrap {
     // Public functions.

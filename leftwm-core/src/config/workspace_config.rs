@@ -10,6 +10,7 @@ pub struct Workspace {
     pub height: i32,
     pub width: i32,
     pub id: Option<i32>,
+    pub output: Option<String>,
     pub max_window_width: Option<Size>,
     pub layouts: Option<Vec<Layout>>,
 }

@@ -153,19 +153,41 @@ impl XlibDisplayServer {
     fn initial_events(&self, config: &impl Config) -> Vec<DisplayEvent> {
         let mut events = vec![];
         if let Some(workspaces) = config.workspaces() {
-            if workspaces.is_empty() {
-                // tell manager about existing screens
-                self.xw.get_screens().into_iter().for_each(|screen| {
-                    let e = DisplayEvent::ScreenCreate(screen);
-                    events.push(e);
-                });
-            } else {
-                for wsc in &workspaces {
-                    let mut screen = Screen::from(wsc);
-                    screen.root = self.root.into();
-                    let e = DisplayEvent::ScreenCreate(screen);
-                    events.push(e);
+            let screens = self.xw.get_screens();
+
+            // If there is no hardcoded workspace layout, add every screen not mentioned in the config.
+            if workspaces.iter().find(|wsc| wsc.output.is_none()).is_none() {
+                screens
+                    .iter()
+                    .filter(|screen| {
+                        !workspaces
+                            .iter()
+                            .any(|wsc| wsc.output == screen.output)
+                    })
+                    .for_each(|screen| events.push(DisplayEvent::ScreenCreate(screen.clone())))
+            }
+
+            for wsc in &workspaces {
+                let mut screen = Screen::from(wsc);
+                screen.root = self.root.into();
+                if let Some(wsc_output) = &wsc.output {
+                    if let Some(output_match) = screens
+                        .iter()
+                        .filter(|i| i.output.is_some())
+                        .find(|i| i.output.as_ref().unwrap() == wsc_output)
+                    {
+                        screen.bbox.x += output_match.bbox.x;
+                        screen.bbox.y += output_match.bbox.y;
+                        screen.bbox.width += output_match.bbox.width;
+                        screen.bbox.height += output_match.bbox.height;
+                        screen.output = output_match.output.to_owned();
+                    } else {
+                        continue;
+                    }
                 }
+                log::info!("Wsc {:#?}", screen);
+                let e = DisplayEvent::ScreenCreate(screen);
+                events.push(e);
             }
         }
 
