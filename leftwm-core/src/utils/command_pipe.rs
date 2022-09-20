@@ -121,10 +121,10 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "AttachScratchPad" => build_attach_scratchpad(rest),
         "ReleaseScratchPad" => Ok(build_release_scratchpad(rest)),
         "NextScratchPadWindow" => Ok(Command::NextScratchPadWindow {
-            scratchpad: rest.to_owned(),
+            scratchpad: rest.to_owned().into(),
         }),
         "PrevScratchPadWindow" => Ok(Command::PrevScratchPadWindow {
-            scratchpad: rest.to_owned(),
+            scratchpad: rest.to_owned().into(),
         }),
         // Floating
         "FloatingToTile" => Ok(Command::FloatingToTile),
@@ -152,7 +152,7 @@ fn build_attach_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
         raw
     };
     Ok(Command::AttachScratchPad {
-        scratchpad: name.to_string(),
+        scratchpad: name.into(),
         window: None,
     })
 }
@@ -170,7 +170,7 @@ fn build_release_scratchpad(raw: &str) -> Command {
         }
     } else {
         Command::ReleaseScratchPad {
-            window: ReleaseScratchPadOption::ScratchpadName(raw.to_string()),
+            window: ReleaseScratchPadOption::ScratchpadName(raw.into()),
             tag: None,
         }
     }
@@ -182,7 +182,7 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
     } else {
         raw
     };
-    Ok(Command::ToggleScratchPad(name.to_string()))
+    Ok(Command::ToggleScratchPad(name.into()))
 }
 
 fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {

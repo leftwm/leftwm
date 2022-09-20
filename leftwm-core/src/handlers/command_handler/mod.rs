@@ -53,25 +53,17 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
     match command {
         Command::ToggleScratchPad(name) => scratchpad_handler::toggle_scratchpad(manager, name),
         Command::AttachScratchPad { window, scratchpad } => {
-            scratchpad_handler::attach_scratchpad(*window, scratchpad.clone(), manager)
+            scratchpad_handler::attach_scratchpad(*window, scratchpad, manager)
         }
         Command::ReleaseScratchPad { window, tag } => {
             scratchpad_handler::release_scratchpad(window.clone(), *tag, manager)
         }
 
         Command::NextScratchPadWindow { scratchpad } => {
-            scratchpad_handler::cycle_scratchpad_window(
-                manager,
-                scratchpad.as_str(),
-                Direction::Forward,
-            )
+            scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Forward)
         }
         Command::PrevScratchPadWindow { scratchpad } => {
-            scratchpad_handler::cycle_scratchpad_window(
-                manager,
-                scratchpad.as_str(),
-                Direction::Backward,
-            )
+            scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Backward)
         }
 
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),

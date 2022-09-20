@@ -31,7 +31,7 @@ pub use layout_manager::LayoutMode;
 pub use manager::Manager;
 pub use margins::Margins;
 pub use mode::Mode;
-pub use scratchpad::ScratchPad;
+pub use scratchpad::{ScratchPad, ScratchPadName};
 pub use screen::{BBox, Screen};
 pub use size::Size;
 pub use window::Window;

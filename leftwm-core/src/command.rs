@@ -1,7 +1,7 @@
 pub use crate::handlers::command_handler::ReleaseScratchPadOption;
 use crate::{
     layouts::Layout,
-    models::{TagId, WindowHandle},
+    models::{ScratchPadName, TagId, WindowHandle},
 };
 use serde::{Deserialize, Serialize};
 
@@ -13,19 +13,19 @@ pub enum Command {
     HardReload,
     AttachScratchPad {
         window: Option<WindowHandle>,
-        scratchpad: String,
+        scratchpad: ScratchPadName,
     },
     ReleaseScratchPad {
         window: ReleaseScratchPadOption,
         tag: Option<TagId>,
     },
     PrevScratchPadWindow {
-        scratchpad: String,
+        scratchpad: ScratchPadName,
     },
     NextScratchPadWindow {
-        scratchpad: String,
+        scratchpad: ScratchPadName,
     },
-    ToggleScratchPad(String),
+    ToggleScratchPad(ScratchPadName),
     ToggleFullScreen,
     ToggleSticky,
     GoToTag {

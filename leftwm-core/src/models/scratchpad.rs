@@ -5,7 +5,7 @@ use super::{Xyhw, XyhwBuilder};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ScratchPad {
-    pub name: String,
+    pub name: ScratchPadName,
     pub value: String,
     // relative x of scratchpad, 25 means 25% of workspace x
     pub x: Option<Size>,
@@ -33,6 +33,30 @@ impl ScratchPad {
             ..XyhwBuilder::default()
         }
         .into()
+    }
+}
+
+/// Newtype used as the name for a scratchpad, can be seen as some sort of symbol in languages like
+/// Lisp/Scheme/...
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[serde(from = "String")]
+pub struct ScratchPadName(String);
+
+impl From<String> for ScratchPadName {
+    fn from(other: String) -> Self {
+        Self(other)
+    }
+}
+
+impl From<&str> for ScratchPadName {
+    fn from(other: &str) -> Self {
+        Self(other.to_string())
+    }
+}
+
+impl PartialEq<&str> for ScratchPadName {
+    fn eq(&self, other: &&str) -> bool {
+        &self.0.as_str() == other
     }
 }
 
