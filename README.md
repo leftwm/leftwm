@@ -309,11 +309,23 @@ For conveniece we also have a Makefile with the following rules:
 
 ## Starting with startx or a login such as slim
 
-Make sure this is at the end of your .xinitrc file:
+Make sure this is at the end of your `.xinitrc` file:
 
 ```bash
 # .xinitrc
 exec dbus-launch leftwm
+```
+
+On some distros like Archlinux, the environment variables are being setup by sourcing `/etc/X11/xinit/xinitrc.d`, as described in [the Arch docs](https://wiki.archlinux.org/title/Xinit#xinitrc), please make sure you copy the default xinitrc like this: 
+
+```bash
+cp /etc/X11/xinit/xinitrc ~/.xinitrc
+```
+
+**Note:** In this case it is not necessary to start leftwm through `dbus-launch` and might even result in some cases in services like `gnome-keyring` to fail. In such an occasion just use:
+```bash
+# .xinitrc
+exec leftwm
 ```
 
 # Theming
