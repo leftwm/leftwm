@@ -209,6 +209,7 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         .find(|s| name == s.name)?
         .clone();
 
+    // Check if there is a valid scratchpad, if so handle it and return immediately
     if let Some(id) = manager.state.active_scratchpads.get_mut(&scratchpad.name) {
         if let Some(first_in_scratchpad) =
             next_valid_scratchpad_pid(id, &manager.state.windows, Direction::Forward)
@@ -220,27 +221,28 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                 .find(|w| w.pid == Some(first_in_scratchpad))
                 .map(|w| (w.has_tag(current_tag), w.handle))
             {
-                if is_visible {
+                let action_result = if is_visible {
                     // Window is visible => Hide the scratchpad.
-                    if let Err(msg) = hide_scratchpad(manager, &window_handle) {
-                        log::error!("{}", msg);
-                        return Some(false);
-                    }
+                    hide_scratchpad(manager, &window_handle)
                 } else {
                     // Window is hidden => show the scratchpad
-                    if let Err(msg) = show_scratchpad(manager, &window_handle) {
+                    show_scratchpad(manager, &window_handle)
+                };
+
+                // Report the result of hiding/showing the scratchpad
+                return match action_result {
+                    Ok(()) => Some(true),
+                    Err(msg) => {
                         log::error!("{}", msg);
                         return Some(false);
                     }
-                }
-
-                return Some(true);
+                };
             }
         }
     }
 
     log::debug!(
-        "no active scratchpad found for name {:?}. creating a new one",
+        "no active scratchpad found for name {:?}. Creating a new one",
         scratchpad.name
     );
     let name = scratchpad.name.clone();
@@ -268,13 +270,17 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
     // If `None`, replace with current window
-    let window_handle = window.or(manager
-        .state
-        .focus_manager
-        .window_history
-        .get(0)?
-        .as_ref()
-        .copied())?;
+    let window_handle = {
+        let current_window = manager
+            .state
+            .focus_manager
+            .window_history
+            .get(0)?
+            .as_ref()
+            .copied();
+
+        window.or(current_window)?
+    };
 
     // Retrieve and prepare window information
     let window_pid = {
@@ -474,17 +480,10 @@ pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
     // Reorder the scratchpads
     // Clean scratchpad and exit if no next exists
     next_valid_scratchpad_pid(scratchpad, &manager.state.windows, direction)?;
+    // Perform cycle
     match direction {
-        Direction::Forward => {
-            // Perform cycle
-            let front = scratchpad.pop_front()?;
-            scratchpad.push_back(front);
-        }
-        Direction::Backward => {
-            // Perform cycle
-            let back = scratchpad.pop_back()?;
-            scratchpad.push_front(back);
-        }
+        Direction::Forward => scratchpad.rotate_left(1),
+        Direction::Backward => scratchpad.rotate_right(1),
     };
     let new_window_pid = *scratchpad.front()?;
 
