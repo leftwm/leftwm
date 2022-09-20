@@ -20,7 +20,7 @@ pub enum ReleaseScratchPadOption {
     Handle(WindowHandle),
     /// Release a window from a scratchpad given a scratchpad name, the most upper window in the
     /// scratchpad queue will be released
-    ScrathpadName(String),
+    ScratchpadName(String),
     /// Release the currently focused window from its scratchpad
     None,
 }
@@ -407,7 +407,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 tag: destination_tag,
             }))
         }
-        ReleaseScratchPadOption::ScrathpadName(scratchpad_name) => {
+        ReleaseScratchPadOption::ScratchpadName(scratchpad_name) => {
             // Remove and get value from active_scratchpad
             let window_pid = manager
                 .state

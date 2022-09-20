@@ -170,7 +170,7 @@ fn build_release_scratchpad(raw: &str) -> Command {
         }
     } else {
         Command::ReleaseScratchPad {
-            window: ReleaseScratchPadOption::ScrathpadName(raw.to_string()),
+            window: ReleaseScratchPadOption::ScratchpadName(raw.to_string()),
             tag: None,
         }
     }
