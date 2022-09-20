@@ -232,6 +232,7 @@ impl XWrap {
                     .map(|output| {
                         (xrandr.XRRGetOutputInfo)(self.display, screen_resources, *output)
                     })
+                    .filter(|&output_info| (*output_info).crtc!= 0)
                     .map(|output_info| {
                         let crtc_info = (xrandr.XRRGetCrtcInfo)(
                             self.display,
