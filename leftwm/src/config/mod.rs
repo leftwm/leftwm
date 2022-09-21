@@ -72,13 +72,19 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        u8::from(
-            self.window_class.is_some()
-                & (self.window_class == window.res_name || self.window_class == window.res_class),
-        ) + 2 * u8::from(
-            self.window_title.is_some()
-                & ((self.window_title == window.name) | (self.window_title == window.legacy_name)),
-        )
+        let class_score = {
+            let score = self.window_class.is_some()
+                & (self.window_class == window.res_name || self.window_class == window.res_class);
+            u8::from(score)
+        };
+
+        let window_name_score = {
+            let score = self.window_title.is_some()
+                & ((self.window_title == window.name) | (self.window_title == window.legacy_name));
+            u8::from(score)
+        };
+
+        class_score + 2 * window_name_score
     }
 
     fn apply(&self, window: &mut Window) {
