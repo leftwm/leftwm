@@ -65,11 +65,10 @@ impl Keybind {
             let mut head = "leftwm-command ".to_owned();
             let mut command_parts: String = self.command.into();
             if !self.value.is_empty() {
-                let args = match &self.command {
-                    BaseCommand::GotoTag => {
-                        format!(" {} {}", self.value, !config.disable_current_tag_swap)
-                    }
-                    _ => format!(" {}", self.value),
+                let args = if self.command == BaseCommand::GotoTag {
+                    format!(" {} {}", self.value, !config.disable_current_tag_swap)
+                } else {
+                    format!(" {}", self.value)
                 };
                 command_parts.push_str(&args);
             }
