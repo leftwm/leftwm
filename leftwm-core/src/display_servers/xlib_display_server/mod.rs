@@ -156,7 +156,7 @@ impl XlibDisplayServer {
             let screens = self.xw.get_screens();
 
             // If there is no hardcoded workspace layout, add every screen not mentioned in the config.
-            if !workspaces.iter().any(|wsc| wsc.output.is_none()) {
+            if config.auto_derive_workspaces() || !workspaces.is_empty() {
                 screens
                     .iter()
                     .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
@@ -166,22 +166,15 @@ impl XlibDisplayServer {
             for wsc in &workspaces {
                 let mut screen = Screen::from(wsc);
                 screen.root = self.root.into();
-                if let Some(wsc_output) = &wsc.output {
-                    if let Some(output_match) = screens
-                        .iter()
-                        .filter(|i| i.output.is_some())
-                        .find(|i| i.output.as_ref().unwrap() == wsc_output)
-                    {
-                        screen.bbox.x += output_match.bbox.x;
-                        screen.bbox.y += output_match.bbox.y;
-                        screen.bbox.width += output_match.bbox.width;
-                        screen.bbox.height += output_match.bbox.height;
+                match screens.iter().find(|i| i.output == wsc.output) {
+                    Some(output_match) => {
+                        if wsc.relative.unwrap_or(false)  {
+                            screen.bbox.add(output_match.bbox);
+                        }
                         screen.output = output_match.output.clone();
-                    } else {
-                        continue;
                     }
+                    None => continue,
                 }
-                log::info!("Wsc {:#?}", screen);
                 let e = DisplayEvent::ScreenCreate(screen);
                 events.push(e);
             }

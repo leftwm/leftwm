@@ -7,7 +7,7 @@ use x11_dl::xlib;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Screen {
     pub root: WindowHandle,
-    pub output: Option<String>,
+    pub output: String,
     #[serde(flatten)]
     pub bbox: BBox,
     pub wsid: Option<i32>,
@@ -28,7 +28,7 @@ impl Screen {
     pub const fn new(bbox: BBox) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
-            output: None,
+            output: String::new(),
             bbox,
             wsid: None,
             max_window_width: None,
@@ -62,11 +62,20 @@ impl Screen {
     }
 }
 
+impl BBox {
+    pub fn add(&mut self, bbox: BBox) {
+        self.x += bbox.x;
+        self.y += bbox.y;
+        self.width += bbox.width;
+        self.height += bbox.height;
+    }
+}
+
 impl From<&Workspace> for Screen {
     fn from(wsc: &Workspace) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
-            output: None,
+            output: String::default(),
             bbox: BBox {
                 height: wsc.height,
                 width: wsc.width,
@@ -83,7 +92,7 @@ impl From<x11_dl::xrandr::XRRCrtcInfo> for Screen {
     fn from(root: x11_dl::xrandr::XRRCrtcInfo) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
-            output: None,
+            output: String::default(),
             bbox: BBox {
                 x: root.x,
                 y: root.y,
@@ -100,7 +109,7 @@ impl From<&xlib::XWindowAttributes> for Screen {
     fn from(root: &xlib::XWindowAttributes) -> Self {
         Self {
             root: root.root.into(),
-            output: None,
+            output: String::default(),
             bbox: BBox {
                 height: root.height,
                 width: root.width,
@@ -117,7 +126,7 @@ impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
     fn from(root: &x11_dl::xinerama::XineramaScreenInfo) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
-            output: None,
+            output: String::default(),
             bbox: BBox {
                 height: root.height.into(),
                 width: root.width.into(),
@@ -134,7 +143,7 @@ impl Default for Screen {
     fn default() -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
-            output: None,
+            output: String::default(),
             bbox: BBox {
                 height: 600,
                 width: 800,

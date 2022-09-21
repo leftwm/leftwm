@@ -113,6 +113,7 @@ pub struct Config {
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub sloppy_mouse_follows_focus: bool,
+    pub auto_derive_workspaces: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -547,6 +548,10 @@ impl leftwm_core::Config for Config {
 
     fn sloppy_mouse_follows_focus(&self) -> bool {
         self.sloppy_mouse_follows_focus
+    }
+
+    fn auto_derive_workspaces(&self) -> bool {
+        self.auto_derive_workspaces
     }
 }
 

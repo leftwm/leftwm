@@ -232,7 +232,7 @@ impl XWrap {
                     .map(|output| {
                         (xrandr.XRRGetOutputInfo)(self.display, screen_resources, *output)
                     })
-                    .filter(|&output_info| (*output_info).crtc!= 0)
+                    .filter(|&output_info| (*output_info).crtc != 0)
                     .map(|output_info| {
                         let crtc_info = (xrandr.XRRGetCrtcInfo)(
                             self.display,
@@ -241,11 +241,9 @@ impl XWrap {
                         );
                         let mut s = Screen::from(*crtc_info);
                         s.root = self.get_default_root_handle();
-                        s.output = Some(
-                            CStr::from_ptr((*output_info).name)
-                                .to_string_lossy()
-                                .into_owned(),
-                        );
+                        s.output = CStr::from_ptr((*output_info).name)
+                            .to_string_lossy()
+                            .into_owned();
                         s
                     })
                     .collect();
