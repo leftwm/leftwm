@@ -154,6 +154,7 @@ mod tests {
             },
             Layout::default(),
             None,
+            String::new(),
         );
         ws.margin = Margins::new(0);
         ws.xyhw.set_minh(600);

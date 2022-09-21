@@ -20,6 +20,7 @@ pub struct Workspace {
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
     pub max_window_width: Option<Size>,
+    pub output: String,
 }
 
 impl fmt::Debug for Workspace {
@@ -48,6 +49,7 @@ impl Workspace {
         bbox: BBox,
         layout: Layout,
         max_window_width: Option<Size>,
+        output: String,
     ) -> Self {
         Self {
             id,
@@ -75,6 +77,7 @@ impl Workspace {
             }
             .into(),
             max_window_width,
+            output,
         }
     }
 
@@ -253,6 +256,7 @@ mod tests {
             },
             Layout::default(),
             None,
+            String::new(),
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
         assert!(
@@ -274,6 +278,7 @@ mod tests {
             },
             Layout::default(),
             None,
+            String::new(),
         );
         let tag = crate::models::Tag::new(TAG_ID, "test", Layout::default());
         subject.show_tag(&tag.id);

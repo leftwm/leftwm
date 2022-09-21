@@ -23,6 +23,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             screen.bbox,
             self.state.layout_manager.new_layout(Some(workspace_id)),
             screen.max_window_width.or(self.state.max_window_width),
+            screen.output.clone(),
         );
         if new_workspace.id.unwrap_or(0) as usize >= tag_len {
             dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
