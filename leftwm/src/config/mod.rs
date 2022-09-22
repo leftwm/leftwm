@@ -42,7 +42,7 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 ///
 /// ```ron
 /// window_rules: [
-///     (window_class: "krita", spawn_on_tag: 3, spawn_floating: farse),
+///     (window_class: "krita", spawn_on_tag: 3, spawn_floating: false),
 /// ]
 /// ```
 ///
