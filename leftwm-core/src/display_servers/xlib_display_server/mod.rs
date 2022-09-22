@@ -155,8 +155,17 @@ impl XlibDisplayServer {
         if let Some(workspaces) = config.workspaces() {
             let screens = self.xw.get_screens();
 
+            let auto_derive_workspaces: bool =
+            if config.auto_derive_workspaces() {
+                true
+            } else if !screens.iter().any(|screen| workspaces.iter().any(|wsc| wsc.output == screen.output)) {
+                log::warn!("No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\".");
+                true
+            } else {
+                false
+            };
             // If there is no hardcoded workspace layout, add every screen not mentioned in the config.
-            if config.auto_derive_workspaces() || !workspaces.is_empty() {
+            if auto_derive_workspaces {
                 screens
                     .iter()
                     .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
