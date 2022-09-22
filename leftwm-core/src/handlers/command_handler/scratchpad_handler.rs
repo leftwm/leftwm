@@ -170,7 +170,7 @@ fn next_valid_scratchpad_pid(
 }
 
 /// Check if the scratchpad is visible on the current tag.
-/// If the name of the scratchpad is incorrect, false will be returned
+/// Returns `false` immediately if the scratchpad name isn't defined in the config
 fn is_scratchpad_visible<C: Config, SERVER: DisplayServer>(
     manager: &Manager<C, SERVER>,
     scratchpad_name: &ScratchPadName,
