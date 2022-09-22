@@ -358,7 +358,7 @@ For more information about themes check out our [theme guide][theme-guide] or th
 [wiki]: https://github.com/leftwm/leftwm/wiki/Themes
 
 ---
-**Note:** leftwm usese RON now as it's default config language. Please consider migrating you toml configs.
+**Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.
 
 ---
 
@@ -373,7 +373,7 @@ The settings file to change key bindings and the default mod key can be found at
 the file is automatically generated when leftwm or leftwm-check is run for the first time.
 
 ---
-**Note:** leftwm usese RON now as it's default config language. Please consider migrating you toml configs.
+**Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.
 
 ---
 
