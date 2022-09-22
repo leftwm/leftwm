@@ -358,7 +358,7 @@ For more information about themes check out our [theme guide][theme-guide] or th
 [wiki]: https://github.com/leftwm/leftwm/wiki/Themes
 
 ---
-**Note:** leftwm usese RON now as it's default config language. Please consider migrating you toml configs.
+**Note:** leftwm uses RON now as it's default config language. Please consider migrating your toml configs.
 
 ---
 
