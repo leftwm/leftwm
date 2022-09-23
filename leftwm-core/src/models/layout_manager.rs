@@ -19,22 +19,29 @@ impl Default for LayoutMode {
 pub struct LayoutManager {
     pub mode: LayoutMode,
     pub layouts: Vec<Layout>,
-    pub layouts_per_workspaces: HashMap<i32, Vec<Layout>>,
+    pub layouts_per_workspaces: HashMap<(String, usize), Vec<Layout>>,
 }
 
 impl LayoutManager {
     pub fn new(config: &impl Config) -> Self {
-        let layouts_per_workspaces = config
+        let mut layouts_per_workspaces: HashMap<(String, usize), Vec<Layout>> = HashMap::default();
+        config
             .workspaces()
             .unwrap_or_default()
             .iter()
-            .map(|ws| {
-                (
-                    ws.id.unwrap_or_default(),
+            .for_each(|ws| {
+                layouts_per_workspaces.insert(
+                    (
+                        ws.output.clone(),
+                        layouts_per_workspaces
+                            .keys()
+                            .filter(|&key| key.0 == ws.output)
+                            .count()
+                            + 1,
+                    ),
                     ws.layouts.clone().unwrap_or_default(),
-                )
-            })
-            .collect();
+                );
+            });
 
         Self {
             mode: config.layout_mode(),
@@ -43,15 +50,15 @@ impl LayoutManager {
         }
     }
 
-    pub fn new_layout(&self, workspace_id: Option<i32>) -> Layout {
+    pub fn new_layout(&self, output: &str, num: usize) -> Layout {
         *self
-            .layouts(workspace_id)
+            .layouts(output, num)
             .first()
             .unwrap_or(&Layout::default())
     }
 
     pub fn next_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = self.layouts(workspace.id);
+        let layouts = self.layouts(&workspace.output, workspace.num);
 
         let next = match layouts.iter().position(|&x| x == workspace.layout) {
             Some(index) if index == layouts.len() - 1 => layouts.first(),
@@ -65,7 +72,7 @@ impl LayoutManager {
     }
 
     pub fn previous_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = self.layouts(workspace.id);
+        let layouts = self.layouts(&workspace.output, workspace.num);
 
         let next = match layouts.iter().position(|&x| x == workspace.layout) {
             Some(index) if index == 0 => layouts.last(),
@@ -98,9 +105,9 @@ impl LayoutManager {
         Some(true)
     }
 
-    fn layouts(&self, workspace_id: Option<i32>) -> &Vec<Layout> {
-        workspace_id
-            .and_then(|id| self.layouts_per_workspaces.get(&id))
+    fn layouts(&self, output: &str, num: usize) -> &Vec<Layout> {
+        self.layouts_per_workspaces
+            .get(&(output.to_owned(), num))
             .and_then(|layouts| {
                 if layouts.is_empty() {
                     None
@@ -128,21 +135,21 @@ mod tests {
             ],
             workspaces: Some(vec![
                 crate::config::Workspace {
-                    id: Some(0),
                     layouts: Some(vec![
                         Layout::CenterMain,
                         Layout::CenterMainBalanced,
                         Layout::MainAndDeck,
                     ]),
+                    output: String::from("TEST"),
                     ..Default::default()
                 },
                 crate::config::Workspace {
-                    id: Some(1),
+                    output: String::from("TEST"),
                     ..Default::default()
                 },
                 crate::config::Workspace {
-                    id: Some(2),
                     layouts: Some(vec![]),
+                    output: String::from("TEST"),
                     ..Default::default()
                 },
             ]),
@@ -152,9 +159,8 @@ mod tests {
         LayoutManager::new(&config)
     }
 
-    fn workspace(id: i32, layout: Layout) -> Workspace {
+    fn workspace(num: usize, layout: Layout) -> Workspace {
         Workspace::new(
-            Some(id),
             BBox {
                 width: 0,
                 height: 0,
@@ -163,7 +169,8 @@ mod tests {
             },
             layout,
             None,
-            String::new(),
+            String::from("TEST"),
+            num,
         )
     }
 
@@ -171,16 +178,28 @@ mod tests {
     fn layouts_should_fallback_to_the_global_list() {
         let layout_manager = layout_manager();
 
-        assert_eq!(layout_manager.layouts(Some(1)), &layout_manager.layouts); // layouts = None
-        assert_eq!(layout_manager.layouts(Some(2)), &layout_manager.layouts); // layouts = vec[]!
-        assert_eq!(layout_manager.layouts(Some(3)), &layout_manager.layouts); // Non existent id
-        assert_eq!(layout_manager.layouts(None), &layout_manager.layouts);
+        assert_eq!(
+            layout_manager.layouts(&String::from("TEST"), 2),
+            &layout_manager.layouts
+        ); // layouts = None
+        assert_eq!(
+            layout_manager.layouts(&String::from("TEST"), 3),
+            &layout_manager.layouts
+        ); // layouts = vec![]
+        assert_eq!(
+            layout_manager.layouts(&String::from("TEST"), 4),
+            &layout_manager.layouts
+        ); // Non existent num
+        assert_eq!(
+            layout_manager.layouts(&String::from("NONE"), 1),
+            &layout_manager.layouts
+        ); // Non existent output
     }
 
     #[test]
     fn next_layout_basic() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::CenterMainBalanced);
+        let workspace = workspace(1, Layout::CenterMainBalanced);
 
         assert_eq!(layout_manager.next_layout(&workspace), Layout::MainAndDeck);
     }
@@ -188,7 +207,7 @@ mod tests {
     #[test]
     fn next_layout_should_cycle() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::MainAndDeck);
+        let workspace = workspace(1, Layout::MainAndDeck);
 
         assert_eq!(layout_manager.next_layout(&workspace), Layout::CenterMain);
     }
@@ -197,7 +216,7 @@ mod tests {
     fn next_layout_fallback_to_global_layouts() {
         let layout_manager = layout_manager();
 
-        let workspace = workspace(1, Layout::EvenVertical);
+        let workspace = workspace(2, Layout::EvenVertical);
         assert_eq!(
             layout_manager.next_layout(&workspace),
             Layout::MainAndHorizontalStack
@@ -207,7 +226,7 @@ mod tests {
     #[test]
     fn next_layout_fallback_to_the_first_layout() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::Fibonacci);
+        let workspace = workspace(1, Layout::Fibonacci);
 
         assert_eq!(layout_manager.next_layout(&workspace), Layout::CenterMain);
     }
@@ -215,7 +234,7 @@ mod tests {
     #[test]
     fn prev_layout_basic() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::CenterMainBalanced);
+        let workspace = workspace(1, Layout::CenterMainBalanced);
 
         assert_eq!(
             layout_manager.previous_layout(&workspace),
@@ -226,7 +245,7 @@ mod tests {
     #[test]
     fn prev_layout_should_cycle() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::CenterMain);
+        let workspace = workspace(1, Layout::CenterMain);
 
         assert_eq!(
             layout_manager.previous_layout(&workspace),
@@ -237,7 +256,7 @@ mod tests {
     #[test]
     fn previous_layout_fallback_to_global_layouts() {
         let layout_manager = layout_manager();
-        let workspace = workspace(2, Layout::EvenVertical);
+        let workspace = workspace(3, Layout::EvenVertical);
 
         assert_eq!(layout_manager.previous_layout(&workspace), Layout::Monocle);
     }
@@ -245,7 +264,7 @@ mod tests {
     #[test]
     fn previous_layout_fallback_to_the_first_layout() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::Fibonacci);
+        let workspace = workspace(1, Layout::Fibonacci);
 
         assert_eq!(
             layout_manager.previous_layout(&workspace),

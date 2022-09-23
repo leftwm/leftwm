@@ -10,7 +10,6 @@ pub struct Screen {
     pub output: String,
     #[serde(flatten)]
     pub bbox: BBox,
-    pub wsid: Option<i32>,
     pub max_window_width: Option<Size>,
 }
 
@@ -30,7 +29,6 @@ impl Screen {
             root: WindowHandle::MockHandle(0),
             output: String::new(),
             bbox,
-            wsid: None,
             max_window_width: None,
         }
     }
@@ -82,7 +80,6 @@ impl From<&Workspace> for Screen {
                 x: wsc.x,
                 y: wsc.y,
             },
-            wsid: wsc.id,
             max_window_width: wsc.max_window_width,
         }
     }
@@ -99,7 +96,6 @@ impl From<x11_dl::xrandr::XRRCrtcInfo> for Screen {
                 width: root.width as i32,
                 height: root.height as i32,
             },
-            wsid: None,
             max_window_width: None,
         }
     }
@@ -116,7 +112,6 @@ impl From<&xlib::XWindowAttributes> for Screen {
                 x: root.x,
                 y: root.y,
             },
-            wsid: None,
             max_window_width: None,
         }
     }
@@ -133,7 +128,6 @@ impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
                 x: root.x_org.into(),
                 y: root.y_org.into(),
             },
-            wsid: None,
             max_window_width: None,
         }
     }
@@ -150,7 +144,6 @@ impl Default for Screen {
                 x: 0,
                 y: 0,
             },
-            wsid: None,
             max_window_width: None,
         }
     }

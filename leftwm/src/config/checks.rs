@@ -23,25 +23,6 @@ impl Config {
         }
     }
 
-    /// Checks defined workspaces to ensure no ID collisions occur.
-    pub fn check_workspace_ids(&self, verbose: bool) {
-        if let Some(wss) = self.workspaces.as_ref() {
-            if verbose {
-                println!("Checking config for valid workspace definitions.");
-            }
-            let ids = crate::get_workspace_ids(wss);
-            if ids.iter().any(std::option::Option::is_some) {
-                if crate::all_ids_some(&ids) {
-                    if !crate::all_ids_unique(&ids) {
-                        println!("Your config file contains duplicate workspace IDs. Please assign unique IDs to workspaces. The default config will be used instead.");
-                    }
-                } else {
-                    println!("Your config file specifies an ID for some but not all workspaces. This can lead to ID collisions and is not allowed. The default config will be used instead.");
-                }
-            }
-        }
-    }
-
     /// Check all keybinds to ensure that required values are provided
     /// Checks to see if value is provided (if required)
     /// Checks to see if keys are valid against Xkeysym

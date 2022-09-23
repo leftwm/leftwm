@@ -155,10 +155,12 @@ impl XlibDisplayServer {
         if let Some(workspaces) = config.workspaces() {
             let screens = self.xw.get_screens();
 
-            let auto_derive_workspaces: bool =
-            if config.auto_derive_workspaces() {
+            let auto_derive_workspaces: bool = if config.auto_derive_workspaces() {
                 true
-            } else if !screens.iter().any(|screen| workspaces.iter().any(|wsc| wsc.output == screen.output)) {
+            } else if !screens
+                .iter()
+                .any(|screen| workspaces.iter().any(|wsc| wsc.output == screen.output))
+            {
                 log::warn!("No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\".");
                 true
             } else {
@@ -177,7 +179,7 @@ impl XlibDisplayServer {
                 screen.root = self.root.into();
                 match screens.iter().find(|i| i.output == wsc.output) {
                     Some(output_match) => {
-                        if wsc.relative.unwrap_or(false)  {
+                        if wsc.relative.unwrap_or(false) {
                             screen.bbox.add(output_match.bbox);
                         }
                         screen.output = output_match.output.clone();

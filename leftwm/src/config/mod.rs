@@ -155,13 +155,7 @@ fn load_from_file() -> Result<Config> {
         log::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
         let contents = fs::read_to_string(config_file_ron)?;
         let config = ron::from_str(&contents)?;
-
-        if check_workspace_ids(&config) {
-            Ok(config)
-        } else {
-            log::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
-            Ok(Config::default())
-        }
+        Ok(config)
     } else if Path::new(&config_file_toml).exists() {
         log::debug!(
             "Config file '{}' found.",
@@ -170,13 +164,7 @@ fn load_from_file() -> Result<Config> {
         let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
         log::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
-
-        if check_workspace_ids(&config) {
-            Ok(config)
-        } else {
-            log::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
-            Ok(Config::default())
-        }
+        Ok(config)
     } else {
         log::debug!("Config file not found. Using default config file.");
 
@@ -204,35 +192,6 @@ fn load_from_file() -> Result<Config> {
 
         Ok(config)
     }
-}
-
-#[must_use]
-pub fn check_workspace_ids(config: &Config) -> bool {
-    config.workspaces.clone().map_or(true, |wss| {
-        let ids = get_workspace_ids(&wss);
-        if ids.iter().any(Option::is_some) {
-            all_ids_some(&ids) && all_ids_unique(&ids)
-        } else {
-            true
-        }
-    })
-}
-
-#[must_use]
-pub fn get_workspace_ids(wss: &[Workspace]) -> Vec<Option<i32>> {
-    wss.iter().map(|ws| ws.id).collect()
-}
-
-pub fn all_ids_some(ids: &[Option<i32>]) -> bool {
-    ids.iter().all(Option::is_some)
-}
-
-#[must_use]
-pub fn all_ids_unique(ids: &[Option<i32>]) -> bool {
-    let mut sorted = ids.to_vec();
-    sorted.sort();
-    sorted.dedup();
-    ids.len() == sorted.len()
 }
 
 #[must_use]

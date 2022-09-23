@@ -9,7 +9,6 @@ pub struct Workspace {
     pub y: i32,
     pub height: i32,
     pub width: i32,
-    pub id: Option<i32>,
     pub output: String,
     pub relative: Option<bool>,
     pub max_window_width: Option<Size>,

@@ -8,7 +8,6 @@ use std::fmt;
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
-    pub id: Option<i32>,
     pub layout: Layout,
     pub main_width_percentage: u8,
     pub tag: Option<TagId>, // TODO: Make this a list.
@@ -20,15 +19,19 @@ pub struct Workspace {
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
     pub max_window_width: Option<Size>,
+    /// Output (monitor) the workspace is linked to.
     pub output: String,
+    /// ID of workspace on output. Starts with 1.
+    pub num: usize,
 }
 
 impl fmt::Debug for Workspace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Workspace {{ id: {:?}, tags: {:?}, x: {}, y: {} }}",
-            self.id,
+            "Workspace {{ output: {:?}, num: {}, tags: {:?}, x: {}, y: {} }}",
+            self.output,
+            self.num,
             self.tag,
             self.xyhw.x(),
             self.xyhw.y()
@@ -38,21 +41,20 @@ impl fmt::Debug for Workspace {
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Self) -> bool {
-        self.id.is_some() && self.id == other.id
+        self.output == other.output && self.num == other.num
     }
 }
 
 impl Workspace {
     #[must_use]
     pub fn new(
-        id: Option<i32>,
         bbox: BBox,
         layout: Layout,
         max_window_width: Option<Size>,
         output: String,
+        num: usize,
     ) -> Self {
         Self {
-            id,
             layout,
             main_width_percentage: layout.main_width(),
             tag: None,
@@ -78,6 +80,7 @@ impl Workspace {
             .into(),
             max_window_width,
             output,
+            num,
         }
     }
 
@@ -90,11 +93,15 @@ impl Workspace {
         config
             .get_list_of_gutters()
             .into_iter()
-            .filter(|gutter| gutter.wsid == self.id || gutter.wsid.is_none())
+            .filter(|gutter| {
+                gutter.output.is_none()
+                    || gutter.output == Some(self.output.clone())
+                        && (gutter.num.is_none() || gutter.num == Some(self.num))
+            })
             .fold(vec![], |mut acc, gutter| {
                 match acc.iter().enumerate().find(|(_i, g)| g.side == gutter.side) {
                     Some((i, x)) => {
-                        if x.wsid.is_none() {
+                        if x.output.is_none() {
                             acc[i] = gutter;
                         }
                     }
@@ -247,7 +254,6 @@ mod tests {
     #[test]
     fn empty_ws_should_not_contain_window() {
         let subject = Workspace::new(
-            None,
             BBox {
                 width: 600,
                 height: 800,
@@ -257,6 +263,7 @@ mod tests {
             Layout::default(),
             None,
             String::new(),
+            0,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
         assert!(
@@ -269,7 +276,6 @@ mod tests {
     fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
         const TAG_ID: TagId = 1;
         let mut subject = Workspace::new(
-            None,
             BBox {
                 width: 600,
                 height: 800,
@@ -279,6 +285,7 @@ mod tests {
             Layout::default(),
             None,
             String::new(),
+            0,
         );
         let tag = crate::models::Tag::new(TAG_ID, "test", Layout::default());
         subject.show_tag(&tag.id);
