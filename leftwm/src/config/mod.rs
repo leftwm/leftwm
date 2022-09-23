@@ -42,7 +42,7 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 ///
 /// ```ron
 /// window_rules: [
-///     (window_class: "krita", spawn_on_tag: 3, spawn_floating: farse),   
+///     (window_class: "krita", spawn_on_tag: 3, spawn_floating: false),
 /// ]
 /// ```
 ///
@@ -515,6 +515,11 @@ impl leftwm_core::Config for Config {
 }
 
 impl Config {
+    #[cfg(feature = "lefthk")]
+    pub fn clear_keybinds(&mut self) {
+        self.keybind.clear();
+    }
+
     fn state_file(&self) -> &Path {
         self.state_path
             .as_deref()
