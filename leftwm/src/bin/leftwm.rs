@@ -142,6 +142,7 @@ fn start_leftwm() {
     let mut session_exit_status: Option<ExitStatus> = None;
     while !error_occured {
         let mut leftwm_session = start_leftwm_session(&current_exe);
+        let mut lefthk_session = start_lefthk_session(&current_exe);
         while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
             children.remove_finished_children();
@@ -150,6 +151,9 @@ fn start_leftwm() {
                 nix::unistd::pause();
             }
         }
+
+        #[cfg(feature = "lefthk")]
+        kill_lefthk_session(&mut lefthk_session);
 
         session_exit_status = get_exit_status(&mut leftwm_session);
         error_occured = check_error_occured(session_exit_status);
