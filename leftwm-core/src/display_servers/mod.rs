@@ -1,12 +1,15 @@
+pub mod xlib_display_server;
+
+#[cfg(test)]
+mod mock_display_server;
+
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
 use crate::DisplayEvent;
-#[cfg(test)]
-mod mock_display_server;
-pub mod xlib_display_server;
+
 use futures::prelude::*;
 use std::pin::Pin;
 

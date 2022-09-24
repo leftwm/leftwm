@@ -1,14 +1,13 @@
 mod insert_behavior;
-mod scratchpad;
 mod workspace_config;
 
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
+pub use crate::models::ScratchPad;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
 use crate::models::{LayoutMode, Manager, Window, WindowType};
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
-pub use scratchpad::ScratchPad;
 pub use workspace_config::Workspace;
 
 pub trait Config {

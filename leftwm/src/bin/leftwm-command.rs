@@ -85,6 +85,10 @@ async fn main() -> Result<()> {
 
         LoadTheme              Args: <Path_to/theme.ron>
             Note: `theme.toml` will be deprecated but stays for backwards compatibility for a while 
+        AttachScratchPad       Args: <ScratchpadName>
+        ReleaseScratchPad      Args: <tag_index> or <ScratchpadName>
+        NextScratchPadWindow   Args: <ScratchpadName>
+        PrevScratchPadWindow   Args: <ScratchpadName>
         ToggleScratchPad       Args: <ScratchpadName>
         SendWorkspaceToTag     Args: <workspaxe_index> <tag_index> (int)
         SendWindowToTag        Args: <tag_index> (int)

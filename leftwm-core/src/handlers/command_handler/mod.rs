@@ -1,9 +1,9 @@
 #![allow(clippy::wildcard_imports)]
-#![allow(clippy::shadow_unrelated)]
 
-// NOTE: there apears to be a clippy bug with shadow_unrelated and the (?) Operator
-// allow shadow should be removed once it is resolved
-// https://github.com/rust-lang/rust-clippy/issues/6563
+mod scratchpad_handler;
+// Make public to the rest of the crate without exposing other internal
+// details of the scratchpad handling code
+pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
 
 use super::*;
 use crate::display_action::DisplayAction;
@@ -11,8 +11,8 @@ use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::{TagId, WindowState};
 use crate::state::State;
+use crate::utils::helpers;
 use crate::utils::helpers::relative_find;
-use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
@@ -51,7 +51,20 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 ) -> Option<bool> {
     let state = &mut manager.state;
     match command {
-        Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
+        Command::ToggleScratchPad(name) => scratchpad_handler::toggle_scratchpad(manager, name),
+        Command::AttachScratchPad { window, scratchpad } => {
+            scratchpad_handler::attach_scratchpad(*window, scratchpad, manager)
+        }
+        Command::ReleaseScratchPad { window, tag } => {
+            scratchpad_handler::release_scratchpad(window.clone(), *tag, manager)
+        }
+
+        Command::NextScratchPadWindow { scratchpad } => {
+            scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Forward)
+        }
+        Command::PrevScratchPadWindow { scratchpad } => {
+            scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Backward)
+        }
 
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
@@ -125,92 +138,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
     }
 }
 
-fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    name: &str,
-) -> Option<bool> {
-    let current_tag = &manager.state.focus_manager.tag(0)?;
-    let scratchpad = manager
-        .state
-        .scratchpads
-        .iter()
-        .find(|s| name == s.name.clone())?
-        .clone();
-
-    let mut handle = None;
-    if let Some(ws) = manager
-        .state
-        .focus_manager
-        .workspace(&manager.state.workspaces)
-    {
-        handle = manager
-            .state
-            .windows
-            .iter()
-            .find(|w| ws.is_managed(w))
-            .map(|w| w.handle);
-    }
-
-    if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
-        if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
-            if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
-                let previous_tag = window.tag;
-                let is_visible = window.has_tag(current_tag);
-                window.untag();
-                if is_visible {
-                    // Hide the scratchpad.
-                    window.tag(&nsp_tag.id);
-                    // Make sure when changing focus the scratchpad is currently focused.
-                    if Some(&Some(window.handle))
-                        != manager.state.focus_manager.window_history.get(0)
-                    {
-                        handle = None;
-                    } else if let Some(Some(prev)) =
-                        manager.state.focus_manager.window_history.get(1)
-                    {
-                        handle = Some(*prev);
-                    }
-                } else {
-                    // Remove the entry for the previous tag to prevent the scratchpad being
-                    // refocused.
-                    if let Some(previous_tag) = previous_tag {
-                        manager
-                            .state
-                            .focus_manager
-                            .tags_last_window
-                            .remove(&previous_tag);
-                    }
-                    // Show the scratchpad.
-                    window.tag(current_tag);
-                    handle = Some(window.handle);
-                }
-                let act = DisplayAction::SetWindowTag(window.handle, window.tag);
-                manager.state.actions.push_back(act);
-                manager.state.sort_windows();
-                if let Some(h) = handle {
-                    manager.state.handle_window_focus(&h);
-                    if !is_visible {
-                        manager.state.move_to_top(&h);
-                    }
-                }
-
-                return Some(true);
-            }
-        }
-
-        log::debug!(
-            "no active scratchpad found for name {:?}. creating a new one",
-            scratchpad.name
-        );
-        let name = scratchpad.name.clone();
-        let pid = exec_shell(&scratchpad.value, &mut manager.children);
-        manager.state.active_scratchpads.insert(name, pid);
-        return None;
-    }
-    log::warn!("unable to find NSP tag");
-    None
-}
-
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     let handle = window.handle;
@@ -253,6 +180,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         .windows
         .iter_mut()
         .find(|w| w.handle == handle)?;
+
     window.untag();
     window.set_floating(false);
     window.tag(&tag.id);

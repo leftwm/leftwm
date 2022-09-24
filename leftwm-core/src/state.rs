@@ -1,14 +1,15 @@
 //! Save and restore manager state.
 
+use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::Layout;
-use crate::models::Screen;
 use crate::models::Size;
 use crate::models::Tags;
 use crate::models::Window;
 use crate::models::Workspace;
 use crate::models::{FocusManager, LayoutManager};
 use crate::models::{Mode, WindowHandle};
+use crate::models::{ScratchPadName, Screen};
 use crate::DisplayAction;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -23,7 +24,7 @@ pub struct State {
     pub mode: Mode,
     pub layouts: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,
-    pub active_scratchpads: HashMap<String, Option<u32>>,
+    pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
     pub mousekey: Vec<String>,
@@ -241,7 +242,8 @@ impl State {
 
         // Restore scratchpads.
         for (scratchpad, id) in &old_state.active_scratchpads {
-            self.active_scratchpads.insert(scratchpad.clone(), *id);
+            self.active_scratchpads
+                .insert(scratchpad.clone(), id.clone());
         }
 
         // Restore focus.
