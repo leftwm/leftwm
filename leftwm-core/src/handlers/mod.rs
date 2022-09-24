@@ -1,4 +1,4 @@
-mod command_handler;
+pub mod command_handler;
 pub mod display_event_handler;
 mod focus_handler;
 mod goto_tag_handler;
