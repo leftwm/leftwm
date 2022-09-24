@@ -142,6 +142,7 @@ fn start_leftwm() {
     let mut session_exit_status: Option<ExitStatus> = None;
     while !error_occured {
         let mut leftwm_session = start_leftwm_session(&current_exe);
+        #[cfg(feature = "lefthk")]
         let mut lefthk_session = start_lefthk_session(&current_exe);
         while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
