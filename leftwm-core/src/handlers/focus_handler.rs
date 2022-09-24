@@ -28,7 +28,7 @@ impl State {
         if let Some(workspace) = self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
             // this is an uggly workaround to suffice some CI failure related to https://github.com/rust-lang/rust/issues/59159
             let workspace_output_borrow_checker_workaround = workspace.output.clone();
-            let workspace_num_borrow_checker_workaround = workspace.num.clone();
+            let workspace_num_borrow_checker_workaround = workspace.num;
             let _ = self.focus_workspace_work(
                 &workspace_output_borrow_checker_workaround,
                 workspace_num_borrow_checker_workaround,
