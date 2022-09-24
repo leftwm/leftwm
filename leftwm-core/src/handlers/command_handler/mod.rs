@@ -1,9 +1,9 @@
 #![allow(clippy::wildcard_imports)]
-#![allow(clippy::shadow_unrelated)]
 
-// NOTE: there apears to be a clippy bug with shadow_unrelated and the (?) Operator
-// allow shadow should be removed once it is resolved
-// https://github.com/rust-lang/rust-clippy/issues/6563
+mod scratchpad_handler;
+// Make public to the rest of the crate without exposing other internal
+// details of the scratchpad handling code
+pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
 
 use super::*;
 use crate::display_action::DisplayAction;
@@ -11,8 +11,8 @@ use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::{TagId, WindowState};
 use crate::state::State;
+use crate::utils::helpers;
 use crate::utils::helpers::relative_find;
-use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
@@ -51,7 +51,20 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 ) -> Option<bool> {
     let state = &mut manager.state;
     match command {
-        Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
+        Command::ToggleScratchPad(name) => scratchpad_handler::toggle_scratchpad(manager, name),
+        Command::AttachScratchPad { window, scratchpad } => {
+            scratchpad_handler::attach_scratchpad(*window, scratchpad, manager)
+        }
+        Command::ReleaseScratchPad { window, tag } => {
+            scratchpad_handler::release_scratchpad(window.clone(), *tag, manager)
+        }
+
+        Command::NextScratchPadWindow { scratchpad } => {
+            scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Forward)
+        }
+        Command::PrevScratchPadWindow { scratchpad } => {
+            scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Backward)
+        }
 
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
@@ -253,6 +266,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         .windows
         .iter_mut()
         .find(|w| w.handle == handle)?;
+
     window.untag();
     window.set_floating(false);
     window.tag(&tag.id);

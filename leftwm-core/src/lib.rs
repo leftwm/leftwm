@@ -30,7 +30,7 @@ pub mod utils;
 use utils::modmask_lookup::Button;
 use utils::modmask_lookup::ModMask;
 
-pub use command::Command;
+pub use command::{Command, ReleaseScratchPadOption};
 pub use config::Config;
 pub use display_action::DisplayAction;
 pub use display_event::DisplayEvent;

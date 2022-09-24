@@ -11,7 +11,7 @@ use std::sync::{atomic::AtomicBool, Arc};
 use tracing::error;
 use xdg::BaseDirectories;
 
-type ChildID = u32;
+pub type ChildID = u32;
 
 #[derive(Default)]
 pub struct Nanny {}
@@ -299,7 +299,7 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 
 /// Sends command to shell for execution
 /// Assumes STDIN/STDOUT unwanted.
-pub fn exec_shell(command: &str, children: &mut Children) -> Option<u32> {
+pub fn exec_shell(command: &str, children: &mut Children) -> Option<ChildID> {
     let child = Command::new("sh")
         .arg("-c")
         .arg(&command)

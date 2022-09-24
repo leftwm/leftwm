@@ -30,8 +30,25 @@ impl Keybind {
     ) -> Result<lefthk_core::config::Keybind> {
         let value_is_some = !self.value.is_empty();
         match &self.command {
-            BaseCommand::Execute | BaseCommand::ToggleScratchPad | BaseCommand::LoadTheme => {
+            BaseCommand::Execute | BaseCommand::LoadTheme => {
                 ensure!(value_is_some, "value must not be empty");
+            }
+            BaseCommand::ToggleScratchPad
+            | BaseCommand::AttachScratchPad
+            | BaseCommand::NextScratchPadWindow
+            | BaseCommand::PrevScratchPadWindow => {
+                ensure!(
+                    is_valid_scratchpad_name(config, self.value.as_str()),
+                    "Value should be a correct scratchpad name"
+                );
+            }
+            BaseCommand::ReleaseScratchPad => {
+                ensure!(
+                    self.value.is_empty()
+                        || usize::from_str(&self.value).is_ok()
+                        || is_valid_scratchpad_name(config, self.value.as_str()),
+                    "Value should be empty, a window number or a valid scratchpad name"
+                );
             }
             BaseCommand::GotoTag => {
                 usize::from_str(&self.value).context("invalid index value for GotoTag")?;
@@ -154,4 +171,12 @@ impl Modifier {
             Self::List(modifiers) => modifiers.sort_unstable(),
         }
     }
+}
+
+fn is_valid_scratchpad_name(config: &Config, scratchpad_name: &str) -> bool {
+    config
+        .scratchpad
+        .as_ref()
+        .and_then(|scratchpads| scratchpads.iter().find(|s| s.name == scratchpad_name))
+        .is_some()
 }
