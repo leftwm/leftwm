@@ -2,6 +2,7 @@ use super::{DisplayEvent, XWrap};
 use crate::{models::WindowChange, Command};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
+
 use x11_dl::xlib;
 
 pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
@@ -9,7 +10,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         return None;
     }
     let atom_name = xw.atoms.get_name(event.message_type);
-    log::trace!("ClientMessage: {} : {:?}", event.window, atom_name);
+    tracing::trace!("ClientMessage: {} : {:?}", event.window, atom_name);
 
     if event.message_type == xw.atoms.NetCurrentDesktop {
         let value = event.data.get_long(0);
@@ -22,7 +23,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
                 return Some(event);
             }
             Err(err) => {
-                log::debug!(
+                tracing::debug!(
                     "Received invalid value for current desktop new index ({}): {}",
                     value,
                     err,
@@ -42,7 +43,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
                 return Some(event);
             }
             Err(err) => {
-                log::debug!(
+                tracing::debug!(
                     "Received invalid value for current desktop new index ({}): {}",
                     value,
                     err,

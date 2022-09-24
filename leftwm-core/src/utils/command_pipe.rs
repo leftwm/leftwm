@@ -40,7 +40,7 @@ impl CommandPipe {
     pub async fn new(pipe_file: PathBuf) -> Result<Self, std::io::Error> {
         fs::remove_file(pipe_file.as_path()).await.ok();
         if let Err(e) = nix::unistd::mkfifo(&pipe_file, nix::sys::stat::Mode::S_IRWXU) {
-            log::error!("Failed to create new fifo {:?}", e);
+            tracing::error!("Failed to create new fifo {:?}", e);
         }
 
         let path = pipe_file.clone();
@@ -77,7 +77,7 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
         let cmd = match parse_command(&line) {
             Ok(cmd) => cmd,
             Err(err) => {
-                log::error!("An error occurred while parsing the command: {}", err);
+                tracing::error!("An error occurred while parsing the command: {}", err);
                 return None;
             }
         };

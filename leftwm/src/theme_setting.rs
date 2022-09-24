@@ -26,7 +26,7 @@ impl ThemeSetting {
         match load_theme_file(path) {
             Ok(theme) => *self = theme,
             Err(err) => {
-                log::error!("Could not load theme at path {}: {}", path.display(), err);
+                tracing::error!("Could not load theme at path {}: {}", path.display(), err);
             }
         }
     }

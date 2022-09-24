@@ -31,7 +31,7 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     scratchpad_window: &WindowHandle,
 ) -> Result<(), &'static str> {
-    log::trace!("Hide scratchpad window {:?}", scratchpad_window);
+    tracing::trace!("Hide scratchpad window {:?}", scratchpad_window);
     let nsp_tag = manager
         .state
         .tags
@@ -100,7 +100,7 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     scratchpad_window: &WindowHandle,
 ) -> Result<(), &'static str> {
-    log::trace!("Show scratchpad window {:?}", scratchpad_window);
+    tracing::trace!("Show scratchpad window {:?}", scratchpad_window);
     let current_tag = &manager
         .state
         .focus_manager
@@ -160,7 +160,7 @@ fn next_valid_scratchpad_pid(
             return Some(window);
         }
 
-        log::info!(
+        tracing::info!(
             "Dead window in scratchpad found, discard: window PID: {}",
             window
         );
@@ -233,7 +233,7 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
                 return match action_result {
                     Ok(()) => Some(true),
                     Err(msg) => {
-                        log::error!("{}", msg);
+                        tracing::error!("{}", msg);
                         return Some(false);
                     }
                 };
@@ -241,7 +241,7 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         }
     }
 
-    log::debug!(
+    tracing::debug!(
         "no active scratchpad found for name {:?}. Creating a new one",
         scratchpad.name
     );
@@ -305,13 +305,13 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
         window.set_floating(true);
         window.normal = ws.xyhw;
         window.set_floating_exact(new_float_exact);
-        log::debug!("Set window to floating: {:?}", window);
+        tracing::debug!("Set window to floating: {:?}", window);
 
         window.pid?
     };
 
     if let Some(windows) = manager.state.active_scratchpads.get_mut(scratchpad) {
-        log::debug!(
+        tracing::debug!(
             "Scratchpad {:?} already active, push scratchpad",
             &scratchpad
         );
@@ -332,7 +332,7 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             hide_scratchpad(manager, &previous_scratchpad_handle).ok()?; // first hide current scratchpad window
         }
     } else {
-        log::debug!(
+        tracing::debug!(
             "Scratchpad {:?} not active yet, open scratchpad",
             &scratchpad
         );
@@ -388,7 +388,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .find(|(_, id)| window.pid.as_ref() == id.front())
                 .map(|(name, _)| name.clone())?;
 
-            log::debug!(
+            tracing::debug!(
                 "Releasing scratchpad {:?} to tag {}",
                 scratchpad_name,
                 destination_tag
@@ -398,7 +398,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
             if let Some(windows) = manager.state.active_scratchpads.get_mut(&scratchpad_name) {
                 if windows.len() > 1 {
                     // If more than 1, pop of the stack
-                    log::debug!("Removed 1 window from scratchpad {:?}", &scratchpad_name);
+                    tracing::debug!("Removed 1 window from scratchpad {:?}", &scratchpad_name);
                     windows.remove(
                         windows
                             .iter()
@@ -406,7 +406,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                     );
                 } else {
                     // If only 1, remove entire vec, not needed anymore
-                    log::debug!(
+                    tracing::debug!(
                         "Empty scratchpad {:?}, removing from active_scratchpads",
                         &scratchpad_name
                     );
@@ -441,7 +441,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .find(|w| w.pid == Some(window_pid))
                 .map(|w| w.handle);
 
-            log::debug!(
+            tracing::debug!(
                 "Releasing scratchpad {:?} to tag {}",
                 scratchpad_name,
                 destination_tag
@@ -495,7 +495,7 @@ pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
 
     // Hide the previous visible window
     if let Err(msg) = hide_scratchpad(manager, &visible_window_handle?) {
-        log::error!("{}", msg);
+        tracing::error!("{}", msg);
         return Some(false);
     }
 
@@ -507,7 +507,7 @@ pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
         .find(|w| w.pid == Some(new_window_pid))
         .map(|w| w.handle)?;
     if let Err(msg) = show_scratchpad(manager, &new_window_handle) {
-        log::error!("{}", msg);
+        tracing::error!("{}", msg);
         return Some(false);
     }
 

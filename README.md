@@ -242,11 +242,14 @@ way, make sure you do not move the build directory as it will break your install
 3. Build leftwm
 
    ```bash
-   # Without systemd logging
+   # With systemd logging (view with 'journalctl -f -t leftwm-worker')
    cargo build --release
  
-   # OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
-   cargo build --release --features=journald
+   # OR with sys-log
+   cargo build --release --no-default-features --features=lefthk,sys-log
+  
+   # OR without lefthk (please bring you own keybind daemon like `sxhkd` or similar) and file logging
+   cargo build --release --no-default-features --features=file-log
    ```
 
 4. Create the symlinks
@@ -254,6 +257,7 @@ way, make sure you do not move the build directory as it will break your install
    ```bash
    sudo ln -s "$(pwd)"/target/release/leftwm /usr/bin/leftwm
    sudo ln -s "$(pwd)"/target/release/leftwm-worker /usr/bin/leftwm-worker
+   sudo ln -s "$(pwd)"/target/release/lefthk-worker /usr/bin/lefthk-worker
    sudo ln -s "$(pwd)"/target/release/leftwm-state /usr/bin/leftwm-state
    sudo ln -s "$(pwd)"/target/release/leftwm-check /usr/bin/leftwm-check
    sudo ln -s "$(pwd)"/target/release/leftwm-command /usr/bin/leftwm-command
