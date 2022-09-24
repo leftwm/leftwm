@@ -26,7 +26,10 @@ impl State {
 
         // Make sure the focused window's workspace is focused.
         if let Some(workspace) = self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
-            let _ = self.focus_workspace_work(&workspace.output.clone(), workspace.num);
+            // this is an uggly workaround to suffice some CI failure related to https://github.com/rust-lang/rust/issues/59159
+            let workspace_output_borrow_checker_workaround = workspace.output.clone();
+            let _ = self
+                .focus_workspace_work(&workspace_output_borrow_checker_workaround, workspace.num);
         }
 
         // Make sure the focused window's tag is focused.
