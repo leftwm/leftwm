@@ -40,11 +40,18 @@ impl ScratchPad {
 /// Lisp/Scheme/...
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 #[serde(from = "String")]
+#[serde(into = "String")]
 pub struct ScratchPadName(String);
 
 impl From<String> for ScratchPadName {
     fn from(other: String) -> Self {
         Self(other)
+    }
+}
+
+impl From<ScratchPadName> for String {
+    fn from(other: ScratchPadName) -> Self {
+        other.0
     }
 }
 
