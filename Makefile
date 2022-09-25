@@ -42,7 +42,14 @@ clean:
 install: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop /usr/share/xsessions/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
-	sudo install -s -Dm755 $(ROOT_DIR)/target/release/leftwm $(ROOT_DIR)/target/release/leftwm-worker $(ROOT_DIR)/target/release/leftwm-state $(ROOT_DIR)/target/release/leftwm-check $(ROOT_DIR)/target/release/leftwm-command -t /usr/bin
+	sudo install -s -Dm755\
+		$(ROOT_DIR)/target/release/leftwm\
+		$(ROOT_DIR)/target/release/leftwm-worker\
+		$(ROOT_DIR)/target/release/lefthk-worker\
+		$(ROOT_DIR)/target/release/leftwm-state\
+		$(ROOT_DIR)/target/release/leftwm-check\
+		$(ROOT_DIR)/target/release/leftwm-command\
+		-t /usr/bin
 	cd $(ROOT_DIR) && cargo clean
 	@echo "binaries, '.desktop' file and manual page have been installed"
 
@@ -52,14 +59,21 @@ install-dev: build
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm $(TARGET_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-worker $(TARGET_DIR)/leftwm-worker
+	sudo ln -sf $(ROOT_DIR)/target/release/lefthk-worker $(TARGET_DIR)/lefthk-worker
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-state $(TARGET_DIR)/leftwm-state
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-check $(TARGET_DIR)/leftwm-check
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-command $(TARGET_DIR)/leftwm-command
-	@echo "binaries have been linked and '.desktop' file installed"
+	@echo "binaries have been linked, manpage and '.desktop' file have been installed"
 
 # uninstalls leftwm from the system, no matter if installed via 'install' or 'install-dev'
 uninstall:
 	sudo rm -f $(SHARE_DIR)/leftwm.desktop
 	sudo rm /usr/local/share/man/man1/leftwm.1
-	sudo rm -f $(TARGET_DIR)/leftwm $(TARGET_DIR)/leftwm-worker $(TARGET_DIR)/leftwm-state $(TARGET_DIR)/leftwm-check $(TARGET_DIR)/leftwm-command
-	@echo "binaries have been uninstalled and '.desktop' file removed"
+	sudo rm -f\
+		$(TARGET_DIR)/leftwm\
+		$(TARGET_DIR)/leftwm-worker\
+		$(TARGET_DIR)/lefthk-worker\
+		$(TARGET_DIR)/leftwm-state\
+		$(TARGET_DIR)/leftwm-check\
+		$(TARGET_DIR)/leftwm-command
+	@echo "binaries and manpage have been uninstalled and '.desktop' file has been removed"
