@@ -93,31 +93,27 @@ async fn main() -> Result<()> {
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
 pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
-    let config_filename = match fspath {
-        Some(fspath) => {
-            println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
-            PathBuf::from(fspath)
-        }
-        None => {
-            let ron_file =
-                BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
-            let toml_file =
-                BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
-            if Path::new(&ron_file).exists() {
-                ron_file
-            } else if Path::new(&toml_file).exists() {
-                println!(
-                    "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
+    let config_filename = if let Some(fspath) = fspath {
+        println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
+        PathBuf::from(fspath)
+    } else {
+        let ron_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
+        let toml_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
+        if Path::new(&ron_file).exists() {
+            ron_file
+        } else if Path::new(&toml_file).exists() {
+            println!(
+                "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
       Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
-                );
-                toml_file
-            } else {
-                let config = Config::default();
-                write_to_file(&ron_file, &config)?;
-                return Ok(config);
-            }
+            );
+            toml_file
+        } else {
+            let config = Config::default();
+            write_to_file(&ron_file, &config)?;
+            return Ok(config);
         }
     };
+
     if verbose {
         dbg!(&config_filename);
     }
