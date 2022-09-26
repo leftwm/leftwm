@@ -135,7 +135,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 _ => None,
             };
 
-            tracing::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
+            // tracing::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
             changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
                 update_workspace_avoid_list(&mut self.state);
@@ -315,18 +315,26 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     let xyhw = window.requested.map_or_else(
         || ws.center_halfed(),
         |mut requested| {
-            if ws.xyhw.contains_xyhw(&requested) {
-                requested
-            } else {
-                requested.center_relative(outer, window.border);
-                if ws.xyhw.contains_xyhw(&requested) {
-                    requested
-                } else {
-                    ws.center_halfed()
-                }
-            }
+            requested.center_relative(outer, window.border);
+            requested
+            // tracing::debug!("Requested: {:?}", requested);
+            // if ws.xyhw.contains_xyhw(&requested) {
+            //     tracing::debug!("YES Requested");
+            //     requested
+            // } else {
+            //     tracing::debug!("ADJUSTED requested: {:?}", requested);
+            //     if ws.xyhw.contains_xyhw(&requested) {
+            //         tracing::debug!("Requested finally in ws!");
+            //         requested
+            //     } else {
+            //         tracing::debug!("Requested still not in it");
+            //         ws.center_halfed()
+            //     }
+            // }
         },
     );
+    tracing::debug!("window.normal: {:?}", window.normal);
+    tracing::debug!("xyhw: {:?}", xyhw);
     window.set_floating_exact(xyhw);
 }
 
