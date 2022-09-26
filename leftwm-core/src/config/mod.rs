@@ -23,6 +23,8 @@ pub trait Config {
 
     fn layouts(&self) -> Vec<Layout>;
 
+    fn new_layouts(&self) -> leftwm_layouts::Layouts;
+
     fn layout_mode(&self) -> LayoutMode;
 
     fn insert_behavior(&self) -> InsertBehavior;
@@ -110,6 +112,9 @@ pub(crate) mod tests {
         }
         fn layouts(&self) -> Vec<Layout> {
             self.layouts.clone()
+        }
+        fn new_layouts(&self) -> leftwm_layouts::Layouts {
+            self.new_layouts().clone()
         }
         fn layout_mode(&self) -> LayoutMode {
             LayoutMode::Workspace

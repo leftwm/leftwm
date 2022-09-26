@@ -468,6 +468,7 @@ dependencies = [
  "git-version",
  "lefthk-core",
  "leftwm-core",
+ "leftwm-layouts",
  "liquid",
  "mio",
  "nix",
@@ -496,6 +497,7 @@ version = "0.3.0"
 dependencies = [
  "dirs-next",
  "futures",
+ "leftwm-layouts",
  "mio",
  "nix",
  "serde",
@@ -507,6 +509,16 @@ dependencies = [
  "tracing",
  "x11-dl",
  "xdg",
+]
+
+[[package]]
+name = "leftwm-layouts"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e4961bc3f88c64f1506b645a36fbf707702f623e8221ff2245c2f2f16720a7b"
+dependencies = [
+ "ron",
+ "serde",
 ]
 
 [[package]]

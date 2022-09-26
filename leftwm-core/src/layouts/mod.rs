@@ -60,6 +60,18 @@ impl Default for Layout {
     }
 }
 
+pub struct NewLayout {
+
+}
+
+impl NewLayout {
+    pub fn update_windows(&self, workspace: &Workspace, windows: &mut [&mut Window], tag: &Tag) {
+        // leftwm_layouts::apply()
+        
+        println!("test")
+    }
+}
+
 // This is tedious, but simple and effective.
 impl Layout {
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut [&mut Window], tag: &Tag) {
