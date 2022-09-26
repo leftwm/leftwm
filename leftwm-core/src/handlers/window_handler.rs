@@ -314,8 +314,8 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace) {
         |mut requested| {
             requested.center_relative(ws.xyhw, window.border);
             requested
-
-    });
+        },
+    );
     window.set_floating_exact(xyhw);
 }
 
