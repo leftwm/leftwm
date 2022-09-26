@@ -7,7 +7,7 @@ use clap::{command, crate_version};
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
-use std::process::{exit, Child, Command};
+use std::process::{exit, Child, Command, ExitStatus};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -137,12 +137,15 @@ fn start_leftwm() {
     let mut children = Nanny::autostart();
 
     let flag = get_sigchld_flag();
-    loop {
+
+    let mut error_occured = false;
+    let mut session_exit_status: Option<ExitStatus> = None;
+    while !error_occured {
         let mut leftwm_session = start_leftwm_session(&current_exe);
         #[cfg(feature = "lefthk")]
         let mut lefthk_session = start_lefthk_session(&current_exe);
 
-        while leftwm_is_still_running(&mut leftwm_session) {
+        while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
             children.remove_finished_children();
 
@@ -151,10 +154,12 @@ fn start_leftwm() {
             }
         }
 
+        // we don't want a rougue lefthk session so we kill it when the leftwm one ended
         #[cfg(feature = "lefthk")]
         kill_lefthk_session(&mut lefthk_session);
 
-        // while lefthk.try_wait().expect("failed to reap lefthk").is_none() {}
+        session_exit_status = get_exit_status(&mut leftwm_session);
+        error_occured = check_error_occured(session_exit_status);
 
         // TODO: either add more details or find a better workaround.
         //
@@ -166,10 +171,19 @@ fn start_leftwm() {
             std::thread::sleep(delay);
         }
     }
+
+    if error_occured {
+        print_crash_message();
+    }
+
+    match session_exit_status {
+        Some(exit_status) => std::process::exit(exit_status.code().unwrap_or(0)),
+        None => std::process::exit(1),
+    };
 }
 
 /// checks if leftwm is still running
-fn leftwm_is_still_running(leftwm_session: &mut Child) -> bool {
+fn session_is_running(leftwm_session: &mut Child) -> bool {
     leftwm_session
         .try_wait()
         .expect("failed to wait on worker")
@@ -224,4 +238,25 @@ fn get_sigchld_flag() -> Arc<AtomicBool> {
 /// - `false` if leftwm needs to refresh its state
 fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
     !flag.swap(false, Ordering::SeqCst)
+}
+
+fn get_exit_status(leftwm_session: &mut Child) -> Option<ExitStatus> {
+    leftwm_session.wait().ok()
+}
+
+fn check_error_occured(session_exit_status: Option<ExitStatus>) -> bool {
+    if let Some(exit_status) = session_exit_status {
+        !exit_status.success()
+    } else {
+        true
+    }
+}
+
+fn print_crash_message() {
+    println!(concat!(
+        "Leftwm crashed due to an unexpected error.\n",
+        "Please create a new issue and post its log if possible.\n",
+        "\n",
+        "NOTE: You can restart leftwm with `startx`."
+    ));
 }
