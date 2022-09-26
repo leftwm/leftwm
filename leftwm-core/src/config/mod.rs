@@ -90,6 +90,7 @@ pub(crate) mod tests {
         pub layouts: Vec<Layout>,
         pub workspaces: Option<Vec<Workspace>>,
         pub insert_behavior: InsertBehavior,
+        pub border_width: i32,
     }
 
     impl Config for TestConfig {
@@ -144,7 +145,7 @@ pub(crate) mod tests {
             800
         }
         fn border_width(&self) -> i32 {
-            0
+            self.border_width
         }
         fn margin(&self) -> Margins {
             Margins::new(0)
