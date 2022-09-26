@@ -132,7 +132,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 _ => None,
             };
 
-            // tracing::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
             changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
                 update_workspace_avoid_list(&mut self.state);
