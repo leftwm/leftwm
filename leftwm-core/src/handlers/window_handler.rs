@@ -4,7 +4,7 @@ use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{WindowHandle, WindowState, Xyhw};
+use crate::models::{WindowHandle, WindowState};
 use crate::state::State;
 use crate::utils::helpers;
 use std::env;
@@ -49,9 +49,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             let act = DisplayAction::SetWindowTag(window.handle, window.tag);
             self.state.actions.push_back(act);
         }
-
-        // Tell the WM the new display order of the windows.
-        self.state.sort_windows(); // Is this needed??
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
@@ -366,16 +363,6 @@ fn setup_window(
                 let new_float_exact = s.xyhw(&ws.xyhw);
                 window.normal = ws.xyhw;
                 window.set_floating_exact(new_float_exact);
-                return;
-            }
-        }
-
-        // Setup a child window.
-        if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
-            // This is currently for vlc, this probably will need to be more general if another
-            // case comes up where we don't want to move the window.
-            if window.r#type != WindowType::Utility {
-                set_relative_floating(window, ws);
                 return;
             }
         }
