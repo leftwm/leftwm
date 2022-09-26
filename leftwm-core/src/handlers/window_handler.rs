@@ -317,24 +317,8 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         |mut requested| {
             requested.center_relative(outer, window.border);
             requested
-            // tracing::debug!("Requested: {:?}", requested);
-            // if ws.xyhw.contains_xyhw(&requested) {
-            //     tracing::debug!("YES Requested");
-            //     requested
-            // } else {
-            //     tracing::debug!("ADJUSTED requested: {:?}", requested);
-            //     if ws.xyhw.contains_xyhw(&requested) {
-            //         tracing::debug!("Requested finally in ws!");
-            //         requested
-            //     } else {
-            //         tracing::debug!("Requested still not in it");
-            //         ws.center_halfed()
-            //     }
-            // }
         },
     );
-    tracing::debug!("window.normal: {:?}", window.normal);
-    tracing::debug!("xyhw: {:?}", xyhw);
     window.set_floating_exact(xyhw);
 }
 
