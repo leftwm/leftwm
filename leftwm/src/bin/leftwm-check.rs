@@ -103,7 +103,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         } else if Path::new(&toml_file).exists() {
             println!(
                 "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-     Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
+      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
             );
             toml_file
         } else {
@@ -112,6 +112,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
             return Ok(config);
         }
     };
+
     if verbose {
         dbg!(&config_filename);
     }

@@ -526,3 +526,23 @@ impl Config {
             .unwrap_or_else(|| Path::new(STATE_FILE))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn config_serializes_to_valid_ron_test() {
+        let config = Config::default();
+
+        // Check RON
+        let ron_pretty_conf = ron::ser::PrettyConfig::new()
+            .depth_limit(2)
+            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+        let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf);
+        assert!(ron.is_ok(), "Could not serialize default config");
+
+        let ron_config = ron::from_str::<'_, Config>(ron.unwrap().as_str());
+        assert!(ron_config.is_ok(), "Could not deserialize default config");
+    }
+}
