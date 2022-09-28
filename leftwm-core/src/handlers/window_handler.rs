@@ -4,7 +4,7 @@ use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{WindowHandle, WindowState};
+use crate::models::{WindowHandle, WindowState, Xyhw};
 use crate::state::State;
 use crate::utils::helpers;
 use std::env;
@@ -305,13 +305,13 @@ fn is_scratchpad(state: &State, window: &Window) -> bool {
         .any(|(_, id)| id.iter().any(|id| window.pid == Some(*id)))
 }
 
-fn set_relative_floating(window: &mut Window, ws: &Workspace) {
+fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.set_floating(true);
     window.normal = ws.xyhw;
     let xyhw = window.requested.map_or_else(
         || ws.center_halfed(),
         |mut requested| {
-            requested.center_relative(ws.xyhw, window.border);
+            requested.center_relative(outer, window.border);
             requested
         },
     );
@@ -366,12 +366,22 @@ fn setup_window(
             }
         }
 
+        // Setup a child window.
+        if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
+            // This is currently for vlc, this probably will need to be more general if another
+            // case comes up where we don't want to move the window.
+            if window.r#type != WindowType::Utility {
+                set_relative_floating(window, ws, parent.exact_xyhw());
+                return;
+            }
+        }
+
         // Setup window based on type.
         match window.r#type {
             WindowType::Normal => {
                 window.apply_margin_multiplier(ws.margin_multiplier);
                 if window.floating() {
-                    set_relative_floating(window, ws);
+                    set_relative_floating(window, ws, ws.xyhw);
                 }
             }
             WindowType::Dialog => {
@@ -381,10 +391,10 @@ fn setup_window(
                     window.normal = ws.xyhw;
                     window.set_floating_exact(new_float_exact);
                 } else {
-                    set_relative_floating(window, ws);
+                    set_relative_floating(window, ws, ws.xyhw);
                 }
             }
-            WindowType::Splash => set_relative_floating(window, ws),
+            WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
             _ => {}
         }
         return;
