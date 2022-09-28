@@ -311,16 +311,12 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     let xyhw = window.requested.map_or_else(
         || ws.center_halfed(),
         |mut requested| {
+            requested.center_relative(outer, window.border);
             if ws.xyhw.contains_xyhw(&requested) {
-                requested.center_relative(ws.xyhw, window.border);
                 requested
             } else {
-                requested.center_relative(outer, window.border);
-                if ws.xyhw.contains_xyhw(&requested) {
-                    requested
-                } else {
-                    ws.center_halfed()
-                }
+                requested.center_relative(ws.xyhw, window.border);
+                requested
             }
         },
     );
