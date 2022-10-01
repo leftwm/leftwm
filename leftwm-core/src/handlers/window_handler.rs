@@ -50,9 +50,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.actions.push_back(act);
         }
 
-        // Tell the WM the new display order of the windows.
-        self.state.sort_windows(); // Is this needed??
-
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
         }
@@ -135,7 +132,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 _ => None,
             };
 
-            tracing::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
             changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
                 update_workspace_avoid_list(&mut self.state);
@@ -315,15 +311,12 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     let xyhw = window.requested.map_or_else(
         || ws.center_halfed(),
         |mut requested| {
+            requested.center_relative(outer, window.border);
             if ws.xyhw.contains_xyhw(&requested) {
                 requested
             } else {
-                requested.center_relative(outer, window.border);
-                if ws.xyhw.contains_xyhw(&requested) {
-                    requested
-                } else {
-                    ws.center_halfed()
-                }
+                requested.center_relative(ws.xyhw, window.border);
+                requested
             }
         },
     );
