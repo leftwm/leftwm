@@ -374,7 +374,7 @@ impl leftwm_core::Config for Config {
     }
 
     fn new_layouts(&self) -> leftwm_layouts::Layouts {
-        self.new_layouts().clone()
+        self.new_layouts.clone()
     }
 
     fn layout_mode(&self) -> LayoutMode {
