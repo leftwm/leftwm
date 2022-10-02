@@ -285,11 +285,8 @@ simple black screen on login.  For a more customized look, install a theme.
 2. Build leftwm
 
    ```bash
-   # Without systemd logging
+   # With systemd logging (view with 'journalctl -f -t leftwm-worker')
    cargo build --release
- 
-   # OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
-   cargo build --release --features=journald
    ```
 
 3. And press the following keybind to reload leftwm
