@@ -8,7 +8,7 @@
         <img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
     </a>
     <a href="https://github.com/leftwm/leftwm/wiki">
-        <img src="https://img.shields.io/badge/wiki-0.2.8-green.svg" alt="wiki" />
+        <img src="https://img.shields.io/badge/wiki-0.4.0-green.svg" alt="wiki" />
     </a>
     <a href="https://discord.gg/c9rB3wDnVs">
         <img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
@@ -19,7 +19,9 @@
   </p>
 </div>
 
-![Screenshot of LeftWM in action](screenshots/4.jpg)
+![Screenshot of LeftWM in action](screenshots/5.png)
+
+**IMPORTANT NOTE: LeftWM has changed the config language from `TOML` to `RON` with the `0.4.0` release. Please use `leftwm-check --migrate-toml-to-ron` to migrate your config and visit the [wiki](https://github.com/leftwm/leftwm/wiki) for more info.**
 
 # Table of contents
 
