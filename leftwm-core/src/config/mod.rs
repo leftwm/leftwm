@@ -65,7 +65,7 @@ pub trait Config {
     fn setup_predefined_window(&self, window: &mut Window) -> bool;
 
     fn load_window(&self, window: &mut Window) {
-        if window.r#type == WindowType::Normal {
+        if window.r#type == WindowType::Normal || window.is_firefox_pip() {
             window.margin = self.margin();
             window.border = self.border_width();
             window.must_float = self.always_float();

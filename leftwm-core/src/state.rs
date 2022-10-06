@@ -86,7 +86,7 @@ impl State {
             partition_windows(other.iter(), |w| {
                 w.r#type == WindowType::Dialog
                     || w.r#type == WindowType::Splash
-                    || w.r#type == WindowType::Utility
+                    || (w.r#type == WindowType::Utility && !w.is_firefox_pip())
                     || w.r#type == WindowType::Menu
             });
 
@@ -98,7 +98,9 @@ impl State {
 
         // Tiled windows.
         let (level5, tiled, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| w.r#type == WindowType::Normal);
+            partition_windows(other.iter(), |w| {
+                w.r#type == WindowType::Normal || w.is_firefox_pip()
+            });
 
         // Last docks.
         let level6: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
