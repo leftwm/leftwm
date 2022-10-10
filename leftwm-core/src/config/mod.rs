@@ -27,6 +27,8 @@ pub trait Config {
 
     fn insert_behavior(&self) -> InsertBehavior;
 
+    fn no_single_border(&self) -> bool;
+
     fn focus_new_windows(&self) -> bool;
 
     fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
@@ -91,6 +93,7 @@ pub(crate) mod tests {
         pub workspaces: Option<Vec<Workspace>>,
         pub insert_behavior: InsertBehavior,
         pub border_width: i32,
+        pub no_single_border: bool,
     }
 
     impl Config for TestConfig {
@@ -118,6 +121,10 @@ pub(crate) mod tests {
 
         fn insert_behavior(&self) -> InsertBehavior {
             self.insert_behavior
+        }
+
+        fn no_single_border(&self) -> bool {
+            self.no_single_border
         }
 
         fn focus_new_windows(&self) -> bool {

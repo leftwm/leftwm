@@ -34,10 +34,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut on_same_tag,
         );
         self.config.load_window(&mut window);
-
         insert_window(&mut self.state, &mut window, layout);
-
-        self.single_border_handler(&window);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour.is_sloppy()
@@ -55,6 +52,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         // Tell the WM to reevaluate the stacking order, so the new window is put in the correct layer
         self.state.sort_windows();
+        self.state.handle_single_border(self.config.border_width());
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
@@ -84,7 +82,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .retain(|_, h| h != handle);
         self.state.windows.retain(|w| &w.handle != handle);
 
-        self.single_border_handler(&window);
+        self.state.handle_single_border(self.config.border_width());
 
         // Make sure the workspaces do not draw on the docks.
         update_workspace_avoid_list(&mut self.state);
@@ -181,25 +179,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .map(|w| w.handle);
         self.state.windows.append(&mut windows_on_workspace);
         new_handle
-    }
-
-    fn single_border_handler(&mut self, window: &Window) {
-        let mut windows_on_tag: Vec<&mut Window> = self.state.windows
-            .iter_mut()
-            .filter(|w| w.tag == window.tag)
-            .collect();
-        if windows_on_tag.len() == 1 {
-            match windows_on_tag.first_mut() {
-                Some(w) => w.border = 0,
-                None => (),
-            };
-        }
-        if windows_on_tag.len() == 2 {
-            match windows_on_tag.first_mut() {
-                Some(w) => w.border = self.config.border_width(),
-                None => (),
-            };
-        }
     }
 }
 

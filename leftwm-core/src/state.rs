@@ -3,7 +3,7 @@
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::Layout;
-use crate::models::Size;
+use crate::models::{Size, WindowType};
 use crate::models::Tags;
 use crate::models::Window;
 use crate::models::Workspace;
@@ -33,6 +33,7 @@ pub struct State {
     pub default_height: i32,
     pub disable_tile_drag: bool,
     pub insert_behavior: InsertBehavior,
+    pub no_single_border: bool,
 }
 
 impl State {
@@ -62,12 +63,12 @@ impl State {
             default_height: config.default_height(),
             disable_tile_drag: config.disable_tile_drag(),
             insert_behavior: config.insert_behavior(),
+            no_single_border: config.no_single_border(),
         }
     }
 
     // Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
-        use crate::models::WindowType;
         // The windows we are managing should be behind unmanaged windows. Unless they are
         // fullscreen, or their children.
         // Fullscreen windows.
@@ -117,6 +118,33 @@ impl State {
         let handles: Vec<WindowHandle> = [level3, level4, level5, level6].concat();
         let act = DisplayAction::SetWindowOrder(fullscreen, handles);
         self.actions.push_back(act);
+    }
+
+    pub fn handle_single_border(&mut self, border_width: i32) {
+        if !self.no_single_border {
+            return;
+        }
+
+        for tag in self.tags.normal() {
+            let mut windows_on_tag: Vec<&mut Window> = self
+                .windows
+                .iter_mut()
+                .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
+                .collect();
+
+            if windows_on_tag.len() == 1 {
+                match windows_on_tag.first_mut() {
+                    Some(w) => w.border = 0,
+                    None => (),
+                };
+            }
+            if windows_on_tag.len() > 1 {
+                match windows_on_tag.first_mut() {
+                    Some(w) => w.border = border_width,
+                    None => (),
+                };
+            }
+        }
     }
 
     pub fn move_to_top(&mut self, handle: &WindowHandle) -> Option<()> {

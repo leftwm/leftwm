@@ -118,6 +118,7 @@ pub struct Config {
     pub disable_window_snap: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
+    pub no_single_border: bool,
     pub sloppy_mouse_follows_focus: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
@@ -384,6 +385,10 @@ impl leftwm_core::Config for Config {
 
     fn insert_behavior(&self) -> InsertBehavior {
         self.insert_behavior
+    }
+
+    fn no_single_border(&self) -> bool {
+        self.no_single_border
     }
 
     fn focus_new_windows(&self) -> bool {
