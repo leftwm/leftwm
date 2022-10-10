@@ -189,6 +189,9 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     manager.state.actions.push_back(act);
 
     manager.state.sort_windows();
+    manager
+        .state
+        .handle_single_border(manager.config.border_width());
     if handle_focus {
         if let Some(new_handle) = new_handle {
             manager.state.focus_window(&new_handle);
@@ -1059,5 +1062,34 @@ mod tests {
             expected_tag
         );
         assert_eq!(manager.state.windows[0].handle, initial.handle);
+    }
+
+    #[test]
+    fn after_moving_second_window_remaining_single_window_has_no_border() {
+        let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        let first_tag = manager.state.tags.get(1).unwrap().id;
+        assert!(manager.state.windows[0].has_tag(&first_tag));
+        assert!(manager.state.windows[0].border() > 0);
+
+        let second_tag = manager.state.tags.get(2).unwrap().id;
+        assert!(manager.command_handler(&Command::SendWindowToTag {
+            window: Some(manager.state.windows[0].handle),
+            tag: second_tag,
+        }));
+
+        assert_eq!(manager.state.windows[0].border(), 0);
     }
 }
