@@ -1,5 +1,8 @@
 use super::{DisplayEvent, XWrap};
-use crate::{models::WindowChange, Command};
+use crate::{
+    models::{WindowChange, WindowHandle},
+    Command,
+};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
 
@@ -52,9 +55,12 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             }
         }
     }
+
     if event.message_type == xw.atoms.NetActiveWindow {
         xw.set_window_urgency(event.window, true);
-        return None;
+        return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
+            event.window,
+        )));
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too
