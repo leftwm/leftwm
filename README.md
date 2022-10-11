@@ -178,7 +178,7 @@ sudo xbps-install -S leftwm
 cargo install leftwm
 ```
 
-If you install LeftWM with crates.io, you will need to link to the xsession desktop file if you want
+If you install LeftWM with crates.io, you will need to link to the [xsession desktop file](https://github.com/leftwm/leftwm/blob/758bbf837a8556cdc7e09ff2d394f528e7657333/leftwm.desktop) if you want
 to be able to login to LeftWM from a display manager (GDM, SSDM, LightDM, etc.):
 
 ```sh
