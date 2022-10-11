@@ -35,6 +35,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             }
         }
     }
+
     if event.message_type == xw.atoms.NetWMDesktop {
         let value = event.data.get_long(0);
         match usize::try_from(value) {
@@ -57,10 +58,14 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
     }
 
     if event.message_type == xw.atoms.NetActiveWindow {
-        xw.set_window_urgency(event.window, true);
+        // When a client sends a Message with this atom and a WindowHandle
+        // we assume it wants to request focus for this window
         return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
             event.window,
         )));
+        // TODO add config switch to let the user just set the urgency flag instead of taking focus
+        // xw.set_window_urgency(event.window, false);
+        // return None;
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too
