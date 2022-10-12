@@ -224,7 +224,7 @@ impl Default for Config {
             disable_window_snap: true,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
             focus_new_windows: true, // default behaviour: focuses windows on creation
-            no_single_border: false,
+            single_window_border: true,
             insert_behavior: leftwm_core::config::InsertBehavior::Bottom,
             modkey: "Mod4".to_owned(),     //win key
             mousekey: Some("Mod4".into()), //win key

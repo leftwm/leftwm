@@ -70,7 +70,7 @@ impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDispl
         Self::new(TestConfig {
             tags,
             border_width,
-            no_single_border: true,
+            single_window_border: false,
             ..TestConfig::default()
         })
     }

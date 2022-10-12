@@ -30,7 +30,7 @@ pub struct State {
     pub default_height: i32,
     pub disable_tile_drag: bool,
     pub insert_behavior: InsertBehavior,
-    pub no_single_border: bool,
+    pub single_window_border: bool,
 }
 
 impl State {
@@ -60,7 +60,7 @@ impl State {
             default_height: config.default_height(),
             disable_tile_drag: config.disable_tile_drag(),
             insert_behavior: config.insert_behavior(),
-            no_single_border: config.no_single_border(),
+            single_window_border: config.single_window_border(),
         }
     }
 
@@ -118,7 +118,7 @@ impl State {
     }
 
     pub fn handle_single_border(&mut self, border_width: i32) {
-        if !self.no_single_border {
+        if self.single_window_border {
             return;
         }
 
