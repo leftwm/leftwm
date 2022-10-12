@@ -3,13 +3,13 @@
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::Layout;
-use crate::models::{Size, WindowType};
 use crate::models::Tags;
 use crate::models::Window;
 use crate::models::Workspace;
 use crate::models::{FocusManager, LayoutManager};
 use crate::models::{Mode, WindowHandle};
 use crate::models::{ScratchPadName, Screen};
+use crate::models::{Size, WindowType};
 use crate::DisplayAction;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};

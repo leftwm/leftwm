@@ -571,11 +571,7 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         let window = Window::new(WindowHandle::MockHandle(1), None, None);
-        manager.window_created_handler(
-            window,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window, -1, -1);
 
         let actual = (&manager.state.windows[0]).border();
 
@@ -589,18 +585,10 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         let window1 = Window::new(WindowHandle::MockHandle(1), None, None);
-        manager.window_created_handler(
-            window1,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window1, -1, -1);
 
         let window2 = Window::new(WindowHandle::MockHandle(2), None, None);
-        manager.window_created_handler(
-            window2,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window2, -1, -1);
 
         let actual_window1 = (&manager.state.windows[0]).border();
         let actual_window2 = (&manager.state.windows[1]).border();
@@ -616,19 +604,11 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         let window1 = Window::new(WindowHandle::MockHandle(1), None, None);
-        manager.window_created_handler(
-            window1,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window1, -1, -1);
 
         let window_handle2 = WindowHandle::MockHandle(2);
         let window2 = Window::new(window_handle2, None, None);
-        manager.window_created_handler(
-            window2,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window2, -1, -1);
 
         manager.window_destroyed_handler(&window_handle2);
 
@@ -645,19 +625,11 @@ mod tests {
 
         let mut window1 = Window::new(WindowHandle::MockHandle(1), None, None);
         window1.tag(&1);
-        manager.window_created_handler(
-            window1,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window1, -1, -1);
 
         let mut window2 = Window::new(WindowHandle::MockHandle(2), None, None);
         window2.tag(&2);
-        manager.window_created_handler(
-            window2,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window2, -1, -1);
 
         let actual_window1 = (&manager.state.windows[0]).border();
         let actual_window2 = (&manager.state.windows[1]).border();
@@ -674,27 +646,15 @@ mod tests {
 
         let mut window1 = Window::new(WindowHandle::MockHandle(1), None, None);
         window1.tag(&1);
-        manager.window_created_handler(
-            window1,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window1, -1, -1);
 
         let mut window2 = Window::new(WindowHandle::MockHandle(2), None, None);
         window2.tag(&2);
-        manager.window_created_handler(
-            window2,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window2, -1, -1);
 
         let mut window3 = Window::new(WindowHandle::MockHandle(3), None, None);
         window3.tag(&2);
-        manager.window_created_handler(
-            window3,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window3, -1, -1);
 
         let actual_window1 = (&manager.state.windows[0]).border();
         let actual_window2 = (&manager.state.windows[1]).border();
@@ -713,28 +673,16 @@ mod tests {
 
         let mut window1 = Window::new(WindowHandle::MockHandle(1), None, None);
         window1.tag(&1);
-        manager.window_created_handler(
-            window1,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window1, -1, -1);
 
         let mut window2 = Window::new(WindowHandle::MockHandle(2), None, None);
         window2.tag(&2);
-        manager.window_created_handler(
-            window2,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window2, -1, -1);
 
         let window_handle3 = WindowHandle::MockHandle(3);
         let mut window3 = Window::new(window_handle3, None, None);
         window3.tag(&2);
-        manager.window_created_handler(
-            window3,
-            -1,
-            -1,
-        );
+        manager.window_created_handler(window3, -1, -1);
 
         manager.window_destroyed_handler(&window_handle3);
 
