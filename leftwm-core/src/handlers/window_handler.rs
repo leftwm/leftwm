@@ -68,14 +68,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn window_destroyed_handler(&mut self, handle: &WindowHandle) -> bool {
-        let window = match self.state.windows.iter().find(|w| &w.handle == handle) {
-            Some(w) => w.clone(),
-            None => return false,
-        };
-
         // Find the next or previous window on the workspace.
         let new_handle = self.get_next_or_previous_handle(handle);
         // If there is a parent we would want to focus it.
+        let (transient, floating, visible) =
+            match self.state.windows.iter().find(|w| &w.handle == handle) {
+                Some(window) => (window.transient, window.floating(), window.visible()),
+                None => return false,
+            };
         self.state
             .focus_manager
             .tags_last_window
@@ -96,20 +96,20 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
             } else if let Some(parent) =
-                find_transient_parent(&self.state.windows, window.transient).map(|p| p.handle)
+                find_transient_parent(&self.state.windows, transient).map(|p| p.handle)
             {
                 self.state.focus_window(&parent);
             } else if let Some(handle) = new_handle {
                 self.state.focus_window(&handle);
             } else {
-                let act = DisplayAction::Unfocus(Some(*handle), window.floating());
+                let act = DisplayAction::Unfocus(Some(*handle), floating);
                 self.state.actions.push_back(act);
                 self.state.focus_manager.window_history.push_front(None);
             }
         }
 
         // Only update windows if this window is visible.
-        window.visible()
+        visible
     }
 
     pub fn window_changed_handler(&mut self, change: WindowChange) -> bool {
@@ -567,129 +567,117 @@ mod tests {
     #[test]
     fn single_window_has_no_border() {
         let mut manager = Manager::new_test_with_border(vec![], 1);
-
         manager.screen_create_handler(Screen::default());
 
-        let window = Window::new(WindowHandle::MockHandle(1), None, None);
-        manager.window_created_handler(window, -1, -1);
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
 
-        let actual = (&manager.state.windows[0]).border();
-
-        assert_eq!(actual, 0);
+        assert_eq!((&manager.state.windows[0]).border(), 0);
     }
 
     #[test]
     fn multiple_windows_have_borders() {
         let mut manager = Manager::new_test_with_border(vec![], 1);
-
         manager.screen_create_handler(Screen::default());
 
-        let window1 = Window::new(WindowHandle::MockHandle(1), None, None);
-        manager.window_created_handler(window1, -1, -1);
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
 
-        let window2 = Window::new(WindowHandle::MockHandle(2), None, None);
-        manager.window_created_handler(window2, -1, -1);
-
-        let actual_window1 = (&manager.state.windows[0]).border();
-        let actual_window2 = (&manager.state.windows[1]).border();
-
-        assert_eq!(actual_window1, 1);
-        assert_eq!(actual_window2, 1);
+        assert_eq!((&manager.state.windows[0]).border(), 1);
+        assert_eq!((&manager.state.windows[1]).border(), 1);
     }
 
     #[test]
     fn remaining_single_window_has_no_border() {
         let mut manager = Manager::new_test_with_border(vec![], 1);
-
         manager.screen_create_handler(Screen::default());
 
-        let window1 = Window::new(WindowHandle::MockHandle(1), None, None);
-        manager.window_created_handler(window1, -1, -1);
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
 
-        let window_handle2 = WindowHandle::MockHandle(2);
-        let window2 = Window::new(window_handle2, None, None);
-        manager.window_created_handler(window2, -1, -1);
+        manager.window_destroyed_handler(&manager.state.windows[1].handle.clone());
 
-        manager.window_destroyed_handler(&window_handle2);
-
-        let actual_window1 = (&manager.state.windows[0]).border();
-
-        assert_eq!(actual_window1, 0);
+        assert_eq!((&manager.state.windows[0]).border(), 0);
     }
 
     #[test]
     fn single_windows_on_different_tags_have_no_border() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-
         manager.screen_create_handler(Screen::default());
 
-        let mut window1 = Window::new(WindowHandle::MockHandle(1), None, None);
-        window1.tag(&1);
-        manager.window_created_handler(window1, -1, -1);
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
 
-        let mut window2 = Window::new(WindowHandle::MockHandle(2), None, None);
-        window2.tag(&2);
-        manager.window_created_handler(window2, -1, -1);
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
 
-        let actual_window1 = (&manager.state.windows[0]).border();
-        let actual_window2 = (&manager.state.windows[1]).border();
-
-        assert_eq!(actual_window1, 0);
-        assert_eq!(actual_window2, 0);
+        assert_eq!((&manager.state.windows[0]).border(), 0);
+        assert_eq!((&manager.state.windows[1]).border(), 0);
     }
 
     #[test]
     fn single_window_has_no_border_and_windows_on_another_tag_have_borders() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-
         manager.screen_create_handler(Screen::default());
 
-        let mut window1 = Window::new(WindowHandle::MockHandle(1), None, None);
-        window1.tag(&1);
-        manager.window_created_handler(window1, -1, -1);
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
 
-        let mut window2 = Window::new(WindowHandle::MockHandle(2), None, None);
-        window2.tag(&2);
-        manager.window_created_handler(window2, -1, -1);
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
 
-        let mut window3 = Window::new(WindowHandle::MockHandle(3), None, None);
-        window3.tag(&2);
-        manager.window_created_handler(window3, -1, -1);
+        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        third_window.tag(&2);
+        manager.window_created_handler(third_window, -1, -1);
 
-        let actual_window1 = (&manager.state.windows[0]).border();
-        let actual_window2 = (&manager.state.windows[1]).border();
-        let actual_window3 = (&manager.state.windows[2]).border();
-
-        assert_eq!(actual_window1, 0);
-        assert_eq!(actual_window2, 1);
-        assert_eq!(actual_window3, 1);
+        assert_eq!((&manager.state.windows[0]).border(), 0);
+        assert_eq!((&manager.state.windows[1]).border(), 1);
+        assert_eq!((&manager.state.windows[2]).border(), 1);
     }
 
     #[test]
     fn remaining_single_window_on_another_tag_has_no_border() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-
         manager.screen_create_handler(Screen::default());
 
-        let mut window1 = Window::new(WindowHandle::MockHandle(1), None, None);
-        window1.tag(&1);
-        manager.window_created_handler(window1, -1, -1);
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
 
-        let mut window2 = Window::new(WindowHandle::MockHandle(2), None, None);
-        window2.tag(&2);
-        manager.window_created_handler(window2, -1, -1);
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
 
-        let window_handle3 = WindowHandle::MockHandle(3);
-        let mut window3 = Window::new(window_handle3, None, None);
-        window3.tag(&2);
-        manager.window_created_handler(window3, -1, -1);
+        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        third_window.tag(&2);
+        manager.window_created_handler(third_window, -1, -1);
 
-        manager.window_destroyed_handler(&window_handle3);
+        manager.window_destroyed_handler(&manager.state.windows[2].handle.clone());
 
-        let actual_window1 = (&manager.state.windows[0]).border();
-        let actual_window2 = (&manager.state.windows[1]).border();
-
-        assert_eq!(actual_window1, 0);
-        assert_eq!(actual_window2, 0);
+        assert_eq!((&manager.state.windows[0]).border(), 0);
+        assert_eq!((&manager.state.windows[1]).border(), 0);
     }
 }
