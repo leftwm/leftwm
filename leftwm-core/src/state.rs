@@ -135,9 +135,9 @@ impl State {
                 }
             }
             if windows_on_tag.len() > 1 {
-                if let Some(w) = windows_on_tag.first_mut() {
-                    w.border = border_width;
-                }
+                windows_on_tag
+                    .iter_mut()
+                    .for_each(|w| w.border = border_width);
             }
         }
     }

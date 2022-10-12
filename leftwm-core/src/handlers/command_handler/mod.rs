@@ -1092,4 +1092,27 @@ mod tests {
 
         assert_eq!(manager.state.windows[0].border(), 0);
     }
+
+    #[test]
+    fn after_moving_single_window_to_another_single_window_both_have_borders() {
+        let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        let second_tag = manager.state.tags.get(2).unwrap().id;
+        assert!(manager.command_handler(&Command::SendWindowToTag {
+            window: Some(manager.state.windows[0].handle),
+            tag: second_tag,
+        }));
+
+        assert_eq!(manager.state.windows[0].border(), 1);
+        assert_eq!(manager.state.windows[1].border(), 1);
+    }
 }
