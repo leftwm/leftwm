@@ -130,16 +130,14 @@ impl State {
                 .collect();
 
             if windows_on_tag.len() == 1 {
-                match windows_on_tag.first_mut() {
-                    Some(w) => w.border = 0,
-                    None => (),
-                };
+                if let Some(w) = windows_on_tag.first_mut() {
+                    w.border = 0;
+                }
             }
             if windows_on_tag.len() > 1 {
-                match windows_on_tag.first_mut() {
-                    Some(w) => w.border = border_width,
-                    None => (),
-                };
+                if let Some(w) = windows_on_tag.first_mut() {
+                    w.border = border_width;
+                }
             }
         }
     }

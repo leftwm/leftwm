@@ -575,7 +575,7 @@ mod tests {
             -1,
         );
 
-        assert_eq!((&manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[0]).border(), 0);
     }
 
     #[test]
@@ -594,8 +594,8 @@ mod tests {
             -1,
         );
 
-        assert_eq!((&manager.state.windows[0]).border(), 1);
-        assert_eq!((&manager.state.windows[1]).border(), 1);
+        assert_eq!((manager.state.windows[0]).border(), 1);
+        assert_eq!((manager.state.windows[1]).border(), 1);
     }
 
     #[test]
@@ -616,7 +616,7 @@ mod tests {
 
         manager.window_destroyed_handler(&manager.state.windows[1].handle.clone());
 
-        assert_eq!((&manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[0]).border(), 0);
     }
 
     #[test]
@@ -632,8 +632,8 @@ mod tests {
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
-        assert_eq!((&manager.state.windows[0]).border(), 0);
-        assert_eq!((&manager.state.windows[1]).border(), 0);
+        assert_eq!((manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[1]).border(), 0);
     }
 
     #[test]
@@ -653,9 +653,9 @@ mod tests {
         third_window.tag(&2);
         manager.window_created_handler(third_window, -1, -1);
 
-        assert_eq!((&manager.state.windows[0]).border(), 0);
-        assert_eq!((&manager.state.windows[1]).border(), 1);
-        assert_eq!((&manager.state.windows[2]).border(), 1);
+        assert_eq!((manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[1]).border(), 1);
+        assert_eq!((manager.state.windows[2]).border(), 1);
     }
 
     #[test]
@@ -677,7 +677,7 @@ mod tests {
 
         manager.window_destroyed_handler(&manager.state.windows[2].handle.clone());
 
-        assert_eq!((&manager.state.windows[0]).border(), 0);
-        assert_eq!((&manager.state.windows[1]).border(), 0);
+        assert_eq!((manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[1]).border(), 0);
     }
 }
