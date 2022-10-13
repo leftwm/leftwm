@@ -129,16 +129,21 @@ impl State {
                 .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
                 .collect();
 
+            if tag.layout == Layout::Monocle {
+                windows_on_tag.iter_mut().for_each(|w| w.border = 0);
+                continue;
+            }
+
             if windows_on_tag.len() == 1 {
                 if let Some(w) = windows_on_tag.first_mut() {
                     w.border = 0;
                 }
+                continue;
             }
-            if windows_on_tag.len() > 1 {
-                windows_on_tag
-                    .iter_mut()
-                    .for_each(|w| w.border = border_width);
-            }
+
+            windows_on_tag
+                .iter_mut()
+                .for_each(|w| w.border = border_width);
         }
     }
 

@@ -680,4 +680,31 @@ mod tests {
         assert_eq!((manager.state.windows[0]).border(), 0);
         assert_eq!((manager.state.windows[1]).border(), 0);
     }
+
+    #[test]
+    fn monocle_layout_only_has_single_windows() {
+        let mut manager = Manager::new_test_with_border(vec!["1".to_string()], 1);
+        manager.screen_create_handler(Screen::default());
+
+        manager
+            .state
+            .tags
+            .get_mut(1)
+            .unwrap()
+            .set_layout(Layout::Monocle, 0);
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        assert_eq!((manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[1]).border(), 0);
+    }
 }
