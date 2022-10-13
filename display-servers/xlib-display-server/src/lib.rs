@@ -8,20 +8,14 @@ mod xwrap;
 pub use xwrap::XWrap;
 
 use self::xwrap::ICONIC_STATE;
-use crate::config::Config;
-use crate::display_action::DisplayAction;
-use crate::models::Mode;
-use crate::models::Screen;
-use crate::models::TagId;
-use crate::models::Window;
-use crate::models::WindowHandle;
-use crate::models::WindowState;
-use crate::models::Workspace;
-use crate::utils;
-use crate::DisplayEvent;
-use crate::DisplayServer;
 use event_translate::XEvent;
 use futures::prelude::*;
+use leftwm_core::config::Config;
+use leftwm_core::models::{Mode, Screen, TagId, Window, WindowHandle, WindowState, Workspace};
+use leftwm_core::utils;
+use leftwm_core::DisplayAction;
+use leftwm_core::DisplayEvent;
+use leftwm_core::DisplayServer;
 use std::os::raw::c_uint;
 use std::pin::Pin;
 
