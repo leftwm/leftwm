@@ -16,7 +16,7 @@ all: build test
 test:
 	cd $(ROOT_DIR) && cargo test --all-targets --all-features
 	cd $(ROOT_DIR) && cargo fmt -- --check
-	cd $(ROOT_DIR) && cargo clippy --release
+	cd $(ROOT_DIR) && cargo clippy
 
 test-full:
 	make test
