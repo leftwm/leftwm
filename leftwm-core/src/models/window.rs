@@ -155,10 +155,28 @@ impl Window {
     pub fn is_fullscreen(&self) -> bool {
         self.states.contains(&WindowState::Fullscreen)
     }
+
+    pub fn set_fullscreen(&mut self, value: bool) {
+        if value {
+            self.states.push(WindowState::Fullscreen);
+        } else {
+            self.states.retain(|&x| x != WindowState::Fullscreen);
+        }
+    }
+
     #[must_use]
     pub fn is_sticky(&self) -> bool {
         self.states.contains(&WindowState::Sticky)
     }
+
+    pub fn set_sticky(&mut self, value: bool) {
+        if value {
+            self.states.push(WindowState::Sticky);
+        } else {
+            self.states.retain(|&x| x != WindowState::Sticky);
+        }
+    }
+
     #[must_use]
     pub fn must_float(&self) -> bool {
         self.must_float

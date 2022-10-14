@@ -15,7 +15,7 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
+    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowType},
     state::State,
     DisplayServer, Manager,
 };
@@ -64,6 +64,9 @@ pub struct WindowHook {
     pub window_title: Option<String>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_floating: Option<bool>,
+    pub spawn_sticky: Option<bool>,
+    pub spawn_fullscreen: Option<bool>,
+    pub behave_as: Option<WindowType>,
 }
 
 impl WindowHook {
@@ -88,11 +91,20 @@ impl WindowHook {
     }
 
     fn apply(&self, window: &mut Window) {
+        if let Some(window_type) = self.behave_as.clone() {
+            window.r#type = window_type;
+        }
         if let Some(tag) = self.spawn_on_tag {
             window.tag = Some(tag);
         }
         if let Some(should_float) = self.spawn_floating {
             window.set_floating(should_float);
+        }
+        if let Some(fullscreen) = self.spawn_fullscreen {
+            window.set_fullscreen(fullscreen);
+        }
+        if let Some(sticky) = self.spawn_sticky {
+            window.set_sticky(sticky);
         }
     }
 }
