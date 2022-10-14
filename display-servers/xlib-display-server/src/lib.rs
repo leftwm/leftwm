@@ -13,9 +13,7 @@ use futures::prelude::*;
 use leftwm_core::config::Config;
 use leftwm_core::models::{Mode, Screen, TagId, Window, WindowHandle, WindowState, Workspace};
 use leftwm_core::utils;
-use leftwm_core::DisplayAction;
-use leftwm_core::DisplayEvent;
-use leftwm_core::DisplayServer;
+use leftwm_core::{DisplayAction, DisplayEvent, DisplayServer};
 use std::os::raw::c_uint;
 use std::pin::Pin;
 
