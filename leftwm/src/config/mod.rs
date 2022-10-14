@@ -15,7 +15,7 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
+    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowType},
     state::State,
     DisplayServer, Manager,
 };
@@ -66,6 +66,8 @@ pub struct WindowHook {
     pub spawn_floating: Option<bool>,
     pub spawn_sticky: Option<bool>,
     pub spawn_fullscreen: Option<bool>,
+    /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
+    pub spawn_as_type: Option<WindowType>,
 }
 
 impl WindowHook {
@@ -101,6 +103,9 @@ impl WindowHook {
         }
         if let Some(sticky) = self.spawn_sticky {
             window.set_sticky(sticky);
+        }
+        if let Some(w_type) = self.spawn_as_type.clone() {
+            window.r#type = w_type;
         }
     }
 }
@@ -544,7 +549,7 @@ impl leftwm_core::Config for Config {
             if let Some((hook, _)) = best_match {
                 hook.apply(window);
                 tracing::debug!(
-                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
+                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
                     window.name,
                     window.legacy_name,
                     window.res_name,
@@ -553,6 +558,7 @@ impl leftwm_core::Config for Config {
                     hook.spawn_floating,
                     hook.spawn_sticky,
                     hook.spawn_fullscreen,
+                    hook.spawn_as_type,
                 );
                 return true;
             }
