@@ -544,13 +544,15 @@ impl leftwm_core::Config for Config {
             if let Some((hook, _)) = best_match {
                 hook.apply(window);
                 tracing::debug!(
-                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}",
+                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
                     window.name,
                     window.legacy_name,
                     window.res_name,
                     window.res_class,
                     hook.spawn_on_tag,
                     hook.spawn_floating,
+                    hook.spawn_sticky,
+                    hook.spawn_fullscreen,
                 );
                 return true;
             }
