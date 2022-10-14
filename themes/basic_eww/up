@@ -24,8 +24,8 @@ elif [ -x "$(command -v compton)" ]; then
   compton &> /dev/null &
 fi
 
-# Set the theme.toml config
-leftwm-command "LoadTheme $SCRIPTPATH/theme.toml"
+# Set the theme.ron config
+leftwm-command "LoadTheme $SCRIPTPATH/theme.ron"
 
 # Set background
 if [ -x "$(command -v feh)" ]; then
