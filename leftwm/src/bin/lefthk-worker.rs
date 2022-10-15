@@ -3,8 +3,14 @@ use lefthk_core::{config::Config, worker::Worker};
 #[cfg(feature = "lefthk")]
 use xdg::BaseDirectories;
 
-#[cfg(feature = "lefthk")]
 fn main() {
+    // we need this little shenanigan to allow actually building with `--no-default-features`
+    #[cfg(feature = "lefthk")]
+    lefthk_worker_main()
+}
+
+#[cfg(feature = "lefthk")]
+fn lefthk_worker_main() {
     leftwm::utils::log::setup_logging();
 
     tracing::info!("lefthk-worker booted!");
