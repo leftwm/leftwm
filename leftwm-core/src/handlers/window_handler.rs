@@ -50,6 +50,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.actions.push_back(act);
         }
 
+        // Tell the WM to reevaluate the stacking order, so the new window is put in the correct layer
+        self.state.sort_windows();
+
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
         }
