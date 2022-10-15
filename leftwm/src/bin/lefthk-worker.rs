@@ -6,7 +6,7 @@ use xdg::BaseDirectories;
 fn main() {
     // we need this little shenanigan to allow actually building with `--no-default-features`
     #[cfg(feature = "lefthk")]
-    lefthk_worker_main()
+    lefthk_worker_main();
 }
 
 #[cfg(feature = "lefthk")]

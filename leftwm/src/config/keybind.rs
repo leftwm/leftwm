@@ -173,10 +173,11 @@ impl Modifier {
     }
 }
 
-// fn is_valid_scratchpad_name(config: &Config, scratchpad_name: &str) -> bool {
-//     config
-//         .scratchpad
-//         .as_ref()
-//         .and_then(|scratchpads| scratchpads.iter().find(|s| s.name == scratchpad_name))
-//         .is_some()
-// }
+#[cfg(feature = "lefthk")]
+fn is_valid_scratchpad_name(config: &Config, scratchpad_name: &str) -> bool {
+    config
+        .scratchpad
+        .as_ref()
+        .and_then(|scratchpads| scratchpads.iter().find(|s| s.name == scratchpad_name))
+        .is_some()
+}
