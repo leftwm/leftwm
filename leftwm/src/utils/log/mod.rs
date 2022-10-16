@@ -17,6 +17,7 @@ pub fn setup_logging() {
         .expect("Couldn't setup global subscriber (logger)");
 }
 
+#[allow(clippy::let_and_return)]
 fn get_subscribers() -> impl Subscriber {
     let env_filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::DEBUG.into())
