@@ -65,11 +65,7 @@ fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -
 
 /// Prints the help page of leftwm (the output of `leftwm --help`)
 fn print_help_page() {
-    let version = format!(
-        "{}, Git-Hash: {}",
-        crate_version!(),
-        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
-    );
+    let version = get_version();
 
     let subcommands = {
         let mut subcommands = Vec::new();
@@ -94,6 +90,14 @@ fn print_help_page() {
         .unwrap();
 }
 
+fn get_version() -> String {
+    format!(
+        "{}, Git-Hash: {}",
+        crate_version!(),
+        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
+    )
+}
+
 /// Checks if the given subcommand-string is a `leftwm-{subcommand}`
 fn is_subcommand(subcommand: &str) -> bool {
     AVAILABLE_SUBCOMMANDS
@@ -112,6 +116,8 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
 
     if is_subcommand(subcommand) {
         execute_subcommand(subcommand, subcommand_args);
+    } else if subcommand == "--version" || subcommand == "-v" {
+        println!("leftwm {}", get_version());
     } else {
         print_help_page();
     }

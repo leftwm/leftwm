@@ -6,7 +6,6 @@
 .bar0 {
   background-color: #3a3a3a;
   color: #b0b4bc;
-  padding: 10px;
 }
 
 // Styles on classes (see eww.yuck for more information)
@@ -49,6 +48,16 @@
 .label-ram {
   font-size: large;
 }
+.time {
+  margin-right: 30px;
+}
+.workspaces {
+  margin-left: 30px;
+}
+.workspaces button {
+  font-size: 24px;
+  padding: 6px;
+}
 .workspaces button:hover {
   color: #D35D6E;
 }
@@ -59,6 +68,10 @@
 .ws-button-visible {
   color: #D35D6E;
   background-color: #4e4e4e;
+}
+.ws-button-urgent {
+  color: #ffd5ca;
+  background-color: #D35D6E;
 }
 .ws-button-busy {
   color: #D35D6E;
