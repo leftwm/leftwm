@@ -1,5 +1,3 @@
-pub mod xlib_display_server;
-
 #[cfg(test)]
 mod mock_display_server;
 
@@ -15,7 +13,6 @@ use std::pin::Pin;
 
 #[cfg(test)]
 pub use self::mock_display_server::MockDisplayServer;
-pub use self::xlib_display_server::XlibDisplayServer;
 
 pub trait DisplayServer {
     fn new(config: &impl Config) -> Self;

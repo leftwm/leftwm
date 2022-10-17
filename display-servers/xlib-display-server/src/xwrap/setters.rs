@@ -1,7 +1,7 @@
 //! `XWrap` setters.
 use super::WindowHandle;
-use crate::models::TagId;
 use crate::XWrap;
+use leftwm_core::models::TagId;
 use std::ffi::CString;
 use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
