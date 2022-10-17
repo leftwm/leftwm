@@ -1,5 +1,8 @@
 //! Xlib calls related to a window.
-use super::{Window, WindowHandle, ICONIC_STATE, NORMAL_STATE, ROOT_EVENT_MASK};
+use super::{
+    on_error_from_xlib, on_error_from_xlib_dummy, Window, WindowHandle, ICONIC_STATE, NORMAL_STATE,
+    ROOT_EVENT_MASK, WITHDRAWN_STATE,
+};
 use crate::models::{WindowChange, WindowType, Xyhw, XyhwChange};
 use crate::{DisplayEvent, XWrap};
 use std::os::raw::{c_long, c_ulong};
@@ -75,6 +78,9 @@ impl XWrap {
         w.can_resize = can_resize;
         if let Some(hint) = wm_hint {
             w.never_focus = hint.flags & xlib::InputHint != 0 && hint.input == 0;
+        }
+        if let Some(hint) = wm_hint {
+            w.urgent = hint.flags & xlib::XUrgencyHint != 0;
         }
         // Is this needed? Made it so it doens't overwrite prior sizing.
         if w.floating() && sizing_hint.is_none() {
@@ -155,16 +161,21 @@ impl XWrap {
     /// Teardown a managed window when it is destroyed.
     // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
-    pub fn teardown_managed_window(&mut self, h: &WindowHandle) {
+    pub fn teardown_managed_window(&mut self, h: &WindowHandle, destroyed: bool) {
         if let WindowHandle::XlibHandle(handle) = h {
-            unsafe {
-                (self.xlib.XGrabServer)(self.display);
-                self.managed_windows.retain(|x| *x != *handle);
-                self.set_client_list();
-                self.ungrab_buttons(*handle);
-                self.sync();
-                (self.xlib.XUngrabServer)(self.display);
+            self.managed_windows.retain(|x| *x != *handle);
+            if !destroyed {
+                unsafe {
+                    (self.xlib.XGrabServer)(self.display);
+                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib_dummy));
+                    self.ungrab_buttons(*handle);
+                    self.set_wm_states(*handle, &[WITHDRAWN_STATE]);
+                    self.sync();
+                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
+                    (self.xlib.XUngrabServer)(self.display);
+                }
             }
+            self.set_client_list();
         }
     }
 
@@ -211,8 +222,9 @@ impl XWrap {
             self.set_wm_states(window, &[NORMAL_STATE]);
             // Make sure the window is mapped.
             unsafe { (self.xlib.XMapWindow)(self.display, window) };
-            // Regrab the mouse clicks.
-            if self.focus_behaviour.is_clickto() {
+            // Regrab the mouse clicks but ignore `dock` windows as some don't handle click events put on them
+            if self.focus_behaviour.is_clickto() && self.get_window_type(window) != WindowType::Dock
+            {
                 self.grab_mouse_clicks(window, false);
             }
         } else {
@@ -228,16 +240,8 @@ impl XWrap {
     }
 
     /// Makes a window take focus.
-    // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
         if let WindowHandle::XlibHandle(handle) = window.handle {
-            // Play a click when in ClickToFocus.
-
-            // fix by commenting line
-            // if self.focus_behaviour.is_clickto() {
-            //     self.replay_click();
-            // }
-
             // Update previous window.
             if let Some(previous) = previous {
                 if let WindowHandle::XlibHandle(previous_handle) = previous.handle {
@@ -253,36 +257,39 @@ impl XWrap {
                     }
                 }
             }
+            self.focused_window = handle;
             self.grab_mouse_clicks(handle, true);
-
-            if !window.never_focus {
-                self.set_window_border_color(handle, self.colors.active);
-                // Mark this window as the `_NET_ACTIVE_WINDOW`
-                unsafe {
-                    (self.xlib.XSetInputFocus)(
-                        self.display,
-                        handle,
-                        xlib::RevertToPointerRoot,
-                        xlib::CurrentTime,
-                    );
-                    let list = vec![handle as c_long];
-                    self.replace_property_long(
-                        self.root,
-                        self.atoms.NetActiveWindow,
-                        xlib::XA_WINDOW,
-                        &list,
-                    );
-                    std::mem::forget(list);
-                }
-            }
-            // This fixes windows that process the `WMTakeFocus` event too slow.
-            // See: https://github.com/leftwm/leftwm/pull/563
-            if !self.focus_behaviour.is_sloppy() {
-                // Tell the window to take focus
-                self.send_xevent_atom(handle, self.atoms.WMTakeFocus);
-            }
+            self.set_window_urgency(handle, false);
+            self.set_window_border_color(handle, self.colors.active);
+            self.focus(handle, window.never_focus);
             self.sync();
         }
+    }
+
+    /// Focuses a window.
+    // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
+    pub fn focus(&mut self, window: xlib::Window, never_focus: bool) {
+        if !never_focus {
+            unsafe {
+                (self.xlib.XSetInputFocus)(
+                    self.display,
+                    window,
+                    xlib::RevertToPointerRoot,
+                    xlib::CurrentTime,
+                );
+                let list = vec![window as c_long];
+                // Mark this window as the `_NET_ACTIVE_WINDOW`
+                self.replace_property_long(
+                    self.root,
+                    self.atoms.NetActiveWindow,
+                    xlib::XA_WINDOW,
+                    &list,
+                );
+                std::mem::forget(list);
+            }
+        }
+        // Tell the window to take focus
+        self.send_xevent_atom(window, self.atoms.WMTakeFocus);
     }
 
     /// Unfocuses all windows.
@@ -390,14 +397,16 @@ impl XWrap {
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn kill_window(&self, h: &WindowHandle) {
         if let WindowHandle::XlibHandle(handle) = h {
-            //nicely ask the window to close
+            // Nicely ask the window to close.
             if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
-                //force kill the app
+                // Force kill the window.
                 unsafe {
                     (self.xlib.XGrabServer)(self.display);
+                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib_dummy));
                     (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
                     (self.xlib.XKillClient)(self.display, *handle);
                     self.sync();
+                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
                     (self.xlib.XUngrabServer)(self.display);
                 }
             }

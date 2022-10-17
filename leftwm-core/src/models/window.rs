@@ -6,12 +6,14 @@ use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
+use crate::Workspace;
 use serde::{Deserialize, Serialize};
+
 use x11_dl::xlib;
 
 type MockHandle = i32;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
@@ -46,12 +48,13 @@ pub struct Window {
     pub(crate) must_float: bool,
     floating: Option<Xyhw>,
     pub never_focus: bool,
+    pub urgent: bool,
     pub debugging: bool,
     pub name: Option<String>,
     pub legacy_name: Option<String>,
     pub pid: Option<u32>,
     pub r#type: WindowType,
-    pub tags: Vec<TagId>,
+    pub tag: Option<TagId>,
     pub border: i32,
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -78,11 +81,12 @@ impl Window {
             must_float: false,
             debugging: false,
             never_focus: false,
+            urgent: false,
             name,
             pid,
             legacy_name: None,
             r#type: WindowType::Normal,
-            tags: Vec::new(),
+            tag: None,
             border: 1,
             margin: Margins::new(10),
             margin_multiplier: 1.0,
@@ -159,21 +163,21 @@ impl Window {
     pub fn must_float(&self) -> bool {
         self.must_float
             || self.transient.is_some()
-            || self.is_unmanaged()
+            || !self.is_managed()
             || self.r#type == WindowType::Splash
     }
     #[must_use]
     pub fn can_move(&self) -> bool {
-        !self.is_unmanaged()
+        self.is_managed()
     }
     #[must_use]
     pub fn can_resize(&self) -> bool {
-        self.can_resize && !self.is_unmanaged()
+        self.can_resize && self.is_managed()
     }
 
     #[must_use]
     pub fn can_focus(&self) -> bool {
-        !self.never_focus && !self.is_unmanaged() && self.visible()
+        !self.never_focus && self.is_managed() && self.visible()
     }
 
     pub fn set_width(&mut self, width: i32) {
@@ -201,7 +205,7 @@ impl Window {
     pub fn apply_margin_multiplier(&mut self, value: f32) {
         self.margin_multiplier = value.abs();
         if value < 0 as f32 {
-            log::warn!(
+            tracing::warn!(
                 "Negative margin multiplier detected. Will be applied as absolute: {:?}",
                 self.margin_multiplier()
             );
@@ -230,7 +234,7 @@ impl Window {
             Some(requested) if requested.minw() > 0 && self.floating() => requested.minw(),
             _ => 100,
         };
-        if value < limit && !self.is_unmanaged() {
+        if value < limit && self.is_managed() {
             value = limit;
         }
         value
@@ -253,7 +257,7 @@ impl Window {
             Some(requested) if requested.minh() > 0 && self.floating() => requested.minh(),
             _ => 100,
         };
-        if value < limit && !self.is_unmanaged() {
+        if value < limit && self.is_managed() {
             value = limit;
         }
         value
@@ -326,27 +330,44 @@ impl Window {
     }
 
     pub fn tag(&mut self, tag: &TagId) {
-        if !self.tags.contains(tag) {
-            self.tags.push(*tag);
-        }
-    }
-
-    pub fn clear_tags(&mut self) {
-        self.tags = vec![];
+        self.tag = Some(*tag);
     }
 
     #[must_use]
     pub fn has_tag(&self, tag: &TagId) -> bool {
-        self.tags.contains(tag)
+        self.tag == Some(*tag)
     }
 
-    pub fn untag(&mut self, tag: &TagId) {
-        self.tags.retain(|t| t != tag);
+    pub fn untag(&mut self) {
+        self.tag = None;
     }
 
     #[must_use]
-    pub fn is_unmanaged(&self) -> bool {
-        self.r#type == WindowType::Desktop || self.r#type == WindowType::Dock
+    pub fn is_managed(&self) -> bool {
+        self.r#type != WindowType::Desktop && self.r#type != WindowType::Dock
+    }
+
+    pub fn snap_to_workspace(&mut self, workspace: &Workspace) -> bool {
+        self.set_floating(false);
+
+        // We are reparenting.
+        if self.tag != workspace.tag {
+            self.tag = workspace.tag;
+            let mut offset = self.get_floating_offsets().unwrap_or_default();
+            let mut start_loc = self.start_loc.unwrap_or_default();
+            let x = offset.x() + self.normal.x();
+            let y = offset.y() + self.normal.y();
+            offset.set_x(x - workspace.xyhw.x());
+            offset.set_y(y - workspace.xyhw.y());
+            self.set_floating_offsets(Some(offset));
+
+            let x = start_loc.x() + self.normal.x();
+            let y = start_loc.y() + self.normal.y();
+            start_loc.set_x(x - workspace.xyhw.x());
+            start_loc.set_y(y - workspace.xyhw.y());
+            self.start_loc = Some(start_loc);
+        }
+        true
     }
 }
 
@@ -365,7 +386,7 @@ mod tests {
     fn should_be_able_to_untag_a_window() {
         let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
         subject.tag(&1);
-        subject.untag(&1);
+        subject.untag();
         assert!(!subject.has_tag(&1), "was unable to untag the window");
     }
 }

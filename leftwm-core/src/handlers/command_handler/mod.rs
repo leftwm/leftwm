@@ -1,23 +1,25 @@
 #![allow(clippy::wildcard_imports)]
-#![allow(clippy::shadow_unrelated)]
 
-// NOTE: there apears to be a clippy bug with shadow_unrelated and the (?) Operator
-// allow shadow should be removed once it is resolved
-// https://github.com/rust-lang/rust-clippy/issues/6563
+mod scratchpad_handler;
+// Make public to the rest of the crate without exposing other internal
+// details of the scratchpad handling code
+pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
 
 use super::*;
-use crate::child_process::Children;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
 use crate::models::{LayoutMode, TagId, WindowState};
 use crate::state::State;
+use crate::utils::helpers;
 use crate::utils::helpers::relative_find;
-use crate::utils::{child_process::exec_shell, helpers};
 use crate::{config::Config, models::FocusBehaviour};
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
-    /* Please also update src/bin/leftwm-check if any of the following apply after your update:
+    /* When adding a command
+     * please update src/utils/command_pipe and leftwm/src/command if:
+     * - a command is introduced or renamed
+     * please also update src/bin/leftwm-check if any of the following apply after your update:
      * - a command now requires a value
      * - a command no longer requires a value
      * - a new command is introduced that requires a value
@@ -33,10 +35,10 @@ macro_rules! move_focus_common_vars {
         let handle = $state.focus_manager.window(&$state.windows)?.handle;
         let tag_id = $state.focus_manager.tag(0)?;
         let tag = $state.tags.get(tag_id)?;
-        let (tags, layout) = (vec![tag_id], Some(tag.layout));
+        let layout = Some(tag.layout);
 
         let for_active_workspace =
-            |x: &Window| -> bool { helpers::intersect(&tags, &x.tags) && !x.is_unmanaged() };
+            |x: &Window| -> bool { x.tag == Some(tag_id) && x.is_managed() };
 
         let to_reorder = helpers::vec_extract(&mut $state.windows, for_active_workspace);
         $func($state, handle, layout, to_reorder, $($arg),*)
@@ -49,14 +51,28 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 ) -> Option<bool> {
     let state = &mut manager.state;
     match command {
-        Command::Execute(shell_command) => execute(&mut manager.children, shell_command),
+        Command::ToggleScratchPad(name) => scratchpad_handler::toggle_scratchpad(manager, name),
+        Command::AttachScratchPad { window, scratchpad } => {
+            scratchpad_handler::attach_scratchpad(*window, scratchpad, manager)
+        }
+        Command::ReleaseScratchPad { window, tag } => {
+            scratchpad_handler::release_scratchpad(window.clone(), *tag, manager)
+        }
 
-        Command::ToggleScratchPad(name) => toggle_scratchpad(manager, name),
+        Command::NextScratchPadWindow { scratchpad } => {
+            scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Forward)
+        }
+        Command::PrevScratchPadWindow { scratchpad } => {
+            scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Backward)
+        }
 
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
 
         Command::SendWindowToTag { window, tag } => move_to_tag(*window, *tag, manager),
+        Command::MoveWindowToNextTag { follow } => move_to_tag_relative(manager, *follow, 1),
+        Command::MoveWindowToPreviousTag { follow } => move_to_tag_relative(manager, *follow, -1),
+        Command::MoveWindowToLastWorkspace => move_to_last_workspace(state),
         Command::MoveWindowToNextWorkspace => move_window_to_workspace_change(manager, 1),
         Command::MoveWindowToPreviousWorkspace => move_window_to_workspace_change(manager, -1),
         Command::MoveWindowUp => move_focus_common_vars!(move_window_change(state, -1)),
@@ -68,7 +84,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::CloseWindow => close_window(state),
         Command::SwapScreens => swap_tags(state),
-        Command::MoveWindowToLastWorkspace => move_to_last_workspace(state),
         Command::NextLayout => next_layout(state),
         Command::PreviousLayout => previous_layout(state),
 
@@ -87,14 +102,12 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
-        Command::MouseMoveWindow => None,
-
         Command::SoftReload => {
             // Make sure the currently focused window is saved for the tag.
-            if let Some((handle, tag)) = state
+            if let Some((handle, Some(tag))) = state
                 .focus_manager
                 .window(&state.windows)
-                .map(|w| (w.handle, w.tags[0]))
+                .map(|w| (w.handle, w.tag))
             {
                 let old_handle = state
                     .focus_manager
@@ -123,95 +136,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::CloseAllOtherWindows => close_all_other_windows(state),
         Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
-}
-
-fn execute(children: &mut Children, shell_command: &str) -> Option<bool> {
-    let _ = exec_shell(shell_command, children);
-    None
-}
-
-fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    name: &str,
-) -> Option<bool> {
-    let current_tag = &manager.state.focus_manager.tag(0)?;
-    let scratchpad = manager
-        .state
-        .scratchpads
-        .iter()
-        .find(|s| name == s.name.clone())?
-        .clone();
-
-    let mut handle = None;
-    if let Some(ws) = manager
-        .state
-        .focus_manager
-        .workspace(&manager.state.workspaces)
-    {
-        handle = manager
-            .state
-            .windows
-            .iter()
-            .find(|w| ws.is_managed(w))
-            .map(|w| w.handle);
-    }
-
-    if let Some(nsp_tag) = manager.state.tags.get_hidden_by_label("NSP") {
-        if let Some(id) = manager.state.active_scratchpads.get(&scratchpad.name) {
-            if let Some(window) = manager.state.windows.iter_mut().find(|w| w.pid == *id) {
-                let previous_tag = window.tags[0];
-                let is_visible = window.has_tag(current_tag);
-                window.clear_tags();
-                if is_visible {
-                    // Hide the scratchpad.
-                    window.tag(&nsp_tag.id);
-                    // Make sure when changing focus the scratchpad is currently focused.
-                    if Some(&Some(window.handle))
-                        != manager.state.focus_manager.window_history.get(0)
-                    {
-                        handle = None;
-                    } else if let Some(Some(prev)) =
-                        manager.state.focus_manager.window_history.get(1)
-                    {
-                        handle = Some(*prev);
-                    }
-                } else {
-                    // Remove the entry for the previous tag to prevent the scratchpad being
-                    // refocused.
-                    manager
-                        .state
-                        .focus_manager
-                        .tags_last_window
-                        .remove(&previous_tag);
-                    // Show the scratchpad.
-                    window.tag(current_tag);
-                    handle = Some(window.handle);
-                }
-                let act = DisplayAction::SetWindowTags(window.handle, window.tags.clone());
-                manager.state.actions.push_back(act);
-                manager.state.sort_windows();
-                if let Some(h) = handle {
-                    manager.state.handle_window_focus(&h);
-                    if !is_visible {
-                        manager.state.move_to_top(&h);
-                    }
-                }
-
-                return Some(true);
-            }
-        }
-
-        log::debug!(
-            "no active scratchpad found for name {:?}. creating a new one",
-            scratchpad.name
-        );
-        let name = scratchpad.name.clone();
-        let pid = exec_shell(&scratchpad.value, &mut manager.children);
-        manager.state.active_scratchpads.insert(name, pid);
-        return None;
-    }
-    log::warn!("unable to find NSP tag");
-    None
 }
 
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
@@ -246,7 +170,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     let handle_focus = window.is_none();
     // Focus the next or previous window on the workspace.
     let new_handle = if handle_focus {
-        manager.get_next_or_previous(&handle)
+        manager.get_next_or_previous_handle(&handle)
     } else {
         None
     };
@@ -256,11 +180,12 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         .windows
         .iter_mut()
         .find(|w| w.handle == handle)?;
-    window.clear_tags();
+
+    window.untag();
     window.set_floating(false);
     window.tag(&tag.id);
     window.apply_margin_multiplier(margin_multiplier);
-    let act = DisplayAction::SetWindowTags(window.handle, vec![tag.id]);
+    let act = DisplayAction::SetWindowTag(window.handle, Some(tag.id));
     manager.state.actions.push_back(act);
 
     manager.state.sort_windows();
@@ -276,6 +201,31 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
     Some(true)
 }
 
+/// Move currently focused window to tag relative to current tag
+///
+/// Conditionally allow focus to follow the window to the target tag
+fn move_to_tag_relative<C: Config, SERVER: DisplayServer>(
+    manager: &mut Manager<C, SERVER>,
+    follow: bool,
+    delta: i32,
+) -> Option<bool> {
+    // Map indexing from 1..len to 0..(len - 1)
+    let current_tag = manager.state.focus_manager.tag(0).unwrap_or_default() - 1;
+    // apply euclidean division reminder to the result of offseting to wrap around tags vector
+    // and add 1 to remap back to 1..len indexing
+    let tags_len = manager.state.tags.normal().len() as isize;
+    let desired_tag = (current_tag as isize + delta as isize).rem_euclid(tags_len) + 1;
+    let desired_tag = desired_tag as usize;
+
+    move_to_tag(None, desired_tag, manager);
+    if follow {
+        let moved_window = *manager.state.focus_manager.window_history.get(1)?;
+        manager.state.goto_tag_handler(desired_tag);
+        manager.state.handle_window_focus(&moved_window?);
+    }
+    Some(true)
+}
+
 fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     delta: i32,
@@ -287,8 +237,8 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
 
-    let tag_num = workspace.tags.first()?;
-    move_to_tag(None, *tag_num, manager)
+    let tag_num = workspace.tag?;
+    move_to_tag(None, tag_num, manager)
 }
 
 fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Option<bool> {
@@ -345,7 +295,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
             .find(|w| Some(&Some(w.handle)) == previous_window_handle)
             .cloned()
     } else {
-        state.windows.iter().find(|w| is_target(*w)).cloned()
+        state.windows.iter().find(|w| is_target(w)).cloned()
     }?;
 
     let handle = target_window.handle;
@@ -355,8 +305,8 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
         return None;
     }
 
-    let tag_id = target_window.tags.first()?;
-    state.goto_tag_handler(*tag_id)?;
+    let tag_id = target_window.tag?;
+    state.goto_tag_handler(tag_id)?;
 
     match state
         .focus_manager
@@ -365,7 +315,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
     {
         Some(layout) if layout == Layout::Monocle || layout == Layout::MainAndDeck => {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
-                w.has_tag(tag_id) && !w.is_unmanaged() && !w.floating()
+                w.has_tag(&tag_id) && w.is_managed() && !w.floating()
             });
 
             let cycle = |wins: &mut Vec<Window>, s: &mut State| {
@@ -410,10 +360,10 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         let hist_a = *state.focus_manager.workspace_history.get(0)?;
         let hist_b = *state.focus_manager.workspace_history.get(1)?;
         //Update workspace tags
-        let mut temp = vec![];
-        std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tags, &mut temp);
-        std::mem::swap(&mut state.workspaces.get_mut(hist_b)?.tags, &mut temp);
-        std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tags, &mut temp);
+        let mut temp = None;
+        std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tag, &mut temp);
+        std::mem::swap(&mut state.workspaces.get_mut(hist_b)?.tag, &mut temp);
+        std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tag, &mut temp);
         // Update dock tags and layouts.
         state.update_static();
         state
@@ -431,7 +381,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
 
 fn close_window(state: &mut State) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
-    if !window.is_unmanaged() {
+    if window.is_managed() {
         let act = DisplayAction::KillWindow(window.handle);
         state.actions.push_back(act);
     }
@@ -441,9 +391,9 @@ fn close_window(state: &mut State) -> Option<bool> {
 fn move_to_last_workspace(state: &mut State) -> Option<bool> {
     if state.workspaces.len() >= 2 && state.focus_manager.workspace_history.len() >= 2 {
         let index = *state.focus_manager.workspace_history.get(1)?;
-        let wp_tags = &state.workspaces.get(index)?.tags.clone();
+        let wp_tags = state.workspaces.get(index)?.tag;
         let window = state.focus_manager.window_mut(&mut state.windows)?;
-        window.tags = vec![*wp_tags.get(0)?];
+        window.tag = wp_tags;
         return Some(true);
     }
     None
@@ -483,13 +433,13 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
                 to_focus = state
                     .windows
                     .iter()
-                    .find(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .find(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating())
                     .cloned();
             } else if layout == Layout::MainAndDeck {
                 let tags_windows = state
                     .windows
                     .iter()
-                    .filter(|w| w.has_tag(&tag_id) && !w.is_unmanaged() && !w.floating())
+                    .filter(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating())
                     .collect::<Vec<&Window>>();
                 if let (Some(mw), Some(tdw)) = (tags_windows.get(0), tags_windows.get(1)) {
                     // If the focused window is the main or the top of the deck, we don't do
@@ -693,7 +643,7 @@ fn focus_window_top(state: &mut State, swap: bool) -> Option<bool> {
     let next = state
         .windows
         .iter()
-        .find(|x| x.tags.contains(&tag) && !x.floating() && !x.is_unmanaged())
+        .find(|x| x.tag == Some(tag) && !x.floating() && x.is_managed())
         .map(|w| w.handle);
 
     match (next, cur, prev) {
@@ -727,10 +677,10 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     let current = state.focus_manager.workspace(&state.workspaces)?;
     let workspace = helpers::relative_find(&state.workspaces, |w| w == current, val, true)?.clone();
 
-    if state.focus_manager.behaviour.is_sloppy() {
+    if state.focus_manager.behaviour.is_sloppy() && state.focus_manager.sloppy_mouse_follows_focus {
         let action = workspace
-            .tags
-            .first()
+            .tag
+            .as_ref()
             .and_then(|tag| state.focus_manager.tags_last_window.get(tag))
             .map_or_else(
                 || DisplayAction::MoveMouseOverPoint(workspace.xyhw.center()),
@@ -761,11 +711,10 @@ fn change_main_width(state: &mut State, delta: i8, factor: i8) -> Option<bool> {
 fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bool> {
     let ws = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     ws.set_margin_multiplier(margin_multiplier);
-    let tags = ws.tags.clone();
+    let tag = ws.tag;
     if state.windows.iter().any(|w| w.r#type == WindowType::Normal) {
-        let for_active_workspace = |x: &Window| -> bool {
-            helpers::intersect(&tags, &x.tags) && x.r#type == WindowType::Normal
-        };
+        let for_active_workspace =
+            |x: &Window| -> bool { tag == x.tag && x.r#type == WindowType::Normal };
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut state.windows, for_active_workspace);
         for w in &mut to_apply_margin_multiplier {
@@ -1056,6 +1005,68 @@ mod tests {
 
         manager.command_handler(&Command::MoveWindowTop { swap: true });
         assert_eq!(manager.state.windows[0].handle, expected.handle);
+    }
+
+    #[test]
+    fn move_window_to_next_or_prev_tag_should_be_able_to_cycle() {
+        let mut manager = Manager::new_test(vec![
+            "AO".to_string(),
+            "EU".to_string(),
+            "ID".to_string(),
+            "HT".to_string(),
+            "NS".to_string(),
+        ]);
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+
+        let first_tag = manager.state.tags.get(1).unwrap().id;
+        let third_tag = manager.state.tags.get(3).unwrap().id;
+        let last_tag = manager.state.tags.get(5).unwrap().id;
+
+        assert!(manager.state.windows[0].has_tag(&first_tag));
+
+        manager.command_handler(&Command::MoveWindowToPreviousTag { follow: true });
+        assert!(manager.state.windows[0].has_tag(&last_tag));
+
+        (0..3).for_each(|_| {
+            manager.command_handler(&Command::MoveWindowToNextTag { follow: false });
+            manager.command_handler(&Command::FocusNextTag);
+        });
+        assert!(manager.state.windows[0].has_tag(&third_tag));
+    }
+
+    #[test]
+    fn move_window_to_next_or_prev_tag_should_be_able_to_keep_window_focused() {
+        let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
+        manager.screen_create_handler(Screen::default());
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+        let expected_tag = manager.state.tags.get(2).unwrap().id;
+        manager.command_handler(&Command::SendWindowToTag {
+            window: None,
+            tag: expected_tag,
+        });
+        let initial = manager.state.windows[0].clone();
+
+        manager.command_handler(&Command::MoveWindowToNextTag { follow: true });
+
+        assert_eq!(
+            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            expected_tag
+        );
+        assert_eq!(manager.state.windows[0].handle, initial.handle);
     }
 
     #[test]

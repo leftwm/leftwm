@@ -6,7 +6,7 @@ use std::ops::Add;
 use std::ops::Sub;
 
 /// Struct containing min/max width and height and window placement. x,y from top left.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Copy)]
 pub struct Xyhw {
     x: i32,
     y: i32,
@@ -20,7 +20,7 @@ pub struct Xyhw {
 
 /// Modifiable struct that can be used to generate an Xyhw struct. Contains min/max width and
 /// height and window placement. x,y from top left.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Copy)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Copy)]
 pub struct XyhwBuilder {
     pub x: i32,
     pub y: i32,

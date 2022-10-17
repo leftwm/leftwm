@@ -1,9 +1,8 @@
-use crate::config::Keybind;
 use crate::models::TagId;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::WindowState;
-use crate::utils::xkeysym_lookup::Button;
+use crate::utils::modmask_lookup::Button;
 use serde::{Deserialize, Serialize};
 
 /// These are responses from the Window manager.
@@ -29,7 +28,7 @@ pub enum DisplayAction {
 
     /// Sets the "z-index" order of the windows
     /// first in the array is top most
-    SetWindowOrder(Vec<Window>),
+    SetWindowOrder(Vec<WindowHandle>, Vec<WindowHandle>),
 
     /// Raises a given window.
     MoveToTop(WindowHandle),
@@ -59,17 +58,14 @@ pub enum DisplayAction {
     ReadyToMoveWindow(WindowHandle),
 
     /// Used to let the WM know of the current displayed tag changes.
-    SetCurrentTags(Vec<TagId>),
+    SetCurrentTags(Option<TagId>),
 
     /// Used to let the WM know of the tag for a given window.
-    SetWindowTags(WindowHandle, Vec<TagId>),
+    SetWindowTag(WindowHandle, Option<TagId>),
 
     /// Tell the DM to return to normal mode if it is not (ie resize a
     /// window or moving a window).
     NormalMode,
-
-    /// SoftReload keygrabs, needed when keyboard changes.
-    ReloadKeyGrabs(Vec<Keybind>),
 
     /// Configure a xlib window.
     ConfigureXlibWindow(Window),

@@ -11,18 +11,18 @@ use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
 use crate::config::Config;
 use crate::models::{FocusBehaviour, Mode};
-use crate::utils::xkeysym_lookup::ModMask;
+use crate::utils::modmask_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
 use std::{ptr, slice};
 use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
+
 use x11_dl::xlib;
 use x11_dl::xrandr::Xrandr;
 
 mod getters;
-mod keyboard;
 mod mouse;
 mod setters;
 mod window;
@@ -41,6 +41,49 @@ pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
 
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
+
+const X_CONFIGUREWINDOW: u8 = 12;
+const X_GRABBUTTON: u8 = 28;
+const X_GRABKEY: u8 = 33;
+const X_SETINPUTFOCUS: u8 = 42;
+const X_COPYAREA: u8 = 62;
+const X_POLYSEGMENT: u8 = 66;
+const X_POLYFILLRECTANGLE: u8 = 70;
+const X_POLYTEXT8: u8 = 74;
+
+// This is allowed for now as const extern fns
+// are not yet stable (1.56.0, 16 Sept 2021)
+// see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
+#[allow(clippy::missing_const_for_fn)]
+pub extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
+    let err = unsafe { *er };
+    let ec = err.error_code;
+    let rc = err.request_code;
+    let ba = ec == xlib::BadAccess;
+    let bd = ec == xlib::BadDrawable;
+    let bm = ec == xlib::BadMatch;
+
+    if ec == xlib::BadWindow
+        || (rc == X_CONFIGUREWINDOW && bm)
+        || (rc == X_GRABBUTTON && ba)
+        || (rc == X_GRABKEY && ba)
+        || (rc == X_SETINPUTFOCUS && bm)
+        || (rc == X_COPYAREA && bd)
+        || (rc == X_POLYSEGMENT && bd)
+        || (rc == X_POLYFILLRECTANGLE && bd)
+        || (rc == X_POLYTEXT8 && bd)
+    {
+        return 0;
+    }
+    1
+}
+
+pub extern "C" fn on_error_from_xlib_dummy(
+    _: *mut xlib::Display,
+    _: *mut xlib::XErrorEvent,
+) -> c_int {
+    1
+}
 
 pub struct Colors {
     normal: c_ulong,
@@ -64,6 +107,7 @@ pub struct XWrap {
     cursors: XCursor,
     colors: Colors,
     pub managed_windows: Vec<xlib::Window>,
+    pub focused_window: xlib::Window,
     pub tag_labels: Vec<String>,
     pub mode: Mode,
     pub focus_behaviour: FocusBehaviour,
@@ -121,7 +165,7 @@ impl XWrap {
             }
 
             if let Err(err) = poll.poll(&mut events, Some(timeout)) {
-                log::warn!("Xlib socket poll failed with {:?}", err);
+                tracing::warn!("Xlib socket poll failed with {:?}", err);
                 continue;
             }
 
@@ -173,7 +217,7 @@ impl XWrap {
             Err(_) => 60,
         };
 
-        log::debug!("Refresh Rate: {}", refresh_rate);
+        tracing::debug!("Refresh Rate: {}", refresh_rate);
 
         let xw = Self {
             xlib,
@@ -183,6 +227,7 @@ impl XWrap {
             cursors,
             colors,
             managed_windows: vec![],
+            focused_window: root,
             tag_labels: vec![],
             mode: Mode::Normal,
             focus_behaviour: FocusBehaviour::Sloppy,
@@ -208,27 +253,6 @@ impl XWrap {
         };
         xw.sync();
 
-        // This is allowed for now as const extern fns
-        // are not yet stable (1.56.0, 16 Sept 2021)
-        // see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
-        #[allow(clippy::missing_const_for_fn)]
-        extern "C" fn on_error_from_xlib(
-            _: *mut xlib::Display,
-            er: *mut xlib::XErrorEvent,
-        ) -> c_int {
-            let err = unsafe { *er };
-            // Ignore bad window errors.
-            if err.error_code == xlib::BadWindow {
-                return 0;
-            }
-            1
-        }
-
-        // Setup cached keymap/modifier information, otherwise MappingNotify might never be called
-        // from:
-        // https://stackoverflow.com/questions/35569562/how-to-catch-keyboard-layout-change-event-and-get-current-new-keyboard-layout-on
-        xw.keysym_to_keycode(x11_dl::keysym::XK_F1);
-
         unsafe { (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib)) };
         xw.sync();
         xw
@@ -241,10 +265,9 @@ impl XWrap {
         windows: &[Window],
     ) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
+        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
         self.load_colors(config, focused, Some(windows));
         self.tag_labels = config.create_list_of_tag_labels();
-        self.reset_grabs(&config.mapped_bindings());
     }
 
     /// Initialize the xwrapper.
@@ -253,7 +276,7 @@ impl XWrap {
     // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
+        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
 
         let root = self.root;
         self.load_colors(config, None, None);
@@ -290,8 +313,6 @@ impl XWrap {
         // EWMH compliance for desktops.
         self.tag_labels = config.create_list_of_tag_labels();
         self.init_desktops_hints();
-
-        self.reset_grabs(&config.mapped_bindings());
 
         self.sync();
     }

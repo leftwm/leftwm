@@ -1,8 +1,6 @@
-use serde::{Deserialize, Serialize};
-
-use crate::{layouts::Layout, Window, Workspace};
-
 use super::TagId;
+use crate::{layouts::Layout, Window, Workspace};
+use serde::{Deserialize, Serialize};
 
 /// Wrapper struct holding all the tags.
 /// This wrapper provides convenience methods to change the tag-list
@@ -102,7 +100,7 @@ impl Tags {
             self.hidden.push(tag);
             Some(id)
         } else {
-            log::error!(
+            tracing::error!(
                 "tried creating a hidden tag with label {}, but a hidden tag with the same label already exists",
                 label
             );
@@ -254,7 +252,7 @@ impl Tag {
                 .filter(|w| {
                     w.has_tag(&self.id)
                         && w.transient.unwrap_or_else(|| 0.into()) == handle
-                        && !w.is_unmanaged()
+                        && w.is_managed()
                 })
                 .for_each(|w| {
                     w.set_visible(true);
@@ -268,7 +266,7 @@ impl Tag {
             // Update the location of all non-floating windows.
             let mut managed_nonfloat: Vec<&mut Window> = windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.id) && !w.is_unmanaged() && !w.floating())
+                .filter(|w| w.has_tag(&self.id) && w.is_managed() && !w.floating())
                 .collect();
             self.layout
                 .update_windows(workspace, &mut managed_nonfloat, self);
@@ -278,7 +276,7 @@ impl Tag {
             // Update the location of all floating windows.
             windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.id) && !w.is_unmanaged() && w.floating())
+                .filter(|w| w.has_tag(&self.id) && w.is_managed() && w.floating())
                 .for_each(|w| w.normal = workspace.xyhw);
         }
     }

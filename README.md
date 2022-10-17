@@ -8,7 +8,7 @@
         <img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
     </a>
     <a href="https://github.com/leftwm/leftwm/wiki">
-        <img src="https://img.shields.io/badge/wiki-0.2.8-green.svg" alt="wiki" />
+        <img src="https://img.shields.io/badge/wiki-0.4.0-green.svg" alt="wiki" />
     </a>
     <a href="https://discord.gg/c9rB3wDnVs">
         <img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
@@ -19,7 +19,9 @@
   </p>
 </div>
 
-![Screenshot of LeftWM in action](screenshots/4.jpg)
+![Screenshot of LeftWM in action](screenshots/5.png)
+
+**IMPORTANT NOTE: LeftWM has changed the config language from `TOML` to `RON` with the `0.4.0` release. Please use `leftwm-check --migrate-toml-to-ron` to migrate your config and visit the [wiki](https://github.com/leftwm/leftwm/wiki) for more info.**
 
 # Table of contents
 
@@ -98,9 +100,9 @@ List of common dependencies for themes:
 | Dependency<br>(git) | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS |
 |--------------------------|-----------|-------------------|-----------|--------------------------|
 | [feh][feh-git]           | feh       | feh               | feh       | [feh][feh-pkg]           |
-| [compton][compton-git]   | compton   | paru -S picom*    | compton   | [compton][compton-pkg]   |
+| [compton][compton-git]   | compton   | picom             | compton   | [compton][compton-pkg]   |
 | [picom][picom-git]       | manual ** | picom             | picom     | [picom][picom-pkg]       |
-| [polybar][polybar-git]   | manual ** | paru -S polybar*  | polybar   | [polybar][polybar-pkg]   |
+| [polybar][polybar-git]   | manual ** | polybar           | polybar   | [polybar][polybar-pkg]   |
 | [xmobar][xmobar-git]     | xmobar    | xmobar            | xmobar    | [xmobar][xmobar-pkg]     |
 | [lemonbar][lemonbar-git] | lemonbar  | paru -S lemonbar* | manual ** | [lemonbar][lemonbar-pkg] |
 | [conky][conky-git]       | conky     | conky             | conky     | [conky][conky-pkg]       |
@@ -127,6 +129,8 @@ List of common dependencies for themes:
 > \*\* See the git page (link in first column) for how to install these manually
 
 # Installation (with package manager)
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/leftwm.svg)](https://repology.org/project/leftwm/versions)
 
 ## Gentoo ([GURU])
 
@@ -174,7 +178,7 @@ sudo xbps-install -S leftwm
 cargo install leftwm
 ```
 
-If you install LeftWM with crates.io, you will need to link to the xsession desktop file if you want
+If you install LeftWM with crates.io, you will need to link to the [xsession desktop file](https://github.com/leftwm/leftwm/blob/758bbf837a8556cdc7e09ff2d394f528e7657333/leftwm.desktop) if you want
 to be able to login to LeftWM from a display manager (GDM, SSDM, LightDM, etc.):
 
 ```sh
@@ -211,7 +215,7 @@ sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 4. Copy leftwm executables to the /usr/bin folder
 
    ```bash
-   sudo install -s -Dm755 ./target/release/leftwm ./target/release/leftwm-worker ./target/release/leftwm-state ./target/release/leftwm-check ./target/release/leftwm-command -t /usr/bin
+   sudo install -s -Dm755 ./target/release/leftwm ./target/release/leftwm-worker ./target/release/lefthk-worker ./target/release/leftwm-state ./target/release/leftwm-check ./target/release/leftwm-command -t /usr/bin
    ```
 
 5. Copy leftwm.desktop to xsessions folder
@@ -240,11 +244,14 @@ way, make sure you do not move the build directory as it will break your install
 3. Build leftwm
 
    ```bash
-   # Without systemd logging
+   # With systemd logging (view with 'journalctl -f -t leftwm-worker')
    cargo build --release
  
-   # OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
-   cargo build --release --features=journald
+   # OR with sys-log
+   cargo build --release --no-default-features --features=lefthk,sys-log
+  
+   # OR without lefthk (please bring you own keybind daemon like `sxhkd` or similar) and file logging
+   cargo build --release --no-default-features --features=file-log
    ```
 
 4. Create the symlinks
@@ -252,6 +259,7 @@ way, make sure you do not move the build directory as it will break your install
    ```bash
    sudo ln -s "$(pwd)"/target/release/leftwm /usr/bin/leftwm
    sudo ln -s "$(pwd)"/target/release/leftwm-worker /usr/bin/leftwm-worker
+   sudo ln -s "$(pwd)"/target/release/lefthk-worker /usr/bin/lefthk-worker
    sudo ln -s "$(pwd)"/target/release/leftwm-state /usr/bin/leftwm-state
    sudo ln -s "$(pwd)"/target/release/leftwm-check /usr/bin/leftwm-check
    sudo ln -s "$(pwd)"/target/release/leftwm-command /usr/bin/leftwm-command
@@ -277,11 +285,8 @@ simple black screen on login.  For a more customized look, install a theme.
 2. Build leftwm
 
    ```bash
-   # Without systemd logging
+   # With systemd logging (view with 'journalctl -f -t leftwm-worker')
    cargo build --release
- 
-   # OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
-   cargo build --release --features=journald
    ```
 
 3. And press the following keybind to reload leftwm
@@ -294,23 +299,36 @@ simple black screen on login.  For a more customized look, install a theme.
 
 For conveniece we also have a Makefile with the following rules:
 
-|make ... | info |
+| make ... | info |
 | - | - |
-|all | implies `build` and `test` |
-|test | runs same tests as CI on github |
+| all | implies `build` and `test` |
+| test | runs same tests as CI on github |
+| test-full | same as `test` but additionally with pedantic clippy lints |
 | build | builds with cargo flag `--release` |
 | clean | clean all buildfiles |
-| install | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/shar/xsession` and cleans build files |
+| install | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/share/xsession` and cleans build files |
 | install-dev | installs by symlinking, copies `leftwm.desktop`, no clean |
 | uninstall | removes `leftwm-*` files from `/usr/bin` and `leftwm.desktop` file |
 
 ## Starting with startx or a login such as slim
 
-Make sure this is at the end of your .xinitrc file:
+Make sure this is at the end of your `.xinitrc` file:
 
 ```bash
 # .xinitrc
 exec dbus-launch leftwm
+```
+
+On some distros like Archlinux, the environment variables are being setup by sourcing `/etc/X11/xinit/xinitrc.d`, as described in [the Arch docs](https://wiki.archlinux.org/title/Xinit#xinitrc), please make sure you copy the default xinitrc like this: 
+
+```bash
+cp /etc/X11/xinit/xinitrc ~/.xinitrc
+```
+
+**Note:** In this case it is not necessary to start leftwm through `dbus-launch` and might even result in some cases in services like `gnome-keyring` to fail. In such an occasion just use:
+```bash
+# .xinitrc
+exec leftwm
 ```
 
 # Theming
@@ -342,15 +360,25 @@ For more information about themes check out our [theme guide][theme-guide] or th
 [theme-guide]: https://github.com/leftwm/leftwm/tree/main/themes
 [wiki]: https://github.com/leftwm/leftwm/wiki/Themes
 
+---
+**Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.
+
+---
+
 # Configuring
 
 The settings file to change key bindings and the default mod key can be found at
 
 ```bash
-~/.config/leftwm/config.toml
+~/.config/leftwm/config.ron
 ```
 
 the file is automatically generated when leftwm or leftwm-check is run for the first time.
+
+---
+**Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.
+
+---
 
 ## Default keys
 
@@ -412,43 +440,20 @@ might want to have two or even three workspaces on a single screen.
 
 Here is an example config changing the way workspaces are defined (~/.config/leftwm/config.toml)
 
----
-**NOTE**
-The line `workspaces = []` needs to be removed or commented out if a configuration like the
-following example is used.
-
----
-
-```toml
-[[workspaces]]
-y = 0
-x = 0
-height = 1440
-width = 1720
-
-[[workspaces]]
-y = 0
-x = 1720
-height = 1440
-width = 1720
+```rust
+workspaces: [
+    ( y: 0, x: 0, height: 1440, width: 1720 ),
+    ( y: 0, x: 1720, height: 1440, width: 1720 ),
+],
 ```
 
 You may optionally specify an ID for your defined workspaces. This is helpful if you want to assign different gutter settings to each workspace in your theme.
 
-```toml
-[[workspaces]]
-y = 0
-x = 1720
-height = 1440
-width = 1720
-id = 1
-
-[[workspaces]]
-y = 0
-x = 0
-height = 1440
-width = 1720
-id = 0
+```rust
+workspaces: [
+    ( y: 0, x: 0, height: 1440, width: 1720, id: 0 ),
+    ( y: 0, x: 1720, height: 1440, width: 1720, id: 1 ),
+],
 ```
 
 ---
@@ -465,8 +470,8 @@ list of tags.
 Here is an example config changing the list of available tags. NOTE: tag navigation (Mod + #)
 doesn't change based on the name of the tag.
 
-```toml
-tags = ["Web", "Code", "Shell", "Music", "Connect"]
+```rust
+tags: ["Web", "Code", "Shell", "Music", "Connect"],
 ```
 
 ## Layouts
@@ -477,30 +482,21 @@ only the layouts you specify.
 
 Example:
 
-```toml
-layouts = ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"]
+```rust
+layouts: ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"],
 ```
 
 Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.
 
 Example:
 
-```toml
-[[workspaces]]
-id = 0
-x = 0
-y = 480
-width = 3840
-height = 1600
-layouts = ["CenterMain", "CenterMainBalanced", "EvenHorizontal"]
-
-[[workspaces]]
-id = 1
-x = 3840
-y = 0
-width = 1440
-height = 2560
-layouts = ["MainAndHorizontalStack", "EvenVertical"]
+```rust
+workspaces: [
+    ( id: 0, y: 480, x: 0, height: 1600, width: 3840,
+      layouts = ["CenterMain", "CenterMainBalanced", "EvenHorizontal"]),
+    ( id: 1, y: 0, x: 3840, height: 2560, width: 1440,
+      layouts = ["MainAndHorizontalStack", "EvenVertical"]),
+],
 ```
 
 **NOTE**

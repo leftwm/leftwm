@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
         .arg(
             Arg::with_name("list")
                 .help("Print a list of available commands with their arguments.")
-                .short("l")
+                .short('l')
                 .long("list"),
         )
         .get_matches();
@@ -55,6 +55,8 @@ async fn main() -> Result<()> {
         ToggleFullScreen
         ToggleSticky
         SwapScreens
+        MoveWindowToNextTag
+        MoveWindowToPreviousTag
         MoveWindowToLastWorkspace
         MoveWindowToNextWorkspace
         MoveWindowToPreviousWorkspace
@@ -74,13 +76,19 @@ async fn main() -> Result<()> {
         NextLayout
         PreviousLayout
         RotateTag
+        ReturnToLastTag
         CloseWindow
 
         Commands with arguments:
             Use quotations for the command and arguments, like this:
             leftwm-command \"<command> <args>\"
 
-        LoadTheme              Args: <Path_to/theme.toml>
+        LoadTheme              Args: <Path_to/theme.ron>
+            Note: `theme.toml` will be deprecated but stays for backwards compatibility for a while 
+        AttachScratchPad       Args: <ScratchpadName>
+        ReleaseScratchPad      Args: <tag_index> or <ScratchpadName>
+        NextScratchPadWindow   Args: <ScratchpadName>
+        PrevScratchPadWindow   Args: <ScratchpadName>
         ToggleScratchPad       Args: <ScratchpadName>
         SendWorkspaceToTag     Args: <workspaxe_index> <tag_index> (int)
         SendWindowToTag        Args: <tag_index> (int)

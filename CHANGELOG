@@ -4,7 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased 0.3.0]
+## [0.4.0]
+### Fixed
+- Fixed again a lot of small papercuts
+- Command parity between keybinds and external aka `leftwm-command` commands
+- Improved window snapping
+- Improved behaviour of floating windows
+- `dock` windows not recieving `click` after some window was `fullscreen`
+### Added
+- Commands `AttachScratchpad`, `ReleaseScratchpad`, `NextScratchpadWindow`, `PrevScratchpadWindow`
+- Commands `MoveWindowToNextTag`, `MoveWindowToPreviousTag`
+- Window rules by `WINDOW_CLASS` or `WINDOW_TITLE`
+- `test-full` to `Makefile` using padantic clippy as well
+- Introduced `lefthk` as default daemon to handle keybinds
+- Changed config language from `TOML` to `RON`
+- Journald logging is default for AUR packages and when building from source
+- Tags support `urgent` flag
+- `sloppy_mouse_follows_focus`
+- `disable_window_snap`
+`### Minimum Supported Rust Version
+- The currently supported MSRV is 1.59.0
+
+## [0.3.0]
 ### Fixed
 ### Added
 ### Minimum Supported Rust Version

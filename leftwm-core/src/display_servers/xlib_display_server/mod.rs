@@ -1,3 +1,13 @@
+mod event_translate;
+mod event_translate_client_message;
+mod event_translate_property_notify;
+mod xatom;
+mod xcursor;
+mod xwrap;
+
+pub use xwrap::XWrap;
+
+use self::xwrap::ICONIC_STATE;
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
@@ -10,28 +20,17 @@ use crate::models::Workspace;
 use crate::utils;
 use crate::DisplayEvent;
 use crate::DisplayServer;
-use crate::Keybind;
+use event_translate::XEvent;
 use futures::prelude::*;
 use std::os::raw::c_uint;
 use std::pin::Pin;
+
 use x11_dl::xlib;
-
-mod event_translate;
-mod event_translate_client_message;
-mod event_translate_property_notify;
-mod xatom;
-mod xwrap;
-pub use xwrap::XWrap;
-
-use event_translate::XEvent;
-
-use self::xwrap::ICONIC_STATE;
-mod xcursor;
 
 pub struct XlibDisplayServer {
     xw: XWrap,
     root: xlib::Window,
-    initial_events: Option<Vec<DisplayEvent>>,
+    initial_events: Vec<DisplayEvent>,
 }
 
 impl DisplayServer for XlibDisplayServer {
@@ -44,12 +43,12 @@ impl DisplayServer for XlibDisplayServer {
         let instance = Self {
             xw: wrap,
             root,
-            initial_events: None,
+            initial_events: Vec::new(),
         };
         let initial_events = instance.initial_events(config);
 
         Self {
-            initial_events: Some(initial_events),
+            initial_events,
             ..instance
         }
     }
@@ -71,26 +70,19 @@ impl DisplayServer for XlibDisplayServer {
 
     fn update_workspaces(&self, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            self.xw.set_current_desktop(&focused.tags);
+            self.xw.set_current_desktop(focused.tag);
         }
     }
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent> {
-        let mut events = vec![];
-
-        if let Some(initial_events) = self.initial_events.take() {
-            for e in initial_events {
-                events.push(e);
-            }
-        }
+        let mut events = std::mem::take(&mut self.initial_events);
 
         let events_in_queue = self.xw.queue_len();
-
         for _ in 0..events_in_queue {
             let xlib_event = self.xw.get_next_event();
             let event = XEvent(&mut self.xw, xlib_event).into();
             if let Some(e) = event {
-                log::trace!("DisplayEvent: {:?}", e);
+                tracing::trace!("DisplayEvent: {:?}", e);
                 events.push(e);
             }
         }
@@ -105,7 +97,7 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
-        log::trace!("DisplayAction: {:?}", act);
+        tracing::trace!("DisplayAction: {:?}", act);
         let xw = &mut self.xw;
         let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(h) => from_kill_window(xw, h),
@@ -116,13 +108,12 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
             DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
-            DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, &ws),
+            DisplayAction::SetWindowOrder(fs, ws) => from_set_window_order(xw, fs, ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
             DisplayAction::ReadyToMoveWindow(h) => from_ready_to_move_window(xw, h),
             DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
-            DisplayAction::SetCurrentTags(ts) => from_set_current_tags(xw, &ts),
-            DisplayAction::SetWindowTags(h, ts) => from_set_window_tags(xw, h, &ts),
-            DisplayAction::ReloadKeyGrabs(ks) => from_reload_key_grabs(xw, &ks),
+            DisplayAction::SetCurrentTags(t) => from_set_current_tags(xw, t),
+            DisplayAction::SetWindowTag(h, t) => from_set_window_tag(xw, h, t),
             DisplayAction::ConfigureXlibWindow(w) => from_configure_xlib_window(xw, &w),
 
             DisplayAction::WindowTakeFocus {
@@ -134,7 +125,7 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::NormalMode => from_normal_mode(xw),
         };
         if event.is_some() {
-            log::trace!("DisplayEvent: {:?}", event);
+            tracing::trace!("DisplayEvent: {:?}", event);
         }
         event
     }
@@ -242,7 +233,7 @@ fn from_move_mouse_over_point(xw: &mut XWrap, point: (i32, i32)) -> Option<Displ
 }
 
 fn from_destroyed_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
-    xw.teardown_managed_window(&handle);
+    xw.teardown_managed_window(&handle, true);
     None
 }
 
@@ -286,36 +277,21 @@ fn from_set_state(
     None
 }
 
-fn from_set_window_order(xw: &mut XWrap, windows: &[Window]) -> Option<DisplayEvent> {
-    // The windows we are managing should be behind unmanaged windows. Unless they are
-    // fullscreen, or their children.
-    let (fullscreen_windows, other): (Vec<&Window>, Vec<&Window>) =
-        windows.iter().partition(|w| w.is_fullscreen());
-    // Fullscreen windows.
-    let level2: Vec<WindowHandle> = fullscreen_windows.iter().map(|w| w.handle).collect();
-    let (fullscreen_children, other): (Vec<&Window>, Vec<&Window>) = other
-        .iter()
-        .partition(|w| level2.contains(&w.transient.unwrap_or_else(|| 0.into())));
-    // Fullscreen windows children.
-    let level1: Vec<WindowHandle> = fullscreen_children.iter().map(|w| w.handle).collect();
-    // Left over managed windows.
-    let level4: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+fn from_set_window_order(
+    xw: &mut XWrap,
+    fullscreen: Vec<WindowHandle>,
+    windows: Vec<WindowHandle>,
+) -> Option<DisplayEvent> {
     // Unmanaged windows.
-    let level3: Vec<WindowHandle> = xw
+    let unmanaged: Vec<WindowHandle> = xw
         .get_all_windows()
         .unwrap_or_default()
         .iter()
         .filter(|&w| *w != xw.get_default_root())
         .map(|&w| w.into())
-        .filter(|&h| !windows.iter().any(|w| w.handle == h))
+        .filter(|&h| !windows.iter().any(|&w| w == h) || !fullscreen.iter().any(|&w| w == h))
         .collect();
-    let all: Vec<WindowHandle> = level1
-        .iter()
-        .chain(level2.iter())
-        .chain(level3.iter())
-        .chain(level4.iter())
-        .copied()
-        .collect();
+    let all: Vec<WindowHandle> = [fullscreen, unmanaged, windows].concat();
     xw.restack(all);
     None
 }
@@ -335,23 +311,19 @@ fn from_ready_to_resize_window(xw: &mut XWrap, handle: WindowHandle) -> Option<D
     None
 }
 
-fn from_set_current_tags(xw: &mut XWrap, tags: &[TagId]) -> Option<DisplayEvent> {
-    xw.set_current_desktop(tags);
+fn from_set_current_tags(xw: &mut XWrap, tag: Option<TagId>) -> Option<DisplayEvent> {
+    xw.set_current_desktop(tag);
     None
 }
 
-fn from_set_window_tags(
+fn from_set_window_tag(
     xw: &mut XWrap,
     handle: WindowHandle,
-    tags: &[TagId],
+    tag: Option<TagId>,
 ) -> Option<DisplayEvent> {
     let window = handle.xlib_handle()?;
-    xw.set_window_desktop(window, tags);
-    None
-}
-
-fn from_reload_key_grabs(xw: &mut XWrap, keybinds: &[Keybind]) -> Option<DisplayEvent> {
-    xw.reset_grabs(keybinds);
+    let tag = tag?;
+    xw.set_window_desktop(window, &tag);
     None
 }
 
@@ -370,6 +342,12 @@ fn from_window_take_focus(
 }
 
 fn from_focus_window_under_cursor(xw: &mut XWrap) -> Option<DisplayEvent> {
+    if let Ok(mut window) = xw.get_cursor_window() {
+        if window == WindowHandle::XlibHandle(0) {
+            window = xw.get_default_root_handle();
+        }
+        return Some(DisplayEvent::WindowTakeFocus(window));
+    }
     let point = xw.get_cursor_point().ok()?;
     let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
     Some(evt)

@@ -1,0 +1,43 @@
+name: 🪄 Enhance an already existing feature
+description: Propose how an existing feature could be made better
+labels: ["enhancement"]
+body:
+    - type: markdown
+      attributes:
+        value: |
+            ## :bulb: Consider brainstorming ideas in Discussions
+            If your feature enhancement request is very unspecific and you are not sure about the details, please consider posting it in the [Discussions Tab](https://github.com/leftwm/leftwm/discussions) first.
+
+    - type: textarea
+      id: description
+      attributes:
+        label: Describe the enhancement
+        description: A clear and concise description of what feature could be enhanced and in what way, including screenshots (if relevant).
+        placeholder: eg. "When resizing a floating window, the cursor should automatically jump to the windows' bottom right.."
+      validations:
+        required: true
+    
+    - type: dropdown
+      id: importance
+      attributes:
+        label: How important is this enhancement to you?
+        description: Please be honest about your answer, this is just to get a feeling. Exaggerating its importance will not automatically make it higher priority.
+        options:
+          - It is just an idea
+          - Would be nice to have
+          - My workflow is impaired without it
+          - LeftWM is unusable without it
+      validations:
+        required: true
+    
+    - type: dropdown
+      id: importance-others
+      attributes:
+        label: How important do you think is this enhancement for the average LeftWM user?
+        options:
+          - I don't know, may be a niche edge-case
+          - Would probably be nice to have
+          - Their workflow is likely impaired without it
+          - No one uses LeftWM because this is missing
+      validations:
+        required: true

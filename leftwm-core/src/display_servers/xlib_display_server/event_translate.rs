@@ -21,6 +21,8 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::UnmapNotify => from_unmap_event(x_event),
             // Window is destroyed.
             xlib::DestroyNotify => from_destroy_notify(x_event),
+            // Window is taking focus.
+            xlib::FocusIn => from_focus_in(x_event),
             // Window client message.
             xlib::ClientMessage if normal_mode => from_client_message(&x_event),
             // Window property notify.
@@ -35,10 +37,6 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ButtonPress => Some(from_button_press(raw_event)),
             // Mouse button released.
             xlib::ButtonRelease if !normal_mode => Some(from_button_release(x_event)),
-            // Keyboard key pressed.
-            xlib::KeyPress => Some(from_key_press(x_event)),
-            // Listen for keyboard changes.
-            xlib::MappingNotify => from_mapping_notify(x_event),
             _other => None,
         }
     }
@@ -54,13 +52,13 @@ fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XUnmapEvent::from(x_event.1);
     if xw.managed_windows.contains(&event.window) {
-        // Set WM_STATE to withdrawn state.
-        xw.set_wm_states(event.window, &[WITHDRAWN_STATE]);
         if event.send_event == xlib::False {
             let h = event.window.into();
-            xw.teardown_managed_window(&h);
+            xw.teardown_managed_window(&h, false);
             return Some(DisplayEvent::WindowDestroy(h));
         }
+        // Set WM_STATE to withdrawn state.
+        xw.set_wm_states(event.window, &[WITHDRAWN_STATE]);
     }
     None
 }
@@ -70,8 +68,22 @@ fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
     let event = xlib::XDestroyWindowEvent::from(x_event.1);
     if xw.managed_windows.contains(&event.window) {
         let h = event.window.into();
-        xw.teardown_managed_window(&h);
+        xw.teardown_managed_window(&h, true);
         return Some(DisplayEvent::WindowDestroy(h));
+    }
+    None
+}
+
+fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
+    let xw = x_event.0;
+    let event = xlib::XFocusChangeEvent::from(x_event.1);
+    // Check that if a window is taking focus, that it should be.
+    if xw.focused_window != event.window {
+        let never_focus = match xw.get_wmhints(xw.focused_window) {
+            Some(hint) => hint.flags & xlib::InputHint != 0 && hint.input == 0,
+            None => false,
+        };
+        xw.focus(xw.focused_window, never_focus);
     }
     None
 }
@@ -146,8 +158,9 @@ fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent> {
 
 fn from_enter_notify(x_event: &XEvent) -> Option<DisplayEvent> {
     let event = xlib::XCrossingEvent::from(x_event.1);
-    if (event.mode != xlib::NotifyNormal || event.detail == xlib::NotifyInferior)
-        && event.window != x_event.0.get_default_root()
+    if event.mode != xlib::NotifyNormal
+        || event.detail == xlib::NotifyInferior
+        || event.window == x_event.0.get_default_root()
     {
         return None;
     }
@@ -202,26 +215,4 @@ fn from_button_release(x_event: XEvent) -> DisplayEvent {
     let xw = x_event.0;
     xw.set_mode(Mode::Normal);
     DisplayEvent::ChangeToNormalMode
-}
-
-fn from_key_press(x_event: XEvent) -> DisplayEvent {
-    let xw = x_event.0;
-    let event = xlib::XKeyEvent::from(x_event.1);
-    let sym = xw.keycode_to_keysym(event.keycode);
-    DisplayEvent::KeyCombo(event.state, sym)
-}
-
-fn from_mapping_notify(x_event: XEvent) -> Option<DisplayEvent> {
-    let xw = x_event.0;
-    let mut event = xlib::XMappingEvent::from(x_event.1);
-    if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
-        // Refresh keyboard.
-        log::debug!("Updating keyboard");
-        xw.refresh_keyboard(&mut event).ok()?;
-
-        // SoftReload keybinds.
-        Some(DisplayEvent::KeyGrabReload)
-    } else {
-        None
-    }
 }

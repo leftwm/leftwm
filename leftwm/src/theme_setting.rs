@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeSetting {
     pub border_width: i32,
     pub margin: CustomMargins,
@@ -26,7 +26,7 @@ impl ThemeSetting {
         match load_theme_file(path) {
             Ok(theme) => *self = theme,
             Err(err) => {
-                log::error!("Could not load theme at path {}: {}", path.display(), err);
+                tracing::error!("Could not load theme at path {}: {}", path.display(), err);
             }
         }
     }
@@ -51,12 +51,17 @@ impl Default for ThemeSetting {
 }
 
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
-    let contents = fs::read_to_string(path)?;
-    let from_file: ThemeSetting = toml::from_str(&contents)?;
-    Ok(from_file)
+    let contents = fs::read_to_string(&path)?;
+    if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
+        let from_file: ThemeSetting = ron::from_str(&contents)?;
+        Ok(from_file)
+    } else {
+        let from_file: ThemeSetting = toml::from_str(&contents)?;
+        Ok(from_file)
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum CustomMargins {
     Int(u32),
@@ -93,7 +98,7 @@ mod tests {
     use leftwm_core::models::Side;
 
     #[test]
-    fn deserialize_custom_theme_config() {
+    fn deserialize_custom_theme_config_toml() {
         let config = r#"
 border_width = 0
 default_width = 400
@@ -111,6 +116,51 @@ side = "Top"
 value = 0
 "#;
         let config: ThemeSetting = toml::from_str(config).unwrap();
+
+        assert_eq!(
+            config,
+            ThemeSetting {
+                border_width: 0,
+                margin: CustomMargins::Int(5),
+                workspace_margin: Some(CustomMargins::Int(5)),
+                default_width: Some(400),
+                default_height: Some(400),
+                always_float: Some(true),
+                gutter: Some(vec![Gutter {
+                    side: Side::Top,
+                    value: 0,
+                    wsid: None,
+                }]),
+                default_border_color: "#222222".to_string(),
+                floating_border_color: "#005500".to_string(),
+                focused_border_color: "#FFB53A".to_string(),
+                on_new_window_cmd: Some("echo Hello World".to_string()),
+            }
+        );
+    }
+
+    #[test]
+    fn deserialize_custom_theme_config_ron() {
+        let config = r##"
+(
+    border_width: 0,
+    default_width: Some(400),
+    default_height: Some(400),
+    always_float: Some(true),
+    margin: 5,
+    workspace_margin: Some(5),
+    default_border_color: "#222222",
+    floating_border_color: "#005500",
+    focused_border_color: "#FFB53A",
+    on_new_window: Some("echo Hello World"),
+
+    gutter: Some([Gutter (
+        side: Top,
+        value: 0,
+        )]
+    )
+)"##;
+        let config: ThemeSetting = ron::from_str(config).unwrap();
 
         assert_eq!(
             config,

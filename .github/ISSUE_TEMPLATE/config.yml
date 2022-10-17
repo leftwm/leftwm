@@ -1,0 +1,10 @@
+blank_issues_enabled: true
+contact_links:
+
+  - name: 💬 Github Discussions
+    url: https://github.com/leftwm/leftwm/discussions
+    about: Please consider asking questions in the discussions tab first
+
+  - name: 👋 LeftWM Discord Server
+    url: https://discord.gg/c9rB3wDnVs
+    about: Join the Discord to chat or ask quick questions

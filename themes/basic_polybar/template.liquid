@@ -3,9 +3,13 @@
 %{A1:$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}:}
 %{F#000000}%{B#FFB52A}  {{tag.name}}  %{B-}%{F-}
 %{A}
+{% elsif tag.urgent %}
+%{A1:$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}:}
+%{B#FF0000}%{F#000000}  {{tag.name}}  %{F-}%{B-}
+%{A}
 {% elsif tag.visible  %}
 %{A1:$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}:}
-%{F#000000}%{B#E60053}  {{tag.name}}  %{B-}%{F-}
+%{F#000000}%{B#FFFFFF}  {{tag.name}}  %{B-}%{F-}
 %{A}
 {% elsif tag.busy %}
 %{A1:$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}:}

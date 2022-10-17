@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 #[derive(Debug, Default)]
 struct State {
     peers: Vec<Option<UnixStream>>,
-    last_state: String, //last_state: String
+    last_state: String,
 }
 
 #[derive(Debug, Default)]
@@ -61,7 +61,9 @@ impl StateSocket {
             let mut json = serde_json::to_string(&state)?;
             json.push('\n');
             let mut state = self.state.lock().await;
-            if json != state.last_state {
+
+            let state_changed = json != state.last_state;
+            if state_changed {
                 state.peers.retain(std::option::Option::is_some);
                 for peer in &mut state.peers {
                     if peer
@@ -88,6 +90,7 @@ impl StateSocket {
             fs::remove_file(&self.socket_file).await?;
             UnixListener::bind(&self.socket_file)?
         };
+
         Ok(tokio::spawn(async move {
             loop {
                 match listener.accept().await {
@@ -97,7 +100,7 @@ impl StateSocket {
                             state.peers.push(Some(peer));
                         }
                     }
-                    Err(e) => log::error!("accept failed = {:?}", e),
+                    Err(e) => tracing::error!("accept failed = {:?}", e),
                 }
             }
         }))

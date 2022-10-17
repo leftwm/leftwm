@@ -1,7 +1,8 @@
-use super::{
-    default_terminal, exit_strategy, BaseCommand, Config, Default, FocusBehaviour, Keybind,
-    LayoutMode, ThemeSetting, LAYOUTS,
-};
+use leftwm_core::models::{ScratchPad, Size};
+
+#[cfg(feature = "lefthk")]
+use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
+use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeSetting, LAYOUTS};
 
 impl Default for Config {
     // We allow this because this function would be difficult to reduce. If someone would like to
@@ -9,7 +10,9 @@ impl Default for Config {
     // considerably.
     #[allow(clippy::too_many_lines)]
     fn default() -> Self {
+        #[cfg(feature = "lefthk")]
         const WORKSPACES_NUM: usize = 10;
+        #[cfg(feature = "lefthk")]
         let mut commands = vec![
             // Mod + p => Open dmenu
             Keybind {
@@ -172,6 +175,7 @@ impl Default for Config {
         ];
 
         // add "goto workspace"
+        #[cfg(feature = "lefthk")]
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
                 command: BaseCommand::GotoTag,
@@ -182,6 +186,7 @@ impl Default for Config {
         }
 
         // and "move to workspace"
+        #[cfg(feature = "lefthk")]
         for i in 1..WORKSPACES_NUM {
             commands.push(Keybind {
                 command: BaseCommand::MoveToTag,
@@ -196,6 +201,15 @@ impl Default for Config {
             .map(|s| (*s).to_string())
             .collect();
 
+        let scratchpad = ScratchPad {
+            name: "Alacritty".into(),
+            value: "alacritty".to_string(),
+            x: Some(Size::Pixel(860)),
+            y: Some(Size::Pixel(390)),
+            height: Some(Size::Pixel(300)),
+            width: Some(Size::Pixel(200)),
+        };
+
         Self {
             workspaces: Some(vec![]),
             tags: Some(tags),
@@ -203,7 +217,7 @@ impl Default for Config {
             layout_mode: LayoutMode::Workspace,
             // TODO: add sane default for scratchpad config.
             // Currently default values are set in sane_dimension fn.
-            scratchpad: Some(vec![]),
+            scratchpad: Some(vec![scratchpad]),
             window_rules: Some(vec![]),
             disable_current_tag_swap: false,
             disable_tile_drag: false,
@@ -213,10 +227,23 @@ impl Default for Config {
             insert_behavior: leftwm_core::config::InsertBehavior::Bottom,
             modkey: "Mod4".to_owned(),     //win key
             mousekey: Some("Mod4".into()), //win key
+            #[cfg(feature = "lefthk")]
             keybind: commands,
             theme_setting: ThemeSetting::default(),
             max_window_width: None,
-            state: None,
+            state_path: None,
+            sloppy_mouse_follows_focus: true,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Config;
+
+    #[test]
+    fn serialize_default_config() {
+        let config = Config::default();
+        assert!(ron::to_string(&config).is_ok());
     }
 }

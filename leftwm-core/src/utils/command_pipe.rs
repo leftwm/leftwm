@@ -1,7 +1,7 @@
 //! Creates a pipe to listen for external commands.
 use crate::layouts::Layout;
 use crate::models::TagId;
-use crate::Command;
+use crate::{Command, ReleaseScratchPadOption};
 use std::env;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -40,7 +40,7 @@ impl CommandPipe {
     pub async fn new(pipe_file: PathBuf) -> Result<Self, std::io::Error> {
         fs::remove_file(pipe_file.as_path()).await.ok();
         if let Err(e) = nix::unistd::mkfifo(&pipe_file, nix::sys::stat::Mode::S_IRWXU) {
-            log::error!("Failed to create new fifo {:?}", e);
+            tracing::error!("Failed to create new fifo {:?}", e);
         }
 
         let path = pipe_file.clone();
@@ -77,7 +77,7 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
         let cmd = match parse_command(&line) {
             Ok(cmd) => cmd,
             Err(err) => {
-                log::error!("An error occurred while parsing the command: {}", err);
+                tracing::error!("An error occurred while parsing the command: {}", err);
                 return None;
             }
         };
@@ -90,37 +90,89 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
 fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let (head, rest) = s.split_once(' ').unwrap_or((s, ""));
     match head {
-        "SoftReload" => Ok(Command::SoftReload),
-        "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
-        "ToggleSticky" => Ok(Command::ToggleSticky),
-        "SwapScreens" => Ok(Command::SwapScreens),
+        // Move Window
+        "MoveWindowDown" => Ok(Command::MoveWindowDown),
+        "MoveWindowTop" => build_move_window_top(rest),
+        "MoveWindowUp" => Ok(Command::MoveWindowUp),
+        "MoveWindowToNextTag" => build_move_window_to_next_tag(rest),
+        "MoveWindowToPreviousTag" => build_move_window_to_previous_tag(rest),
         "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
         "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),
         "MoveWindowToPreviousWorkspace" => Ok(Command::MoveWindowToPreviousWorkspace),
-        "FloatingToTile" => Ok(Command::FloatingToTile),
-        "TileToFloating" => Ok(Command::TileToFloating),
-        "ToggleFloating" => Ok(Command::ToggleFloating),
-        "MoveWindowUp" => Ok(Command::MoveWindowUp),
-        "MoveWindowDown" => Ok(Command::MoveWindowDown),
-        "MoveWindowTop" => build_move_window_top(rest),
-        "FocusWindowUp" => Ok(Command::FocusWindowUp),
+        "SendWindowToTag" => build_send_window_to_tag(rest),
+        // Focus Navigation
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
         "FocusWindowTop" => build_focus_window_top(rest),
+        "FocusWindowUp" => Ok(Command::FocusWindowUp),
         "FocusNextTag" => Ok(Command::FocusNextTag),
         "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
+        // Layout
+        "DecreaseMainWidth" => build_decrease_main_width(rest),
+        "IncreaseMainWidth" => build_increase_main_width(rest),
         "NextLayout" => Ok(Command::NextLayout),
         "PreviousLayout" => Ok(Command::PreviousLayout),
         "RotateTag" => Ok(Command::RotateTag),
-        "CloseWindow" => Ok(Command::CloseWindow),
-        "ToggleScratchPad" => build_toggle_scratchpad(rest),
-        "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
-        "SendWindowToTag" => build_send_window_to_tag(rest),
         "SetLayout" => build_set_layout(rest),
         "SetMarginMultiplier" => build_set_margin_multiplier(rest),
+        // Scratchpad
+        "ToggleScratchPad" => build_toggle_scratchpad(rest),
+        "AttachScratchPad" => build_attach_scratchpad(rest),
+        "ReleaseScratchPad" => Ok(build_release_scratchpad(rest)),
+        "NextScratchPadWindow" => Ok(Command::NextScratchPadWindow {
+            scratchpad: rest.to_owned().into(),
+        }),
+        "PrevScratchPadWindow" => Ok(Command::PrevScratchPadWindow {
+            scratchpad: rest.to_owned().into(),
+        }),
+        // Floating
+        "FloatingToTile" => Ok(Command::FloatingToTile),
+        "TileToFloating" => Ok(Command::TileToFloating),
+        "ToggleFloating" => Ok(Command::ToggleFloating),
+        // Workspace/Tag
+        "GoToTag" => build_go_to_tag(rest),
+        "ReturnToLastTag" => Ok(Command::ReturnToLastTag),
+        "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
+        "SwapScreens" => Ok(Command::SwapScreens),
+        "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
+        "ToggleSticky" => Ok(Command::ToggleSticky),
+        // General
+        "CloseWindow" => Ok(Command::CloseWindow),
         "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
+        "SoftReload" => Ok(Command::SoftReload),
         _ => Ok(Command::Other(s.into())),
+    }
+}
+
+fn build_attach_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let name = if raw.is_empty() {
+        return Err("missing argument scratchpad's name".into());
+    } else {
+        raw
+    };
+    Ok(Command::AttachScratchPad {
+        scratchpad: name.into(),
+        window: None,
+    })
+}
+
+fn build_release_scratchpad(raw: &str) -> Command {
+    if raw.is_empty() {
+        Command::ReleaseScratchPad {
+            window: ReleaseScratchPadOption::None,
+            tag: None,
+        }
+    } else if let Ok(tag_id) = usize::from_str(raw) {
+        Command::ReleaseScratchPad {
+            window: ReleaseScratchPadOption::None,
+            tag: Some(tag_id),
+        }
+    } else {
+        Command::ReleaseScratchPad {
+            window: ReleaseScratchPadOption::ScratchpadName(raw.into()),
+            tag: None,
+        }
     }
 }
 
@@ -130,7 +182,15 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
     } else {
         raw
     };
-    Ok(Command::ToggleScratchPad(name.to_string()))
+    Ok(Command::ToggleScratchPad(name.into()))
+}
+
+fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "GoToTag ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let tag: TagId = parts.first().ok_or("missing argument tag_id")?.parse()?;
+    let swap: bool = parts.get(1).ok_or("missing argument swap")?.parse()?;
+    Ok(Command::GoToTag { tag, swap })
 }
 
 fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
@@ -192,6 +252,45 @@ fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
         bool::from_str(raw)?
     };
     Ok(Command::MoveWindowTop { swap })
+}
+
+fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let follow = if raw.is_empty() {
+        true
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::MoveWindowToNextTag { follow })
+}
+
+fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let follow = if raw.is_empty() {
+        true
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::MoveWindowToPreviousTag { follow })
+}
+
+fn build_increase_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "IncreaseMainWidth ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let change: i8 = parts.first().ok_or("missing argument change")?.parse()?;
+    Ok(Command::IncreaseMainWidth(change))
+}
+
+fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let headless = without_head(raw, "DecreaseMainWidth ");
+    let parts: Vec<&str> = headless.split(' ').collect();
+    let change: i8 = parts.first().ok_or("missing argument change")?.parse()?;
+    Ok(Command::DecreaseMainWidth(change))
+}
+
+fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
+    if !s.starts_with(head) {
+        return s;
+    }
+    &s[head.len()..]
 }
 
 #[cfg(test)]
@@ -309,6 +408,22 @@ mod test {
         assert_eq!(
             build_focus_window_top("").unwrap(),
             Command::FocusWindowTop { swap: false }
+        );
+    }
+
+    #[test]
+    fn build_move_window_to_next_tag_without_parameter() {
+        assert_eq!(
+            build_move_window_to_next_tag("").unwrap(),
+            Command::MoveWindowToNextTag { follow: true }
+        );
+    }
+
+    #[test]
+    fn build_move_window_to_previous_tag_without_parameter() {
+        assert_eq!(
+            build_move_window_to_previous_tag("").unwrap(),
+            Command::MoveWindowToPreviousTag { follow: true }
         );
     }
 }

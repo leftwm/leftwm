@@ -15,7 +15,6 @@
     clippy::default_trait_access
 )]
 mod command;
-mod command_builder;
 pub mod config;
 mod display_action;
 mod display_event;
@@ -28,12 +27,11 @@ pub mod models;
 pub mod state;
 pub mod utils;
 
-use utils::xkeysym_lookup::Button;
-use utils::xkeysym_lookup::ModMask;
-use utils::xkeysym_lookup::XKeysym;
+use utils::modmask_lookup::Button;
+use utils::modmask_lookup::ModMask;
 
-pub use command::Command;
-pub use config::{Config, Keybind};
+pub use command::{Command, ReleaseScratchPadOption};
+pub use config::Config;
 pub use display_action::DisplayAction;
 pub use display_event::DisplayEvent;
 pub use display_servers::xlib_display_server::XWrap;

@@ -6,9 +6,11 @@ Fixes #(issue)
 
 ## Type of change
 
+- [ ] Development change (no change visible to user)
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation only update (no change to the factual codebase)
 - [ ] This change requires a documentation update
 
 ## Updated user documentation:
@@ -21,7 +23,7 @@ See [CONTRIBUTING.md User Documentation section](../CONTRIBUTING.md#user-documen
 
 # Checklist:
 
-- [ ] Ran `make test` locally with no errors or warnings reported
-- [ ] Enhanced review is performed with `cargo clippy -- -W clippy::pedantic -A clippy::must_use_candidate -A clippy::cast_precision_loss -A clippy::cast_possible_truncation -A clippy::cast_possible_wrap -A clippy::cast_sign_loss -A clippy::mut_mut`
+- [ ] Ran `make test-full` locally with no errors or warnings reported
+  Note: To fully reproduce CI checks, you will need to run `make test-full-nix`. Usually, this is not neccesary.
 - [ ] Manual page has been updated accordingly
 - [ ] Wiki pages have been updated accordingly (to perform **after** merge)

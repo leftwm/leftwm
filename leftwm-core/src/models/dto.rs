@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Viewport {
-    pub tags: Vec<String>,
+    pub tag: String,
     pub h: u32,
     pub w: u32,
     pub x: i32,
@@ -19,6 +19,7 @@ pub struct ManagerState {
     pub viewports: Vec<Viewport>,
     pub active_desktop: Vec<String>,
     pub working_tags: Vec<String>,
+    pub urgent_tags: Vec<String>,
 }
 
 #[allow(clippy::struct_excessive_bools)]
@@ -29,6 +30,7 @@ pub struct TagsForWorkspace {
     pub mine: bool,
     pub visible: bool,
     pub focused: bool,
+    pub urgent: bool,
     pub busy: bool,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -49,7 +51,7 @@ pub struct DisplayState {
 
 impl From<ManagerState> for DisplayState {
     fn from(m: ManagerState) -> Self {
-        let visible: Vec<String> = m.viewports.iter().flat_map(|vp| vp.tags.clone()).collect();
+        let visible: Vec<String> = m.viewports.iter().map(|vp| vp.tag.clone()).collect();
         let workspaces = m
             .viewports
             .iter()
@@ -60,6 +62,7 @@ impl From<ManagerState> for DisplayState {
                     &m.active_desktop,
                     &visible,
                     &m.working_tags,
+                    &m.urgent_tags,
                     vp,
                     i,
                 )
@@ -77,6 +80,7 @@ fn viewport_into_display_workspace(
     focused: &[String],
     visible: &[String],
     working_tags: &[String],
+    urgent_tags: &[String],
     viewport: &Viewport,
     ws_index: usize,
 ) -> DisplayWorkspace {
@@ -86,9 +90,10 @@ fn viewport_into_display_workspace(
         .map(|(index, t)| TagsForWorkspace {
             name: t.clone(),
             index,
-            mine: viewport.tags.contains(t),
+            mine: viewport.tag == *t,
             visible: visible.contains(t),
             focused: focused.contains(t),
+            urgent: urgent_tags.contains(t),
             busy: working_tags.contains(t),
         })
         .collect();
@@ -114,16 +119,22 @@ impl From<&State> for ManagerState {
             .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id)))
             .map(|t| t.label.clone())
             .collect();
+        let urgent_tags = state
+            .tags
+            .all()
+            .iter()
+            .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id) && w.urgent))
+            .map(|t| t.label.clone())
+            .collect();
         for ws in &state.workspaces {
-            let tag_labels = ws
-                .tags
-                .iter()
-                .map(|&tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
-                .map(std::option::Option::unwrap)
-                .collect();
+            let tag_label = ws
+                .tag
+                .map(|tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
+                .unwrap()
+                .unwrap();
 
             viewports.push(Viewport {
-                tags: tag_labels,
+                tag: tag_label,
                 x: ws.xyhw.x(),
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
@@ -133,7 +144,7 @@ impl From<&State> for ManagerState {
         }
         let active_desktop = match state.focus_manager.workspace(&state.workspaces) {
             Some(ws) => ws
-                .tags
+                .tag
                 .iter()
                 .map(|&tag_id| state.tags.get(tag_id).unwrap().label.clone())
                 .collect(),
@@ -153,6 +164,7 @@ impl From<&State> for ManagerState {
                 .collect(),
             viewports,
             active_desktop,
+            urgent_tags,
             working_tags,
         }
     }
