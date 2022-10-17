@@ -16,7 +16,11 @@ all: build test
 test:
 	cd $(ROOT_DIR) && cargo test --all-targets --all-features
 	cd $(ROOT_DIR) && cargo fmt -- --check
-	cd $(ROOT_DIR) && cargo clippy --release
+	cd $(ROOT_DIR) && cargo clippy
+
+test-nix:
+	cd $(ROOT_DIR) && sudo NIX_PATH=nixpkgs=channel:nixos-unstable nix flake check --extra-experimental-features "nix-command flakes"
+	cd $(ROOT_DIR) && sudo NIX_PATH=nixpkgs=channel:nixos-unstable nix build --extra-experimental-features "nix-command flakes"
 
 test-full:
 	make test
@@ -28,6 +32,10 @@ test-full:
 		-A clippy::cast_possible_wrap\
 		-A clippy::cast_sign_loss\
 		-A clippy::mut_mut
+
+test-full-nix:
+	make test-full
+	make test-nix
 
 # builds the project
 build:

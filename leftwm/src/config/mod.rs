@@ -15,7 +15,7 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
+    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowType},
     state::State,
     DisplayServer, Manager,
 };
@@ -64,6 +64,8 @@ pub struct WindowHook {
     pub window_title: Option<String>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_floating: Option<bool>,
+    /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
+    pub spawn_as_type: Option<WindowType>,
 }
 
 impl WindowHook {
@@ -93,6 +95,9 @@ impl WindowHook {
         }
         if let Some(should_float) = self.spawn_floating {
             window.set_floating(should_float);
+        }
+        if let Some(w_type) = self.spawn_as_type.clone() {
+            window.r#type = w_type;
         }
     }
 }
@@ -536,13 +541,14 @@ impl leftwm_core::Config for Config {
             if let Some((hook, _)) = best_match {
                 hook.apply(window);
                 tracing::debug!(
-                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}",
+                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?} as type={:?}",
                     window.name,
                     window.legacy_name,
                     window.res_name,
                     window.res_class,
                     hook.spawn_on_tag,
                     hook.spawn_floating,
+                    hook.spawn_as_type,
                 );
                 return true;
             }
