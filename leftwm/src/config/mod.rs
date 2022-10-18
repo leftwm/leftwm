@@ -15,9 +15,9 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowType},
+    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowState, WindowType},
     state::State,
-    DisplayServer, Manager,
+    DisplayAction, DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -91,7 +91,7 @@ impl WindowHook {
         class_score + 2 * window_name_score
     }
 
-    fn apply(&self, window: &mut Window) {
+    fn apply(&self, state: &mut State, window: &mut Window) {
         if let Some(tag) = self.spawn_on_tag {
             window.tag = Some(tag);
         }
@@ -99,10 +99,14 @@ impl WindowHook {
             window.set_floating(should_float);
         }
         if let Some(fullscreen) = self.spawn_fullscreen {
-            window.set_fullscreen(fullscreen);
+            let act = DisplayAction::SetState(window.handle, fullscreen, WindowState::Fullscreen);
+            state.actions.push_back(act);
+            state.handle_window_focus(&window.handle);
         }
         if let Some(sticky) = self.spawn_sticky {
-            window.set_sticky(sticky);
+            let act = DisplayAction::SetState(window.handle, sticky, WindowState::Sticky);
+            state.actions.push_back(act);
+            state.handle_window_focus(&window.handle);
         }
         if let Some(w_type) = self.spawn_as_type.clone() {
             window.r#type = w_type;
@@ -537,7 +541,7 @@ impl leftwm_core::Config for Config {
     }
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
-    fn setup_predefined_window(&self, window: &mut Window) -> bool {
+    fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
         if let Some(window_rules) = &self.window_rules {
             let best_match = window_rules
                 .iter()
@@ -547,18 +551,18 @@ impl leftwm_core::Config for Config {
                 .filter(|(_wh, score)| score != &0)
                 .max_by_key(|(_wh, score)| *score);
             if let Some((hook, _)) = best_match {
-                hook.apply(window);
+                hook.apply(state, window);
                 tracing::debug!(
                     "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
                     window.name,
                     window.legacy_name,
                     window.res_name,
                     window.res_class,
+                    hook.spawn_as_type,
                     hook.spawn_on_tag,
                     hook.spawn_floating,
                     hook.spawn_sticky,
                     hook.spawn_fullscreen,
-                    hook.spawn_as_type,
                 );
                 return true;
             }

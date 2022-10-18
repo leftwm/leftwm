@@ -62,7 +62,7 @@ pub trait Config {
     fn load_state(&self, state: &mut State);
 
     /// Handle window placement based on `WM_CLASS`
-    fn setup_predefined_window(&self, window: &mut Window) -> bool;
+    fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool;
 
     fn load_window(&self, window: &mut Window) {
         if window.r#type == WindowType::Normal {
@@ -185,7 +185,7 @@ pub(crate) mod tests {
         fn load_state(&self, _state: &mut State) {
             unimplemented!()
         }
-        fn setup_predefined_window(&self, window: &mut Window) -> bool {
+        fn setup_predefined_window(&self, _: &mut State, window: &mut Window) -> bool {
             if window.res_class == Some("ShouldGoToTag2".to_string()) {
                 window.tag = Some(2);
                 true
