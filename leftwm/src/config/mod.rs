@@ -63,6 +63,7 @@ pub struct WindowHook {
     /// `_NET_WM_NAME` in X11
     pub window_title: Option<String>,
     pub spawn_on_tag: Option<usize>,
+    pub spawn_on_workspace: Option<i32>,
     pub spawn_floating: Option<bool>,
     pub spawn_sticky: Option<bool>,
     pub spawn_fullscreen: Option<bool>,
@@ -94,6 +95,34 @@ impl WindowHook {
     fn apply(&self, state: &mut State, window: &mut Window) {
         if let Some(tag) = self.spawn_on_tag {
             window.tag = Some(tag);
+        }
+        if self.spawn_on_workspace.is_some() {
+            if let Some(workspace) = state
+                .workspaces
+                .iter()
+                .find(|ws| ws.id == self.spawn_on_workspace)
+            {
+                if let Some(tag) = workspace.tag {
+                    // In order to apply the correct margin multiplier we want to copy this value
+                    // from any window already present on the target tag
+                    let margin_multiplier = match state.windows.iter().find(|w| w.has_tag(&tag)) {
+                        Some(w) => w.margin_multiplier(),
+                        None => 1.0,
+                    };
+
+                    window.untag();
+                    window.set_floating(self.spawn_floating.unwrap_or_default());
+                    window.tag(&tag);
+                    window.apply_margin_multiplier(margin_multiplier);
+                    let act = DisplayAction::SetWindowTag(window.handle, Some(tag));
+                    state.actions.push_back(act);
+
+                    state.sort_windows();
+                }
+            } else {
+                // the function is called directly before the hook is displayed in debug mode.
+                tracing::debug!("Could not find workspace for following hook.");
+            }
         }
         if let Some(should_float) = self.spawn_floating {
             window.set_floating(should_float);
