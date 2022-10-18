@@ -109,7 +109,7 @@ impl Nanny {
         while let Some(Reverse(script)) = scripts.pop() {
             match Self::run_script(&script) {
                 Ok(_) => {}
-                Err(e) => tracing::warn!("Unable to run script {script:?}, error: {e}"),
+                Err(e) => tracing::error!("Unable to run script {script:?}, error: {e}"),
             }
         }
 
