@@ -87,6 +87,32 @@ impl Nanny {
     /// Could be caused by inadequate permissions.
     pub fn run_global_up_script() -> Result<Option<Child>> {
         let mut path = Self::get_config_dir()?;
+        let config_dir = fs::read_dir(&path)?;
+
+        use std::cmp::Reverse;
+        let mut scripts = std::collections::BinaryHeap::new();
+
+        for entry in config_dir {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+            let file = entry.path();
+
+            if let Some(extension) = file.extension() {
+                if extension == "up" {
+                    scripts.push(Reverse(file));
+                }
+            }
+        }
+
+        while let Some(Reverse(script)) = scripts.pop() {
+            match Self::run_script(&script) {
+                Ok(_) => {}
+                Err(e) => tracing::warn!("Unable to run script {script:?}, error: {e}"),
+            }
+        }
+
         path.push("up");
         Self::run_script(&path)
     }
