@@ -1,6 +1,7 @@
 //! Starts programs in autostart, runs global 'up' script, and boots theme. Provides function to
 //! boot other desktop files also.
 use crate::errors::Result;
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
@@ -89,7 +90,6 @@ impl Nanny {
         let mut path = Self::get_config_dir()?;
         let config_dir = fs::read_dir(&path)?;
 
-        use std::cmp::Reverse;
         let mut scripts = std::collections::BinaryHeap::new();
 
         for entry in config_dir {
