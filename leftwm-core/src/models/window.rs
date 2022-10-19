@@ -155,10 +155,12 @@ impl Window {
     pub fn is_fullscreen(&self) -> bool {
         self.states.contains(&WindowState::Fullscreen)
     }
+
     #[must_use]
     pub fn is_sticky(&self) -> bool {
         self.states.contains(&WindowState::Sticky)
     }
+
     #[must_use]
     pub fn must_float(&self) -> bool {
         self.must_float

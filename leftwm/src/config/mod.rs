@@ -15,9 +15,9 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowType},
+    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowState, WindowType},
     state::State,
-    DisplayServer, Manager,
+    DisplayAction, DisplayServer, Manager,
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -63,7 +63,10 @@ pub struct WindowHook {
     /// `_NET_WM_NAME` in X11
     pub window_title: Option<String>,
     pub spawn_on_tag: Option<usize>,
+    pub spawn_on_workspace: Option<i32>,
     pub spawn_floating: Option<bool>,
+    pub spawn_sticky: Option<bool>,
+    pub spawn_fullscreen: Option<bool>,
     /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
     pub spawn_as_type: Option<WindowType>,
 }
@@ -89,12 +92,50 @@ impl WindowHook {
         class_score + 2 * window_name_score
     }
 
-    fn apply(&self, window: &mut Window) {
+    fn apply(&self, state: &mut State, window: &mut Window) {
         if let Some(tag) = self.spawn_on_tag {
             window.tag = Some(tag);
         }
+        if self.spawn_on_workspace.is_some() {
+            if let Some(workspace) = state
+                .workspaces
+                .iter()
+                .find(|ws| ws.id == self.spawn_on_workspace)
+            {
+                if let Some(tag) = workspace.tag {
+                    // In order to apply the correct margin multiplier we want to copy this value
+                    // from any window already present on the target tag
+                    let margin_multiplier = match state.windows.iter().find(|w| w.has_tag(&tag)) {
+                        Some(w) => w.margin_multiplier(),
+                        None => 1.0,
+                    };
+
+                    window.untag();
+                    window.set_floating(self.spawn_floating.unwrap_or_default());
+                    window.tag(&tag);
+                    window.apply_margin_multiplier(margin_multiplier);
+                    let act = DisplayAction::SetWindowTag(window.handle, Some(tag));
+                    state.actions.push_back(act);
+
+                    state.sort_windows();
+                }
+            } else {
+                // the function is called directly before the hook is displayed in debug mode.
+                tracing::debug!("Could not find workspace for following hook.");
+            }
+        }
         if let Some(should_float) = self.spawn_floating {
             window.set_floating(should_float);
+        }
+        if let Some(fullscreen) = self.spawn_fullscreen {
+            let act = DisplayAction::SetState(window.handle, fullscreen, WindowState::Fullscreen);
+            state.actions.push_back(act);
+            state.handle_window_focus(&window.handle);
+        }
+        if let Some(sticky) = self.spawn_sticky {
+            let act = DisplayAction::SetState(window.handle, sticky, WindowState::Sticky);
+            state.actions.push_back(act);
+            state.handle_window_focus(&window.handle);
         }
         if let Some(w_type) = self.spawn_as_type.clone() {
             window.r#type = w_type;
@@ -534,7 +575,7 @@ impl leftwm_core::Config for Config {
     }
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
-    fn setup_predefined_window(&self, window: &mut Window) -> bool {
+    fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
         if let Some(window_rules) = &self.window_rules {
             let best_match = window_rules
                 .iter()
@@ -544,16 +585,19 @@ impl leftwm_core::Config for Config {
                 .filter(|(_wh, score)| score != &0)
                 .max_by_key(|(_wh, score)| *score);
             if let Some((hook, _)) = best_match {
-                hook.apply(window);
+                hook.apply(state, window);
                 tracing::debug!(
-                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?} as type={:?}",
+                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
                     window.name,
                     window.legacy_name,
                     window.res_name,
                     window.res_class,
-                    hook.spawn_on_tag,
-                    hook.spawn_floating,
                     hook.spawn_as_type,
+                    hook.spawn_on_tag,
+                    hook.spawn_on_workspace,
+                    hook.spawn_floating,
+                    hook.spawn_sticky,
+                    hook.spawn_fullscreen,
                 );
                 return true;
             }

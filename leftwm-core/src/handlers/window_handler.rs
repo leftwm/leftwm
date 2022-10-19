@@ -20,7 +20,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
 
         // Setup any predifined hooks.
-        self.config.setup_predefined_window(&mut window);
+        self.config
+            .setup_predefined_window(&mut self.state, &mut window);
         let mut is_first = false;
         let mut on_same_tag = true;
         // Random value
