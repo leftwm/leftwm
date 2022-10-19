@@ -1,5 +1,6 @@
-use leftwm_core::{Manager, XlibDisplayServer};
+use leftwm_core::Manager;
 use std::panic;
+use xlib_display_server::XlibDisplayServer;
 
 fn main() {
     leftwm::utils::log::setup_logging();

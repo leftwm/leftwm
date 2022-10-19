@@ -1,5 +1,5 @@
 use super::{DisplayEvent, XWrap};
-use crate::{
+use leftwm_core::{
     models::{WindowChange, WindowHandle},
     Command,
 };

@@ -487,6 +487,7 @@ dependencies = [
  "tracing-journald",
  "tracing-subscriber",
  "xdg",
+ "xlib-display-server",
 ]
 
 [[package]]
@@ -1328,4 +1329,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c4583db5cbd4c4c0303df2d15af80f0539db703fa1c68802d4cbbd2dd0f88f6"
 dependencies = [
  "dirs",
+]
+
+[[package]]
+name = "xlib-display-server"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "leftwm-core",
+ "mio",
+ "tokio",
+ "tracing",
+ "x11-dl",
 ]

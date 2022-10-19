@@ -9,9 +9,9 @@
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
-use crate::config::Config;
-use crate::models::{FocusBehaviour, Mode};
-use crate::utils::modmask_lookup::ModMask;
+use leftwm_core::config::Config;
+use leftwm_core::models::{FocusBehaviour, Mode};
+use leftwm_core::utils::modmask_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
