@@ -1,9 +1,7 @@
 //! Save and restore manager state.
 
+use crate::Config;
 use crate::child_process::ChildID;
-use crate::config::{Config, InsertBehavior, ScratchPad};
-use crate::layouts::Layout;
-use crate::models::Size;
 use crate::models::Tags;
 use crate::models::Window;
 use crate::models::Workspace;
@@ -22,17 +20,9 @@ pub struct State {
     pub focus_manager: FocusManager,
     pub layout_manager: LayoutManager,
     pub mode: Mode,
-    pub layouts: Vec<Layout>,
-    pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
-    pub mousekey: Vec<String>,
-    pub max_window_width: Option<Size>,
-    pub default_width: i32,
-    pub default_height: i32,
-    pub disable_tile_drag: bool,
-    pub insert_behavior: InsertBehavior,
 }
 
 impl State {
@@ -47,8 +37,6 @@ impl State {
         Self {
             focus_manager: FocusManager::new(config),
             layout_manager,
-            scratchpads: config.create_list_of_scratchpads(),
-            layouts: config.layouts(),
             screens: Default::default(),
             windows: Default::default(),
             workspaces: Default::default(),
@@ -56,12 +44,6 @@ impl State {
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
-            max_window_width: config.max_window_width(),
-            mousekey: config.mousekey(),
-            default_width: config.default_width(),
-            default_height: config.default_height(),
-            disable_tile_drag: config.disable_tile_drag(),
-            insert_behavior: config.insert_behavior(),
         }
     }
 
@@ -144,8 +126,6 @@ impl State {
     }
 
     pub(crate) fn load_config(&mut self, config: &impl Config) {
-        self.mousekey = config.mousekey();
-        self.max_window_width = config.max_window_width();
         for win in &mut self.windows {
             config.load_window(win);
         }

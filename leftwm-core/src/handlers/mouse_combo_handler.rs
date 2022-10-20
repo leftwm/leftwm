@@ -1,13 +1,15 @@
+use crate::Config;
+use crate::DisplayServer;
+use crate::Manager;
 use crate::display_action::DisplayAction;
 use crate::models::Mode;
 use crate::models::WindowHandle;
-use crate::state::State;
 use crate::utils;
 use crate::utils::modmask_lookup::Button;
 use crate::utils::modmask_lookup::ModMask;
 use x11_dl::xlib;
 
-impl State {
+impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn mouse_combo_handler(
         &mut self,
         modmask: ModMask,
@@ -16,20 +18,20 @@ impl State {
         x: i32,
         y: i32,
     ) -> bool {
-        if let Some(window) = self.windows.iter().find(|w| w.handle == handle) {
-            if !self.disable_tile_drag || window.floating() {
-                let modifier = utils::modmask_lookup::into_modmask(&self.mousekey);
+        if let Some(window) = self.state.windows.iter().find(|w| w.handle == handle) {
+            if !self.config.disable_tile_drag() || window.floating() {
+                let modifier = utils::modmask_lookup::into_modmask(&self.config.mousekey());
                 // Build the display to say whether we are ready to move/resize.
                 let act = self.build_action(modmask, button, handle, modifier);
                 if let Some(act) = act {
-                    self.actions.push_back(act);
+                    self.state.actions.push_back(act);
                     return false;
                 }
             }
-        } else if self.focus_manager.behaviour.is_clickto() {
+        } else if self.state.focus_manager.behaviour.is_clickto() {
             if let xlib::Button1 | xlib::Button3 = button {
-                if self.screens.iter().any(|s| s.root == handle) {
-                    self.focus_workspace_with_point(x, y);
+                if self.state.screens.iter().any(|s| s.root == handle) {
+                    self.state.focus_workspace_with_point(x, y);
                     return false;
                 }
             }
@@ -48,22 +50,22 @@ impl State {
         match button {
             xlib::Button1 if is_mouse_key => {
                 let _ = self
-                    .windows
+                    .state.windows
                     .iter()
                     .find(|w| w.handle == window && w.can_move())?;
-                self.mode = Mode::ReadyToMove(window);
+                self.state.mode = Mode::ReadyToMove(window);
                 Some(DisplayAction::ReadyToMoveWindow(window))
             }
             xlib::Button3 if is_mouse_key => {
                 let _ = self
-                    .windows
+                    .state.windows
                     .iter()
                     .find(|w| w.handle == window && w.can_resize())?;
-                self.mode = Mode::ReadyToResize(window);
+                self.state.mode = Mode::ReadyToResize(window);
                 Some(DisplayAction::ReadyToResizeWindow(window))
             }
-            xlib::Button1 | xlib::Button3 if self.focus_manager.behaviour.is_clickto() => {
-                self.focus_window(&window);
+            xlib::Button1 | xlib::Button3 if self.state.focus_manager.behaviour.is_clickto() => {
+                self.state.focus_window(&window);
                 Some(DisplayAction::ReplayClick(window, button))
             }
             _ => None,

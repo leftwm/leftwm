@@ -6,7 +6,7 @@ use std::sync::{atomic::AtomicBool, Arc};
 
 /// Maintains current program state.
 #[derive(Debug)]
-pub struct Manager<C, SERVER> {
+pub struct Manager<C: Config, SERVER: DisplayServer> {
     pub state: State,
     pub config: C,
 
@@ -31,9 +31,7 @@ where
             reload_requested: false,
         }
     }
-}
 
-impl<C, SERVER> Manager<C, SERVER> {
     pub fn register_child_hook(&self) {
         crate::child_process::register_child_hook(self.reap_requested.clone());
     }
@@ -42,9 +40,7 @@ impl<C, SERVER> Manager<C, SERVER> {
     pub fn hard_reload(&mut self) {
         self.reload_requested = true;
     }
-}
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Reload the configuration of the running [`Manager`].
     pub fn reload_config(&mut self) -> bool {
         let focused = self.state.focus_manager.window_history.front();

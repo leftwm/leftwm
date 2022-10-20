@@ -90,8 +90,8 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SetLayout(layout) => set_layout(*layout, state),
 
         Command::FloatingToTile => floating_to_tile(state),
-        Command::TileToFloating => tile_to_floating(state),
-        Command::ToggleFloating => toggle_floating(state),
+        Command::TileToFloating => tile_to_floating(state, &manager.config),
+        Command::ToggleFloating => toggle_floating(state, &manager.config),
 
         Command::FocusNextTag => focus_tag_change(state, 1),
         Command::FocusPreviousTag => focus_tag_change(state, -1),
@@ -490,9 +490,9 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn tile_to_floating(state: &mut State) -> Option<bool> {
-    let width = state.default_width;
-    let height = state.default_height;
+fn tile_to_floating<C: Config>(state: &mut State, config: &C) -> Option<bool> {
+    let width = config.default_width();
+    let height = config.default_height();
     let window = state.focus_manager.window_mut(&mut state.windows)?;
     if window.must_float() {
         return None;
@@ -520,12 +520,12 @@ fn tile_to_floating(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn toggle_floating(state: &mut State) -> Option<bool> {
+fn toggle_floating<C: Config>(state: &mut State, config: &C) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     if window.floating() {
         floating_to_tile(state)
     } else {
-        tile_to_floating(state)
+        tile_to_floating(state, config)
     }
 }
 

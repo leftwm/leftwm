@@ -27,6 +27,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut layout: Layout = Layout::MainAndVertStack;
         setup_window(
             &mut self.state,
+            &self.config,
             &mut window,
             (x, y),
             &mut layout,
@@ -34,7 +35,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut on_same_tag,
         );
         self.config.load_window(&mut window);
-        insert_window(&mut self.state, &mut window, layout);
+        insert_window(&mut self.state, &self.config, &mut window, layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour.is_sloppy()
@@ -227,7 +228,7 @@ fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) ->
     }
 }
 
-fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
+fn insert_window<C: Config>(state: &mut State, config: &C, window: &mut Window, layout: Layout) {
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
         let for_active_workspace = |x: &Window| -> bool { window.tag == x.tag && x.is_managed() };
@@ -289,7 +290,7 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
         .unwrap_or(0);
 
     // Past special cases we just insert the window based on the configured insert behavior
-    match state.insert_behavior {
+    match config.insert_behavior() {
         InsertBehavior::Top => state.windows.insert(0, window.clone()),
         InsertBehavior::Bottom => state.windows.push(window.clone()),
         InsertBehavior::AfterCurrent if current_index < state.windows.len() => {
@@ -326,8 +327,9 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.set_floating_exact(xyhw);
 }
 
-fn setup_window(
+fn setup_window<C: Config>(
     state: &mut State,
+    config: &C,
     window: &mut Window,
     xy: (i32, i32),
     layout: &mut Layout,
@@ -362,8 +364,7 @@ fn setup_window(
             .find(|(_, id)| id.iter().any(|id| Some(*id) == window.pid))
         {
             window.set_floating(true);
-            if let Some(s) = state
-                .scratchpads
+            if let Some(s) = config.create_list_of_scratchpads()
                 .iter()
                 .find(|s| *scratchpad_name == s.name)
             {

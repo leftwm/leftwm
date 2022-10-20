@@ -203,8 +203,8 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
 ) -> Option<bool> {
     let current_tag = &manager.state.focus_manager.tag(0)?;
     let scratchpad = manager
-        .state
-        .scratchpads
+        .config
+        .create_list_of_scratchpads()
         .iter()
         .find(|s| name == &s.name)?
         .clone();
@@ -288,12 +288,12 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .state
             .focus_manager
             .workspace(&manager.state.workspaces)?;
-        let to_scratchpad = manager
-            .state
-            .scratchpads
-            .iter()
-            .find(|s| &s.name == scratchpad)?;
-        let new_float_exact = to_scratchpad.xyhw(&ws.xyhw);
+
+        let new_float_exact = {
+            let scratchpads = manager.config.create_list_of_scratchpads();
+            let matching_scratchpad = scratchpads.iter().find(|s| &s.name == scratchpad)?;
+            matching_scratchpad.xyhw(&ws.xyhw)
+        };
 
         let window = manager
             .state
