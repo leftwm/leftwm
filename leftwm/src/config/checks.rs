@@ -34,7 +34,11 @@ impl Config {
         let mut bindings = HashSet::new();
         for keybind in &self.keybind {
             if verbose {
-                println!("Keybind: {:?} {}", keybind, keybind.value.is_empty());
+                println!(
+                    "Keybind: {:?} value field is empty: {}",
+                    keybind,
+                    keybind.value.is_empty()
+                );
             }
             if let Err(err) = keybind.try_convert_to_lefthk_keybind(self) {
                 returns.push((Some(keybind.clone()), err.to_string()));

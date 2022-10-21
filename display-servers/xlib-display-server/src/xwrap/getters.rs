@@ -1,7 +1,7 @@
 //! `XWrap` getters.
 use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN, MOUSEMASK};
-use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
+use leftwm_core::models::{DockArea, WindowState, WindowType, XyhwChange};
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;

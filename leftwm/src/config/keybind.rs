@@ -173,6 +173,7 @@ impl Modifier {
     }
 }
 
+#[cfg(feature = "lefthk")]
 fn is_valid_scratchpad_name(config: &Config, scratchpad_name: &str) -> bool {
     config
         .scratchpad

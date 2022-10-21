@@ -64,4 +64,14 @@ impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDispl
             ..TestConfig::default()
         })
     }
+
+    pub fn new_test_with_border(tags: Vec<String>, border_width: i32) -> Self {
+        use crate::config::tests::TestConfig;
+        Self::new(TestConfig {
+            tags,
+            border_width,
+            single_window_border: false,
+            ..TestConfig::default()
+        })
+    }
 }

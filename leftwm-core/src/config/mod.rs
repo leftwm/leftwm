@@ -27,6 +27,8 @@ pub trait Config {
 
     fn insert_behavior(&self) -> InsertBehavior;
 
+    fn single_window_border(&self) -> bool;
+
     fn focus_new_windows(&self) -> bool;
 
     fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
@@ -63,7 +65,7 @@ pub trait Config {
     fn load_state(&self, state: &mut State);
 
     /// Handle window placement based on `WM_CLASS`
-    fn setup_predefined_window(&self, window: &mut Window) -> bool;
+    fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool;
 
     fn load_window(&self, window: &mut Window) {
         if window.r#type == WindowType::Normal {
@@ -91,6 +93,8 @@ pub(crate) mod tests {
         pub layouts: Vec<Layout>,
         pub workspaces: Option<Vec<Workspace>>,
         pub insert_behavior: InsertBehavior,
+        pub border_width: i32,
+        pub single_window_border: bool,
     }
 
     impl Config for TestConfig {
@@ -120,6 +124,10 @@ pub(crate) mod tests {
             self.insert_behavior
         }
 
+        fn single_window_border(&self) -> bool {
+            self.single_window_border
+        }
+
         fn focus_new_windows(&self) -> bool {
             false
         }
@@ -145,7 +153,7 @@ pub(crate) mod tests {
             800
         }
         fn border_width(&self) -> i32 {
-            0
+            self.border_width
         }
         fn margin(&self) -> Margins {
             Margins::new(0)
@@ -186,7 +194,7 @@ pub(crate) mod tests {
         fn load_state(&self, _state: &mut State) {
             unimplemented!()
         }
-        fn setup_predefined_window(&self, window: &mut Window) -> bool {
+        fn setup_predefined_window(&self, _: &mut State, window: &mut Window) -> bool {
             if window.res_class == Some("ShouldGoToTag2".to_string()) {
                 window.tag = Some(2);
                 true
