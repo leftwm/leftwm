@@ -108,7 +108,7 @@ pub struct Config {
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
     pub layouts: Vec<Layout>,
-    pub new_layouts: leftwm_layouts::Layouts,
+    pub layout_definitions: leftwm_layouts::Layouts,
     pub layout_mode: LayoutMode,
     pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
@@ -379,8 +379,8 @@ impl leftwm_core::Config for Config {
         self.layouts.clone()
     }
 
-    fn new_layouts(&self) -> leftwm_layouts::Layouts {
-        self.new_layouts.clone()
+    fn layout_definitions(&self) -> leftwm_layouts::Layouts {
+        self.layout_definitions.clone()
     }
 
     fn layout_mode(&self) -> LayoutMode {

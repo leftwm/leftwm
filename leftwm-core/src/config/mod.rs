@@ -23,7 +23,7 @@ pub trait Config {
 
     fn layouts(&self) -> Vec<Layout>;
 
-    fn new_layouts(&self) -> leftwm_layouts::Layouts;
+    fn layout_definitions(&self) -> leftwm_layouts::Layouts;
 
     fn layout_mode(&self) -> LayoutMode;
 
@@ -90,7 +90,7 @@ pub(crate) mod tests {
     pub struct TestConfig {
         pub tags: Vec<String>,
         pub layouts: Vec<Layout>,
-        pub new_layouts: leftwm_layouts::Layouts,
+        pub layout_definitions: leftwm_layouts::Layouts,
         pub workspaces: Option<Vec<Workspace>>,
         pub insert_behavior: InsertBehavior,
     }
@@ -114,8 +114,8 @@ pub(crate) mod tests {
         fn layouts(&self) -> Vec<Layout> {
             self.layouts.clone()
         }
-        fn new_layouts(&self) -> leftwm_layouts::Layouts {
-            self.new_layouts.clone()
+        fn layout_definitions(&self) -> leftwm_layouts::Layouts {
+            self.layout_definitions.clone()
         }
         fn layout_mode(&self) -> LayoutMode {
             LayoutMode::Workspace
