@@ -157,7 +157,6 @@ impl XWrap {
     }
 
     pub fn set_background_color(&self, mut color: c_ulong) {
-        tracing::warn!("Color {} printed.", color);
         unsafe {
             // Force border opacity to 0xff.
             let mut bytes = color.to_le_bytes();

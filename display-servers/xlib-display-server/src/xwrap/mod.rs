@@ -447,8 +447,8 @@ impl XWrap {
                     self.set_window_border_color(handle, color);
                 }
             }
-            self.set_background_color(self.colors.background);
         }
+        self.set_background_color(self.colors.background);
     }
 
     /// Sets the mode within our xwrapper.
