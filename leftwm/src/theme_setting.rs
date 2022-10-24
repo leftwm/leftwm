@@ -16,6 +16,7 @@ pub struct ThemeSetting {
     pub default_border_color: String,
     pub floating_border_color: String,
     pub focused_border_color: String,
+    pub background_color: String,
     #[serde(rename = "on_new_window")]
     pub on_new_window_cmd: Option<String>,
 }
@@ -45,6 +46,7 @@ impl Default for ThemeSetting {
             default_border_color: "#000000".to_owned(),
             floating_border_color: "#000000".to_owned(),
             focused_border_color: "#FF0000".to_owned(),
+            background_color: "#333333".to_owned(),
             on_new_window_cmd: None,
         }
     }
@@ -109,6 +111,7 @@ workspace_margin = 5
 default_border_color = '#222222'
 floating_border_color = '#005500'
 focused_border_color = '#FFB53A'
+background_color = '#333333'
 on_new_window = 'echo Hello World'
 
 [[gutter]]
@@ -134,6 +137,7 @@ value = 0
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),
+                background_color: "#333333".to_owned(),
                 on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );
@@ -152,6 +156,7 @@ value = 0
     default_border_color: "#222222",
     floating_border_color: "#005500",
     focused_border_color: "#FFB53A",
+    background_color: "#333333",
     on_new_window: Some("echo Hello World"),
 
     gutter: Some([Gutter (
@@ -179,6 +184,7 @@ value = 0
                 default_border_color: "#222222".to_string(),
                 floating_border_color: "#005500".to_string(),
                 focused_border_color: "#FFB53A".to_string(),
+                background_color: "#333333".to_owned(),
                 on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );

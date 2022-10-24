@@ -507,6 +507,10 @@ impl leftwm_core::Config for Config {
         self.theme_setting.floating_border_color.clone()
     }
 
+    fn background_color(&self) -> String {
+        self.theme_setting.background_color.clone()
+    }
+
     fn disable_window_snap(&self) -> bool {
         self.disable_window_snap
     }

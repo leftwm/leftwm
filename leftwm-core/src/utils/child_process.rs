@@ -66,17 +66,12 @@ impl Nanny {
     }
 
     /// Runs a script if it exits
-    fn run_script(path: &Path) -> Result<Option<Child>> {
-        if path.is_file() {
-            Command::new(&path)
-                .stdin(Stdio::null())
-                .stdout(Stdio::null())
-                .spawn()
-                .map(Some)
-                .map_err(Into::into)
-        } else {
-            Ok(None)
-        }
+    fn run_script(path: &Path) -> Result<Child> {
+        Command::new(&path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .spawn()
+            .map_err(Into::into)
     }
 
     /// Runs the 'up' script in the config directory, if there is one.
@@ -85,7 +80,7 @@ impl Nanny {
     ///
     /// Will error if unable to open current config directory.
     /// Could be caused by inadequate permissions.
-    pub fn run_global_up_script() -> Result<Option<Child>> {
+    pub fn run_global_up_script() -> Result<Child> {
         let mut path = Self::get_config_dir()?;
         path.push("up");
         Self::run_script(&path)
@@ -97,7 +92,7 @@ impl Nanny {
     ///
     /// Will error if unable to open current theme directory.
     /// Could be caused by inadequate permissions.
-    pub fn boot_current_theme() -> Result<Option<Child>> {
+    pub fn boot_current_theme() -> Result<Child> {
         let mut path = Self::get_config_dir()?;
         path.push("themes");
         path.push("current");
