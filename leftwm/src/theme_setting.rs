@@ -13,10 +13,10 @@ pub struct ThemeSetting {
     pub default_height: Option<i32>,
     pub always_float: Option<bool>,
     pub gutter: Option<Vec<Gutter>>,
-    pub default_border_color: String,
-    pub floating_border_color: String,
-    pub focused_border_color: String,
-    pub background_color: String,
+    pub default_border_color: Option<String>,
+    pub floating_border_color: Option<String>,
+    pub focused_border_color: Option<String>,
+    pub background_color: Option<String>,
     #[serde(rename = "on_new_window")]
     pub on_new_window_cmd: Option<String>,
 }
@@ -43,10 +43,10 @@ impl Default for ThemeSetting {
             default_height: Some(700),
             always_float: Some(false),
             gutter: None,
-            default_border_color: "#000000".to_owned(),
-            floating_border_color: "#000000".to_owned(),
-            focused_border_color: "#FF0000".to_owned(),
-            background_color: "#333333".to_owned(),
+            default_border_color: Some("#000000".to_owned()),
+            floating_border_color: Some("#000000".to_owned()),
+            focused_border_color: Some("#FFD625".to_owned()),
+            background_color: Some("#333333".to_owned()),
             on_new_window_cmd: None,
         }
     }
@@ -134,10 +134,10 @@ value = 0
                     value: 0,
                     wsid: None,
                 }]),
-                default_border_color: "#222222".to_string(),
-                floating_border_color: "#005500".to_string(),
-                focused_border_color: "#FFB53A".to_string(),
-                background_color: "#333333".to_owned(),
+                default_border_color: Some("#222222".to_string()),
+                floating_border_color: Some("#005500".to_string()),
+                focused_border_color: Some("#FFB53A".to_string()),
+                background_color: Some("#333333".to_owned()),
                 on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );
@@ -153,10 +153,10 @@ value = 0
     always_float: Some(true),
     margin: 5,
     workspace_margin: Some(5),
-    default_border_color: "#222222",
-    floating_border_color: "#005500",
-    focused_border_color: "#FFB53A",
-    background_color: "#333333",
+    default_border_color: Some("#222222"),
+    floating_border_color: Some("#005500"),
+    focused_border_color: Some("#FFB53A"),
+    background_color: Some("#333333"),
     on_new_window: Some("echo Hello World"),
 
     gutter: Some([Gutter (
@@ -181,10 +181,10 @@ value = 0
                     value: 0,
                     wsid: None,
                 }]),
-                default_border_color: "#222222".to_string(),
-                floating_border_color: "#005500".to_string(),
-                focused_border_color: "#FFB53A".to_string(),
-                background_color: "#333333".to_owned(),
+                default_border_color: Some("#222222".to_string()),
+                floating_border_color: Some("#005500".to_string()),
+                focused_border_color: Some("#FFB53A".to_string()),
+                background_color: Some("#333333".to_owned()),
                 on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );

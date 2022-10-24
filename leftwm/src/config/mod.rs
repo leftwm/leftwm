@@ -500,15 +500,15 @@ impl leftwm_core::Config for Config {
     }
 
     fn default_border_color(&self) -> String {
-        self.theme_setting.default_border_color.clone()
+        self.theme_setting.default_border_color.clone().unwrap_or(String::from("#000000"))
     }
 
     fn floating_border_color(&self) -> String {
-        self.theme_setting.floating_border_color.clone()
+        self.theme_setting.floating_border_color.clone().unwrap_or(String::from("#000000"))
     }
 
     fn background_color(&self) -> String {
-        self.theme_setting.background_color.clone()
+        self.theme_setting.background_color.clone().unwrap_or(String::from("#333333"))
     }
 
     fn disable_window_snap(&self) -> bool {
@@ -528,7 +528,7 @@ impl leftwm_core::Config for Config {
     }
 
     fn focused_border_color(&self) -> String {
-        self.theme_setting.focused_border_color.clone()
+        self.theme_setting.focused_border_color.clone().unwrap_or(String::from("#FFD625"))
     }
 
     fn on_new_window_cmd(&self) -> Option<String> {
