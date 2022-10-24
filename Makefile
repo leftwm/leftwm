@@ -62,7 +62,7 @@ install: build
 	@echo "binaries, '.desktop' file and manual page have been installed"
 
 # build the project and links the binaries, will also install the .desktop file
-install-dev: build
+install-linked: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm $(TARGET_DIR)/leftwm
@@ -72,6 +72,19 @@ install-dev: build
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-check $(TARGET_DIR)/leftwm-check
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-command $(TARGET_DIR)/leftwm-command
 	@echo "binaries have been linked, manpage and '.desktop' file have been installed"
+
+install-linked-dev:
+	cd $(ROOT_DIR) && cargo build ${BUILDFLAGS}
+	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
+	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm $(TARGET_DIR)/leftwm
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-worker $(TARGET_DIR)/leftwm-worker
+	sudo ln -sf $(ROOT_DIR)/target/debug/lefthk-worker $(TARGET_DIR)/lefthk-worker
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-state $(TARGET_DIR)/leftwm-state
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-check $(TARGET_DIR)/leftwm-check
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-command $(TARGET_DIR)/leftwm-command
+	@echo "binaries have been linked, manpage and '.desktop' file have been linked."
+
 
 # uninstalls leftwm from the system, no matter if installed via 'install' or 'install-dev'
 uninstall:

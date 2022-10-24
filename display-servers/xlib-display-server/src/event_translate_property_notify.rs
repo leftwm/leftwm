@@ -1,5 +1,5 @@
 use super::{DisplayEvent, XWrap};
-use crate::models::{WindowChange, WindowType, Xyhw};
+use leftwm_core::models::{WindowChange, WindowType, Xyhw};
 
 use x11_dl::xlib;
 

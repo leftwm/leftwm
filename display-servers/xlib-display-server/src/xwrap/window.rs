@@ -3,8 +3,9 @@ use super::{
     on_error_from_xlib, on_error_from_xlib_dummy, Window, WindowHandle, ICONIC_STATE, NORMAL_STATE,
     ROOT_EVENT_MASK, WITHDRAWN_STATE,
 };
-use crate::models::{WindowChange, WindowType, Xyhw, XyhwChange};
-use crate::{DisplayEvent, XWrap};
+use crate::XWrap;
+use leftwm_core::models::{WindowChange, WindowType, Xyhw, XyhwChange};
+use leftwm_core::DisplayEvent;
 use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
 

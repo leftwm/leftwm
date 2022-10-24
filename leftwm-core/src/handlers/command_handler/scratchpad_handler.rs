@@ -53,6 +53,9 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
     let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
     manager.state.actions.push_back(act);
     manager.state.sort_windows();
+    manager
+        .state
+        .handle_single_border(manager.config.border_width());
 
     // Will ignore current window handler because we just set it invisible
     let last_focused_still_visible = manager
@@ -132,6 +135,9 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
     let act = DisplayAction::SetWindowTag(*scratchpad_window, window.tag);
     manager.state.actions.push_back(act);
     manager.state.sort_windows();
+    manager
+        .state
+        .handle_single_border(manager.config.border_width());
     manager.state.handle_window_focus(scratchpad_window);
     manager.state.move_to_top(scratchpad_window);
 
@@ -554,7 +560,7 @@ mod tests {
         );
         assert!(
             window.visible(),
-            "Scratchpad window still is marked as visible"
+            "Scratchpad window still is marked as invisible"
         );
     }
 
@@ -1229,5 +1235,68 @@ mod tests {
             WindowHandle::MockHandle(1),
             "After focusing the scratchpad and then focusing the top, window (1) should be focused"
         );
+    }
+
+    #[test]
+    fn toggle_scratchpad_also_toggles_single_window_borders() {
+        let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
+        manager.screen_create_handler(Default::default());
+        let second_tag = manager.state.tags.get(2).unwrap().id;
+
+        let scratchpad_pid = 1_u32;
+        let scratchpad_handle = WindowHandle::MockHandle(scratchpad_pid as i32);
+        let scratchpad_name: ScratchPadName = "Alacritty".into();
+        let mut scratchpad = Window::new(scratchpad_handle, None, Some(scratchpad_pid));
+        scratchpad.tag = Some(second_tag);
+        manager.window_created_handler(scratchpad, -1, -1);
+        manager.state.scratchpads.push(ScratchPad {
+            name: scratchpad_name.clone(),
+            value: "".to_string(),
+            x: None,
+            y: None,
+            height: None,
+            width: None,
+        });
+        manager
+            .state
+            .active_scratchpads
+            .insert(scratchpad_name.clone(), VecDeque::from([scratchpad_pid]));
+
+        let window_pid = 2_u32;
+        let window_handle = WindowHandle::MockHandle(window_pid as i32);
+        manager.window_created_handler(Window::new(window_handle, None, Some(window_pid)), -1, -1);
+
+        manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.clone()));
+
+        {
+            let scratchpad = manager
+                .state
+                .windows
+                .iter_mut()
+                .find(|w| w.pid == Some(scratchpad_pid))
+                .unwrap();
+            assert_eq!(scratchpad.border(), 1);
+
+            let window = manager
+                .state
+                .windows
+                .iter_mut()
+                .find(|w| w.pid == Some(window_pid))
+                .unwrap();
+            assert_eq!(window.border(), 1);
+        }
+
+        manager.command_handler(&Command::ToggleScratchPad(scratchpad_name));
+
+        {
+            let window = manager
+                .state
+                .windows
+                .iter_mut()
+                .find(|w| w.pid == Some(window_pid))
+                .unwrap();
+
+            assert_eq!(window.border(), 0);
+        }
     }
 }
