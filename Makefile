@@ -22,9 +22,9 @@ test-nix:
 	cd $(ROOT_DIR) && sudo NIX_PATH=nixpkgs=channel:nixos-unstable nix flake check --extra-experimental-features "nix-command flakes"
 	cd $(ROOT_DIR) && sudo NIX_PATH=nixpkgs=channel:nixos-unstable nix build --extra-experimental-features "nix-command flakes"
 
-test-full:
-	make test
+test-full: test
 	cargo clippy --\
+		-D warnings\
 		-W clippy::pedantic\
 		-A clippy::must_use_candidate\
 		-A clippy::cast_precision_loss\
@@ -33,9 +33,7 @@ test-full:
 		-A clippy::cast_sign_loss\
 		-A clippy::mut_mut
 
-test-full-nix:
-	make test-full
-	make test-nix
+test-full-nix: test-full test-nix
 
 # builds the project
 build:
