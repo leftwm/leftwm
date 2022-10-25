@@ -469,11 +469,17 @@ impl leftwm_core::Config for Config {
     }
 
     fn border_width(&self) -> i32 {
-        self.theme_setting.border_width
+        self.theme_setting.border_width.unwrap_or(1)
     }
 
     fn margin(&self) -> Margins {
-        match self.theme_setting.margin.clone().try_into() {
+        match self
+            .theme_setting
+            .margin
+            .clone()
+            .unwrap_or(crate::CustomMargins::Int(10))
+            .try_into()
+        {
             Ok(margins) => margins,
             Err(err) => {
                 tracing::warn!("Could not read margin: {}", err);

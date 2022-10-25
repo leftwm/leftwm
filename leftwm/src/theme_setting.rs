@@ -6,8 +6,8 @@ use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeSetting {
-    pub border_width: i32,
-    pub margin: CustomMargins,
+    pub border_width: Option<i32>,
+    pub margin: Option<CustomMargins>,
     pub workspace_margin: Option<CustomMargins>,
     pub default_width: Option<i32>,
     pub default_height: Option<i32>,
@@ -36,8 +36,8 @@ impl ThemeSetting {
 impl Default for ThemeSetting {
     fn default() -> Self {
         Self {
-            border_width: 1,
-            margin: CustomMargins::Int(10),
+            border_width: Some(1),
+            margin: Some(CustomMargins::Int(10)),
             workspace_margin: Some(CustomMargins::Int(10)),
             default_width: Some(1000),
             default_height: Some(700),
@@ -123,8 +123,8 @@ value = 0
         assert_eq!(
             config,
             ThemeSetting {
-                border_width: 0,
-                margin: CustomMargins::Int(5),
+                border_width: Some(0),
+                margin: Some(CustomMargins::Int(5)),
                 workspace_margin: Some(CustomMargins::Int(5)),
                 default_width: Some(400),
                 default_height: Some(400),
@@ -147,11 +147,11 @@ value = 0
     fn deserialize_custom_theme_config_ron() {
         let config = r##"
 (
-    border_width: 0,
+    border_width: Some(0),
     default_width: Some(400),
     default_height: Some(400),
     always_float: Some(true),
-    margin: 5,
+    margin: Some(5),
     workspace_margin: Some(5),
     default_border_color: Some("#222222"),
     floating_border_color: Some("#005500"),
@@ -170,8 +170,8 @@ value = 0
         assert_eq!(
             config,
             ThemeSetting {
-                border_width: 0,
-                margin: CustomMargins::Int(5),
+                border_width: Some(0),
+                margin: Some(CustomMargins::Int(5)),
                 workspace_margin: Some(CustomMargins::Int(5)),
                 default_width: Some(400),
                 default_height: Some(400),
