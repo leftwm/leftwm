@@ -367,13 +367,22 @@ For more information about themes check out our [theme guide][theme-guide] or th
 
 # Configuring
 
-The settings file to change key bindings and the default mod key can be found at
+You can configure key bindings, default mod key and many other options:
+
+## With [LeftWM-Config](https://github.com/leftwm/leftwm-config)
+```bash
+leftwm-config -n # Generate new config
+leftwm-config    # Open configuration file in $EDITOR
+leftwm-config -t # Edit configuration via TUI (Beta)
+```
+
+## Without via editing the file
 
 ```bash
 ~/.config/leftwm/config.ron
 ```
-
-the file is automatically generated when leftwm or leftwm-check is run for the first time.
+---
+**Note:** The configuration file is automatically generated when leftwm or leftwm-check is run for the first time.
 
 ---
 **Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.

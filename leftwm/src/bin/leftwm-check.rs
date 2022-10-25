@@ -130,7 +130,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     }
 }
 
-fn write_to_file(ron_file: &PathBuf, config: &Config) -> Result<(), anyhow::Error> {
+fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> {
     let ron_pretty_conf = ron::ser::PrettyConfig::new()
         .depth_limit(2)
         .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
