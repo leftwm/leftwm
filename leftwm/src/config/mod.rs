@@ -540,7 +540,7 @@ impl leftwm_core::Config for Config {
         self.theme_setting
             .focused_border_color
             .clone()
-            .unwrap_or_else(|| "#FFD625".to_string())
+            .unwrap_or_else(|| "#FF0000".to_string())
     }
 
     fn on_new_window_cmd(&self) -> Option<String> {
