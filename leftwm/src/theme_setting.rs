@@ -45,7 +45,7 @@ impl Default for ThemeSetting {
             gutter: None,
             default_border_color: Some("#000000".to_owned()),
             floating_border_color: Some("#000000".to_owned()),
-            focused_border_color: Some("#FFD625".to_owned()),
+            focused_border_color: Some("#FF0000".to_owned()),
             background_color: Some("#333333".to_owned()),
             on_new_window_cmd: None,
         }
