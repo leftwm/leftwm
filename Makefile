@@ -19,8 +19,8 @@ test:
 	cd $(ROOT_DIR) && cargo clippy
 
 test-nix:
-	cd $(ROOT_DIR) && sudo NIX_PATH=nixpkgs=channel:nixos-unstable nix flake check --extra-experimental-features "nix-command flakes"
-	cd $(ROOT_DIR) && sudo NIX_PATH=nixpkgs=channel:nixos-unstable nix build --extra-experimental-features "nix-command flakes"
+	cd $(ROOT_DIR) && NIX_PATH=nixpkgs=channel:nixos-unstable nix flake check --extra-experimental-features "nix-command flakes" --verbose
+	cd $(ROOT_DIR) && NIX_PATH=nixpkgs=channel:nixos-unstable nix build --extra-experimental-features "nix-command flakes" --verbose
 
 test-full: test
 	cargo clippy --\
@@ -42,6 +42,7 @@ build:
 # removes the generated binaries
 clean:
 	cd $(ROOT_DIR) && cargo clean
+	rm $(ROOT_DIR)/result
 	@echo "build files have been cleaned"
 
 # builds the project and installs the binaries (and .desktop)
@@ -55,7 +56,7 @@ install: build
 		$(ROOT_DIR)/target/release/leftwm-state\
 		$(ROOT_DIR)/target/release/leftwm-check\
 		$(ROOT_DIR)/target/release/leftwm-command\
-		-t /usr/bin
+		-t $(TARGET_DIR)
 	cd $(ROOT_DIR) && cargo clean
 	@echo "binaries, '.desktop' file and manual page have been installed"
 
@@ -71,8 +72,9 @@ install-linked: build
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-command $(TARGET_DIR)/leftwm-command
 	@echo "binaries have been linked, manpage and '.desktop' file have been installed"
 
+# same as above, but builds the project in debug mode (no optimisations, faster builds)
 install-linked-dev:
-	cd $(ROOT_DIR) && cargo build ${BUILDFLAGS}
+	cd $(ROOT_DIR) && cargo build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm $(TARGET_DIR)/leftwm
@@ -84,7 +86,7 @@ install-linked-dev:
 	@echo "binaries have been linked, manpage and '.desktop' file have been linked."
 
 
-# uninstalls leftwm from the system, no matter if installed via 'install' or 'install-dev'
+# uninstalls leftwm from the system, no matter if installed via 'install', 'install-linked' or 'install-linked-dev'
 uninstall:
 	sudo rm -f $(SHARE_DIR)/leftwm.desktop
 	sudo rm /usr/local/share/man/man1/leftwm.1
