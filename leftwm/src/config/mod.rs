@@ -469,11 +469,17 @@ impl leftwm_core::Config for Config {
     }
 
     fn border_width(&self) -> i32 {
-        self.theme_setting.border_width
+        self.theme_setting.border_width.unwrap_or(1)
     }
 
     fn margin(&self) -> Margins {
-        match self.theme_setting.margin.clone().try_into() {
+        match self
+            .theme_setting
+            .margin
+            .clone()
+            .unwrap_or(crate::CustomMargins::Int(10))
+            .try_into()
+        {
             Ok(margins) => margins,
             Err(err) => {
                 tracing::warn!("Could not read margin: {}", err);
@@ -500,11 +506,24 @@ impl leftwm_core::Config for Config {
     }
 
     fn default_border_color(&self) -> String {
-        self.theme_setting.default_border_color.clone()
+        self.theme_setting
+            .default_border_color
+            .clone()
+            .unwrap_or_else(|| "#000000".to_string())
     }
 
     fn floating_border_color(&self) -> String {
-        self.theme_setting.floating_border_color.clone()
+        self.theme_setting
+            .floating_border_color
+            .clone()
+            .unwrap_or_else(|| "#000000".to_string())
+    }
+
+    fn background_color(&self) -> String {
+        self.theme_setting
+            .background_color
+            .clone()
+            .unwrap_or_else(|| "#333333".to_string())
     }
 
     fn disable_window_snap(&self) -> bool {
@@ -524,7 +543,10 @@ impl leftwm_core::Config for Config {
     }
 
     fn focused_border_color(&self) -> String {
-        self.theme_setting.focused_border_color.clone()
+        self.theme_setting
+            .focused_border_color
+            .clone()
+            .unwrap_or_else(|| "#FF0000".to_string())
     }
 
     fn on_new_window_cmd(&self) -> Option<String> {
