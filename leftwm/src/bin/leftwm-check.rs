@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use clap::{App, Arg};
+use clap::{arg, command};
 use leftwm::{Config, ThemeSetting};
 use std::env;
 use std::fs;
@@ -12,32 +12,35 @@ use xdg::BaseDirectories;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = App::new("LeftWM Check")
+    let matches = command!("LeftWM Check")
         .author("Lex Childs <lex.childs@gmail.com>")
         .version(env!("CARGO_PKG_VERSION"))
         .about("checks syntax of the configuration file")
         .arg(
-            Arg::with_name("INPUT")
+            arg!("INPUT")
                 .help("Sets the input file to use. Uses first in PATH otherwise.")
                 .required(false)
                 .index(1),
         )
         .arg(
-            Arg::with_name("verbose")
+            arg!("verbose")
                 .short('v')
                 .long("verbose")
                 .help("Outputs received configuration file."),
         )
         .arg(
-            Arg::with_name("migrate")
+            arg!("migrate")
                 .short('m')
                 .long("migrate-toml-to-ron")
                 .help("Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
         )
         .get_matches();
 
-    let config_file = matches.value_of("INPUT");
-    let verbose = matches.occurrences_of("verbose") >= 1;
+    let config_file = match matches.get_one("INPUT") {
+        Some(&x) => Some(x),
+        _ => None,
+    };
+    let verbose = matches.get_count("verbose") >= 1;
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
@@ -47,7 +50,7 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
-    if matches.occurrences_of("migrate") >= 1 {
+    if matches.get_count("migrate") >= 1 {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
         let path = BaseDirectories::with_prefix("leftwm")?;
         let ron_file = path.place_config_file("config.ron")?;

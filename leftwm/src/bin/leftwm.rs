@@ -3,7 +3,7 @@
 //! If no arguments are passed, starts `leftwm-worker`. If arguments are passed, starts
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
-use clap::{command, crate_version};
+use clap::command;
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
@@ -66,8 +66,6 @@ fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -
 
 /// Prints the help page of leftwm (the output of `leftwm --help`)
 fn print_help_page() {
-    let version = get_version();
-
     let subcommands = {
         let mut subcommands = Vec::new();
         for entry in AVAILABLE_SUBCOMMANDS {
@@ -85,18 +83,10 @@ fn print_help_page() {
              the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
              it is installed.",
         )
-        .version(version.as_str())
+        .version(env!("CARGO_PKG_VERSION"))
         .subcommands(subcommands)
         .print_help()
         .unwrap();
-}
-
-fn get_version() -> String {
-    format!(
-        "{}, Git-Hash: {}",
-        crate_version!(),
-        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
-    )
 }
 
 /// Checks if the given subcommand-string is a `leftwm-{subcommand}`
@@ -118,7 +108,7 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
     if is_subcommand(subcommand) {
         execute_subcommand(subcommand, subcommand_args);
     } else if subcommand == "--version" || subcommand == "-v" {
-        println!("leftwm {}", get_version());
+        println!("leftwm {}", env!("CARGO_PKG_VERSION"));
     } else {
         print_help_page();
     }
