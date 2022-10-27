@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
         .about("Sends external commands to LeftWM")
         .arg(
             arg!(--"command" [COMMAND] "The command to be sent. See 'list' flag."), // .required(true)
-                                                                          // .multiple(true)
+                                                                                    // .multiple(true)
         )
         .arg(arg!(-l --list "Print a list of available commands with their arguments."))
         .get_matches();
