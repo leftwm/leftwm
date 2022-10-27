@@ -19,14 +19,19 @@ const QUIT_ARG: &str = "quit";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = get_command()
-        .get_matches();
+    let matches = get_command().get_matches();
 
     let template_file = matches.get_one::<String>(TEMPLATE_ARG);
     let string_literal = matches.get_one::<String>(STRING_ARG);
-    let ws_num = matches.get_one::<usize>(WORKSPACE_ARG).map(std::borrow::ToOwned::to_owned);
-    let newline = matches.get_one::<bool>(NEWLINE_ARG).map_or(false, std::borrow::ToOwned::to_owned);
-    let once = matches.get_one::<bool>(QUIT_ARG).map_or(false, std::borrow::ToOwned::to_owned);
+    let ws_num = matches
+        .get_one::<usize>(WORKSPACE_ARG)
+        .map(std::borrow::ToOwned::to_owned);
+    let newline = matches
+        .get_one::<bool>(NEWLINE_ARG)
+        .map_or(false, std::borrow::ToOwned::to_owned);
+    let once = matches
+        .get_one::<bool>(QUIT_ARG)
+        .map_or(false, std::borrow::ToOwned::to_owned);
 
     let mut stream_reader = stream_reader().await?;
     if let Some(template_file) = template_file {
@@ -167,11 +172,11 @@ fn get_command() -> clap::Command {
         .args(&[
             arg!(-t --template [FILE] "A liquid template to use for the output"),
             arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),
-            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]").value_parser(clap::value_parser!(usize)),
+            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]")
+                .value_parser(clap::value_parser!(usize)),
             arg!(-n --newline "Print new lines in the output"),
             arg!(-q --quit "Prints the state once and quits"),
         ])
-
 }
 
 #[cfg(test)]

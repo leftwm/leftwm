@@ -10,8 +10,7 @@ const COMMAND_ARG: &str = "COMMAND";
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = get_command()
-        .get_matches();
+    let matches = get_command().get_matches();
 
     let file_name = CommandPipe::pipe_name();
     let file_path = BaseDirectories::with_prefix("leftwm")?
@@ -29,7 +28,9 @@ async fn main() -> Result<()> {
         }
     }
 
-    let command_list = matches.get_one::<bool>(LIST_ARG).map_or(false, std::borrow::ToOwned::to_owned);
+    let command_list = matches
+        .get_one::<bool>(LIST_ARG)
+        .map_or(false, std::borrow::ToOwned::to_owned);
 
     if command_list {
         print_commandlist();
@@ -50,7 +51,7 @@ fn get_command() -> clap::Command {
 
 fn print_commandlist() {
     println!(
-            "
+        "
         Available Commands:
 
         Commands without arguments:
