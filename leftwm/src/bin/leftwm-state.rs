@@ -13,7 +13,7 @@ type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource
 
 const TEMPLATE_ARG: &str = "template";
 const STRING_ARG: &str = "string";
-const WORKSPACE_ARG: &str = "workspace";
+const WORKSPACE_ARG: &str = "WS_NUM";
 const NEWLINE_ARG: &str = "newline";
 const QUIT_ARG: &str = "quit";
 
