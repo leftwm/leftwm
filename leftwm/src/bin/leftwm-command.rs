@@ -5,9 +5,6 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 use xdg::BaseDirectories;
 
-const LIST_ARG: &str = "list";
-const COMMAND_ARG: &str = "COMMAND";
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = get_command().get_matches();
@@ -20,7 +17,7 @@ async fn main() -> Result<()> {
         .append(true)
         .open(file_path)
         .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
-    if let Some(commands) = matches.get_many::<String>(COMMAND_ARG) {
+    if let Some(commands) = matches.get_many::<String>("COMMAND") {
         for command in commands {
             if let Err(e) = writeln!(file, "{}", command) {
                 eprintln!(" ERROR: Couldn't write to commands.pipe: {}", e);
@@ -28,7 +25,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    if matches.get_flag(LIST_ARG) {
+    if matches.get_flag("list") {
         print_commandlist();
     }
     Ok(())

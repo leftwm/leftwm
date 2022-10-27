@@ -11,23 +11,17 @@ use xdg::BaseDirectories;
 
 type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource>;
 
-const TEMPLATE_ARG: &str = "template";
-const STRING_ARG: &str = "string";
-const WORKSPACE_ARG: &str = "workspace";
-const NEWLINE_ARG: &str = "newline";
-const QUIT_ARG: &str = "quit";
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = get_command().get_matches();
 
-    let template_file = matches.get_one::<String>(TEMPLATE_ARG);
-    let string_literal = matches.get_one::<String>(STRING_ARG);
+    let template_file = matches.get_one::<String>("template");
+    let string_literal = matches.get_one::<String>("string");
     let ws_num = matches
-        .get_one::<usize>(WORKSPACE_ARG)
+        .get_one::<usize>("workspace")
         .map(std::borrow::ToOwned::to_owned);
-    let newline = matches.get_flag(NEWLINE_ARG);
-    let once = matches.get_flag(QUIT_ARG);
+    let newline = matches.get_flag("newline");
+    let once = matches.get_flag("quit");
 
     let mut stream_reader = stream_reader().await?;
     if let Some(template_file) = template_file {
