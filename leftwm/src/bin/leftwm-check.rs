@@ -41,11 +41,10 @@ async fn main() -> Result<()> {
 
     let config_file: Option<&str> = matches
         .get_one::<String>(INPUT_ARG)
-        .map(|input| input.as_ref());
+        .map(std::convert::AsRef::as_ref);
     let verbose = matches
         .get_one::<bool>(VERBOSE_ARG)
-        .map(|verbose| verbose.to_owned())
-        .unwrap_or(false);
+        .map_or(false, std::borrow::ToOwned::to_owned);
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
