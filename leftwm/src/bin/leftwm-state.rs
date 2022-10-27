@@ -13,7 +13,7 @@ type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource
 
 const TEMPLATE_ARG: &str = "template";
 const STRING_ARG: &str = "string";
-const WORKSPACE_ARG: &str = "WS_NUM";
+const WORKSPACE_ARG: &str = "workspace";
 const NEWLINE_ARG: &str = "newline";
 const QUIT_ARG: &str = "quit";
 
@@ -26,12 +26,8 @@ async fn main() -> Result<()> {
     let ws_num = matches
         .get_one::<usize>(WORKSPACE_ARG)
         .map(std::borrow::ToOwned::to_owned);
-    let newline = matches
-        .get_one::<bool>(NEWLINE_ARG)
-        .map_or(false, std::borrow::ToOwned::to_owned);
-    let once = matches
-        .get_one::<bool>(QUIT_ARG)
-        .map_or(false, std::borrow::ToOwned::to_owned);
+    let newline = matches.get_flag(NEWLINE_ARG);
+    let once = matches.get_flag(QUIT_ARG);
 
     let mut stream_reader = stream_reader().await?;
     if let Some(template_file) = template_file {

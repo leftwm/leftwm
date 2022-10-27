@@ -28,11 +28,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let command_list = matches
-        .get_one::<bool>(LIST_ARG)
-        .map_or(false, std::borrow::ToOwned::to_owned);
-
-    if command_list {
+    if matches.get_flag(LIST_ARG) {
         print_commandlist();
     }
     Ok(())
