@@ -33,9 +33,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let command_list = *matches.get_one::<bool>("list").unwrap();
-
-    if command_list {
+    if matches.get_flag("list") {
         println!(
             "
         Available Commands:

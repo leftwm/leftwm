@@ -1,4 +1,4 @@
-use clap::{arg, command};
+use clap::{arg, command, value_parser};
 use leftwm_core::errors::Result;
 use leftwm_core::models::dto::{DisplayState, ManagerState};
 use std::ffi::OsStr;
@@ -20,7 +20,8 @@ async fn main() -> Result<()> {
         .args(&[
             arg!(-t --template [FILE] "A liquid template to use for the output"),
             arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),
-            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]"),
+            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]")
+                .value_parser(value_parser!(usize)),
             arg!(-n --newline "Print new lines in the output"),
             arg!(-q --quit "Prints the state once and quits"),
         ])
@@ -30,14 +31,11 @@ async fn main() -> Result<()> {
 
     let string_literal = matches.get_one::<String>("string");
 
-    let ws_num: Option<usize> = match matches.get_one("workspace") {
-        Some(&x) => Some(x),
-        _ => None,
-    };
+    let ws_num = matches.get_one("workspace").copied();
 
     let mut stream_reader = stream_reader().await?;
-    let once = *matches.get_one::<bool>("quit").unwrap();
-    let newline = *matches.get_one::<bool>("newline").unwrap();
+    let once = matches.get_flag("quit");
+    let newline = matches.get_flag("newline");
 
     if let Some(template_file) = template_file {
         let path = Path::new(template_file);

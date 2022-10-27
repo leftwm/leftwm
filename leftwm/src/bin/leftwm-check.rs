@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         .get_matches();
 
     let config_file = matches.get_one::<String>("INPUT").map(String::as_str);
-    let verbose = *matches.get_one::<bool>("verbose").unwrap_or(&false);
+    let verbose = matches.get_flag("verbose");
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
