@@ -1,4 +1,4 @@
-use clap::{arg, command};
+use clap::{arg, command, value_parser};
 use leftwm_core::errors::Result;
 use leftwm_core::models::dto::{DisplayState, ManagerState};
 use std::ffi::OsStr;
@@ -20,7 +20,8 @@ async fn main() -> Result<()> {
         .args(&[
             arg!(-t --template [FILE] "A liquid template to use for the output"),
             arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),
-            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]"),
+            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]")
+                .value_parser(value_parser!(usize)),
             arg!(-n --newline "Print new lines in the output"),
             arg!(-q --quit "Prints the state once and quits"),
         ])
@@ -69,7 +70,7 @@ async fn main() -> Result<()> {
         }
     } else {
         while let Some(line) = stream_reader.next_line().await? {
-            let _droppable2 = raw_handler(&line);
+            let _droppable = raw_handler(&line);
             if once {
                 break;
             }
