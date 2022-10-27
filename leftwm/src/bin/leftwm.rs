@@ -85,7 +85,7 @@ fn print_help_page() {
         )
         .version(env!("CARGO_PKG_VERSION"))
         .subcommands(subcommands)
-        .print_help()
+        .print_long_help()
         .unwrap();
 }
 
