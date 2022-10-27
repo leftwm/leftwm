@@ -13,8 +13,8 @@ use xdg::BaseDirectories;
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = command!("LeftWM Check")
-        .author(clap::crate_authors!("\n"))
-        .version(clap::crate_version!())
+        .author("Lex Childs <lex.childs@gmail.com>")
+        .version(env!("CARGO_PKG_VERSION"))
         .about("checks syntax of the configuration file")
         .args(&[
             arg!(-v --verbose "Outputs received configuration file."),
