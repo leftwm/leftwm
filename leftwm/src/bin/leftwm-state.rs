@@ -36,8 +36,8 @@ async fn main() -> Result<()> {
     };
 
     let mut stream_reader = stream_reader().await?;
-    let once = matches.get_count("quit") == 1;
-    let newline = matches.get_count("newline") == 1;
+    let once = matches.get_one::<bool>("quit").is_some();
+    let newline = matches.get_one::<bool>("newline").is_some();
 
     if let Some(template_file) = template_file {
         let path = Path::new(template_file);
