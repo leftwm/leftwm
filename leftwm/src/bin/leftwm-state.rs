@@ -154,9 +154,8 @@ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
 
 fn get_command() -> clap::Command {
     command!("LeftWM State")
-        .author(clap::crate_authors!("\n"))
-        .version(clap::crate_version!())
-        .about("prints out the current state of LeftWM")
+        .about("Prints out the current state of LeftWM")
+        .help_template(leftwm::utils::get_help_template())
         .args(&[
             arg!(-t --template [FILE] "A liquid template to use for the output"),
             arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),

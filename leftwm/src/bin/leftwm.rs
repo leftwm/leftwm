@@ -78,24 +78,14 @@ fn print_help_page() {
     };
 
     command!()
-        .long_about(
+        .about(
             "Starts LeftWM if no arguments are supplied. If a subcommand is given, executes the \
              the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
              it is installed.",
         )
-        .author(clap::crate_authors!("\n"))
-        .version(env!("CARGO_PKG_VERSION"))
         .subcommands(subcommands)
-        .help_template(
-            "\
-{name} {version}
-{author-with-newline}{about-with-newline}
-{usage-heading} {usage}
-
-{all-args}
-",
-        )
-        .print_long_help()
+        .help_template(leftwm::utils::get_help_template())
+        .print_help()
         .unwrap();
 }
 
