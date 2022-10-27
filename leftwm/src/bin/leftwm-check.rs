@@ -15,7 +15,7 @@ async fn main() -> Result<()> {
     let matches = command!("LeftWM Check")
         .author(clap::crate_authors!("\n"))
         .version(clap::crate_version!())
-        .about("checks syntax of the configuration file")
+        .about("Checks syntax of the configuration file")
         .args(&[
             arg!(-v --verbose "Outputs received configuration file."),
             arg!(migrate: -m --"migrate-toml-to-ron" "Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
