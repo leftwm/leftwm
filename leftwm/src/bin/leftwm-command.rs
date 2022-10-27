@@ -12,7 +12,7 @@ async fn main() -> Result<()> {
         .version(env!("CARGO_PKG_VERSION"))
         .about("Sends external commands to LeftWM")
         .arg(
-            arg!(--"command" "The command to be sent. See 'list' flag."), // .required(true)
+            arg!(--"command" [COMMAND] "The command to be sent. See 'list' flag."), // .required(true)
                                                                           // .multiple(true)
         )
         .arg(arg!(-l --list "Print a list of available commands with their arguments."))
@@ -26,6 +26,7 @@ async fn main() -> Result<()> {
         .append(true)
         .open(file_path)
         .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
+
     if let Some(commands) = matches.get_many::<String>("command") {
         for command in commands {
             if let Err(e) = writeln!(file, "{}", command) {
@@ -34,7 +35,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let command_list = matches.get_count("list") == 1;
+    let command_list = matches.get_one::<bool>("list").is_some();
 
     if command_list {
         println!(

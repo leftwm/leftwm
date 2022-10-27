@@ -21,6 +21,8 @@ fn main() {
         #[cfg(not(feature = "lefthk"))]
         let config = leftwm::load();
 
+        tracing::info!("{:?}", config);
+
         let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
         manager.register_child_hook();
         rt.block_on(manager.start_event_loop())
