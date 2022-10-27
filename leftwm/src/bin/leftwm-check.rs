@@ -16,31 +16,15 @@ async fn main() -> Result<()> {
         .author("Lex Childs <lex.childs@gmail.com>")
         .version(env!("CARGO_PKG_VERSION"))
         .about("checks syntax of the configuration file")
-        .arg(
-            arg!("INPUT")
-                .help("Sets the input file to use. Uses first in PATH otherwise.")
-                .required(false)
-                .index(1),
-        )
-        .arg(
-            arg!("verbose")
-                .short('v')
-                .long("verbose")
-                .help("Outputs received configuration file."),
-        )
-        .arg(
-            arg!("migrate")
-                .short('m')
-                .long("migrate-toml-to-ron")
-                .help("Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
-        )
+        .args(&[
+            arg!(-v --verbose "Outputs received configuration file."),
+            arg!(migrate: -m --"migrate-toml-to-ron" "Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
+            arg!([INPUT] "Sets the input file to use. Uses first in PATH otherwise."),
+        ])
         .get_matches();
 
-    let config_file = match matches.get_one("INPUT") {
-        Some(&x) => Some(x),
-        _ => None,
-    };
-    let verbose = matches.get_count("verbose") >= 1;
+    let config_file = matches.get_one::<String>("INPUT").map(String::as_str);
+    let verbose = *matches.get_one::<bool>("verbose").unwrap_or(&false);
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
@@ -50,7 +34,7 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
-    if matches.get_count("migrate") >= 1 {
+    if *matches.get_one::<bool>("migrate").unwrap() {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
         let path = BaseDirectories::with_prefix("leftwm")?;
         let ron_file = path.place_config_file("config.ron")?;

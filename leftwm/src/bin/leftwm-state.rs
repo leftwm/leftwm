@@ -17,39 +17,13 @@ async fn main() -> Result<()> {
         .author("Lex Childs <lex.childs@gmail.com>")
         .version(env!("CARGO_PKG_VERSION"))
         .about("prints out the current state of LeftWM")
-        .arg(
-            arg!("template")
-                .short('t')
-                .long("template")
-                .value_name("FILE")
-                .help("A liquid template to use for the output"), // .takes_value(true),
-        )
-        .arg(
-            arg!("string")
-                .short('s')
-                .long("string")
-                .value_name("STRING")
-                .help("Use a liquid template string literal to use for the output"), // .takes_value(true),
-        )
-        .arg(
-            arg!("workspace")
-                .short('w')
-                .long("workspace")
-                .value_name("WS_NUM")
-                .help("render only info about a given workspace [0..]"), // .takes_value(true),
-        )
-        .arg(
-            arg!("newline")
-                .short('n')
-                .long("newline")
-                .help("Print new lines in the output"),
-        )
-        .arg(
-            arg!("quit")
-                .short('q')
-                .long("quit")
-                .help("Prints the state once and quits"),
-        )
+        .args(&[
+            arg!(-t --template [FILE] "A liquid template to use for the output"),
+            arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),
+            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]"),
+            arg!(-n --newline "Print new lines in the output"),
+            arg!(-q --quit "Prints the state once and quits"),
+        ])
         .get_matches();
 
     let template_file = matches.get_one::<String>("template");
@@ -62,8 +36,8 @@ async fn main() -> Result<()> {
     };
 
     let mut stream_reader = stream_reader().await?;
-    let once = matches.get_count("quit") == 1;
-    let newline = matches.get_count("newline") == 1;
+    let once = *matches.get_one::<bool>("quit").unwrap();
+    let newline = *matches.get_one::<bool>("newline").unwrap();
 
     if let Some(template_file) = template_file {
         let path = Path::new(template_file);
