@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use clap::{Arg, command};
+use clap::{command, Arg};
 use leftwm::{Config, ThemeSetting};
 use std::env;
 use std::fs;
@@ -39,9 +39,11 @@ async fn main() -> Result<()> {
         )
         .get_matches();
 
-    let config_file: Option<&str> = matches.get_one::<String>(INPUT_ARG)
+    let config_file: Option<&str> = matches
+        .get_one::<String>(INPUT_ARG)
         .map(|input| input.as_ref());
-    let verbose = matches.get_one::<bool>(VERBOSE_ARG)
+    let verbose = matches
+        .get_one::<bool>(VERBOSE_ARG)
         .map(|verbose| verbose.to_owned())
         .unwrap_or(false);
 
