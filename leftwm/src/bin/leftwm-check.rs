@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use clap::{arg, command};
+use clap::{Arg, command};
 use leftwm::{Config, ThemeSetting};
 use std::env;
 use std::fs;
@@ -10,6 +10,10 @@ use std::path::Path;
 use std::path::PathBuf;
 use xdg::BaseDirectories;
 
+const INPUT_ARG: &str = "input";
+const VERBOSE_ARG: &str = "verbose";
+const MIGRATE_ARG: &str = "migrate";
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = command!("LeftWM Check")
@@ -17,30 +21,29 @@ async fn main() -> Result<()> {
         .version(env!("CARGO_PKG_VERSION"))
         .about("checks syntax of the configuration file")
         .arg(
-            arg!("INPUT")
+            Arg::new(INPUT_ARG)
+                .value_name("INPUT")
                 .help("Sets the input file to use. Uses first in PATH otherwise.")
-                .required(false)
-                .index(1),
         )
         .arg(
-            arg!("verbose")
+            Arg::new(VERBOSE_ARG)
                 .short('v')
                 .long("verbose")
-                .help("Outputs received configuration file."),
+                .help("Outputs received configuration file.")
         )
         .arg(
-            arg!("migrate")
+            Arg::new(MIGRATE_ARG)
                 .short('m')
                 .long("migrate-toml-to-ron")
-                .help("Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
+                .help("Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually.")
         )
         .get_matches();
 
-    let config_file = match matches.get_one("INPUT") {
-        Some(&x) => Some(x),
-        _ => None,
-    };
-    let verbose = matches.get_count("verbose") >= 1;
+    let config_file: Option<&str> = matches.get_one::<String>(INPUT_ARG)
+        .map(|input| input.as_ref());
+    let verbose = matches.get_one::<bool>(VERBOSE_ARG)
+        .map(|verbose| verbose.to_owned())
+        .unwrap_or(false);
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
@@ -50,7 +53,7 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
-    if matches.get_count("migrate") >= 1 {
+    if matches.get_one::<bool>(MIGRATE_ARG).is_some() {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
         let path = BaseDirectories::with_prefix("leftwm")?;
         let ron_file = path.place_config_file("config.ron")?;

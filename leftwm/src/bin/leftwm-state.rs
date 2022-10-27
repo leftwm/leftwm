@@ -18,37 +18,19 @@ async fn main() -> Result<()> {
         .version(env!("CARGO_PKG_VERSION"))
         .about("prints out the current state of LeftWM")
         .arg(
-            arg!("template")
-                .short('t')
-                .long("template")
-                .value_name("FILE")
-                .help("A liquid template to use for the output"), // .takes_value(true),
+            arg!(-t --template [FILE] "A liquid template to use for the output")
         )
         .arg(
-            arg!("string")
-                .short('s')
-                .long("string")
-                .value_name("STRING")
-                .help("Use a liquid template string literal to use for the output"), // .takes_value(true),
+            arg!(-s --string [STRING] "Use a liquid template string literal to use for the output")
         )
         .arg(
-            arg!("workspace")
-                .short('w')
-                .long("workspace")
-                .value_name("WS_NUM")
-                .help("render only info about a given workspace [0..]"), // .takes_value(true),
+            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]")
         )
         .arg(
-            arg!("newline")
-                .short('n')
-                .long("newline")
-                .help("Print new lines in the output"),
+            arg!(-n --newline "Print new lines in the output")
         )
         .arg(
-            arg!("quit")
-                .short('q')
-                .long("quit")
-                .help("Prints the state once and quits"),
+            arg!(-q --quit "Prints the state once and quits")
         )
         .get_matches();
 

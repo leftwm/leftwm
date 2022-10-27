@@ -12,14 +12,11 @@ async fn main() -> Result<()> {
         .version(env!("CARGO_PKG_VERSION"))
         .about("Sends external commands to LeftWM")
         .arg(
-            arg!("command").help("The command to be sent. See 'list' flag."), // .required(true)
+            arg!(--"command" "The command to be sent. See 'list' flag."), // .required(true)
                                                                               // .multiple(true)
         )
         .arg(
-            arg!("list")
-                .help("Print a list of available commands with their arguments.")
-                .short('l')
-                .long("list"),
+            arg!(-l --list "Print a list of available commands with their arguments.")
         )
         .get_matches();
 
