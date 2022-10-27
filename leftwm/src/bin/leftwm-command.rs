@@ -33,8 +33,8 @@ async fn main() -> Result<()> {
 
 fn get_command() -> clap::Command {
     command!("LeftWM Command")
-        .author("Lex Childs <lex.childs@gmail.com>")
-        .version(env!("CARGO_PKG_VERSION"))
+        .author(clap::crate_authors!("\n"))
+        .version(clap::crate_version!())
         .about("Sends external commands to LeftWM")
         .args(&[
             arg!(-l --list "Print a list of available commands with their arguments."),
