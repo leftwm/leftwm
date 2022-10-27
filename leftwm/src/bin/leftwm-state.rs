@@ -17,13 +17,13 @@ async fn main() -> Result<()> {
         .author("Lex Childs <lex.childs@gmail.com>")
         .version(env!("CARGO_PKG_VERSION"))
         .about("prints out the current state of LeftWM")
-        .arg(arg!(-t --template [FILE] "A liquid template to use for the output"))
-        .arg(
+        .args(&[
+            arg!(-t --template [FILE] "A liquid template to use for the output"),
             arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),
-        )
-        .arg(arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]"))
-        .arg(arg!(-n --newline "Print new lines in the output"))
-        .arg(arg!(-q --quit "Prints the state once and quits"))
+            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]"),
+            arg!(-n --newline "Print new lines in the output"),
+            arg!(-q --quit "Prints the state once and quits"),
+        ])
         .get_matches();
 
     let template_file = matches.get_one::<String>("template");
@@ -36,8 +36,8 @@ async fn main() -> Result<()> {
     };
 
     let mut stream_reader = stream_reader().await?;
-    let once = matches.get_one::<bool>("quit").is_some();
-    let newline = matches.get_one::<bool>("newline").is_some();
+    let once = *matches.get_one::<bool>("quit").unwrap();
+    let newline = *matches.get_one::<bool>("newline").unwrap();
 
     if let Some(template_file) = template_file {
         let path = Path::new(template_file);
