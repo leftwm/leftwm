@@ -5,16 +5,12 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 use xdg::BaseDirectories;
 
+const LIST_ARG: &str = "list";
+const COMMAND_ARG: &str = "COMMAND";
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = command!("LeftWM Command")
-        .author("Lex Childs <lex.childs@gmail.com>")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("Sends external commands to LeftWM")
-        .args(&[
-            arg!(-l --list "Print a list of available commands with their arguments."),
-            arg!([COMMAND] ... "The command to be sent. See 'list' flag."),
-        ])
+    let matches = get_command()
         .get_matches();
 
     let file_name = CommandPipe::pipe_name();
@@ -25,7 +21,7 @@ async fn main() -> Result<()> {
         .append(true)
         .open(file_path)
         .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
-    if let Some(commands) = matches.get_many::<String>("COMMAND") {
+    if let Some(commands) = matches.get_many::<String>(COMMAND_ARG) {
         for command in commands {
             if let Err(e) = writeln!(file, "{}", command) {
                 eprintln!(" ERROR: Couldn't write to commands.pipe: {}", e);
@@ -33,10 +29,27 @@ async fn main() -> Result<()> {
         }
     }
 
-    let command_list = *matches.get_one::<bool>("list").unwrap();
+    let command_list = matches.get_one::<bool>(LIST_ARG).map_or(false, std::borrow::ToOwned::to_owned);
 
     if command_list {
-        println!(
+        print_commandlist();
+    }
+    Ok(())
+}
+
+fn get_command() -> clap::Command {
+    command!("LeftWM Command")
+        .author(clap::crate_authors!("\n"))
+        .version(clap::crate_version!())
+        .about("Sends external commands to LeftWM")
+        .args(&[
+            arg!(-l --list "Print a list of available commands with their arguments."),
+            arg!([COMMAND] ... "The command to be sent. See 'list' flag."),
+        ])
+}
+
+fn print_commandlist() {
+    println!(
             "
         Available Commands:
 
@@ -91,7 +104,5 @@ async fn main() -> Result<()> {
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands
          "
-        );
-    }
-    Ok(())
+    );
 }

@@ -11,34 +11,24 @@ use xdg::BaseDirectories;
 
 type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource>;
 
+const TEMPLATE_ARG: &str = "template";
+const STRING_ARG: &str = "string";
+const WORKSPACE_ARG: &str = "workspace";
+const NEWLINE_ARG: &str = "newline";
+const QUIT_ARG: &str = "quit";
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = command!("LeftWM State")
-        .author("Lex Childs <lex.childs@gmail.com>")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("prints out the current state of LeftWM")
-        .args(&[
-            arg!(-t --template [FILE] "A liquid template to use for the output"),
-            arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),
-            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]"),
-            arg!(-n --newline "Print new lines in the output"),
-            arg!(-q --quit "Prints the state once and quits"),
-        ])
+    let matches = get_command()
         .get_matches();
 
-    let template_file = matches.get_one::<String>("template");
-
-    let string_literal = matches.get_one::<String>("string");
-
-    let ws_num: Option<usize> = match matches.get_one("workspace") {
-        Some(&x) => Some(x),
-        _ => None,
-    };
+    let template_file = matches.get_one::<String>(TEMPLATE_ARG);
+    let string_literal = matches.get_one::<String>(STRING_ARG);
+    let ws_num = matches.get_one::<usize>(WORKSPACE_ARG).map(std::borrow::ToOwned::to_owned);
+    let newline = matches.get_one::<bool>(NEWLINE_ARG).map_or(false, std::borrow::ToOwned::to_owned);
+    let once = matches.get_one::<bool>(QUIT_ARG).map_or(false, std::borrow::ToOwned::to_owned);
 
     let mut stream_reader = stream_reader().await?;
-    let once = *matches.get_one::<bool>("quit").unwrap();
-    let newline = *matches.get_one::<bool>("newline").unwrap();
-
     if let Some(template_file) = template_file {
         let path = Path::new(template_file);
         let partials = get_partials(path.parent()).await?;
@@ -167,6 +157,21 @@ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
     let socket_file = base.place_runtime_file("current_state.sock")?;
     let stream = UnixStream::connect(socket_file).await?;
     Ok(BufReader::new(stream).lines())
+}
+
+fn get_command() -> clap::Command {
+    command!("LeftWM State")
+        .author(clap::crate_authors!("\n"))
+        .version(clap::crate_version!())
+        .about("prints out the current state of LeftWM")
+        .args(&[
+            arg!(-t --template [FILE] "A liquid template to use for the output"),
+            arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),
+            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]").value_parser(clap::value_parser!(usize)),
+            arg!(-n --newline "Print new lines in the output"),
+            arg!(-q --quit "Prints the state once and quits"),
+        ])
+
 }
 
 #[cfg(test)]
