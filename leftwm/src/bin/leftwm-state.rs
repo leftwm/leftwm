@@ -17,9 +17,7 @@ async fn main() -> Result<()> {
 
     let template_file = matches.get_one::<String>("template");
     let string_literal = matches.get_one::<String>("string");
-    let ws_num = matches
-        .get_one::<usize>("workspace")
-        .map(std::borrow::ToOwned::to_owned);
+    let ws_num = matches.get_one::<usize>("workspace").copied();
     let newline = matches.get_flag("newline");
     let once = matches.get_flag("quit");
 
