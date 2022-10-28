@@ -83,9 +83,19 @@ fn print_help_page() {
              the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
              it is installed.",
         )
+        .author(clap::crate_authors!("\n"))
         .version(env!("CARGO_PKG_VERSION"))
         .subcommands(subcommands)
-        .print_help()
+        .help_template(
+            "\
+{name} {version}
+{author-with-newline}{about-with-newline}
+{usage-heading} {usage}
+
+{all-args}
+",
+        )
+        .print_long_help()
         .unwrap();
 }
 

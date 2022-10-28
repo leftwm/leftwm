@@ -13,9 +13,9 @@ use xdg::BaseDirectories;
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = command!("LeftWM Check")
-        .author("Lex Childs <lex.childs@gmail.com>")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("checks syntax of the configuration file")
+        .author(clap::crate_authors!("\n"))
+        .version(clap::crate_version!())
+        .about("Checks syntax of the configuration file")
         .args(&[
             arg!(-v --verbose "Outputs received configuration file."),
             arg!(migrate: -m --"migrate-toml-to-ron" "Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         .get_matches();
 
     let config_file = matches.get_one::<String>("INPUT").map(String::as_str);
-    let verbose = *matches.get_one::<bool>("verbose").unwrap_or(&false);
+    let verbose = matches.get_flag("verbose");
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
-    if *matches.get_one::<bool>("migrate").unwrap() {
+    if matches.get_flag("migrate") {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
         let path = BaseDirectories::with_prefix("leftwm")?;
         let ron_file = path.place_config_file("config.ron")?;
