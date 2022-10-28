@@ -40,17 +40,21 @@
       in
       rec {
         # `nix build`
-        packages.leftwm = leftwm;
-        defaultPackage = packages.leftwm;
+        packages = {
+          inherit leftwm;
+          default = leftwm;
+        };
 
         # `nix run`
-        apps.leftwm = flake-utils.lib.mkApp {
-          drv = packages.leftwm;
+        apps = {
+          leftwm = flake-utils.lib.mkApp {
+            drv = packages.leftwm;
+          };
+          default = apps.leftwm;
         };
-        defaultApp = apps.leftwm;
 
         # `nix develop`
-        devShell = pkgs.mkShell
+        devShells.default = pkgs.mkShell
           {
             buildInputs = deps ++ [ pkgs.pkg-config pkgs.systemd ];
             nativeBuildInputs = with pkgs; [

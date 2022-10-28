@@ -46,6 +46,7 @@ pub trait Config {
     fn default_border_color(&self) -> String;
     fn floating_border_color(&self) -> String;
     fn focused_border_color(&self) -> String;
+    fn background_color(&self) -> String;
     fn on_new_window_cmd(&self) -> Option<String>;
     fn get_list_of_gutters(&self) -> Vec<Gutter>;
     fn max_window_width(&self) -> Option<Size>;
@@ -171,6 +172,9 @@ pub(crate) mod tests {
             unimplemented!()
         }
         fn focused_border_color(&self) -> String {
+            unimplemented!()
+        }
+        fn background_color(&self) -> String {
             unimplemented!()
         }
         fn on_new_window_cmd(&self) -> Option<String> {

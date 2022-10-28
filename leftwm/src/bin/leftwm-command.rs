@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use clap::{App, Arg};
+use clap::{arg, command};
 use leftwm_core::CommandPipe;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
@@ -7,22 +7,14 @@ use xdg::BaseDirectories;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = App::new("LeftWM Command")
+    let matches = command!("LeftWM Command")
         .author("Lex Childs <lex.childs@gmail.com>")
         .version(env!("CARGO_PKG_VERSION"))
         .about("Sends external commands to LeftWM")
-        .arg(
-            Arg::with_name("command")
-                .help("The command to be sent. See 'list' flag.")
-                // .required(true)
-                .multiple(true),
-        )
-        .arg(
-            Arg::with_name("list")
-                .help("Print a list of available commands with their arguments.")
-                .short('l')
-                .long("list"),
-        )
+        .args(&[
+            arg!(-l --list "Print a list of available commands with their arguments."),
+            arg!([COMMAND] ... "The command to be sent. See 'list' flag."),
+        ])
         .get_matches();
 
     let file_name = CommandPipe::pipe_name();
@@ -33,7 +25,7 @@ async fn main() -> Result<()> {
         .append(true)
         .open(file_path)
         .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
-    if let Some(commands) = matches.values_of("command") {
+    if let Some(commands) = matches.get_many::<String>("COMMAND") {
         for command in commands {
             if let Err(e) = writeln!(file, "{}", command) {
                 eprintln!(" ERROR: Couldn't write to commands.pipe: {}", e);
@@ -41,7 +33,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let command_list = matches.occurrences_of("list") == 1;
+    let command_list = *matches.get_one::<bool>("list").unwrap();
 
     if command_list {
         println!(

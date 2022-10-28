@@ -156,6 +156,19 @@ impl XWrap {
         }
     }
 
+    pub fn set_background_color(&self, mut color: c_ulong) {
+        unsafe {
+            // Force border opacity to 0xff.
+            let mut bytes = color.to_le_bytes();
+            bytes[3] = 0xff;
+            color = c_ulong::from_le_bytes(bytes);
+            (self.xlib.XSetWindowBackground)(self.display, self.root, color);
+            (self.xlib.XClearWindow)(self.display, self.root);
+            (self.xlib.XFlush)(self.display);
+            (self.xlib.XSync)(self.display, 0);
+        }
+    }
+
     /// Sets a windows configuration.
     pub fn set_window_config(
         &self,
