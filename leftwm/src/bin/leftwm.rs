@@ -108,7 +108,9 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
     if is_subcommand(subcommand) {
         execute_subcommand(subcommand, subcommand_args);
     } else if subcommand == "help" {
-        if !subcommand_args.is_empty() && is_subcommand(&subcommand_args[0]) {
+        if subcommand_args.is_empty() {
+            print_help_page();
+        } else if is_subcommand(&subcommand_args[0]) {
             execute_subcommand(&subcommand_args[0], vec!["--help".to_string()]);
         } else {
             println!("No such subcommand. Try 'leftwm --help' to find valid subcommands.");
