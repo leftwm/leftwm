@@ -16,11 +16,15 @@ all: build test
 test:
 	cd $(ROOT_DIR) && cargo test --all-targets --all-features
 	cd $(ROOT_DIR) && cargo fmt -- --check
-	cd $(ROOT_DIR) && cargo clippy --release
+	cd $(ROOT_DIR) && cargo clippy
 
-test-full:
-	make test
+test-nix:
+	cd $(ROOT_DIR) && NIX_PATH=nixpkgs=channel:nixos-unstable nix flake check --extra-experimental-features "nix-command flakes" --verbose
+	cd $(ROOT_DIR) && NIX_PATH=nixpkgs=channel:nixos-unstable nix build --extra-experimental-features "nix-command flakes" --verbose
+
+test-full: test
 	cargo clippy --\
+		-D warnings\
 		-W clippy::pedantic\
 		-A clippy::must_use_candidate\
 		-A clippy::cast_precision_loss\
@@ -29,6 +33,8 @@ test-full:
 		-A clippy::cast_sign_loss\
 		-A clippy::mut_mut
 
+test-full-nix: test-full test-nix
+
 # builds the project
 build:
 	cd $(ROOT_DIR) && cargo build ${BUILDFLAGS}
@@ -36,6 +42,7 @@ build:
 # removes the generated binaries
 clean:
 	cd $(ROOT_DIR) && cargo clean
+	rm $(ROOT_DIR)/result
 	@echo "build files have been cleaned"
 
 # builds the project and installs the binaries (and .desktop)
@@ -49,12 +56,12 @@ install: build
 		$(ROOT_DIR)/target/release/leftwm-state\
 		$(ROOT_DIR)/target/release/leftwm-check\
 		$(ROOT_DIR)/target/release/leftwm-command\
-		-t /usr/bin
+		-t $(TARGET_DIR)
 	cd $(ROOT_DIR) && cargo clean
 	@echo "binaries, '.desktop' file and manual page have been installed"
 
 # build the project and links the binaries, will also install the .desktop file
-install-dev: build
+install-linked: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm $(TARGET_DIR)/leftwm
@@ -65,7 +72,21 @@ install-dev: build
 	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-command $(TARGET_DIR)/leftwm-command
 	@echo "binaries have been linked, manpage and '.desktop' file have been installed"
 
-# uninstalls leftwm from the system, no matter if installed via 'install' or 'install-dev'
+# same as above, but builds the project in debug mode (no optimisations, faster builds)
+install-linked-dev:
+	cd $(ROOT_DIR) && cargo build
+	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
+	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm $(TARGET_DIR)/leftwm
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-worker $(TARGET_DIR)/leftwm-worker
+	sudo ln -sf $(ROOT_DIR)/target/debug/lefthk-worker $(TARGET_DIR)/lefthk-worker
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-state $(TARGET_DIR)/leftwm-state
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-check $(TARGET_DIR)/leftwm-check
+	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-command $(TARGET_DIR)/leftwm-command
+	@echo "binaries have been linked, manpage and '.desktop' file have been linked."
+
+
+# uninstalls leftwm from the system, no matter if installed via 'install', 'install-linked' or 'install-linked-dev'
 uninstall:
 	sudo rm -f $(SHARE_DIR)/leftwm.desktop
 	sudo rm /usr/local/share/man/man1/leftwm.1

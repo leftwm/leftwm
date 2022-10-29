@@ -1,7 +1,7 @@
 //! `XWrap` setters.
 use super::WindowHandle;
-use crate::models::TagId;
 use crate::XWrap;
+use leftwm_core::models::TagId;
 use std::ffi::CString;
 use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
@@ -153,6 +153,19 @@ impl XWrap {
             bytes[3] = 0xff;
             color = c_ulong::from_le_bytes(bytes);
             (self.xlib.XSetWindowBorder)(self.display, window, color);
+        }
+    }
+
+    pub fn set_background_color(&self, mut color: c_ulong) {
+        unsafe {
+            // Force border opacity to 0xff.
+            let mut bytes = color.to_le_bytes();
+            bytes[3] = 0xff;
+            color = c_ulong::from_le_bytes(bytes);
+            (self.xlib.XSetWindowBackground)(self.display, self.root, color);
+            (self.xlib.XClearWindow)(self.display, self.root);
+            (self.xlib.XFlush)(self.display);
+            (self.xlib.XSync)(self.display, 0);
         }
     }
 

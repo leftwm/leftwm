@@ -166,15 +166,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     fn call_up_scripts(&mut self) {
         match Nanny::run_global_up_script() {
             Ok(child) => {
-                child.map(|child| self.children.insert(child));
+                self.children.insert(child);
             }
-            Err(err) => tracing::error!("Global up script faild: {}", err),
+            Err(err) => tracing::warn!("Global up script faild: {}", err),
         }
         match Nanny::boot_current_theme() {
             Ok(child) => {
-                child.map(|child| self.children.insert(child));
+                self.children.insert(child);
             }
-            Err(err) => tracing::error!("Theme loading failed: {}", err),
+            Err(err) => tracing::warn!("Theme loading failed: {}", err),
         }
     }
 }

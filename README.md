@@ -178,7 +178,7 @@ sudo xbps-install -S leftwm
 cargo install leftwm
 ```
 
-If you install LeftWM with crates.io, you will need to link to the xsession desktop file if you want
+If you install LeftWM with crates.io, you will need to link to the [xsession desktop file](https://github.com/leftwm/leftwm/blob/758bbf837a8556cdc7e09ff2d394f528e7657333/leftwm.desktop) if you want
 to be able to login to LeftWM from a display manager (GDM, SSDM, LightDM, etc.):
 
 ```sh
@@ -285,11 +285,8 @@ simple black screen on login.  For a more customized look, install a theme.
 2. Build leftwm
 
    ```bash
-   # Without systemd logging
+   # With systemd logging (view with 'journalctl -f -t leftwm-worker')
    cargo build --release
- 
-   # OR with systemd logging (view with 'journalctl -f -t leftwm-worker')
-   cargo build --release --features=journald
    ```
 
 3. And press the following keybind to reload leftwm
@@ -370,13 +367,22 @@ For more information about themes check out our [theme guide][theme-guide] or th
 
 # Configuring
 
-The settings file to change key bindings and the default mod key can be found at
+You can configure key bindings, default mod key and many other options:
+
+## With [LeftWM-Config](https://github.com/leftwm/leftwm-config)
+```bash
+leftwm-config -n # Generate new config
+leftwm-config    # Open configuration file in $EDITOR
+leftwm-config -t # Edit configuration via TUI (Beta)
+```
+
+## Without via editing the file
 
 ```bash
 ~/.config/leftwm/config.ron
 ```
-
-the file is automatically generated when leftwm or leftwm-check is run for the first time.
+---
+**Note:** The configuration file is automatically generated when leftwm or leftwm-check is run for the first time.
 
 ---
 **Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.

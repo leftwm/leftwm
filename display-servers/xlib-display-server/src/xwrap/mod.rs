@@ -9,9 +9,9 @@
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
-use crate::config::Config;
-use crate::models::{FocusBehaviour, Mode};
-use crate::utils::modmask_lookup::ModMask;
+use leftwm_core::config::Config;
+use leftwm_core::models::{FocusBehaviour, Mode};
+use leftwm_core::utils::modmask_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
@@ -89,6 +89,7 @@ pub struct Colors {
     normal: c_ulong,
     floating: c_ulong,
     active: c_ulong,
+    background: c_ulong,
 }
 
 #[derive(Debug, Clone)]
@@ -183,6 +184,7 @@ impl XWrap {
             normal: 0,
             floating: 0,
             active: 0,
+            background: 0,
         };
 
         let refresh_rate = match Xrandr::open() {
@@ -427,6 +429,7 @@ impl XWrap {
             normal: self.get_color(config.default_border_color()),
             floating: self.get_color(config.floating_border_color()),
             active: self.get_color(config.focused_border_color()),
+            background: self.get_color(config.background_color()),
         };
         // Update all the windows with the new colors.
         if let Some(windows) = windows {
@@ -445,6 +448,7 @@ impl XWrap {
                 }
             }
         }
+        self.set_background_color(self.colors.background);
     }
 
     /// Sets the mode within our xwrapper.

@@ -17,8 +17,8 @@ elif [ -x "$(command -v picom)" ]; then
   picom &> /dev/null &
 fi
 
-#set the theme.toml config
-leftwm-command "LoadTheme $SCRIPTPATH/theme.toml"
+#set the theme.ron config
+leftwm-command "LoadTheme $SCRIPTPATH/theme.ron"
 
 
 #set background
