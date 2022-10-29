@@ -1,6 +1,3 @@
-# The flags to pass to the `cargo build` command
-BUILDFLAGS := --release
-
 # Absolute path to project directory, required for symbolic links
 # or when 'make' is run from another directory.
 # - credit: https://stackoverflow.com/a/23324703/2726733
@@ -8,6 +5,18 @@ ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 SHARE_DIR := /usr/share/xsessions
 TARGET_DIR := /usr/local/bin
+
+# Set default profile if unset
+ifndef profile
+	profile := optimized
+endif
+
+# Set corresponding target folder name
+ifeq ($(profile),dev)
+	folder := debug
+else
+	folder := $(profile)
+endif
 
 # default rule is to run build/test
 all: build test
@@ -37,56 +46,45 @@ test-full-nix: test-full test-nix
 
 # builds the project
 build:
-	cd $(ROOT_DIR) && cargo build ${BUILDFLAGS}
+	@echo "Building with $(profile) profile"
+	@echo "Change the profile by adding profile=release or profile=dev to the command"
+	cd $(ROOT_DIR) && cargo build --profile $(profile)
 
 # removes the generated binaries
 clean:
 	cd $(ROOT_DIR) && cargo clean
 	rm $(ROOT_DIR)/result
-	@echo "build files have been cleaned"
+	@echo "Build files have been cleaned"
 
 # builds the project and installs the binaries (and .desktop)
 install: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop /usr/share/xsessions/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo install -s -Dm755\
-		$(ROOT_DIR)/target/release/leftwm\
-		$(ROOT_DIR)/target/release/leftwm-worker\
-		$(ROOT_DIR)/target/release/lefthk-worker\
-		$(ROOT_DIR)/target/release/leftwm-state\
-		$(ROOT_DIR)/target/release/leftwm-check\
-		$(ROOT_DIR)/target/release/leftwm-command\
+		$(ROOT_DIR)/target/$(folder)/leftwm\
+		$(ROOT_DIR)/target/$(folder)/leftwm-worker\
+		$(ROOT_DIR)/target/$(folder)/lefthk-worker\
+		$(ROOT_DIR)/target/$(folder)/leftwm-state\
+		$(ROOT_DIR)/target/$(folder)/leftwm-check\
+		$(ROOT_DIR)/target/$(folder)/leftwm-command\
 		-t $(TARGET_DIR)
 	cd $(ROOT_DIR) && cargo clean
-	@echo "binaries, '.desktop' file and manual page have been installed"
+	@echo "Binaries, '.desktop' file and manual page have been installed"
 
-# build the project and links the binaries, will also install the .desktop file
+# Function to build and link a specific profile
 install-linked: build
+	cd $(ROOT_DIR) && cargo build --profile $(profile)
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
-	sudo ln -sf $(ROOT_DIR)/target/release/leftwm $(TARGET_DIR)/leftwm
-	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-worker $(TARGET_DIR)/leftwm-worker
-	sudo ln -sf $(ROOT_DIR)/target/release/lefthk-worker $(TARGET_DIR)/lefthk-worker
-	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-state $(TARGET_DIR)/leftwm-state
-	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-check $(TARGET_DIR)/leftwm-check
-	sudo ln -sf $(ROOT_DIR)/target/release/leftwm-command $(TARGET_DIR)/leftwm-command
+	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm $(TARGET_DIR)/leftwm
+	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-worker $(TARGET_DIR)/leftwm-worker
+	sudo ln -sf $(ROOT_DIR)/target/$(folder)/lefthk-worker $(TARGET_DIR)/lefthk-worker
+	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-state $(TARGET_DIR)/leftwm-state
+	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-check $(TARGET_DIR)/leftwm-check
+	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-command $(TARGET_DIR)/leftwm-command
 	@echo "binaries have been linked, manpage and '.desktop' file have been installed"
 
-# same as above, but builds the project in debug mode (no optimisations, faster builds)
-install-linked-dev:
-	cd $(ROOT_DIR) && cargo build
-	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
-	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
-	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm $(TARGET_DIR)/leftwm
-	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-worker $(TARGET_DIR)/leftwm-worker
-	sudo ln -sf $(ROOT_DIR)/target/debug/lefthk-worker $(TARGET_DIR)/lefthk-worker
-	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-state $(TARGET_DIR)/leftwm-state
-	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-check $(TARGET_DIR)/leftwm-check
-	sudo ln -sf $(ROOT_DIR)/target/debug/leftwm-command $(TARGET_DIR)/leftwm-command
-	@echo "binaries have been linked, manpage and '.desktop' file have been linked."
-
-
-# uninstalls leftwm from the system, no matter if installed via 'install', 'install-linked' or 'install-linked-dev'
+# Uninstalls leftwm from the system.
 uninstall:
 	sudo rm -f $(SHARE_DIR)/leftwm.desktop
 	sudo rm /usr/local/share/man/man1/leftwm.1
@@ -97,4 +95,4 @@ uninstall:
 		$(TARGET_DIR)/leftwm-state\
 		$(TARGET_DIR)/leftwm-check\
 		$(TARGET_DIR)/leftwm-command
-	@echo "binaries and manpage have been uninstalled and '.desktop' file has been removed"
+	@echo "Binaries and manpage have been uninstalled and '.desktop' file has been removed"
