@@ -290,7 +290,7 @@ simple black screen on login.  For a more customized look, install a theme.
 
    ```bash
    # With systemd logging (view with 'journalctl -f -t leftwm-worker')
-   cargo build --profile release
+   cargo build --profile optimized
    ```
 
 3. And press the following keybind to reload leftwm
