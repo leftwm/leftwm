@@ -1,5 +1,6 @@
 use super::Tag;
 use crate::{config::Config, layouts::Layout, Workspace};
+use leftwm_layouts::LayoutDefinition;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -11,15 +12,19 @@ pub enum LayoutMode {
 
 impl Default for LayoutMode {
     fn default() -> Self {
-        Self::Workspace
+        Self::Tag // todo: update wiki with new default value
     }
 }
 
+/// The LayoutManager holds the actual LayoutDefinitions,
+/// All references to "layouts" on Workspace or Tag are just
+/// the layout name(s) as String pointing to the value
+/// stored here
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LayoutManager {
     pub mode: LayoutMode,
-    pub layouts: Vec<Layout>,
-    pub layouts_per_workspaces: HashMap<i32, Vec<Layout>>,
+    pub layouts: Vec<LayoutDefinition>,
+    pub layouts_per_workspaces: HashMap<i32, Vec<LayoutDefinition>>,
 }
 
 impl LayoutManager {
@@ -31,29 +36,32 @@ impl LayoutManager {
             .map(|ws| {
                 (
                     ws.id.unwrap_or_default(),
-                    ws.layouts.clone().unwrap_or_default(),
+                    ws.layouts.unwrap_or_default().iter()
+                        .filter_map(|layout_name| config.layout_definitions().iter().find(|l| l.name == *layout_name))
+                        .map(|definition| definition.clone())
+                        .collect(),
                 )
             })
             .collect();
 
         Self {
             mode: config.layout_mode(),
-            layouts: config.layouts(),
+            layouts: config.layout_definitions().clone(),
             layouts_per_workspaces,
         }
     }
 
-    pub fn new_layout(&self, workspace_id: Option<i32>) -> Layout {
+    pub fn new_layout(&self, workspace_id: Option<i32>) -> LayoutDefinition {
         *self
             .layouts(workspace_id)
             .first()
-            .unwrap_or(&Layout::default())
+            .unwrap_or(&LayoutDefinition::default())
     }
 
-    pub fn next_layout(&self, workspace: &Workspace) -> Layout {
+    pub fn next_layout(&self, workspace: &Workspace) -> LayoutDefinition {
         let layouts = self.layouts(workspace.id);
 
-        let next = match layouts.iter().position(|&x| x == workspace.layout) {
+        let next = match layouts.iter().position(|&x| x.name == workspace.layout) {
             Some(index) if index == layouts.len() - 1 => layouts.first(),
             Some(index) => layouts.get(index + 1),
             None => None,
@@ -67,7 +75,7 @@ impl LayoutManager {
     pub fn previous_layout(&self, workspace: &Workspace) -> Layout {
         let layouts = self.layouts(workspace.id);
 
-        let next = match layouts.iter().position(|&x| x == workspace.layout) {
+        let next = match layouts.iter().position(|&x| x.name == workspace.layout) {
             Some(index) if index == 0 => layouts.last(),
             Some(index) => layouts.get(index - 1),
             None => None,
@@ -87,18 +95,17 @@ impl LayoutManager {
             let tag = tags.iter_mut().find(|t| Some(t.id) == workspace.tag)?;
             match self.mode {
                 LayoutMode::Workspace => {
-                    tag.set_layout(workspace.layout, workspace.main_width_percentage);
+                    tag.set_layout(workspace.layout);
                 }
                 LayoutMode::Tag => {
                     workspace.layout = tag.layout;
-                    workspace.main_width_percentage = tag.main_width_percentage;
                 }
             }
         }
         Some(true)
     }
 
-    fn layouts(&self, workspace_id: Option<i32>) -> &Vec<Layout> {
+    fn layouts(&self, workspace_id: Option<i32>) -> &Vec<LayoutDefinition> {
         workspace_id
             .and_then(|id| self.layouts_per_workspaces.get(&id))
             .and_then(|layouts| {
@@ -130,9 +137,9 @@ mod tests {
                 crate::config::Workspace {
                     id: Some(0),
                     layouts: Some(vec![
-                        Layout::CenterMain,
-                        Layout::CenterMainBalanced,
-                        Layout::MainAndDeck,
+                        String::from("CenterMain"),
+                        String::from("CenterMainBalanced"),
+                        String::from("MainAndDeck"),
                     ]),
                     ..Default::default()
                 },
@@ -152,7 +159,7 @@ mod tests {
         LayoutManager::new(&config)
     }
 
-    fn workspace(id: i32, layout: Layout) -> Workspace {
+    fn workspace(id: i32, layout: String) -> Workspace {
         Workspace::new(
             Some(id),
             BBox {
@@ -179,27 +186,25 @@ mod tests {
     #[test]
     fn next_layout_basic() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::CenterMainBalanced);
-
-        assert_eq!(layout_manager.next_layout(&workspace), Layout::MainAndDeck);
+        let workspace = workspace(0, String::from("CenterMainBalanced"));
+        assert_eq!(layout_manager.next_layout(&workspace).name, String::from("MainAndDeck"));
     }
 
     #[test]
     fn next_layout_should_cycle() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::MainAndDeck);
-
-        assert_eq!(layout_manager.next_layout(&workspace), Layout::CenterMain);
+        let workspace = workspace(0, String::from("MainAndDeck"));
+        assert_eq!(layout_manager.next_layout(&workspace).name, String::from("CenterMain"));
     }
 
     #[test]
     fn next_layout_fallback_to_global_layouts() {
         let layout_manager = layout_manager();
 
-        let workspace = workspace(1, Layout::EvenVertical);
+        let workspace = workspace(1, String::from("EvenVertical"));
         assert_eq!(
-            layout_manager.next_layout(&workspace),
-            Layout::MainAndHorizontalStack
+            layout_manager.next_layout(&workspace).name,
+            String::from("MainAndHorizontalStack")
         );
     }
 

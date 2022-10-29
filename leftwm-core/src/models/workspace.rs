@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::models::{
-    layouts::Layout, BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder,
+    BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -9,8 +9,7 @@ use std::fmt;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: Option<i32>,
-    pub layout: Layout,
-    pub main_width_percentage: u8,
+    pub layout: String,
     pub tag: Option<TagId>, // TODO: Make this a list.
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -46,13 +45,12 @@ impl Workspace {
     pub fn new(
         id: Option<i32>,
         bbox: BBox,
-        layout: Layout,
+        layout: String,
         max_window_width: Option<Size>,
     ) -> Self {
         Self {
             id,
             layout,
-            main_width_percentage: layout.main_width(),
             tag: None,
             margin: Margins::new(10),
             margin_multiplier: 1.0,
@@ -218,22 +216,22 @@ impl Workspace {
         self.margin_multiplier
     }
 
-    pub fn change_main_width(&mut self, delta: i8) {
-        //Check we are not gonna go negative
-        let mwp = &mut self.main_width_percentage;
-        if (*mwp as i8) < -delta {
-            *mwp = 0;
-            return;
-        }
-        if delta.is_negative() {
-            *mwp -= delta.unsigned_abs();
-            return;
-        }
-        *mwp += delta as u8;
-        if *mwp > 100 {
-            *mwp = 100;
-        }
-    }
+    //pub fn change_main_width(&mut self, delta: i8) {
+    //    //Check we are not gonna go negative
+    //    let mwp = &mut self.main_width_percentage;
+    //    if (*mwp as i8) < -delta {
+    //        *mwp = 0;
+    //        return;
+    //    }
+    //    if delta.is_negative() {
+    //        *mwp -= delta.unsigned_abs();
+    //        return;
+    //    }
+    //    *mwp += delta as u8;
+    //    if *mwp > 100 {
+    //        *mwp = 100;
+    //    }
+    //}
 }
 
 #[cfg(test)]
@@ -251,7 +249,7 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            Layout::default(),
+            String::from("MainAndVertStack"),
             None,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
@@ -272,10 +270,10 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            Layout::default(),
+            String::from("MainAndVertStack"),
             None,
         );
-        let tag = crate::models::Tag::new(TAG_ID, "test", Layout::default());
+        let tag = crate::models::Tag::new(TAG_ID, "test", String::from("MainAndVertStack"));
         subject.show_tag(&tag.id);
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.tag(&TAG_ID);
