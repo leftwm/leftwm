@@ -314,7 +314,7 @@ For conveniece we also have a Makefile with the following rules:
 | install-dev | installs by symlinking, copies `leftwm.desktop`, no clean |
 | uninstall | removes `leftwm-*` files from `/usr/bin` and `leftwm.desktop` file |
 
-Note that for `build`, `install` and `install-linked`, you can specify the build profile to use. Currently available are `dev`, `release` and `release-optimized`.
+Note that for `build`, `install` and `install-linked`, you can specify the build profile to use by adding the `profile=<profile-name>` argument. Currently available are `dev`, `release` and `release-optimized`.
 
 ## Starting with startx or a login such as slim
 
