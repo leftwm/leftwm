@@ -12,7 +12,7 @@ description = "A window manager for Adventurers"
 
 [dependencies]
 anyhow = "1.0.48"
-clap = { version = "3.2.12", features = ["cargo"] }
+clap = { version = "4.0.0", features = ["cargo"] }
 const_format = "0.2.26"
 once_cell = "1.13.0"
 dirs-next = "2.0.0"
@@ -20,10 +20,10 @@ futures = "0.3.21"
 git-version = "0.3.4"
 lefthk-core = { version = '0.1.8', optional = true }
 leftwm-core = { path = "../leftwm-core", version = '0.4.0' }
-liquid = "0.24.0"
+liquid = "0.26.0"
 mio = "0.8.0"
-nix = "0.23.0"
-ron = "0.7.0"
+nix = "0.25.0"
+ron = "0.8.0"
 serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
 shellexpand = "2.1"

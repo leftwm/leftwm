@@ -6,16 +6,17 @@ use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeSetting {
-    pub border_width: i32,
-    pub margin: CustomMargins,
+    pub border_width: Option<i32>,
+    pub margin: Option<CustomMargins>,
     pub workspace_margin: Option<CustomMargins>,
     pub default_width: Option<i32>,
     pub default_height: Option<i32>,
     pub always_float: Option<bool>,
     pub gutter: Option<Vec<Gutter>>,
-    pub default_border_color: String,
-    pub floating_border_color: String,
-    pub focused_border_color: String,
+    pub default_border_color: Option<String>,
+    pub floating_border_color: Option<String>,
+    pub focused_border_color: Option<String>,
+    pub background_color: Option<String>,
     #[serde(rename = "on_new_window")]
     pub on_new_window_cmd: Option<String>,
 }
@@ -35,16 +36,17 @@ impl ThemeSetting {
 impl Default for ThemeSetting {
     fn default() -> Self {
         Self {
-            border_width: 1,
-            margin: CustomMargins::Int(10),
+            border_width: Some(1),
+            margin: Some(CustomMargins::Int(10)),
             workspace_margin: Some(CustomMargins::Int(10)),
             default_width: Some(1000),
             default_height: Some(700),
             always_float: Some(false),
             gutter: None,
-            default_border_color: "#000000".to_owned(),
-            floating_border_color: "#000000".to_owned(),
-            focused_border_color: "#FF0000".to_owned(),
+            default_border_color: Some("#000000".to_owned()),
+            floating_border_color: Some("#000000".to_owned()),
+            focused_border_color: Some("#FF0000".to_owned()),
+            background_color: Some("#333333".to_owned()),
             on_new_window_cmd: None,
         }
     }
@@ -109,6 +111,7 @@ workspace_margin = 5
 default_border_color = '#222222'
 floating_border_color = '#005500'
 focused_border_color = '#FFB53A'
+background_color = '#333333'
 on_new_window = 'echo Hello World'
 
 [[gutter]]
@@ -120,8 +123,8 @@ value = 0
         assert_eq!(
             config,
             ThemeSetting {
-                border_width: 0,
-                margin: CustomMargins::Int(5),
+                border_width: Some(0),
+                margin: Some(CustomMargins::Int(5)),
                 workspace_margin: Some(CustomMargins::Int(5)),
                 default_width: Some(400),
                 default_height: Some(400),
@@ -131,9 +134,10 @@ value = 0
                     value: 0,
                     wsid: None,
                 }]),
-                default_border_color: "#222222".to_string(),
-                floating_border_color: "#005500".to_string(),
-                focused_border_color: "#FFB53A".to_string(),
+                default_border_color: Some("#222222".to_string()),
+                floating_border_color: Some("#005500".to_string()),
+                focused_border_color: Some("#FFB53A".to_string()),
+                background_color: Some("#333333".to_owned()),
                 on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );
@@ -143,15 +147,16 @@ value = 0
     fn deserialize_custom_theme_config_ron() {
         let config = r##"
 (
-    border_width: 0,
+    border_width: Some(0),
     default_width: Some(400),
     default_height: Some(400),
     always_float: Some(true),
-    margin: 5,
+    margin: Some(5),
     workspace_margin: Some(5),
-    default_border_color: "#222222",
-    floating_border_color: "#005500",
-    focused_border_color: "#FFB53A",
+    default_border_color: Some("#222222"),
+    floating_border_color: Some("#005500"),
+    focused_border_color: Some("#FFB53A"),
+    background_color: Some("#333333"),
     on_new_window: Some("echo Hello World"),
 
     gutter: Some([Gutter (
@@ -165,8 +170,8 @@ value = 0
         assert_eq!(
             config,
             ThemeSetting {
-                border_width: 0,
-                margin: CustomMargins::Int(5),
+                border_width: Some(0),
+                margin: Some(CustomMargins::Int(5)),
                 workspace_margin: Some(CustomMargins::Int(5)),
                 default_width: Some(400),
                 default_height: Some(400),
@@ -176,9 +181,10 @@ value = 0
                     value: 0,
                     wsid: None,
                 }]),
-                default_border_color: "#222222".to_string(),
-                floating_border_color: "#005500".to_string(),
-                focused_border_color: "#FFB53A".to_string(),
+                default_border_color: Some("#222222".to_string()),
+                floating_border_color: Some("#005500".to_string()),
+                focused_border_color: Some("#FFB53A".to_string()),
+                background_color: Some("#333333".to_owned()),
                 on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );
