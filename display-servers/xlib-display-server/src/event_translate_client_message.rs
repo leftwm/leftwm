@@ -58,10 +58,13 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
     }
 
     if event.message_type == xw.atoms.NetActiveWindow {
-        // TODO add config switch to let the user just set the urgency flag instead of taking focus
-        xw.set_window_urgency(event.window, true);
-        // When a client sends a Message with this atom and a WindowHandle
-        // we assume it wants to request focus for this window
+        // When an application client sends a Message with this atom and a WindowHandle
+        // we assume it wants to request `urgency` when the client is a pager or does
+        // not set `source indication` we focus the window
+        if event.data.get_short(0) == 1 {
+            xw.set_window_urgency(event.window, true);
+            return None;
+        };
         return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
             event.window,
         )));
