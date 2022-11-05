@@ -31,6 +31,7 @@
 - [Manual Installation (no package manager)](#manual-installation-no-package-manager)
   - [Using a graphical login such as LightDM, GDM, LXDM, and others](#using-a-graphical-login-such-as-lightdm-gdm-lxdm-and-others)
   - [Optional Development Installation](#optional-development-installation)
+  - [Optional Build Features](#optional-build-features)
   - [Using the Makefile](#using-the-makefile)
   - [Starting with startx or a login such as slim](#starting-with-startx-or-a-login-such-as-slim)
 - [Theming](#theming)
@@ -152,6 +153,7 @@ paru -S leftwm
 ```sh
 sudo dnf copr enable atim/leftwm -y && sudo dnf install leftwm
 ```
+**Important note: currently the copr package is broken due to missing `lefthk-worker` in the installation. We are on it to get the package fixed. In the meantime please look into cargo or manual installation.**
 
 ## NetBSD ([Official repositories])
 
@@ -184,6 +186,7 @@ to be able to login to LeftWM from a display manager (GDM, SSDM, LightDM, etc.):
 ```sh
 sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 ```
+Also see [the build options](#optional-build-features) for more feature options, especially if you don't use `systemd` or want to use your own hotkey daemon like `sxhkd`.
 
 [AUR]: https://aur.archlinux.org/packages/leftwm
 [GURU]: https://gitweb.gentoo.org/repo/proj/guru.git/tree/x11-wm/leftwm
@@ -246,13 +249,8 @@ way, make sure you do not move the build directory as it will break your install
    ```bash
    # With systemd logging (view with 'journalctl -f -t leftwm-worker')
    cargo build --release
- 
-   # OR with sys-log
-   cargo build --release --no-default-features --features=lefthk,sys-log
-  
-   # OR without lefthk (please bring you own keybind daemon like `sxhkd` or similar) and file logging
-   cargo build --release --no-default-features --features=file-log
    ```
+   For more options see [build options below](#optional-build-features).
 
 4. Create the symlinks
 
@@ -294,6 +292,28 @@ simple black screen on login.  For a more customized look, install a theme.
    ```bash
    Mod + Shift + R
    ```
+  
+### Optional Build Features
+
+Since `LeftWM` is targeting to be more and more modular, there are a few features that can be selected at compile time:
+
+Use `cargo` with the added flags `--no-default-features --features=` and then commaseparated a selection from the following features:
+
+| feature | info | default |
+| - | - | - |
+| lefthk | built-in hotkey daemon, if you build with out make sure you bring your own (e.g. `sxhkd`) to manage any keybinds, be sure you install the `lefthk-worker` binary if you build with this option | ✔ |
+| journald-log | logging to `journald`, depends on `systemd` | ✔ |
+| sys-log | use standard system logging | ✘ |
+| file-log | log to `/tmp/leftwm/<log-file-by-datetime-of-launch>` | ✘ |
+
+Example:
+```bash
+# With `lefthk` and logging to `sys-log`
+cargo build --release --no-default-features --features=lefthk,sys-log
+
+# Without `lefthk` and logging to file
+cargo build --release --no-default-features --features=file-log
+```
 
 ## Using the Makefile
 
