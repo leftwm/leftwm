@@ -46,6 +46,12 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
+    println!("\x1b[0;94m::\x1b[0m Enabled features:");
+    print_enabled_features();
+
+    println!("\x1b[0;94m::\x1b[0m Checking feature dependencies . . .");
+    check_enabled_features();
+
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
         Ok(config) => {
@@ -358,4 +364,41 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     } else {
         bail!("No `theme.ron` found at path: {}", filepath.display())
     }
+}
+
+fn check_feature<T, E, F>(name: &str, predicate: F) -> Result<()>
+    where
+        F: FnOnce() -> Result<T, E>,
+        E: std::fmt::Debug,
+{
+    match predicate() {
+        Ok(_) => Ok(println!("\x1b[0;92m    -> {} OK\x1b[0m", name)),
+        Err(err) => bail!("Check for feature {} failed: {:?}", name, err),
+    }
+}
+
+fn check_enabled_features() {
+    #[cfg(feature = "journald-log")]
+    check_feature("journald-log", || tracing_journald::layer()).unwrap();
+}
+
+// NOTE: this shouldnt be used. the build.rs solution is probably a lot better.
+macro_rules! print_feature {
+    ($feature:literal) => {
+        #[cfg(feature = $feature)]
+        println!("  - {}", $feature);
+    };
+}
+
+fn print_enabled_features() {
+    print_feature!("journald-log");
+    print_feature!("lefthk");
+    print_feature!("tracing-journald");
+    print_feature!("lefthk-core");
+    print_feature!("file-log");
+    print_feature!("sys-log");
+    print_feature!("tracing-appender");
+    print_feature!("syslog-tracing");
+    print_feature!("slow-dm-fix");
+
 }
