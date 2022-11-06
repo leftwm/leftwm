@@ -46,10 +46,6 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    println!("\x1b[0;94m::\x1b[0m Enabled features:");
-    print_enabled_features();
-
-    println!("\x1b[0;94m::\x1b[0m Checking feature dependencies . . .");
     check_enabled_features();
 
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
@@ -378,27 +374,11 @@ fn check_feature<T, E, F>(name: &str, predicate: F) -> Result<()>
 }
 
 fn check_enabled_features() {
+    println!("\x1b[0;94m::\x1b[0m Enabled features:");
+    println!(" - {}", env!("LEFTWM_FEATURES"));
+    
+    println!("\x1b[0;94m::\x1b[0m Checking feature dependencies . . .");
+
     #[cfg(feature = "journald-log")]
     check_feature("journald-log", || tracing_journald::layer()).unwrap();
-}
-
-// NOTE: this shouldnt be used. the build.rs solution is probably a lot better.
-macro_rules! print_feature {
-    ($feature:literal) => {
-        #[cfg(feature = $feature)]
-        println!("  - {}", $feature);
-    };
-}
-
-fn print_enabled_features() {
-    print_feature!("journald-log");
-    print_feature!("lefthk");
-    print_feature!("tracing-journald");
-    print_feature!("lefthk-core");
-    print_feature!("file-log");
-    print_feature!("sys-log");
-    print_feature!("tracing-appender");
-    print_feature!("syslog-tracing");
-    print_feature!("slow-dm-fix");
-
 }
