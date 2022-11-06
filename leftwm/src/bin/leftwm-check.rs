@@ -374,9 +374,8 @@ fn check_feature<T, E, F>(name: &str, predicate: F) -> Result<()>
 }
 
 fn check_enabled_features() {
-    println!("\x1b[0;94m::\x1b[0m Enabled features:");
-    println!(" - {}", env!("LEFTWM_FEATURES"));
-    
+    println!("\x1b[0;94m::\x1b[0m Enabled features:{}", env!("LEFTWM_FEATURES"));
+
     println!("\x1b[0;94m::\x1b[0m Checking feature dependencies . . .");
 
     #[cfg(feature = "journald-log")]
