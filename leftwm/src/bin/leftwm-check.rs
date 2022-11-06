@@ -136,7 +136,7 @@ fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> 
 "#,
     );
     let ron_with_header = comment_header + &ron;
-    let mut file = File::create(&ron_file)?;
+    let mut file = File::create(ron_file)?;
     file.write_all(ron_with_header.as_bytes())?;
     Ok(())
 }
@@ -266,10 +266,10 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
     match &filepath {
         Some(p) => {
             if verbose {
-                if fs::symlink_metadata(&p)?.file_type().is_symlink() {
+                if fs::symlink_metadata(p)?.file_type().is_symlink() {
                     println!(
                         "Found symlink `current`, pointing to theme folder: {:?}",
-                        fs::read_link(&p).unwrap()
+                        fs::read_link(p).unwrap()
                     );
                 } else {
                     println!("\x1b[1;93mWARN: Found `current` theme folder: {:?}. Use of a symlink is recommended, instead.\x1b[0m", p);
@@ -313,7 +313,7 @@ fn check_up_file(filepath: PathBuf) -> Result<()> {
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
-    let contents = fs::read_to_string(&filepath.as_path())?;
+    let contents = fs::read_to_string(filepath.as_path())?;
 
     if metadata.is_file() {
         if verbose {
@@ -341,7 +341,7 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
 
 fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
-    let contents = fs::read_to_string(&filepath.as_path())?;
+    let contents = fs::read_to_string(filepath.as_path())?;
 
     if metadata.is_file() {
         if verbose {
@@ -363,9 +363,9 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
 }
 
 fn check_feature<T, E, F>(name: &str, predicate: F) -> Result<()>
-    where
-        F: FnOnce() -> Result<T, E>,
-        E: std::fmt::Debug,
+where
+    F: FnOnce() -> Result<T, E>,
+    E: std::fmt::Debug,
 {
     match predicate() {
         Ok(_) => Ok(println!("\x1b[0;92m    -> {} OK\x1b[0m", name)),
@@ -374,10 +374,13 @@ fn check_feature<T, E, F>(name: &str, predicate: F) -> Result<()>
 }
 
 fn check_enabled_features() {
-    println!("\x1b[0;94m::\x1b[0m Enabled features:{}", env!("LEFTWM_FEATURES"));
+    println!(
+        "\x1b[0;94m::\x1b[0m Enabled features:{}",
+        env!("LEFTWM_FEATURES")
+    );
 
     println!("\x1b[0;94m::\x1b[0m Checking feature dependencies . . .");
 
     #[cfg(feature = "journald-log")]
-    check_feature("journald-log", || tracing_journald::layer()).unwrap();
+    check_feature("journald-log", tracing_journald::layer).unwrap();
 }
