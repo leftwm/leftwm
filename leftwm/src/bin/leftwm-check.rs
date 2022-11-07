@@ -368,7 +368,10 @@ where
     E: std::fmt::Debug,
 {
     match predicate() {
-        Ok(_) => Ok(println!("\x1b[0;92m    -> {} OK\x1b[0m", name)),
+        Ok(_) => {
+            println!("\x1b[0;92m    -> {} OK\x1b[0m", name);
+            Ok(())
+        }
         Err(err) => bail!("Check for feature {} failed: {:?}", name, err),
     }
 }

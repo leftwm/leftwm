@@ -611,7 +611,7 @@ mod tests {
         manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
-            value: "".to_string(),
+            value: String::new(),
             x: None,
             y: None,
             height: None,
@@ -1251,7 +1251,7 @@ mod tests {
         manager.window_created_handler(scratchpad, -1, -1);
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
-            value: "".to_string(),
+            value: String::new(),
             x: None,
             y: None,
             height: None,
