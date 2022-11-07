@@ -67,7 +67,7 @@ impl Nanny {
 
     /// Runs a script if it exits
     fn run_script(path: &Path) -> Result<Child> {
-        Command::new(&path)
+        Command::new(path)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .spawn()
@@ -297,7 +297,7 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 pub fn exec_shell(command: &str, children: &mut Children) -> Option<ChildID> {
     let child = Command::new("sh")
         .arg("-c")
-        .arg(&command)
+        .arg(command)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .spawn()
