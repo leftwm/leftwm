@@ -7,15 +7,7 @@ use xdg::BaseDirectories;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = command!("LeftWM Command")
-        .author("Lex Childs <lex.childs@gmail.com>")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("Sends external commands to LeftWM")
-        .args(&[
-            arg!(-l --list "Print a list of available commands with their arguments."),
-            arg!([COMMAND] ... "The command to be sent. See 'list' flag."),
-        ])
-        .get_matches();
+    let matches = get_command().get_matches();
 
     let file_name = CommandPipe::pipe_name();
     let file_path = BaseDirectories::with_prefix("leftwm")?
@@ -33,11 +25,25 @@ async fn main() -> Result<()> {
         }
     }
 
-    let command_list = *matches.get_one::<bool>("list").unwrap();
+    if matches.get_flag("list") {
+        print_commandlist();
+    }
+    Ok(())
+}
 
-    if command_list {
-        println!(
-            "
+fn get_command() -> clap::Command {
+    command!("LeftWM Command")
+        .about("Sends external commands to LeftWM")
+        .help_template(leftwm::utils::get_help_template())
+        .args(&[
+            arg!(-l --list "Print a list of available commands with their arguments."),
+            arg!([COMMAND] ... "The command to be sent. See 'list' flag."),
+        ])
+}
+
+fn print_commandlist() {
+    println!(
+        "
         Available Commands:
 
         Commands without arguments:
@@ -91,7 +97,5 @@ async fn main() -> Result<()> {
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands
          "
-        );
-    }
-    Ok(())
+    );
 }

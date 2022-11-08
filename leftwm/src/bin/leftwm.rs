@@ -78,13 +78,13 @@ fn print_help_page() {
     };
 
     command!()
-        .long_about(
+        .about(
             "Starts LeftWM if no arguments are supplied. If a subcommand is given, executes the \
              the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
              it is installed.",
         )
-        .version(env!("CARGO_PKG_VERSION"))
         .subcommands(subcommands)
+        .help_template(leftwm::utils::get_help_template())
         .print_help()
         .unwrap();
 }
@@ -107,6 +107,14 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
 
     if is_subcommand(subcommand) {
         execute_subcommand(subcommand, subcommand_args);
+    } else if subcommand == "help" {
+        if subcommand_args.is_empty() {
+            print_help_page();
+        } else if is_subcommand(&subcommand_args[0]) {
+            execute_subcommand(&subcommand_args[0], vec!["--help".to_string()]);
+        } else {
+            println!("No such subcommand. Try 'leftwm --help' to find valid subcommands.");
+        }
     } else if subcommand == "--version" || subcommand == "-v" {
         println!("leftwm {}", env!("CARGO_PKG_VERSION"));
     } else {

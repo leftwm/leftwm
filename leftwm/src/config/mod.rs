@@ -528,7 +528,7 @@ impl leftwm_core::Config for Config {
 
     fn save_state(&self, state: &State) {
         let path = self.state_file();
-        let state_file = match File::create(&path) {
+        let state_file = match File::create(path) {
             Ok(file) => file,
             Err(err) => {
                 tracing::error!("Cannot create file at path {}: {}", path.display(), err);

@@ -13,9 +13,8 @@ use xdg::BaseDirectories;
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = command!("LeftWM Check")
-        .author("Lex Childs <lex.childs@gmail.com>")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("checks syntax of the configuration file")
+        .about("Checks syntax of the configuration file")
+        .help_template(leftwm::utils::get_help_template())
         .args(&[
             arg!(-v --verbose "Outputs received configuration file."),
             arg!(migrate: -m --"migrate-toml-to-ron" "Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
@@ -24,7 +23,7 @@ async fn main() -> Result<()> {
         .get_matches();
 
     let config_file = matches.get_one::<String>("INPUT").map(String::as_str);
-    let verbose = *matches.get_one::<bool>("verbose").unwrap_or(&false);
+    let verbose = matches.get_flag("verbose");
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
@@ -34,7 +33,7 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
-    if *matches.get_one::<bool>("migrate").unwrap() {
+    if matches.get_flag("migrate") {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
         let path = BaseDirectories::with_prefix("leftwm")?;
         let ron_file = path.place_config_file("config.ron")?;
@@ -46,6 +45,8 @@ async fn main() -> Result<()> {
 
         return Ok(());
     }
+
+    check_enabled_features();
 
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
@@ -134,7 +135,7 @@ fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> 
 "#,
     );
     let ron_with_header = comment_header + &ron;
-    let mut file = File::create(&ron_file)?;
+    let mut file = File::create(ron_file)?;
     file.write_all(ron_with_header.as_bytes())?;
     Ok(())
 }
@@ -264,10 +265,10 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
     match &filepath {
         Some(p) => {
             if verbose {
-                if fs::symlink_metadata(&p)?.file_type().is_symlink() {
+                if fs::symlink_metadata(p)?.file_type().is_symlink() {
                     println!(
                         "Found symlink `current`, pointing to theme folder: {:?}",
-                        fs::read_link(&p).unwrap()
+                        fs::read_link(p).unwrap()
                     );
                 } else {
                     println!("\x1b[1;93mWARN: Found `current` theme folder: {:?}. Use of a symlink is recommended, instead.\x1b[0m", p);
@@ -311,7 +312,7 @@ fn check_up_file(filepath: PathBuf) -> Result<()> {
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
-    let contents = fs::read_to_string(&filepath.as_path())?;
+    let contents = fs::read_to_string(filepath.as_path())?;
 
     if metadata.is_file() {
         if verbose {
@@ -339,7 +340,7 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
 
 fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
-    let contents = fs::read_to_string(&filepath.as_path())?;
+    let contents = fs::read_to_string(filepath.as_path())?;
 
     if metadata.is_file() {
         if verbose {
@@ -358,4 +359,30 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     } else {
         bail!("No `theme.ron` found at path: {}", filepath.display())
     }
+}
+
+fn check_feature<T, E, F>(name: &str, predicate: F) -> Result<()>
+where
+    F: FnOnce() -> Result<T, E>,
+    E: std::fmt::Debug,
+{
+    match predicate() {
+        Ok(_) => {
+            println!("\x1b[0;92m    -> {} OK\x1b[0m", name);
+            Ok(())
+        }
+        Err(err) => bail!("Check for feature {} failed: {:?}", name, err),
+    }
+}
+
+fn check_enabled_features() {
+    println!(
+        "\x1b[0;94m::\x1b[0m Enabled features:{}",
+        env!("LEFTWM_FEATURES")
+    );
+
+    println!("\x1b[0;94m::\x1b[0m Checking feature dependencies . . .");
+
+    #[cfg(feature = "journald-log")]
+    check_feature("journald-log", tracing_journald::layer).unwrap();
 }
