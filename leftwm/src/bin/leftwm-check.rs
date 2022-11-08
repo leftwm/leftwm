@@ -46,7 +46,12 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    check_enabled_features();
+    match check_enabled_features() {
+        Ok(_) => {}
+        Err(err) => {
+            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {} \x1b[0m", err);
+        }
+    }
 
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
@@ -361,7 +366,8 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
         bail!("No `theme.ron` found at path: {}", filepath.display())
     }
 }
-
+// this function is called only when specific features are enabled.
+#[allow(dead_code)]
 fn check_feature<T, E, F>(name: &str, predicate: F) -> Result<()>
 where
     F: FnOnce() -> Result<T, E>,
@@ -376,7 +382,12 @@ where
     }
 }
 
-fn check_enabled_features() {
+fn check_enabled_features() -> Result<()> {
+    if env!("LEFTWM_FEATURES").is_empty() {
+        println!("\x1b[0;94m::\x1b[0m Built with no enabled features.");
+        return Ok(());
+    }
+
     println!(
         "\x1b[0;94m::\x1b[0m Enabled features:{}",
         env!("LEFTWM_FEATURES")
@@ -385,5 +396,20 @@ fn check_enabled_features() {
     println!("\x1b[0;94m::\x1b[0m Checking feature dependencies . . .");
 
     #[cfg(feature = "journald-log")]
-    check_feature("journald-log", tracing_journald::layer).unwrap();
+    check_feature("journald-log", tracing_journald::layer)?;
+    #[cfg(feature = "lefthk")]
+    // TODO once we refactor all file handling into a utiliy module, we want to call a `path-builder` method from that module
+    check_feature("lefthk", || {
+        if let Ok(path) = env::var("PATH") {
+            for p in path.split(':') {
+                let path = format!("{}/{}", p, "lefthk-worker");
+                if Path::new(&path).exists() {
+                    return Ok(());
+                }
+            }
+        }
+        Err("Could not find lefthk")
+    })?;
+
+    Ok(())
 }
