@@ -1,6 +1,11 @@
 use anyhow::{bail, Result};
 use clap::{arg, command};
 use leftwm::{Config, ThemeSetting};
+use ron::{
+    extensions::Extensions,
+    ser::{to_string_pretty, PrettyConfig},
+    Options,
+};
 use std::env;
 use std::fs;
 use std::fs::File;
@@ -115,7 +120,8 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         dbg!(&contents);
     }
     if config_filename.as_path().extension() == Some(std::ffi::OsStr::new("ron")) {
-        let config = ron::from_str(&contents)?;
+        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let config: Config = ron.from_str(&contents)?;
         Ok(config)
     } else {
         let config = toml::from_str(&contents)?;
@@ -124,10 +130,10 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
 }
 
 fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> {
-    let ron_pretty_conf = ron::ser::PrettyConfig::new()
+    let ron_pretty_conf = PrettyConfig::new()
         .depth_limit(2)
-        .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
-    let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf)?;
+        .extensions(Extensions::IMPLICIT_SOME);
+    let ron = to_string_pretty(&config, ron_pretty_conf)?;
     let comment_header = String::from(
         r#"//  _        ___                                      ___ _
 // | |      / __)_                                   / __|_)
