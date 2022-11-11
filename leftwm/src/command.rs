@@ -67,7 +67,7 @@ impl std::convert::From<BaseCommand> for String {
             BaseCommand::GotoTag => "GoToTag".to_owned(),
             BaseCommand::MoveToTag => "SendWindowToTag".to_owned(),
             BaseCommand::MoveToLastWorkspace => "MoveWindowToLastWorkspace".to_owned(),
-            BaseCommand::Execute => "".to_owned(),
+            BaseCommand::Execute => String::new(),
             _ => format!("{:?}", command),
         }
     }

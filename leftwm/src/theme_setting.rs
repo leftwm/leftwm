@@ -1,5 +1,6 @@
 use anyhow::Result;
 use leftwm_core::models::{Gutter, Margins};
+use ron::{extensions::Extensions, Options};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -55,7 +56,8 @@ impl Default for ThemeSetting {
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     let contents = fs::read_to_string(&path)?;
     if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
-        let from_file: ThemeSetting = ron::from_str(&contents)?;
+        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let from_file: ThemeSetting = ron.from_str(&contents)?;
         Ok(from_file)
     } else {
         let from_file: ThemeSetting = toml::from_str(&contents)?;
