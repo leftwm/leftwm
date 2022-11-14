@@ -2,7 +2,6 @@ mod insert_behavior;
 mod workspace_config;
 
 use crate::display_servers::DisplayServer;
-use crate::layouts::Layout;
 pub use crate::models::ScratchPad;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
 use crate::models::{LayoutMode, Manager, Window, WindowType};
@@ -22,7 +21,7 @@ pub trait Config {
 
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
 
-    fn layouts(&self) -> Vec<Layout>;
+    fn layouts(&self) -> Vec<String>;
 
     fn layout_definitions(&self) -> Vec<LayoutDefinition>;
 
@@ -93,7 +92,7 @@ pub(crate) mod tests {
     #[derive(Default)]
     pub struct TestConfig {
         pub tags: Vec<String>,
-        pub layouts: Vec<Layout>,
+        pub layouts: Vec<String>,
         pub layout_definitions: Vec<LayoutDefinition>,
         pub workspaces: Option<Vec<Workspace>>,
         pub insert_behavior: InsertBehavior,
@@ -117,7 +116,7 @@ pub(crate) mod tests {
         fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
             vec![]
         }
-        fn layouts(&self) -> Vec<Layout> {
+        fn layouts(&self) -> Vec<String> {
             self.layouts.clone()
         }
         fn layout_definitions(&self) -> Vec<LayoutDefinition> {

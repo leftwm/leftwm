@@ -2,12 +2,12 @@
 
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
-use crate::layouts::Layout;
 use crate::models::{
     FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle,
     WindowType, Workspace,
 };
 use crate::DisplayAction;
+use leftwm_layouts::LayoutDefinition;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
@@ -19,8 +19,8 @@ pub struct State {
     pub focus_manager: FocusManager,
     pub layout_manager: LayoutManager,
     pub mode: Mode,
-    pub layouts: Vec<Layout>,
-    pub layout_definitions: leftwm_layouts::Layouts,
+    //pub layouts: Vec<Layout>,
+    pub layout_definitions: Vec<LayoutDefinition>,
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     pub actions: VecDeque<DisplayAction>,
@@ -47,7 +47,7 @@ impl State {
             focus_manager: FocusManager::new(config),
             layout_manager,
             scratchpads: config.create_list_of_scratchpads(),
-            layouts: config.layouts(),
+            //layouts: config.layouts(),
             layout_definitions: config.layout_definitions(),
             screens: Default::default(),
             windows: Default::default(),
@@ -131,7 +131,7 @@ impl State {
                 .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
                 .collect();
 
-            if tag.layout == Layout::Monocle {
+            if tag.layout == "Monocle" {
                 windows_on_tag.iter_mut().for_each(|w| w.border = 0);
                 continue;
             }
@@ -190,11 +190,7 @@ impl State {
         for old_tag in old_state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {
                 tag.hidden = old_tag.hidden;
-                tag.layout = old_tag.layout;
-                tag.layout_rotation = old_tag.layout_rotation;
-                tag.flipped_vertical = old_tag.flipped_vertical;
-                tag.flipped_horizontal = old_tag.flipped_horizontal;
-                tag.main_width_percentage = old_tag.main_width_percentage;
+                tag.layout = old_tag.layout.to_owned();
             }
         }
 
@@ -252,8 +248,7 @@ impl State {
         for workspace in &mut self.workspaces {
             if let Some(old_workspace) = old_state.workspaces.iter().find(|w| w.id == workspace.id)
             {
-                workspace.layout = old_workspace.layout;
-                workspace.main_width_percentage = old_workspace.main_width_percentage;
+                workspace.layout = old_workspace.layout.to_owned();
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
                 if are_tags_equal {
                     workspace.tag = old_workspace.tag;
@@ -295,6 +290,10 @@ impl State {
             },
         };
         self.focus_tag(&tag_id);
+
+        // restore layouts
+        // TODO
+        self.layout_manager = old_state.layout_manager.to_owned() // todo: ???
     }
 }
 

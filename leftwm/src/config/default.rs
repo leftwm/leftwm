@@ -210,11 +210,13 @@ impl Default for Config {
             width: Some(Size::Pixel(200)),
         };
 
+        let layouts = leftwm_layouts::Layouts::default();
+
         Self {
             workspaces: Some(vec![]),
             tags: Some(tags),
-            layouts: LAYOUTS.to_vec(),
-            layout_definitions: leftwm_layouts::Layouts::default(),
+            layouts: layouts.names(),
+            layout_definitions: layouts.layouts,
             layout_mode: LayoutMode::Workspace,
             // TODO: add sane default for scratchpad config.
             // Currently default values are set in sane_dimension fn.

@@ -256,8 +256,11 @@ impl Tag {
                 .collect();
             // todo: leftwm_layouts
 
-            self.layout
-                .update_windows(workspace, &mut managed_nonfloat, self);
+
+            // TODO:
+            //self.layout.update_windows(workspace, &mut managed_nonfloat, self);
+        
+
             for w in &mut managed_nonfloat {
                 w.container_size = Some(workspace.xyhw);
             }
@@ -312,16 +315,18 @@ impl Tag {
 
 #[cfg(test)]
 mod tests {
+    use leftwm_layouts::LayoutDefinition;
+
     use super::Tags;
     use crate::layouts::Layout;
 
     #[test]
     fn normal_tags_are_numbered_in_order() {
         let mut tags = Tags::new();
-        let home_id = tags.add_new("home", Layout::default());
-        let chat_id = tags.add_new("chat", Layout::default());
-        let surf_id = tags.add_new("surf", Layout::default());
-        let code_id = tags.add_new("code", Layout::default());
+        let home_id = tags.add_new("home", LayoutDefinition::default().name);
+        let chat_id = tags.add_new("chat", LayoutDefinition::default().name);
+        let surf_id = tags.add_new("surf", LayoutDefinition::default().name);
+        let code_id = tags.add_new("code", LayoutDefinition::default().name);
         assert_eq!(home_id, 1);
         assert_eq!(chat_id, 2);
         assert_eq!(surf_id, 3);
@@ -340,8 +345,8 @@ mod tests {
     #[test]
     fn multiple_normal_tags_can_have_same_label() {
         let mut tags = Tags::new();
-        let first_id = tags.add_new("home", Layout::default());
-        let second_id = tags.add_new("home", Layout::default());
+        let first_id = tags.add_new("home", LayoutDefinition::default().name);
+        let second_id = tags.add_new("home", LayoutDefinition::default().name);
         assert_eq!(first_id, 1);
         assert_eq!(second_id, 2);
     }
@@ -349,8 +354,8 @@ mod tests {
     #[test]
     fn unlabelled_tags_are_automatically_labelled_with_their_id() {
         let mut tags = Tags::new();
-        let first_tag = tags.add_new_unlabeled(Layout::default());
-        let second_tag = tags.add_new_unlabeled(Layout::default());
+        let first_tag = tags.add_new_unlabeled(LayoutDefinition::default().name);
+        let second_tag = tags.add_new_unlabeled(LayoutDefinition::default().name);
         let first_label = tags.get(first_tag).map(|tag| tag.label.clone());
         let second_label = tags.get(second_tag).map(|tag| tag.label.clone());
         assert_eq!(first_label, Some(String::from("1")));
@@ -372,10 +377,10 @@ mod tests {
     #[test]
     fn must_be_able_to_only_get_normal_tags() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
-        tags.add_new("chat", Layout::default());
-        tags.add_new("surf", Layout::default());
-        tags.add_new("code", Layout::default());
+        tags.add_new("home", LayoutDefinition::default().name);
+        tags.add_new("chat", LayoutDefinition::default().name);
+        tags.add_new("surf", LayoutDefinition::default().name);
+        tags.add_new("code", LayoutDefinition::default().name);
         tags.add_new_hidden("NSP");
 
         assert_eq!(tags.len_normal(), 4);
@@ -385,10 +390,10 @@ mod tests {
     #[test]
     fn must_be_able_to_get_all_tags() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
-        tags.add_new("chat", Layout::default());
-        tags.add_new("surf", Layout::default());
-        tags.add_new("code", Layout::default());
+        tags.add_new("home", LayoutDefinition::default().name);
+        tags.add_new("chat", LayoutDefinition::default().name);
+        tags.add_new("surf", LayoutDefinition::default().name);
+        tags.add_new("code", LayoutDefinition::default().name);
         tags.add_new_hidden("NSP");
 
         assert_eq!(tags.all().len(), 5);
@@ -397,7 +402,7 @@ mod tests {
     #[test]
     fn hidden_tags_must_be_retrievable_by_label() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
+        tags.add_new("home", LayoutDefinition::default().name);
         tags.add_new_hidden("NSP");
         tags.add_new_hidden("whatever");
 
@@ -413,7 +418,7 @@ mod tests {
     #[test]
     fn only_hidden_tags_can_be_retrieved_by_label() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
+        tags.add_new("home", LayoutDefinition::default().name);
         let tag = tags.get_hidden_by_label("home");
         assert!(tag.is_none());
     }
@@ -421,9 +426,9 @@ mod tests {
     #[test]
     fn tags_can_be_mutable() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
-        tags.add_new("chat", Layout::default());
-        tags.add_new("surf", Layout::default());
+        tags.add_new("home", LayoutDefinition::default().name);
+        tags.add_new("chat", LayoutDefinition::default().name);
+        tags.add_new("surf", LayoutDefinition::default().name);
 
         let first_retrieve = tags.get_mut(2).unwrap();
         assert_eq!(first_retrieve.label, String::from("chat"));

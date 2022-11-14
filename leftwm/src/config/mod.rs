@@ -19,6 +19,7 @@ use leftwm_core::{
     state::State,
     DisplayAction, DisplayServer, Manager,
 };
+use leftwm_layouts::LayoutDefinition;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::default::Default;
@@ -153,8 +154,8 @@ pub struct Config {
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
-    pub layouts: Vec<Layout>,
-    pub layout_definitions: leftwm_layouts::Layouts,
+    pub layouts: Vec<String>,
+    pub layout_definitions: Vec<LayoutDefinition>,
     pub layout_mode: LayoutMode,
     pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
@@ -422,11 +423,11 @@ impl leftwm_core::Config for Config {
         vec![]
     }
 
-    fn layouts(&self) -> Vec<Layout> {
+    fn layouts(&self) -> Vec<String> {
         self.layouts.clone()
     }
 
-    fn layout_definitions(&self) -> leftwm_layouts::Layouts {
+    fn layout_definitions(&self) -> Vec<LayoutDefinition> {
         self.layout_definitions.clone()
     }
 

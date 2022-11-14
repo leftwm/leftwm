@@ -40,7 +40,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         };
 
         if let Some(tag) = self.state.tags.get_mut(next_id) {
-            tag.layout = new_workspace.layout;
+            tag.layout = new_workspace.layout.to_owned();
         }
 
         self.state.focus_workspace(&new_workspace);

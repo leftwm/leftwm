@@ -5,19 +5,6 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
 
-mod center_main;
-mod center_main_balanced;
-mod center_main_fluid;
-mod even_horizontal;
-mod even_vertical;
-mod fibonacci;
-mod grid_horizontal;
-mod left_main;
-mod main_and_deck;
-mod main_and_horizontal_stack;
-mod main_and_vert_stack;
-mod monocle;
-mod right_main_and_vert_stack;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum Layout {
@@ -54,6 +41,23 @@ pub const LAYOUTS: &[Layout] = &[
     Layout::LeftWiderRightStack,
 ];
 
+pub const DEFAULT: &str = "Default";
+pub const MONOCLE: &str = "Monocle";
+pub const MAIN_AND_DECK: &str = "MainAndDeck";
+pub const LEFT_WIDER_RIGHT_STACK: &str = "LeftWiderRightStack";
+pub const RIGHT_WIDER_LEFT_STACK: &str = "RightWiderLeftStack";
+pub const MAIN_AND_VERT_STACK: &str = "MainAndVertStack";
+pub const MAIN_AND_HORIZONTAL_STACK: &str = "MainAndHorizontalStack";
+pub const GRID_HORIZONTAL: &str = "GridHorizontal";
+pub const EVEN_HORIZONTAL: &str = "EvenHorizontal";
+pub const EVEN_VERTICAL: &str = "EvenVertical";
+pub const FIBONACCI: &str = "Fibonacci";
+pub const LEFT_MAIN: &str = "LeftMain";
+pub const CENTER_MAIN: &str = "CenterMain";
+pub const CENTER_MAIN_BALANCED: &str = "CenterMainBalanced";
+pub const CENTER_MAIN_FLUID: &str = "CenterMainFluid";
+
+
 impl Default for Layout {
     fn default() -> Self {
         Self::MainAndVertStack
@@ -72,7 +76,8 @@ impl NewLayout {
 // This is tedious, but simple and effective.
 impl Layout {
     pub fn update_windows(&self, workspace: &Workspace, windows: &mut [&mut Window], tag: &Tag) {
-        match self {
+        // todo: remove method
+        /*match self {
             Self::MainAndVertStack | Self::LeftWiderRightStack => {
                 main_and_vert_stack::update(workspace, tag, windows);
             }
@@ -92,7 +97,7 @@ impl Layout {
             Self::RightWiderLeftStack => {
                 right_main_and_vert_stack::update(workspace, tag, windows);
             }
-        }
+        }*/
     }
 
     pub const fn main_width(&self) -> u8 {
@@ -147,10 +152,12 @@ impl FromStr for Layout {
 
 #[cfg(test)]
 mod tests {
+    use leftwm_layouts::LayoutDefinition;
+
     use super::*;
     use crate::models::{BBox, Margins, WindowHandle};
 
-    #[test]
+    /*#[test]
     fn should_fullscreen_a_single_window() {
         //size defaults to 600x800
         let mut ws = Workspace::new(
@@ -161,7 +168,7 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            Layout::default(),
+            LayoutDefinition::default().name, // todo
             None,
         );
         ws.margin = Margins::new(0);
@@ -178,7 +185,7 @@ mod tests {
             "window was not size to the correct height"
         );
         assert!(w.width() == 800, "window was not size to the correct width");
-    }
+    }*/
 
     #[test]
     fn test_from_str() {

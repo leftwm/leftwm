@@ -224,7 +224,7 @@ fn build_set_layout(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     } else {
         raw
     };
-    Ok(Command::SetLayout(Layout::from_str(layout_name)?))
+    Ok(Command::SetLayout(String::from(layout_name)))
 }
 
 fn build_set_margin_multiplier(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {

@@ -66,7 +66,7 @@ pub enum Command {
     MoveWindowToPreviousWorkspace,
     NextLayout,
     PreviousLayout,
-    SetLayout(Layout),
+    SetLayout(String),
     RotateTag,
     IncreaseMainWidth(i8),
     DecreaseMainWidth(i8),

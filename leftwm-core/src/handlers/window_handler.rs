@@ -25,7 +25,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut is_first = false;
         let mut on_same_tag = true;
         // Random value
-        let mut layout: Layout = Layout::MainAndVertStack;
+        let mut layout: String = String::from("MainAndVertStack");
         setup_window(
             &mut self.state,
             &mut window,
@@ -231,7 +231,7 @@ fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) ->
     }
 }
 
-fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
+fn insert_window(state: &mut State, window: &mut Window, layout: String) {
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
         let for_active_workspace = |x: &Window| -> bool { window.tag == x.tag && x.is_managed() };
@@ -246,10 +246,12 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
             state.actions.push_back(act);
             was_fullscreen = true;
         }
-        if matches!(layout, Layout::Monocle | Layout::MainAndDeck) {
+        let monocle = String::from("Monocle");
+        let mainAndDeck = String::from("MainAndDeck");
+        if layout == monocle || layout == mainAndDeck {
             // Extract the current windows on the same workspace.
             let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
-            if layout == Layout::Monocle || to_reorder.is_empty() {
+            if layout == monocle || to_reorder.is_empty() {
                 // When in monocle we want the new window to be fullscreen if the previous window was
                 // fullscreen.
                 if was_fullscreen {
@@ -334,7 +336,7 @@ fn setup_window(
     state: &mut State,
     window: &mut Window,
     xy: (i32, i32),
-    layout: &mut Layout,
+    layout: &mut String,
     is_first: &mut bool,
     on_same_tag: &mut bool,
 ) {
@@ -357,7 +359,7 @@ fn setup_window(
                 find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
         }
         *on_same_tag = ws.tag == window.tag;
-        *layout = ws.layout;
+        *layout = ws.layout.to_owned();
 
         // Setup a scratchpad window.
         if let Some((scratchpad_name, _)) = state
@@ -692,7 +694,7 @@ mod tests {
             .tags
             .get_mut(1)
             .unwrap()
-            .set_layout(Layout::Monocle, 0);
+            .set_layout(String::from("Monocle"));
 
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),

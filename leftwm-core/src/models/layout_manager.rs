@@ -1,8 +1,8 @@
 use super::Tag;
-use crate::{config::Config, layouts::Layout, Workspace};
+use crate::{config::Config, Workspace};
 use leftwm_layouts::LayoutDefinition;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, borrow::Borrow};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutMode {
@@ -28,62 +28,62 @@ pub struct LayoutManager {
 }
 
 impl LayoutManager {
+
+    /// Get a copy of all the layout definitions in `defs` whose names
+    /// are contained in `names`.
+    fn map_name_to_definition(defs: &Vec<LayoutDefinition>, names: &Vec<String>) -> Vec<LayoutDefinition> {
+        return names.iter()
+            .filter_map(|name| defs.iter().find(|def| def.name == *name))
+            .map(|def| def.to_owned())
+            .collect();
+    }
+
+    /// Create a new `LayoutManager` from the config
     pub fn new(config: &impl Config) -> Self {
-        let layouts_per_workspaces = config
-            .workspaces()
-            .unwrap_or_default()
-            .iter()
+        let definitions = &config.layout_definitions();
+        let layouts: Vec<LayoutDefinition> = Self::map_name_to_definition(definitions, &config.layouts());
+        let layouts_per_workspaces: HashMap<i32, Vec<LayoutDefinition>> = config.workspaces().unwrap_or_default().iter()
             .map(|ws| {
                 (
-                    ws.id.unwrap_or_default(),
-                    ws.layouts.unwrap_or_default().iter()
-                        .filter_map(|layout_name| config.layout_definitions().iter().find(|l| l.name == *layout_name))
-                        .map(|definition| definition.clone())
-                        .collect(),
+                    ws.id.unwrap_or_default(), // TODO: why is ws.id an Option?
+                    Self::map_name_to_definition(definitions, ws.layouts.as_ref().unwrap_or(&Vec::new()).borrow()),
                 )
             })
             .collect();
-
         Self {
             mode: config.layout_mode(),
-            layouts: config.layout_definitions().clone(),
+            layouts,
             layouts_per_workspaces,
         }
     }
 
-    pub fn new_layout(&self, workspace_id: Option<i32>) -> LayoutDefinition {
-        *self
+    pub fn new_layout(&self, workspace_id: Option<i32>) -> String {
+        self
             .layouts(workspace_id)
             .first()
-            .unwrap_or(&LayoutDefinition::default())
+            .unwrap_or(&LayoutDefinition::default()).name.clone()
     }
 
-    pub fn next_layout(&self, workspace: &Workspace) -> LayoutDefinition {
-        let layouts = self.layouts(workspace.id);
-
-        let next = match layouts.iter().position(|&x| x.name == workspace.layout) {
-            Some(index) if index == layouts.len() - 1 => layouts.first(),
-            Some(index) => layouts.get(index + 1),
-            None => None,
-        };
-
-        // If no layout was found, return the first in the list, in case of a
-        // SoftReload with a new list that does not include the current layout.
-        *next.unwrap_or_else(|| layouts.first().unwrap_or(&workspace.layout))
+    pub fn next_layout(&self, workspace: &Workspace) -> String {
+        crate::utils::helpers::relative_find(
+            self.layouts(workspace.id), 
+            |o| o.name == workspace.layout,
+             1,
+              true
+            )
+            .map(|d| d.name.to_owned())
+            .unwrap_or_else(|| LayoutDefinition::default().name)
     }
 
-    pub fn previous_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = self.layouts(workspace.id);
-
-        let next = match layouts.iter().position(|&x| x.name == workspace.layout) {
-            Some(index) if index == 0 => layouts.last(),
-            Some(index) => layouts.get(index - 1),
-            None => None,
-        };
-
-        // If no layout was found, return the first in the list, in case of a
-        // SoftReload with a new list that does not include the current layout.
-        *next.unwrap_or_else(|| layouts.first().unwrap_or(&workspace.layout))
+    pub fn previous_layout(&self, workspace: &Workspace) -> String {
+        crate::utils::helpers::relative_find(
+            self.layouts(workspace.id), 
+            |o| o.name == workspace.layout,
+             -1,
+              true
+            )
+            .map(|d| d.name.to_owned())
+            .unwrap_or_else(|| LayoutDefinition::default().name.to_owned())
     }
 
     pub fn update_layouts(
@@ -95,10 +95,10 @@ impl LayoutManager {
             let tag = tags.iter_mut().find(|t| Some(t.id) == workspace.tag)?;
             match self.mode {
                 LayoutMode::Workspace => {
-                    tag.set_layout(workspace.layout);
+                    tag.set_layout(workspace.layout.to_owned());
                 }
                 LayoutMode::Tag => {
-                    workspace.layout = tag.layout;
+                    workspace.layout = tag.layout.to_owned();
                 }
             }
         }
@@ -122,6 +122,7 @@ impl LayoutManager {
 #[cfg(test)]
 mod tests {
     use crate::config::tests::TestConfig;
+    use crate::layouts;
     use crate::models::BBox;
 
     use super::*;
@@ -129,17 +130,17 @@ mod tests {
     fn layout_manager() -> LayoutManager {
         let config = TestConfig {
             layouts: vec![
-                Layout::Monocle,
-                Layout::EvenVertical,
-                Layout::MainAndHorizontalStack,
+                layouts::MONOCLE.to_string(),
+                layouts::EVEN_VERTICAL.to_string(),
+                layouts::MAIN_AND_HORIZONTAL_STACK.to_string(),
             ],
             workspaces: Some(vec![
                 crate::config::Workspace {
                     id: Some(0),
                     layouts: Some(vec![
-                        String::from("CenterMain"),
-                        String::from("CenterMainBalanced"),
-                        String::from("MainAndDeck"),
+                        layouts::CENTER_MAIN.to_string(),
+                        layouts::CENTER_MAIN_BALANCED.to_string(),
+                        layouts::MAIN_AND_DECK.to_string(),
                     ]),
                     ..Default::default()
                 },
@@ -187,14 +188,14 @@ mod tests {
     fn next_layout_basic() {
         let layout_manager = layout_manager();
         let workspace = workspace(0, String::from("CenterMainBalanced"));
-        assert_eq!(layout_manager.next_layout(&workspace).name, String::from("MainAndDeck"));
+        assert_eq!(layout_manager.next_layout(&workspace), String::from("MainAndDeck"));
     }
 
     #[test]
     fn next_layout_should_cycle() {
         let layout_manager = layout_manager();
         let workspace = workspace(0, String::from("MainAndDeck"));
-        assert_eq!(layout_manager.next_layout(&workspace).name, String::from("CenterMain"));
+        assert_eq!(layout_manager.next_layout(&workspace), String::from("CenterMain"));
     }
 
     #[test]
@@ -203,7 +204,7 @@ mod tests {
 
         let workspace = workspace(1, String::from("EvenVertical"));
         assert_eq!(
-            layout_manager.next_layout(&workspace).name,
+            layout_manager.next_layout(&workspace),
             String::from("MainAndHorizontalStack")
         );
     }
@@ -211,49 +212,49 @@ mod tests {
     #[test]
     fn next_layout_fallback_to_the_first_layout() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::Fibonacci);
+        let workspace = workspace(0, String::from("Fibonacci"));
 
-        assert_eq!(layout_manager.next_layout(&workspace), Layout::CenterMain);
+        assert_eq!(layout_manager.next_layout(&workspace), String::from("CenterMain"));
     }
 
     #[test]
     fn prev_layout_basic() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::CenterMainBalanced);
+        let workspace = workspace(0, String::from("CenterMainBalanced"));
 
         assert_eq!(
             layout_manager.previous_layout(&workspace),
-            Layout::CenterMain
+            String::from("CenterMain")
         );
     }
 
     #[test]
     fn prev_layout_should_cycle() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::CenterMain);
+        let workspace = workspace(0, String::from("CenterMain"));
 
         assert_eq!(
             layout_manager.previous_layout(&workspace),
-            Layout::MainAndDeck
+            String::from("MainAndDeck")
         );
     }
 
     #[test]
     fn previous_layout_fallback_to_global_layouts() {
         let layout_manager = layout_manager();
-        let workspace = workspace(2, Layout::EvenVertical);
+        let workspace = workspace(2, String::from("EvenVertical"));
 
-        assert_eq!(layout_manager.previous_layout(&workspace), Layout::Monocle);
+        assert_eq!(layout_manager.previous_layout(&workspace), String::from("Monocle"));
     }
 
     #[test]
     fn previous_layout_fallback_to_the_first_layout() {
         let layout_manager = layout_manager();
-        let workspace = workspace(0, Layout::Fibonacci);
+        let workspace = workspace(0, String::from("Fibonacci"));
 
         assert_eq!(
             layout_manager.previous_layout(&workspace),
-            Layout::CenterMain
+            String::from("CenterMain")
         );
     }
 }
