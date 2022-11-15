@@ -19,13 +19,18 @@ use leftwm_core::{
     state::State,
     DisplayAction, DisplayServer, Manager,
 };
+use ron::{
+    extensions::Extensions,
+    ser::{to_string_pretty, PrettyConfig},
+    Options,
+};
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::default::Default;
 use std::env;
 use std::fs;
 use std::fs::File;
-use std::io::prelude::*;
+use std::io::prelude::Write;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
@@ -207,8 +212,9 @@ fn load_from_file() -> Result<Config> {
 
     if Path::new(&config_file_ron).exists() {
         tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
+        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
         let contents = fs::read_to_string(config_file_ron)?;
-        let config = ron::from_str(&contents)?;
+        let config = ron.from_str(&contents)?;
         Ok(config)
     } else if Path::new(&config_file_toml).exists() {
         tracing::debug!(
@@ -223,10 +229,10 @@ fn load_from_file() -> Result<Config> {
         tracing::debug!("Config file not found. Using default config file.");
 
         let config = Config::default();
-        let ron_pretty_conf = ron::ser::PrettyConfig::new()
+        let ron_pretty_conf = PrettyConfig::new()
             .depth_limit(2)
-            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
-        let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf).unwrap();
+            .extensions(Extensions::IMPLICIT_SOME);
+        let ron = to_string_pretty(&config, ron_pretty_conf).unwrap();
         let comment_header = String::from(
             r#"//  _        ___                                      ___ _
 // | |      / __)_                                   / __|_)

@@ -212,8 +212,10 @@ Also see [the build options](#optional-build-features) for more feature options,
 3. Build leftwm
 
    ```bash
-   cargo build --release
+   cargo build --profile optimized
    ```
+
+   For more options see the [build options](#optional-build-features) section.
 
 4. Copy leftwm executables to the /usr/bin folder
 
@@ -236,6 +238,10 @@ If your goal is to continuously build leftwm and keep up to date with the latest
 prefer to symlink the leftwm executables instead of copying them.  If you choose to install this
 way, make sure you do not move the build directory as it will break your installation.
 
+Note that if you want to build leftwm with an other build profile, you will have to change the
+`--profile <profile-name>` option and the target folder to `target/<profile-name>`.
+Currently available are `dev`, `release` and `optimized`.
+
 1. Dependencies: Rust, Cargo
 2. Clone the repository and cd into the directory
 
@@ -248,19 +254,19 @@ way, make sure you do not move the build directory as it will break your install
 
    ```bash
    # With systemd logging (view with 'journalctl -f -t leftwm-worker')
-   cargo build --release
+   cargo build --profile optimized
    ```
    For more options see [build options below](#optional-build-features).
 
 4. Create the symlinks
 
    ```bash
-   sudo ln -s "$(pwd)"/target/release/leftwm /usr/bin/leftwm
-   sudo ln -s "$(pwd)"/target/release/leftwm-worker /usr/bin/leftwm-worker
-   sudo ln -s "$(pwd)"/target/release/lefthk-worker /usr/bin/lefthk-worker
-   sudo ln -s "$(pwd)"/target/release/leftwm-state /usr/bin/leftwm-state
-   sudo ln -s "$(pwd)"/target/release/leftwm-check /usr/bin/leftwm-check
-   sudo ln -s "$(pwd)"/target/release/leftwm-command /usr/bin/leftwm-command
+   sudo ln -s "$(pwd)"/target/optimized/leftwm /usr/bin/leftwm
+   sudo ln -s "$(pwd)"/target/optimized/leftwm-worker /usr/bin/leftwm-worker
+   sudo ln -s "$(pwd)"/target/optimized/lefthk-worker /usr/bin/lefthk-worker
+   sudo ln -s "$(pwd)"/target/optimized/leftwm-state /usr/bin/leftwm-state
+   sudo ln -s "$(pwd)"/target/optimized/leftwm-check /usr/bin/leftwm-check
+   sudo ln -s "$(pwd)"/target/optimized/leftwm-command /usr/bin/leftwm-command
    ```
 
 5. Copy leftwm.desktop to xsessions folder
@@ -284,7 +290,7 @@ simple black screen on login.  For a more customized look, install a theme.
 
    ```bash
    # With systemd logging (view with 'journalctl -f -t leftwm-worker')
-   cargo build --release
+   cargo build --profile optimized
    ```
 
 3. And press the following keybind to reload leftwm
@@ -309,10 +315,22 @@ Use `cargo` with the added flags `--no-default-features --features=` and then co
 Example:
 ```bash
 # With `lefthk` and logging to `sys-log`
-cargo build --release --no-default-features --features=lefthk,sys-log
+cargo build --profile optimized --no-default-features --features=lefthk,sys-log
 
 # Without `lefthk` and logging to file
-cargo build --release --no-default-features --features=file-log
+cargo build --profile optimized --no-default-features --features=file-log
+```
+
+
+There are also multiple levels of optimization. These are specified by the cargo profiles, available are `dev`, `release` and `optimized`. The dev and release profiles are default profiles used by cargo, whereas the optimized profile is recomended for production builds.
+
+Example:
+```bash
+# With the dev profile
+cargo build --profile dev
+
+# With the release profile
+cargo build --profile release
 ```
 
 ## Using the Makefile
@@ -324,11 +342,14 @@ For conveniece we also have a Makefile with the following rules:
 | all | implies `build` and `test` |
 | test | runs same tests as CI on github |
 | test-full | same as `test` but additionally with pedantic clippy lints |
-| build | builds with cargo flag `--release` |
+| test-full-nix | same as `test-full` but additionally compiles the nix package, resulting in a full representation of ci checks | 
+| build | builds with cargo profile `optimized` by default; read build output on how to change the profile. |
 | clean | clean all buildfiles |
 | install | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/share/xsession` and cleans build files |
-| install-dev | installs by symlinking, copies `leftwm.desktop`, no clean |
+| install-linked | installs by symlinking, copies `leftwm.desktop`, no clean |
 | uninstall | removes `leftwm-*` files from `/usr/bin` and `leftwm.desktop` file |
+
+Note that for `build`, `install` and `install-linked`, you can specify the build profile to use by adding the `profile=<profile-name>` argument. Currently available are `dev`, `release` and `release-optimized`.
 
 ## Starting with startx or a login such as slim
 
