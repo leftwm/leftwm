@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, process::Command};
 
 fn main() {
     let mut features_string = String::new();
@@ -13,5 +13,8 @@ fn main() {
 
     println!("cargo:rustc-env=LEFTWM_FEATURES={}", features_string);
 
-    println!("cargo:warning=When first time building with `lefthk` you need to completely restart `leftwm` in order to start the hotkey daemon proprerly. A `SoftReload` or `HardReload` will leave you with a session non responsive to keybinds but otherwise running well.");
+    match Command::new("lefthk-worker").spawn() {
+        Ok(mut p) => p.kill().unwrap(),
+        Err(_) => println!("cargo:warning=When first time building with `lefthk` you need to completely restart `leftwm` in order to start the hotkey daemon proprerly. A `SoftReload` or `HardReload` will leave you with a session non responsive to keybinds but otherwise running well."),
+    }
 }
