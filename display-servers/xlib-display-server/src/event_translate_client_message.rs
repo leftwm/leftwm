@@ -65,7 +65,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             xw.set_window_urgency(event.window, true);
             return None;
         };
-        return Some(DisplayEvent::WindowTakeFocus(WindowHandle::XlibHandle(
+        return Some(DisplayEvent::HandleWindowFocus(WindowHandle::XlibHandle(
             event.window,
         )));
     }
