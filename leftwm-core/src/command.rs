@@ -1,6 +1,5 @@
 pub use crate::handlers::command_handler::ReleaseScratchPadOption;
 use crate::{
-    layouts::Layout,
     models::{ScratchPadName, TagId, WindowHandle},
 };
 use serde::{Deserialize, Serialize};

@@ -1,5 +1,4 @@
 //! Creates a pipe to listen for external commands.
-use crate::layouts::Layout;
 use crate::models::TagId;
 use crate::{Command, ReleaseScratchPadOption};
 use std::env;

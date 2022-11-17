@@ -8,7 +8,7 @@ pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
 use super::*;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::layouts::{Layout, self};
+use crate::layouts::{self};
 use crate::models::{TagId, WindowState};
 use crate::state::State;
 use crate::utils::helpers;

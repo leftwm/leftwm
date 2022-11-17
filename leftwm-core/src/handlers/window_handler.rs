@@ -3,7 +3,6 @@ use crate::child_process::exec_shell;
 use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::layouts::Layout;
 use crate::models::{WindowHandle, WindowState, Xyhw};
 use crate::state::State;
 use crate::utils::helpers;

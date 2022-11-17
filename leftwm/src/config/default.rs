@@ -2,7 +2,7 @@ use leftwm_core::models::{ScratchPad, Size};
 
 #[cfg(feature = "lefthk")]
 use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
-use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeSetting, LAYOUTS};
+use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeSetting};
 
 impl Default for Config {
     // We allow this because this function would be difficult to reduce. If someone would like to

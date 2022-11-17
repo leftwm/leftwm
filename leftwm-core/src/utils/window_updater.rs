@@ -18,7 +18,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             let windows = &mut self.state.windows;
             let all_tags = &self.state.tags;
             if let Some(Some(tag)) = ws.tag.map(|tag_id| all_tags.get(tag_id)) {
-                tag.update_windows(windows, ws);
+                tag.update_windows(windows, ws, &self.state.layout_manager);
             }
         }
     }

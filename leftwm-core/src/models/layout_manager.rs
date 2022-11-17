@@ -1,6 +1,6 @@
 use super::Tag;
-use crate::{config::Config, Workspace};
-use leftwm_layouts::LayoutDefinition;
+use crate::{config::Config, Workspace, Window};
+use leftwm_layouts::{LayoutDefinition, geometry::Rect};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, borrow::Borrow};
 
@@ -116,6 +116,21 @@ impl LayoutManager {
                 }
             })
             .unwrap_or(&self.layouts)
+    }
+
+    pub fn apply(&self, name: &String, windows: &Vec<&mut Window>, ws: &Workspace) {
+        let def = self.layouts.iter()
+            .find(|x| x.name == *name)
+            .unwrap_or(&LayoutDefinition::default());
+        
+        let container = Rect{
+            x: ws.x(),
+            y: ws.y(),
+            h: ws.height().unsigned_abs(),
+            w: ws.width().unsigned_abs(),
+        };
+
+        //let rects = leftwm_layouts::apply(def, windows.len(), container);
     }
 }
 

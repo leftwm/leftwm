@@ -1,5 +1,5 @@
-use super::TagId;
-use crate::{layouts::Layout, Window, Workspace};
+use super::{TagId, layout_manager, LayoutManager};
+use crate::{Window, Workspace};
 use serde::{Deserialize, Serialize};
 
 /// Wrapper struct holding all the tags.
@@ -225,7 +225,7 @@ impl Tag {
         }
     }
 
-    pub fn update_windows(&self, windows: &mut [Window], workspace: &Workspace) {
+    pub fn update_windows(&self, windows: &mut [Window], workspace: &Workspace, layout_manager: &LayoutManager) {
         if let Some(window) = windows
             .iter_mut()
             .find(|w| w.has_tag(&self.id) && w.is_fullscreen())
@@ -254,9 +254,16 @@ impl Tag {
                 .iter_mut()
                 .filter(|w| w.has_tag(&self.id) && w.is_managed() && !w.floating())
                 .collect();
+
+            
+            let count = managed_nonfloat.len();
+            
+            layout_manager.apply(&self.layout, &managed_nonfloat, workspace);
+
+
+            
+
             // todo: leftwm_layouts
-
-
             // TODO:
             //self.layout.update_windows(workspace, &mut managed_nonfloat, self);
         
@@ -318,7 +325,6 @@ mod tests {
     use leftwm_layouts::LayoutDefinition;
 
     use super::Tags;
-    use crate::layouts::Layout;
 
     #[test]
     fn normal_tags_are_numbered_in_order() {
