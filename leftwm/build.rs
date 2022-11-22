@@ -13,7 +13,7 @@ fn main() {
 
     println!("cargo:rustc-env=LEFTWM_FEATURES={}", features_string);
 
-    #[cfg(feature = "lefthk")]
+    #[cfg(all(feature = "lefthk", not(target_os = "netbsd")))]
     match std::process::Command::new("lefthk-worker").spawn() {
         Ok(mut p) => p.kill().unwrap(),
         Err(_) => println!("cargo:warning=When first time building with `lefthk` you need to completely restart `leftwm` in order to start the hotkey daemon proprerly. A `SoftReload` or `HardReload` will leave you with a session non responsive to keybinds but otherwise running well."),
