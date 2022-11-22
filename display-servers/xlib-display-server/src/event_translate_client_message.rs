@@ -1,5 +1,8 @@
 use super::{DisplayEvent, XWrap};
-use leftwm_core::{models::WindowChange, Command};
+use leftwm_core::{
+    models::{WindowChange, WindowHandle},
+    Command,
+};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
 
@@ -32,6 +35,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             }
         }
     }
+
     if event.message_type == xw.atoms.NetWMDesktop {
         let value = event.data.get_long(0);
         match usize::try_from(value) {
@@ -52,9 +56,18 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
             }
         }
     }
+
     if event.message_type == xw.atoms.NetActiveWindow {
-        xw.set_window_urgency(event.window, true);
-        return None;
+        // When an application client sends a Message with this atom and a WindowHandle
+        // we assume it wants to request `urgency` when the client is a pager or does
+        // not set `source indication` we focus the window
+        if event.data.get_short(0) == 1 {
+            xw.set_window_urgency(event.window, true);
+            return None;
+        };
+        return Some(DisplayEvent::HandleWindowFocus(WindowHandle::XlibHandle(
+            event.window,
+        )));
     }
 
     //if the client is trying to toggle fullscreen without changing the window state, change it too
