@@ -220,7 +220,7 @@ Also see [the build options](#optional-build-features) for more feature options,
 4. Copy leftwm executables to the /usr/bin folder
 
    ```bash
-   sudo install -s -Dm755 ./target/release/leftwm ./target/release/leftwm-worker ./target/release/lefthk-worker ./target/release/leftwm-state ./target/release/leftwm-check ./target/release/leftwm-command -t /usr/bin
+   sudo install -s -Dm755 ./target/optimized/leftwm ./target/optimized/leftwm-worker ./target/optimized/lefthk-worker ./target/optimized/leftwm-state ./target/optimized/leftwm-check ./target/optimized/leftwm-command -t /usr/bin
    ```
 
 5. Copy leftwm.desktop to xsessions folder
