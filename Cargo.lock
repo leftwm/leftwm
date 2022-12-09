@@ -445,6 +445,7 @@ dependencies = [
  "mio",
  "nix 0.25.0",
  "once_cell",
+ "regex",
  "ron",
  "serde",
  "serde_json",

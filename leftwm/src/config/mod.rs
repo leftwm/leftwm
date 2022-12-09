@@ -24,7 +24,7 @@ use ron::{
     ser::{to_string_pretty, PrettyConfig},
     Options,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryInto;
 use std::default::Default;
 use std::env;
@@ -64,9 +64,11 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct WindowHook {
     /// `WM_CLASS` in X11
-    pub window_class: Option<String>,
+    #[serde(deserialize_with = "from_regexps", serialize_with = "to_regexps")]
+    pub window_class: Option<regex::Regex>,
     /// `_NET_WM_NAME` in X11
-    pub window_title: Option<String>,
+    #[serde(deserialize_with = "from_regexps", serialize_with = "to_regexps")]
+    pub window_title: Option<regex::Regex>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_on_workspace: Option<i32>,
     pub spawn_floating: Option<bool>,
@@ -82,19 +84,27 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        let class_score = {
-            let score = self.window_class.is_some()
-                & (self.window_class == window.res_name || self.window_class == window.res_class);
-            u8::from(score)
+        let class_score = match (&self.window_class, &window.res_class) {
+            (Some(wc_re), Some(res_class)) => {
+                if wc_re.is_match(res_class) {
+                    return 1;
+                }
+                return 0;
+            }
+            _ => 0,
         };
 
-        let window_name_score = {
-            let score = self.window_title.is_some()
-                & ((self.window_title == window.name) | (self.window_title == window.legacy_name));
-            u8::from(score)
+        let title_score = match (&self.window_title, &window.legacy_name) {
+            (Some(wt_re), Some(legacy_name)) => {
+                if wt_re.is_match(legacy_name) {
+                    return 1;
+                }
+                return 0;
+            }
+            _ => 0,
         };
 
-        class_score + 2 * window_name_score
+        class_score + 2 * title_score
     }
 
     fn apply(&self, state: &mut State, window: &mut Window) {
@@ -649,6 +659,30 @@ impl Config {
         self.state_path
             .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
+    }
+}
+
+fn from_regexps<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<regex::Regex>, D::Error> {
+    let res: Option<String> = Deserialize::deserialize(deserializer)?;
+    if let Some(s) = res {
+        match regex::Regex::new(&s) {
+            Ok(re) => Ok(Some(re)),
+            Err(err) => {
+                tracing::error!("Failed to match regex {}", err);
+                Ok(None)
+            }
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+fn to_regexps<S: Serializer>(wc: &Option<regex::Regex>, s: S) -> Result<S::Ok, S::Error> {
+    match wc {
+        Some(ref re) => s.serialize_some(re.as_str()),
+        None => s.serialize_none(),
     }
 }
 
