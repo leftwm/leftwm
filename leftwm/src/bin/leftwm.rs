@@ -132,9 +132,27 @@ fn set_env_vars() {
     env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
 }
 
+fn get_current_exe() -> std::path::PathBuf {
+    #[cfg(not(target_os = "openbsd"))]
+    {
+        std::env::current_exe().expect("can't get path to leftwm-binary")
+    }
+
+    #[cfg(target_os = "openbsd")]
+    {
+        // OpenBSD panics at current_exe() call because the OS itself does not
+        // provide a function to get the current executable. For LeftWM
+        // purposes just args[0] works fine under OpenBSD.
+        let arg0 = std::env::args()
+            .next()
+            .expect("Cannot get args[0] to compute leftwm executable path");
+        std::path::PathBuf::from(arg0)
+    }
+}
+
 /// The main-entry-point. The leftwm-session is prepared here
 fn start_leftwm() {
-    let current_exe = std::env::current_exe().expect("can't get path to leftwm-binary");
+    let current_exe = get_current_exe();
 
     set_env_vars();
 
