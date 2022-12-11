@@ -1,8 +1,11 @@
 //! Starts programs in autostart, runs global 'up' script, and boots theme. Provides function to
 //! boot other desktop files also.
 use crate::errors::Result;
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::ffi::OsStr;
 use std::fs;
 use std::iter::{Extend, FromIterator};
 use std::path::{Path, PathBuf};
@@ -67,7 +70,7 @@ impl Nanny {
 
     /// Runs a script if it exits
     fn run_script(path: &Path) -> Result<Child> {
-        Command::new(&path)
+        Command::new(path)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .spawn()
@@ -82,8 +85,42 @@ impl Nanny {
     /// Could be caused by inadequate permissions.
     pub fn run_global_up_script() -> Result<Child> {
         let mut path = Self::get_config_dir()?;
+        let mut scripts = Self::get_files_in_path_with_ext(&path, "up")?;
+
+        while let Some(Reverse(script)) = scripts.pop() {
+            if let Err(e) = Self::run_script(&script) {
+                tracing::error!("Unable to run script {script:?}, error: {e}");
+            }
+        }
+
         path.push("up");
         Self::run_script(&path)
+    }
+
+    /// Returns a min-heap of files with the specified extension.
+    ///
+    /// # Errors
+    ///
+    /// Comes from `std::fs::read_dir()`.
+    fn get_files_in_path_with_ext(
+        path: impl AsRef<Path>,
+        ext: impl AsRef<OsStr>,
+    ) -> Result<BinaryHeap<Reverse<PathBuf>>> {
+        let dir = fs::read_dir(&path)?;
+
+        let mut files = BinaryHeap::new();
+
+        for entry in dir.flatten() {
+            let file = entry.path();
+
+            if let Some(extension) = file.extension() {
+                if extension == ext.as_ref() {
+                    files.push(Reverse(file));
+                }
+            }
+        }
+
+        Ok(files)
     }
 
     /// Runs the 'up' script of the current theme, if there is one.
@@ -297,7 +334,7 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 pub fn exec_shell(command: &str, children: &mut Children) -> Option<ChildID> {
     let child = Command::new("sh")
         .arg("-c")
-        .arg(&command)
+        .arg(command)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .spawn()

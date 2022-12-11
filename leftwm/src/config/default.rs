@@ -217,7 +217,7 @@ impl Default for Config {
             tags: Some(tags),
             layouts: layouts.names(),
             layout_definitions: layouts.layouts,
-            layout_mode: LayoutMode::Workspace,
+            layout_mode: LayoutMode::Tag,
             // TODO: add sane default for scratchpad config.
             // Currently default values are set in sane_dimension fn.
             scratchpad: Some(vec![scratchpad]),
