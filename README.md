@@ -153,7 +153,6 @@ paru -S leftwm
 ```sh
 sudo dnf copr enable th3-s4lm0n/leftwm -y && sudo dnf install leftwm
 ```
-**Important note: currently the copr package is broken due to missing `lefthk-worker` in the installation. We are on it to get the package fixed. In the meantime please look into cargo or manual installation.**
 
 ## NetBSD ([Official repositories])
 
