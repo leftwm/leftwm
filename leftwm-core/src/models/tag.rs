@@ -1,4 +1,4 @@
-use super::{TagId, layout_manager, LayoutManager};
+use super::{layout_manager, LayoutManager, TagId};
 use crate::{Window, Workspace};
 use serde::{Deserialize, Serialize};
 
@@ -225,7 +225,12 @@ impl Tag {
         }
     }
 
-    pub fn update_windows(&self, windows: &mut [Window], workspace: &Workspace, layout_manager: &LayoutManager) {
+    pub fn update_windows(
+        &self,
+        windows: &mut [Window],
+        workspace: &Workspace,
+        layout_manager: &LayoutManager,
+    ) {
         if let Some(window) = windows
             .iter_mut()
             .find(|w| w.has_tag(&self.id) && w.is_fullscreen())
@@ -255,18 +260,13 @@ impl Tag {
                 .filter(|w| w.has_tag(&self.id) && w.is_managed() && !w.floating())
                 .collect();
 
-            
             let count = managed_nonfloat.len();
-            
+
             layout_manager.apply(&self.layout, &managed_nonfloat, workspace);
-
-
-            
 
             // todo: leftwm_layouts
             // TODO:
             //self.layout.update_windows(workspace, &mut managed_nonfloat, self);
-        
 
             for w in &mut managed_nonfloat {
                 w.container_size = Some(workspace.xyhw);

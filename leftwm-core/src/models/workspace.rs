@@ -1,7 +1,5 @@
 use crate::config::Config;
-use crate::models::{
-    BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder,
-};
+use crate::models::{BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 

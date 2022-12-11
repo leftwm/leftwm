@@ -34,6 +34,4 @@ impl NewLayout {
 pub struct ParseLayoutError(String);
 
 #[cfg(test)]
-mod tests {
-    
-}
+mod tests {}

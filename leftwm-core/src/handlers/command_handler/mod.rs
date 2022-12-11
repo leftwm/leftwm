@@ -812,12 +812,30 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.screen_create_handler(Screen::default());
         manager.state.tags = Tags::new();
-        manager.state.tags.add_new("A15", layouts::DEFAULT.to_string());
-        manager.state.tags.add_new("B24", layouts::DEFAULT.to_string());
-        manager.state.tags.add_new("C", layouts::DEFAULT.to_string());
-        manager.state.tags.add_new("6D4", layouts::DEFAULT.to_string());
-        manager.state.tags.add_new("E39", layouts::DEFAULT.to_string());
-        manager.state.tags.add_new("F67", layouts::DEFAULT.to_string());
+        manager
+            .state
+            .tags
+            .add_new("A15", layouts::DEFAULT.to_string());
+        manager
+            .state
+            .tags
+            .add_new("B24", layouts::DEFAULT.to_string());
+        manager
+            .state
+            .tags
+            .add_new("C", layouts::DEFAULT.to_string());
+        manager
+            .state
+            .tags
+            .add_new("6D4", layouts::DEFAULT.to_string());
+        manager
+            .state
+            .tags
+            .add_new("E39", layouts::DEFAULT.to_string());
+        manager
+            .state
+            .tags
+            .add_new("F67", layouts::DEFAULT.to_string());
         assert!(!manager.command_handler(&Command::GoToTag {
             tag: 0,
             swap: false
