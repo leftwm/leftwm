@@ -2,9 +2,10 @@ mod insert_behavior;
 mod workspace_config;
 
 use crate::display_servers::DisplayServer;
+use crate::layouts::LayoutMode;
 pub use crate::models::ScratchPad;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
-use crate::models::{LayoutMode, Manager, Window, WindowType};
+use crate::models::{Manager, Window, WindowType};
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
 use leftwm_layouts::LayoutDefinition;

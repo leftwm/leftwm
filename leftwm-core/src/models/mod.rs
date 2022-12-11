@@ -2,7 +2,6 @@
 mod dock_area;
 mod focus_manager;
 mod gutter;
-mod layout_manager;
 mod manager;
 mod margins;
 mod mode;
@@ -19,15 +18,12 @@ mod xyhw;
 mod xyhw_change;
 
 pub mod dto;
-use crate::layouts;
 
 pub use dock_area::DockArea;
 pub use focus_manager::FocusBehaviour;
 pub use focus_manager::FocusManager;
 pub use gutter::Gutter;
 pub use gutter::Side;
-pub use layout_manager::LayoutManager;
-pub use layout_manager::LayoutMode;
 pub use manager::Manager;
 pub use margins::Margins;
 pub use mode::Mode;

@@ -6,7 +6,7 @@ use std::fmt;
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
-    pub id: Option<i32>,
+    pub id: Option<i32>, // Why is this an Option / Change this to usize (same as tag id)
     pub layout: String,
     pub tag: Option<TagId>, // TODO: Make this a list.
     pub margin: Margins,

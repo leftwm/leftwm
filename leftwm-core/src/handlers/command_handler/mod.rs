@@ -369,9 +369,9 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tag, &mut temp);
         // Update dock tags and layouts.
         state.update_static();
-        state
-            .layout_manager
-            .update_layouts(&mut state.workspaces, state.tags.all_mut());
+        /*state
+        .layout_manager
+        .update_layouts(&mut state.workspaces, state.tags.all_mut());*/
 
         return Some(true);
     }
@@ -404,14 +404,22 @@ fn move_to_last_workspace(state: &mut State) -> Option<bool> {
 
 fn next_layout(state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
-    let layout = state.layout_manager.next_layout(workspace);
-    set_layout(&layout, state)
+    state
+        .layout_manager
+        .cycle_next_layout(workspace.id.unwrap_or(0), workspace.tag.unwrap_or(1));
+    // TODO
+    //set_layout(&layout, state)
+    Some(true)
 }
 
 fn previous_layout(state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
-    let layout = state.layout_manager.previous_layout(workspace);
-    set_layout(&layout, state)
+    state
+        .layout_manager
+        .cycle_previous_layout(workspace.id.unwrap_or(0), workspace.tag.unwrap_or(1));
+    // TODO
+    // set_layout(&layout, state)
+    Some(true)
 }
 
 fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
@@ -694,10 +702,17 @@ fn change_main_width(state: &mut State, delta: i8, factor: i8) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     // todo
     //workspace.change_main_width(delta * factor);
-    let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get_mut(tag_id)?;
+    //let tag = state.tags.get_mut(tag_id)?;
     // todo
     //tag.change_main_width(delta * factor);
+    let workspace_id = workspace.id.unwrap_or(1);
+    let tag_id = state.focus_manager.tag(0)?;
+    let def = state.layout_manager.layout_mut(workspace_id, tag_id);
+    match factor {
+        1 => def.increase_main_size(workspace.width()),
+        -1 => def.decrease_main_size(),
+        _ => (),
+    }
     Some(true)
 }
 

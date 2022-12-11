@@ -2,9 +2,10 @@
 
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
+use crate::layouts::NewLayoutManager;
 use crate::models::{
-    FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle,
-    WindowType, Workspace,
+    FocusManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle, WindowType,
+    Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::LayoutDefinition;
@@ -17,7 +18,7 @@ pub struct State {
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
-    pub layout_manager: LayoutManager,
+    pub layout_manager: NewLayoutManager,
     pub mode: Mode,
     //pub layouts: Vec<Layout>,
     pub layout_definitions: Vec<LayoutDefinition>,
@@ -36,11 +37,11 @@ pub struct State {
 
 impl State {
     pub(crate) fn new(config: &impl Config) -> Self {
-        let layout_manager = LayoutManager::new(config);
+        let layout_manager = NewLayoutManager::new(config);
         let mut tags = Tags::new();
-        config.create_list_of_tag_labels().iter().for_each(|label| {
+        /*config.create_list_of_tag_labels().iter().for_each(|label| {
             tags.add_new(label.as_str(), layout_manager.new_layout(None));
-        });
+        });*/
         tags.add_new_hidden("NSP");
 
         Self {

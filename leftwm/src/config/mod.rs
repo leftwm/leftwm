@@ -14,7 +14,8 @@ use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowState, WindowType},
+    layouts::LayoutMode,
+    models::{FocusBehaviour, Gutter, Margins, Size, Window, WindowState, WindowType},
     state::State,
     DisplayAction, DisplayServer, Manager,
 };

@@ -1,7 +1,10 @@
-use super::models::Window;
-use super::models::Workspace;
-use crate::models::Tag;
+mod layout_mode;
+mod new_layout_manager;
+
 use thiserror::Error;
+
+pub use layout_mode::LayoutMode;
+pub use new_layout_manager::NewLayoutManager;
 
 pub const DEFAULT: &str = "Default";
 pub const MONOCLE: &str = "Monocle";
@@ -18,16 +21,6 @@ pub const LEFT_MAIN: &str = "LeftMain";
 pub const CENTER_MAIN: &str = "CenterMain";
 pub const CENTER_MAIN_BALANCED: &str = "CenterMainBalanced";
 pub const CENTER_MAIN_FLUID: &str = "CenterMainFluid";
-
-/*
-pub struct NewLayout {}
-
-impl NewLayout {
-    pub fn update_windows(&self, workspace: &Workspace, windows: &mut [&mut Window], tag: &Tag) {
-        // leftwm_layouts::apply()
-        println!("test")
-    }
-}*/
 
 #[derive(Debug, Error)]
 #[error("Could not parse layout: {0}")]

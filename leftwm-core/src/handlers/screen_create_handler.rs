@@ -18,6 +18,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 .unwrap_or(-1)
                 + 1
         });
+        todo!()
+        /*
         let mut new_workspace = Workspace::new(
             Some(workspace_id),
             screen.bbox,
@@ -51,6 +53,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state.screens.push(screen);
         self.state.focus_workspace(&new_workspace);
         false
+        */
     }
 }
 
