@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
         }
     } else {
         while let Some(line) = stream_reader.next_line().await? {
-            let _droppable2 = raw_handler(&line, newline);
+            let _droppable2 = raw_handler(&line);
             if once {
                 break;
             }
@@ -98,17 +98,11 @@ fn is_partial_filename(filename: &OsStr) -> bool {
     f_n.starts_with('_') && f_n.ends_with(".liquid")
 }
 
-fn raw_handler(line: &str, newline: bool) -> Result<()> {
+fn raw_handler(line: &str) -> Result<()> {
     let s: ManagerState = serde_json::from_str(line)?;
     let display: DisplayState = s.into();
-    let mut json = serde_json::to_string(&display)?;
-    json = str::replace(&json, "\r", "");
-    if newline {
-        print!("{}", json);
-    } else {
-        json = str::replace(&json, "\n", "");
-        println!("{}", json);
-    }
+    let json = serde_json::to_string(&display)?;
+    println!("{}", json);
     Ok(())
 }
 

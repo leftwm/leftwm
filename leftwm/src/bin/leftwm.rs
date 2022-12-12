@@ -134,7 +134,7 @@ fn set_env_vars() {
 
 /// The main-entry-point. The leftwm-session is prepared here
 fn start_leftwm() {
-    let current_exe = get_curren_exe();
+    let current_exe = std::env::current_exe().expect("can't get path to leftwm-binary");
 
     set_env_vars();
 
@@ -185,13 +185,6 @@ fn start_leftwm() {
         Some(exit_status) => std::process::exit(exit_status.code().unwrap_or(0)),
         None => std::process::exit(1),
     };
-}
-
-fn get_curren_exe() -> std::path::PathBuf {
-    #[cfg(not(target_os = "openbsd"))]
-    return std::env::current_exe().expect("can't get path to leftwm-binary");
-    #[cfg(target_os = "openbsd")]
-    arg[0].cannonicalize() // pseudo code, needs to be replaced with a proper hanbling for OpenBSD
 }
 
 /// checks if leftwm is still running
