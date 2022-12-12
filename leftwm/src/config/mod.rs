@@ -64,10 +64,18 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct WindowHook {
     /// `WM_CLASS` in X11
-    #[serde(deserialize_with = "from_regexps", serialize_with = "to_regexps")]
+    #[serde(
+        default,
+        deserialize_with = "from_regexps",
+        serialize_with = "to_config_strings"
+    )]
     pub window_class: Option<regex::Regex>,
     /// `_NET_WM_NAME` in X11
-    #[serde(deserialize_with = "from_regexps", serialize_with = "to_regexps")]
+    #[serde(
+        default,
+        deserialize_with = "from_regexps",
+        serialize_with = "to_config_strings"
+    )]
     pub window_title: Option<regex::Regex>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_on_workspace: Option<i32>,
@@ -679,7 +687,7 @@ fn from_regexps<'de, D: Deserializer<'de>>(
     }
 }
 
-fn to_regexps<S: Serializer>(wc: &Option<regex::Regex>, s: S) -> Result<S::Ok, S::Error> {
+fn to_config_strings<S: Serializer>(wc: &Option<regex::Regex>, s: S) -> Result<S::Ok, S::Error> {
     match wc {
         Some(ref re) => s.serialize_some(re.as_str()),
         None => s.serialize_none(),
