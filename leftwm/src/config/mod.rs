@@ -63,6 +63,9 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 /// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct WindowHook {
+    // Use serde default field attribute to fallback to None option in case of missing field in
+    // config. Without this attribute deserializer will fail on missing field due to it's inability
+    // to treat missing value as Option::None
     /// `WM_CLASS` in X11
     #[serde(
         default,
