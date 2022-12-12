@@ -1,32 +1,23 @@
-use crate::config::Config;
-use crate::display_action::DisplayAction;
-use crate::models::Mode;
-use crate::models::Screen;
-use crate::models::TagId;
-use crate::models::Window;
-use crate::models::WindowHandle;
-use crate::models::WindowState;
-use crate::models::Workspace;
-use crate::utils;
-use crate::DisplayEvent;
-use crate::DisplayServer;
-use crate::Keybind;
-use futures::prelude::*;
-use std::os::raw::c_uint;
-use std::pin::Pin;
-use x11_dl::xlib;
-
 mod event_translate;
 mod event_translate_client_message;
 mod event_translate_property_notify;
 mod xatom;
+mod xcursor;
 mod xwrap;
+
 pub use xwrap::XWrap;
 
-use event_translate::XEvent;
-
 use self::xwrap::ICONIC_STATE;
-mod xcursor;
+use event_translate::XEvent;
+use futures::prelude::*;
+use leftwm_core::config::Config;
+use leftwm_core::models::{Mode, Screen, TagId, Window, WindowHandle, WindowState, Workspace};
+use leftwm_core::utils;
+use leftwm_core::{DisplayAction, DisplayEvent, DisplayServer};
+use std::os::raw::c_uint;
+use std::pin::Pin;
+
+use x11_dl::xlib;
 
 pub struct XlibDisplayServer {
     xw: XWrap,
@@ -83,7 +74,7 @@ impl DisplayServer for XlibDisplayServer {
             let xlib_event = self.xw.get_next_event();
             let event = XEvent(&mut self.xw, xlib_event).into();
             if let Some(e) = event {
-                log::trace!("DisplayEvent: {:?}", e);
+                tracing::trace!("DisplayEvent: {:?}", e);
                 events.push(e);
             }
         }
@@ -98,7 +89,7 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
-        log::trace!("DisplayAction: {:?}", act);
+        tracing::trace!("DisplayAction: {:?}", act);
         let xw = &mut self.xw;
         let event: Option<DisplayEvent> = match act {
             DisplayAction::KillWindow(h) => from_kill_window(xw, h),
@@ -115,7 +106,6 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
             DisplayAction::SetCurrentTags(t) => from_set_current_tags(xw, t),
             DisplayAction::SetWindowTag(h, t) => from_set_window_tag(xw, h, t),
-            DisplayAction::ReloadKeyGrabs(ks) => from_reload_key_grabs(xw, &ks),
             DisplayAction::ConfigureXlibWindow(w) => from_configure_xlib_window(xw, &w),
 
             DisplayAction::WindowTakeFocus {
@@ -127,7 +117,7 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::NormalMode => from_normal_mode(xw),
         };
         if event.is_some() {
-            log::trace!("DisplayEvent: {:?}", event);
+            tracing::trace!("DisplayEvent: {:?}", event);
         }
         event
     }
@@ -326,11 +316,6 @@ fn from_set_window_tag(
     let window = handle.xlib_handle()?;
     let tag = tag?;
     xw.set_window_desktop(window, &tag);
-    None
-}
-
-fn from_reload_key_grabs(xw: &mut XWrap, keybinds: &[Keybind]) -> Option<DisplayEvent> {
-    xw.reset_grabs(keybinds);
     None
 }
 

@@ -8,6 +8,7 @@ use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
 use crate::Workspace;
 use serde::{Deserialize, Serialize};
+
 use x11_dl::xlib;
 
 type MockHandle = i32;
@@ -154,10 +155,12 @@ impl Window {
     pub fn is_fullscreen(&self) -> bool {
         self.states.contains(&WindowState::Fullscreen)
     }
+
     #[must_use]
     pub fn is_sticky(&self) -> bool {
         self.states.contains(&WindowState::Sticky)
     }
+
     #[must_use]
     pub fn must_float(&self) -> bool {
         self.must_float
@@ -204,7 +207,7 @@ impl Window {
     pub fn apply_margin_multiplier(&mut self, value: f32) {
         self.margin_multiplier = value.abs();
         if value < 0 as f32 {
-            log::warn!(
+            tracing::warn!(
                 "Negative margin multiplier detected. Will be applied as absolute: {:?}",
                 self.margin_multiplier()
             );

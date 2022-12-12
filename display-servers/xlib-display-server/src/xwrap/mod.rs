@@ -9,20 +9,20 @@
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
-use crate::config::Config;
-use crate::models::{FocusBehaviour, Mode};
-use crate::utils::xkeysym_lookup::ModMask;
+use leftwm_core::config::Config;
+use leftwm_core::models::{FocusBehaviour, Mode};
+use leftwm_core::utils::modmask_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
 use std::{ptr, slice};
 use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
+
 use x11_dl::xlib;
 use x11_dl::xrandr::Xrandr;
 
 mod getters;
-mod keyboard;
 mod mouse;
 mod setters;
 mod window;
@@ -89,6 +89,7 @@ pub struct Colors {
     normal: c_ulong,
     floating: c_ulong,
     active: c_ulong,
+    background: c_ulong,
 }
 
 #[derive(Debug, Clone)]
@@ -165,7 +166,7 @@ impl XWrap {
             }
 
             if let Err(err) = poll.poll(&mut events, Some(timeout)) {
-                log::warn!("Xlib socket poll failed with {:?}", err);
+                tracing::warn!("Xlib socket poll failed with {:?}", err);
                 continue;
             }
 
@@ -183,6 +184,7 @@ impl XWrap {
             normal: 0,
             floating: 0,
             active: 0,
+            background: 0,
         };
 
         let refresh_rate = match Xrandr::open() {
@@ -217,7 +219,7 @@ impl XWrap {
             Err(_) => 60,
         };
 
-        log::debug!("Refresh Rate: {}", refresh_rate);
+        tracing::debug!("Refresh Rate: {}", refresh_rate);
 
         let xw = Self {
             xlib,
@@ -253,11 +255,6 @@ impl XWrap {
         };
         xw.sync();
 
-        // Setup cached keymap/modifier information, otherwise MappingNotify might never be called
-        // from:
-        // https://stackoverflow.com/questions/35569562/how-to-catch-keyboard-layout-change-event-and-get-current-new-keyboard-layout-on
-        xw.keysym_to_keycode(x11_dl::keysym::XK_F1);
-
         unsafe { (xw.xlib.XSetErrorHandler)(Some(on_error_from_xlib)) };
         xw.sync();
         xw
@@ -270,10 +267,9 @@ impl XWrap {
         windows: &[Window],
     ) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
+        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
         self.load_colors(config, focused, Some(windows));
         self.tag_labels = config.create_list_of_tag_labels();
-        self.reset_grabs(&config.mapped_bindings());
     }
 
     /// Initialize the xwrapper.
@@ -282,7 +278,7 @@ impl XWrap {
     // TODO: split into smaller functions
     pub fn init(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::xkeysym_lookup::into_modmask(&config.mousekey());
+        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
 
         let root = self.root;
         self.load_colors(config, None, None);
@@ -319,8 +315,6 @@ impl XWrap {
         // EWMH compliance for desktops.
         self.tag_labels = config.create_list_of_tag_labels();
         self.init_desktops_hints();
-
-        self.reset_grabs(&config.mapped_bindings());
 
         self.sync();
     }
@@ -435,6 +429,7 @@ impl XWrap {
             normal: self.get_color(config.default_border_color()),
             floating: self.get_color(config.floating_border_color()),
             active: self.get_color(config.focused_border_color()),
+            background: self.get_color(config.background_color()),
         };
         // Update all the windows with the new colors.
         if let Some(windows) = windows {
@@ -453,6 +448,7 @@ impl XWrap {
                 }
             }
         }
+        self.set_background_color(self.colors.background);
     }
 
     /// Sets the mode within our xwrapper.

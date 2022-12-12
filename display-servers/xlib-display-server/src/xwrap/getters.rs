@@ -1,7 +1,7 @@
 //! `XWrap` getters.
 use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN, MOUSEMASK};
-use crate::models::{DockArea, WindowState, WindowType, XyhwChange};
 use crate::XWrap;
+use leftwm_core::models::{DockArea, WindowState, WindowType, XyhwChange};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
@@ -480,12 +480,12 @@ impl XWrap {
     pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
         // More modern structure.
         if let Some(d) = self.get_window_strut_array_strut_partial(window) {
-            log::debug!("STRUT:[{:?}] {:?}", window, d);
+            tracing::debug!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
         // Older structure.
         if let Some(d) = self.get_window_strut_array_strut(window) {
-            log::debug!("STRUT:[{:?}] {:?}", window, d);
+            tracing::debug!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
         None

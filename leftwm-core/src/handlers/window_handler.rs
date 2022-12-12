@@ -1,10 +1,10 @@
 use super::{Manager, Window, WindowChange, WindowType, Workspace};
 use crate::child_process::exec_shell;
-use crate::config::{Config, InsertBehavior, ScratchPad};
+use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{Size, WindowHandle, WindowState, Xyhw, XyhwBuilder};
+use crate::models::{WindowHandle, WindowState, Xyhw};
 use crate::state::State;
 use crate::utils::helpers;
 use std::env;
@@ -20,7 +20,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
 
         // Setup any predifined hooks.
-        self.config.setup_predefined_window(&mut window);
+        self.config
+            .setup_predefined_window(&mut self.state, &mut window);
         let mut is_first = false;
         let mut on_same_tag = true;
         // Random value
@@ -50,8 +51,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.actions.push_back(act);
         }
 
-        // Tell the WM the new display order of the windows.
-        self.state.sort_windows(); // Is this needed??
+        // Tell the WM to reevaluate the stacking order, so the new window is put in the correct layer
+        self.state.sort_windows();
+        self.state.handle_single_border(self.config.border_width());
 
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
@@ -80,6 +82,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .tags_last_window
             .retain(|_, h| h != handle);
         self.state.windows.retain(|w| &w.handle != handle);
+
+        self.state.handle_single_border(self.config.border_width());
 
         // Make sure the workspaces do not draw on the docks.
         update_workspace_avoid_list(&mut self.state);
@@ -135,7 +139,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 _ => None,
             };
 
-            log::debug!("WINDOW CHANGED {:?} {:?}", &window, change);
             changed = change.update(window, container);
             if window.r#type == WindowType::Dock {
                 update_workspace_avoid_list(&mut self.state);
@@ -306,32 +309,7 @@ fn is_scratchpad(state: &State, window: &Window) -> bool {
     state
         .active_scratchpads
         .iter()
-        .any(|(_, &id)| window.pid == id)
-}
-
-fn sane_dimension(config_value: Option<Size>, default_ratio: f32, max_pixel: i32) -> i32 {
-    match config_value {
-        Some(size @ Size::Ratio(r)) if (0.0..=1.0).contains(&r) => size.into_absolute(max_pixel),
-        Some(Size::Pixel(pixel)) if (0..=max_pixel).contains(&pixel) => pixel,
-        _ => Size::Ratio(default_ratio).into_absolute(max_pixel),
-    }
-}
-
-// Get size and position of scratchpad from config and workspace size.
-fn scratchpad_xyhw(xyhw: &Xyhw, scratch_pad: &ScratchPad) -> Xyhw {
-    let x_sane = sane_dimension(scratch_pad.x, 0.25, xyhw.w());
-    let y_sane = sane_dimension(scratch_pad.y, 0.25, xyhw.h());
-    let height_sane = sane_dimension(scratch_pad.height, 0.50, xyhw.h());
-    let width_sane = sane_dimension(scratch_pad.width, 0.50, xyhw.w());
-
-    XyhwBuilder {
-        x: xyhw.x() + x_sane,
-        y: xyhw.y() + y_sane,
-        h: height_sane,
-        w: width_sane,
-        ..XyhwBuilder::default()
-    }
-    .into()
+        .any(|(_, id)| id.iter().any(|id| window.pid == Some(*id)))
 }
 
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
@@ -340,15 +318,12 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     let xyhw = window.requested.map_or_else(
         || ws.center_halfed(),
         |mut requested| {
+            requested.center_relative(outer, window.border);
             if ws.xyhw.contains_xyhw(&requested) {
                 requested
             } else {
-                requested.center_relative(outer, window.border);
-                if ws.xyhw.contains_xyhw(&requested) {
-                    requested
-                } else {
-                    ws.center_halfed()
-                }
+                requested.center_relative(ws.xyhw, window.border);
+                requested
             }
         },
     );
@@ -388,7 +363,7 @@ fn setup_window(
         if let Some((scratchpad_name, _)) = state
             .active_scratchpads
             .iter()
-            .find(|(_, &id)| id == window.pid)
+            .find(|(_, id)| id.iter().any(|id| Some(*id) == window.pid))
         {
             window.set_floating(true);
             if let Some(s) = state
@@ -396,7 +371,7 @@ fn setup_window(
                 .iter()
                 .find(|s| *scratchpad_name == s.name)
             {
-                let new_float_exact = scratchpad_xyhw(&ws.xyhw, s);
+                let new_float_exact = s.xyhw(&ws.xyhw);
                 window.normal = ws.xyhw;
                 window.set_floating_exact(new_float_exact);
                 return;
@@ -455,7 +430,7 @@ fn update_workspace_avoid_list(state: &mut State) {
         .filter(|w| w.r#type == WindowType::Dock)
         .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
         .for_each(|(handle, to_avoid)| {
-            log::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
+            tracing::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
             avoid.push(to_avoid);
         });
     for ws in &mut state.workspaces {
@@ -588,5 +563,149 @@ mod tests {
         let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn single_window_has_no_border() {
+        let mut manager = Manager::new_test_with_border(vec![], 1);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+
+        assert_eq!((manager.state.windows[0]).border(), 0);
+    }
+
+    #[test]
+    fn multiple_windows_have_borders() {
+        let mut manager = Manager::new_test_with_border(vec![], 1);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        assert_eq!((manager.state.windows[0]).border(), 1);
+        assert_eq!((manager.state.windows[1]).border(), 1);
+    }
+
+    #[test]
+    fn remaining_single_window_has_no_border() {
+        let mut manager = Manager::new_test_with_border(vec![], 1);
+        manager.screen_create_handler(Screen::default());
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        manager.window_destroyed_handler(&manager.state.windows[1].handle.clone());
+
+        assert_eq!((manager.state.windows[0]).border(), 0);
+    }
+
+    #[test]
+    fn single_windows_on_different_tags_have_no_border() {
+        let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        assert_eq!((manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[1]).border(), 0);
+    }
+
+    #[test]
+    fn single_window_has_no_border_and_windows_on_another_tag_have_borders() {
+        let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        third_window.tag(&2);
+        manager.window_created_handler(third_window, -1, -1);
+
+        assert_eq!((manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[1]).border(), 1);
+        assert_eq!((manager.state.windows[2]).border(), 1);
+    }
+
+    #[test]
+    fn remaining_single_window_on_another_tag_has_no_border() {
+        let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        third_window.tag(&2);
+        manager.window_created_handler(third_window, -1, -1);
+
+        manager.window_destroyed_handler(&manager.state.windows[2].handle.clone());
+
+        assert_eq!((manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[1]).border(), 0);
+    }
+
+    #[test]
+    fn monocle_layout_only_has_single_windows() {
+        let mut manager = Manager::new_test_with_border(vec!["1".to_string()], 1);
+        manager.screen_create_handler(Screen::default());
+
+        manager
+            .state
+            .tags
+            .get_mut(1)
+            .unwrap()
+            .set_layout(Layout::Monocle, 0);
+
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(1), None, None),
+            -1,
+            -1,
+        );
+        manager.window_created_handler(
+            Window::new(WindowHandle::MockHandle(2), None, None),
+            -1,
+            -1,
+        );
+
+        assert_eq!((manager.state.windows[0]).border(), 0);
+        assert_eq!((manager.state.windows[1]).border(), 0);
     }
 }

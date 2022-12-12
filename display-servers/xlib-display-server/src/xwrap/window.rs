@@ -3,8 +3,9 @@ use super::{
     on_error_from_xlib, on_error_from_xlib_dummy, Window, WindowHandle, ICONIC_STATE, NORMAL_STATE,
     ROOT_EVENT_MASK, WITHDRAWN_STATE,
 };
-use crate::models::{WindowChange, WindowType, Xyhw, XyhwChange};
-use crate::{DisplayEvent, XWrap};
+use crate::XWrap;
+use leftwm_core::models::{WindowChange, WindowType, Xyhw, XyhwChange};
+use leftwm_core::DisplayEvent;
 use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
 
@@ -222,8 +223,9 @@ impl XWrap {
             self.set_wm_states(window, &[NORMAL_STATE]);
             // Make sure the window is mapped.
             unsafe { (self.xlib.XMapWindow)(self.display, window) };
-            // Regrab the mouse clicks.
-            if self.focus_behaviour.is_clickto() {
+            // Regrab the mouse clicks but ignore `dock` windows as some don't handle click events put on them
+            if self.focus_behaviour.is_clickto() && self.get_window_type(window) != WindowType::Dock
+            {
                 self.grab_mouse_clicks(window, false);
             }
         } else {

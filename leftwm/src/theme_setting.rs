@@ -1,21 +1,23 @@
 use anyhow::Result;
 use leftwm_core::models::{Gutter, Margins};
+use ron::{extensions::Extensions, Options};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeSetting {
-    pub border_width: i32,
-    pub margin: CustomMargins,
+    pub border_width: Option<i32>,
+    pub margin: Option<CustomMargins>,
     pub workspace_margin: Option<CustomMargins>,
     pub default_width: Option<i32>,
     pub default_height: Option<i32>,
     pub always_float: Option<bool>,
     pub gutter: Option<Vec<Gutter>>,
-    pub default_border_color: String,
-    pub floating_border_color: String,
-    pub focused_border_color: String,
+    pub default_border_color: Option<String>,
+    pub floating_border_color: Option<String>,
+    pub focused_border_color: Option<String>,
+    pub background_color: Option<String>,
     #[serde(rename = "on_new_window")]
     pub on_new_window_cmd: Option<String>,
 }
@@ -26,7 +28,7 @@ impl ThemeSetting {
         match load_theme_file(path) {
             Ok(theme) => *self = theme,
             Err(err) => {
-                log::error!("Could not load theme at path {}: {}", path.display(), err);
+                tracing::error!("Could not load theme at path {}: {}", path.display(), err);
             }
         }
     }
@@ -35,25 +37,32 @@ impl ThemeSetting {
 impl Default for ThemeSetting {
     fn default() -> Self {
         Self {
-            border_width: 1,
-            margin: CustomMargins::Int(10),
+            border_width: Some(1),
+            margin: Some(CustomMargins::Int(10)),
             workspace_margin: Some(CustomMargins::Int(10)),
             default_width: Some(1000),
             default_height: Some(700),
             always_float: Some(false),
             gutter: None,
-            default_border_color: "#000000".to_owned(),
-            floating_border_color: "#000000".to_owned(),
-            focused_border_color: "#FF0000".to_owned(),
+            default_border_color: Some("#000000".to_owned()),
+            floating_border_color: Some("#000000".to_owned()),
+            focused_border_color: Some("#FF0000".to_owned()),
+            background_color: Some("#333333".to_owned()),
             on_new_window_cmd: None,
         }
     }
 }
 
 fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
-    let contents = fs::read_to_string(path)?;
-    let from_file: ThemeSetting = toml::from_str(&contents)?;
-    Ok(from_file)
+    let contents = fs::read_to_string(&path)?;
+    if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
+        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let from_file: ThemeSetting = ron.from_str(&contents)?;
+        Ok(from_file)
+    } else {
+        let from_file: ThemeSetting = toml::from_str(&contents)?;
+        Ok(from_file)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -93,7 +102,7 @@ mod tests {
     use leftwm_core::models::Side;
 
     #[test]
-    fn deserialize_custom_theme_config() {
+    fn deserialize_custom_theme_config_toml() {
         let config = r#"
 border_width = 0
 default_width = 400
@@ -104,6 +113,7 @@ workspace_margin = 5
 default_border_color = '#222222'
 floating_border_color = '#005500'
 focused_border_color = '#FFB53A'
+background_color = '#333333'
 on_new_window = 'echo Hello World'
 
 [[gutter]]
@@ -115,8 +125,8 @@ value = 0
         assert_eq!(
             config,
             ThemeSetting {
-                border_width: 0,
-                margin: CustomMargins::Int(5),
+                border_width: Some(0),
+                margin: Some(CustomMargins::Int(5)),
                 workspace_margin: Some(CustomMargins::Int(5)),
                 default_width: Some(400),
                 default_height: Some(400),
@@ -126,9 +136,57 @@ value = 0
                     value: 0,
                     wsid: None,
                 }]),
-                default_border_color: "#222222".to_string(),
-                floating_border_color: "#005500".to_string(),
-                focused_border_color: "#FFB53A".to_string(),
+                default_border_color: Some("#222222".to_string()),
+                floating_border_color: Some("#005500".to_string()),
+                focused_border_color: Some("#FFB53A".to_string()),
+                background_color: Some("#333333".to_owned()),
+                on_new_window_cmd: Some("echo Hello World".to_string()),
+            }
+        );
+    }
+
+    #[test]
+    fn deserialize_custom_theme_config_ron() {
+        let config = r##"
+(
+    border_width: Some(0),
+    default_width: Some(400),
+    default_height: Some(400),
+    always_float: Some(true),
+    margin: Some(5),
+    workspace_margin: Some(5),
+    default_border_color: Some("#222222"),
+    floating_border_color: Some("#005500"),
+    focused_border_color: Some("#FFB53A"),
+    background_color: Some("#333333"),
+    on_new_window: Some("echo Hello World"),
+
+    gutter: Some([Gutter (
+        side: Top,
+        value: 0,
+        )]
+    )
+)"##;
+        let config: ThemeSetting = ron::from_str(config).unwrap();
+
+        assert_eq!(
+            config,
+            ThemeSetting {
+                border_width: Some(0),
+                margin: Some(CustomMargins::Int(5)),
+                workspace_margin: Some(CustomMargins::Int(5)),
+                default_width: Some(400),
+                default_height: Some(400),
+                always_float: Some(true),
+                gutter: Some(vec![Gutter {
+                    side: Side::Top,
+                    value: 0,
+                    wsid: None,
+                }]),
+                default_border_color: Some("#222222".to_string()),
+                floating_border_color: Some("#005500".to_string()),
+                focused_border_color: Some("#FFB53A".to_string()),
+                background_color: Some("#333333".to_owned()),
                 on_new_window_cmd: Some("echo Hello World".to_string()),
             }
         );

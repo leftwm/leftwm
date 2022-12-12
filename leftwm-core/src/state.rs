@@ -1,14 +1,12 @@
 //! Save and restore manager state.
 
+use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::Layout;
-use crate::models::Screen;
-use crate::models::Size;
-use crate::models::Tags;
-use crate::models::Window;
-use crate::models::Workspace;
-use crate::models::{FocusManager, LayoutManager};
-use crate::models::{Mode, WindowHandle};
+use crate::models::{
+    FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle,
+    WindowType, Workspace,
+};
 use crate::DisplayAction;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -23,7 +21,7 @@ pub struct State {
     pub mode: Mode,
     pub layouts: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,
-    pub active_scratchpads: HashMap<String, Option<u32>>,
+    pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
     pub mousekey: Vec<String>,
@@ -32,6 +30,7 @@ pub struct State {
     pub default_height: i32,
     pub disable_tile_drag: bool,
     pub insert_behavior: InsertBehavior,
+    pub single_window_border: bool,
 }
 
 impl State {
@@ -61,12 +60,12 @@ impl State {
             default_height: config.default_height(),
             disable_tile_drag: config.disable_tile_drag(),
             insert_behavior: config.insert_behavior(),
+            single_window_border: config.single_window_border(),
         }
     }
 
     // Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
-        use crate::models::WindowType;
         // The windows we are managing should be behind unmanaged windows. Unless they are
         // fullscreen, or their children.
         // Fullscreen windows.
@@ -116,6 +115,36 @@ impl State {
         let handles: Vec<WindowHandle> = [level3, level4, level5, level6].concat();
         let act = DisplayAction::SetWindowOrder(fullscreen, handles);
         self.actions.push_back(act);
+    }
+
+    pub fn handle_single_border(&mut self, border_width: i32) {
+        if self.single_window_border {
+            return;
+        }
+
+        for tag in self.tags.normal() {
+            let mut windows_on_tag: Vec<&mut Window> = self
+                .windows
+                .iter_mut()
+                .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
+                .collect();
+
+            if tag.layout == Layout::Monocle {
+                windows_on_tag.iter_mut().for_each(|w| w.border = 0);
+                continue;
+            }
+
+            if windows_on_tag.len() == 1 {
+                if let Some(w) = windows_on_tag.first_mut() {
+                    w.border = 0;
+                }
+                continue;
+            }
+
+            windows_on_tag
+                .iter_mut()
+                .for_each(|w| w.border = border_width);
+        }
     }
 
     pub fn move_to_top(&mut self, handle: &WindowHandle) -> Option<()> {
@@ -242,7 +271,8 @@ impl State {
 
         // Restore scratchpads.
         for (scratchpad, id) in &old_state.active_scratchpads {
-            self.active_scratchpads.insert(scratchpad.clone(), *id);
+            self.active_scratchpads
+                .insert(scratchpad.clone(), id.clone());
         }
 
         // Restore focus.

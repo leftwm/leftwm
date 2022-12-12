@@ -1,6 +1,11 @@
 use anyhow::{bail, Result};
-use clap::{App, Arg};
+use clap::{arg, command};
 use leftwm::{Config, ThemeSetting};
+use ron::{
+    extensions::Extensions,
+    ser::{to_string_pretty, PrettyConfig},
+    Options,
+};
 use std::env;
 use std::fs;
 use std::fs::File;
@@ -12,26 +17,18 @@ use xdg::BaseDirectories;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = App::new("LeftWM Check")
-        .author("Lex Childs <lex.childs@gmail.com>")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("checks syntax of the configuration file")
-        .arg(
-            Arg::with_name("INPUT")
-                .help("Sets the input file to use. Uses first in PATH otherwise.")
-                .required(false)
-                .index(1),
-        )
-        .arg(
-            Arg::with_name("verbose")
-                .short('v')
-                .long("verbose")
-                .help("Outputs received configuration file."),
-        )
+    let matches = command!("LeftWM Check")
+        .about("Checks syntax of the configuration file")
+        .help_template(leftwm::utils::get_help_template())
+        .args(&[
+            arg!(-v --verbose "Outputs received configuration file."),
+            arg!(migrate: -m --"migrate-toml-to-ron" "Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
+            arg!([INPUT] "Sets the input file to use. Uses first in PATH otherwise."),
+        ])
         .get_matches();
 
-    let config_file = matches.value_of("INPUT");
-    let verbose = matches.occurrences_of("verbose") >= 1;
+    let config_file = matches.get_one::<String>("INPUT").map(String::as_str);
+    let verbose = matches.get_flag("verbose");
 
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM version: {}",
@@ -41,6 +38,26 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
     );
+    if matches.get_flag("migrate") {
+        println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
+        let path = BaseDirectories::with_prefix("leftwm")?;
+        let ron_file = path.place_config_file("config.ron")?;
+        let toml_file = path.place_config_file("config.toml")?;
+
+        let config = load_from_file(toml_file.as_os_str().to_str(), verbose)?;
+
+        write_to_file(&ron_file, &config)?;
+
+        return Ok(());
+    }
+
+    match check_enabled_features() {
+        Ok(_) => {}
+        Err(err) => {
+            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {} \x1b[0m", err);
+        }
+    }
+
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
     match load_from_file(config_file, verbose) {
         Ok(config) => {
@@ -50,6 +67,9 @@ async fn main() -> Result<()> {
             }
             config.check_mousekey(verbose);
             config.check_workspace_ids(verbose);
+            #[cfg(not(feature = "lefthk"))]
+            println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
+            #[cfg(feature = "lefthk")]
             config.check_keybinds(verbose);
         }
         Err(e) => {
@@ -71,32 +91,65 @@ async fn main() -> Result<()> {
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
 pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
-    let config_filename = match fspath {
-        Some(fspath) => {
-            println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
-            PathBuf::from(fspath)
+    let config_filename = if let Some(fspath) = fspath {
+        println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
+        PathBuf::from(fspath)
+    } else {
+        let ron_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
+        let toml_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
+        if Path::new(&ron_file).exists() {
+            ron_file
+        } else if Path::new(&toml_file).exists() {
+            println!(
+                "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
+      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
+            );
+            toml_file
+        } else {
+            let config = Config::default();
+            write_to_file(&ron_file, &config)?;
+            return Ok(config);
         }
-
-        None => BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?,
     };
+
     if verbose {
         dbg!(&config_filename);
     }
-    if Path::new(&config_filename).exists() {
-        let contents = fs::read_to_string(config_filename)?;
-        if verbose {
-            dbg!(&contents);
-        }
-
-        let config = toml::from_str(&contents)?;
+    let contents = fs::read_to_string(&config_filename)?;
+    if verbose {
+        dbg!(&contents);
+    }
+    if config_filename.as_path().extension() == Some(std::ffi::OsStr::new("ron")) {
+        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let config: Config = ron.from_str(&contents)?;
         Ok(config)
     } else {
-        let config = Config::default();
-        let toml = toml::to_string(&config)?;
-        let mut file = File::create(&config_filename)?;
-        file.write_all(toml.as_bytes())?;
+        let config = toml::from_str(&contents)?;
         Ok(config)
     }
+}
+
+fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> {
+    let ron_pretty_conf = PrettyConfig::new()
+        .depth_limit(2)
+        .extensions(Extensions::IMPLICIT_SOME);
+    let ron = to_string_pretty(&config, ron_pretty_conf)?;
+    let comment_header = String::from(
+        r#"//  _        ___                                      ___ _
+// | |      / __)_                                   / __|_)
+// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
+// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
+// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
+// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
+// A WindowManager for Adventurers                         (____/
+// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
+
+"#,
+    );
+    let ron_with_header = comment_header + &ron;
+    let mut file = File::create(ron_file)?;
+    file.write_all(ron_with_header.as_bytes())?;
+    Ok(())
 }
 
 fn check_elogind(verbose: bool) -> Result<()> {
@@ -195,6 +248,10 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
                 Ok(_fp) => continue,
                 Err(e) => returns.push(e.to_string()),
             },
+            f if f.ends_with("theme.ron") => match check_theme_ron(f, verbose) {
+                Ok(_fp) => continue,
+                Err(e) => returns.push(e.to_string()),
+            },
             _ => continue,
         }
     }
@@ -211,7 +268,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
 }
 
 fn missing_expected_file(filepaths: &[PathBuf]) -> impl Iterator<Item = &&str> {
-    ["up", "down", "theme.toml"]
+    ["up", "down", "theme.ron"]
         .iter()
         .filter(move |f| !filepaths.iter().any(|fp| fp.ends_with(f)))
 }
@@ -220,10 +277,10 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
     match &filepath {
         Some(p) => {
             if verbose {
-                if fs::symlink_metadata(&p)?.file_type().is_symlink() {
+                if fs::symlink_metadata(p)?.file_type().is_symlink() {
                     println!(
                         "Found symlink `current`, pointing to theme folder: {:?}",
-                        fs::read_link(&p).unwrap()
+                        fs::read_link(p).unwrap()
                     );
                 } else {
                     println!("\x1b[1;93mWARN: Found `current` theme folder: {:?}. Use of a symlink is recommended, instead.\x1b[0m", p);
@@ -267,7 +324,7 @@ fn check_up_file(filepath: PathBuf) -> Result<()> {
 
 fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     let metadata = fs::metadata(&filepath)?;
-    let contents = fs::read_to_string(&filepath.as_path())?;
+    let contents = fs::read_to_string(filepath.as_path())?;
 
     if metadata.is_file() {
         if verbose {
@@ -279,6 +336,11 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
                 if verbose {
                     println!("The theme file looks OK.");
                 }
+                println!(
+                    "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
+      Please consider migrating to RON or contact the theme creator about this topic.
+      Note: make sure the `up` script is loading the correct theme file.\x1b[0m"
+                );
                 Ok(filepath)
             }
             Err(err) => bail!("Could not parse theme file: {}", err),
@@ -286,4 +348,74 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
     } else {
         bail!("No `theme.toml` found at path: {}", filepath.display());
     }
+}
+
+fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
+    let metadata = fs::metadata(&filepath)?;
+    let contents = fs::read_to_string(filepath.as_path())?;
+
+    if metadata.is_file() {
+        if verbose {
+            println!("Found: {}", filepath.display());
+        }
+
+        match ron::from_str::<ThemeSetting>(&contents) {
+            Ok(_) => {
+                if verbose {
+                    println!("The theme file looks OK.");
+                }
+                Ok(filepath)
+            }
+            Err(err) => bail!("Could not parse theme file: {}", err),
+        }
+    } else {
+        bail!("No `theme.ron` found at path: {}", filepath.display())
+    }
+}
+// this function is called only when specific features are enabled.
+#[allow(dead_code)]
+fn check_feature<T, E, F>(name: &str, predicate: F) -> Result<()>
+where
+    F: FnOnce() -> Result<T, E>,
+    E: std::fmt::Debug,
+{
+    match predicate() {
+        Ok(_) => {
+            println!("\x1b[0;92m    -> {} OK\x1b[0m", name);
+            Ok(())
+        }
+        Err(err) => bail!("Check for feature {} failed: {:?}", name, err),
+    }
+}
+
+fn check_enabled_features() -> Result<()> {
+    if env!("LEFTWM_FEATURES").is_empty() {
+        println!("\x1b[0;94m::\x1b[0m Built with no enabled features.");
+        return Ok(());
+    }
+
+    println!(
+        "\x1b[0;94m::\x1b[0m Enabled features:{}",
+        env!("LEFTWM_FEATURES")
+    );
+
+    println!("\x1b[0;94m::\x1b[0m Checking feature dependencies . . .");
+
+    #[cfg(feature = "journald-log")]
+    check_feature("journald-log", tracing_journald::layer)?;
+    #[cfg(feature = "lefthk")]
+    // TODO once we refactor all file handling into a utiliy module, we want to call a `path-builder` method from that module
+    check_feature("lefthk", || {
+        if let Ok(path) = env::var("PATH") {
+            for p in path.split(':') {
+                let path = format!("{}/{}", p, "lefthk-worker");
+                if Path::new(&path).exists() {
+                    return Ok(());
+                }
+            }
+        }
+        Err("Could not find lefthk")
+    })?;
+
+    Ok(())
 }

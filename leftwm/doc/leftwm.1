@@ -15,7 +15,7 @@ The list of available subcommands available for leftwm is listed below:
 .SH SUBCOMMANDS
 .IP "-h, --help"
 Prints help information for this subcommand. This flag can also be used with other subcommands to display their own help message.
-.IP "-v --version"
+.IP "-v, --version"
 Prints the version information.
 .IP "check"
 This command will run several actions to ensure leftwm is configured properly, this will report the current leftwm version and git commit, it will also check if configuration is loaded correctly, check for syntax errors in your
@@ -26,15 +26,25 @@ This subcommand will check for basic / common mistakes made in the directory str
 .IP "command"
 This subcommand sends commands directly to leftwm. It can also be used to concat commands for a keybind in
 .I config.toml
-For a list of available commands use the '-l | --list' flag.
+For a list of available commands use the '-l, --list' flag.
 .IP "state"
 Prints the current state of leftwm (in JSON format). You can also use flags and liqud-like syntax for a more refined output of this command.
 .IP "theme"
 Manage leftwm themes (This is part of an external package found in: https://GitHub.com/leftwm/leftwm-theme).
+.IP "config"
+Manage leftwm configuration (This is part of an external package found in: https://GitHub.com/leftwm/leftwm-config).
 .SH CONFIGURING LEFTWM
+
+.B NOTE:
+We are in the transition from
+.I TOML
+to
+.I RON
+as config language. Please use leftwm-check with '-m, --migrate-ron-to-toml' flags to convert your config.
+For more info please refer to the wiki.
 .IP "Configuration file"
 The settings file of leftwm can be found at:
-.I $HOME/.config/leftwm/config.toml
+.I $HOME/.config/leftwm/config.ron
 .IP
 With this file you can configure the modkey for leftwm, available keybinds, tag names, workspace layouts and more.
 .RS
@@ -100,10 +110,10 @@ UXTerm
 Guake
 
 .IP "About Keybind Modifiers"
-Note: All entries require a modifier, even if blank: modifier = []
+Note: All entries require a modifier, even if blank: modifier: []
 see your
 .I
-config.toml
+config.ron
 file for more information.
 
 .SS Floating Windows
@@ -132,7 +142,15 @@ This behaviour switches the currenly focused window between floating and tiled m
 .SH CONFIGURATION
 .B IMPORTANT:
 You will need to reload in order to apply any changes you write to
-.I config.toml
+.I config.ron
+
+.B NOTE:
+We are in the transition from
+.I TOML
+to
+.I RON
+as config language. Please use leftwm-check with '-m, --migrate-ron-to-toml' flags to convert your config.
+For more info please refer to the wiki.
 
 .SS Modkey
 .PP
@@ -185,20 +203,20 @@ Default layouts:
 .IP
 .nf
 \f[C]
-layouts = [
-    \[dq]MainAndDeck\[dq],
-    \[dq]MainAndVertStack\[dq],
-    \[dq]MainAndHorizontalStack\[dq],
-    \[dq]GridHorizontal\[dq],
-    \[dq]EvenHorizontal\[dq],
-    \[dq]EvenVertical\[dq],
-    \[dq]Fibonacci\[dq],
-    \[dq]CenterMain\[dq],
-    \[dq]CenterMainBalanced\[dq],
-    \[dq]CenterMainFluid\[dq],
-    \[dq]Monocle\[dq],
-    \[dq]RightWiderLeftStack\[dq],
-    \[dq]LeftWiderRightStack\[dq],
+layouts: [
+    MainAndDeck,
+    MainAndVertStack,
+    MainAndHorizontalStack,
+    GridHorizontal,
+    EvenHorizontal,
+    EvenVertical,
+    Fibonacci,
+    CenterMain,
+    CenterMainBalanced,
+    CenterMainFluid,
+    Monocle,
+    RightWiderLeftStack,
+    LeftWiderRightStack,
 ]
 \f[R]
 .fi
@@ -209,37 +227,15 @@ Workspaces are how you view tags (desktops).
 A workspace is an area on a screen or most likely the whole screen.
 in this areas you can view a given tag.
 .PP
-Default: \f[C]workspaces = []\f[R] (one workspace per screen)
+Default: \f[C]workspaces: []\f[R] (one workspace per screen)
 .PP
 Example (two workspaces on a single ultrawide):
 .IP
 .nf
 \f[C]
-[[workspaces]]
-y = 0
-x = 0
-height = 1440
-width = 1720
-\f[R]
-.fi
-.IP
-.nf
-\f[C]
-[[workspaces]]
-y = 0
-x = 1720
-height = 1440
-width = 1720
-\f[R]
-.fi
-.PP
-Or with short syntax:
-.IP
-.nf
-\f[C]
-workspaces = [
-    { y = 0, x = 0, height = 1440, width = 1720 },
-    { y = 0, x = 1720, height = 1440, width = 1720 },
+workspaces: [
+    ( y: 0, x: 0, height: 1440, width: 1720 ),
+    ( y: 0, x: 1720, height: 1440, width: 1720 ),
 ]
 \f[R]
 .fi
@@ -252,9 +248,11 @@ You can rename them to any unicode string including symbols/icons from
 popular icon libraries such as font-awesome.
 .PP
 Default:
-\f[C]tags = [\[dq]1\[dq], \[dq]2\[dq], \[dq]3\[dq], \[dq]4\[dq], \[dq]5\[dq], \[dq]6\[dq], \[dq]7\[dq], \[dq]8\[dq], \[dq]9\[dq]]\f[R]
+\f[C]tags: [\[dq]1\[dq], \[dq]2\[dq], \[dq]3\[dq], \[dq]4\[dq], \[dq]5\[dq], \[dq]6\[dq], \[dq]7\[dq], \[dq]8\[dq], \[dq]9\[dq]]\f[R]
 
 
+.SH WIKI
+You can find more documentation in the LefrWM Wiki: https://github.com/leftwm/leftwm/wiki
 .SH BUGS
 If you find any bugs or functionality issues please report them on Github: https://github.com/leftwm/leftwm/issues
 .SH AUTHORS

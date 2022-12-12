@@ -1,4 +1,4 @@
-use clap::{value_t, App, Arg};
+use clap::{arg, command};
 use leftwm_core::errors::Result;
 use leftwm_core::models::dto::{DisplayState, ManagerState};
 use std::ffi::OsStr;
@@ -13,61 +13,15 @@ type Partials = liquid::partials::EagerCompiler<liquid::partials::InMemorySource
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = App::new("LeftWM State")
-        .author("Lex Childs <lex.childs@gmail.com>")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("prints out the current state of LeftWM")
-        .arg(
-            Arg::with_name("template")
-                .short('t')
-                .long("template")
-                .value_name("FILE")
-                .help("A liquid template to use for the output")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("string")
-                .short('s')
-                .long("string")
-                .value_name("STRING")
-                .help("Use a liquid template string literal to use for the output")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("workspace")
-                .short('w')
-                .long("workspace")
-                .value_name("WS_NUM")
-                .help("render only info about a given workspace [0..]")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("newline")
-                .short('n')
-                .long("newline")
-                .help("Print new lines in the output"),
-        )
-        .arg(
-            Arg::with_name("quit")
-                .short('q')
-                .long("quit")
-                .help("Prints the state once and quits"),
-        )
-        .get_matches();
+    let matches = get_command().get_matches();
 
-    let template_file = matches.value_of("template");
-
-    let string_literal = matches.value_of("string");
-
-    let ws_num: Option<usize> = match value_t!(matches, "workspace", usize) {
-        Ok(x) => Some(x),
-        Err(_) => None,
-    };
+    let template_file = matches.get_one::<String>("template");
+    let string_literal = matches.get_one::<String>("string");
+    let ws_num = matches.get_one("workspace").copied();
+    let newline = matches.get_flag("newline");
+    let once = matches.get_flag("quit");
 
     let mut stream_reader = stream_reader().await?;
-    let once = matches.occurrences_of("quit") == 1;
-    let newline = matches.occurrences_of("newline") == 1;
-
     if let Some(template_file) = template_file {
         let path = Path::new(template_file);
         let partials = get_partials(path.parent()).await?;
@@ -196,6 +150,20 @@ async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
     let socket_file = base.place_runtime_file("current_state.sock")?;
     let stream = UnixStream::connect(socket_file).await?;
     Ok(BufReader::new(stream).lines())
+}
+
+fn get_command() -> clap::Command {
+    command!("LeftWM State")
+        .about("Prints out the current state of LeftWM")
+        .help_template(leftwm::utils::get_help_template())
+        .args(&[
+            arg!(-t --template [FILE] "A liquid template to use for the output"),
+            arg!(-s --string [STRING] "Use a liquid template string literal to use for the output"),
+            arg!(-w --workspace [WS_NUM] "render only info about a given workspace [0..]")
+                .value_parser(clap::value_parser!(usize)),
+            arg!(-n --newline "Print new lines in the output"),
+            arg!(-q --quit "Prints the state once and quits"),
+        ])
 }
 
 #[cfg(test)]

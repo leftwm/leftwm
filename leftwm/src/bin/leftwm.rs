@@ -3,11 +3,11 @@
 //! If no arguments are passed, starts `leftwm-worker`. If arguments are passed, starts
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
-use clap::{command, crate_version};
+use clap::command;
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
-use std::process::{exit, Child, Command};
+use std::process::{exit, Child, Command, ExitStatus};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -21,11 +21,12 @@ const SUBCOMMAND_PREFIX: &str = "leftwm-";
 
 const SUBCOMMAND_NAME_INDEX: usize = 0;
 const SUBCOMMAND_DESCRIPTION_INDEX: usize = 1;
-const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 4] = [
+const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 5] = [
     ["check", "Check syntax of the configuration file"],
     ["command", "Send external commands to LeftWM"],
     ["state", "Print the current state of LeftWM"],
     ["theme", "Manage LeftWM themes"],
+    ["config", "Manage LeftWM configuration file"],
 ];
 
 fn main() {
@@ -65,12 +66,6 @@ fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -
 
 /// Prints the help page of leftwm (the output of `leftwm --help`)
 fn print_help_page() {
-    let version = format!(
-        "{}, Git-Hash: {}",
-        crate_version!(),
-        git_version::git_version!(fallback = option_env!("GIT_HASH").unwrap_or("NONE"))
-    );
-
     let subcommands = {
         let mut subcommands = Vec::new();
         for entry in AVAILABLE_SUBCOMMANDS {
@@ -83,13 +78,13 @@ fn print_help_page() {
     };
 
     command!()
-        .long_about(
+        .about(
             "Starts LeftWM if no arguments are supplied. If a subcommand is given, executes the \
              the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
              it is installed.",
         )
-        .version(version.as_str())
         .subcommands(subcommands)
+        .help_template(leftwm::utils::get_help_template())
         .print_help()
         .unwrap();
 }
@@ -112,6 +107,16 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
 
     if is_subcommand(subcommand) {
         execute_subcommand(subcommand, subcommand_args);
+    } else if subcommand == "help" {
+        if subcommand_args.is_empty() {
+            print_help_page();
+        } else if is_subcommand(&subcommand_args[0]) {
+            execute_subcommand(&subcommand_args[0], vec!["--help".to_string()]);
+        } else {
+            println!("No such subcommand. Try 'leftwm --help' to find valid subcommands.");
+        }
+    } else if subcommand == "--version" || subcommand == "-v" {
+        println!("leftwm {}", env!("CARGO_PKG_VERSION"));
     } else {
         print_help_page();
     }
@@ -138,9 +143,14 @@ fn start_leftwm() {
 
     let flag = get_sigchld_flag();
 
-    loop {
+    let mut error_occured = false;
+    let mut session_exit_status: Option<ExitStatus> = None;
+    while !error_occured {
         let mut leftwm_session = start_leftwm_session(&current_exe);
-        while leftwm_is_still_running(&mut leftwm_session) {
+        #[cfg(feature = "lefthk")]
+        let mut lefthk_session = start_lefthk_session(&current_exe);
+
+        while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
             children.remove_finished_children();
 
@@ -148,6 +158,13 @@ fn start_leftwm() {
                 nix::unistd::pause();
             }
         }
+
+        // we don't want a rougue lefthk session so we kill it when the leftwm one ended
+        #[cfg(feature = "lefthk")]
+        kill_lefthk_session(&mut lefthk_session);
+
+        session_exit_status = get_exit_status(&mut leftwm_session);
+        error_occured = check_error_occured(session_exit_status);
 
         // TODO: either add more details or find a better workaround.
         //
@@ -159,10 +176,19 @@ fn start_leftwm() {
             std::thread::sleep(delay);
         }
     }
+
+    if error_occured {
+        print_crash_message();
+    }
+
+    match session_exit_status {
+        Some(exit_status) => std::process::exit(exit_status.code().unwrap_or(0)),
+        None => std::process::exit(1),
+    };
 }
 
 /// checks if leftwm is still running
-fn leftwm_is_still_running(leftwm_session: &mut Child) -> bool {
+fn session_is_running(leftwm_session: &mut Child) -> bool {
     leftwm_session
         .try_wait()
         .expect("failed to wait on worker")
@@ -176,6 +202,28 @@ fn start_leftwm_session(current_exe: &Path) -> Child {
     Command::new(&worker_file)
         .spawn()
         .expect("failed to start leftwm")
+}
+
+/// Starts the lefthk session and returns the process/lefthk-session
+#[cfg(feature = "lefthk")]
+fn start_lefthk_session(current_exe: &Path) -> Child {
+    let worker_file = current_exe.with_file_name("lefthk-worker");
+
+    Command::new(&worker_file)
+        .spawn()
+        .expect("failed to start lefthk")
+}
+
+/// Kills the lefthk session
+#[cfg(feature = "lefthk")]
+fn kill_lefthk_session(lefthk_session: &mut Child) {
+    if lefthk_session.kill().is_ok() {
+        while lefthk_session
+            .try_wait()
+            .expect("failed to reap lefthk")
+            .is_none()
+        {}
+    }
 }
 
 /// The SIGCHLD can be set by the children of leftwm if their window need a refresh for example.
@@ -195,4 +243,25 @@ fn get_sigchld_flag() -> Arc<AtomicBool> {
 /// - `false` if leftwm needs to refresh its state
 fn is_suspending(flag: &Arc<AtomicBool>) -> bool {
     !flag.swap(false, Ordering::SeqCst)
+}
+
+fn get_exit_status(leftwm_session: &mut Child) -> Option<ExitStatus> {
+    leftwm_session.wait().ok()
+}
+
+fn check_error_occured(session_exit_status: Option<ExitStatus>) -> bool {
+    if let Some(exit_status) = session_exit_status {
+        !exit_status.success()
+    } else {
+        true
+    }
+}
+
+fn print_crash_message() {
+    println!(concat!(
+        "Leftwm crashed due to an unexpected error.\n",
+        "Please create a new issue and post its log if possible.\n",
+        "\n",
+        "NOTE: You can restart leftwm with `startx`."
+    ));
 }

@@ -2,7 +2,7 @@ use super::{
     event_translate_client_message, event_translate_property_notify, xwrap::WITHDRAWN_STATE,
     DisplayEvent, XWrap,
 };
-use crate::models::{Mode, WindowChange, WindowType, XyhwChange};
+use leftwm_core::models::{Mode, WindowChange, WindowType, XyhwChange};
 use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
@@ -37,10 +37,6 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ButtonPress => Some(from_button_press(raw_event)),
             // Mouse button released.
             xlib::ButtonRelease if !normal_mode => Some(from_button_release(x_event)),
-            // Keyboard key pressed.
-            xlib::KeyPress => Some(from_key_press(x_event)),
-            // Listen for keyboard changes.
-            xlib::MappingNotify => from_mapping_notify(x_event),
             _other => None,
         }
     }
@@ -219,26 +215,4 @@ fn from_button_release(x_event: XEvent) -> DisplayEvent {
     let xw = x_event.0;
     xw.set_mode(Mode::Normal);
     DisplayEvent::ChangeToNormalMode
-}
-
-fn from_key_press(x_event: XEvent) -> DisplayEvent {
-    let xw = x_event.0;
-    let event = xlib::XKeyEvent::from(x_event.1);
-    let sym = xw.keycode_to_keysym(event.keycode);
-    DisplayEvent::KeyCombo(event.state, sym)
-}
-
-fn from_mapping_notify(x_event: XEvent) -> Option<DisplayEvent> {
-    let xw = x_event.0;
-    let mut event = xlib::XMappingEvent::from(x_event.1);
-    if event.request == xlib::MappingModifier || event.request == xlib::MappingKeyboard {
-        // Refresh keyboard.
-        log::debug!("Updating keyboard");
-        xw.refresh_keyboard(&mut event).ok()?;
-
-        // SoftReload keybinds.
-        Some(DisplayEvent::KeyGrabReload)
-    } else {
-        None
-    }
 }

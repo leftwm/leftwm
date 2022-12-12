@@ -5,6 +5,8 @@ use crate::{
 use std::path::{Path, PathBuf};
 use std::sync::{atomic::Ordering, Once};
 
+use tracing::error;
+
 /// Errors which can appear while running the event loop.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Error {
@@ -18,7 +20,6 @@ pub enum Error {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum EventResponse {
     None,
-    Continue,
     DisplayRefreshNeeded,
 }
 
@@ -47,22 +48,25 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.display_server.flush();
 
             let response: EventResponse = tokio::select! {
-                _ = self.display_server.wait_readable(), if event_buffer.is_empty()
-                    => self.add_events(&mut event_buffer),
+                _ = self.display_server.wait_readable(), if event_buffer.is_empty() => {
+                    self.add_events(&mut event_buffer);
+                    continue;
+                }
                 // When a mouse button is pressed or enter/motion notifies are blocked and only appear
                 // once the button is released. This is to double check that we know which window
                 // is currently focused.
                 _ = timeout(100), if event_buffer.is_empty()
                     && self.state.focus_manager.sloppy_mouse_follows_focus
-                    && self.state.focus_manager.behaviour.is_sloppy()
-                    => self.refresh_focus(&mut event_buffer),
+                    && self.state.focus_manager.behaviour.is_sloppy() => {
+                        self.refresh_focus(&mut event_buffer);
+                        continue;
+                    }
                 Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => self.execute_command(&cmd),
                 else => self.execute_display_events(&mut event_buffer),
             };
 
             match response {
                 EventResponse::None => (),
-                EventResponse::Continue => continue,
                 EventResponse::DisplayRefreshNeeded => self.refresh_display(),
             };
 
@@ -132,20 +136,20 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         if self.command_handler(command) {
             EventResponse::DisplayRefreshNeeded
         } else {
-            EventResponse::Continue
+            EventResponse::None
         }
     }
 
     fn add_events(&mut self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
         event_buffer.append(&mut self.display_server.get_next_events());
-        EventResponse::Continue
+        EventResponse::None
     }
 
     fn refresh_focus(&self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
         if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
             event_buffer.push(verify_event);
         }
-        EventResponse::Continue
+        EventResponse::None
     }
 
     // Perform any actions requested by the handler.
@@ -162,15 +166,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     fn call_up_scripts(&mut self) {
         match Nanny::run_global_up_script() {
             Ok(child) => {
-                child.map(|child| self.children.insert(child));
+                self.children.insert(child);
             }
-            Err(err) => log::error!("Global up script faild: {}", err),
+            Err(err) => tracing::warn!("Global up script faild: {}", err),
         }
         match Nanny::boot_current_theme() {
             Ok(child) => {
-                child.map(|child| self.children.insert(child));
+                self.children.insert(child);
             }
-            Err(err) => log::error!("Theme loading failed: {}", err),
+            Err(err) => tracing::warn!("Theme loading failed: {}", err),
         }
     }
 }

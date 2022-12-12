@@ -6,15 +6,23 @@ mod keybind;
 
 use self::keybind::Modifier;
 
-use super::{BaseCommand, ThemeSetting};
+#[cfg(feature = "lefthk")]
+use super::BaseCommand;
+use super::ThemeSetting;
+#[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window},
+    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowState, WindowType},
     state::State,
-    DisplayServer, Manager,
+    DisplayAction, DisplayServer, Manager,
+};
+use ron::{
+    extensions::Extensions,
+    ser::{to_string_pretty, PrettyConfig},
+    Options,
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -22,7 +30,7 @@ use std::default::Default;
 use std::env;
 use std::fs;
 use std::fs::File;
-use std::io::prelude::*;
+use std::io::prelude::Write;
 use std::path::{Path, PathBuf};
 use xdg::BaseDirectories;
 
@@ -34,7 +42,16 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 ///
 /// # Example
 ///
-/// In `config.toml`
+///
+/// In `config.ron`
+///
+/// ```ron
+/// window_rules: [
+///     (window_class: "krita", spawn_on_tag: 3, spawn_floating: false),
+/// ]
+/// ```
+///
+/// In the deprecated `config.toml`
 ///
 /// ```toml
 /// [[window_config_by_class]]
@@ -51,7 +68,12 @@ pub struct WindowHook {
     /// `_NET_WM_NAME` in X11
     pub window_title: Option<String>,
     pub spawn_on_tag: Option<usize>,
+    pub spawn_on_workspace: Option<i32>,
     pub spawn_floating: Option<bool>,
+    pub spawn_sticky: Option<bool>,
+    pub spawn_fullscreen: Option<bool>,
+    /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
+    pub spawn_as_type: Option<WindowType>,
 }
 
 impl WindowHook {
@@ -60,21 +82,68 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        u8::from(
-            self.window_class.is_some()
-                & (self.window_class == window.res_name || self.window_class == window.res_class),
-        ) + 2 * u8::from(
-            self.window_title.is_some()
-                & ((self.window_title == window.name) | (self.window_title == window.legacy_name)),
-        )
+        let class_score = {
+            let score = self.window_class.is_some()
+                & (self.window_class == window.res_name || self.window_class == window.res_class);
+            u8::from(score)
+        };
+
+        let window_name_score = {
+            let score = self.window_title.is_some()
+                & ((self.window_title == window.name) | (self.window_title == window.legacy_name));
+            u8::from(score)
+        };
+
+        class_score + 2 * window_name_score
     }
 
-    fn apply(&self, window: &mut Window) {
+    fn apply(&self, state: &mut State, window: &mut Window) {
         if let Some(tag) = self.spawn_on_tag {
             window.tag = Some(tag);
         }
+        if self.spawn_on_workspace.is_some() {
+            if let Some(workspace) = state
+                .workspaces
+                .iter()
+                .find(|ws| ws.id == self.spawn_on_workspace)
+            {
+                if let Some(tag) = workspace.tag {
+                    // In order to apply the correct margin multiplier we want to copy this value
+                    // from any window already present on the target tag
+                    let margin_multiplier = match state.windows.iter().find(|w| w.has_tag(&tag)) {
+                        Some(w) => w.margin_multiplier(),
+                        None => 1.0,
+                    };
+
+                    window.untag();
+                    window.set_floating(self.spawn_floating.unwrap_or_default());
+                    window.tag(&tag);
+                    window.apply_margin_multiplier(margin_multiplier);
+                    let act = DisplayAction::SetWindowTag(window.handle, Some(tag));
+                    state.actions.push_back(act);
+
+                    state.sort_windows();
+                }
+            } else {
+                // the function is called directly before the hook is displayed in debug mode.
+                tracing::debug!("Could not find workspace for following hook.");
+            }
+        }
         if let Some(should_float) = self.spawn_floating {
             window.set_floating(should_float);
+        }
+        if let Some(fullscreen) = self.spawn_fullscreen {
+            let act = DisplayAction::SetState(window.handle, fullscreen, WindowState::Fullscreen);
+            state.actions.push_back(act);
+            state.handle_window_focus(&window.handle);
+        }
+        if let Some(sticky) = self.spawn_sticky {
+            let act = DisplayAction::SetState(window.handle, sticky, WindowState::Sticky);
+            state.actions.push_back(act);
+            state.handle_window_focus(&window.handle);
+        }
+        if let Some(w_type) = self.spawn_as_type.clone() {
+            window.r#type = w_type;
         }
     }
 }
@@ -100,10 +169,11 @@ pub struct Config {
     pub disable_window_snap: bool,
     pub focus_behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
+    pub single_window_border: bool,
     pub sloppy_mouse_follows_focus: bool,
+    #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
-
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
     //       at least when `TOML` is used as config language
     #[serde(skip)]
@@ -130,28 +200,66 @@ pub fn load() -> Config {
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
-    log::debug!("Loading config file");
+    tracing::debug!("Loading config file");
 
     let path = BaseDirectories::with_prefix("leftwm")?;
-    let config_filename = path.place_config_file("config.toml")?;
-    if Path::new(&config_filename).exists() {
-        log::debug!("Config file '{}' found.", config_filename.to_string_lossy());
 
-        let contents = fs::read_to_string(config_filename)?;
-        let config = toml::from_str(&contents)?;
+    // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
+    let config_file_ron = path.place_config_file("config.ron")?;
+    let config_file_toml = path.place_config_file("config.toml")?;
+
+    if Path::new(&config_file_ron).exists() {
+        tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
+        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let contents = fs::read_to_string(config_file_ron)?;
+        let config: Config = ron.from_str(&contents)?;
+
         if check_workspace_ids(&config) {
             Ok(config)
         } else {
-            log::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
+            tracing::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
+            Ok(Config::default())
+        }
+    } else if Path::new(&config_file_toml).exists() {
+        tracing::debug!(
+            "Config file '{}' found.",
+            config_file_toml.to_string_lossy()
+        );
+        let contents = fs::read_to_string(config_file_toml)?;
+        let config = toml::from_str(&contents)?;
+        tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+
+        if check_workspace_ids(&config) {
+            Ok(config)
+        } else {
+            tracing::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
             Ok(Config::default())
         }
     } else {
-        log::debug!("Config file not found. Using default config file.");
+        tracing::debug!("Config file not found. Using default config file.");
 
         let config = Config::default();
-        let toml = toml::to_string(&config).unwrap();
-        let mut file = File::create(&config_filename)?;
-        file.write_all(toml.as_bytes())?;
+        let ron_pretty_conf = PrettyConfig::new()
+            .depth_limit(2)
+            .extensions(Extensions::IMPLICIT_SOME);
+        let ron = to_string_pretty(&config, ron_pretty_conf).unwrap();
+        let comment_header = String::from(
+            r#"//  _        ___                                      ___ _
+// | |      / __)_                                   / __|_)
+// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
+// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
+// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
+// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
+// A WindowManager for Adventurers                         (____/
+// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
+
+"#,
+        );
+        let ron_with_header = comment_header + &ron;
+
+        let mut file = File::create(&config_file_ron)?;
+        file.write_all(ron_with_header.as_bytes())?;
+
         Ok(config)
     }
 }
@@ -199,6 +307,7 @@ pub fn is_program_in_path(program: &str) -> bool {
 }
 
 /// Returns a terminal to set for the default mod+shift+enter keybind.
+#[cfg(feature = "lefthk")]
 fn default_terminal<'s>() -> &'s str {
     // order from least common to most common.
     // the thinking is if a machine has an uncommon terminal installed, it is intentional
@@ -235,6 +344,7 @@ fn default_terminal<'s>() -> &'s str {
 // whether it is implemented on non-systemd machines,so we instead look
 // to see if loginctl is in the path. If it isn't then we default to
 // `pkill leftwm`, which may leave zombie processes on a machine.
+#[cfg(feature = "lefthk")]
 fn exit_strategy<'s>() -> &'s str {
     if is_program_in_path("loginctl") {
         return "loginctl kill-session $XDG_SESSION_ID";
@@ -247,8 +357,9 @@ fn absolute_path(path: &str) -> Option<PathBuf> {
     std::fs::canonicalize(exp_path.as_ref()).ok()
 }
 
-impl leftwm_core::Config for Config {
-    fn mapped_bindings(&self) -> Vec<leftwm_core::Keybind> {
+#[cfg(feature = "lefthk")]
+impl lefthk_core::config::Config for Config {
+    fn mapped_bindings(&self) -> Vec<lefthk_core::config::Keybind> {
         // copy keybinds substituting "modkey" modifier with a new "modkey".
         self.keybind
             .clone()
@@ -270,16 +381,20 @@ impl leftwm_core::Config for Config {
 
                 keybind
             })
-            .filter_map(|keybind| match keybind.try_convert_to_core_keybind(self) {
-                Ok(internal_keybind) => Some(internal_keybind),
-                Err(err) => {
-                    log::error!("Invalid key binding: {}\n{:?}", err, keybind);
-                    None
-                }
-            })
+            .filter_map(
+                |keybind| match keybind.try_convert_to_lefthk_keybind(self) {
+                    Ok(lefthk_keybind) => Some(lefthk_keybind),
+                    Err(err) => {
+                        tracing::error!("Invalid key binding: {}\n{:?}", err, keybind);
+                        None
+                    }
+                },
+            )
             .collect()
     }
+}
 
+impl leftwm_core::Config for Config {
     fn create_list_of_tag_labels(&self) -> Vec<String> {
         if let Some(tags) = &self.tags {
             return tags.clone();
@@ -324,6 +439,10 @@ impl leftwm_core::Config for Config {
         self.insert_behavior
     }
 
+    fn single_window_border(&self) -> bool {
+        self.single_window_border
+    }
+
     fn focus_new_windows(&self) -> bool {
         self.focus_new_windows
     }
@@ -338,7 +457,7 @@ impl leftwm_core::Config for Config {
                     if let Some(absolute) = absolute_path(value.trim()) {
                         manager.config.theme_setting.load(absolute);
                     } else {
-                        log::warn!("Path submitted does not exist.");
+                        tracing::warn!("Path submitted does not exist.");
                     }
                     return manager.reload_config();
                 }
@@ -347,7 +466,7 @@ impl leftwm_core::Config for Config {
                     return manager.reload_config();
                 }
                 _ => {
-                    log::warn!("Command not recognized: {}", command);
+                    tracing::warn!("Command not recognized: {}", command);
                     return false;
                 }
             }
@@ -356,14 +475,20 @@ impl leftwm_core::Config for Config {
     }
 
     fn border_width(&self) -> i32 {
-        self.theme_setting.border_width
+        self.theme_setting.border_width.unwrap_or(1)
     }
 
     fn margin(&self) -> Margins {
-        match self.theme_setting.margin.clone().try_into() {
+        match self
+            .theme_setting
+            .margin
+            .clone()
+            .unwrap_or(crate::CustomMargins::Int(10))
+            .try_into()
+        {
             Ok(margins) => margins,
             Err(err) => {
-                log::warn!("Could not read margin: {}", err);
+                tracing::warn!("Could not read margin: {}", err);
                 Margins::new(0)
             }
         }
@@ -376,7 +501,7 @@ impl leftwm_core::Config for Config {
             .and_then(|custom_margin| match custom_margin.try_into() {
                 Ok(margins) => Some(margins),
                 Err(err) => {
-                    log::warn!("Could not read margin: {}", err);
+                    tracing::warn!("Could not read margin: {}", err);
                     None
                 }
             })
@@ -387,11 +512,24 @@ impl leftwm_core::Config for Config {
     }
 
     fn default_border_color(&self) -> String {
-        self.theme_setting.default_border_color.clone()
+        self.theme_setting
+            .default_border_color
+            .clone()
+            .unwrap_or_else(|| "#000000".to_string())
     }
 
     fn floating_border_color(&self) -> String {
-        self.theme_setting.floating_border_color.clone()
+        self.theme_setting
+            .floating_border_color
+            .clone()
+            .unwrap_or_else(|| "#000000".to_string())
+    }
+
+    fn background_color(&self) -> String {
+        self.theme_setting
+            .background_color
+            .clone()
+            .unwrap_or_else(|| "#333333".to_string())
     }
 
     fn disable_window_snap(&self) -> bool {
@@ -411,7 +549,10 @@ impl leftwm_core::Config for Config {
     }
 
     fn focused_border_color(&self) -> String {
-        self.theme_setting.focused_border_color.clone()
+        self.theme_setting
+            .focused_border_color
+            .clone()
+            .unwrap_or_else(|| "#FF0000".to_string())
     }
 
     fn on_new_window_cmd(&self) -> Option<String> {
@@ -432,15 +573,15 @@ impl leftwm_core::Config for Config {
 
     fn save_state(&self, state: &State) {
         let path = self.state_file();
-        let state_file = match File::create(&path) {
+        let state_file = match File::create(path) {
             Ok(file) => file,
             Err(err) => {
-                log::error!("Cannot create file at path {}: {}", path.display(), err);
+                tracing::error!("Cannot create file at path {}: {}", path.display(), err);
                 return;
             }
         };
         if let Err(err) = serde_json::to_writer(state_file, state) {
-            log::error!("Cannot save state: {}", err);
+            tracing::error!("Cannot save state: {}", err);
         }
     }
 
@@ -450,19 +591,19 @@ impl leftwm_core::Config for Config {
             Ok(file) => {
                 match serde_json::from_reader(file) {
                     Ok(old_state) => state.restore_state(&old_state),
-                    Err(err) => log::error!("Cannot load old state: {}", err),
+                    Err(err) => tracing::error!("Cannot load old state: {}", err),
                 }
                 // Clean old state.
                 if let Err(err) = std::fs::remove_file(&path) {
-                    log::error!("Cannot remove old state file: {}", err);
+                    tracing::error!("Cannot remove old state file: {}", err);
                 }
             }
-            Err(err) => log::error!("Cannot open old state: {}", err),
+            Err(err) => tracing::error!("Cannot open old state: {}", err),
         }
     }
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
-    fn setup_predefined_window(&self, window: &mut Window) -> bool {
+    fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
         if let Some(window_rules) = &self.window_rules {
             let best_match = window_rules
                 .iter()
@@ -472,15 +613,19 @@ impl leftwm_core::Config for Config {
                 .filter(|(_wh, score)| score != &0)
                 .max_by_key(|(_wh, score)| *score);
             if let Some((hook, _)) = best_match {
-                hook.apply(window);
-                log::debug!(
-                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} with floating={:?}",
+                hook.apply(state, window);
+                tracing::debug!(
+                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
                     window.name,
                     window.legacy_name,
                     window.res_name,
                     window.res_class,
+                    hook.spawn_as_type,
                     hook.spawn_on_tag,
+                    hook.spawn_on_workspace,
                     hook.spawn_floating,
+                    hook.spawn_sticky,
+                    hook.spawn_fullscreen,
                 );
                 return true;
             }
@@ -495,9 +640,34 @@ impl leftwm_core::Config for Config {
 }
 
 impl Config {
+    #[cfg(feature = "lefthk")]
+    pub fn clear_keybinds(&mut self) {
+        self.keybind.clear();
+    }
+
     fn state_file(&self) -> &Path {
         self.state_path
             .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn config_serializes_to_valid_ron_test() {
+        let config = Config::default();
+
+        // Check RON
+        let ron_pretty_conf = ron::ser::PrettyConfig::new()
+            .depth_limit(2)
+            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+        let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf);
+        assert!(ron.is_ok(), "Could not serialize default config");
+
+        let ron_config = ron::from_str::<'_, Config>(ron.unwrap().as_str());
+        assert!(ron_config.is_ok(), "Could not deserialize default config");
     }
 }
