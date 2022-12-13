@@ -69,15 +69,15 @@ pub struct WindowHook {
     /// `WM_CLASS` in X11
     #[serde(
         default,
-        deserialize_with = "from_regexps",
-        serialize_with = "to_config_strings"
+        deserialize_with = "from_regex",
+        serialize_with = "to_config_string"
     )]
     pub window_class: Option<regex::Regex>,
     /// `_NET_WM_NAME` in X11
     #[serde(
         default,
-        deserialize_with = "from_regexps",
-        serialize_with = "to_config_strings"
+        deserialize_with = "from_regex",
+        serialize_with = "to_config_string"
     )]
     pub window_title: Option<regex::Regex>,
     pub spawn_on_tag: Option<usize>,
@@ -673,24 +673,16 @@ impl Config {
     }
 }
 
-fn from_regexps<'de, D: Deserializer<'de>>(
+fn from_regex<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<regex::Regex>, D::Error> {
     let res: Option<String> = Deserialize::deserialize(deserializer)?;
-    if let Some(s) = res {
-        match regex::Regex::new(&s) {
-            Ok(re) => Ok(Some(re)),
-            Err(err) => {
-                tracing::error!("Failed to match regex {}", err);
-                Ok(None)
-            }
-        }
-    } else {
-        Ok(None)
-    }
+    res.map_or(Ok(None), |s| {
+        regex::Regex::new(&s).map_or(Ok(None), |re| Ok(Some(re)))
+    })
 }
 
-fn to_config_strings<S: Serializer>(wc: &Option<regex::Regex>, s: S) -> Result<S::Ok, S::Error> {
+fn to_config_string<S: Serializer>(wc: &Option<regex::Regex>, s: S) -> Result<S::Ok, S::Error> {
     match wc {
         Some(ref re) => s.serialize_some(re.as_str()),
         None => s.serialize_none(),
