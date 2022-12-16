@@ -28,10 +28,10 @@ impl State {
         if let Some(workspace) = self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
             // this is an uggly workaround to suffice some CI failure related to https://github.com/rust-lang/rust/issues/59159
             let workspace_output_borrow_checker_workaround = workspace.output.clone();
-            let workspace_num_borrow_checker_workaround = workspace.num;
+            let workspace_id_borrow_checker_workaround = workspace.id;
             let _ = self.focus_workspace_work(
                 &workspace_output_borrow_checker_workaround,
-                workspace_num_borrow_checker_workaround,
+                workspace_id_borrow_checker_workaround,
             );
         }
 
@@ -44,7 +44,7 @@ impl State {
     /// Focuses the given workspace.
     // NOTE: Should only be called externally from this file.
     pub fn focus_workspace(&mut self, workspace: &Workspace) {
-        if self.focus_workspace_work(&workspace.output, workspace.num) {
+        if self.focus_workspace_work(&workspace.output, workspace.id) {
             // Make sure this workspaces tag is focused.
             workspace.tag.iter().for_each(|t| {
                 self.focus_tag_work(*t);
@@ -72,7 +72,7 @@ impl State {
             .cloned()
             .collect();
         for ws in &to_focus {
-            self.focus_workspace_work(&ws.output, ws.num);
+            self.focus_workspace_work(&ws.output, ws.id);
         }
         // Make sure the focused window is on this workspace.
         if self.focus_manager.behaviour.is_sloppy() && self.focus_manager.sloppy_mouse_follows_focus
@@ -111,7 +111,7 @@ impl State {
             .iter()
             .find(|ws| {
                 ws.contains_point(x, y)
-                    && !(ws.output == focused_ws.output && ws.num == focused_ws.num)
+                    && !(ws.output == focused_ws.output && ws.id == focused_ws.id)
             })
             .cloned()
         {
@@ -229,10 +229,10 @@ impl State {
         Some(found.clone())
     }
 
-    fn focus_workspace_work(&mut self, output: &str, num: usize) -> bool {
+    fn focus_workspace_work(&mut self, output: &str, id: usize) -> bool {
         //no new history if no change
         if let Some(fws) = self.focus_manager.workspace(&self.workspaces) {
-            if fws.output == output && fws.num == num {
+            if fws.output == output && fws.id == id {
                 return false;
             }
         }
@@ -242,7 +242,7 @@ impl State {
         if let Some(index) = self
             .workspaces
             .iter()
-            .position(|x| x.output == output && x.num == num)
+            .position(|x| x.output == output && x.id == id)
         {
             self.focus_manager.workspace_history.push_front(index);
             return true;

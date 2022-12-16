@@ -135,7 +135,7 @@ value = 0
                     side: Side::Top,
                     value: 0,
                     output: None,
-                    num: None
+                    id: None
                 }]),
                 default_border_color: Some("#222222".to_string()),
                 floating_border_color: Some("#005500".to_string()),
@@ -183,7 +183,7 @@ value = 0
                     side: Side::Top,
                     value: 0,
                     output: None,
-                    num: None,
+                    id: None,
                 }]),
                 default_border_color: Some("#222222".to_string()),
                 floating_border_color: Some("#005500".to_string()),

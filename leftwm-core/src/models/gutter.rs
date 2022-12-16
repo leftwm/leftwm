@@ -13,17 +13,17 @@ pub struct Gutter {
     pub side: Side,
     pub value: i32,
     pub output: Option<String>,
-    pub num: Option<usize>,
+    pub id: Option<usize>,
 }
 
 impl Gutter {
     #[must_use]
-    pub const fn new(side: Side, value: i32, output: Option<String>, num: Option<usize>) -> Self {
+    pub const fn new(side: Side, value: i32, output: Option<String>, id: Option<usize>) -> Self {
         Self {
             side,
             value,
             output,
-            num,
+            id,
         }
     }
 }
@@ -34,7 +34,7 @@ impl Default for Gutter {
             side: Side::Top,
             value: 0,
             output: None,
-            num: None,
+            id: None,
         }
     }
 }

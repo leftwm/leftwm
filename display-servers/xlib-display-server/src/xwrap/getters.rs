@@ -742,8 +742,8 @@ impl XWrap {
     fn get_xscreens(&self) -> Vec<xlib::Screen> {
         let mut screens = Vec::new();
         let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
-        for screen_num in 0..(screen_count) {
-            let screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_num) };
+        for screen_id in 0..(screen_count) {
+            let screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_id) };
             screens.push(screen);
         }
         screens

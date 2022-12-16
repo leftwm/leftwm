@@ -69,7 +69,7 @@ pub struct WindowHook {
     pub window_title: Option<String>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_on_workspace: Option<String>,
-    pub spawn_on_workspace_num: Option<usize>,
+    pub spawn_on_workspace_id: Option<usize>,
     pub spawn_floating: Option<bool>,
     pub spawn_sticky: Option<bool>,
     pub spawn_fullscreen: Option<bool>,
@@ -105,8 +105,8 @@ impl WindowHook {
         if self.spawn_on_workspace.is_some() {
             if let Some(workspace) = state.workspaces.iter().find(|ws| {
                 &ws.output == self.spawn_on_workspace.as_ref().unwrap()
-                    && (self.spawn_on_workspace_num.is_none()
-                        || Some(ws.num) == self.spawn_on_workspace_num)
+                    && (self.spawn_on_workspace_id.is_none()
+                        || Some(ws.id) == self.spawn_on_workspace_id)
             }) {
                 if let Some(tag) = workspace.tag {
                     // In order to apply the correct margin multiplier we want to copy this value

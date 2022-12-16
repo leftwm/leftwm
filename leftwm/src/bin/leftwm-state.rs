@@ -17,7 +17,7 @@ async fn main() -> Result<()> {
 
     let template_file = matches.get_one::<String>("template");
     let string_literal = matches.get_one::<String>("string");
-    let ws_num = matches.get_one("workspace").copied();
+    let ws_id = matches.get_one("workspace").copied();
     let newline = matches.get_flag("newline");
     let once = matches.get_flag("quit");
 
@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
             .parse(&template_str)
             .expect("Unable to parse template");
         while let Some(line) = stream_reader.next_line().await? {
-            let _droppable = template_handler(&template, newline, ws_num, &line);
+            let _droppable = template_handler(&template, newline, ws_id, &line);
             if once {
                 break;
             }
@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
             .parse(string_literal)
             .expect("Unable to parse template");
         while let Some(line) = stream_reader.next_line().await? {
-            let _droppable = template_handler(&template, newline, ws_num, &line);
+            let _droppable = template_handler(&template, newline, ws_id, &line);
             if once {
                 break;
             }
@@ -109,14 +109,14 @@ fn raw_handler(line: &str) -> Result<()> {
 fn template_handler(
     template: &liquid::Template,
     newline: bool,
-    ws_num: Option<usize>,
+    ws_id: Option<usize>,
     line: &str,
 ) -> Result<()> {
     let s: ManagerState = serde_json::from_str(line)?;
     let display: DisplayState = s.into();
 
-    let globals = if let Some(ws_num) = ws_num {
-        let json = serde_json::to_string(&display.workspaces[ws_num])?;
+    let globals = if let Some(ws_id) = ws_id {
+        let json = serde_json::to_string(&display.workspaces[ws_id])?;
         let workspace: liquid::model::Object = serde_json::from_str(&json)?;
         let mut globals = liquid::model::Object::new();
         globals.insert(

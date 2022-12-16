@@ -50,15 +50,15 @@ impl LayoutManager {
         }
     }
 
-    pub fn new_layout(&self, output: &str, num: usize) -> Layout {
+    pub fn new_layout(&self, output: &str, id: usize) -> Layout {
         *self
-            .layouts(output, num)
+            .layouts(output, id)
             .first()
             .unwrap_or(&Layout::default())
     }
 
     pub fn next_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = self.layouts(&workspace.output, workspace.num);
+        let layouts = self.layouts(&workspace.output, workspace.id);
 
         let next = match layouts.iter().position(|&x| x == workspace.layout) {
             Some(index) if index == layouts.len() - 1 => layouts.first(),
@@ -72,7 +72,7 @@ impl LayoutManager {
     }
 
     pub fn previous_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = self.layouts(&workspace.output, workspace.num);
+        let layouts = self.layouts(&workspace.output, workspace.id);
 
         let next = match layouts.iter().position(|&x| x == workspace.layout) {
             Some(index) if index == 0 => layouts.last(),
@@ -105,9 +105,9 @@ impl LayoutManager {
         Some(true)
     }
 
-    fn layouts(&self, output: &str, num: usize) -> &Vec<Layout> {
+    fn layouts(&self, output: &str, id: usize) -> &Vec<Layout> {
         self.layouts_per_workspaces
-            .get(&(output.to_owned(), num))
+            .get(&(output.to_owned(), id))
             .and_then(|layouts| {
                 if layouts.is_empty() {
                     None
@@ -159,7 +159,7 @@ mod tests {
         LayoutManager::new(&config)
     }
 
-    fn workspace(num: usize, layout: Layout) -> Workspace {
+    fn workspace(id: usize, layout: Layout) -> Workspace {
         Workspace::new(
             BBox {
                 width: 0,
@@ -170,7 +170,7 @@ mod tests {
             layout,
             None,
             String::from("TEST"),
-            num,
+            id,
         )
     }
 
@@ -189,7 +189,7 @@ mod tests {
         assert_eq!(
             layout_manager.layouts(&String::from("TEST"), 4),
             &layout_manager.layouts
-        ); // Non existent num
+        ); // Non existent id
         assert_eq!(
             layout_manager.layouts(&String::from("NONE"), 1),
             &layout_manager.layouts

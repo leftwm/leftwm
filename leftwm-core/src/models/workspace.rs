@@ -22,16 +22,16 @@ pub struct Workspace {
     /// Output (monitor) the workspace is linked to.
     pub output: String,
     /// ID of workspace on output. Starts with 1.
-    pub num: usize,
+    pub id: usize,
 }
 
 impl fmt::Debug for Workspace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Workspace {{ output: {:?}, num: {}, tags: {:?}, x: {}, y: {} }}",
+            "Workspace {{ output: {:?}, id: {}, tags: {:?}, x: {}, y: {} }}",
             self.output,
-            self.num,
+            self.id,
             self.tag,
             self.xyhw.x(),
             self.xyhw.y()
@@ -41,7 +41,7 @@ impl fmt::Debug for Workspace {
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Self) -> bool {
-        self.output == other.output && self.num == other.num
+        self.output == other.output && self.id == other.id
     }
 }
 
@@ -52,7 +52,7 @@ impl Workspace {
         layout: Layout,
         max_window_width: Option<Size>,
         output: String,
-        num: usize,
+        id: usize,
     ) -> Self {
         Self {
             layout,
@@ -80,7 +80,7 @@ impl Workspace {
             .into(),
             max_window_width,
             output,
-            num,
+            id,
         }
     }
 
@@ -96,7 +96,7 @@ impl Workspace {
             .filter(|gutter| {
                 gutter.output.is_none()
                     || gutter.output == Some(self.output.clone())
-                        && (gutter.num.is_none() || gutter.num == Some(self.num))
+                        && (gutter.id.is_none() || gutter.id == Some(self.id))
             })
             .fold(vec![], |mut acc, gutter| {
                 match acc.iter().enumerate().find(|(_i, g)| g.side == gutter.side) {
