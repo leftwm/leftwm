@@ -19,6 +19,7 @@ use leftwm_core::{
     state::State,
     DisplayAction, DisplayServer, Manager,
 };
+use regex::Regex;
 use ron::{
     extensions::Extensions,
     ser::{to_string_pretty, PrettyConfig},
@@ -72,14 +73,14 @@ pub struct WindowHook {
         deserialize_with = "from_regex",
         serialize_with = "to_config_string"
     )]
-    pub window_class: Option<regex::Regex>,
+    pub window_class: Option<Regex>,
     /// `_NET_WM_NAME` in X11
     #[serde(
         default,
         deserialize_with = "from_regex",
         serialize_with = "to_config_string"
     )]
-    pub window_title: Option<regex::Regex>,
+    pub window_title: Option<Regex>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_on_workspace: Option<i32>,
     pub spawn_floating: Option<bool>,
@@ -663,16 +664,14 @@ impl Config {
     }
 }
 
-fn from_regex<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Option<regex::Regex>, D::Error> {
+fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex>, D::Error> {
     let res: Option<String> = Deserialize::deserialize(deserializer)?;
     res.map_or(Ok(None), |s| {
-        regex::Regex::new(&s).map_or(Ok(None), |re| Ok(Some(re)))
+        Regex::new(&s).map_or(Ok(None), |re| Ok(Some(re)))
     })
 }
 
-fn to_config_string<S: Serializer>(wc: &Option<regex::Regex>, s: S) -> Result<S::Ok, S::Error> {
+fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
     match wc {
         Some(ref re) => s.serialize_some(re.as_str()),
         None => s.serialize_none(),
