@@ -664,6 +664,8 @@ impl Config {
     }
 }
 
+// Regular expression in leftwm config should correspond to RE2 syntax, described here:
+// https://github.com/google/re2/wiki/Syntax
 fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex>, D::Error> {
     let res: Option<String> = Deserialize::deserialize(deserializer)?;
     res.map_or(Ok(None), |s| {
