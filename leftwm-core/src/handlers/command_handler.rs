@@ -376,7 +376,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         return Some(true);
     }
     if state.workspaces.len() == 1 {
-        let last = *state.focus_manager.tag_history.get(1).unwrap();
+        let last = *state.focus_manager.tag_history.get(1)?;
         return state.goto_tag_handler(last);
     }
     None
