@@ -35,7 +35,7 @@ impl NewLayoutManager {
             .collect();
 
         // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
-        //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)
+        //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)      
 
         Self {
             mode: config.layout_mode(),
@@ -44,6 +44,7 @@ impl NewLayoutManager {
         }
     }
 
+    /// Get back either the workspace ID or the tag ID, based on the current [`LayoutMode`]
     fn id(&self, wsid: i32, tagid: usize) -> usize {
         match self.mode {
             LayoutMode::Tag => tagid,
@@ -51,18 +52,18 @@ impl NewLayoutManager {
         }
     }
 
-    fn layouts(&self, wsid: i32, tagid: usize) -> &Vec<LayoutDefinition> {
+    fn layouts(&mut self, wsid: i32, tagid: usize) -> &Vec<LayoutDefinition> {
         let id = self.id(wsid, tagid);
-        self.layouts.get(&id).unwrap()
+        self.layouts.entry(id).or_insert_with(|| self.available_definitions.to_owned())
     }
 
     fn layouts_mut(&mut self, wsid: i32, tagid: usize) -> &mut Vec<LayoutDefinition> {
         let id = self.id(wsid, tagid);
-        self.layouts.get_mut(&id).unwrap()
+        self.layouts.entry(id).or_insert_with(|| self.available_definitions.to_owned())
     }
 
     /// Get the current [`LayoutDefinition`] for the provided workspace / tag context
-    pub fn layout(&self, wsid: i32, tagid: usize) -> &LayoutDefinition {
+    pub fn layout(&mut self, wsid: i32, tagid: usize) -> &LayoutDefinition {
         self.layouts(wsid, tagid).first().unwrap()
     }
 
@@ -73,12 +74,10 @@ impl NewLayoutManager {
 
     pub fn cycle_next_layout(&mut self, wsid: i32, tagid: usize) {
         cycle_vec(self.layouts_mut(wsid, tagid), 1);
-        //self.layouts_mut(wsid, tagid).rotate_right(1);
     }
 
     pub fn cycle_previous_layout(&mut self, wsid: i32, tagid: usize) {
         cycle_vec(self.layouts_mut(wsid, tagid), -1);
-        //self.layouts_mut(wsid, tagid).rotate_left(1);
     }
 
     // todo: reset fn, that resets all the layout-definitions to their unchanged properties

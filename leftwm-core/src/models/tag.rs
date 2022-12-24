@@ -1,5 +1,6 @@
-use super::TagId;
+use super::{TagId, Xyhw};
 use crate::{layouts::NewLayoutManager, Window, Workspace};
+use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 
 /// Wrapper struct holding all the tags.
@@ -229,7 +230,7 @@ impl Tag {
         &self,
         windows: &mut [Window],
         workspace: &Workspace,
-        layout_manager: &NewLayoutManager,
+        layout_manager: &mut NewLayoutManager,
     ) {
         if let Some(window) = windows
             .iter_mut()
@@ -261,10 +262,13 @@ impl Tag {
                 .collect();
 
             let count = managed_nonfloat.len();
-
             let def = layout_manager.layout(workspace.id.unwrap_or(0), self.id);
+            let positions = leftwm_layouts::apply(def, count, &workspace.xyhw.into());
 
-            // leftwm_layouts::apply(def, count, workspace.)
+            managed_nonfloat
+                .iter_mut()
+                .zip(positions)
+                .for_each(|(w, rect)| w.normal = Xyhw::from(rect));
 
             //layout_manager.apply(&self.layout, &managed_nonfloat, workspace);
 
