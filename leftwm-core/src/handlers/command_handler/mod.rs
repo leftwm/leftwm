@@ -466,21 +466,11 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
     workspace.layout = layout;
 
     if state.layout_manager.mode == LayoutMode::Workspace {
-        match layout {
-            Layout::RightWiderLeftStack | Layout::LeftWiderRightStack => {
-                workspace.main_width_percentage = layout.main_width();
-            }
-            _ => {}
-        }
+        workspace.main_width_percentage = layout.main_width();
     }
 
     let tag = state.tags.get_mut(tag_id)?;
-    match layout {
-        Layout::RightWiderLeftStack | Layout::LeftWiderRightStack => {
-            tag.set_layout(layout, layout.main_width());
-        }
-        _ => tag.set_layout(layout, workspace.main_width_percentage),
-    }
+    tag.set_layout(layout, layout.main_width());
     Some(true)
 }
 
