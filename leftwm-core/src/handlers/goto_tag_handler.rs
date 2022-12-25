@@ -27,7 +27,7 @@ impl State {
 
         // TODO: ???
         /*self.layout_manager
-            .update_layouts(&mut self.workspaces, self.tags.all_mut());*/
+        .update_layouts(&mut self.workspaces, self.tags.all_mut());*/
 
         Some(true)
     }

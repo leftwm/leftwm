@@ -39,11 +39,7 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(
-        id: Option<i32>,
-        bbox: BBox,
-        max_window_width: Option<Size>,
-    ) -> Self {
+    pub fn new(id: Option<i32>, bbox: BBox, max_window_width: Option<Size>) -> Self {
         Self {
             id,
             tag: None,

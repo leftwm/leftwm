@@ -34,9 +34,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             tag_index + 1
         } else {
             // Add a new tag for the workspace.
-            self.state
-                .tags
-                .add_new_unlabeled()
+            self.state.tags.add_new_unlabeled()
         };
 
         // TODO: ???

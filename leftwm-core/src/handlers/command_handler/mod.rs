@@ -475,7 +475,9 @@ fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
         }
     }
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
-    state.layout_manager.set_layout(workspace.id.unwrap(), tag_id, layout.to_string());
+    state
+        .layout_manager
+        .set_layout(workspace.id.unwrap(), tag_id, layout.to_string());
     //let tag = state.tags.get_mut(tag_id)?;
     //tag.set_layout(layout.to_string());
     Some(true)
@@ -831,30 +833,12 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.screen_create_handler(Screen::default());
         manager.state.tags = Tags::new();
-        manager
-            .state
-            .tags
-            .add_new("A15");
-        manager
-            .state
-            .tags
-            .add_new("B24");
-        manager
-            .state
-            .tags
-            .add_new("C");
-        manager
-            .state
-            .tags
-            .add_new("6D4");
-        manager
-            .state
-            .tags
-            .add_new("E39");
-        manager
-            .state
-            .tags
-            .add_new("F67");
+        manager.state.tags.add_new("A15");
+        manager.state.tags.add_new("B24");
+        manager.state.tags.add_new("C");
+        manager.state.tags.add_new("6D4");
+        manager.state.tags.add_new("E39");
+        manager.state.tags.add_new("F67");
         assert!(!manager.command_handler(&Command::GoToTag {
             tag: 0,
             swap: false

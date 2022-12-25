@@ -35,7 +35,7 @@ impl NewLayoutManager {
             .collect();
 
         // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
-        //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)      
+        //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)
 
         Self {
             mode: config.layout_mode(),
@@ -53,13 +53,17 @@ impl NewLayoutManager {
     }
 
     fn layouts(&mut self, wsid: i32, tagid: usize) -> &Vec<LayoutDefinition> {
-        let id = self.id(wsid, tagid);        
-        self.layouts.entry(id).or_insert_with(|| self.available_definitions.to_owned())
+        let id = self.id(wsid, tagid);
+        self.layouts
+            .entry(id)
+            .or_insert_with(|| self.available_definitions.to_owned())
     }
 
     fn layouts_mut(&mut self, wsid: i32, tagid: usize) -> &mut Vec<LayoutDefinition> {
         let id = self.id(wsid, tagid);
-        self.layouts.entry(id).or_insert_with(|| self.available_definitions.to_owned())
+        self.layouts
+            .entry(id)
+            .or_insert_with(|| self.available_definitions.to_owned())
     }
 
     /// Get the current [`LayoutDefinition`] for the provided workspace / tag context
@@ -81,14 +85,16 @@ impl NewLayoutManager {
     }
 
     pub fn set_layout(&mut self, wsid: i32, tagid: usize, name: String) {
-        let i = self.layouts(wsid, tagid).iter()
+        let i = self
+            .layouts(wsid, tagid)
+            .iter()
             .enumerate()
             .find(|(i, layout)| layout.name == name)
             .map(|(i, _)| i);
-        
+
         match i {
             Some(index) => cycle_vec(self.layouts_mut(wsid, tagid), index as i32),
-            None => None
+            None => None,
         };
     }
 
