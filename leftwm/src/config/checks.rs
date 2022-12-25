@@ -74,7 +74,7 @@ impl Config {
                 if m != "modkey" && m != "mousekey" && xkeysym_lookup::into_mod(&m) == 0 {
                     returns.push((
                         Some(keybind.clone()),
-                        format!("Modifier `{}` is not valid", m),
+                        format!("Modifier `{m}` is not valid"),
                     ));
                 }
             }
@@ -100,8 +100,8 @@ impl Config {
                 match error.0 {
                     Some(binding) => {
                         println!(
-                            "\x1b[1;91mERROR: {} for keybind {:?}\x1b[0m",
-                            error.1, binding
+                            "\x1b[1;91mERROR: {} for keybind {binding:?}\x1b[0m",
+                            error.1
                         );
                     }
                     None => {

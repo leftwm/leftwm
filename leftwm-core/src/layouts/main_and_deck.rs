@@ -19,7 +19,7 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
     let workspace_x = workspace.x_limited(column_count);
 
     let primary_width = match window_count {
-        1 => workspace_width as i32,
+        1 => workspace_width,
         _ => (workspace_width as f32 / 100.0 * tag.main_width_percentage()).floor() as i32,
     };
 

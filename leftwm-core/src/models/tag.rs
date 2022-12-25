@@ -287,9 +287,8 @@ impl Tag {
     /// ## Arguments
     /// * `delta` - increase/decrease main width percentage by this amount
     pub fn change_main_width(&mut self, delta: i8) {
-        self.main_width_percentage = (self.main_width_percentage as i8 + delta)
-            .max(0) // not smaller than 0
-            .min(100) as u8; // not larger than 100
+        self.main_width_percentage = (self.main_width_percentage as i8 + delta).clamp(0, 100) as u8;
+        // not smaller than 0 and not larger than 100
     }
 
     /// Sets the main width percentage

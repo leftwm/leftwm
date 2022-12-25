@@ -18,7 +18,7 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
     let workspace_x = workspace.x_limited(column_count);
 
     let height = match window_count {
-        1 => workspace.height() as i32,
+        1 => workspace.height(),
         _ => (workspace.height() as f32 / 100.0 * tag.main_width_percentage()).floor() as i32,
     };
 

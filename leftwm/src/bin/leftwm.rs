@@ -51,14 +51,14 @@ fn main() {
 /// - `subcommand`: The `leftwm-{subcommand}` which should be executed
 /// - `subcommand_args`: The arguments which should be given to the `leftwm-{subcommand}`
 fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -> ! {
-    let subcommand_file = format!("{}{}", SUBCOMMAND_PREFIX, subcommand);
-    match &mut Command::new(&subcommand_file).args(subcommand_args).spawn() {
+    let subcommand_file = format!("{SUBCOMMAND_PREFIX}{subcommand}");
+    match &mut Command::new(subcommand_file).args(subcommand_args).spawn() {
         Ok(child) => {
             let status = child.wait().expect("Failed to wait for child.");
             exit(status.code().unwrap_or(0));
         }
         Err(e) => {
-            eprintln!("Failed to execute {}. {}", subcommand, e);
+            eprintln!("Failed to execute {subcommand}. {e}");
             exit(1);
         }
     };
@@ -199,7 +199,7 @@ fn session_is_running(leftwm_session: &mut Child) -> bool {
 fn start_leftwm_session(current_exe: &Path) -> Child {
     let worker_file = current_exe.with_file_name("leftwm-worker");
 
-    Command::new(&worker_file)
+    Command::new(worker_file)
         .spawn()
         .expect("failed to start leftwm")
 }
@@ -209,7 +209,7 @@ fn start_leftwm_session(current_exe: &Path) -> Child {
 fn start_lefthk_session(current_exe: &Path) -> Child {
     let worker_file = current_exe.with_file_name("lefthk-worker");
 
-    Command::new(&worker_file)
+    Command::new(worker_file)
         .spawn()
         .expect("failed to start lefthk")
 }
