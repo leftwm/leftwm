@@ -1,3 +1,5 @@
+use leftwm_layouts::LayoutDefinition;
+
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
 use crate::state::State;
@@ -61,6 +63,8 @@ impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDispl
         use crate::config::tests::TestConfig;
         Self::new(TestConfig {
             tags,
+            layouts: vec![String::from("Default")],
+            layout_definitions: vec![LayoutDefinition::default()],
             ..TestConfig::default()
         })
     }
@@ -69,6 +73,8 @@ impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDispl
         use crate::config::tests::TestConfig;
         Self::new(TestConfig {
             tags,
+            layouts: vec![String::from("Default")],
+            layout_definitions: vec![LayoutDefinition::default()],
             border_width,
             single_window_border: false,
             ..TestConfig::default()

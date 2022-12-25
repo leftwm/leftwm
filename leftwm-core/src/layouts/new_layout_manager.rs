@@ -53,7 +53,7 @@ impl NewLayoutManager {
     }
 
     fn layouts(&mut self, wsid: i32, tagid: usize) -> &Vec<LayoutDefinition> {
-        let id = self.id(wsid, tagid);
+        let id = self.id(wsid, tagid);        
         self.layouts.entry(id).or_insert_with(|| self.available_definitions.to_owned())
     }
 
@@ -78,6 +78,18 @@ impl NewLayoutManager {
 
     pub fn cycle_previous_layout(&mut self, wsid: i32, tagid: usize) {
         cycle_vec(self.layouts_mut(wsid, tagid), -1);
+    }
+
+    pub fn set_layout(&mut self, wsid: i32, tagid: usize, name: String) {
+        let i = self.layouts(wsid, tagid).iter()
+            .enumerate()
+            .find(|(i, layout)| layout.name == name)
+            .map(|(i, _)| i);
+        
+        match i {
+            Some(index) => cycle_vec(self.layouts_mut(wsid, tagid), index as i32),
+            None => None
+        };
     }
 
     // todo: reset fn, that resets all the layout-definitions to their unchanged properties

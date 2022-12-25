@@ -357,8 +357,8 @@ fn setup_window(
             window.tag =
                 find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
         }
-        *on_same_tag = ws.tag == window.tag;
-        *layout = ws.layout.to_owned();
+        *on_same_tag = ws.tag == window.tag;        
+        *layout = state.layout_manager.layout(ws.id.unwrap(), window.tag.unwrap()).name.to_owned();
 
         // Setup a scratchpad window.
         if let Some((scratchpad_name, _)) = state
@@ -688,12 +688,12 @@ mod tests {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string()], 1);
         manager.screen_create_handler(Screen::default());
 
-        manager
+        /*manager
             .state
             .tags
             .get_mut(1)
             .unwrap()
-            .set_layout(String::from("Monocle"));
+            .set_layout(String::from("Monocle"));*/
 
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),

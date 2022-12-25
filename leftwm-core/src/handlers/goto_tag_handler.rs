@@ -24,10 +24,12 @@ impl State {
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tag = new_tag;
         self.focus_tag(&tag_num);
         self.update_static();
-        todo!()
+
+        // TODO: ???
         /*self.layout_manager
-            .update_layouts(&mut self.workspaces, self.tags.all_mut());
-        Some(true)*/
+            .update_layouts(&mut self.workspaces, self.tags.all_mut());*/
+
+        Some(true)
     }
 }
 

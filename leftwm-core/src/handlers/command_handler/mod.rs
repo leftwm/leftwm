@@ -34,8 +34,11 @@ macro_rules! move_focus_common_vars {
     ($func:ident ($state:expr $(, $arg:expr )* $(,)? )) => {{
         let handle = $state.focus_manager.window(&$state.windows)?.handle;
         let tag_id = $state.focus_manager.tag(0)?;
-        let tag = $state.tags.get(tag_id)?;
-        let layout = Some(tag.layout.to_owned());
+        let ws_id = $state.focus_manager.workspace(&$state.workspaces)?.id?;
+        //let tag = $state.tags.get(tag_id)?;
+
+        let layout = Some($state.layout_manager.layout(ws_id, tag_id).name.to_owned());
+        //let layout = Some(tag.layout.to_owned());
 
         let for_active_workspace =
             |x: &Window| -> bool { x.tag == Some(tag_id) && x.is_managed() };
@@ -314,7 +317,8 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
     match state
         .focus_manager
         .workspace(&state.workspaces)
-        .map(|ws| ws.layout.to_owned())
+        .map(|ws| state.layout_manager.layout(ws.id.unwrap_or(0), tag_id))
+        .map(|def| def.name.to_owned())
     {
         Some(layout) if layout == layouts::MONOCLE || layout == layouts::MAIN_AND_DECK => {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
@@ -471,9 +475,9 @@ fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
         }
     }
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
-    workspace.layout = layout.to_string();
-    let tag = state.tags.get_mut(tag_id)?;
-    tag.set_layout(layout.to_string());
+    state.layout_manager.set_layout(workspace.id.unwrap(), tag_id, layout.to_string());
+    //let tag = state.tags.get_mut(tag_id)?;
+    //tag.set_layout(layout.to_string());
     Some(true)
 }
 
@@ -830,27 +834,27 @@ mod tests {
         manager
             .state
             .tags
-            .add_new("A15", layouts::DEFAULT.to_string());
+            .add_new("A15");
         manager
             .state
             .tags
-            .add_new("B24", layouts::DEFAULT.to_string());
+            .add_new("B24");
         manager
             .state
             .tags
-            .add_new("C", layouts::DEFAULT.to_string());
+            .add_new("C");
         manager
             .state
             .tags
-            .add_new("6D4", layouts::DEFAULT.to_string());
+            .add_new("6D4");
         manager
             .state
             .tags
-            .add_new("E39", layouts::DEFAULT.to_string());
+            .add_new("E39");
         manager
             .state
             .tags
-            .add_new("F67", layouts::DEFAULT.to_string());
+            .add_new("F67");
         assert!(!manager.command_handler(&Command::GoToTag {
             tag: 0,
             swap: false

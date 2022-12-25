@@ -7,7 +7,6 @@ use std::fmt;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub id: Option<i32>, // Why is this an Option / Change this to usize (same as tag id)
-    pub layout: String,
     pub tag: Option<TagId>, // TODO: Make this a list.
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -43,12 +42,10 @@ impl Workspace {
     pub fn new(
         id: Option<i32>,
         bbox: BBox,
-        layout: String,
         max_window_width: Option<Size>,
     ) -> Self {
         Self {
             id,
-            layout,
             tag: None,
             margin: Margins::new(10),
             margin_multiplier: 1.0,
@@ -247,7 +244,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            String::from("MainAndVertStack"),
             None,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
@@ -268,10 +264,9 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            String::from("MainAndVertStack"),
             None,
         );
-        let tag = crate::models::Tag::new(TAG_ID, "test", String::from("MainAndVertStack"));
+        let tag = crate::models::Tag::new(TAG_ID, "test");
         subject.show_tag(&tag.id);
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.tag(&TAG_ID);

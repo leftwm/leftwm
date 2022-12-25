@@ -18,12 +18,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 .unwrap_or(-1)
                 + 1
         });
-        todo!()
-        /*
+
         let mut new_workspace = Workspace::new(
             Some(workspace_id),
             screen.bbox,
-            self.state.layout_manager.new_layout(Some(workspace_id)),
             screen.max_window_width.or(self.state.max_window_width),
         );
         if new_workspace.id.unwrap_or(0) as usize >= tag_len {
@@ -38,12 +36,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             // Add a new tag for the workspace.
             self.state
                 .tags
-                .add_new_unlabeled(self.state.layout_manager.new_layout(Some(workspace_id)))
+                .add_new_unlabeled()
         };
 
-        if let Some(tag) = self.state.tags.get_mut(next_id) {
+        // TODO: ???
+        /*if let Some(tag) = self.state.tags.get_mut(next_id) {
             tag.layout = new_workspace.layout.to_owned();
-        }
+        }*/
 
         self.state.focus_workspace(&new_workspace);
         self.state.focus_tag(&next_id);
@@ -53,7 +52,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state.screens.push(screen);
         self.state.focus_workspace(&new_workspace);
         false
-        */
     }
 }
 

@@ -39,9 +39,9 @@ impl State {
     pub(crate) fn new(config: &impl Config) -> Self {
         let layout_manager = NewLayoutManager::new(config);
         let mut tags = Tags::new();
-        /*config.create_list_of_tag_labels().iter().for_each(|label| {
-            tags.add_new(label.as_str(), layout_manager.new_layout(None));
-        });*/
+        config.create_list_of_tag_labels().iter().for_each(|label| {
+            tags.add_new(label.as_str());
+        });
         tags.add_new_hidden("NSP");
 
         Self {
@@ -132,10 +132,11 @@ impl State {
                 .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
                 .collect();
 
-            if tag.layout == "Monocle" {
+            // TODO: this needs an alternative
+            /*if tag.layout == "Monocle" {
                 windows_on_tag.iter_mut().for_each(|w| w.border = 0);
                 continue;
-            }
+            }*/
 
             if windows_on_tag.len() == 1 {
                 if let Some(w) = windows_on_tag.first_mut() {
@@ -191,7 +192,7 @@ impl State {
         for old_tag in old_state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {
                 tag.hidden = old_tag.hidden;
-                tag.layout = old_tag.layout.to_owned();
+                //tag.layout = old_tag.layout.to_owned();
             }
         }
 
@@ -249,7 +250,6 @@ impl State {
         for workspace in &mut self.workspaces {
             if let Some(old_workspace) = old_state.workspaces.iter().find(|w| w.id == workspace.id)
             {
-                workspace.layout = old_workspace.layout.to_owned();
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
                 if are_tags_equal {
                     workspace.tag = old_workspace.tag;
