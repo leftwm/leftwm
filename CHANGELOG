@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1]
+### Fixed
+- Temp fix for MainWidth inconsistency until layout-lib
+- Fix crash when swapping tag at startup
+- Swap for new copr repo
+- Using args[0] instead of current_exe() under OpenBSD. current_exe() is not supported in this OS.
+- replace `<module-name>/mod.rs` with `<module-name>.rs`
+- Fix manual install instructions
+- Change default layout mode to `Tag`
+- Exclude NetBSD in `build.rs` and avoid build-hangs
+- Print `lefthk` warning only when no binary present
+- use `implicit_some` extension in ron deserializer
+- small update to readme
+- Make help pages work
+- better clap and fix broken `workspace` flag for `leftwm-state`
+- Fix binary arguments (clap)
+- Some fixes for the `Makefile` and `flake.nix`
+- Make `test-full` fail on warnings
+- bump several depedencies
+- Make `leftwm --version` work
+- Improve output of `leftwm-check --verbose`
+- Fix `--no-default-features` build failing
+- Refactor: Move xlib display server to it's own crate
+- Add link to `leftfwm.desktop` to the README
+- Fix new windows always getting stacked topmost
+- Also a bunch of little papercuts and code cleanup
+### Added
+- feat(config): allow regexps in window_rules for window_class,
+- Option to hide border when only one window is visible
+- added lefthk feature checks and errors
+- add features log to leftwm-check.
+- handle theme templates within Makefile
+- Add optimized build profile
+- Add leftwm config subcommand
+- Add `background_color` to theme config
+- update theme examples to ron
+- update eww example
+- Feature: Multiple `up` scripts
+- Add install-linked-dev to Makefile
+- feat: Add a `spawn_as_type` to the `window_rules` configuration
+- Added nix tests to Makefile.
+- Added a few options to the pr template
+- Add a few window rules
+### Minimum Supported Rust Version
+- The currently supported MSRV is 1.60.0
+
 ## [0.4.0]
 ### Fixed
 - Fixed again a lot of small papercuts
@@ -22,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tags support `urgent` flag
 - `sloppy_mouse_follows_focus`
 - `disable_window_snap`
-`### Minimum Supported Rust Version
+### Minimum Supported Rust Version
 - The currently supported MSRV is 1.59.0
 
 ## [0.3.0]

@@ -8,7 +8,7 @@
         <img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
     </a>
     <a href="https://github.com/leftwm/leftwm/wiki">
-        <img src="https://img.shields.io/badge/wiki-0.4.0-green.svg" alt="wiki" />
+        <img src="https://img.shields.io/badge/wiki-0.4.1-green.svg" alt="wiki" />
     </a>
     <a href="https://discord.gg/c9rB3wDnVs">
         <img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
