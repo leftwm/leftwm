@@ -82,7 +82,8 @@ pub struct WindowHook {
     )]
     pub window_title: Option<Regex>,
     pub spawn_on_tag: Option<usize>,
-    pub spawn_on_workspace: Option<i32>,
+    pub spawn_on_workspace: Option<String>,
+    pub spawn_on_workspace_id: Option<usize>,
     pub spawn_floating: Option<bool>,
     pub spawn_sticky: Option<bool>,
     pub spawn_fullscreen: Option<bool>,
@@ -114,11 +115,11 @@ impl WindowHook {
             window.tag = Some(tag);
         }
         if self.spawn_on_workspace.is_some() {
-            if let Some(workspace) = state
-                .workspaces
-                .iter()
-                .find(|ws| ws.id == self.spawn_on_workspace)
-            {
+            if let Some(workspace) = state.workspaces.iter().find(|ws| {
+                &ws.output == self.spawn_on_workspace.as_ref().unwrap()
+                    && (self.spawn_on_workspace_id.is_none()
+                        || Some(ws.id) == self.spawn_on_workspace_id)
+            }) {
                 if let Some(tag) = workspace.tag {
                     // In order to apply the correct margin multiplier we want to copy this value
                     // from any window already present on the target tag
@@ -183,6 +184,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub single_window_border: bool,
     pub sloppy_mouse_follows_focus: bool,
+    pub auto_derive_workspaces: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -224,14 +226,8 @@ fn load_from_file() -> Result<Config> {
         tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
         let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
         let contents = fs::read_to_string(config_file_ron)?;
-        let config: Config = ron.from_str(&contents)?;
-
-        if check_workspace_ids(&config) {
-            Ok(config)
-        } else {
-            tracing::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
-            Ok(Config::default())
-        }
+        let config = ron.from_str(&contents)?;
+        Ok(config)
     } else if Path::new(&config_file_toml).exists() {
         tracing::debug!(
             "Config file '{}' found.",
@@ -240,13 +236,7 @@ fn load_from_file() -> Result<Config> {
         let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
         tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
-
-        if check_workspace_ids(&config) {
-            Ok(config)
-        } else {
-            tracing::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
-            Ok(Config::default())
-        }
+        Ok(config)
     } else {
         tracing::debug!("Config file not found. Using default config file.");
 
@@ -274,35 +264,6 @@ fn load_from_file() -> Result<Config> {
 
         Ok(config)
     }
-}
-
-#[must_use]
-pub fn check_workspace_ids(config: &Config) -> bool {
-    config.workspaces.clone().map_or(true, |wss| {
-        let ids = get_workspace_ids(&wss);
-        if ids.iter().any(Option::is_some) {
-            all_ids_some(&ids) && all_ids_unique(&ids)
-        } else {
-            true
-        }
-    })
-}
-
-#[must_use]
-pub fn get_workspace_ids(wss: &[Workspace]) -> Vec<Option<i32>> {
-    wss.iter().map(|ws| ws.id).collect()
-}
-
-pub fn all_ids_some(ids: &[Option<i32>]) -> bool {
-    ids.iter().all(Option::is_some)
-}
-
-#[must_use]
-pub fn all_ids_unique(ids: &[Option<i32>]) -> bool {
-    let mut sorted = ids.to_vec();
-    sorted.sort();
-    sorted.dedup();
-    ids.len() == sorted.len()
 }
 
 #[must_use]
@@ -648,6 +609,10 @@ impl leftwm_core::Config for Config {
 
     fn sloppy_mouse_follows_focus(&self) -> bool {
         self.sloppy_mouse_follows_focus
+    }
+
+    fn auto_derive_workspaces(&self) -> bool {
+        self.auto_derive_workspaces
     }
 }
 

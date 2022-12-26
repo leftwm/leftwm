@@ -66,7 +66,6 @@ async fn main() -> Result<()> {
                 dbg!(&config);
             }
             config.check_mousekey(verbose);
-            config.check_workspace_ids(verbose);
             #[cfg(not(feature = "lefthk"))]
             println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
             #[cfg(feature = "lefthk")]

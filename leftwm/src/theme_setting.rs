@@ -134,7 +134,8 @@ value = 0
                 gutter: Some(vec![Gutter {
                     side: Side::Top,
                     value: 0,
-                    wsid: None,
+                    output: None,
+                    id: None
                 }]),
                 default_border_color: Some("#222222".to_string()),
                 floating_border_color: Some("#005500".to_string()),
@@ -181,7 +182,8 @@ value = 0
                 gutter: Some(vec![Gutter {
                     side: Side::Top,
                     value: 0,
-                    wsid: None,
+                    output: None,
+                    id: None,
                 }]),
                 default_border_color: Some("#222222".to_string()),
                 floating_border_color: Some("#005500".to_string()),
