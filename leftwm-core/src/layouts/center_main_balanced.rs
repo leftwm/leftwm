@@ -205,7 +205,7 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
     // put even numbered windows in the left column and the odd windows in the right column.
     // Distribute them in the same way as the fibonacci layout, but start with rows instead of
     // columns.
-    let remaining_windows = (iter.len() - 2) as usize;
+    let remaining_windows = iter.len() - 2;
     let half_remaining = (remaining_windows as f32 / 2.0).ceil() as usize;
 
     let mut left_windows = Vec::with_capacity(half_remaining);
@@ -252,8 +252,8 @@ fn update_fibonacci(
 ) {
     let mut x = workspace_x;
     let mut y = workspace_y;
-    let mut height = workspace_height as i32;
-    let mut width = workspace_width as i32;
+    let mut height = workspace_height;
+    let mut width = workspace_width;
     let window_count = windows.len() as i32;
 
     for i in 0..window_count {

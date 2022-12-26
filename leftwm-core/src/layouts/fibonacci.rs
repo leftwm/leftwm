@@ -22,8 +22,8 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
     };
     let mut x = workspace.x_limited(column_count);
     let mut y = workspace.y();
-    let mut height = workspace.height() as i32;
-    let mut width = workspace.width_limited(column_count) as i32;
+    let mut height = workspace.height();
+    let mut width = workspace.width_limited(column_count);
 
     for i in 0..window_count {
         if i % 2 != 0 {

@@ -102,7 +102,7 @@ fn raw_handler(line: &str) -> Result<()> {
     let s: ManagerState = serde_json::from_str(line)?;
     let display: DisplayState = s.into();
     let json = serde_json::to_string(&display)?;
-    println!("{}", json);
+    println!("{json}");
     Ok(())
 }
 
@@ -137,10 +137,10 @@ fn template_handler(
     // but note the difference between print! and println!. Trying to skip println!
     // will result in theme degradation, as in #263.
     if newline {
-        print!("{}", output);
+        print!("{output}");
     } else {
         output = str::replace(&output, "\n", "");
-        println!("{}", output);
+        println!("{output}");
     }
     Ok(())
 }

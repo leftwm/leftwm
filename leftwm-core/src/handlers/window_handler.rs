@@ -192,14 +192,14 @@ fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {
     let shell = shell_path.split('/').last()?;
     // Try and find the shell that launched this app, if such a thing exists.
     let is_terminal = |pid: u32| -> Option<bool> {
-        let parent = std::fs::read(format!("/proc/{}/comm", pid)).ok()?;
+        let parent = std::fs::read(format!("/proc/{pid}/comm")).ok()?;
         let parent_bytes = parent.split(|&c| c == b' ').next()?;
         let parent_str = std::str::from_utf8(parent_bytes).ok()?.strip_suffix('\n')?;
         Some(parent_str == shell)
     };
 
     let get_parent = |pid: u32| -> Option<u32> {
-        let stat = std::fs::read(format!("/proc/{}/stat", pid)).ok()?;
+        let stat = std::fs::read(format!("/proc/{pid}/stat")).ok()?;
         let ppid_bytes = stat.split(|&c| c == b' ').nth(3)?;
         let ppid_str = std::str::from_utf8(ppid_bytes).ok()?;
         let ppid_u32 = u32::from_str(ppid_str).ok()?;

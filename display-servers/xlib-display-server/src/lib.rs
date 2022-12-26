@@ -186,7 +186,7 @@ impl XlibDisplayServer {
                 }
             }),
             Err(err) => {
-                println!("ERROR: {}", err);
+                println!("ERROR: {err}");
             }
         }
         all
