@@ -11,7 +11,7 @@ fn main() {
         }
     });
 
-    println!("cargo:rustc-env=LEFTWM_FEATURES={}", features_string);
+    println!("cargo:rustc-env=LEFTWM_FEATURES={features_string}");
 
     #[cfg(all(feature = "lefthk", not(target_os = "netbsd")))]
     match std::process::Command::new("lefthk-worker").spawn() {

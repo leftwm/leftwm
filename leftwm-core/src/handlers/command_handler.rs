@@ -9,7 +9,7 @@ use super::*;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
-use crate::models::{TagId, WindowState};
+use crate::models::{LayoutMode, TagId, WindowState};
 use crate::state::State;
 use crate::utils::helpers;
 use crate::utils::helpers::relative_find;
@@ -153,10 +153,10 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
 
 fn move_to_tag<C: Config, SERVER: DisplayServer>(
     window: Option<WindowHandle>,
-    tag_num: TagId,
+    tag_id: TagId,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    let tag = manager.state.tags.get(tag_num)?.clone();
+    let tag = manager.state.tags.get(tag_id)?.clone();
 
     // In order to apply the correct margin multiplier we want to copy this value
     // from any window already present on the target tag
@@ -240,8 +240,8 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
 
-    let tag_num = workspace.tag?;
-    move_to_tag(None, tag_num, manager)
+    let tag_id = workspace.tag?;
+    move_to_tag(None, tag_id, manager)
 }
 
 fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Option<bool> {
@@ -464,13 +464,13 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
     }
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     workspace.layout = layout;
-    let tag = state.tags.get_mut(tag_id)?;
-    match layout {
-        Layout::RightWiderLeftStack | Layout::LeftWiderRightStack => {
-            tag.set_layout(layout, layout.main_width());
-        }
-        _ => tag.set_layout(layout, workspace.main_width_percentage),
+
+    if state.layout_manager.mode == LayoutMode::Workspace {
+        workspace.main_width_percentage = layout.main_width();
     }
+
+    let tag = state.tags.get_mut(tag_id)?;
+    tag.set_layout(layout, layout.main_width());
     Some(true)
 }
 

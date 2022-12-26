@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
     match check_enabled_features() {
         Ok(_) => {}
         Err(err) => {
-            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {} \x1b[0m", err);
+            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
         }
     }
 
@@ -66,14 +66,13 @@ async fn main() -> Result<()> {
                 dbg!(&config);
             }
             config.check_mousekey(verbose);
-            config.check_workspace_ids(verbose);
             #[cfg(not(feature = "lefthk"))]
             println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
             #[cfg(feature = "lefthk")]
             config.check_keybinds(verbose);
         }
         Err(e) => {
-            println!("Configuration failed. Reason: {:?}", e);
+            println!("Configuration failed. Reason: {e:?}");
         }
     }
     println!("\x1b[0;94m::\x1b[0m Checking environment . . .");
@@ -92,7 +91,7 @@ async fn main() -> Result<()> {
 /// If a path is specified and does not exist, returns `LeftError`.
 pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     let config_filename = if let Some(fspath) = fspath {
-        println!("\x1b[1;35mNote: Using file {} \x1b[0m", fspath);
+        println!("\x1b[1;35mNote: Using file {fspath} \x1b[0m");
         PathBuf::from(fspath)
     } else {
         let ron_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
@@ -161,7 +160,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
     ) {
         (Ok(val), true) => {
             if verbose {
-                println!(":: XDG_RUNTIME_DIR: {}, LOGINCTL OKAY", val);
+                println!(":: XDG_RUNTIME_DIR: {val}, LOGINCTL OKAY");
             }
 
             println!("\x1b[0;92m    -> Environment OK \x1b[0m");
@@ -170,7 +169,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
         }
         (Ok(val), false) => {
             if verbose {
-                println!(":: XDG_RUNTIME_DIR: {}, LOGINCTL not installed", val);
+                println!(":: XDG_RUNTIME_DIR: {val}, LOGINCTL not installed");
             }
 
             println!("\x1b[0;92m    -> Environment OK (has XDG_RUNTIME_DIR) \x1b[0m");
@@ -179,7 +178,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
         }
         (Err(e), false) => {
             if verbose {
-                println!(":: XDG_RUNTIME_DIR_ERROR: {:?}, LOGINCTL BAD", e);
+                println!(":: XDG_RUNTIME_DIR_ERROR: {e:?}, LOGINCTL BAD");
             }
 
             bail!(
@@ -189,7 +188,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
         }
         (Err(e), true) => {
             if verbose {
-                println!(":: XDG_RUNTIME_DIR: {:?}, LOGINCTL OKAY", e);
+                println!(":: XDG_RUNTIME_DIR: {e:?}, LOGINCTL OKAY");
             }
             println!(
                 "\x1b[1;93mWARN: Elogind/systemd installed but XDG_RUNTIME_DIR not set.\nThis may be because elogind isn't started. \x1b[0m",
@@ -204,7 +203,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
 /// Checks if `theme.toml` is in the `current` path
 fn check_theme(verbose: bool) -> bool {
     let xdg_base_dir = BaseDirectories::with_prefix("leftwm/themes");
-    let err_formatter = |s| println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {} \x1b[0m", s);
+    let err_formatter = |s| println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {s} \x1b[0m");
 
     if let Err(e) = xdg_base_dir {
         err_formatter(e.to_string());
@@ -228,7 +227,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
     let missing_files = missing_expected_file(&filepaths);
 
     for missing_file in missing_files {
-        returns.push(format!("File not found: {}", missing_file));
+        returns.push(format!("File not found: {missing_file}"));
     }
 
     for filepath in filepaths {
@@ -261,7 +260,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
         true
     } else {
         for error in &returns {
-            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {} \x1b[0m", error);
+            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {error} \x1b[0m");
         }
         false
     }
@@ -283,7 +282,7 @@ fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<
                         fs::read_link(p).unwrap()
                     );
                 } else {
-                    println!("\x1b[1;93mWARN: Found `current` theme folder: {:?}. Use of a symlink is recommended, instead.\x1b[0m", p);
+                    println!("\x1b[1;93mWARN: Found `current` theme folder: {p:?}. Use of a symlink is recommended, instead.\x1b[0m");
                 }
             }
             Ok(p)
@@ -381,7 +380,7 @@ where
 {
     match predicate() {
         Ok(_) => {
-            println!("\x1b[0;92m    -> {} OK\x1b[0m", name);
+            println!("\x1b[0;92m    -> {name} OK\x1b[0m");
             Ok(())
         }
         Err(err) => bail!("Check for feature {} failed: {:?}", name, err),
@@ -408,7 +407,7 @@ fn check_enabled_features() -> Result<()> {
     check_feature("lefthk", || {
         if let Ok(path) = env::var("PATH") {
             for p in path.split(':') {
-                let path = format!("{}/{}", p, "lefthk-worker");
+                let path = format!("{p}/{}", "lefthk-worker");
                 if Path::new(&path).exists() {
                     return Ok(());
                 }

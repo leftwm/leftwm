@@ -19,12 +19,13 @@ use leftwm_core::{
     state::State,
     DisplayAction, DisplayServer, Manager,
 };
+use regex::Regex;
 use ron::{
     extensions::Extensions,
     ser::{to_string_pretty, PrettyConfig},
     Options,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryInto;
 use std::default::Default;
 use std::env;
@@ -63,12 +64,26 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 /// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct WindowHook {
+    // Use serde default field attribute to fallback to None option in case of missing field in
+    // config. Without this attribute deserializer will fail on missing field due to it's inability
+    // to treat missing value as Option::None
     /// `WM_CLASS` in X11
-    pub window_class: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "from_regex",
+        serialize_with = "to_config_string"
+    )]
+    pub window_class: Option<Regex>,
     /// `_NET_WM_NAME` in X11
-    pub window_title: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "from_regex",
+        serialize_with = "to_config_string"
+    )]
+    pub window_title: Option<Regex>,
     pub spawn_on_tag: Option<usize>,
-    pub spawn_on_workspace: Option<i32>,
+    pub spawn_on_workspace: Option<String>,
+    pub spawn_on_workspace_id: Option<usize>,
     pub spawn_floating: Option<bool>,
     pub spawn_sticky: Option<bool>,
     pub spawn_fullscreen: Option<bool>,
@@ -82,19 +97,17 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        let class_score = {
-            let score = self.window_class.is_some()
-                & (self.window_class == window.res_name || self.window_class == window.res_class);
-            u8::from(score)
+        let class_score = match (&self.window_class, &window.res_class) {
+            (Some(wc_re), Some(res_class)) => u8::from(wc_re.replace(res_class, "") == ""),
+            _ => 0,
         };
 
-        let window_name_score = {
-            let score = self.window_title.is_some()
-                & ((self.window_title == window.name) | (self.window_title == window.legacy_name));
-            u8::from(score)
+        let title_score = match (&self.window_title, &window.legacy_name) {
+            (Some(wt_re), Some(legacy_name)) => u8::from(wt_re.replace(legacy_name, "") == ""),
+            _ => 0,
         };
 
-        class_score + 2 * window_name_score
+        class_score + 2 * title_score
     }
 
     fn apply(&self, state: &mut State, window: &mut Window) {
@@ -102,11 +115,11 @@ impl WindowHook {
             window.tag = Some(tag);
         }
         if self.spawn_on_workspace.is_some() {
-            if let Some(workspace) = state
-                .workspaces
-                .iter()
-                .find(|ws| ws.id == self.spawn_on_workspace)
-            {
+            if let Some(workspace) = state.workspaces.iter().find(|ws| {
+                &ws.output == self.spawn_on_workspace.as_ref().unwrap()
+                    && (self.spawn_on_workspace_id.is_none()
+                        || Some(ws.id) == self.spawn_on_workspace_id)
+            }) {
                 if let Some(tag) = workspace.tag {
                     // In order to apply the correct margin multiplier we want to copy this value
                     // from any window already present on the target tag
@@ -171,6 +184,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub single_window_border: bool,
     pub sloppy_mouse_follows_focus: bool,
+    pub auto_derive_workspaces: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -183,7 +197,7 @@ pub struct Config {
 #[must_use]
 pub fn load() -> Config {
     load_from_file()
-        .map_err(|err| eprintln!("ERROR LOADING CONFIG: {:?}", err))
+        .map_err(|err| eprintln!("ERROR LOADING CONFIG: {err:?}"))
         .unwrap_or_default()
 }
 
@@ -212,14 +226,8 @@ fn load_from_file() -> Result<Config> {
         tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
         let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
         let contents = fs::read_to_string(config_file_ron)?;
-        let config: Config = ron.from_str(&contents)?;
-
-        if check_workspace_ids(&config) {
-            Ok(config)
-        } else {
-            tracing::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
-            Ok(Config::default())
-        }
+        let config = ron.from_str(&contents)?;
+        Ok(config)
     } else if Path::new(&config_file_toml).exists() {
         tracing::debug!(
             "Config file '{}' found.",
@@ -228,13 +236,7 @@ fn load_from_file() -> Result<Config> {
         let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
         tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
-
-        if check_workspace_ids(&config) {
-            Ok(config)
-        } else {
-            tracing::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
-            Ok(Config::default())
-        }
+        Ok(config)
     } else {
         tracing::debug!("Config file not found. Using default config file.");
 
@@ -265,39 +267,10 @@ fn load_from_file() -> Result<Config> {
 }
 
 #[must_use]
-pub fn check_workspace_ids(config: &Config) -> bool {
-    config.workspaces.clone().map_or(true, |wss| {
-        let ids = get_workspace_ids(&wss);
-        if ids.iter().any(Option::is_some) {
-            all_ids_some(&ids) && all_ids_unique(&ids)
-        } else {
-            true
-        }
-    })
-}
-
-#[must_use]
-pub fn get_workspace_ids(wss: &[Workspace]) -> Vec<Option<i32>> {
-    wss.iter().map(|ws| ws.id).collect()
-}
-
-pub fn all_ids_some(ids: &[Option<i32>]) -> bool {
-    ids.iter().all(Option::is_some)
-}
-
-#[must_use]
-pub fn all_ids_unique(ids: &[Option<i32>]) -> bool {
-    let mut sorted = ids.to_vec();
-    sorted.sort();
-    sorted.dedup();
-    ids.len() == sorted.len()
-}
-
-#[must_use]
 pub fn is_program_in_path(program: &str) -> bool {
     if let Ok(path) = env::var("PATH") {
         for p in path.split(':') {
-            let p_str = format!("{}/{}", p, program);
+            let p_str = format!("{p}/{program}");
             if fs::metadata(p_str).is_ok() {
                 return true;
             }
@@ -637,6 +610,10 @@ impl leftwm_core::Config for Config {
     fn sloppy_mouse_follows_focus(&self) -> bool {
         self.sloppy_mouse_follows_focus
     }
+
+    fn auto_derive_workspaces(&self) -> bool {
+        self.auto_derive_workspaces
+    }
 }
 
 impl Config {
@@ -649,6 +626,22 @@ impl Config {
         self.state_path
             .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
+    }
+}
+
+// Regular expression in leftwm config should correspond to RE2 syntax, described here:
+// https://github.com/google/re2/wiki/Syntax
+fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex>, D::Error> {
+    let res: Option<String> = Deserialize::deserialize(deserializer)?;
+    res.map_or(Ok(None), |s| {
+        Regex::new(&s).map_or(Ok(None), |re| Ok(Some(re)))
+    })
+}
+
+fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
+    match wc {
+        Some(ref re) => s.serialize_some(re.as_str()),
+        None => s.serialize_none(),
     }
 }
 

@@ -7,9 +7,9 @@ use x11_dl::xlib;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Screen {
     pub root: WindowHandle,
+    pub output: String,
     #[serde(flatten)]
     pub bbox: BBox,
-    pub wsid: Option<i32>,
     pub max_window_width: Option<Size>,
 }
 
@@ -27,8 +27,8 @@ impl Screen {
     pub const fn new(bbox: BBox) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
+            output: String::new(),
             bbox,
-            wsid: None,
             max_window_width: None,
         }
     }
@@ -60,18 +60,43 @@ impl Screen {
     }
 }
 
+impl BBox {
+    pub fn add(&mut self, bbox: BBox) {
+        self.x += bbox.x;
+        self.y += bbox.y;
+        self.width += bbox.width;
+        self.height += bbox.height;
+    }
+}
+
 impl From<&Workspace> for Screen {
     fn from(wsc: &Workspace) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
+            output: String::default(),
             bbox: BBox {
                 height: wsc.height,
                 width: wsc.width,
                 x: wsc.x,
                 y: wsc.y,
             },
-            wsid: wsc.id,
             max_window_width: wsc.max_window_width,
+        }
+    }
+}
+
+impl From<x11_dl::xrandr::XRRCrtcInfo> for Screen {
+    fn from(root: x11_dl::xrandr::XRRCrtcInfo) -> Self {
+        Self {
+            root: WindowHandle::MockHandle(0),
+            output: String::default(),
+            bbox: BBox {
+                x: root.x,
+                y: root.y,
+                width: root.width as i32,
+                height: root.height as i32,
+            },
+            max_window_width: None,
         }
     }
 }
@@ -80,13 +105,13 @@ impl From<&xlib::XWindowAttributes> for Screen {
     fn from(root: &xlib::XWindowAttributes) -> Self {
         Self {
             root: root.root.into(),
+            output: String::default(),
             bbox: BBox {
                 height: root.height,
                 width: root.width,
                 x: root.x,
                 y: root.y,
             },
-            wsid: None,
             max_window_width: None,
         }
     }
@@ -96,13 +121,13 @@ impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
     fn from(root: &x11_dl::xinerama::XineramaScreenInfo) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
+            output: String::default(),
             bbox: BBox {
                 height: root.height.into(),
                 width: root.width.into(),
                 x: root.x_org.into(),
                 y: root.y_org.into(),
             },
-            wsid: None,
             max_window_width: None,
         }
     }
@@ -112,13 +137,13 @@ impl Default for Screen {
     fn default() -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
+            output: String::default(),
             bbox: BBox {
                 height: 600,
                 width: 800,
                 x: 0,
                 y: 0,
             },
-            wsid: None,
             max_window_width: None,
         }
     }

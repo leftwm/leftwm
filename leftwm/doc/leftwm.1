@@ -239,7 +239,23 @@ workspaces: [
 ]
 \f[R]
 .fi
-
+.PP
+Workspaces can also be applied to a specific screen by using the output field. If this field is used, all size-related fields get relative to the output's position. You can set multiple workspaces per screen.
+.PP
+If you only set per-screen workspaces, unassigned screens will be automatically given a workspace.
+.PP
+You can get the output names by running xrandr in your terminal.
+.PP
+Again the example for an ultra-wide screen, splitting workspaces by substracting half the width:
+.IP
+.nf
+\f[C]
+workspaces: [
+    { output: "HDMI-1", y: 0, x: 0, height: 1440, width: -1720 },
+    { output: "HDMI-1", y: 0, x: 1720, height: 1440, width: -1720 },
+]
+\f[R]
+.fi
 .SS Tags
 .PP
 Tags are the names of the virtual desktops where windows live.

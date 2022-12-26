@@ -50,6 +50,7 @@ pub trait Config {
     fn on_new_window_cmd(&self) -> Option<String>;
     fn get_list_of_gutters(&self) -> Vec<Gutter>;
     fn max_window_width(&self) -> Option<Size>;
+    fn auto_derive_workspaces(&self) -> bool;
     fn disable_tile_drag(&self) -> bool;
     fn disable_window_snap(&self) -> bool;
     fn sloppy_mouse_follows_focus(&self) -> bool;
@@ -206,6 +207,10 @@ pub(crate) mod tests {
             }
         }
         fn sloppy_mouse_follows_focus(&self) -> bool {
+            true
+        }
+
+        fn auto_derive_workspaces(&self) -> bool {
             true
         }
     }
