@@ -19,12 +19,13 @@ use leftwm_core::{
     state::State,
     DisplayAction, DisplayServer, Manager,
 };
+use regex::Regex;
 use ron::{
     extensions::Extensions,
     ser::{to_string_pretty, PrettyConfig},
     Options,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::convert::TryInto;
 use std::default::Default;
 use std::env;
@@ -63,10 +64,23 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 /// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct WindowHook {
+    // Use serde default field attribute to fallback to None option in case of missing field in
+    // config. Without this attribute deserializer will fail on missing field due to it's inability
+    // to treat missing value as Option::None
     /// `WM_CLASS` in X11
-    pub window_class: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "from_regex",
+        serialize_with = "to_config_string"
+    )]
+    pub window_class: Option<Regex>,
     /// `_NET_WM_NAME` in X11
-    pub window_title: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "from_regex",
+        serialize_with = "to_config_string"
+    )]
+    pub window_title: Option<Regex>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_on_workspace: Option<i32>,
     pub spawn_floating: Option<bool>,
@@ -82,19 +96,17 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        let class_score = {
-            let score = self.window_class.is_some()
-                & (self.window_class == window.res_name || self.window_class == window.res_class);
-            u8::from(score)
+        let class_score = match (&self.window_class, &window.res_class) {
+            (Some(wc_re), Some(res_class)) => u8::from(wc_re.replace(res_class, "") == ""),
+            _ => 0,
         };
 
-        let window_name_score = {
-            let score = self.window_title.is_some()
-                & ((self.window_title == window.name) | (self.window_title == window.legacy_name));
-            u8::from(score)
+        let title_score = match (&self.window_title, &window.legacy_name) {
+            (Some(wt_re), Some(legacy_name)) => u8::from(wt_re.replace(legacy_name, "") == ""),
+            _ => 0,
         };
 
-        class_score + 2 * window_name_score
+        class_score + 2 * title_score
     }
 
     fn apply(&self, state: &mut State, window: &mut Window) {
@@ -649,6 +661,22 @@ impl Config {
         self.state_path
             .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
+    }
+}
+
+// Regular expression in leftwm config should correspond to RE2 syntax, described here:
+// https://github.com/google/re2/wiki/Syntax
+fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex>, D::Error> {
+    let res: Option<String> = Deserialize::deserialize(deserializer)?;
+    res.map_or(Ok(None), |s| {
+        Regex::new(&s).map_or(Ok(None), |re| Ok(Some(re)))
+    })
+}
+
+fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
+    match wc {
+        Some(ref re) => s.serialize_some(re.as_str()),
+        None => s.serialize_none(),
     }
 }
 
