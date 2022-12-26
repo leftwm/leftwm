@@ -431,7 +431,7 @@ dependencies = [
 
 [[package]]
 name = "leftwm"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -467,7 +467,7 @@ dependencies = [
 
 [[package]]
 name = "leftwm-core"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "dirs-next",
  "futures",
