@@ -1,12 +1,12 @@
 use crate::{models::TagId, state::State};
 
 impl State {
-    pub fn goto_tag_handler(&mut self, tag_num: TagId) -> Option<bool> {
-        if tag_num > self.tags.len_normal() || tag_num < 1 {
+    pub fn goto_tag_handler(&mut self, tag_id: TagId) -> Option<bool> {
+        if tag_id > self.tags.len_normal() || tag_id < 1 {
             return Some(false);
         }
 
-        let new_tag = Some(tag_num);
+        let new_tag = Some(tag_id);
         // No focus safety check.
         let old_tag = self.focus_manager.workspace(&self.workspaces)?.tag?;
         if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
@@ -22,7 +22,7 @@ impl State {
         }
 
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tag = new_tag;
-        self.focus_tag(&tag_num);
+        self.focus_tag(&tag_id);
         self.update_static();
 
         // TODO: ???

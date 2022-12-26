@@ -19,8 +19,8 @@ async fn main() -> Result<()> {
         .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
     if let Some(commands) = matches.get_many::<String>("COMMAND") {
         for command in commands {
-            if let Err(e) = writeln!(file, "{}", command) {
-                eprintln!(" ERROR: Couldn't write to commands.pipe: {}", e);
+            if let Err(e) = writeln!(file, "{command}") {
+                eprintln!(" ERROR: Couldn't write to commands.pipe: {e}");
             }
         }
     }

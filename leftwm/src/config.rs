@@ -69,7 +69,7 @@ pub struct WindowHook {
     /// `_NET_WM_NAME` in X11
     pub window_title: Option<String>,
     pub spawn_on_tag: Option<usize>,
-    pub spawn_on_workspace: Option<i32>,
+    pub spawn_on_workspace: Option<usize>,
     pub spawn_floating: Option<bool>,
     pub spawn_sticky: Option<bool>,
     pub spawn_fullscreen: Option<bool>,
@@ -106,7 +106,7 @@ impl WindowHook {
             if let Some(workspace) = state
                 .workspaces
                 .iter()
-                .find(|ws| ws.id == self.spawn_on_workspace)
+                .find(|ws| Some(ws.id) == self.spawn_on_workspace)
             {
                 if let Some(tag) = workspace.tag {
                     // In order to apply the correct margin multiplier we want to copy this value
@@ -173,6 +173,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub single_window_border: bool,
     pub sloppy_mouse_follows_focus: bool,
+    pub auto_derive_workspaces: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -216,12 +217,13 @@ fn load_from_file() -> Result<Config> {
         let contents = fs::read_to_string(config_file_ron)?;
         let config: Config = ron.from_str(&contents)?;
 
-        if check_workspace_ids(&config) {
-            Ok(config)
-        } else {
-            tracing::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
-            Ok(Config::default())
-        }
+        //if check_workspace_ids(&config) {
+        //    Ok(config)
+        //} else {
+        //    tracing::warn!("Invalid workspace ID configuration in config file. Falling back to default config.");
+        //    Ok(Config::default())
+        //}
+        Ok(config)
     } else if Path::new(&config_file_toml).exists() {
         tracing::debug!(
             "Config file '{}' found.",
@@ -231,12 +233,13 @@ fn load_from_file() -> Result<Config> {
         let config = toml::from_str(&contents)?;
         tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
 
-        if check_workspace_ids(&config) {
-            Ok(config)
-        } else {
-            tracing::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
-            Ok(Config::default())
-        }
+        //if check_workspace_ids(&config) {
+        //    Ok(config)
+        //} else {
+        //    tracing::warn!("Invalid workspace ID configuration in config.toml. Falling back to default config.");
+        //    Ok(Config::default())
+        //}
+        Ok(config)
     } else {
         tracing::debug!("Config file not found. Using default config file.");
 
@@ -266,22 +269,22 @@ fn load_from_file() -> Result<Config> {
     }
 }
 
-#[must_use]
-pub fn check_workspace_ids(config: &Config) -> bool {
-    config.workspaces.clone().map_or(true, |wss| {
-        let ids = get_workspace_ids(&wss);
-        if ids.iter().any(Option::is_some) {
-            all_ids_some(&ids) && all_ids_unique(&ids)
-        } else {
-            true
-        }
-    })
-}
+//#[must_use]
+//pub fn check_workspace_ids(config: &Config) -> bool {
+//    config.workspaces.clone().map_or(true, |wss| {
+//        let ids = get_workspace_ids(&wss);
+//        if ids.iter().any(Option::is_some) {
+//            all_ids_some(&ids) && all_ids_unique(&ids)
+//        } else {
+//            true
+//        }
+//    })
+//}
 
-#[must_use]
-pub fn get_workspace_ids(wss: &[Workspace]) -> Vec<Option<i32>> {
-    wss.iter().map(|ws| ws.id).collect()
-}
+//#[must_use]
+//pub fn get_workspace_ids(wss: &[Workspace]) -> Vec<Option<i32>> {
+//    wss.iter().map(|ws| ws.id).collect()
+//}
 
 pub fn all_ids_some(ids: &[Option<i32>]) -> bool {
     ids.iter().all(Option::is_some)
@@ -431,10 +434,6 @@ impl leftwm_core::Config for Config {
 
     fn layouts(&self) -> Vec<String> {
         self.layouts.clone()
-    }
-
-    fn layout_definitions(&self) -> Vec<LayoutDefinition> {
-        self.layout_definitions.clone()
     }
 
     fn layout_mode(&self) -> LayoutMode {
@@ -642,6 +641,14 @@ impl leftwm_core::Config for Config {
 
     fn sloppy_mouse_follows_focus(&self) -> bool {
         self.sloppy_mouse_follows_focus
+    }
+
+    fn layout_definitions(&self) -> Vec<leftwm_layouts::LayoutDefinition> {
+        todo!()
+    }
+
+    fn auto_derive_workspaces(&self) -> bool {
+        todo!()
     }
 }
 

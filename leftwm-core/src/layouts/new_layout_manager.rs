@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use super::LayoutMode;
 
-/// The [`LayoutManager`] holds the actual LayoutDefinitions,
+/// The [`LayoutManager`] holds the actual [`LayoutDefinitions`],
 /// All references to "layouts" on Workspace or Tag are just
 /// the layout name(s) as String pointing to the value
 /// stored here
@@ -31,7 +31,7 @@ impl NewLayoutManager {
             .layout_definitions()
             .iter()
             .filter(|def| config.layouts().contains(&def.name))
-            .map(|def| def.to_owned())
+            .map(std::clone::Clone::clone)
             .collect();
 
         // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
@@ -45,55 +45,57 @@ impl NewLayoutManager {
     }
 
     /// Get back either the workspace ID or the tag ID, based on the current [`LayoutMode`]
-    fn id(&self, wsid: i32, tagid: usize) -> usize {
+    fn id(&self, wsid: usize, tagid: usize) -> usize {
         match self.mode {
             LayoutMode::Tag => tagid,
-            LayoutMode::Workspace => wsid as usize,
+            LayoutMode::Workspace => wsid,
         }
     }
 
-    fn layouts(&mut self, wsid: i32, tagid: usize) -> &Vec<LayoutDefinition> {
+    fn layouts(&mut self, wsid: usize, tagid: usize) -> &Vec<LayoutDefinition> {
         let id = self.id(wsid, tagid);
         self.layouts
             .entry(id)
-            .or_insert_with(|| self.available_definitions.to_owned())
+            .or_insert_with(|| self.available_definitions.clone())
     }
 
-    fn layouts_mut(&mut self, wsid: i32, tagid: usize) -> &mut Vec<LayoutDefinition> {
+    fn layouts_mut(&mut self, wsid: usize, tagid: usize) -> &mut Vec<LayoutDefinition> {
         let id = self.id(wsid, tagid);
         self.layouts
             .entry(id)
-            .or_insert_with(|| self.available_definitions.to_owned())
+            .or_insert_with(|| self.available_definitions.clone())
     }
 
     /// Get the current [`LayoutDefinition`] for the provided workspace / tag context
-    pub fn layout(&mut self, wsid: i32, tagid: usize) -> &LayoutDefinition {
+    pub fn layout(&mut self, wsid: usize, tagid: usize) -> &LayoutDefinition {
+        // TODO: prevent panic
         self.layouts(wsid, tagid).first().unwrap()
     }
 
     /// Get the current [`LayoutDefinition`] for the provided workspace / tag context as mutable
-    pub fn layout_mut(&mut self, wsid: i32, tagid: usize) -> &mut LayoutDefinition {
+    pub fn layout_mut(&mut self, wsid: usize, tagid: usize) -> &mut LayoutDefinition {
+        // TODO: prevent panic
         self.layouts_mut(wsid, tagid).first_mut().unwrap()
     }
 
-    pub fn cycle_next_layout(&mut self, wsid: i32, tagid: usize) {
-        cycle_vec(self.layouts_mut(wsid, tagid), 1);
-    }
-
-    pub fn cycle_previous_layout(&mut self, wsid: i32, tagid: usize) {
+    pub fn cycle_next_layout(&mut self, wsid: usize, tagid: usize) {
         cycle_vec(self.layouts_mut(wsid, tagid), -1);
     }
 
-    pub fn set_layout(&mut self, wsid: i32, tagid: usize, name: String) {
+    pub fn cycle_previous_layout(&mut self, wsid: usize, tagid: usize) {
+        cycle_vec(self.layouts_mut(wsid, tagid), 1);
+    }
+
+    pub fn set_layout(&mut self, wsid: usize, tagid: usize, name: &str) {
         let i = self
             .layouts(wsid, tagid)
             .iter()
             .enumerate()
-            .find(|(i, layout)| layout.name == name)
+            .find(|(_, layout)| layout.name == name)
             .map(|(i, _)| i);
 
         match i {
-            Some(index) => cycle_vec(self.layouts_mut(wsid, tagid), index as i32),
+            Some(index) => cycle_vec(self.layouts_mut(wsid, tagid), -(index as i32)),
             None => None,
         };
     }
@@ -208,7 +210,12 @@ impl NewLayoutManager {
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::tests::TestConfig, layouts};
+    use leftwm_layouts::Layouts;
+
+    use crate::{
+        config::tests::TestConfig,
+        layouts::{self, EVEN_VERTICAL, MONOCLE},
+    };
 
     use super::NewLayoutManager;
 
@@ -219,9 +226,9 @@ mod tests {
                 layouts::EVEN_VERTICAL.to_string(),
                 layouts::MAIN_AND_HORIZONTAL_STACK.to_string(),
             ],
+            layout_definitions: Layouts::default().layouts,
             workspaces: Some(vec![
                 crate::config::Workspace {
-                    id: Some(0),
                     layouts: Some(vec![
                         layouts::CENTER_MAIN.to_string(),
                         layouts::CENTER_MAIN_BALANCED.to_string(),
@@ -230,11 +237,9 @@ mod tests {
                     ..Default::default()
                 },
                 crate::config::Workspace {
-                    id: Some(1),
                     ..Default::default()
                 },
                 crate::config::Workspace {
-                    id: Some(2),
                     layouts: Some(vec![]),
                     ..Default::default()
                 },
@@ -249,5 +254,14 @@ mod tests {
     fn layouts_should_fallback_to_the_global_list() {
         let layout_manager = layout_manager();
         assert_eq!(1, layout_manager.id(1, 2));
+    }
+
+    #[test]
+    fn monocle_layout_only_has_single_windows() {
+        let mut layout_manager = layout_manager();
+        layout_manager.set_layout(1, 1, MONOCLE);
+        assert_eq!(MONOCLE, &layout_manager.layout(1, 1).name);
+        layout_manager.set_layout(1, 1, EVEN_VERTICAL);
+        assert_eq!(EVEN_VERTICAL, &layout_manager.layout(1, 1).name);
     }
 }

@@ -3,7 +3,7 @@
 # - credit: https://stackoverflow.com/a/23324703/2726733
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-SHARE_DIR := /usr/share/xsessions
+SHARE_DIR := /usr/share
 TARGET_DIR := /usr/local/bin
 
 # Set default profile if unset
@@ -58,8 +58,10 @@ clean:
 
 # builds the project and installs the binaries (and .desktop)
 install: build
-	sudo cp $(ROOT_DIR)/leftwm.desktop /usr/share/xsessions/
+	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/xsessions/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
+	sudo mkdir $(SHARE_DIR)/leftwm
+	sudo cp -r $(ROOT_DIR)/themes $(SHARE_DIR)/leftwm
 	sudo install -s -Dm755\
 		$(ROOT_DIR)/target/$(folder)/leftwm\
 		$(ROOT_DIR)/target/$(folder)/leftwm-worker\
@@ -69,25 +71,28 @@ install: build
 		$(ROOT_DIR)/target/$(folder)/leftwm-command\
 		-t $(TARGET_DIR)
 	cd $(ROOT_DIR) && cargo clean
-	@echo "Binaries, '.desktop' file and manual page have been installed"
+	@echo "Binaries, '.desktop' file, theme templates and manual page have been installed"
 
 # Function to build and link a specific profile
 install-linked: build
 	cd $(ROOT_DIR) && cargo build --profile $(profile)
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
+	sudo mkdir $(SHARE_DIR)/leftwm
+	sudo cp -r $(ROOT_DIR)/themes $(SHARE_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm $(TARGET_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-worker $(TARGET_DIR)/leftwm-worker
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/lefthk-worker $(TARGET_DIR)/lefthk-worker
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-state $(TARGET_DIR)/leftwm-state
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-check $(TARGET_DIR)/leftwm-check
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-command $(TARGET_DIR)/leftwm-command
-	@echo "binaries have been linked, manpage and '.desktop' file have been installed"
+	@echo "binaries have been linked, manpage, theme templates and '.desktop' file have been installed"
 
 # Uninstalls leftwm from the system.
 uninstall:
 	sudo rm -f $(SHARE_DIR)/leftwm.desktop
 	sudo rm /usr/local/share/man/man1/leftwm.1
+	sudo rm -f $(SHARE_DIR)/leftwm
 	sudo rm -f\
 		$(TARGET_DIR)/leftwm\
 		$(TARGET_DIR)/leftwm-worker\
@@ -95,4 +100,4 @@ uninstall:
 		$(TARGET_DIR)/leftwm-state\
 		$(TARGET_DIR)/leftwm-check\
 		$(TARGET_DIR)/leftwm-command
-	@echo "Binaries and manpage have been uninstalled and '.desktop' file has been removed"
+	@echo "Binaries and manpage have been uninstalled and '.desktop' file and theme templates have been removed"

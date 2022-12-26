@@ -34,7 +34,7 @@ macro_rules! move_focus_common_vars {
     ($func:ident ($state:expr $(, $arg:expr )* $(,)? )) => {{
         let handle = $state.focus_manager.window(&$state.windows)?.handle;
         let tag_id = $state.focus_manager.tag(0)?;
-        let ws_id = $state.focus_manager.workspace(&$state.workspaces)?.id?;
+        let ws_id = $state.focus_manager.workspace(&$state.workspaces)?.id;
         //let tag = $state.tags.get(tag_id)?;
 
         let layout = Some($state.layout_manager.layout(ws_id, tag_id).name.to_owned());
@@ -44,7 +44,7 @@ macro_rules! move_focus_common_vars {
             |x: &Window| -> bool { x.tag == Some(tag_id) && x.is_managed() };
 
         let to_reorder = helpers::vec_extract(&mut $state.windows, for_active_workspace);
-        $func($state, handle, layout, to_reorder, $($arg),*)
+        $func($state, handle, &layout, to_reorder, $($arg),*)
     }};
 }
 
@@ -156,10 +156,10 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
 
 fn move_to_tag<C: Config, SERVER: DisplayServer>(
     window: Option<WindowHandle>,
-    tag_num: TagId,
+    tag_id: TagId,
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
-    let tag = manager.state.tags.get(tag_num)?.clone();
+    let tag = manager.state.tags.get(tag_id)?.clone();
 
     // In order to apply the correct margin multiplier we want to copy this value
     // from any window already present on the target tag
@@ -243,8 +243,8 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     let workspace =
         helpers::relative_find(&manager.state.workspaces, |w| w == current, delta, true)?.clone();
 
-    let tag_num = workspace.tag?;
-    move_to_tag(None, tag_num, manager)
+    let tag_id = workspace.tag?;
+    move_to_tag(None, tag_id, manager)
 }
 
 fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Option<bool> {
@@ -317,8 +317,8 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
     match state
         .focus_manager
         .workspace(&state.workspaces)
-        .map(|ws| state.layout_manager.layout(ws.id.unwrap_or(0), tag_id))
-        .map(|def| def.name.to_owned())
+        .map(|ws| state.layout_manager.layout(ws.id, tag_id))
+        .map(|def| def.name.clone())
     {
         Some(layout) if layout == layouts::MONOCLE || layout == layouts::MAIN_AND_DECK => {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
@@ -380,7 +380,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         return Some(true);
     }
     if state.workspaces.len() == 1 {
-        let last = *state.focus_manager.tag_history.get(1).unwrap();
+        let last = *state.focus_manager.tag_history.get(1)?;
         return state.goto_tag_handler(last);
     }
     None
@@ -410,7 +410,7 @@ fn next_layout(state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     state
         .layout_manager
-        .cycle_next_layout(workspace.id.unwrap_or(0), workspace.tag.unwrap_or(1));
+        .cycle_next_layout(workspace.id, workspace.tag.unwrap_or(1));
     // TODO
     //set_layout(&layout, state)
     Some(true)
@@ -420,7 +420,7 @@ fn previous_layout(state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     state
         .layout_manager
-        .cycle_previous_layout(workspace.id.unwrap_or(0), workspace.tag.unwrap_or(1));
+        .cycle_previous_layout(workspace.id, workspace.tag.unwrap_or(1));
     // TODO
     // set_layout(&layout, state)
     Some(true)
@@ -477,7 +477,7 @@ fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     state
         .layout_manager
-        .set_layout(workspace.id.unwrap(), tag_id, layout.to_string());
+        .set_layout(workspace.id, tag_id, layout);
     //let tag = state.tags.get_mut(tag_id)?;
     //tag.set_layout(layout.to_string());
     Some(true)
@@ -544,15 +544,15 @@ fn toggle_floating(state: &mut State) -> Option<bool> {
 fn move_window_change(
     state: &mut State,
     mut handle: WindowHandle,
-    layout: Option<String>,
+    layout: &Option<String>,
     mut to_reorder: Vec<Window>,
     val: i32,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    if layout == Some(String::from("Monocle")) {
+    if layout == &Some(String::from("Monocle")) {
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
-    } else if layout == Some(String::from("MainAndDeck")) {
+    } else if layout == &Some(String::from("MainAndDeck")) {
         if let Some(index) = to_reorder.iter().position(|x: &Window| !x.floating()) {
             let mut window_group = to_reorder.split_off(index + 1);
             if !to_reorder.iter().any(|w| w.handle == handle) {
@@ -573,7 +573,7 @@ fn move_window_change(
 fn move_window_top(
     state: &mut State,
     handle: WindowHandle,
-    _layout: Option<String>,
+    _layout: &Option<String>,
     mut to_reorder: Vec<Window>,
     swap: bool,
 ) -> Option<bool> {
@@ -605,18 +605,18 @@ fn move_window_top(
 fn focus_window_change(
     state: &mut State,
     mut handle: WindowHandle,
-    layout: Option<String>,
+    layout: &Option<String>,
     mut to_reorder: Vec<Window>,
     val: i32,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    if layout == Some(layouts::MONOCLE.to_string()) {
+    if layout == &Some(layouts::MONOCLE.to_string()) {
         // For Monocle we want to also move windows up/down
         // Not the best solution but results
         // in desired behaviour
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
-    } else if layout == Some(layouts::MAIN_AND_DECK.to_string()) {
+    } else if layout == &Some(layouts::MAIN_AND_DECK.to_string()) {
         let len = to_reorder.len() as i32;
         if len > 0 {
             let index = match to_reorder.iter().position(|x: &Window| !x.floating()) {
@@ -637,7 +637,7 @@ fn focus_window_change(
     }
     state.windows.append(&mut to_reorder);
     state.handle_window_focus(&handle);
-    Some(layout == Some(layouts::MONOCLE.to_string()))
+    Some(layout == &Some(layouts::MONOCLE.to_string()))
 }
 
 fn focus_window_top(state: &mut State, swap: bool) -> Option<bool> {
@@ -699,7 +699,8 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
 fn rotate_tag(state: &mut State) -> Option<bool> {
     let tag_id = state.focus_manager.tag(0)?;
     let tag = state.tags.get_mut(tag_id)?;
-    // todo
+    //state.layout_manager.layout_mut(tag, tagid)
+    // TODO
     //tag.rotate_layout()?;
     Some(true)
 }
@@ -711,7 +712,7 @@ fn change_main_width(state: &mut State, delta: i8, factor: i8) -> Option<bool> {
     //let tag = state.tags.get_mut(tag_id)?;
     // todo
     //tag.change_main_width(delta * factor);
-    let workspace_id = workspace.id.unwrap_or(1);
+    let workspace_id = workspace.id;
     let tag_id = state.focus_manager.tag(0)?;
     let def = state.layout_manager.layout_mut(workspace_id, tag_id);
     match factor {

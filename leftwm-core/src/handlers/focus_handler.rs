@@ -25,13 +25,14 @@ impl State {
         };
 
         // Make sure the focused window's workspace is focused.
-        if let Some(workspace_id) = self
-            .workspaces
-            .iter()
-            .find(|ws| ws.is_displaying(&window))
-            .map(|ws| ws.id)
-        {
-            let _ = self.focus_workspace_work(workspace_id);
+        if let Some(workspace) = self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
+            // this is an uggly workaround to suffice some CI failure related to https://github.com/rust-lang/rust/issues/59159
+            let workspace_output_borrow_checker_workaround = workspace.output.clone();
+            let workspace_id_borrow_checker_workaround = workspace.id;
+            let _ = self.focus_workspace_work(
+                &workspace_output_borrow_checker_workaround,
+                workspace_id_borrow_checker_workaround,
+            );
         }
 
         // Make sure the focused window's tag is focused.
@@ -43,7 +44,7 @@ impl State {
     /// Focuses the given workspace.
     // NOTE: Should only be called externally from this file.
     pub fn focus_workspace(&mut self, workspace: &Workspace) {
-        if self.focus_workspace_work(workspace.id) {
+        if self.focus_workspace_work(&workspace.output, workspace.id) {
             // Make sure this workspaces tag is focused.
             workspace.tag.iter().for_each(|t| {
                 self.focus_tag_work(*t);
@@ -71,7 +72,7 @@ impl State {
             .cloned()
             .collect();
         for ws in &to_focus {
-            self.focus_workspace_work(ws.id);
+            self.focus_workspace_work(&ws.output, ws.id);
         }
         // Make sure the focused window is on this workspace.
         if self.focus_manager.behaviour.is_sloppy() && self.focus_manager.sloppy_mouse_follows_focus
@@ -101,14 +102,17 @@ impl State {
 
     /// Focuses the workspace containing a given point.
     pub fn focus_workspace_with_point(&mut self, x: i32, y: i32) {
-        let focused_id = match self.focus_manager.workspace(&self.workspaces) {
-            Some(fws) => fws.id,
-            None => None,
+        let focused_ws = match self.focus_manager.workspace(&self.workspaces) {
+            Some(r) => r,
+            None => return,
         };
         if let Some(ws) = self
             .workspaces
             .iter()
-            .find(|ws| ws.contains_point(x, y) && ws.id != focused_id)
+            .find(|ws| {
+                ws.contains_point(x, y)
+                    && !(ws.output == focused_ws.output && ws.id == focused_ws.id)
+            })
             .cloned()
         {
             self.focus_workspace(&ws);
@@ -225,17 +229,21 @@ impl State {
         Some(found.clone())
     }
 
-    fn focus_workspace_work(&mut self, workspace_id: Option<i32>) -> bool {
+    fn focus_workspace_work(&mut self, output: &str, id: usize) -> bool {
         //no new history if no change
         if let Some(fws) = self.focus_manager.workspace(&self.workspaces) {
-            if fws.id == workspace_id {
+            if fws.output == output && fws.id == id {
                 return false;
             }
         }
         // Clean old history.
         self.focus_manager.workspace_history.truncate(10);
         // Add this focus to the history.
-        if let Some(index) = self.workspaces.iter().position(|x| x.id == workspace_id) {
+        if let Some(index) = self
+            .workspaces
+            .iter()
+            .position(|x| x.output == output && x.id == id)
+        {
             self.focus_manager.workspace_history.push_front(index);
             return true;
         }
@@ -284,7 +292,7 @@ mod tests {
             .focus_manager
             .workspace(&manager.state.workspaces)
             .unwrap();
-        assert_eq!(Some(0), actual.id);
+        assert_eq!(&expected, actual);
     }
 
     #[test]
@@ -416,7 +424,7 @@ mod tests {
             .focus_manager
             .workspace(&manager.state.workspaces)
             .unwrap();
-        assert_eq!(actual.id, Some(0));
+        assert_eq!(actual.output, String::new());
     }
 
     #[test]
@@ -459,9 +467,8 @@ mod tests {
             .state
             .focus_manager
             .workspace(&manager.state.workspaces)
-            .unwrap()
-            .id;
-        let expected = manager.state.workspaces[1].id;
+            .unwrap();
+        let expected = &manager.state.workspaces[1];
         assert_eq!(expected, actual);
     }
 

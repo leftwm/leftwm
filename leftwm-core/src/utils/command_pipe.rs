@@ -60,7 +60,7 @@ impl CommandPipe {
             .and_then(|d| d.rsplit_once(':').map(|(_, r)| r.to_owned()))
             .unwrap_or_else(|| "0".to_string());
 
-        PathBuf::from(format!("command-{}.pipe", display))
+        PathBuf::from(format!("command-{display}.pipe"))
     }
 
     pub async fn read_command(&mut self) -> Option<Command> {

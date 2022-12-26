@@ -9,23 +9,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
-        let workspace_id = screen.wsid.unwrap_or_else(|| {
-            self.state
-                .workspaces
-                .iter()
-                .map(|ws| ws.id.unwrap_or(-1))
-                .max()
-                .unwrap_or(-1)
-                + 1
-        });
+        let workspace_id = self
+            .state
+            .workspaces
+            .iter()
+            .filter(|ws| ws.output == screen.output)
+            .count()
+            + 1;
 
         let mut new_workspace = Workspace::new(
-            Some(workspace_id),
             screen.bbox,
             screen.max_window_width.or(self.state.max_window_width),
+            screen.output.clone(),
+            workspace_id,
         );
-        if new_workspace.id.unwrap_or(0) as usize >= tag_len {
-            dbg!("Workspace ID needs to be less than or equal to the number of tags available.");
+        if self.state.workspaces.len() >= tag_len {
+            tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. No more workspaces will be added.");
         }
         new_workspace.load_config(&self.config);
 
@@ -46,7 +45,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state.focus_tag(&next_id);
         new_workspace.show_tag(&next_id);
         self.state.workspaces.push(new_workspace.clone());
-        self.state.workspaces.sort_by(|a, b| a.id.cmp(&b.id));
         self.state.screens.push(screen);
         self.state.focus_workspace(&new_workspace);
         false

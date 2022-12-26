@@ -2,7 +2,7 @@
 
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
-use crate::layouts::NewLayoutManager;
+use crate::layouts::{self, NewLayoutManager};
 use crate::models::{
     FocusManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle, WindowType,
     Workspace,
@@ -132,11 +132,16 @@ impl State {
                 .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
                 .collect();
 
-            // TODO: this needs an alternative
-            /*if tag.layout == "Monocle" {
+            let wsid = self
+                .workspaces
+                .iter()
+                .find(|ws| ws.has_tag(&tag.id))
+                .map(|w| w.id);
+            let layout = self.layout_manager.layout(wsid.unwrap_or(1), tag.id);
+            if layout.name == layouts::MONOCLE {
+                dbg!("WHWWW");
                 windows_on_tag.iter_mut().for_each(|w| w.border = 0);
-                continue;
-            }*/
+            }
 
             if windows_on_tag.len() == 1 {
                 if let Some(w) = windows_on_tag.first_mut() {
@@ -294,7 +299,7 @@ impl State {
 
         // restore layouts
         // TODO
-        self.layout_manager = old_state.layout_manager.to_owned() // todo: ???
+        self.layout_manager = old_state.layout_manager.clone(); // todo: ???
     }
 }
 

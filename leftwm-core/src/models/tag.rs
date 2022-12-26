@@ -1,6 +1,5 @@
 use super::{TagId, Xyhw};
 use crate::{layouts::NewLayoutManager, Window, Workspace};
-use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 
 /// Wrapper struct holding all the tags.
@@ -95,7 +94,6 @@ impl Tags {
                 id: next_id,
                 label: label.to_string(),
                 hidden: true,
-                ..Tag::default()
             };
             let id = tag.id;
             self.hidden.push(tag);
@@ -257,7 +255,7 @@ impl Tag {
                 .collect();
 
             let count = managed_nonfloat.len();
-            let def = layout_manager.layout(workspace.id.unwrap_or(0), self.id);
+            let def = layout_manager.layout(workspace.id, self.id);
             let positions = leftwm_layouts::apply(def, count, &workspace.xyhw.into());
 
             managed_nonfloat
@@ -267,13 +265,24 @@ impl Tag {
 
             //layout_manager.apply(&self.layout, &managed_nonfloat, workspace);
 
+            let def = layout_manager.layout(workspace.id, workspace.tag.unwrap_or(1));
+            let rects = leftwm_layouts::apply(def, managed_nonfloat.len(), &workspace.xyhw.into());
+
+            rects
+                .iter()
+                .zip(managed_nonfloat)
+                .for_each(|(rect, window)| {
+                    window.normal = Xyhw::from(*rect);
+                    window.container_size = Some(workspace.xyhw);
+                });
+
             // todo: leftwm_layouts
             // TODO:
             //self.layout.update_windows(workspace, &mut managed_nonfloat, self);
 
-            for w in &mut managed_nonfloat {
-                w.container_size = Some(workspace.xyhw);
-            }
+            //for w in &mut managed_nonfloat {
+            //    w.container_size = Some(workspace.xyhw);
+            //}
             // Update the location of all floating windows.
             windows
                 .iter_mut()
@@ -288,9 +297,8 @@ impl Tag {
     ///// ## Arguments
     ///// * `delta` - increase/decrease main width percentage by this amount
     //pub fn change_main_width(&mut self, delta: i8) {
-    //    self.main_width_percentage = (self.main_width_percentage as i8 + delta)
-    //        .max(0) // not smaller than 0
-    //        .min(100) as u8; // not larger than 100
+    //    // not smaller than 0 and not larger than 100
+    //    self.main_width_percentage = (self.main_width_percentage as i8 + delta).clamp(0, 100) as u8;
     //}
 
     ///// Sets the main width percentage

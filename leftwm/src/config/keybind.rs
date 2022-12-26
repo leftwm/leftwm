@@ -90,7 +90,7 @@ impl Keybind {
                 };
                 command_parts.push_str(&args);
             }
-            let _ = writeln!(head, "'{}'", command_parts);
+            let _ = writeln!(head, "'{command_parts}'");
             head
         };
         Ok(lefthk_core::config::Keybind {
@@ -159,7 +159,7 @@ impl std::convert::From<&str> for Modifier {
 impl std::fmt::Display for Modifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Single(modifier) => write!(f, "{}", modifier),
+            Self::Single(modifier) => write!(f, "{modifier}"),
             Self::List(modifiers) => write!(f, "{}", modifiers.join("+")),
         }
     }

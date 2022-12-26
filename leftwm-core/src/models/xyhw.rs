@@ -124,16 +124,27 @@ impl From<Rect> for Xyhw {
     }
 }
 
-impl Into<Rect> for Xyhw {
-    fn into(self) -> Rect {
+impl From<Xyhw> for Rect {
+    fn from(xyhw: Xyhw) -> Self {
         Rect {
-            x: self.x,
-            y: self.y,
-            w: self.w.unsigned_abs(),
-            h: self.h.unsigned_abs(),
+            x: xyhw.x,
+            y: xyhw.y,
+            w: xyhw.w.unsigned_abs(),
+            h: xyhw.h.unsigned_abs(),
         }
     }
 }
+
+//impl Into<Rect> for Xyhw {
+//    fn into(self) -> Rect {
+//        Rect {
+//            x: self.x,
+//            y: self.y,
+//            w: self.w.unsigned_abs(),
+//            h: self.h.unsigned_abs(),
+//        }
+//    }
+//}
 
 impl Xyhw {
     #[must_use]
