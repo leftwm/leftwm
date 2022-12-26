@@ -19,6 +19,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         let mut new_workspace = Workspace::new(
             screen.bbox,
+            //self.state
+            //    .layout_manager
+            //    .new_layout(&screen.output, workspace_id),
             screen.max_window_width.or(self.state.max_window_width),
             screen.output.clone(),
             workspace_id,

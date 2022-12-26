@@ -478,8 +478,12 @@ fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
     state
         .layout_manager
         .set_layout(workspace.id, tag_id, layout);
+    //workspace.layout = layout;
+    //if state.layout_manager.mode == LayoutMode::Workspace {
+    //    workspace.main_width_percentage = layout.main_width();
+    //}
     //let tag = state.tags.get_mut(tag_id)?;
-    //tag.set_layout(layout.to_string());
+    //tag.set_layout(layout, layout.main_width());
     Some(true)
 }
 
