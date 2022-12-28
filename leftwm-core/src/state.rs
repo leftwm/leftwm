@@ -139,8 +139,8 @@ impl State {
                 .map(|w| w.id);
             let layout = self.layout_manager.layout(wsid.unwrap_or(1), tag.id);
             if layout.name == layouts::MONOCLE {
-                dbg!("WHWWW");
                 windows_on_tag.iter_mut().for_each(|w| w.border = 0);
+                continue;
             }
 
             if windows_on_tag.len() == 1 {

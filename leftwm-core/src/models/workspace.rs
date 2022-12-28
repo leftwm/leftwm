@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::models::{BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder};
+use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -214,6 +215,15 @@ impl Workspace {
     #[must_use]
     pub const fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
+    }    
+
+    pub fn rect(&self) -> Rect {
+        Rect {
+            x: self.x(),
+            y: self.y(),
+            w: self.width().unsigned_abs(),
+            h: self.height().unsigned_abs(),
+        }
     }
 
     //pub fn change_main_width(&mut self, delta: i8) {

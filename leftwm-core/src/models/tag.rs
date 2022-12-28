@@ -256,7 +256,7 @@ impl Tag {
 
             let count = managed_nonfloat.len();
             let def = layout_manager.layout(workspace.id, self.id);
-            let positions = leftwm_layouts::apply(def, count, &workspace.xyhw.into());
+            let positions = leftwm_layouts::apply(def, count, &workspace.rect());
 
             managed_nonfloat
                 .iter_mut()
@@ -266,7 +266,7 @@ impl Tag {
             //layout_manager.apply(&self.layout, &managed_nonfloat, workspace);
 
             let def = layout_manager.layout(workspace.id, workspace.tag.unwrap_or(1));
-            let rects = leftwm_layouts::apply(def, managed_nonfloat.len(), &workspace.xyhw.into());
+            let rects = leftwm_layouts::apply(def, managed_nonfloat.len(), &workspace.rect());
 
             rects
                 .iter()

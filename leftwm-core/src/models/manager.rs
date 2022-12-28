@@ -1,4 +1,5 @@
-use leftwm_layouts::{LayoutDefinition, Layouts};
+#[cfg(test)]
+use leftwm_layouts::{Layouts};
 
 use crate::config::Config;
 use crate::display_servers::DisplayServer;

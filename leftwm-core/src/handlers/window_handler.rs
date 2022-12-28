@@ -3,7 +3,7 @@ use crate::child_process::exec_shell;
 use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::layouts;
+use crate::layouts::{self, MAIN_AND_VERT_STACK};
 use crate::models::{WindowHandle, WindowState, Xyhw};
 use crate::state::State;
 use crate::utils::helpers;
@@ -25,7 +25,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut is_first = false;
         let mut on_same_tag = true;
         // Random value
-        let mut layout: String = String::from("MainAndVertStack");
+        let mut layout = MAIN_AND_VERT_STACK.to_string();
         setup_window(
             &mut self.state,
             &mut window,

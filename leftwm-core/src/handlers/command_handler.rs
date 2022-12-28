@@ -8,7 +8,7 @@ pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
 use super::*;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::layouts::{self};
+use crate::layouts::{self, MAIN_AND_DECK, MONOCLE};
 use crate::models::{TagId, WindowState};
 use crate::state::State;
 use crate::utils::helpers;
@@ -553,10 +553,10 @@ fn move_window_change(
     val: i32,
 ) -> Option<bool> {
     let is_handle = |x: &Window| -> bool { x.handle == handle };
-    if layout == &Some(String::from("Monocle")) {
+    if layout == &Some(MONOCLE.to_string()) {
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
-    } else if layout == &Some(String::from("MainAndDeck")) {
+    } else if layout == &Some(MAIN_AND_DECK.to_string()) {
         if let Some(index) = to_reorder.iter().position(|x: &Window| !x.floating()) {
             let mut window_group = to_reorder.split_off(index + 1);
             if !to_reorder.iter().any(|w| w.handle == handle) {
@@ -701,8 +701,10 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
 }
 
 fn rotate_tag(state: &mut State) -> Option<bool> {
-    let tag_id = state.focus_manager.tag(0)?;
-    let tag = state.tags.get_mut(tag_id)?;
+    //let tag_id = state.focus_manager.tag(0)?;
+    //let tag = state.tags.get_mut(tag_id)?;
+    //let ws_id = state.workspaces.iter().find(|ws| ws.has_tag(&tag_id))?.id;
+    //let mut rotation = state.layout_manager.layout_mut(ws_id, tag_id).rotate()s;
     //state.layout_manager.layout_mut(tag, tagid)
     // TODO
     //tag.rotate_layout()?;
