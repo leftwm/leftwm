@@ -215,7 +215,7 @@ impl Workspace {
     #[must_use]
     pub const fn margin_multiplier(&self) -> f32 {
         self.margin_multiplier
-    }    
+    }
 
     pub fn rect(&self) -> Rect {
         Rect {
