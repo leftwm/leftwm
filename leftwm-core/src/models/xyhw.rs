@@ -135,17 +135,6 @@ impl From<Xyhw> for Rect {
     }
 }
 
-//impl Into<Rect> for Xyhw {
-//    fn into(self) -> Rect {
-//        Rect {
-//            x: self.x,
-//            y: self.y,
-//            w: self.w.unsigned_abs(),
-//            h: self.h.unsigned_abs(),
-//        }
-//    }
-//}
-
 impl Xyhw {
     #[must_use]
     pub const fn x(&self) -> i32 {

@@ -290,41 +290,6 @@ impl Tag {
                 .for_each(|w| w.normal = workspace.xyhw);
         }
     }
-
-    ///// Changes the main width percentage by the provided delta.
-    ///// Result is sanitized, so the percentage can't go below 0 or above 100.
-    /////
-    ///// ## Arguments
-    ///// * `delta` - increase/decrease main width percentage by this amount
-    //pub fn change_main_width(&mut self, delta: i8) {
-    //    // not smaller than 0 and not larger than 100
-    //    self.main_width_percentage = (self.main_width_percentage as i8 + delta).clamp(0, 100) as u8;
-    //}
-
-    ///// Sets the main width percentage
-    /////
-    ///// ## Arguments
-    ///// * `val` - the new with percentage
-    //pub fn set_main_width(&mut self, val: u8) {
-    //    self.main_width_percentage = val.min(100); // not larger than 100
-    //}
-
-    // #[must_use]
-    // pub fn main_width_percentage(&self) -> f32 {
-    //     f32::from(self.main_width_percentage)
-    // }
-
-    // pub fn rotate_layout(&mut self) -> Option<()> {
-    //     let rotations = self.layout.rotations();
-    //     self.layout_rotation += 1;
-    //     if self.layout_rotation >= rotations.len() {
-    //         self.layout_rotation = 0;
-    //     }
-    //     let (horz, vert) = rotations.get(self.layout_rotation)?;
-    //     self.flipped_horizontal = *horz;
-    //     self.flipped_vertical = *vert;
-    //     Some(())
-    // }
 }
 
 #[cfg(test)]
