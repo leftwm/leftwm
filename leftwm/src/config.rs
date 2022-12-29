@@ -97,13 +97,21 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        let class_score = match (&self.window_class, &window.res_class) {
-            (Some(wc_re), Some(res_class)) => u8::from(wc_re.replace(res_class, "") == ""),
+        let class_score = match (&self.window_class, &window.res_class, &window.res_name) {
+            (Some(wc_re), Some(res_class), Some(res_name)) => {
+                u8::from(wc_re.replace(res_class, "") == "" || wc_re.replace(res_name, "") == "")
+            }
+            (Some(wc_re), Some(res_class), _) => u8::from(wc_re.replace(res_class, "") == ""),
+            (Some(wc_re), _, Some(res_name)) => u8::from(wc_re.replace(res_name, "") == ""),
             _ => 0,
         };
 
-        let title_score = match (&self.window_title, &window.legacy_name) {
-            (Some(wt_re), Some(legacy_name)) => u8::from(wt_re.replace(legacy_name, "") == ""),
+        let title_score = match (&self.window_title, &window.legacy_name, &window.name) {
+            (Some(wt_re), Some(legacy_name), Some(name)) => {
+                u8::from(wt_re.replace(legacy_name, "") == "" || wt_re.replace(name, "") == "")
+            }
+            (Some(wt_re), Some(legacy_name), _) => u8::from(wt_re.replace(legacy_name, "") == ""),
+            (Some(wt_re), _, Some(name)) => u8::from(wt_re.replace(name, "") == ""),
             _ => 0,
         };
 
