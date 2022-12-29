@@ -4,8 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- Removal of `max_window_width` feature. The "always fill entire screen" behavior can be addressed directly in layouts with the `Reserve` property.
+- The `layouts` in `config.ron` must be declared as Strings because they are no longer backed by an enum. (ie. `layouts: ["CenterMain"]` instead of `layouts: [CenterMain]`)
+- The `IncreaseMainWidth` and `DecreaseMainWidth` command no longer accepts a `delta` parameter, it always changes the size by either ±5% or ±100px (depending whether the layout's main size is defined as absolute or relative).
+
+### Added
+
+- Implemented the new [leftwm-layouts](https://github.com/leftwm/leftwm-layouts) library
+
+
 ## [0.4.1]
+
 ### Fixed
+
 - Temp fix for MainWidth inconsistency until layout-lib
 - Fix crash when swapping tag at startup
 - Swap for new copr repo

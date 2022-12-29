@@ -79,11 +79,11 @@ impl NewLayoutManager {
     }
 
     pub fn cycle_next_layout(&mut self, wsid: usize, tagid: usize) {
-        cycle_vec(self.layouts_mut(wsid, tagid), -1);
+        cycle_vec(self.layouts_mut(wsid, tagid), 1);
     }
 
     pub fn cycle_previous_layout(&mut self, wsid: usize, tagid: usize) {
-        cycle_vec(self.layouts_mut(wsid, tagid), 1);
+        cycle_vec(self.layouts_mut(wsid, tagid), -1);
     }
 
     pub fn set_layout(&mut self, wsid: usize, tagid: usize, name: &str) {

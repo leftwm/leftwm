@@ -130,8 +130,10 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::RotateTag => rotate_tag(state),
 
-        Command::IncreaseMainWidth(delta) => change_main_width(state, *delta, 1),
-        Command::DecreaseMainWidth(delta) => change_main_width(state, *delta, -1),
+        Command::IncreaseMainSize() => change_main_size(state, 1),
+        Command::DecreaseMainSize() => change_main_size(state, -1),
+        Command::IncreaseMainCount() => change_main_count(state, 1),
+        Command::DecreaseMainCount() => change_main_count(state, -1),
         Command::SetMarginMultiplier(multiplier) => set_margin_multiplier(state, *multiplier),
         Command::SendWorkspaceToTag(ws_index, tag_index) => {
             Some(send_workspace_to_tag(state, *ws_index, *tag_index))
@@ -589,6 +591,7 @@ fn move_window_top(
     let index = list.iter().position(|x| is_handle(x))?;
     let item = list.get(index)?.clone();
     list.remove(index);
+    dbg!(swap);
     let mut new_index: usize = match index {
         0 if swap => 1,
         _ => 0,
@@ -701,29 +704,35 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
 }
 
 fn rotate_tag(state: &mut State) -> Option<bool> {
-    //let tag_id = state.focus_manager.tag(0)?;
-    //let tag = state.tags.get_mut(tag_id)?;
-    //let ws_id = state.workspaces.iter().find(|ws| ws.has_tag(&tag_id))?.id;
-    //let mut rotation = state.layout_manager.layout_mut(ws_id, tag_id).rotate()s;
-    //state.layout_manager.layout_mut(tag, tagid)
-    // TODO
-    //tag.rotate_layout()?;
+    let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
+    let workspace_id = workspace.id;
+    let tag_id = state.focus_manager.tag(0)?;
+    let def = state.layout_manager.layout_mut(workspace_id, tag_id);
+    def.rotate(true);
     Some(true)
 }
 
-fn change_main_width(state: &mut State, delta: i8, factor: i8) -> Option<bool> {
+fn change_main_size(state: &mut State, factor: i8) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
-    // todo
-    //workspace.change_main_width(delta * factor);
-    //let tag = state.tags.get_mut(tag_id)?;
-    // todo
-    //tag.change_main_width(delta * factor);
     let workspace_id = workspace.id;
     let tag_id = state.focus_manager.tag(0)?;
     let def = state.layout_manager.layout_mut(workspace_id, tag_id);
     match factor {
         1 => def.increase_main_size(workspace.width()),
         -1 => def.decrease_main_size(),
+        _ => (),
+    }
+    Some(true)
+}
+
+fn change_main_count(state: &mut State, factor: i8) -> Option<bool> {
+    let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
+    let workspace_id = workspace.id;
+    let tag_id = state.focus_manager.tag(0)?;
+    let def = state.layout_manager.layout_mut(workspace_id, tag_id);
+    match factor {
+        1 => def.increase_main_window_count(),
+        -1 => def.decrease_main_window_count(),
         _ => (),
     }
     Some(true)

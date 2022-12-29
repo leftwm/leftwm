@@ -108,8 +108,10 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
         // Layout
-        "DecreaseMainWidth" => build_decrease_main_width(rest),
-        "IncreaseMainWidth" => build_increase_main_width(rest),
+        "DecreaseMainWidth" | "DecreaseMainSize" => Ok(Command::DecreaseMainSize()), // 'width' deprecated
+        "IncreaseMainWidth" | "IncreaseMainSize" => Ok(Command::IncreaseMainSize()), // 'width' deprecated
+        "DecreaseMainCount" => Ok(Command::DecreaseMainCount()),
+        "IncreaseMainCount" => Ok(Command::IncreaseMainCount()),
         "NextLayout" => Ok(Command::NextLayout),
         "PreviousLayout" => Ok(Command::PreviousLayout),
         "RotateTag" => Ok(Command::RotateTag),
@@ -269,20 +271,6 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
         bool::from_str(raw)?
     };
     Ok(Command::MoveWindowToPreviousTag { follow })
-}
-
-fn build_increase_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "IncreaseMainWidth ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let change: i8 = parts.first().ok_or("missing argument change")?.parse()?;
-    Ok(Command::IncreaseMainWidth(change))
-}
-
-fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "DecreaseMainWidth ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let change: i8 = parts.first().ok_or("missing argument change")?.parse()?;
-    Ok(Command::DecreaseMainWidth(change))
 }
 
 fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {

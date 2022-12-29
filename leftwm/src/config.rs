@@ -405,6 +405,10 @@ impl leftwm_core::Config for Config {
         self.layouts.clone()
     }
 
+    fn layout_definitions(&self) -> Vec<LayoutDefinition> {
+        self.layout_definitions.clone()
+    }
+
     fn layout_mode(&self) -> LayoutMode {
         self.layout_mode
     }
@@ -610,10 +614,6 @@ impl leftwm_core::Config for Config {
 
     fn sloppy_mouse_follows_focus(&self) -> bool {
         self.sloppy_mouse_follows_focus
-    }
-
-    fn layout_definitions(&self) -> Vec<leftwm_layouts::LayoutDefinition> {
-        self.layout_definitions.clone()
     }
 
     fn auto_derive_workspaces(&self) -> bool {
