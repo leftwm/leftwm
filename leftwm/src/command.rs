@@ -33,6 +33,7 @@ pub enum BaseCommand {
     MoveWindowUp,
     MoveWindowDown,
     MoveWindowTop,
+    SwapWindowTop,
     FocusNextTag,
     FocusPreviousTag,
     FocusWindow,
