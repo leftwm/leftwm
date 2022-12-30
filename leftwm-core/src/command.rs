@@ -38,6 +38,9 @@ pub enum Command {
     MoveWindowTop {
         swap: bool,
     },
+    SwapWindowTop {
+        swap: bool,
+    },
     FocusNextTag,
     FocusPreviousTag,
     FocusWindow(String),

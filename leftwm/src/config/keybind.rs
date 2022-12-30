@@ -55,6 +55,9 @@ impl Keybind {
             BaseCommand::FocusWindowTop if value_is_some => {
                 bool::from_str(&self.value).context("invalid boolean value for FocusWindowTop")?;
             }
+            BaseCommand::SwapWindowTop if value_is_some => {
+                bool::from_str(&self.value).context("invalid boolean value for SwapWindowTop")?;
+            }
             BaseCommand::MoveToTag => {
                 usize::from_str(&self.value).context("invalid index value for SendWindowToTag")?;
             }
