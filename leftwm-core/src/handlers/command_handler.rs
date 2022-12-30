@@ -609,10 +609,11 @@ fn move_window_top(
     }
     Some(true)
 }
+
 fn swap_window_top(
     state: &mut State,
     handle: WindowHandle,
-    _layout: Option<Layout>,
+    _layout: &Option<String>,
     mut to_reorder: Vec<Window>,
     swap: bool,
 ) -> Option<bool> {
