@@ -93,6 +93,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         // Move Window
         "MoveWindowDown" => Ok(Command::MoveWindowDown),
         "MoveWindowTop" => build_move_window_top(rest),
+        "SwapWindowTop" => build_swap_window_top(rest),
         "MoveWindowUp" => Ok(Command::MoveWindowUp),
         "MoveWindowToNextTag" => build_move_window_to_next_tag(rest),
         "MoveWindowToPreviousTag" => build_move_window_to_previous_tag(rest),
@@ -252,6 +253,15 @@ fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
         bool::from_str(raw)?
     };
     Ok(Command::MoveWindowTop { swap })
+}
+
+fn build_swap_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let swap = if raw.is_empty() {
+        true
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::SwapWindowTop { swap })
 }
 
 fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {

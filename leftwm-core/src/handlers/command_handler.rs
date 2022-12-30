@@ -78,6 +78,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::MoveWindowUp => move_focus_common_vars!(move_window_change(state, -1)),
         Command::MoveWindowDown => move_focus_common_vars!(move_window_change(state, 1)),
         Command::MoveWindowTop { swap } => move_focus_common_vars!(move_window_top(state, *swap)),
+        Command::SwapWindowTop { swap } => move_focus_common_vars!(swap_window_top(state, *swap)),
 
         Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
         Command::ReturnToLastTag => return_to_last_tag(state),
@@ -584,6 +585,37 @@ fn move_window_top(
         new_index -= len;
     }
     list.insert(new_index, item);
+
+    state.windows.append(&mut to_reorder);
+    // focus follows the window if it was not already on top of the stack
+    if index > 0 {
+        state.handle_window_focus(&handle);
+    }
+    Some(true)
+}
+fn swap_window_top(
+    state: &mut State,
+    handle: WindowHandle,
+    _layout: Option<Layout>,
+    mut to_reorder: Vec<Window>,
+    swap: bool,
+) -> Option<bool> {
+    // Swaps the selected window to index 0 of the window list.
+    // If the selected window is already at index 0, it is sent to index 1.
+    let is_handle = |x: &Window| -> bool { x.handle == handle };
+    let list = &mut to_reorder;
+    let len = list.len();
+    let index = list.iter().position(|x| is_handle(x))?;
+
+    let mut new_index: usize = match index {
+        0 if swap => 1,
+        _ => 0,
+    };
+
+    if new_index >= len {
+        new_index -= len;
+    }
+    list.swap(index, new_index);
 
     state.windows.append(&mut to_reorder);
     // focus follows the window if it was not already on top of the stack
