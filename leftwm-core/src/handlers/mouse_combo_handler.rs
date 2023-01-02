@@ -19,9 +19,17 @@ impl State {
         if let Some(window) = self.windows.iter().find(|w| w.handle == handle) {
             if !self.disable_tile_drag || window.floating() {
                 let modifier = utils::modmask_lookup::into_modmask(&self.mousekey);
+                let win = window.clone();
                 // Build the display to say whether we are ready to move/resize.
                 let act = self.build_action(modmask, button, handle, modifier);
                 if let Some(act) = act {
+                    if let DisplayAction::ReadyToResizeWindow(_) = act {
+                        let move_act = DisplayAction::MoveMouseOverPoint((
+                            win.x() + win.width(),
+                            win.y() + win.height(),
+                        ));
+                        self.actions.push_back(move_act);
+                    }
                     self.actions.push_back(act);
                     return false;
                 }
