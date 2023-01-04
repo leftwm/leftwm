@@ -1,10 +1,10 @@
+mod layout_manager;
 mod layout_mode;
-mod new_layout_manager;
 
 use thiserror::Error;
 
+pub use layout_manager::LayoutManager;
 pub use layout_mode::LayoutMode;
-pub use new_layout_manager::NewLayoutManager;
 
 pub const DEFAULT: &str = "Default";
 pub const MONOCLE: &str = "Monocle";

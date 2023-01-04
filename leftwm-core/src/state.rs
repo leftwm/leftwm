@@ -2,7 +2,7 @@
 
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
-use crate::layouts::{self, NewLayoutManager};
+use crate::layouts::{self, LayoutManager};
 use crate::models::{
     FocusManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle, WindowType,
     Workspace,
@@ -18,7 +18,7 @@ pub struct State {
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
-    pub layout_manager: NewLayoutManager,
+    pub layout_manager: LayoutManager,
     pub mode: Mode,
     //pub layouts: Vec<Layout>,
     pub layout_definitions: Vec<LayoutDefinition>,
@@ -37,7 +37,7 @@ pub struct State {
 
 impl State {
     pub(crate) fn new(config: &impl Config) -> Self {
-        let layout_manager = NewLayoutManager::new(config);
+        let layout_manager = LayoutManager::new(config);
         let mut tags = Tags::new();
         config.create_list_of_tag_labels().iter().for_each(|label| {
             tags.add_new(label.as_str());

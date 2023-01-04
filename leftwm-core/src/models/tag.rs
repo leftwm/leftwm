@@ -1,5 +1,5 @@
 use super::{TagId, Xyhw};
-use crate::{layouts::NewLayoutManager, Window, Workspace};
+use crate::{layouts::LayoutManager, Window, Workspace};
 use serde::{Deserialize, Serialize};
 
 /// Wrapper struct holding all the tags.
@@ -223,7 +223,7 @@ impl Tag {
         &self,
         windows: &mut [Window],
         workspace: &Workspace,
-        layout_manager: &mut NewLayoutManager,
+        layout_manager: &mut LayoutManager,
     ) {
         if let Some(window) = windows
             .iter_mut()

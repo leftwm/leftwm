@@ -5,12 +5,9 @@ use std::collections::HashMap;
 
 use super::LayoutMode;
 
-/// The [`LayoutManager`] holds the actual [`LayoutDefinitions`],
-/// All references to "layouts" on Workspace or Tag are just
-/// the layout name(s) as String pointing to the value
-/// stored here
+/// The [`LayoutManager`] holds the actual set of [`LayoutDefinition`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NewLayoutManager {
+pub struct LayoutManager {
     /// LayoutMode to be used when applying layouts
     mode: LayoutMode,
 
@@ -24,15 +21,34 @@ pub struct NewLayoutManager {
     layouts: HashMap<usize, Vec<LayoutDefinition>>,
 }
 
-impl NewLayoutManager {
+impl LayoutManager {
     /// Create a new [`LayoutManager`] from the config
     pub fn new(config: &impl Config) -> Self {
-        let available_definitions: Vec<LayoutDefinition> = config
-            .layout_definitions()
-            .iter()
-            .filter(|def| config.layouts().contains(&def.name))
-            .map(std::clone::Clone::clone)
-            .collect();
+        let mut available_definitions: Vec<LayoutDefinition> = Vec::new();
+
+        tracing::debug!(
+            "Looking for layout definitions named: {:?}",
+            config.layouts()
+        );
+        for name in config.layouts() {
+            if let Some(def) = config
+                .layout_definitions()
+                .iter()
+                .find(|def| def.name == name)
+            {
+                available_definitions.push(def.clone())
+            };
+        }
+
+        if available_definitions.is_empty() {
+            tracing::warn!("No LayoutDefinitions were loaded from config - defaulting to a single default LayoutDefinition");
+            available_definitions.push(LayoutDefinition::default());
+        }
+
+        tracing::debug!(
+            "The available layout definitions are: {:?}",
+            available_definitions
+        );
 
         // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
         //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)
@@ -68,7 +84,11 @@ impl NewLayoutManager {
 
     /// Get the current [`LayoutDefinition`] for the provided workspace / tag context
     pub fn layout(&mut self, wsid: usize, tagid: usize) -> &LayoutDefinition {
-        // TODO: prevent panic
+        let layouts = self.layouts(wsid, tagid);
+        assert!(
+            !layouts.is_empty(),
+            "there should always be at least one layout definition"
+        );
         self.layouts(wsid, tagid).first().unwrap()
     }
 
@@ -129,9 +149,9 @@ mod tests {
         layouts::{self, EVEN_VERTICAL, MONOCLE},
     };
 
-    use super::NewLayoutManager;
+    use super::LayoutManager;
 
-    fn layout_manager() -> NewLayoutManager {
+    fn layout_manager() -> LayoutManager {
         let config = TestConfig {
             layouts: vec![
                 layouts::MONOCLE.to_string(),
@@ -159,7 +179,7 @@ mod tests {
             ..Default::default()
         };
 
-        NewLayoutManager::new(&config)
+        LayoutManager::new(&config)
     }
 
     #[test]
