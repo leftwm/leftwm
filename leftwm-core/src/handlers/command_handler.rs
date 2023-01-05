@@ -376,10 +376,6 @@ fn swap_tags(state: &mut State) -> Option<bool> {
         std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tag, &mut temp);
         // Update dock tags and layouts.
         state.update_static();
-        /*state
-        .layout_manager
-        .update_layouts(&mut state.workspaces, state.tags.all_mut());*/
-
         return Some(true);
     }
     if state.workspaces.len() == 1 {
@@ -414,8 +410,6 @@ fn next_layout(state: &mut State) -> Option<bool> {
     state
         .layout_manager
         .cycle_next_layout(workspace.id, workspace.tag.unwrap_or(1));
-    // TODO
-    //set_layout(&layout, state)
     Some(true)
 }
 
@@ -424,8 +418,6 @@ fn previous_layout(state: &mut State) -> Option<bool> {
     state
         .layout_manager
         .cycle_previous_layout(workspace.id, workspace.tag.unwrap_or(1));
-    // TODO
-    // set_layout(&layout, state)
     Some(true)
 }
 
@@ -481,12 +473,6 @@ fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
     state
         .layout_manager
         .set_layout(workspace.id, tag_id, layout);
-    //workspace.layout = layout;
-    //if state.layout_manager.mode == LayoutMode::Workspace {
-    //    workspace.main_width_percentage = layout.main_width();
-    //}
-    //let tag = state.tags.get_mut(tag_id)?;
-    //tag.set_layout(layout, layout.main_width());
     Some(true)
 }
 
