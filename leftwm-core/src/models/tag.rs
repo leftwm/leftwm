@@ -248,41 +248,26 @@ impl Tag {
             let mut all_mine: Vec<&mut Window> =
                 windows.iter_mut().filter(|w| w.has_tag(&self.id)).collect();
             all_mine.iter_mut().for_each(|w| w.set_visible(true));
-            // Update the location of all non-floating windows.
+
+            // Update the location / visibility of all non-floating windows.
             let mut managed_nonfloat: Vec<&mut Window> = windows
                 .iter_mut()
                 .filter(|w| w.has_tag(&self.id) && w.is_managed() && !w.floating())
                 .collect();
-
-            let count = managed_nonfloat.len();
-            let def = layout_manager.layout(workspace.id, self.id);
-            let positions = leftwm_layouts::apply(def, count, &workspace.rect());
-
-            managed_nonfloat
-                .iter_mut()
-                .zip(positions)
-                .for_each(|(w, rect)| w.normal = Xyhw::from(rect));
-
-            //layout_manager.apply(&self.layout, &managed_nonfloat, workspace);
-
             let def = layout_manager.layout(workspace.id, workspace.tag.unwrap_or(1));
             let rects = leftwm_layouts::apply(def, managed_nonfloat.len(), &workspace.rect());
+            for (i, window) in managed_nonfloat.iter_mut().enumerate() {
+                match rects.get(i) {
+                    Some(rect) => {
+                        window.normal = Xyhw::from(*rect);
+                        window.container_size = Some(workspace.xyhw);
+                    }
+                    None => {
+                        window.set_visible(false);
+                    }
+                }
+            }
 
-            rects
-                .iter()
-                .zip(managed_nonfloat)
-                .for_each(|(rect, window)| {
-                    window.normal = Xyhw::from(*rect);
-                    window.container_size = Some(workspace.xyhw);
-                });
-
-            // todo: leftwm_layouts
-            // TODO:
-            //self.layout.update_windows(workspace, &mut managed_nonfloat, self);
-
-            //for w in &mut managed_nonfloat {
-            //    w.container_size = Some(workspace.xyhw);
-            //}
             // Update the location of all floating windows.
             windows
                 .iter_mut()

@@ -36,7 +36,7 @@ impl LayoutManager {
                 .iter()
                 .find(|def| def.name == name)
             {
-                available_definitions.push(def.clone())
+                available_definitions.push(def.clone());
             };
         }
 
