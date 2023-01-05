@@ -106,8 +106,6 @@ impl WindowHook {
         let class_score = self.window_class.as_ref().map_or(0, |re| {
             u8::from(matches_any(re, vec![&window.res_class, &window.res_name]))
         });
-            _ => 0,
-        };
 
         let title_score = self.window_title.as_ref().map_or(0, |re| {
             u8::from(matches_any(re, vec![&window.legacy_name, &window.name]))
