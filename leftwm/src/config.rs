@@ -97,15 +97,19 @@ impl WindowHook {
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
     fn score_window(&self, window: &Window) -> u8 {
-        let class_score = match (&self.window_class, &window.res_class) {
-            (Some(wc_re), Some(res_class)) => u8::from(wc_re.replace(res_class, "") == ""),
-            _ => 0,
+        // returns true if any of the items in the provided `Vec<&Option<String>>` is Some and matches the `&Regex`
+        let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
+            strs.iter()
+                .any(|str| str.as_ref().map_or(false, |s| re.replace(s, "") == ""))
         };
 
-        let title_score = match (&self.window_title, &window.legacy_name) {
-            (Some(wt_re), Some(legacy_name)) => u8::from(wt_re.replace(legacy_name, "") == ""),
-            _ => 0,
-        };
+        let class_score = self.window_class.as_ref().map_or(0, |re| {
+            u8::from(matches_any(re, vec![&window.res_class, &window.res_name]))
+        });
+
+        let title_score = self.window_title.as_ref().map_or(0, |re| {
+            u8::from(matches_any(re, vec![&window.legacy_name, &window.name]))
+        });
 
         class_score + 2 * title_score
     }
