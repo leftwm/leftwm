@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `SwapWindowTop` command as an alternative to `MoveWindowTop` (via #1005 by @emiliode)
 - Reposition mouse cursor to bottom-right corner of window when resizing (via #1009 by @nemalex)
 
+### Fixed
+- Fix minor regression where `res_name` and `name` window properties were no longer checked by window rules (via #1002 by @guigot)
+
 ## [0.4.1]
 ### Fixed
 - Temp fix for MainWidth inconsistency until layout-lib
