@@ -31,11 +31,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.tags.add_new_unlabeled()
         };
 
-        // TODO: ???
-        /*if let Some(tag) = self.state.tags.get_mut(next_id) {
-            tag.layout = new_workspace.layout.to_owned();
-        }*/
-
         self.state.focus_workspace(&new_workspace);
         self.state.focus_tag(&next_id);
         new_workspace.show_tag(&next_id);
