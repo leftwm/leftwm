@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::models::{BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder};
+use crate::models::{BBox, Gutter, Margins, Side, TagId, Window, Xyhw, XyhwBuilder};
 use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -15,7 +15,6 @@ pub struct Workspace {
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
-    pub max_window_width: Option<Size>,
     /// Output (monitor) the workspace is linked to.
     pub output: String,
     /// ID of workspace on output. Starts with 1.
@@ -44,7 +43,7 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(bbox: BBox, max_window_width: Option<Size>, output: String, id: usize) -> Self {
+    pub fn new(bbox: BBox, output: String, id: usize) -> Self {
         Self {
             tag: None,
             margin: Margins::new(10),
@@ -67,7 +66,6 @@ impl Workspace {
                 ..XyhwBuilder::default()
             }
             .into(),
-            max_window_width,
             output,
             id,
         }
@@ -138,16 +136,6 @@ impl Workspace {
         self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
 
-    /// Returns the x position for the workspace,
-    /// while accounting for the optional `max_window_width` configuration
-    #[must_use]
-    pub fn x_limited(&self, column_count: usize) -> i32 {
-        match self.width() - self.width_limited(column_count) {
-            0 => self.x(),
-            remainder => self.x() + (remainder / 2),
-        }
-    }
-
     #[must_use]
     pub fn y(&self) -> i32 {
         let top = self.margin.top as f32;
@@ -173,17 +161,6 @@ impl Workspace {
         //Only one side
         let gutter = self.get_gutter(&Side::Left) + self.get_gutter(&Side::Right);
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
-    }
-
-    /// Returns the width of the workspace,
-    /// while accounting for the optional `max_window_width` configuration
-    #[must_use]
-    pub fn width_limited(&self, column_count: usize) -> i32 {
-        let width = self.width();
-        match self.max_window_width {
-            Some(size) => std::cmp::min(size.into_absolute(width) * column_count as i32, width),
-            None => width,
-        }
     }
 
     fn get_gutter(&self, side: &Side) -> i32 {
@@ -258,7 +235,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            None,
             String::new(),
             0,
         );
@@ -279,7 +255,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            None,
             String::new(),
             0,
         );

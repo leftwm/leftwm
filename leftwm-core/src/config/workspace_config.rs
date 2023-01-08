@@ -11,6 +11,5 @@ pub struct Workspace {
     pub output: String,
     pub relative: Option<bool>,
     pub max_window_width: Option<Size>,
-    // pub layouts: Option<Vec<Layout>>,
     pub layouts: Option<Vec<String>>,
 }

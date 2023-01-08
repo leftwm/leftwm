@@ -17,15 +17,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .count()
             + 1;
 
-        let mut new_workspace = Workspace::new(
-            screen.bbox,
-            //self.state
-            //    .layout_manager
-            //    .new_layout(&screen.output, workspace_id),
-            screen.max_window_width.or(self.state.max_window_width),
-            screen.output.clone(),
-            workspace_id,
-        );
+        let mut new_workspace = Workspace::new(screen.bbox, screen.output.clone(), workspace_id);
         if self.state.workspaces.len() >= tag_len {
             tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. No more workspaces will be added.");
         }

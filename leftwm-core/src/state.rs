@@ -4,8 +4,7 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::{self, LayoutManager};
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle, WindowType,
-    Workspace,
+    FocusManager, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowType, Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::LayoutDefinition;
@@ -27,7 +26,6 @@ pub struct State {
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
     pub mousekey: Vec<String>,
-    pub max_window_width: Option<Size>,
     pub default_width: i32,
     pub default_height: i32,
     pub disable_tile_drag: bool,
@@ -57,7 +55,6 @@ impl State {
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
-            max_window_width: config.max_window_width(),
             mousekey: config.mousekey(),
             default_width: config.default_width(),
             default_height: config.default_height(),
@@ -182,7 +179,6 @@ impl State {
 
     pub(crate) fn load_config(&mut self, config: &impl Config) {
         self.mousekey = config.mousekey();
-        self.max_window_width = config.max_window_width();
         for win in &mut self.windows {
             config.load_window(win);
         }

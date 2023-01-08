@@ -545,10 +545,6 @@ impl leftwm_core::Config for Config {
         self.theme_setting.gutter.clone().unwrap_or_default()
     }
 
-    fn max_window_width(&self) -> Option<Size> {
-        self.max_window_width
-    }
-
     fn disable_tile_drag(&self) -> bool {
         self.disable_tile_drag
     }
