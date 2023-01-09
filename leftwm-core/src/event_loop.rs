@@ -11,10 +11,10 @@ use tracing::error;
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Error {
     #[error("Couldn't create the file: '{0}'")]
-    CreateFile(String),
+    CreateFile(PathBuf),
 
     #[error("Couldn't connect to file: '{0}'")]
-    ConnectToFile(String),
+    ConnectToFile(PathBuf),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -180,30 +180,29 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 }
 
 async fn get_state_socket() -> Result<StateSocket, Error> {
-    let socket_filename = String::from("current_state.sock");
-    let socket_file = place_runtime_file(socket_filename.clone())
-        .map_err(|_| Error::CreateFile(socket_filename.clone()))?;
+    let socket_filename = Path::new("current_state.sock");
+    let socket_file = place_runtime_file(socket_filename)
+        .map_err(|_| Error::CreateFile(socket_filename.into()))?;
 
     let mut state_socket = StateSocket::default();
 
     state_socket
         .listen(socket_file)
         .await
-        .map_err(|_| Error::ConnectToFile(socket_filename))?;
+        .map_err(|_| Error::ConnectToFile(socket_filename.into()))?;
 
     Ok(state_socket)
 }
 
 async fn get_command_pipe() -> Result<CommandPipe, Error> {
     let file_name = CommandPipe::pipe_name();
-    let file_path = file_name.to_str().unwrap().to_string();
 
     let pipe_file =
-        place_runtime_file(&file_name).map_err(|_| Error::CreateFile(file_path.clone()))?;
+        place_runtime_file(&file_name).map_err(|_| Error::CreateFile(file_name.clone()))?;
 
     CommandPipe::new(pipe_file)
         .await
-        .map_err(|_| Error::ConnectToFile(file_path))
+        .map_err(|_| Error::ConnectToFile(file_name))
 }
 
 fn place_runtime_file<P>(path: P) -> std::io::Result<PathBuf>
