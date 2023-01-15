@@ -87,19 +87,31 @@ impl LayoutManager {
     }
 
     /// Get the current [`Layout`] for the provided workspace / tag context
+    ///
+    /// # Panics
+    /// May panic if `available_definitions` is empty, which shouldn't happen because
+    /// it always falls back to a default layout when it's empty
     pub fn layout(&mut self, wsid: usize, tagid: usize) -> &Layout {
         let layouts = self.layouts(wsid, tagid);
         assert!(
             !layouts.is_empty(),
-            "there should always be at least one layout definition"
+            "there should be always at least one layout, because LeftWM must fallback to a default if empty"
         );
-        self.layouts(wsid, tagid).first().unwrap()
+        layouts.first().unwrap()
     }
 
     /// Get the current [`Layout`] for the provided workspace / tag context as mutable
+    ///
+    /// # Panics
+    /// May panic if `available_definitions` is empty, which shouldn't happen because
+    /// it always falls back to a default layout when it's empty
     pub fn layout_mut(&mut self, wsid: usize, tagid: usize) -> &mut Layout {
-        // TODO: prevent panic
-        self.layouts_mut(wsid, tagid).first_mut().unwrap()
+        let layouts = self.layouts_mut(wsid, tagid);
+        assert!(
+            !layouts.is_empty(),
+            "there should be always at least one layout, because LeftWM must fallback to a default if empty"
+        );
+        layouts.first_mut().unwrap()
     }
 
     pub fn cycle_next_layout(&mut self, wsid: usize, tagid: usize) {
