@@ -63,7 +63,7 @@ impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDispl
     pub fn new_test(tags: Vec<String>) -> Self {
         use crate::config::tests::TestConfig;
         let defs = Layouts::default().layouts;
-        let names = defs.iter().map(|def| def.name.to_owned()).collect();
+        let names = defs.iter().map(|def| def.name.clone()).collect();
         Self::new(TestConfig {
             tags,
             layouts: names,
@@ -75,7 +75,7 @@ impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDispl
     pub fn new_test_with_border(tags: Vec<String>, border_width: i32) -> Self {
         use crate::config::tests::TestConfig;
         let defs = Layouts::default().layouts;
-        let names = defs.iter().map(|def| def.name.to_owned()).collect();
+        let names = defs.iter().map(|def| def.name.clone()).collect();
         Self::new(TestConfig {
             tags,
             layouts: names,
