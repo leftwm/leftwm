@@ -210,7 +210,7 @@ impl Default for Config {
             width: Some(Size::Pixel(200)),
         };
 
-        let layouts = leftwm_layouts::Layouts::default();
+        let layouts = leftwm_layouts::layouts::Layouts::default();
 
         Self {
             workspaces: Some(vec![]),

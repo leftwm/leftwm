@@ -8,7 +8,7 @@ pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
 use crate::models::{Manager, Window, WindowType};
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
-use leftwm_layouts::LayoutDefinition;
+use leftwm_layouts::Layout;
 pub use workspace_config::Workspace;
 
 pub trait Config {
@@ -24,7 +24,7 @@ pub trait Config {
 
     fn layouts(&self) -> Vec<String>;
 
-    fn layout_definitions(&self) -> Vec<LayoutDefinition>;
+    fn layout_definitions(&self) -> Vec<Layout>;
 
     fn layout_mode(&self) -> LayoutMode;
 
@@ -94,7 +94,7 @@ pub(crate) mod tests {
     pub struct TestConfig {
         pub tags: Vec<String>,
         pub layouts: Vec<String>,
-        pub layout_definitions: Vec<LayoutDefinition>,
+        pub layout_definitions: Vec<Layout>,
         pub workspaces: Option<Vec<Workspace>>,
         pub insert_behavior: InsertBehavior,
         pub border_width: i32,
@@ -120,7 +120,7 @@ pub(crate) mod tests {
         fn layouts(&self) -> Vec<String> {
             self.layouts.clone()
         }
-        fn layout_definitions(&self) -> Vec<LayoutDefinition> {
+        fn layout_definitions(&self) -> Vec<Layout> {
             self.layout_definitions.clone()
         }
         fn layout_mode(&self) -> LayoutMode {

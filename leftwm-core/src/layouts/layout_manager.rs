@@ -1,11 +1,11 @@
 use crate::{config::Config, utils::helpers::cycle_vec};
-use leftwm_layouts::LayoutDefinition;
+use leftwm_layouts::Layout;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::LayoutMode;
 
-/// The [`LayoutManager`] holds the actual set of [`LayoutDefinition`].
+/// The [`LayoutManager`] holds the actual set of [`Layout`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LayoutManager {
     /// LayoutMode to be used when applying layouts
@@ -14,17 +14,17 @@ pub struct LayoutManager {
     /// All the available layout definitions. Loaded from the config and
     /// to be unchanged during runtime. The layout manager shall make
     /// copies of those definitions for the specific workspaces and tags.
-    available_definitions: Vec<LayoutDefinition>,
+    available_definitions: Vec<Layout>,
 
     /// The actual, modifiable layout definitions grouped by either
     /// Workspace or Tag, depending on the configured [`LayoutMode`].
-    layouts: HashMap<usize, Vec<LayoutDefinition>>,
+    layouts: HashMap<usize, Vec<Layout>>,
 }
 
 impl LayoutManager {
     /// Create a new [`LayoutManager`] from the config
     pub fn new(config: &impl Config) -> Self {
-        let mut available_definitions: Vec<LayoutDefinition> = Vec::new();
+        let mut available_definitions: Vec<Layout> = Vec::new();
 
         tracing::debug!(
             "Looking for layout definitions named: {:?}",
@@ -37,12 +37,16 @@ impl LayoutManager {
                 .find(|def| def.name == name)
             {
                 available_definitions.push(def.clone());
-            };
+            } else {
+                tracing::warn!("There is no Layout with the name {:?}", name);
+            }
         }
 
         if available_definitions.is_empty() {
-            tracing::warn!("No LayoutDefinitions were loaded from config - defaulting to a single default LayoutDefinition");
-            available_definitions.push(LayoutDefinition::default());
+            tracing::warn!(
+                "No Layouts were loaded from config - defaulting to a single default Layout"
+            );
+            available_definitions.push(Layout::default());
         }
 
         tracing::debug!(
@@ -68,22 +72,22 @@ impl LayoutManager {
         }
     }
 
-    fn layouts(&mut self, wsid: usize, tagid: usize) -> &Vec<LayoutDefinition> {
+    fn layouts(&mut self, wsid: usize, tagid: usize) -> &Vec<Layout> {
         let id = self.id(wsid, tagid);
         self.layouts
             .entry(id)
             .or_insert_with(|| self.available_definitions.clone())
     }
 
-    fn layouts_mut(&mut self, wsid: usize, tagid: usize) -> &mut Vec<LayoutDefinition> {
+    fn layouts_mut(&mut self, wsid: usize, tagid: usize) -> &mut Vec<Layout> {
         let id = self.id(wsid, tagid);
         self.layouts
             .entry(id)
             .or_insert_with(|| self.available_definitions.clone())
     }
 
-    /// Get the current [`LayoutDefinition`] for the provided workspace / tag context
-    pub fn layout(&mut self, wsid: usize, tagid: usize) -> &LayoutDefinition {
+    /// Get the current [`Layout`] for the provided workspace / tag context
+    pub fn layout(&mut self, wsid: usize, tagid: usize) -> &Layout {
         let layouts = self.layouts(wsid, tagid);
         assert!(
             !layouts.is_empty(),
@@ -92,8 +96,8 @@ impl LayoutManager {
         self.layouts(wsid, tagid).first().unwrap()
     }
 
-    /// Get the current [`LayoutDefinition`] for the provided workspace / tag context as mutable
-    pub fn layout_mut(&mut self, wsid: usize, tagid: usize) -> &mut LayoutDefinition {
+    /// Get the current [`Layout`] for the provided workspace / tag context as mutable
+    pub fn layout_mut(&mut self, wsid: usize, tagid: usize) -> &mut Layout {
         // TODO: prevent panic
         self.layouts_mut(wsid, tagid).first_mut().unwrap()
     }
@@ -142,7 +146,7 @@ impl LayoutManager {
 
 #[cfg(test)]
 mod tests {
-    use leftwm_layouts::Layouts;
+    use leftwm_layouts::layouts::Layouts;
 
     use crate::{
         config::tests::TestConfig,

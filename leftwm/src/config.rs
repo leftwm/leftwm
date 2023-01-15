@@ -19,7 +19,8 @@ use leftwm_core::{
     state::State,
     DisplayAction, DisplayServer, Manager,
 };
-use leftwm_layouts::LayoutDefinition;
+use leftwm_layouts::layouts::Layouts;
+use leftwm_layouts::Layout;
 use regex::Regex;
 use ron::{
     extensions::Extensions,
@@ -176,7 +177,7 @@ pub struct Config {
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
     pub layouts: Vec<String>,
-    pub layout_definitions: Vec<LayoutDefinition>,
+    pub layout_definitions: Vec<Layout>,
     pub layout_mode: LayoutMode,
     pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
@@ -409,8 +410,12 @@ impl leftwm_core::Config for Config {
         self.layouts.clone()
     }
 
-    fn layout_definitions(&self) -> Vec<LayoutDefinition> {
-        self.layout_definitions.clone()
+    fn layout_definitions(&self) -> Vec<Layout> {
+        let mut layouts = Layouts::default().layouts;
+        for custom_layout in &self.layout_definitions {
+            layouts.push(custom_layout.clone());
+        }
+        layouts
     }
 
     fn layout_mode(&self) -> LayoutMode {

@@ -7,7 +7,7 @@ use crate::models::{
     FocusManager, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowType, Workspace,
 };
 use crate::DisplayAction;
-use leftwm_layouts::LayoutDefinition;
+use leftwm_layouts::Layout;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
@@ -20,7 +20,7 @@ pub struct State {
     pub layout_manager: LayoutManager,
     pub mode: Mode,
     //pub layouts: Vec<Layout>,
-    pub layout_definitions: Vec<LayoutDefinition>,
+    pub layout_definitions: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     pub actions: VecDeque<DisplayAction>,
@@ -295,7 +295,7 @@ impl State {
 
         // restore layouts
         // TODO
-        self.layout_manager = old_state.layout_manager.clone(); // todo: ???
+        // self.layout_manager = old_state.layout_manager.clone(); // todo: ???
     }
 }
 

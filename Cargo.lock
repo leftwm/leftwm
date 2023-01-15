@@ -488,9 +488,9 @@ dependencies = [
 
 [[package]]
 name = "leftwm-layouts"
-version = "0.5.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b0f686deff1205370ecfa4378fe78014f297bf54892a9b8cd95c4e392d576fd"
+checksum = "5cd6764b94186b54fa896c8b0ab2dd81585d123a63509f9c609fd1ac90908390"
 dependencies = [
  "serde",
 ]
