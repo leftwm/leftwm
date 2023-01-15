@@ -11,12 +11,12 @@ pub struct LayoutManager {
     /// LayoutMode to be used when applying layouts
     mode: LayoutMode,
 
-    /// All the available layout definitions. Loaded from the config and
+    /// All the available layouts. Loaded from the config and
     /// to be unchanged during runtime. The layout manager shall make
-    /// copies of those definitions for the specific workspaces and tags.
-    available_definitions: Vec<Layout>,
+    /// copies of those layouts for the specific workspaces and tags.
+    available_layouts: Vec<Layout>,
 
-    /// The actual, modifiable layout definitions grouped by either
+    /// The actual, modifiable layouts grouped by either
     /// Workspace or Tag, depending on the configured [`LayoutMode`].
     layouts: HashMap<usize, Vec<Layout>>,
 }
@@ -24,10 +24,10 @@ pub struct LayoutManager {
 impl LayoutManager {
     /// Create a new [`LayoutManager`] from the config
     pub fn new(config: &impl Config) -> Self {
-        let mut available_definitions: Vec<Layout> = Vec::new();
+        let mut available_layouts: Vec<Layout> = Vec::new();
 
         tracing::debug!(
-            "Looking for layout definitions named: {:?}",
+            "Looking for layout named: {:?}",
             config.layouts()
         );
         for name in config.layouts() {
@@ -36,22 +36,22 @@ impl LayoutManager {
                 .iter()
                 .find(|def| def.name == name)
             {
-                available_definitions.push(def.clone());
+                available_layouts.push(def.clone());
             } else {
                 tracing::warn!("There is no Layout with the name {:?}", name);
             }
         }
 
-        if available_definitions.is_empty() {
+        if available_layouts.is_empty() {
             tracing::warn!(
                 "No Layouts were loaded from config - defaulting to a single default Layout"
             );
-            available_definitions.push(Layout::default());
+            available_layouts.push(Layout::default());
         }
 
         tracing::debug!(
-            "The available layout definitions are: {:?}",
-            available_definitions
+            "The available layouts are: {:?}",
+            available_layouts
         );
 
         // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
@@ -59,7 +59,7 @@ impl LayoutManager {
 
         Self {
             mode: config.layout_mode(),
-            available_definitions,
+            available_layouts,
             layouts: HashMap::new(),
         }
     }
@@ -76,20 +76,20 @@ impl LayoutManager {
         let id = self.id(wsid, tagid);
         self.layouts
             .entry(id)
-            .or_insert_with(|| self.available_definitions.clone())
+            .or_insert_with(|| self.available_layouts.clone())
     }
 
     fn layouts_mut(&mut self, wsid: usize, tagid: usize) -> &mut Vec<Layout> {
         let id = self.id(wsid, tagid);
         self.layouts
             .entry(id)
-            .or_insert_with(|| self.available_definitions.clone())
+            .or_insert_with(|| self.available_layouts.clone())
     }
 
     /// Get the current [`Layout`] for the provided workspace / tag context
     ///
     /// # Panics
-    /// May panic if `available_definitions` is empty, which shouldn't happen because
+    /// May panic if `available_layouts` is empty, which shouldn't happen because
     /// it always falls back to a default layout when it's empty
     pub fn layout(&mut self, wsid: usize, tagid: usize) -> &Layout {
         let layouts = self.layouts(wsid, tagid);
@@ -103,7 +103,7 @@ impl LayoutManager {
     /// Get the current [`Layout`] for the provided workspace / tag context as mutable
     ///
     /// # Panics
-    /// May panic if `available_definitions` is empty, which shouldn't happen because
+    /// May panic if `available_layouts` is empty, which shouldn't happen because
     /// it always falls back to a default layout when it's empty
     pub fn layout_mut(&mut self, wsid: usize, tagid: usize) -> &mut Layout {
         let layouts = self.layouts_mut(wsid, tagid);
@@ -136,7 +136,7 @@ impl LayoutManager {
         };
     }
 
-    // todo: reset fn, that resets all the layout-definitions to their unchanged properties
+    // todo: reset fn, that resets all the layouts to their unchanged properties
 
     /*pub fn apply(&self, name: &String, windows: &Vec<&mut Window>, ws: &Workspace) {
         let def = self
