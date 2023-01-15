@@ -26,10 +26,7 @@ impl LayoutManager {
     pub fn new(config: &impl Config) -> Self {
         let mut available_layouts: Vec<Layout> = Vec::new();
 
-        tracing::debug!(
-            "Looking for layout named: {:?}",
-            config.layouts()
-        );
+        tracing::debug!("Looking for layout named: {:?}", config.layouts());
         for name in config.layouts() {
             if let Some(def) = config
                 .layout_definitions()
@@ -49,10 +46,7 @@ impl LayoutManager {
             available_layouts.push(Layout::default());
         }
 
-        tracing::debug!(
-            "The available layouts are: {:?}",
-            available_layouts
-        );
+        tracing::debug!("The available layouts are: {:?}", available_layouts);
 
         // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
         //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)
