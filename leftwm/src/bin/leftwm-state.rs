@@ -1,6 +1,7 @@
 use clap::{arg, command};
-use leftwm_core::errors::Result;
+use leftwm_core::errors::{LeftError, Result};
 use leftwm_core::models::dto::{DisplayState, ManagerState};
+use liquid::Template;
 use std::ffi::OsStr;
 use std::path::Path;
 use std::str;
@@ -26,12 +27,7 @@ async fn main() -> Result<()> {
         let path = Path::new(template_file);
         let partials = get_partials(path.parent()).await?;
         let template_str = fs::read_to_string(template_file).await?;
-        let template = liquid::ParserBuilder::with_stdlib()
-            .partials(partials)
-            .build()
-            .expect("Unable to build template")
-            .parse(&template_str)
-            .expect("Unable to parse template");
+        let template = get_parsed_template(&template_str, Some(partials))?;
         while let Some(line) = stream_reader.next_line().await? {
             let _droppable = template_handler(&template, newline, ws_id, &line);
             if once {
@@ -39,11 +35,7 @@ async fn main() -> Result<()> {
             }
         }
     } else if let Some(string_literal) = string_literal {
-        let template = liquid::ParserBuilder::with_stdlib()
-            .build()
-            .expect("Unable to build template")
-            .parse(string_literal)
-            .expect("Unable to parse template");
+        let template = get_parsed_template(string_literal, None)?;
         while let Some(line) = stream_reader.next_line().await? {
             let _droppable = template_handler(&template, newline, ws_id, &line);
             if once {
@@ -60,6 +52,28 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Given some string literal and optional partials, calculate the template and return a useful
+/// error
+fn get_parsed_template(string_literal: &str, partials: Option<Partials>) -> Result<Template> {
+    let mut parser = liquid::ParserBuilder::with_stdlib();
+    if let Some(partials) = partials {
+        parser = parser.partials(partials);
+    }
+
+    match parser
+        .build()
+        .expect("Unable to build template")
+        .parse(string_literal)
+    {
+        Ok(template) => Ok(template),
+        Err(err) => {
+            eprintln!("{err}");
+
+            Err(LeftError::LiquidParsingError)
+        }
+    }
 }
 
 async fn get_partials(dir: Option<&Path>) -> Result<Partials> {
