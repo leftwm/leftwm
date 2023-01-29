@@ -1,7 +1,6 @@
 use super::Tag;
 use crate::{config::Config, layouts::Layout, Workspace};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutMode {
@@ -19,28 +18,33 @@ impl Default for LayoutMode {
 pub struct LayoutManager {
     pub mode: LayoutMode,
     pub layouts: Vec<Layout>,
-    pub layouts_per_workspaces: HashMap<(String, usize), Vec<Layout>>,
+    pub layouts_per_workspaces: Vec<LayoutsForWorkspace>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LayoutsForWorkspace {
+    pub output: String,
+    pub id: usize,
+    pub layouts: Vec<Layout>,
 }
 
 impl LayoutManager {
     pub fn new(config: &impl Config) -> Self {
-        let mut layouts_per_workspaces: HashMap<(String, usize), Vec<Layout>> = HashMap::default();
+        let mut layouts_per_workspaces: Vec<LayoutsForWorkspace> = Vec::new();
         config
             .workspaces()
             .unwrap_or_default()
             .iter()
             .for_each(|ws| {
-                layouts_per_workspaces.insert(
-                    (
-                        ws.output.clone(),
-                        layouts_per_workspaces
-                            .keys()
-                            .filter(|&key| key.0 == ws.output)
-                            .count()
-                            + 1,
-                    ),
-                    ws.layouts.clone().unwrap_or_default(),
-                );
+                layouts_per_workspaces.push(LayoutsForWorkspace {
+                    output: ws.output.clone(),
+                    id: layouts_per_workspaces
+                        .iter()
+                        .filter(|&i| i.output == ws.output)
+                        .count()
+                        + 1,
+                    layouts: ws.layouts.clone().unwrap_or_default(),
+                });
             });
 
         Self {
@@ -107,12 +111,13 @@ impl LayoutManager {
 
     fn layouts(&self, output: &str, id: usize) -> &Vec<Layout> {
         self.layouts_per_workspaces
-            .get(&(output.to_owned(), id))
-            .and_then(|layouts| {
-                if layouts.is_empty() {
+            .iter()
+            .find(|lfw| lfw.output == output && lfw.id == id)
+            .and_then(|lfw| {
+                if lfw.layouts.is_empty() {
                     None
                 } else {
-                    Some(layouts)
+                    Some(&lfw.layouts)
                 }
             })
             .unwrap_or(&self.layouts)
