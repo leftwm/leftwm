@@ -207,7 +207,7 @@ exec dbus-launch ~/.cargo/bin/leftwm >> ~/.cache/leftwm.log 2>&1
 [AUR]: https://aur.archlinux.org/packages/leftwm
 [GURU]: https://gitweb.gentoo.org/repo/proj/guru.git/tree/x11-wm/leftwm
 [copr]: https://copr.fedorainfracloud.org/coprs/atim/leftwm/
-[Official repositories]: https://pkgsrc.se/wm/leftwm/
+[Official repositories]: http://cvsweb.netbsd.org/bsdweb.cgi/pkgsrc/wm/leftwm/
 [XBPS]: https://voidlinux.org/packages/?arch=x86_64&q=leftwm
 [crates.io]: https://crates.io/crates/leftwm
 [paru]: https://github.com/Morganamilo/paru
