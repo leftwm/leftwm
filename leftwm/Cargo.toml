@@ -35,7 +35,7 @@ time_leftwm = { package = "time", version = "0.3.7", features = [
   "formatting",
   "local-offset",
 ] }
-tokio = { version = "1.2.0", features = [
+tokio = { version = "1.24.2", features = [
   "fs",
   "io-util",
   "macros",
