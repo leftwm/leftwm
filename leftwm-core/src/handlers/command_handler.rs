@@ -321,9 +321,8 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
         .focus_manager
         .workspace(&state.workspaces)
         .map(|ws| state.layout_manager.layout(ws.id, tag_id))
-        .map(|def| def.name.clone())
     {
-        Some(layout) if layout == layouts::MONOCLE || layout == layouts::MAIN_AND_DECK => {
+        Some(layout) if layout.is_monocle() || layout.is_main_and_deck() => {
             let mut windows = helpers::vec_extract(&mut state.windows, |w| {
                 w.has_tag(&tag_id) && w.is_managed() && !w.floating()
             });
@@ -334,9 +333,9 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
                 s.windows.append(wins);
             };
 
-            if layout == layouts::MONOCLE && windows.len() > 1 {
+            if layout.is_monocle() && windows.len() > 1 {
                 cycle(&mut windows, state);
-            } else if layout == layouts::MAIN_AND_DECK && windows.len() > 2 {
+            } else if layout.is_main_and_deck() && windows.len() > 2 {
                 let main_window = windows.remove(0);
                 state.windows.push(main_window);
                 cycle(&mut windows, state);
