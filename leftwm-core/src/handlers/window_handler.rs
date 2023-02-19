@@ -436,7 +436,7 @@ fn update_workspace_avoid_list(state: &mut State) {
         .filter(|w| w.r#type == WindowType::Dock)
         .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
         .for_each(|(handle, to_avoid)| {
-            tracing::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
+            tracing::trace!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
             avoid.push(to_avoid);
         });
     for ws in &mut state.workspaces {

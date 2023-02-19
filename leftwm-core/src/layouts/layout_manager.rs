@@ -46,7 +46,7 @@ impl LayoutManager {
             available_layouts.push(Layout::default());
         }
 
-        tracing::debug!("The available layouts are: {:?}", available_layouts);
+        tracing::trace!("The available layouts are: {:?}", available_layouts);
 
         // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
         //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)
@@ -56,6 +56,14 @@ impl LayoutManager {
             available_layouts,
             layouts: HashMap::new(),
         }
+    }
+
+    pub fn restore(&mut self, old: &LayoutManager) {
+        if self.mode != old.mode {
+            tracing::debug!("The LayoutMode has changed, layouts will not be restored");
+            return;
+        }
+        tracing::debug!("Restoring layouts is currently not implemented");
     }
 
     /// Get back either the workspace ID or the tag ID, based on the current [`LayoutMode`]
@@ -109,11 +117,11 @@ impl LayoutManager {
     }
 
     pub fn cycle_next_layout(&mut self, wsid: usize, tagid: usize) {
-        cycle_vec(self.layouts_mut(wsid, tagid), 1);
+        cycle_vec(self.layouts_mut(wsid, tagid), -1);
     }
 
     pub fn cycle_previous_layout(&mut self, wsid: usize, tagid: usize) {
-        cycle_vec(self.layouts_mut(wsid, tagid), -1);
+        cycle_vec(self.layouts_mut(wsid, tagid), 1);
     }
 
     pub fn set_layout(&mut self, wsid: usize, tagid: usize, name: &str) {

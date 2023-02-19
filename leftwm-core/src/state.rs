@@ -35,7 +35,6 @@ pub struct State {
 
 impl State {
     pub(crate) fn new(config: &impl Config) -> Self {
-        let layout_manager = LayoutManager::new(config);
         let mut tags = Tags::new();
         config.create_list_of_tag_labels().iter().for_each(|label| {
             tags.add_new(label.as_str());
@@ -44,9 +43,8 @@ impl State {
 
         Self {
             focus_manager: FocusManager::new(config),
-            layout_manager,
+            layout_manager: LayoutManager::new(config),
             scratchpads: config.create_list_of_scratchpads(),
-            //layouts: config.layouts(),
             layout_definitions: config.layout_definitions(),
             screens: Default::default(),
             windows: Default::default(),
@@ -189,6 +187,8 @@ impl State {
 
     /// Apply saved state to a running manager.
     pub fn restore_state(&mut self, old_state: &Self) {
+        tracing::debug!("Restoring old state");
+
         // Restore tags.
         for old_tag in old_state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {
@@ -293,9 +293,8 @@ impl State {
         };
         self.focus_tag(&tag_id);
 
-        // restore layouts
-        // TODO
-        // self.layout_manager = old_state.layout_manager.clone(); // todo: ???
+        // Restore layout manager
+        self.layout_manager.restore(&old_state.layout_manager);
     }
 }
 
