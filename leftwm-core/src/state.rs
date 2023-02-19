@@ -2,7 +2,7 @@
 
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
-use crate::layouts::{self, LayoutManager};
+use crate::layouts::LayoutManager;
 use crate::models::{
     FocusManager, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowType, Workspace,
 };
