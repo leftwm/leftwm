@@ -283,7 +283,7 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
     Ok(Command::MoveWindowToPreviousTag { follow })
 }
 
-fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
+fn without_head<'a>(s: &'a str, head: &str) -> &'a str {
     if !s.starts_with(head) {
         return s;
     }

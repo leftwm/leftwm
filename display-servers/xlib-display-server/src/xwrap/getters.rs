@@ -368,16 +368,8 @@ impl XWrap {
             if status == 0 {
                 return None;
             }
-            let res_name =
-                match CString::from_raw(class_return.res_name.cast::<c_char>()).into_string() {
-                    Ok(s) => s,
-                    Err(_) => return None,
-                };
-            let res_class =
-                match CString::from_raw(class_return.res_class.cast::<c_char>()).into_string() {
-                    Ok(s) => s,
-                    Err(_) => return None,
-                };
+            let Ok(res_name) = CString::from_raw(class_return.res_name.cast::<c_char>()).into_string() else { return None };
+            let Ok(res_class) = CString::from_raw(class_return.res_class.cast::<c_char>()).into_string() else { return None };
             Some((res_name, res_class))
         }
     }
