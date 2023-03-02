@@ -62,12 +62,12 @@ tempfile = "3.2.0"
 
 [features]
 default = ["journald-log", "lefthk"]
-lefthk = ["lefthk-core"]
+lefthk = ["dep:lefthk-core"]
 
 # logging features
-journald-log = ["tracing-journald"]
-file-log = ["tracing-appender"]
-sys-log = ["syslog-tracing"]
+journald-log = ["dep:tracing-journald"]
+file-log = ["dep:tracing-appender"]
+sys-log = ["dep:syslog-tracing"]
 
 # Sleep on restart
 slow-dm-fix = []
