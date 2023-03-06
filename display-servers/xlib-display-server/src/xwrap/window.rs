@@ -150,7 +150,7 @@ impl XWrap {
             self.set_window_border_color(handle, color);
 
             if follow_mouse {
-                let _ = self.move_cursor_to_window(handle);
+                _ = self.move_cursor_to_window(handle);
             }
             if self.focus_behaviour.is_clickto() {
                 self.grab_mouse_clicks(handle, false);

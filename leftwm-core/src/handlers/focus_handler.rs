@@ -28,7 +28,7 @@ impl State {
             // this is an uggly workaround to suffice some CI failure related to https://github.com/rust-lang/rust/issues/59159
             let workspace_output_borrow_checker_workaround = workspace.output.clone();
             let workspace_id_borrow_checker_workaround = workspace.id;
-            let _ = self.focus_workspace_work(
+            _ = self.focus_workspace_work(
                 &workspace_output_borrow_checker_workaround,
                 workspace_id_borrow_checker_workaround,
             );
@@ -36,7 +36,7 @@ impl State {
 
         // Make sure the focused window's tag is focused.
         if let Some(tag) = window.tag {
-            let _ = self.focus_tag_work(tag);
+            _ = self.focus_tag_work(tag);
         }
     }
 

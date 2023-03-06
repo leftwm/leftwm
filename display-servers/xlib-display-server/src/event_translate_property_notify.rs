@@ -3,7 +3,7 @@ use leftwm_core::models::{WindowChange, WindowType, Xyhw};
 
 use x11_dl::xlib;
 
-pub(crate) fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
+pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
     if event.window == xw.get_default_root()
         || event.state == xlib::PropertyDelete
         || !xw.managed_windows.contains(&event.window)

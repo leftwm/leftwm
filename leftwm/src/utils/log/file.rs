@@ -9,7 +9,7 @@ use xdg::BaseDirectories;
 const LOG_PREFIX: &str = "leftwm";
 const LOG_FILE_NAME: &str = "log.log";
 
-pub(crate) fn add_layer<S>(subscriber: S) -> impl Subscriber + for<'span> LookupSpan<'span>
+pub fn add_layer<S>(subscriber: S) -> impl Subscriber + for<'span> LookupSpan<'span>
 where
     S: Subscriber + for<'span> LookupSpan<'span>,
 {

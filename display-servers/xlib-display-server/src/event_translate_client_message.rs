@@ -5,7 +5,7 @@ use std::os::raw::c_long;
 
 use x11_dl::xlib;
 
-pub(crate) fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
+pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<DisplayEvent> {
     if !xw.managed_windows.contains(&event.window) && event.window != xw.get_default_root() {
         return None;
     }

@@ -232,7 +232,7 @@ fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle, force: bool) -> Op
     let window = handle.xlib_handle()?;
     match xw.get_cursor_window() {
         Ok(WindowHandle::XlibHandle(cursor_window)) if force || cursor_window != window => {
-            let _ = xw.move_cursor_to_window(window);
+            _ = xw.move_cursor_to_window(window);
         }
         _ => {}
     }
@@ -240,7 +240,7 @@ fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle, force: bool) -> Op
 }
 
 fn from_move_mouse_over_point(xw: &mut XWrap, point: (i32, i32)) -> Option<DisplayEvent> {
-    let _ = xw.move_cursor_to_point(point);
+    _ = xw.move_cursor_to_point(point);
     None
 }
 
