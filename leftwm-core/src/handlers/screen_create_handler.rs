@@ -7,6 +7,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
+        //self.config.workspaces()
+
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
         let workspace_id = self

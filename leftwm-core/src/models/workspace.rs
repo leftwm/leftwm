@@ -5,6 +5,50 @@ use crate::models::{
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+struct Workspaces {
+    workspaces: Vec<Workspace>,
+}
+
+impl Workspaces {
+    fn add(&mut self, wsc: Workspace) {
+        self.workspaces.push(wsc);
+    }
+
+    fn get(&self, id: usize) -> Option<&Workspace> {
+        self.workspaces.iter().find(|ws| ws.id == id)
+    }
+
+    /*fn next_id(&self) -> usize {
+        self.workspaces.last().map(|ws| ws.id).unwrap_or(0) + 1
+    }*/
+
+    fn find_pos(&self, reference: usize) -> Option<usize> {
+        self.workspaces.iter().position(|ws| ws.id == reference)
+    }
+
+    fn previous_pos(&self, reference: usize) -> Option<usize> {
+        match self.find_pos(reference)? {
+            0 => Some(self.workspaces.len() - 1),
+            i => Some(i - 1),
+        }
+    }
+
+    fn next_pos(&self, reference: usize) -> Option<usize> {
+        match self.find_pos(reference)? {
+            i if i == self.workspaces.len() => Some(0),
+            i => Some(i + 1),
+        }
+    }
+
+    pub fn previous(&self, reference: usize) -> Option<&Workspace> {
+        self.workspaces.get(self.previous_pos(reference)?)
+    }
+
+    pub fn next(&self, reference: usize) -> Option<&Workspace> {
+        self.workspaces.get(self.next_pos(reference)?)
+    }
+}
+
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
