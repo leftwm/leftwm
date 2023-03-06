@@ -193,13 +193,11 @@ impl XlibDisplayServer {
         let mut all: Vec<DisplayEvent> = Vec::new();
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
-                let attrs = match self.xw.get_window_attrs(handle) {
-                    Ok(x) => x,
-                    Err(_) => return,
+                let Ok(attrs) = self.xw.get_window_attrs(handle) else {
+                    return
                 };
-                let state = match self.xw.get_wm_state(handle) {
-                    Some(state) => state,
-                    None => return,
+                let Some(state) = self.xw.get_wm_state(handle) else {
+                    return
                 };
                 if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
                     if let Some(event) = self.xw.setup_window(handle) {

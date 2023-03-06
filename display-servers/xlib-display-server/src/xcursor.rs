@@ -4,10 +4,10 @@ use x11_dl::xlib;
 //#![allow(non_snake_case)]
 #[derive(Clone, Debug)]
 #[allow(non_snake_case)]
-pub struct XCursor {
-    pub normal: c_ulong,
-    pub resize: c_ulong,
-    pub move_: c_ulong,
+pub(crate) struct XCursor {
+    pub(crate) normal: c_ulong,
+    pub(crate) resize: c_ulong,
+    pub(crate) move_: c_ulong,
 }
 
 //pointer def can be found at https://tronche.com/gui/x/xlib/appendix/b/
@@ -16,7 +16,7 @@ const SIZING: c_uint = 120;
 const FLEUR: c_uint = 52;
 
 impl XCursor {
-    pub fn new(xlib: &xlib::Xlib, dpy: *mut xlib::Display) -> Self {
+    pub(crate) fn new(xlib: &xlib::Xlib, dpy: *mut xlib::Display) -> Self {
         unsafe {
             Self {
                 normal: (xlib.XCreateFontCursor)(dpy, LEFT_PTR),

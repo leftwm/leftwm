@@ -28,12 +28,12 @@ mod setters;
 mod window;
 
 type WindowStateConst = c_long;
-pub const WITHDRAWN_STATE: WindowStateConst = 0;
-pub const NORMAL_STATE: WindowStateConst = 1;
-pub const ICONIC_STATE: WindowStateConst = 2;
+pub(crate) const WITHDRAWN_STATE: WindowStateConst = 0;
+pub(crate) const NORMAL_STATE: WindowStateConst = 1;
+pub(crate) const ICONIC_STATE: WindowStateConst = 2;
 const MAX_PROPERTY_VALUE_LEN: c_long = 4096;
 
-pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
+pub(crate) const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
     | xlib::SubstructureNotifyMask
     | xlib::ButtonPressMask
     | xlib::PointerMotionMask
@@ -55,7 +55,10 @@ const X_POLYTEXT8: u8 = 74;
 // are not yet stable (1.56.0, 16 Sept 2021)
 // see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
 #[allow(clippy::missing_const_for_fn)]
-pub extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
+pub(crate) extern "C" fn on_error_from_xlib(
+    _: *mut xlib::Display,
+    er: *mut xlib::XErrorEvent,
+) -> c_int {
     let err = unsafe { *er };
     let ec = err.error_code;
     let rc = err.request_code;
@@ -78,14 +81,14 @@ pub extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErro
     1
 }
 
-pub extern "C" fn on_error_from_xlib_dummy(
+pub(crate) extern "C" fn on_error_from_xlib_dummy(
     _: *mut xlib::Display,
     _: *mut xlib::XErrorEvent,
 ) -> c_int {
     1
 }
 
-pub struct Colors {
+pub(crate) struct Colors {
     normal: c_ulong,
     floating: c_ulong,
     active: c_ulong,

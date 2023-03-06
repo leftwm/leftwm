@@ -4,7 +4,7 @@ use tracing_subscriber::{layer::SubscriberExt, registry::LookupSpan};
 
 const IDENTITY: &[u8] = b"leftwm\0";
 
-pub fn add_layer<S>(subscriber: S) -> impl Subscriber + for<'span> LookupSpan<'span>
+pub(crate) fn add_layer<S>(subscriber: S) -> impl Subscriber + for<'span> LookupSpan<'span>
 where
     S: Subscriber + for<'span> LookupSpan<'span>,
 {
