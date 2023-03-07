@@ -10,7 +10,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         tracing::debug!("screen create: {:?}", screen);
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
-        let workspace_id = screen.id.expect("screen is expected to always have an id");
+        let workspace_id = screen
+            .id
+            .unwrap_or_else(|| self.state.workspaces.last().map_or(0, |ws| ws.id) + 1);
 
         let mut new_workspace = Workspace::new(
             screen.bbox,
