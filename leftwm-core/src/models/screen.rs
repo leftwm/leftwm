@@ -80,6 +80,7 @@ impl From<&Workspace> for Screen {
                 x: wsc.x,
                 y: wsc.y,
             },
+            output: wsc.output.clone(),
             max_window_width: wsc.max_window_width,
             ..Default::default()
         }

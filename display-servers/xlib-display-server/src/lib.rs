@@ -154,7 +154,6 @@ impl XlibDisplayServer {
                         if wsc.relative.unwrap_or(false) {
                             screen.bbox.add(output_match.bbox);
                         }
-                        screen.output = output_match.output.clone(); // what's the point of that?
                         screen.id = Some(i);
                     }
                     None => continue,
