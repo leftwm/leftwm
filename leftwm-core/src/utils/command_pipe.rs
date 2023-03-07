@@ -296,7 +296,7 @@ fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::E
     Ok(Command::DecreaseMainWidth(change))
 }
 
-fn without_head<'a, 'b>(s: &'a str, head: &'b str) -> &'a str {
+fn without_head<'a>(s: &'a str, head: &str) -> &'a str {
     if !s.starts_with(head) {
         return s;
     }

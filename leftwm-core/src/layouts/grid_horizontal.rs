@@ -44,10 +44,7 @@ pub fn update(workspace: &Workspace, tag: &Tag, windows: &mut [&mut Window]) {
         };
 
         for row in 0..num_rows_in_this_col {
-            let (_idx, win) = match iter.next() {
-                Some(x) => x,
-                None => return,
-            };
+            let Some((_idx, win)) = iter.next() else { return };
             win.set_height(win_height);
             win.set_width(win_width);
 
