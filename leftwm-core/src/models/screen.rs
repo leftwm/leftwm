@@ -1,4 +1,4 @@
-use super::{DockArea, Size, WindowHandle};
+use super::{DockArea, Size, WindowHandle, WorkspaceId};
 use crate::config::Workspace;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
@@ -8,7 +8,7 @@ use x11_dl::xlib;
 pub struct Screen {
     pub root: WindowHandle,
     pub output: String,
-    pub id: Option<usize>,
+    pub id: Option<WorkspaceId>,
     #[serde(flatten)]
     pub bbox: BBox,
     pub max_window_width: Option<Size>,
@@ -31,7 +31,7 @@ impl Screen {
             output: String::new(),
             bbox,
             max_window_width: None,
-            id: None
+            id: None,
         }
     }
 

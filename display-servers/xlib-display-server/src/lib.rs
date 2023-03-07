@@ -154,7 +154,7 @@ impl XlibDisplayServer {
                         if wsc.relative.unwrap_or(false) {
                             screen.bbox.add(output_match.bbox);
                         }
-                        screen.output = output_match.output.clone();
+                        screen.output = output_match.output.clone(); // what's the point of that?
                         screen.id = Some(i);
                     }
                     None => continue,
@@ -172,12 +172,19 @@ impl XlibDisplayServer {
                 false
             };
 
+            let mut next_id = workspaces.len() + 1;
+
             // If there is no hardcoded workspace layout, add every screen not mentioned in the config.
             if auto_derive_workspaces {
                 screens
                     .iter()
                     .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
-                    .for_each(|screen| events.push(DisplayEvent::ScreenCreate(screen.clone())));
+                    .for_each(|screen| {
+                        let mut s = screen.clone();
+                        s.id = Some(next_id);
+                        next_id += 1;
+                        events.push(DisplayEvent::ScreenCreate(s));
+                    });
             }
         }
 

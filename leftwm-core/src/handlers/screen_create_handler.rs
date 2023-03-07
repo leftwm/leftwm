@@ -7,17 +7,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
-        //self.config.workspaces()
-
+        tracing::debug!("screen create: {:?}", screen);
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
-        let workspace_id = self
-            .state
-            .workspaces
-            .iter()
-            .filter(|ws| ws.output == screen.output)
-            .count()
-            + 1;
+        let workspace_id = screen.id.expect("screen is expected to always have an id");
 
         let mut new_workspace = Workspace::new(
             screen.bbox,

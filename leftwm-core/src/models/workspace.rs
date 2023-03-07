@@ -5,6 +5,9 @@ use crate::models::{
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use super::WorkspaceId;
+
+/*
 struct Workspaces {
     workspaces: Vec<Workspace>,
 }
@@ -18,9 +21,9 @@ impl Workspaces {
         self.workspaces.iter().find(|ws| ws.id == id)
     }
 
-    /*fn next_id(&self) -> usize {
+    fn next_id(&self) -> usize {
         self.workspaces.last().map(|ws| ws.id).unwrap_or(0) + 1
-    }*/
+    }
 
     fn find_pos(&self, reference: usize) -> Option<usize> {
         self.workspaces.iter().position(|ws| ws.id == reference)
@@ -48,6 +51,7 @@ impl Workspaces {
         self.workspaces.get(self.next_pos(reference)?)
     }
 }
+*/
 
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
@@ -66,7 +70,7 @@ pub struct Workspace {
     /// Output (monitor) the workspace is linked to.
     pub output: String,
     /// ID of workspace on output. Starts with 1.
-    pub id: usize,
+    pub id: WorkspaceId,
 }
 
 impl fmt::Debug for Workspace {
