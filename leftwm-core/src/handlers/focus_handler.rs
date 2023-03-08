@@ -19,14 +19,20 @@ impl State {
 
     /// Focuses the given window.
     pub fn focus_window(&mut self, handle: &WindowHandle) {
+<<<<<<< HEAD
         let Some(window) = self.focus_window_work(handle) else { return };
+=======
+        let Some(window) = self.focus_window_work(handle) else {
+            return
+        };
+>>>>>>> main
 
         // Make sure the focused window's workspace is focused.
         if let Some(workspace) = self.workspaces.iter().find(|ws| ws.is_displaying(&window)) {
             // this is an uggly workaround to suffice some CI failure related to https://github.com/rust-lang/rust/issues/59159
             let workspace_output_borrow_checker_workaround = workspace.output.clone();
             let workspace_id_borrow_checker_workaround = workspace.id;
-            let _ = self.focus_workspace_work(
+            _ = self.focus_workspace_work(
                 &workspace_output_borrow_checker_workaround,
                 workspace_id_borrow_checker_workaround,
             );
@@ -34,7 +40,7 @@ impl State {
 
         // Make sure the focused window's tag is focused.
         if let Some(tag) = window.tag {
-            let _ = self.focus_tag_work(tag);
+            _ = self.focus_tag_work(tag);
         }
     }
 
@@ -99,7 +105,13 @@ impl State {
 
     /// Focuses the workspace containing a given point.
     pub fn focus_workspace_with_point(&mut self, x: i32, y: i32) {
+<<<<<<< HEAD
         let Some(focused_ws) = self.focus_manager.workspace(&self.workspaces) else { return };
+=======
+        let Some(focused_ws) = self.focus_manager.workspace(&self.workspaces) else {
+            return
+        };
+>>>>>>> main
         if let Some(ws) = self
             .workspaces
             .iter()
@@ -149,7 +161,13 @@ impl State {
     // Helper function.
 
     fn focus_closest_window(&mut self, x: i32, y: i32) {
+<<<<<<< HEAD
         let Some(ws) = self.workspaces.iter().find(|ws| ws.contains_point(x, y)) else { return };
+=======
+        let Some(ws) = self.workspaces.iter().find(|ws| ws.contains_point(x, y)) else {
+            return
+        };
+>>>>>>> main
         let mut dists: Vec<(i32, &Window)> = self
             .windows
             .iter()
