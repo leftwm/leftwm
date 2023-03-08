@@ -1,4 +1,4 @@
-use super::Tag;
+use super::{Tag, WorkspaceId};
 use crate::{config::Config, layouts::Layout, Workspace};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -19,12 +19,12 @@ impl Default for LayoutMode {
 pub struct LayoutManager {
     pub mode: LayoutMode,
     pub layouts: Vec<Layout>,
-    pub layouts_per_workspaces: HashMap<usize, Vec<Layout>>,
+    pub layouts_per_workspaces: HashMap<WorkspaceId, Vec<Layout>>,
 }
 
 impl LayoutManager {
     pub fn new(config: &impl Config) -> Self {
-        let mut layouts_per_workspaces: HashMap<usize, Vec<Layout>> = HashMap::default();
+        let mut layouts_per_workspaces: HashMap<WorkspaceId, Vec<Layout>> = HashMap::default();
         config
             .workspaces()
             .unwrap_or_default()
@@ -41,7 +41,7 @@ impl LayoutManager {
         }
     }
 
-    pub fn new_layout(&self, id: usize) -> Layout {
+    pub fn new_layout(&self, id: WorkspaceId) -> Layout {
         *self.layouts(id).first().unwrap_or(&Layout::default())
     }
 
@@ -92,7 +92,7 @@ impl LayoutManager {
         Some(true)
     }
 
-    fn layouts(&self, id: usize) -> &Vec<Layout> {
+    fn layouts(&self, id: WorkspaceId) -> &Vec<Layout> {
         self.layouts_per_workspaces
             .get(&id)
             .and_then(|layouts| {
@@ -146,7 +146,7 @@ mod tests {
         LayoutManager::new(&config)
     }
 
-    fn workspace(id: usize, layout: Layout) -> Workspace {
+    fn workspace(id: WorkspaceId, layout: Layout) -> Workspace {
         Workspace::new(
             BBox {
                 width: 0,
