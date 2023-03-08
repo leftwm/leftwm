@@ -19,28 +19,19 @@ impl Default for LayoutMode {
 pub struct LayoutManager {
     pub mode: LayoutMode,
     pub layouts: Vec<Layout>,
-    pub layouts_per_workspaces: HashMap<(String, usize), Vec<Layout>>,
+    pub layouts_per_workspaces: HashMap<usize, Vec<Layout>>,
 }
 
 impl LayoutManager {
     pub fn new(config: &impl Config) -> Self {
-        let mut layouts_per_workspaces: HashMap<(String, usize), Vec<Layout>> = HashMap::default();
+        let mut layouts_per_workspaces: HashMap<usize, Vec<Layout>> = HashMap::default();
         config
             .workspaces()
             .unwrap_or_default()
             .iter()
-            .for_each(|ws| {
-                layouts_per_workspaces.insert(
-                    (
-                        ws.output.clone(),
-                        layouts_per_workspaces
-                            .keys()
-                            .filter(|&key| key.0 == ws.output)
-                            .count()
-                            + 1,
-                    ),
-                    ws.layouts.clone().unwrap_or_default(),
-                );
+            .enumerate()
+            .for_each(|(i, ws)| {
+                layouts_per_workspaces.insert(i + 1, ws.layouts.clone().unwrap_or_default());
             });
 
         Self {
@@ -50,16 +41,12 @@ impl LayoutManager {
         }
     }
 
-    pub fn new_layout(&self, output: &str, id: usize) -> Layout {
-        *self
-            .layouts(output, id)
-            .first()
-            .unwrap_or(&Layout::default())
+    pub fn new_layout(&self, id: usize) -> Layout {
+        *self.layouts(id).first().unwrap_or(&Layout::default())
     }
 
     pub fn next_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = self.layouts(&workspace.output, workspace.id);
-
+        let layouts = self.layouts(workspace.id);
         let next = match layouts.iter().position(|&x| x == workspace.layout) {
             Some(index) if index == layouts.len() - 1 => layouts.first(),
             Some(index) => layouts.get(index + 1),
@@ -72,7 +59,7 @@ impl LayoutManager {
     }
 
     pub fn previous_layout(&self, workspace: &Workspace) -> Layout {
-        let layouts = self.layouts(&workspace.output, workspace.id);
+        let layouts = self.layouts(workspace.id);
 
         let next = match layouts.iter().position(|&x| x == workspace.layout) {
             Some(index) if index == 0 => layouts.last(),
@@ -105,9 +92,9 @@ impl LayoutManager {
         Some(true)
     }
 
-    fn layouts(&self, output: &str, id: usize) -> &Vec<Layout> {
+    fn layouts(&self, id: usize) -> &Vec<Layout> {
         self.layouts_per_workspaces
-            .get(&(output.to_owned(), id))
+            .get(&id)
             .and_then(|layouts| {
                 if layouts.is_empty() {
                     None
@@ -178,22 +165,9 @@ mod tests {
     fn layouts_should_fallback_to_the_global_list() {
         let layout_manager = layout_manager();
 
-        assert_eq!(
-            layout_manager.layouts(&String::from("TEST"), 2),
-            &layout_manager.layouts
-        ); // layouts = None
-        assert_eq!(
-            layout_manager.layouts(&String::from("TEST"), 3),
-            &layout_manager.layouts
-        ); // layouts = vec![]
-        assert_eq!(
-            layout_manager.layouts(&String::from("TEST"), 4),
-            &layout_manager.layouts
-        ); // Non existent id
-        assert_eq!(
-            layout_manager.layouts(&String::from("NONE"), 1),
-            &layout_manager.layouts
-        ); // Non existent output
+        assert_eq!(layout_manager.layouts(2), &layout_manager.layouts); // layouts = None
+        assert_eq!(layout_manager.layouts(3), &layout_manager.layouts); // layouts = vec![]
+        assert_eq!(layout_manager.layouts(4), &layout_manager.layouts); // Non existent id
     }
 
     #[test]

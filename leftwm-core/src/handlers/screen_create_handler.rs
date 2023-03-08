@@ -16,9 +16,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         let mut new_workspace = Workspace::new(
             screen.bbox,
-            self.state
-                .layout_manager
-                .new_layout(&screen.output, workspace_id),
+            self.state.layout_manager.new_layout(workspace_id),
             screen.max_window_width.or(self.state.max_window_width),
             screen.output.clone(),
             workspace_id,
@@ -33,11 +31,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             tag_index + 1
         } else {
             // Add a new tag for the workspace.
-            self.state.tags.add_new_unlabeled(
-                self.state
-                    .layout_manager
-                    .new_layout(&screen.output, workspace_id),
-            )
+            self.state
+                .tags
+                .add_new_unlabeled(self.state.layout_manager.new_layout(workspace_id))
         };
 
         if let Some(tag) = self.state.tags.get_mut(next_id) {

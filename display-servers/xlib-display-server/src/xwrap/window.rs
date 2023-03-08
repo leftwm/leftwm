@@ -198,11 +198,7 @@ impl XWrap {
                 self.set_window_config(handle, changes, u32::from(unlock));
                 self.configure_window(window);
             }
-<<<<<<< HEAD
-            let Some(state) = self.get_wm_state(handle) else { return };
-=======
             let Some(state) = self.get_wm_state(handle) else {return};
->>>>>>> main
             // Only change when needed. This prevents task bar icons flashing (especially with steam).
             if window.visible() && state != NORMAL_STATE {
                 self.toggle_window_visibility(handle, true);
