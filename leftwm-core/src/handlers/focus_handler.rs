@@ -19,9 +19,8 @@ impl State {
 
     /// Focuses the given window.
     pub fn focus_window(&mut self, handle: &WindowHandle) {
-        let window = match self.focus_window_work(handle) {
-            Some(w) => w,
-            None => return,
+        let Some(window) = self.focus_window_work(handle) else {
+            return
         };
 
         // Make sure the focused window's workspace is focused.
@@ -29,7 +28,7 @@ impl State {
             // this is an uggly workaround to suffice some CI failure related to https://github.com/rust-lang/rust/issues/59159
             let workspace_output_borrow_checker_workaround = workspace.output.clone();
             let workspace_id_borrow_checker_workaround = workspace.id;
-            let _ = self.focus_workspace_work(
+            _ = self.focus_workspace_work(
                 &workspace_output_borrow_checker_workaround,
                 workspace_id_borrow_checker_workaround,
             );
@@ -37,7 +36,7 @@ impl State {
 
         // Make sure the focused window's tag is focused.
         if let Some(tag) = window.tag {
-            let _ = self.focus_tag_work(tag);
+            _ = self.focus_tag_work(tag);
         }
     }
 
@@ -102,9 +101,8 @@ impl State {
 
     /// Focuses the workspace containing a given point.
     pub fn focus_workspace_with_point(&mut self, x: i32, y: i32) {
-        let focused_ws = match self.focus_manager.workspace(&self.workspaces) {
-            Some(r) => r,
-            None => return,
+        let Some(focused_ws) = self.focus_manager.workspace(&self.workspaces) else {
+            return
         };
         if let Some(ws) = self
             .workspaces
@@ -155,9 +153,8 @@ impl State {
     // Helper function.
 
     fn focus_closest_window(&mut self, x: i32, y: i32) {
-        let ws = match self.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-            Some(ws) => ws,
-            None => return,
+        let Some(ws) = self.workspaces.iter().find(|ws| ws.contains_point(x, y)) else {
+            return
         };
         let mut dists: Vec<(i32, &Window)> = self
             .windows

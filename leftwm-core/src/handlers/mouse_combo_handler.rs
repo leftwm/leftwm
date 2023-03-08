@@ -52,7 +52,7 @@ impl State {
         let is_mouse_key = mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask);
         match button {
             xlib::Button1 if is_mouse_key => {
-                let _ = self
+                _ = self
                     .windows
                     .iter()
                     .find(|w| w.handle == window && w.can_move())?;
@@ -60,7 +60,7 @@ impl State {
                 Some(DisplayAction::ReadyToMoveWindow(window))
             }
             xlib::Button3 if is_mouse_key => {
-                let _ = self
+                _ = self
                     .windows
                     .iter()
                     .find(|w| w.handle == window && w.can_resize())?;

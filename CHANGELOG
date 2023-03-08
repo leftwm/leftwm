@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add `SwapWindowTop` command as an alternative to `MoveWindowTop` (via #1005 by @emiliode)
 - Reposition mouse cursor to bottom-right corner of window when resizing (via #1009 by @nemalex)
+- The currently supported MSRV is 1.65.0
 
 ### Fixed
 - Fix minor regression where `res_name` and `name` window properties were no longer checked by window rules (via #1002 by @guigot)
