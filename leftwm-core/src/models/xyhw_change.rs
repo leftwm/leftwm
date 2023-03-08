@@ -104,13 +104,9 @@ impl XyhwChange {
         } else {
             false
         };
-<<<<<<< HEAD
-        let Some(mut xyhw) = window.strut else { return false };
-=======
         let Some(mut xyhw) = window.strut else {
             return false
         };
->>>>>>> main
         changed = self.update(&mut xyhw) || changed;
         window.strut = Some(xyhw);
         changed
