@@ -193,13 +193,11 @@ impl XlibDisplayServer {
         let mut all: Vec<DisplayEvent> = Vec::new();
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
-                let attrs = match self.xw.get_window_attrs(handle) {
-                    Ok(x) => x,
-                    Err(_) => return,
+                let Ok(attrs) = self.xw.get_window_attrs(handle) else {
+                    return
                 };
-                let state = match self.xw.get_wm_state(handle) {
-                    Some(state) => state,
-                    None => return,
+                let Some(state) = self.xw.get_wm_state(handle) else {
+                    return
                 };
                 if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
                     if let Some(event) = self.xw.setup_window(handle) {
@@ -234,7 +232,7 @@ fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle, force: bool) -> Op
     let window = handle.xlib_handle()?;
     match xw.get_cursor_window() {
         Ok(WindowHandle::XlibHandle(cursor_window)) if force || cursor_window != window => {
-            let _ = xw.move_cursor_to_window(window);
+            _ = xw.move_cursor_to_window(window);
         }
         _ => {}
     }
@@ -242,7 +240,7 @@ fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle, force: bool) -> Op
 }
 
 fn from_move_mouse_over_point(xw: &mut XWrap, point: (i32, i32)) -> Option<DisplayEvent> {
-    let _ = xw.move_cursor_to_point(point);
+    _ = xw.move_cursor_to_point(point);
     None
 }
 

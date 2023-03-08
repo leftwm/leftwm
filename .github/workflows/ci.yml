@@ -25,7 +25,7 @@ jobs:
     name: Check MSRV
     strategy:
       matrix:
-        toolchain: [ '1.60.0' ]
+        toolchain: [ '1.65.0' ]
         target: [ 'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu' ]
     uses: ./.github/workflows/lib/check-msrv.yml
     with:

@@ -1,6 +1,7 @@
 [package]
 name = "leftwm"
 version = "0.4.1"
+rust-version = "1.65.0"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["window manager"]
 edition = "2021"
@@ -22,12 +23,12 @@ lefthk-core = { version = '0.1.8', optional = true }
 leftwm-core = { path = "../leftwm-core", version = '0.4.1' }
 liquid = "0.26.0"
 mio = "0.8.0"
-nix = "0.25.0"
+nix = "0.26.2"
 regex = "1"
 ron = "0.8.0"
 serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
-shellexpand = "2.1"
+shellexpand = "3.0.0"
 signal-hook = "0.3.4"
 thiserror = "1.0.30"
 time_leftwm = { package = "time", version = "0.3.7", features = [
@@ -44,7 +45,7 @@ tokio = { version = "1.2.0", features = [
   "sync",
   "time",
 ] }
-toml = "0.5.5"
+toml = "0.7.2"
 xdg = "2.2.0"
 
 # logging
