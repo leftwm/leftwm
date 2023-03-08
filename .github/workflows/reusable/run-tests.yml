@@ -60,10 +60,6 @@ jobs:
       - name: apt install libsystemd-dev
         run: sudo apt install -y --no-install-recommends libsystemd-dev
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
       - name: Run test
         uses: actions-rs/cargo@v1
         with:

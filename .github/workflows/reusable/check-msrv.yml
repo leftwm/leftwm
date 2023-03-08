@@ -19,9 +19,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - run: curl https://sh.rustup.rs -sSf | sh -s -- -y
-      - run: source "$HOME/.cargo/env"
-
       - name: Install MSRV Toolchain (${{ inputs.toolchain }})
         uses: actions-rs/toolchain@v1
         with:

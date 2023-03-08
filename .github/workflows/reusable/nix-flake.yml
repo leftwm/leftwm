@@ -12,10 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
       - name: Install Nix
         uses: cachix/install-nix-action@v16
         with:
