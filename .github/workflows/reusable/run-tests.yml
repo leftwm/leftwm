@@ -1,0 +1,67 @@
+name: Run Tests and Linters
+
+on:
+  workflow_call:
+
+jobs:
+  fmt:
+    name: Run rustfmt in check mode
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Run fmt
+        uses: actions-rs/cargo@v1
+        with:
+            command: fmt
+            args: -- --check
+
+  clippy:
+    name: Run clippy
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: apt update
+        run: sudo apt update
+
+      - name: apt install libsystemd-dev
+        run: sudo apt install -y --no-install-recommends libsystemd-dev
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Run clippy
+        uses: actions-rs/cargo@v1
+        with:
+            command: clippy
+            args: --all-targets --all-features
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: apt update
+        run: sudo apt update
+
+      - name: apt install libsystemd-dev
+        run: sudo apt install -y --no-install-recommends libsystemd-dev
+
+      - name: Run test
+        uses: actions-rs/cargo@v1
+        with:
+            command: test
+            args: --all-targets --all-features

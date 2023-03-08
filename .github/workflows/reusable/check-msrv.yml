@@ -1,0 +1,35 @@
+name: Check MSRV
+
+on:
+  workflow_call:
+    inputs:
+      toolchain:
+        required: true
+        type: string
+      target:
+        type: string
+        default: 'x86_64-unknown-linux-gnu'
+
+jobs:
+  msrv:
+    name: Check MSRV (${{ inputs.toolchain }} on ${{ inputs.target }})
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install MSRV Toolchain (${{ inputs.toolchain }})
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: ${{ inputs.toolchain }}
+            target: ${{ inputs.target }}
+            override: true
+
+      - name: Cargo Check
+        uses: actions-rs/cargo@v1
+        with:
+            command: check
+
+      - name: Display MSRV
+        run: cargo -V
