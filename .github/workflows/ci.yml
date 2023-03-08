@@ -15,11 +15,11 @@ jobs:
 
   test:
     name: Run tests
-    uses: ./.github/workflows/reusable/run-tests.yml
+    uses: ./.github/workflows/run-tests.yml
 
   build:
     name: Run build
-    uses: ./.github/workflows/reusable/run-build.yml
+    uses: ./.github/workflows/run-build.yml
 
   msrv:
     name: Check MSRV
@@ -27,11 +27,11 @@ jobs:
       matrix:
         toolchain: [ '1.65.0' ]
         target: [ 'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu' ]
-    uses: ./.github/workflows/reusable/check-msrv.yml
+    uses: ./.github/workflows/check-msrv.yml
     with:
       toolchain: ${{ matrix.toolchain }}
       target: ${{ matrix.target }}
     
   nix-flake:
     name: Nix Flake
-    uses: ./.github/workflows/reusable/nix-flake.yml
+    uses: ./.github/workflows/nix-flake.yml
