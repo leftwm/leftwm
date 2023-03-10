@@ -307,10 +307,7 @@ impl Children {
 impl FromIterator<Child> for Children {
     fn from_iter<T: IntoIterator<Item = Child>>(iter: T) -> Self {
         Self {
-            inner: iter
-                .into_iter()
-                .map(|child| (child.id(), child))
-                .collect::<HashMap<_, _>>(),
+            inner: iter.into_iter().map(|child| (child.id(), child)).collect(),
         }
     }
 }
