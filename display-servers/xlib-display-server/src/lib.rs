@@ -154,7 +154,7 @@ impl XlibDisplayServer {
                         if wsc.relative.unwrap_or(false) {
                             screen.bbox.add(output_match.bbox);
                         }
-                        screen.id = Some(i);
+                        screen.id = Some(i + 1);
                     }
                     None => continue,
                 }
