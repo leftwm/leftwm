@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Viewport {
+    pub id: usize,
     pub tag: String,
     pub h: u32,
     pub w: u32,
@@ -36,6 +37,7 @@ pub struct TagsForWorkspace {
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DisplayWorkspace {
+    pub id: usize,
     pub h: u32,
     pub w: u32,
     pub x: i32,
@@ -100,6 +102,7 @@ fn viewport_into_display_workspace(
         })
         .collect();
     DisplayWorkspace {
+        id: viewport.id,
         tags,
         h: viewport.h,
         w: viewport.w,
@@ -137,6 +140,7 @@ impl From<&State> for ManagerState {
                 .unwrap();
 
             viewports.push(Viewport {
+                id: ws.id,
                 tag: tag_label,
                 x: ws.xyhw.x(),
                 y: ws.xyhw.y(),
