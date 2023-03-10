@@ -193,9 +193,9 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
 
 fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "GoToTag ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let tag: TagId = parts.first().ok_or("missing argument tag_id")?.parse()?;
-    let swap: bool = parts.get(1).ok_or("missing argument swap")?.parse()?;
+    let mut parts = headless.split(' ');
+    let tag: TagId = parts.next().ok_or("missing argument tag_id")?.parse()?;
+    let swap: bool = parts.next().ok_or("missing argument swap")?.parse()?;
     Ok(Command::GoToTag { tag, swap })
 }
 
@@ -289,15 +289,15 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
 
 fn build_increase_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "IncreaseMainWidth ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let change: i8 = parts.first().ok_or("missing argument change")?.parse()?;
+    let mut parts = headless.split(' ');
+    let change: i8 = parts.next().ok_or("missing argument change")?.parse()?;
     Ok(Command::IncreaseMainWidth(change))
 }
 
 fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "DecreaseMainWidth ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let change: i8 = parts.first().ok_or("missing argument change")?.parse()?;
+    let mut parts = headless.split(' ');
+    let change: i8 = parts.next().ok_or("missing argument change")?.parse()?;
     Ok(Command::DecreaseMainWidth(change))
 }
 
