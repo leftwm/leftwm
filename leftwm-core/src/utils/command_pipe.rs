@@ -23,11 +23,16 @@ impl Drop for CommandPipe {
 
         // Open fifo for write to unblock pending open for read operation that prevents tokio runtime
         // from shutting down.
-        std::fs::OpenOptions::new()
+        if let Err(err) = std::fs::OpenOptions::new()
             .write(true)
             .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
-            .open(self.pipe_file.clone())
-            .ok();
+            .open(&self.pipe_file)
+        {
+            eprintln!(
+                "Failed to open {} when dropping CommandPipe: {err}",
+                self.pipe_file.display()
+            );
+        }
     }
 }
 
