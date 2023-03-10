@@ -14,4 +14,6 @@ pub enum LeftError {
     XdgBaseDirError(#[from] xdg::BaseDirectoriesError),
     #[error("Stream error")]
     StreamError,
+    #[error("Liquid parsing error")]
+    LiquidParsingError,
 }
