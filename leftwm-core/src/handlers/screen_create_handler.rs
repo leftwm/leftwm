@@ -11,9 +11,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
-        let workspace_id = screen
-            .id
-            .unwrap_or_else(|| self.state.workspaces.last().map_or(0, |ws| ws.id) + 1);
+
+        // Only used in tests, where there are multiple screens being created by `Screen::default()` (id is 0 by default)
+        #[cfg(test)]
+        let workspace_id = match screen.id {
+            0 => self.state.workspaces.last().map_or(0, |ws| ws.id) + 1,
+            other => other,
+        };
+        #[cfg(not(test))]
+        let workspace_id = screen.id;
 
         let mut new_workspace = Workspace::new(
             screen.bbox,
