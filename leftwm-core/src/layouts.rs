@@ -153,7 +153,6 @@ mod tests {
             },
             Layout::default(),
             None,
-            String::from("TEST"),
             0,
         );
         ws.margin = Margins::new(0);

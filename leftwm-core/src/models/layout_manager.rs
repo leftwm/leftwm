@@ -156,7 +156,6 @@ mod tests {
             },
             layout,
             None,
-            String::from("TEST"),
             id,
         )
     }

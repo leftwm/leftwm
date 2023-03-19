@@ -12,19 +12,13 @@ pub enum Side {
 pub struct Gutter {
     pub side: Side,
     pub value: i32,
-    pub output: Option<String>,
     pub id: Option<usize>,
 }
 
 impl Gutter {
     #[must_use]
-    pub const fn new(side: Side, value: i32, output: Option<String>, id: Option<usize>) -> Self {
-        Self {
-            side,
-            value,
-            output,
-            id,
-        }
+    pub const fn new(side: Side, value: i32, id: Option<usize>) -> Self {
+        Self { side, value, id }
     }
 }
 
@@ -33,7 +27,6 @@ impl Default for Gutter {
         Self {
             side: Side::Top,
             value: 0,
-            output: None,
             id: None,
         }
     }

@@ -19,7 +19,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             screen.bbox,
             self.state.layout_manager.new_layout(workspace_id),
             screen.max_window_width.or(self.state.max_window_width),
-            screen.output.clone(),
             workspace_id,
         );
         if self.state.workspaces.len() >= tag_len {

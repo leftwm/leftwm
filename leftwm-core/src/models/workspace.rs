@@ -21,9 +21,7 @@ pub struct Workspace {
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
     pub max_window_width: Option<Size>,
-    /// Output (monitor) the workspace is linked to.
-    pub output: String,
-    /// ID of workspace on output. Starts with 1.
+    /// ID of workspace. Starts with 1.
     pub id: WorkspaceId,
 }
 
@@ -31,8 +29,7 @@ impl fmt::Debug for Workspace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Workspace {{ output: {:?}, id: {}, tags: {:?}, x: {}, y: {} }}",
-            self.output,
+            "Workspace {{ id: {}, tags: {:?}, x: {}, y: {} }}",
             self.id,
             self.tag,
             self.xyhw.x(),
@@ -43,19 +40,13 @@ impl fmt::Debug for Workspace {
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Self) -> bool {
-        self.output == other.output && self.id == other.id
+        self.id == other.id
     }
 }
 
 impl Workspace {
     #[must_use]
-    pub fn new(
-        bbox: BBox,
-        layout: Layout,
-        max_window_width: Option<Size>,
-        output: String,
-        id: usize,
-    ) -> Self {
+    pub fn new(bbox: BBox, layout: Layout, max_window_width: Option<Size>, id: usize) -> Self {
         Self {
             layout,
             main_width_percentage: layout.main_width(),
@@ -81,7 +72,6 @@ impl Workspace {
             }
             .into(),
             max_window_width,
-            output,
             id,
         }
     }
@@ -95,15 +85,11 @@ impl Workspace {
         config
             .get_list_of_gutters()
             .into_iter()
-            .filter(|gutter| {
-                gutter.output.is_none()
-                    || gutter.output == Some(self.output.clone())
-                        && (gutter.id.is_none() || gutter.id == Some(self.id))
-            })
+            .filter(|gutter| gutter.id.is_none() || gutter.id == Some(self.id))
             .fold(vec![], |mut acc, gutter| {
                 match acc.iter().enumerate().find(|(_i, g)| g.side == gutter.side) {
                     Some((i, x)) => {
-                        if x.output.is_none() {
+                        if x.id.is_none() {
                             acc[i] = gutter;
                         }
                     }
@@ -264,7 +250,6 @@ mod tests {
             },
             Layout::default(),
             None,
-            String::new(),
             0,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
@@ -286,7 +271,6 @@ mod tests {
             },
             Layout::default(),
             None,
-            String::new(),
             0,
         );
         let tag = crate::models::Tag::new(TAG_ID, "test", Layout::default());
