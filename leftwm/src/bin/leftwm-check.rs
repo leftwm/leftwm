@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use clap::{arg, command};
-use leftwm::utils::file_handler::{load_from_file, write_to_file};
+use leftwm::utils::file_handler::{check_config_file, write_to_file};
 use leftwm::ThemeSetting;
 use std::{
     env, fs,
@@ -38,58 +38,11 @@ async fn main() -> Result<()> {
         let ron_file = path.place_config_file("config.ron")?;
         let toml_file = path.place_config_file("config.toml")?;
 
-        let config = load_from_file(toml_file.as_os_str().to_str(), verbose)?;
+        let config = check_config_file(toml_file.as_os_str().to_str(), verbose)?;
 
         write_to_file(&ron_file, &config)?;
 
         return Ok(());
-    }
-
-    pub(crate) fn check_elogind(verbose: bool) -> Result<()> {
-        // We assume that if it is in the path it's all good
-        // We also cross-reference the ENV variable
-        match (
-            std::env::var("XDG_RUNTIME_DIR"),
-            leftwm::is_program_in_path("loginctl"),
-        ) {
-            (Ok(val), true) => {
-                if verbose {
-                    println!(":: XDG_RUNTIME_DIR: {val}, LOGINCTL OKAY");
-                }
-
-                println!("\x1b[0;92m    -> Environment OK \x1b[0m");
-
-                Ok(())
-            }
-            (Ok(val), false) => {
-                if verbose {
-                    println!(":: XDG_RUNTIME_DIR: {val}, LOGINCTL not installed");
-                }
-
-                println!("\x1b[0;92m    -> Environment OK (has XDG_RUNTIME_DIR) \x1b[0m");
-
-                Ok(())
-            }
-            (Err(e), false) => {
-                if verbose {
-                    println!(":: XDG_RUNTIME_DIR_ERROR: {e:?}, LOGINCTL BAD");
-                }
-
-                bail!(
-                    "Elogind not installed/operating and no alternative XDG_RUNTIME_DIR is set. \
-                See https://github.com/leftwm/leftwm/wiki/XDG_RUNTIME_DIR for more information."
-                );
-            }
-            (Err(e), true) => {
-                if verbose {
-                    println!(":: XDG_RUNTIME_DIR: {e:?}, LOGINCTL OKAY");
-                }
-                println!(
-                    "\x1b[1;93mWARN: Elogind/systemd installed but XDG_RUNTIME_DIR not set.\nThis may be because elogind isn't started. \x1b[0m",
-                );
-                Ok(())
-            }
-        }
     }
 
     match check_enabled_features() {
@@ -100,7 +53,7 @@ async fn main() -> Result<()> {
     }
 
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
-    match load_from_file(config_file, verbose) {
+    match check_config_file(config_file, verbose) {
         Ok(config) => {
             println!("\x1b[0;92m    -> Configuration loaded OK \x1b[0m");
             if verbose {
@@ -122,6 +75,53 @@ async fn main() -> Result<()> {
     check_theme(verbose);
 
     Ok(())
+}
+
+pub(crate) fn check_elogind(verbose: bool) -> Result<()> {
+    // We assume that if it is in the path it's all good
+    // We also cross-reference the ENV variable
+    match (
+        std::env::var("XDG_RUNTIME_DIR"),
+        leftwm::is_program_in_path("loginctl"),
+    ) {
+        (Ok(val), true) => {
+            if verbose {
+                println!(":: XDG_RUNTIME_DIR: {val}, LOGINCTL OKAY");
+            }
+
+            println!("\x1b[0;92m    -> Environment OK \x1b[0m");
+
+            Ok(())
+        }
+        (Ok(val), false) => {
+            if verbose {
+                println!(":: XDG_RUNTIME_DIR: {val}, LOGINCTL not installed");
+            }
+
+            println!("\x1b[0;92m    -> Environment OK (has XDG_RUNTIME_DIR) \x1b[0m");
+
+            Ok(())
+        }
+        (Err(e), false) => {
+            if verbose {
+                println!(":: XDG_RUNTIME_DIR_ERROR: {e:?}, LOGINCTL BAD");
+            }
+
+            bail!(
+                "Elogind not installed/operating and no alternative XDG_RUNTIME_DIR is set. \
+                See https://github.com/leftwm/leftwm/wiki/XDG_RUNTIME_DIR for more information."
+            );
+        }
+        (Err(e), true) => {
+            if verbose {
+                println!(":: XDG_RUNTIME_DIR: {e:?}, LOGINCTL OKAY");
+            }
+            println!(
+                    "\x1b[1;93mWARN: Elogind/systemd installed but XDG_RUNTIME_DIR not set.\nThis may be because elogind isn't started. \x1b[0m",
+                );
+            Ok(())
+        }
+    }
 }
 
 /// Checks if `.config/leftwm/theme/current/` is a valid path

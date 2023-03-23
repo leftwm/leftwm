@@ -11,7 +11,7 @@ use super::BaseCommand;
 use super::ThemeSetting;
 #[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
-use crate::utils::file_handler::write_to_file;
+use crate::utils::file_handler::load_config_file;
 use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
@@ -21,7 +21,6 @@ use leftwm_core::{
     DisplayAction, DisplayServer, Manager,
 };
 use regex::Regex;
-use ron::{extensions::Extensions, Options};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     convert::TryInto,
@@ -30,7 +29,6 @@ use std::{
     fs::{self, File},
     path::{Path, PathBuf},
 };
-use xdg::BaseDirectories;
 
 /// Path to file where state will be dumped upon soft reload.
 const STATE_FILE: &str = "/tmp/leftwm.state";
@@ -197,54 +195,9 @@ pub struct Config {
 
 #[must_use]
 pub fn load() -> Config {
-    load_from_file()
+    load_config_file()
         .map_err(|err| eprintln!("ERROR LOADING CONFIG: {err:?}"))
         .unwrap_or_default()
-}
-
-/// # Panics
-///
-/// Function can only panic if toml cannot be serialized. This should not occur as it is defined
-/// globally.
-///
-/// # Errors
-///
-/// Function will throw an error if `BaseDirectories` doesn't exist, if user doesn't have
-/// permissions to place config.toml, if config.toml cannot be read (access writes, malformed file,
-/// etc.).
-/// Function can also error from inability to save config.toml (if it is the first time running
-/// `LeftWM`).
-fn load_from_file() -> Result<Config> {
-    tracing::debug!("Loading config file");
-
-    let path = BaseDirectories::with_prefix("leftwm")?;
-
-    // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
-    let config_file_ron = path.place_config_file("config.ron")?;
-    let config_file_toml = path.place_config_file("config.toml")?;
-
-    if Path::new(&config_file_ron).exists() {
-        tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
-        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
-        let contents = fs::read_to_string(config_file_ron)?;
-        let config = ron.from_str(&contents)?;
-        Ok(config)
-    } else if Path::new(&config_file_toml).exists() {
-        tracing::debug!(
-            "Config file '{}' found.",
-            config_file_toml.to_string_lossy()
-        );
-        let contents = fs::read_to_string(config_file_toml)?;
-        let config = toml::from_str(&contents)?;
-        tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
-        Ok(config)
-    } else {
-        tracing::debug!("Config file not found. Using default config file.");
-
-        let config = Config::default();
-        write_to_file(&config_file_ron, &config)?;
-        Ok(config)
-    }
 }
 
 #[must_use]
