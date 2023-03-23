@@ -77,7 +77,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn check_elogind(verbose: bool) -> Result<()> {
+fn check_elogind(verbose: bool) -> Result<()> {
     // We assume that if it is in the path it's all good
     // We also cross-reference the ENV variable
     match (
