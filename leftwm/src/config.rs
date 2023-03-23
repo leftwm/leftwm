@@ -11,6 +11,7 @@ use super::BaseCommand;
 use super::ThemeSetting;
 #[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
+use crate::utils::file_handler::write_to_file;
 use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
@@ -20,19 +21,15 @@ use leftwm_core::{
     DisplayAction, DisplayServer, Manager,
 };
 use regex::Regex;
-use ron::{
-    extensions::Extensions,
-    ser::{to_string_pretty, PrettyConfig},
-    Options,
-};
+use ron::{extensions::Extensions, Options};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryInto;
-use std::default::Default;
-use std::env;
-use std::fs;
-use std::fs::File;
-use std::io::prelude::Write;
-use std::path::{Path, PathBuf};
+use std::{
+    convert::TryInto,
+    default::Default,
+    env,
+    fs::{self, File},
+    path::{Path, PathBuf},
+};
 use xdg::BaseDirectories;
 
 /// Path to file where state will be dumped upon soft reload.
@@ -245,27 +242,7 @@ fn load_from_file() -> Result<Config> {
         tracing::debug!("Config file not found. Using default config file.");
 
         let config = Config::default();
-        let ron_pretty_conf = PrettyConfig::new()
-            .depth_limit(2)
-            .extensions(Extensions::IMPLICIT_SOME);
-        let ron = to_string_pretty(&config, ron_pretty_conf).unwrap();
-        let comment_header = String::from(
-            r#"//  _        ___                                      ___ _
-// | |      / __)_                                   / __|_)
-// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
-// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
-// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
-// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
-// A WindowManager for Adventurers                         (____/
-// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
-
-"#,
-        );
-        let ron_with_header = comment_header + &ron;
-
-        let mut file = File::create(&config_file_ron)?;
-        file.write_all(ron_with_header.as_bytes())?;
-
+        write_to_file(&config_file_ron, &config)?;
         Ok(config)
     }
 }
