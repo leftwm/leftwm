@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use clap::{arg, command};
-use leftwm::utils::file_handler::{check_config_file, write_to_file};
 use leftwm::ThemeSetting;
+use leftwm::{utils::file_handler::write_to_file, Config};
 use std::{
     env, fs,
     os::unix::fs::PermissionsExt,
@@ -75,6 +75,44 @@ async fn main() -> Result<()> {
     check_theme(verbose);
 
     Ok(())
+}
+
+/// Loads configuration from either specified file (preferred) or default.
+/// # Errors
+///
+/// Errors if file cannot be read. Indicates filesystem error
+/// (inadequate permissions, disk full, etc.)
+/// If a path is specified and does not exist, returns `LeftError`.
+pub fn check_config_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
+    let config_filename = if let Some(fspath) = fspath {
+        println!("\x1b[1;35mNote: Using file {fspath} \x1b[0m");
+        PathBuf::from(fspath)
+    } else {
+        let ron_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
+        let toml_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
+        if Path::new(&ron_file).exists() {
+            ron_file
+        } else if Path::new(&toml_file).exists() {
+            println!(
+                "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
+      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
+            );
+            toml_file
+        } else {
+            let config = Config::default();
+            write_to_file(&ron_file, &config)?;
+            return Ok(config);
+        }
+    };
+
+    if verbose {
+        dbg!(&config_filename);
+    }
+    let contents = fs::read_to_string(&config_filename)?;
+    if verbose {
+        dbg!(&contents);
+    }
+    leftwm::utils::file_handler::load_config_file(&Some(config_filename))
 }
 
 fn check_elogind(verbose: bool) -> Result<()> {

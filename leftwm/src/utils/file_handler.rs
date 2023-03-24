@@ -23,6 +23,12 @@ const COMMENT_HEADER: &str = r#"//  _        ___                                
 
 "#;
 
+#[derive(PartialEq)]
+enum FileType {
+    RonFile,
+    TomlFile,
+}
+
 // TODO: wirte unified `fn load_file` that loads file with path and returns Type `Result<Config>` or `Result<ThemeSetting>`
 
 /// # Panics
@@ -37,27 +43,26 @@ const COMMENT_HEADER: &str = r#"//  _        ___                                
 /// etc.).
 /// Function can also error from inability to save config.toml (if it is the first time running
 /// `LeftWM`).
-pub(crate) fn load_config_file() -> Result<Config> {
+pub fn load_config_file(_config_filename: &Option<PathBuf>) -> Result<Config> {
     tracing::debug!("Loading config file");
 
     let path = BaseDirectories::with_prefix("leftwm")?;
+    let config_file = path.place_config_file("config.*")?;
+    let file_type = check_file_type(&config_file);
 
     // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
-    let config_file_ron = path.place_config_file("config.ron")?;
-    let config_file_toml = path.place_config_file("config.toml")?;
+    // let config_file_ron = path.place_config_file("config.ron")?;
+    // let config_file_toml = path.place_config_file("config.toml")?;
 
-    if Path::new(&config_file_ron).exists() {
-        tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
+    if Path::new(&config_file).exists() && file_type == FileType::RonFile {
+        tracing::debug!("Config file '{}' found.", config_file.to_string_lossy());
         let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
-        let contents = fs::read_to_string(config_file_ron)?;
+        let contents = fs::read_to_string(config_file)?;
         let config = ron.from_str(&contents)?;
         Ok(config)
-    } else if Path::new(&config_file_toml).exists() {
-        tracing::debug!(
-            "Config file '{}' found.",
-            config_file_toml.to_string_lossy()
-        );
-        let contents = fs::read_to_string(config_file_toml)?;
+    } else if Path::new(&config_file).exists() && file_type == FileType::TomlFile {
+        tracing::debug!("Config file '{}' found.", config_file.to_string_lossy());
+        let contents = fs::read_to_string(config_file)?;
         let config = toml::from_str(&contents)?;
         tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
         Ok(config)
@@ -65,53 +70,25 @@ pub(crate) fn load_config_file() -> Result<Config> {
         tracing::debug!("Config file not found. Using default config file.");
 
         let config = Config::default();
-        write_to_file(&config_file_ron, &config)?;
+        write_to_file(&config_file, &config)?;
         Ok(config)
     }
 }
 
-/// Loads configuration from either specified file (preferred) or default.
 /// # Errors
 ///
 /// Errors if file cannot be read. Indicates filesystem error
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
-pub fn check_config_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
-    let config_filename = if let Some(fspath) = fspath {
-        println!("\x1b[1;35mNote: Using file {fspath} \x1b[0m");
-        PathBuf::from(fspath)
-    } else {
-        let ron_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
-        let toml_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
-        if Path::new(&ron_file).exists() {
-            ron_file
-        } else if Path::new(&toml_file).exists() {
-            println!(
-                "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
-            );
-            toml_file
-        } else {
-            let config = Config::default();
-            write_to_file(&ron_file, &config)?;
-            return Ok(config);
-        }
-    };
-
-    if verbose {
-        dbg!(&config_filename);
-    }
-    let contents = fs::read_to_string(&config_filename)?;
-    if verbose {
-        dbg!(&contents);
-    }
-    if config_filename.as_path().extension() == Some(std::ffi::OsStr::new("ron")) {
+pub fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
+    let contents = fs::read_to_string(&path)?;
+    if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
         let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
-        let config: Config = ron.from_str(&contents)?;
-        Ok(config)
+        let from_file: ThemeSetting = ron.from_str(&contents)?;
+        Ok(from_file)
     } else {
-        let config = toml::from_str(&contents)?;
-        Ok(config)
+        let from_file: ThemeSetting = toml::from_str(&contents)?;
+        Ok(from_file)
     }
 }
 
@@ -130,19 +107,10 @@ pub fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Err
     Ok(())
 }
 
-/// # Errors
-///
-/// Errors if file cannot be read. Indicates filesystem error
-/// (inadequate permissions, disk full, etc.)
-/// If a path is specified and does not exist, returns `LeftError`.
-pub fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
-    let contents = fs::read_to_string(&path)?;
+fn check_file_type(path: impl AsRef<Path>) -> FileType {
     if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
-        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
-        let from_file: ThemeSetting = ron.from_str(&contents)?;
-        Ok(from_file)
+        FileType::RonFile
     } else {
-        let from_file: ThemeSetting = toml::from_str(&contents)?;
-        Ok(from_file)
+        FileType::TomlFile
     }
 }

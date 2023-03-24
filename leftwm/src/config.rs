@@ -195,7 +195,7 @@ pub struct Config {
 
 #[must_use]
 pub fn load() -> Config {
-    load_config_file()
+    load_config_file(&None)
         .map_err(|err| eprintln!("ERROR LOADING CONFIG: {err:?}"))
         .unwrap_or_default()
 }
