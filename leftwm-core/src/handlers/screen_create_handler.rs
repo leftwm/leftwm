@@ -12,14 +12,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
 
-        // Only used in tests, where there are multiple screens being created by `Screen::default()` (id is 0 by default)
-        #[cfg(test)]
+        // Only used in tests, where there are multiple screens being created by `Screen::default()`
+        // The screen passed to this function should normally already have it's id given in the config serialization.
         let workspace_id = match screen.id {
-            0 => self.state.workspaces.last().map_or(0, |ws| ws.id) + 1,
-            other => other,
+            None => self.state.workspaces.last().map_or(0, |ws| ws.id) + 1,
+            Some(set_id) => set_id,
         };
-        #[cfg(not(test))]
-        let workspace_id = screen.id;
 
         let mut new_workspace = Workspace::new(
             screen.bbox,

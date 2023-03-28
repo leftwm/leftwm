@@ -100,10 +100,10 @@ impl State {
 
     /// Focuses the workspace containing a given point.
     pub fn focus_workspace_with_point(&mut self, x: i32, y: i32) {
-        let focused_id = match self.focus_manager.workspace(&self.workspaces) {
-            Some(ws) => ws.id,
-            None => return,
+        let Some(focused_id) = self.focus_manager.workspace(&self.workspaces).map(|ws| ws.id) else {
+            return;
         };
+
         if let Some(ws) = self
             .workspaces
             .iter()

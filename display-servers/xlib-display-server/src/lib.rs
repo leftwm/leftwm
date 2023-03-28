@@ -155,7 +155,7 @@ impl XlibDisplayServer {
                         if wsc.relative.unwrap_or(false) {
                             screen.bbox.add(output_match.bbox);
                         }
-                        screen.id = i + 1;
+                        screen.id = Some(i + 1);
                     }
                     None => continue,
                 }
@@ -181,7 +181,7 @@ impl XlibDisplayServer {
                     .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
                     .for_each(|screen| {
                         let mut s = screen.clone();
-                        s.id = next_id;
+                        s.id = Some(next_id);
                         next_id += 1;
                         events.push(DisplayEvent::ScreenCreate(s));
                     });

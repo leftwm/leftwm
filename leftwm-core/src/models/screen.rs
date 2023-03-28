@@ -8,7 +8,7 @@ use x11_dl::xlib;
 pub struct Screen {
     pub root: WindowHandle,
     pub output: String,
-    pub id: WorkspaceId,
+    pub id: Option<WorkspaceId>,
     #[serde(flatten)]
     pub bbox: BBox,
     pub max_window_width: Option<Size>,
@@ -25,13 +25,13 @@ pub struct BBox {
 
 impl Screen {
     #[must_use]
-    pub const fn new(bbox: BBox, output: String, id: WorkspaceId) -> Self {
+    pub const fn new(bbox: BBox, output: String) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
             output,
             bbox,
             max_window_width: None,
-            id,
+            id: None,
         }
     }
 
@@ -135,7 +135,7 @@ impl Default for Screen {
         Self {
             root: WindowHandle::MockHandle(0),
             output: String::default(),
-            id: 0,
+            id: None,
             bbox: BBox {
                 height: 600,
                 width: 800,
