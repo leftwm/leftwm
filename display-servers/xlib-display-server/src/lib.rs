@@ -149,6 +149,7 @@ impl XlibDisplayServer {
             for (i, wsc) in workspaces.iter().enumerate() {
                 let mut screen = Screen::from(wsc);
                 screen.root = self.root.into();
+                // If there is a screen corresponding to the given output, create the workspace
                 match screens.iter().find(|i| i.output == wsc.output) {
                     Some(output_match) => {
                         if wsc.relative.unwrap_or(false) {

@@ -25,10 +25,10 @@ pub struct BBox {
 
 impl Screen {
     #[must_use]
-    pub const fn new(bbox: BBox) -> Self {
+    pub const fn new(bbox: BBox, output: String) -> Self {
         Self {
             root: WindowHandle::MockHandle(0),
-            output: String::new(),
+            output,
             bbox,
             max_window_width: None,
             id: None,
