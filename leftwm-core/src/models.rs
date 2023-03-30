@@ -48,4 +48,5 @@ pub use tag::Tag;
 pub use tag::Tags;
 
 pub type TagId = usize;
+pub type WorkspaceId = usize;
 type MaybeWindowHandle = Option<WindowHandle>;

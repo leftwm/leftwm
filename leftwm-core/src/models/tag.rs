@@ -101,7 +101,7 @@ impl Tags {
             Some(id)
         } else {
             tracing::error!(
-                "tried creating a hidden tag with label {}, but a hidden tag with the same label already exists",
+                "Tried creating a hidden tag with label {}, but a hidden tag with the same label already exists",
                 label
             );
             None

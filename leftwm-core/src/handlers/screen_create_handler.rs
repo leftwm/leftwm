@@ -7,23 +7,22 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
+        tracing::trace!("Screen create: {:?}", screen);
+
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
-        let workspace_id = self
-            .state
-            .workspaces
-            .iter()
-            .filter(|ws| ws.output == screen.output)
-            .count()
-            + 1;
+
+        // Only used in tests, where there are multiple screens being created by `Screen::default()`
+        // The screen passed to this function should normally already have it's id given in the config serialization.
+        let workspace_id = match screen.id {
+            None => self.state.workspaces.last().map_or(0, |ws| ws.id) + 1,
+            Some(set_id) => set_id,
+        };
 
         let mut new_workspace = Workspace::new(
             screen.bbox,
-            self.state
-                .layout_manager
-                .new_layout(&screen.output, workspace_id),
+            self.state.layout_manager.new_layout(workspace_id),
             screen.max_window_width.or(self.state.max_window_width),
-            screen.output.clone(),
             workspace_id,
         );
         if self.state.workspaces.len() >= tag_len {
@@ -36,11 +35,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             tag_index + 1
         } else {
             // Add a new tag for the workspace.
-            self.state.tags.add_new_unlabeled(
-                self.state
-                    .layout_manager
-                    .new_layout(&screen.output, workspace_id),
-            )
+            self.state
+                .tags
+                .add_new_unlabeled(self.state.layout_manager.new_layout(workspace_id))
         };
 
         if let Some(tag) = self.state.tags.get_mut(next_id) {
