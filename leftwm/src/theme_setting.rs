@@ -2,7 +2,7 @@ use crate::utils::file_handler::load_theme_file;
 use anyhow::Result;
 use leftwm_core::models::{Gutter, Margins};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeSetting {
@@ -22,8 +22,7 @@ pub struct ThemeSetting {
 }
 
 impl ThemeSetting {
-    pub fn load(&mut self, path: impl AsRef<Path>) {
-        let path = path.as_ref();
+    pub fn load(&mut self, path: PathBuf) {
         match load_theme_file(path) {
             Ok(theme) => *self = theme,
             Err(err) => {
