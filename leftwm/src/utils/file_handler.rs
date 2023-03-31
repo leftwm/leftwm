@@ -5,7 +5,7 @@ use ron::{
     ser::{to_string_pretty, PrettyConfig},
     Options,
 };
-use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use std::{
     fs::{self, File},
     io::Write,
@@ -29,12 +29,6 @@ const COMMENT_HEADER: &str = r#"//  _        ___                                
 enum ConfigFileType {
     RonFile,
     TomlFile,
-}
-
-#[derive(Deserialize)]
-enum ConfigType<Config, ThemeSetting> {
-    Config(Config),
-    Theme(ThemeSetting),
 }
 
 // TODO: wirte unified `fn load_file` that loads file with path and returns Type `Result<Config>` or `Result<ThemeSetting>`
@@ -83,21 +77,21 @@ pub fn load_config_file(_config_filename: &Option<PathBuf>) -> Result<Config> {
 /// Errors if file cannot be read. Indicates filesystem error
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
-pub fn load_theme_file(path: PathBuf) -> Result<ThemeSetting> {
-    let file_type = check_file_type(&path);
+pub fn load_theme_file(path: &PathBuf) -> Result<ThemeSetting> {
+    let file_type = check_file_type(path);
     if file_type == ConfigFileType::RonFile {
-        read_ron_config(&path)
+        read_ron_config(path)
     } else {
         let from_file = toml::from_str(&fs::read_to_string(path)?)?;
         Ok(from_file)
     }
 }
 
-fn read_ron_config(
+fn read_ron_config<T: DeserializeOwned>(
     config_file: &PathBuf,
-) -> std::result::Result<ConfigType<Config, ThemeSetting>, anyhow::Error> {
+) -> std::result::Result<T, anyhow::Error> {
     let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
-    let contents = fs::read_to_string(*config_file)?;
+    let contents = fs::read_to_string(config_file)?;
     let config = ron.from_str(&contents)?;
     Ok(config)
 }

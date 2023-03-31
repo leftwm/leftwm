@@ -361,7 +361,7 @@ impl leftwm_core::Config for Config {
             match command {
                 "LoadTheme" => {
                     if let Some(absolute) = absolute_path(value.trim()) {
-                        manager.config.theme_setting.load(absolute);
+                        manager.config.theme_setting.load(&absolute);
                     } else {
                         tracing::warn!("Path submitted does not exist.");
                     }
