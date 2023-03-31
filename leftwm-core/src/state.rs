@@ -4,7 +4,7 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::Layout;
 use crate::models::{
-    FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle,
+    FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, TagId, Tags, Window, WindowHandle,
     WindowType, Workspace,
 };
 use crate::DisplayAction;
@@ -15,6 +15,7 @@ use std::collections::{HashMap, VecDeque};
 pub struct State {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
+    pub window_history: HashMap<TagId, VecDeque<WindowHandle>>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
     pub layout_manager: LayoutManager,
@@ -43,6 +44,7 @@ impl State {
         tags.add_new_hidden("NSP");
 
         Self {
+            window_history: HashMap::new(),
             focus_manager: FocusManager::new(config),
             layout_manager,
             scratchpads: config.create_list_of_scratchpads(),
