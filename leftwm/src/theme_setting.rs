@@ -22,7 +22,7 @@ pub struct ThemeSetting {
 }
 
 impl ThemeSetting {
-    pub fn load(&mut self, path: PathBuf) {
+    pub fn load(&mut self, path: &PathBuf) {
         match load_theme_file(path) {
             Ok(theme) => *self = theme,
             Err(err) => {
