@@ -49,25 +49,29 @@ pub fn load_config_file(_config_filename: &Option<PathBuf>) -> Result<Config> {
     tracing::debug!("Loading config file");
 
     let path = BaseDirectories::with_prefix("leftwm")?;
-    let config_file = path.place_config_file("config.*")?;
-
-    // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
-    let file_type = check_file_type(&config_file);
+    let config_file = path.place_config_file("config.ron")?;
 
     if Path::new(&config_file).exists() {
-        tracing::debug!("Config file not found. Using default config file.");
-
-        let config = Config::default();
-        write_to_file(&config_file, &config)?;
-        Ok(config)
-    } else if file_type == ConfigFileType::RonFile {
         tracing::debug!("Config file '{}' found.", config_file.to_string_lossy());
         read_ron_config(&config_file)
     } else {
-        tracing::debug!("Config file '{}' found.", config_file.to_string_lossy());
-        let contents = fs::read_to_string(config_file)?;
-        let config = toml::from_str(&contents)?;
-        tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+        // Deprecated TOML handling
+        let config_file_toml = path.get_config_file("config.toml");
+        if Path::new(&config_file_toml).exists() {
+            tracing::debug!(
+                "Config file '{}' found.",
+                config_file_toml.to_string_lossy()
+            );
+            let contents = fs::read_to_string(config_file_toml)?;
+            let config = toml::from_str(&contents)?;
+            tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+            return Ok(config);
+        }
+
+        tracing::warn!("Config file not found. Creating default config file.");
+
+        let config = Config::default();
+        write_to_file(&config_file, &config)?;
         Ok(config)
     }
 }
