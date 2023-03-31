@@ -146,40 +146,45 @@ impl XlibDisplayServer {
         let mut events = vec![];
         if let Some(workspaces) = config.workspaces() {
             let screens = self.xw.get_screens();
-
-            let auto_derive_workspaces: bool = if config.auto_derive_workspaces() {
-                true
-            } else if !screens
-                .iter()
-                .any(|screen| workspaces.iter().any(|wsc| wsc.output == screen.output))
-            {
-                tracing::warn!("No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\".");
-                true
-            } else {
-                false
-            };
-            // If there is no hardcoded workspace layout, add every screen not mentioned in the config.
-            if auto_derive_workspaces {
-                screens
-                    .iter()
-                    .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
-                    .for_each(|screen| events.push(DisplayEvent::ScreenCreate(screen.clone())));
-            }
-
-            for wsc in &workspaces {
+            for (i, wsc) in workspaces.iter().enumerate() {
                 let mut screen = Screen::from(wsc);
                 screen.root = self.root.into();
+                // If there is a screen corresponding to the given output, create the workspace
                 match screens.iter().find(|i| i.output == wsc.output) {
                     Some(output_match) => {
                         if wsc.relative.unwrap_or(false) {
                             screen.bbox.add(output_match.bbox);
                         }
-                        screen.output = output_match.output.clone();
+                        screen.id = Some(i + 1);
                     }
                     None => continue,
                 }
                 let e = DisplayEvent::ScreenCreate(screen);
                 events.push(e);
+            }
+
+            let auto_derive_workspaces: bool = if config.auto_derive_workspaces() {
+                true
+            } else if events.is_empty() {
+                tracing::warn!("No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\".");
+                true
+            } else {
+                false
+            };
+
+            let mut next_id = workspaces.len() + 1;
+
+            // If there is no hardcoded workspace layout, add every screen not mentioned in the config.
+            if auto_derive_workspaces {
+                screens
+                    .iter()
+                    .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
+                    .for_each(|screen| {
+                        let mut s = screen.clone();
+                        s.id = Some(next_id);
+                        next_id += 1;
+                        events.push(DisplayEvent::ScreenCreate(s));
+                    });
             }
         }
 

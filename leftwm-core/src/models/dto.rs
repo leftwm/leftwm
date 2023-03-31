@@ -4,13 +4,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Viewport {
+    pub id: usize,
     pub tag: String,
     pub h: u32,
     pub w: u32,
     pub x: i32,
     pub y: i32,
     pub layout: Layout,
-    pub output: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -36,11 +36,11 @@ pub struct TagsForWorkspace {
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DisplayWorkspace {
+    pub id: usize,
     pub h: u32,
     pub w: u32,
     pub x: i32,
     pub y: i32,
-    pub output: String,
     pub layout: Layout,
     pub index: usize,
     pub tags: Vec<TagsForWorkspace>,
@@ -100,6 +100,7 @@ fn viewport_into_display_workspace(
         })
         .collect();
     DisplayWorkspace {
+        id: viewport.id,
         tags,
         h: viewport.h,
         w: viewport.w,
@@ -107,7 +108,6 @@ fn viewport_into_display_workspace(
         y: viewport.y,
         layout: viewport.layout,
         index: ws_index,
-        output: viewport.output.clone(),
     }
 }
 
@@ -137,13 +137,13 @@ impl From<&State> for ManagerState {
                 .unwrap();
 
             viewports.push(Viewport {
+                id: ws.id,
                 tag: tag_label,
                 x: ws.xyhw.x(),
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
                 w: ws.xyhw.w() as u32,
                 layout: ws.layout,
-                output: ws.output.clone(),
             });
         }
         let active_desktop = match state.focus_manager.workspace(&state.workspaces) {

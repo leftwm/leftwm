@@ -248,7 +248,7 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     }
 
     tracing::debug!(
-        "no active scratchpad found for name {:?}. Creating a new one",
+        "No active scratchpad found for name {:?}. Creating a new one",
         scratchpad.name
     );
     let name = scratchpad.name.clone();
