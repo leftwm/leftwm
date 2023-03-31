@@ -24,14 +24,11 @@ const COMMENT_HEADER: &str = r#"//  _        ___                                
 
 "#;
 
-// Don't like this name much, as this can be confused with std::fs::FileType
 #[derive(PartialEq)]
 enum ConfigFileType {
     RonFile,
     TomlFile,
 }
-
-// TODO: wirte unified `fn load_file` that loads file with path and returns Type `Result<Config>` or `Result<ThemeSetting>`
 
 /// # Panics
 ///
@@ -62,8 +59,7 @@ pub fn load_config_file(_config_filename: &Option<PathBuf>) -> Result<Config> {
                 "Config file '{}' found.",
                 config_file_toml.to_string_lossy()
             );
-            let contents = fs::read_to_string(config_file_toml)?;
-            let config = toml::from_str(&contents)?;
+            let config = read_toml_file(&config_file)?;
             tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
             return Ok(config);
         }
@@ -86,14 +82,16 @@ pub fn load_theme_file(path: &PathBuf) -> Result<ThemeSetting> {
     if file_type == ConfigFileType::RonFile {
         read_ron_config(path)
     } else {
-        let from_file = toml::from_str(&fs::read_to_string(path)?)?;
-        Ok(from_file)
+        read_toml_file(path)
     }
 }
 
-fn read_ron_config<T: DeserializeOwned>(
-    config_file: &PathBuf,
-) -> std::result::Result<T, anyhow::Error> {
+/// # Errors
+///
+/// Errors if file cannot be read. Indicates filesystem error
+/// (inadequate permissions, disk full, etc.)
+/// If a path is specified and does not exist, returns `LeftError`.
+fn read_ron_config<T: DeserializeOwned>(config_file: &PathBuf) -> Result<T, anyhow::Error> {
     let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
     let contents = fs::read_to_string(config_file)?;
     let config = ron.from_str(&contents)?;
@@ -101,6 +99,17 @@ fn read_ron_config<T: DeserializeOwned>(
 }
 
 /// # Errors
+///
+/// Errors if file cannot be read. Indicates filesystem error
+/// (inadequate permissions, disk full, etc.)
+/// If a path is specified and does not exist, returns `LeftError`.
+fn read_toml_file<T: DeserializeOwned>(path: &PathBuf) -> Result<T, anyhow::Error> {
+    let from_file = toml::from_str(&fs::read_to_string(path)?)?;
+    Ok(from_file)
+}
+
+/// # Errors
+///
 /// This function errors when:
 /// - serialization of the config fails
 /// - writing to file fails
