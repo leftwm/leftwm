@@ -1,0 +1,25 @@
+name: Run Build
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    name: Run build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: apt update
+        run: sudo apt update
+
+      - name: apt install libsystemd-dev
+        run: sudo apt install -y --no-install-recommends libsystemd-dev
+
+      - name: Run build
+        uses: actions-rs/cargo@v1
+        with:
+            command: build
+            args: --all-targets --all-features

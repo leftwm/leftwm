@@ -4,6 +4,8 @@ use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+use super::WorkspaceId;
+
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
@@ -15,18 +17,15 @@ pub struct Workspace {
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
-    /// Output (monitor) the workspace is linked to.
-    pub output: String,
-    /// ID of workspace on output. Starts with 1.
-    pub id: usize,
+    /// ID of workspace. Starts with 1.
+    pub id: WorkspaceId,
 }
 
 impl fmt::Debug for Workspace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Workspace {{ output: {:?}, id: {}, tags: {:?}, x: {}, y: {} }}",
-            self.output,
+            "Workspace {{ id: {}, tags: {:?}, x: {}, y: {} }}",
             self.id,
             self.tag,
             self.xyhw.x(),
@@ -37,13 +36,13 @@ impl fmt::Debug for Workspace {
 
 impl PartialEq for Workspace {
     fn eq(&self, other: &Self) -> bool {
-        self.output == other.output && self.id == other.id
+        self.id == other.id
     }
 }
 
 impl Workspace {
     #[must_use]
-    pub fn new(bbox: BBox, output: String, id: usize) -> Self {
+    pub fn new(bbox: BBox, id: usize) -> Self {
         Self {
             tag: None,
             margin: Margins::new(10),
@@ -66,7 +65,6 @@ impl Workspace {
                 ..XyhwBuilder::default()
             }
             .into(),
-            output,
             id,
         }
     }
@@ -80,15 +78,11 @@ impl Workspace {
         config
             .get_list_of_gutters()
             .into_iter()
-            .filter(|gutter| {
-                gutter.output.is_none()
-                    || gutter.output == Some(self.output.clone())
-                        && (gutter.id.is_none() || gutter.id == Some(self.id))
-            })
+            .filter(|gutter| gutter.id.is_none() || gutter.id == Some(self.id))
             .fold(vec![], |mut acc, gutter| {
                 match acc.iter().enumerate().find(|(_i, g)| g.side == gutter.side) {
                     Some((i, x)) => {
-                        if x.output.is_none() {
+                        if x.id.is_none() {
                             acc[i] = gutter;
                         }
                     }
@@ -235,7 +229,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            String::new(),
             0,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
@@ -255,7 +248,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            String::new(),
             0,
         );
         let tag = crate::models::Tag::new(TAG_ID, "test");

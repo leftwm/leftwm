@@ -6,6 +6,7 @@ fn main() {
         if let Some(name) = name.strip_prefix("CARGO_FEATURE_") {
             let name = name.replace('_', "-");
             let name = name.to_lowercase();
+            let name = name.replace("default", "");
             features_string.push(' ');
             features_string.push_str(&name);
         }

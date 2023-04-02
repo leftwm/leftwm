@@ -93,7 +93,7 @@ impl Keybind {
                 };
                 command_parts.push_str(&args);
             }
-            let _ = writeln!(head, "'{command_parts}'");
+            _ = writeln!(head, "'{command_parts}'");
             head
         };
         Ok(lefthk_core::config::Keybind {

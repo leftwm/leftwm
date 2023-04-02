@@ -12,66 +12,26 @@ env:
   RUSTDOCFLAGS: -Dwarnings
 
 jobs:
+
+  test:
+    name: Run tests
+    uses: ./.github/workflows/run-tests.yml
+
   build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: apt update
-      run: sudo apt update
-    - name: apt install libsystemd-dev
-      run: sudo apt install -y --no-install-recommends libsystemd-dev
-    - name: Build
-      run: cargo build --all-targets --all-features
-    - name: Run tests
-      run: cargo test --all-targets --all-features
-
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: apt update
-      run: sudo apt update
-    - name: apt install libsystemd-dev
-      run: sudo apt install -y --no-install-recommends libsystemd-dev
-    - name: Clippy
-      run: cargo clippy --all-targets --all-features
-
-  fmt:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Fmt
-      run: cargo fmt -- --check
+    name: Run build
+    uses: ./.github/workflows/run-build.yml
 
   msrv:
-    name: msrv
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install MSRV
-      uses: actions-rs/toolchain@v1
-      with:
-          toolchain: 1.60.0
-          override: true
-
-    - name: Run cargo check
-      uses: actions-rs/cargo@v1
-      with:
-          command: check
-
-    - name: Display MSRV
-      run: cargo -V
-
+    name: Check MSRV
+    strategy:
+      matrix:
+        toolchain: [ '1.65.0' ]
+        target: [ 'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu' ]
+    uses: ./.github/workflows/check-msrv.yml
+    with:
+      toolchain: ${{ matrix.toolchain }}
+      target: ${{ matrix.target }}
+    
   nix-flake:
-    name: nix-flake
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2.4.0
-    - uses: cachix/install-nix-action@v16
-      with:
-        nix_path: nixpkgs=channel:nixos-unstable
-        extra_nix_config: |
-          trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
-          substituters = https://cache.nixos.org/ https://nix-community.cachix.org
-    - run: nix flake check
-    - run: nix build
+    name: Nix Flake
+    uses: ./.github/workflows/nix-flake.yml

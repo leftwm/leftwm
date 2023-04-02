@@ -329,7 +329,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
 
             let cycle = |wins: &mut Vec<Window>, s: &mut State| {
                 let window_index = wins.iter().position(|w| w.handle == handle).unwrap_or(0);
-                let _ = helpers::cycle_vec(wins, -(window_index as i32));
+                _ = helpers::cycle_vec(wins, -(window_index as i32));
                 s.windows.append(wins);
             };
 
@@ -550,11 +550,11 @@ fn move_window_change(
             if !to_reorder.iter().any(|w| w.handle == handle) {
                 handle = helpers::relative_find(&window_group, is_handle, -val, true)?.handle;
             }
-            let _ = helpers::cycle_vec(&mut window_group, val);
+            _ = helpers::cycle_vec(&mut window_group, val);
             to_reorder.append(&mut window_group);
         }
     } else {
-        let _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
+        _ = helpers::reorder_vec(&mut to_reorder, is_handle, val);
     }
     state.windows.append(&mut to_reorder);
     state.handle_window_focus(&handle);

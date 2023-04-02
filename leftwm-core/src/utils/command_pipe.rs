@@ -22,11 +22,16 @@ impl Drop for CommandPipe {
 
         // Open fifo for write to unblock pending open for read operation that prevents tokio runtime
         // from shutting down.
-        std::fs::OpenOptions::new()
+        if let Err(err) = std::fs::OpenOptions::new()
             .write(true)
             .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
-            .open(self.pipe_file.clone())
-            .ok();
+            .open(&self.pipe_file)
+        {
+            eprintln!(
+                "Failed to open {} when dropping CommandPipe: {err}",
+                self.pipe_file.display()
+            );
+        }
     }
 }
 
@@ -189,9 +194,9 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
 
 fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "GoToTag ");
-    let parts: Vec<&str> = headless.split(' ').collect();
-    let tag: TagId = parts.first().ok_or("missing argument tag_id")?.parse()?;
-    let swap: bool = parts.get(1).ok_or("missing argument swap")?.parse()?;
+    let mut parts = headless.split(' ');
+    let tag: TagId = parts.next().ok_or("missing argument tag_id")?.parse()?;
+    let swap: bool = parts.next().ok_or("missing argument swap")?.parse()?;
     Ok(Command::GoToTag { tag, swap })
 }
 
@@ -283,7 +288,7 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
     Ok(Command::MoveWindowToPreviousTag { follow })
 }
 
-fn without_head<'a>(s: &'a str, head: &str) -> &'a str {
+fn without_head<'a>(s: &'a str, head: &'a str) -> &'a str {
     if !s.starts_with(head) {
         return s;
     }

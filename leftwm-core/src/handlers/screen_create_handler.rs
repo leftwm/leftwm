@@ -7,17 +7,19 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
+        tracing::trace!("Screen create: {:?}", screen);
+
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
-        let workspace_id = self
-            .state
-            .workspaces
-            .iter()
-            .filter(|ws| ws.output == screen.output)
-            .count()
-            + 1;
 
-        let mut new_workspace = Workspace::new(screen.bbox, screen.output.clone(), workspace_id);
+        // Only used in tests, where there are multiple screens being created by `Screen::default()`
+        // The screen passed to this function should normally already have it's id given in the config serialization.
+        let workspace_id = match screen.id {
+            None => self.state.workspaces.last().map_or(0, |ws| ws.id) + 1,
+            Some(set_id) => set_id,
+        };
+
+        let mut new_workspace = Workspace::new(screen.bbox, workspace_id);
         if self.state.workspaces.len() >= tag_len {
             tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. No more workspaces will be added.");
         }
