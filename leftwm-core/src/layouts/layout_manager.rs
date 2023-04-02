@@ -16,6 +16,12 @@ pub struct LayoutManager {
     /// copies of those layouts for the specific workspaces and tags.
     available_layouts: Vec<Layout>,
 
+    /// All the available layouts per workspace. Different workspaces may
+    /// have different available layouts, if configured that way. If a
+    /// workspace does not have its own set of available layouts, the
+    /// global available layouts from [`available_layouts`] will be used instead.
+    available_layouts_per_ws: HashMap<usize, Vec<Layout>>,
+
     /// The actual, modifiable layouts grouped by either
     /// Workspace or Tag, depending on the configured [`LayoutMode`].
     layouts: HashMap<usize, Vec<Layout>>,
@@ -39,6 +45,28 @@ impl LayoutManager {
             }
         }
 
+        let mut available_layouts_per_ws: HashMap<usize, Vec<Layout>> = HashMap::new();
+
+        for (i, ws) in config.workspaces().unwrap_or(vec![]).iter().enumerate() {
+            if let Some(ws_layout_names) = &ws.layouts {
+                let wsid = i + 1;
+                for ws_layout_name in ws_layout_names {
+                    if let Some(layout) = config
+                        .layout_definitions()
+                        .iter()
+                        .find(|layout| layout.name == *ws_layout_name)
+                    {
+                        available_layouts_per_ws
+                            .entry(wsid)
+                            .and_modify(|layouts| layouts.push(layout.clone()))
+                            .or_insert_with(|| vec![layout.clone()]);
+                    } else {
+                        tracing::warn!("There is no Layout with the name {:?}, but was configured on workspace {:?}", ws_layout_name, wsid);
+                    }
+                }
+            }
+        }
+
         if available_layouts.is_empty() {
             tracing::warn!(
                 "No Layouts were loaded from config - defaulting to a single default Layout"
@@ -46,7 +74,11 @@ impl LayoutManager {
             available_layouts.push(Layout::default());
         }
 
-        tracing::trace!("The available layouts are: {:?}", available_layouts);
+        tracing::trace!("The general available layouts are: {:?}", available_layouts);
+        tracing::trace!(
+            "The workspace specific available layouts are: {:?}",
+            available_layouts_per_ws
+        );
 
         // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
         //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)
@@ -54,6 +86,7 @@ impl LayoutManager {
         Self {
             mode: config.layout_mode(),
             available_layouts,
+            available_layouts_per_ws,
             layouts: HashMap::new(),
         }
     }
@@ -75,17 +108,19 @@ impl LayoutManager {
     }
 
     fn layouts(&mut self, wsid: usize, tagid: usize) -> &Vec<Layout> {
-        let id = self.id(wsid, tagid);
-        self.layouts
-            .entry(id)
-            .or_insert_with(|| self.available_layouts.clone())
+        self.layouts_mut(wsid, tagid)
     }
 
     fn layouts_mut(&mut self, wsid: usize, tagid: usize) -> &mut Vec<Layout> {
         let id = self.id(wsid, tagid);
-        self.layouts
-            .entry(id)
-            .or_insert_with(|| self.available_layouts.clone())
+        self.layouts.entry(id).or_insert_with(|| match &self.mode {
+            LayoutMode::Tag => self.available_layouts.clone(),
+            LayoutMode::Workspace => self
+                .available_layouts_per_ws
+                .get(&wsid)
+                .unwrap_or(&self.available_layouts)
+                .clone(),
+        })
     }
 
     /// Get the current [`Layout`] for the provided workspace / tag context
@@ -209,9 +244,9 @@ mod tests {
     #[test]
     fn monocle_layout_only_has_single_windows() {
         let mut layout_manager = layout_manager();
-        layout_manager.set_layout(1, 1, MONOCLE);
-        assert_eq!(MONOCLE, &layout_manager.layout(1, 1).name);
-        layout_manager.set_layout(1, 1, EVEN_VERTICAL);
-        assert_eq!(EVEN_VERTICAL, &layout_manager.layout(1, 1).name);
+        layout_manager.set_layout(2, 1, MONOCLE);
+        assert_eq!(MONOCLE, &layout_manager.layout(2, 1).name);
+        layout_manager.set_layout(2, 1, EVEN_VERTICAL);
+        assert_eq!(EVEN_VERTICAL, &layout_manager.layout(2, 1).name);
     }
 }
