@@ -32,7 +32,7 @@ impl LayoutManager {
     pub fn new(config: &impl Config) -> Self {
         let mut available_layouts: Vec<Layout> = Vec::new();
 
-        tracing::debug!("Looking for layout named: {:?}", config.layouts());
+        tracing::trace!("Looking for layouts named: {:?}", config.layouts());
         for name in config.layouts() {
             if let Some(def) = config
                 .layout_definitions()
@@ -80,9 +80,6 @@ impl LayoutManager {
             available_layouts_per_ws
         );
 
-        // TODO: implement the workspace -> layouts config (available layouts may differ per workspace)
-        //config.workspaces().unwrap().iter().for_each(|ws| ws.layouts)
-
         Self {
             mode: config.layout_mode(),
             available_layouts,
@@ -107,10 +104,20 @@ impl LayoutManager {
         }
     }
 
+    /// Get the layouts for the provided workspace / tag context
+    /// 
+    /// If the layouts for the specific workspace / tag have not
+    /// yet been set up, they will be initialized by copying
+    /// from the [`Self::available_layouts`] or [`Self::available_layouts_per_ws`].
     fn layouts(&mut self, wsid: usize, tagid: usize) -> &Vec<Layout> {
         self.layouts_mut(wsid, tagid)
     }
 
+    /// Get the mutable layouts for the provided workspace / tag context
+    /// 
+    /// If the layouts for the specific workspace / tag have not
+    /// yet been set up, they will be initialized by copying
+    /// from the [`Self::available_layouts`] or [`Self::available_layouts_per_ws`].
     fn layouts_mut(&mut self, wsid: usize, tagid: usize) -> &mut Vec<Layout> {
         let id = self.id(wsid, tagid);
         self.layouts.entry(id).or_insert_with(|| match &self.mode {
@@ -121,6 +128,17 @@ impl LayoutManager {
                 .unwrap_or(&self.available_layouts)
                 .clone(),
         })
+    }
+
+    /// Get the current [`Layout`] for the provided workspace / tag context
+    /// 
+    /// This may return [`None`] if the layouts have not been set up for
+    /// the specific tag / workspace. If unsure, it is probably wiser
+    /// to use [`Self::layout(usize, usize)`], which will initialize
+    /// the layouts automatically.
+    pub fn layout_maybe(&self, wsid: usize, tagid: usize) -> Option<&Layout> {
+        let id = self.id(wsid, tagid);
+        self.layouts.get(&id).and_then(|vec| vec.first())
     }
 
     /// Get the current [`Layout`] for the provided workspace / tag context

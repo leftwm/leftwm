@@ -597,7 +597,7 @@ impl leftwm_core::Config for Config {
                 .max_by_key(|(_wh, score)| *score);
             if let Some((hook, _)) = best_match {
                 hook.apply(state, window);
-                tracing::debug!(
+                tracing::trace!(
                     "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
                     window.name,
                     window.legacy_name,
