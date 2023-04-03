@@ -105,7 +105,7 @@ impl LayoutManager {
     }
 
     /// Get the layouts for the provided workspace / tag context
-    /// 
+    ///
     /// If the layouts for the specific workspace / tag have not
     /// yet been set up, they will be initialized by copying
     /// from the [`Self::available_layouts`] or [`Self::available_layouts_per_ws`].
@@ -114,7 +114,7 @@ impl LayoutManager {
     }
 
     /// Get the mutable layouts for the provided workspace / tag context
-    /// 
+    ///
     /// If the layouts for the specific workspace / tag have not
     /// yet been set up, they will be initialized by copying
     /// from the [`Self::available_layouts`] or [`Self::available_layouts_per_ws`].
@@ -131,7 +131,7 @@ impl LayoutManager {
     }
 
     /// Get the current [`Layout`] for the provided workspace / tag context
-    /// 
+    ///
     /// This may return [`None`] if the layouts have not been set up for
     /// the specific tag / workspace. If unsure, it is probably wiser
     /// to use [`Self::layout(usize, usize)`], which will initialize
