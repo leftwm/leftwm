@@ -1,7 +1,10 @@
 use anyhow::{bail, Result};
 use clap::{arg, command};
+use leftwm::utils::file_handler::{
+    check_file_type, check_path, get_default_path, load_config_file, migrate_config,
+};
+use leftwm::Config;
 use leftwm::ThemeSetting;
-use leftwm::{utils::file_handler::write_to_file, Config};
 use std::{
     env, fs,
     os::unix::fs::PermissionsExt,
@@ -34,13 +37,12 @@ async fn main() -> Result<()> {
     );
     if matches.get_flag("migrate") {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
-        let path = BaseDirectories::with_prefix("leftwm")?;
-        let ron_file = path.place_config_file("config.ron")?;
-        let toml_file = path.place_config_file("config.toml")?;
-
-        let config = check_config_file(toml_file.as_os_str().to_str(), verbose)?;
-
-        write_to_file(&ron_file, &config)?;
+        let toml_file = if let Some(config_file) = config_file {
+            PathBuf::from(config_file)
+        } else {
+            get_default_path()?.with_extension("toml")
+        };
+        migrate_config(toml_file, verbose)?;
 
         return Ok(());
     }
@@ -83,27 +85,14 @@ async fn main() -> Result<()> {
 /// Errors if file cannot be read. Indicates filesystem error
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
-pub fn check_config_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
-    let config_filename = if let Some(fspath) = fspath {
-        println!("\x1b[1;35mNote: Using file {fspath} \x1b[0m");
-        PathBuf::from(fspath)
+fn check_config_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
+    let config_path = if let Some(fspath) = fspath {
+        Some(PathBuf::from(fspath))
     } else {
-        let ron_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
-        let toml_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
-        if Path::new(&ron_file).exists() {
-            ron_file
-        } else if Path::new(&toml_file).exists() {
-            println!(
-                "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
-            );
-            toml_file
-        } else {
-            let config = Config::default();
-            write_to_file(&ron_file, &config)?;
-            return Ok(config);
-        }
+        None
     };
+
+    let config_filename = check_path(config_path, verbose)?;
 
     if verbose {
         dbg!(&config_filename);
@@ -112,7 +101,10 @@ pub fn check_config_file(fspath: Option<&str>, verbose: bool) -> Result<Config> 
     if verbose {
         dbg!(&contents);
     }
-    leftwm::utils::file_handler::load_config_file(&Some(config_filename))
+    if check_file_type(&config_filename) == leftwm::utils::file_handler::ConfigFileType::TomlFile {
+        println!("\x1b[1;35mYou are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki. \x1b[0m");
+    };
+    load_config_file(Some(config_filename))
 }
 
 fn check_elogind(verbose: bool) -> Result<()> {

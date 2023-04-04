@@ -7,6 +7,7 @@ use ron::{
 };
 use serde::de::DeserializeOwned;
 use std::{
+    ffi::OsStr,
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
@@ -25,50 +26,41 @@ const COMMENT_HEADER: &str = r#"//  _        ___                                
 "#;
 
 #[derive(PartialEq)]
-enum ConfigFileType {
+pub enum ConfigFileType {
     RonFile,
     TomlFile,
 }
 
 /// # Panics
 ///
-/// Function can only panic if toml cannot be serialized. This should not occur as it is defined
+/// Function can only panic if ron cannot be serialized. This should not occur as it is defined
 /// globally.
 ///
 /// # Errors
 ///
 /// Function will throw an error if `BaseDirectories` doesn't exist, if user doesn't have
-/// permissions to place config.toml, if config.toml cannot be read (access writes, malformed file,
+/// permissions to place config.ron, if config.ron or config.toml cannot be read (access writes, malformed file,
 /// etc.).
 /// Function can also error from inability to save config.toml (if it is the first time running
-/// `LeftWM`).
-pub fn load_config_file(_config_filename: &Option<PathBuf>) -> Result<Config> {
+/// `LeftWM).
+pub fn load_config_file(config_filename: Option<PathBuf>) -> Result<Config> {
     tracing::debug!("Loading config file");
 
-    let path = BaseDirectories::with_prefix("leftwm")?;
-    let config_file = path.place_config_file("config.ron")?;
+    let config_file = match check_path(config_filename, false) {
+        Ok(path) => path,
+        Err(_) => {
+            tracing::warn!("Config file not found. Creating default config file.");
 
-    if Path::new(&config_file).exists() {
-        tracing::debug!("Config file '{}' found.", config_file.to_string_lossy());
-        read_ron_config(&config_file)
-    } else {
-        // Deprecated TOML handling
-        let config_file_toml = path.get_config_file("config.toml");
-        if Path::new(&config_file_toml).exists() {
-            tracing::debug!(
-                "Config file '{}' found.",
-                config_file_toml.to_string_lossy()
-            );
-            let config = read_toml_file(&config_file)?;
-            tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
-            return Ok(config);
+            let config = Config::default();
+            let file_path = get_default_path()?;
+            write_to_file(&file_path, &config)?;
+            file_path
         }
+    };
 
-        tracing::warn!("Config file not found. Creating default config file.");
-
-        let config = Config::default();
-        write_to_file(&config_file, &config)?;
-        Ok(config)
+    match check_file_type(&config_file) {
+        ConfigFileType::RonFile => read_ron_config(&config_file),
+        ConfigFileType::TomlFile => read_toml_file(&config_file),
     }
 }
 
@@ -76,7 +68,7 @@ pub fn load_config_file(_config_filename: &Option<PathBuf>) -> Result<Config> {
 ///
 /// Errors if file cannot be read. Indicates filesystem error
 /// (inadequate permissions, disk full, etc.)
-/// If a path is specified and does not exist, returns `LeftError`.
+/// If a path is specified and does not exist, returns LeftError`.
 pub fn load_theme_file(path: &PathBuf) -> Result<ThemeSetting> {
     let file_type = check_file_type(path);
     if file_type == ConfigFileType::RonFile {
@@ -113,7 +105,7 @@ fn read_toml_file<T: DeserializeOwned>(path: &PathBuf) -> Result<T, anyhow::Erro
 /// This function errors when:
 /// - serialization of the config fails
 /// - writing to file fails
-pub fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> {
+fn write_to_file(ron_file: &PathBuf, config: &Config) -> Result<(), anyhow::Error> {
     let ron_pretty_conf = PrettyConfig::new()
         .depth_limit(2)
         .extensions(Extensions::IMPLICIT_SOME);
@@ -124,10 +116,55 @@ pub fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Err
     Ok(())
 }
 
-fn check_file_type(path: impl AsRef<Path>) -> ConfigFileType {
-    if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
-        ConfigFileType::RonFile
-    } else {
-        ConfigFileType::TomlFile
+pub fn check_file_type(path: impl AsRef<Path>) -> ConfigFileType {
+    // we want to assume any other file type as `toml` is `ron` so files like `config.backup` can be checked manually and get parsed as ron
+    match path.as_ref().extension() {
+        Some(e) if e == OsStr::new("toml") => {
+            tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+            ConfigFileType::TomlFile
+        }
+        Some(e) if e == OsStr::new("ron") => ConfigFileType::RonFile,
+        _ => {
+            tracing::info!("Non-matching file type, assuming `RON`.");
+            ConfigFileType::RonFile
+        }
     }
+}
+
+pub fn check_path(
+    config_filename: Option<PathBuf>,
+    verbose: bool,
+) -> Result<PathBuf, anyhow::Error> {
+    let file_path = match config_filename {
+        Some(c) => {
+            if verbose {
+                println!(
+                    "\x1b[1;35mNote: Using file {} \x1b[0m",
+                    &c.to_string_lossy()
+                );
+            }
+            c.clone()
+        }
+        None => get_default_path()?,
+    };
+    if Path::new(&file_path).exists() {
+        tracing::debug!("Config file '{}' found.", file_path.to_string_lossy());
+    } else {
+        return Err(anyhow::Error::msg("file not found"));
+    }
+    Ok(file_path)
+}
+
+pub fn get_default_path() -> Result<PathBuf, anyhow::Error> {
+    let config_path = BaseDirectories::with_prefix("leftwm")?;
+    Ok(config_path.place_config_file("config.ron")?)
+}
+
+pub fn migrate_config(path: PathBuf, verbose: bool) -> Result<(), anyhow::Error> {
+    if verbose {
+        println!("Using toml file with path: {}", path.to_string_lossy());
+    }
+    let toml_config = load_config_file(Some(path))?;
+    let ron_file = get_default_path()?;
+    write_to_file(&ron_file, &toml_config)
 }
