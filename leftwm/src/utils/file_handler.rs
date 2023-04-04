@@ -45,12 +45,10 @@ pub enum ConfigFileType {
 /// `LeftWM).
 pub fn load_config_file(config_filename: Option<PathBuf>) -> Result<Config> {
     tracing::debug!("Loading config file");
-
     let config_file = match check_path(config_filename, false) {
         Ok(path) => path,
         Err(_) => {
             tracing::warn!("Config file not found. Creating default config file.");
-
             let config = Config::default();
             let file_path = get_default_path()?;
             write_to_file(&file_path, &config)?;
@@ -149,10 +147,10 @@ pub fn check_path(
     };
     if Path::new(&file_path).exists() {
         tracing::debug!("Config file '{}' found.", file_path.to_string_lossy());
+        Ok(file_path)
     } else {
-        return Err(anyhow::Error::msg("file not found"));
+        Err(anyhow::Error::msg("file not found"))
     }
-    Ok(file_path)
 }
 
 pub fn get_default_path() -> Result<PathBuf, anyhow::Error> {

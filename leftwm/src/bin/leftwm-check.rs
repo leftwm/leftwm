@@ -92,7 +92,13 @@ fn check_config_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         None
     };
 
-    let config_filename = check_path(config_path, verbose)?;
+    let config_filename = match check_path(config_path, verbose) {
+        Ok(path) => path,
+        Err(_) => {
+            load_config_file(None)?;
+            get_default_path()?
+        }
+    };
 
     if verbose {
         dbg!(&config_filename);
