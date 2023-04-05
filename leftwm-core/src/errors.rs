@@ -16,4 +16,6 @@ pub enum LeftError {
     StreamError,
     #[error("Liquid parsing error")]
     LiquidParsingError,
+    #[error("Toml is deprecated, use Ron.")]
+    TomlDeprecationError,
 }

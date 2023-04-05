@@ -56,10 +56,7 @@ pub fn load_config_file(config_filename: Option<PathBuf>) -> Result<Config> {
         }
     };
 
-    match check_file_type(&config_file) {
-        ConfigFileType::RonFile => read_ron_config(&config_file),
-        ConfigFileType::TomlFile => read_toml_file(&config_file),
-    }
+    read_ron_config(&config_file)
 }
 
 /// # Errors
@@ -68,11 +65,11 @@ pub fn load_config_file(config_filename: Option<PathBuf>) -> Result<Config> {
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns LeftError`.
 pub fn load_theme_file(path: &PathBuf) -> Result<ThemeSetting> {
-    let file_type = check_file_type(path);
-    if file_type == ConfigFileType::RonFile {
+    if check_file_type(path) == ConfigFileType::RonFile {
         read_ron_config(path)
     } else {
-        read_toml_file(path)
+        tracing::error!("`TOML` config and theming is deprecatd, please convert to `RON`. Refer to the leftwm wiki for more info.");
+        Err(leftwm_core::errors::LeftError::TomlDeprecationError.into())
     }
 }
 
@@ -82,10 +79,11 @@ pub fn load_theme_file(path: &PathBuf) -> Result<ThemeSetting> {
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
 fn read_ron_config<T: DeserializeOwned>(config_file: &PathBuf) -> Result<T, anyhow::Error> {
-    let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+    let ron = Options::default()
+        .with_default_extension(Extensions::IMPLICIT_SOME)
+        .with_default_extension(Extensions::UNWRAP_NEWTYPES);
     let contents = fs::read_to_string(config_file)?;
-    let config = ron.from_str(&contents)?;
-    Ok(config)
+    Ok(ron.from_str(&contents)?)
 }
 
 /// # Errors
@@ -94,8 +92,7 @@ fn read_ron_config<T: DeserializeOwned>(config_file: &PathBuf) -> Result<T, anyh
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
 fn read_toml_file<T: DeserializeOwned>(path: &PathBuf) -> Result<T, anyhow::Error> {
-    let from_file = toml::from_str(&fs::read_to_string(path)?)?;
-    Ok(from_file)
+    Ok(toml::from_str(&fs::read_to_string(path)?)?)
 }
 
 /// # Errors
@@ -106,7 +103,8 @@ fn read_toml_file<T: DeserializeOwned>(path: &PathBuf) -> Result<T, anyhow::Erro
 fn write_to_file(ron_file: &PathBuf, config: &Config) -> Result<(), anyhow::Error> {
     let ron_pretty_conf = PrettyConfig::new()
         .depth_limit(2)
-        .extensions(Extensions::IMPLICIT_SOME);
+        .extensions(Extensions::IMPLICIT_SOME)
+        .extensions(Extensions::UNWRAP_NEWTYPES);
     let ron = to_string_pretty(&config, ron_pretty_conf)?;
     let ron_with_header = String::from(COMMENT_HEADER) + &ron;
     let mut file = File::create(ron_file)?;
@@ -118,7 +116,7 @@ pub fn check_file_type(path: impl AsRef<Path>) -> ConfigFileType {
     // we want to assume any other file type as `toml` is `ron` so files like `config.backup` can be checked manually and get parsed as ron
     match path.as_ref().extension() {
         Some(e) if e == OsStr::new("toml") => {
-            tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+            tracing::warn!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
             ConfigFileType::TomlFile
         }
         Some(e) if e == OsStr::new("ron") => ConfigFileType::RonFile,
@@ -160,9 +158,9 @@ pub fn get_default_path() -> Result<PathBuf, anyhow::Error> {
 
 pub fn migrate_config(path: PathBuf, verbose: bool) -> Result<(), anyhow::Error> {
     if verbose {
-        println!("Using toml file with path: {}", path.to_string_lossy());
+        println!("Using `TOML` file with path: {}", path.to_string_lossy());
     }
-    let toml_config = load_config_file(Some(path))?;
+    let toml_config = read_toml_file(&path)?;
     let ron_file = get_default_path()?;
     write_to_file(&ron_file, &toml_config)
 }
