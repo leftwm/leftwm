@@ -168,7 +168,7 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
                 let mut windows_restores = vec![];
 
                 let mut windows = helpers::vec_extract(&mut state.windows, |w| {
-                    w.has_tag(&tag_id) && w.is_managed() && !w.floating()
+                    w.has_tag(&tag_id) && w.is_managed()
                 });
 
                 while let Some(popped_window_handle) = window_order.pop_front() {
