@@ -161,27 +161,24 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
             let window_history = state
                 .window_history
                 .entry(tag_id)
-                .or_insert_with(|| VecDeque::new());
+                .or_insert_with(VecDeque::new);
             window_history.append(&mut handles);
-        } else {
-            if let Some(window_order) = state.window_history.get_mut(&tag_id) {
-                let mut windows_restores = vec![];
+        } else if let Some(window_order) = state.window_history.get_mut(&tag_id) {
+            let mut windows_restores = vec![];
 
-                let mut windows = helpers::vec_extract(&mut state.windows, |w| {
-                    w.has_tag(&tag_id) && w.is_managed()
-                });
+            let mut windows =
+                helpers::vec_extract(&mut state.windows, |w| w.has_tag(&tag_id) && w.is_managed());
 
-                while let Some(popped_window_handle) = window_order.pop_front() {
-                    let pos = windows
-                        .iter_mut()
-                        .position(|w| w.handle == popped_window_handle);
-                    if let Some(pos) = pos {
-                        let window = windows.remove(pos);
-                        windows_restores.push(window);
-                    }
+            while let Some(popped_window_handle) = window_order.pop_front() {
+                let pos = windows
+                    .iter_mut()
+                    .position(|w| w.handle == popped_window_handle);
+                if let Some(pos) = pos {
+                    let window = windows.remove(pos);
+                    windows_restores.push(window);
                 }
-                state.windows.append(&mut windows_restores);
             }
+            state.windows.append(&mut windows_restores);
         }
     }
 
