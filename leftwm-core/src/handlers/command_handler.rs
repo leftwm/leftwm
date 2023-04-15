@@ -1,7 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 
 mod scratchpad_handler;
-use std::collections::VecDeque;
 
 // Make public to the rest of the crate without exposing other internal
 // details of the scratchpad handling code
@@ -151,34 +150,25 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
         //Going to fullscreen, so we save the window order
         //or else, we restore it!
         if toggle_to {
-            let mut handles = state
+            let handles = state
                 .windows
                 .iter()
                 .filter(|window| window.tag == Some(tag_id) && window.is_managed())
                 .map(|w| w.handle)
                 .collect();
 
-            let window_history = state
-                .window_history
-                .entry(tag_id)
-                .or_insert_with(VecDeque::new);
-            window_history.append(&mut handles);
+            state.window_history.insert(tag_id, handles);
         } else if let Some(window_order) = state.window_history.get_mut(&tag_id) {
-            let mut windows_restores = vec![];
-
-            let mut windows =
-                helpers::vec_extract(&mut state.windows, |w| w.has_tag(&tag_id) && w.is_managed());
-
             while let Some(popped_window_handle) = window_order.pop_front() {
-                let pos = windows
-                    .iter_mut()
+                let pos = state
+                    .windows
+                    .iter()
                     .position(|w| w.handle == popped_window_handle);
                 if let Some(pos) = pos {
-                    let window = windows.remove(pos);
-                    windows_restores.push(window);
+                    let window = state.windows.remove(pos);
+                    state.windows.push(window);
                 }
             }
-            state.windows.append(&mut windows_restores);
         }
     }
 

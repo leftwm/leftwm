@@ -4,8 +4,8 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::Layout;
 use crate::models::{
-    FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, TagId, Tags, Window, WindowHandle,
-    WindowType, Workspace,
+    FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, TagId, Tags, Window,
+    WindowHandle, WindowType, Workspace,
 };
 use crate::DisplayAction;
 use serde::{Deserialize, Serialize};
