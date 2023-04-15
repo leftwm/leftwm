@@ -158,13 +158,13 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
                 .collect();
 
             state.window_history.insert(tag_id, handles);
-        } else if let Some(window_order) = state.window_history.get_mut(&tag_id) {
-            while let Some(popped_window_handle) = window_order.pop_front() {
-                let pos = state
+        } else if let Some(window_order) = state.window_history.get(&tag_id) {
+            for window_handle in window_order {
+                if let Some(pos) = state
                     .windows
                     .iter()
-                    .position(|w| w.handle == popped_window_handle);
-                if let Some(pos) = pos {
+                    .position(|w| w.handle == *window_handle)
+                {
                     let window = state.windows.remove(pos);
                     state.windows.push(window);
                 }

@@ -15,7 +15,7 @@ use std::collections::{HashMap, VecDeque};
 pub struct State {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
-    pub window_history: HashMap<TagId, VecDeque<WindowHandle>>,
+    pub window_history: HashMap<TagId, Vec<WindowHandle>>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
     pub layout_manager: LayoutManager,
