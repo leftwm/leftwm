@@ -114,8 +114,8 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
         // Layout
-        "DecreaseMainWidth" | "DecreaseMainSize" => Ok(Command::DecreaseMainSize()), // 'width' deprecated
-        "IncreaseMainWidth" | "IncreaseMainSize" => Ok(Command::IncreaseMainSize()), // 'width' deprecated
+        "DecreaseMainWidth" | "DecreaseMainSize" => build_decrease_main_size(rest), // 'DecreaseMainWidth' deprecated
+        "IncreaseMainWidth" | "IncreaseMainSize" => build_increase_main_size(rest), // 'IncreaseMainWidth' deprecated
         "DecreaseMainCount" => Ok(Command::DecreaseMainCount()),
         "IncreaseMainCount" => Ok(Command::IncreaseMainCount()),
         "NextLayout" => Ok(Command::NextLayout),
@@ -286,6 +286,18 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
         bool::from_str(raw)?
     };
     Ok(Command::MoveWindowToPreviousTag { follow })
+}
+
+fn build_increase_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let mut parts = raw.split(' ');
+    let change: i32 = parts.next().ok_or("missing argument change")?.parse()?;
+    Ok(Command::IncreaseMainSize(change))
+}
+
+fn build_decrease_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let mut parts = raw.split(' ');
+    let change: i32 = parts.next().ok_or("missing argument change")?.parse()?;
+    Ok(Command::DecreaseMainSize(change))
 }
 
 fn without_head<'a>(s: &'a str, head: &'a str) -> &'a str {

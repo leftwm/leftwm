@@ -68,8 +68,10 @@ pub enum Command {
     PreviousLayout,
     SetLayout(String),
     RotateTag,
-    IncreaseMainSize(),
-    DecreaseMainSize(),
+    IncreaseMainWidth(i32), // deprecated: use IncreaseMainSize instead
+    DecreaseMainWidth(i32), // deprecated: use DecreaseMainSize instead
+    IncreaseMainSize(i32),
+    DecreaseMainSize(i32),
     IncreaseMainCount(),
     DecreaseMainCount(),
     SetMarginMultiplier(f32),

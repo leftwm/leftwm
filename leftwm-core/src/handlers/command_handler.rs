@@ -131,8 +131,12 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::RotateTag => rotate_tag(state),
 
-        Command::IncreaseMainSize() => change_main_size(state, 1),
-        Command::DecreaseMainSize() => change_main_size(state, -1),
+        Command::IncreaseMainWidth(delta) | Command::IncreaseMainSize(delta) => {
+            change_main_size(state, *delta, 1)
+        }
+        Command::DecreaseMainWidth(delta) | Command::DecreaseMainSize(delta) => {
+            change_main_size(state, *delta, -1)
+        }
         Command::IncreaseMainCount() => change_main_count(state, 1),
         Command::DecreaseMainCount() => change_main_count(state, -1),
         Command::SetMarginMultiplier(multiplier) => set_margin_multiplier(state, *multiplier),
@@ -730,16 +734,12 @@ fn rotate_tag(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn change_main_size(state: &mut State, factor: i8) -> Option<bool> {
+fn change_main_size(state: &mut State, delta: i32, factor: i8) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     let workspace_id = workspace.id;
     let tag_id = state.focus_manager.tag(0)?;
     let def = state.layout_manager.layout_mut(workspace_id, tag_id);
-    match factor {
-        1 => def.increase_main_size(workspace.width()),
-        -1 => def.decrease_main_size(),
-        _ => (),
-    }
+    def.change_main_size(delta * i32::from(factor), workspace.width());
     Some(true)
 }
 

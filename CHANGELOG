@@ -8,28 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Change
 
-- The `layouts` (also `workspace.layouts`) in `config.ron` must be declared as Strings because they are no longer backed by an enum. (ie. `layouts: ["CenterMain"]` instead of `layouts: [CenterMain]`)
-- The `max_window_width` was removed without direct replacement. The "always fill entire screen" behavior can now be addressed in layouts with the `Reserve` property.
-- The `IncreaseMainWidth` and `DecreaseMainWidth` commands have been removed, use `IncreaseMainSize` and `DecreaseMainSize` instead
-- The `IncreaseMainSize` and `DecreaseMainSize` command no longer accepts a `delta` parameter, it always changes the size by either ±5% or ±100px (depending whether the layout's main size is defined as absolute or relative).
+- The `layouts` and `workspace.layouts` in `config.ron` must be declared as Strings because they are no longer backed by an enum. (ie. `layouts: ["CenterMain"]` instead of `layouts: [CenterMain]`)
+- The `max_window_width` config was removed without direct replacement. The "always fill entire screen" behavior can now be addressed by creating a custom layout with an appropriate `Reserve` property.
+
+### Deprecated
+
+- The commands `IncreaseMainWidth` / `DecreaseMainWidth` were deprecated in favor of `IncreaseMainSize` and `DecreaseMainSize`
 
 ### Removed
 
 - The `max_window_width` config option was removed
-- The commands `IncreaseMainWidth` / `DecreaseMainWidth` were removed
 
 ### Added
 
 - Add `SwapWindowTop` command as an alternative to `MoveWindowTop` (via #1005 by @emiliode)
 - Reposition mouse cursor to bottom-right corner of window when resizing (via #1009 by @nemalex)
 - Implemented the new [leftwm-layouts](https://github.com/leftwm/leftwm-layouts) library (via #1000 by @hertg)
-- Added `IncreaseMainSize` / `DecreaseMainSize` as a replacement for the removed `IncreaseMainWidth` / `DecreaseMainWidth` (closes #545 via #1000 by @hertg)
+- Added `IncreaseMainSize` / `DecreaseMainSize` as a replacement for the deprecated `IncreaseMainWidth` / `DecreaseMainWidth` (closes #545 via #1000 by @hertg)
 - Add support for multiple main windows on all layouts that have a main column, new commands are `IncreaseMainCount` and `DecreaseMainCount` (closes #516 via #1000 by @hertg)
-- The currently supported MSRV is 1.65.0
 
 ### Fixed
+
 - Fix minor regression where `res_name` and `name` window properties were no longer checked by window rules (via #1002 by @guigot)
 - Changing main width now works on all layouts that have a main column (fixes #96 via #1000 by @hertg)
+
+### Minimum Supported Rust Version
+
+- The currently supported MSRV is 1.65.0
 
 ## [0.4.1]
 
