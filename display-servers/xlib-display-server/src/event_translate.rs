@@ -4,7 +4,7 @@ use super::{
 };
 use leftwm_core::models::{Mode, WindowChange, WindowType, XyhwChange};
 use std::os::raw::c_ulong;
-use x11_dl::xlib;
+use x11_dl::{xlib, xrandr};
 
 pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 
@@ -37,7 +37,23 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ButtonPress => Some(from_button_press(raw_event)),
             // Mouse button released.
             xlib::ButtonRelease if !normal_mode => Some(from_button_release(x_event)),
-            _other => None,
+            other => {
+                // Also match Xrandr events
+                if let Some(base) = x_event.0.xrandr_event_base {
+                    match other - base {
+                        xrandr::RRNotify => {
+                            // Xrandr XRRNotifyEvent has multiple subtypes, match them too.
+                            match xrandr::XRRNotifyEvent::from(raw_event).subtype {
+                                xrandr::RRNotify_CrtcChange => from_xrandr_crtc_change(x_event),
+                                _other => None,
+                            }
+                        }
+                        _other => None,
+                    }
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -215,4 +231,10 @@ fn from_button_release(x_event: XEvent) -> DisplayEvent {
     let xw = x_event.0;
     xw.set_mode(Mode::Normal);
     DisplayEvent::ChangeToNormalMode
+}
+
+fn from_xrandr_crtc_change(x_event: XEvent) -> Option<DisplayEvent> {
+    let event = x11_dl::xrandr::XRRCrtcChangeNotifyEvent::from(x_event.1);
+    tracing::warn!("Crtc change for {} - {:?}", event.crtc, event);
+    None
 }
