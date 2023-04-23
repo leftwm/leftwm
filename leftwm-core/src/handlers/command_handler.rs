@@ -35,10 +35,7 @@ macro_rules! move_focus_common_vars {
         let handle = $state.focus_manager.window(&$state.windows)?.handle;
         let tag_id = $state.focus_manager.tag(0)?;
         let ws_id = $state.focus_manager.workspace(&$state.workspaces)?.id;
-        //let tag = $state.tags.get(tag_id)?;
-
         let layout = Some($state.layout_manager.layout(ws_id, tag_id).name.to_owned());
-        //let layout = Some(tag.layout.to_owned());
 
         let for_active_workspace =
             |x: &Window| -> bool { x.tag == Some(tag_id) && x.is_managed() };

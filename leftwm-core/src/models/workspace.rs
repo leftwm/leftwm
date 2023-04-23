@@ -196,23 +196,6 @@ impl Workspace {
             h: self.height().unsigned_abs(),
         }
     }
-
-    //pub fn change_main_width(&mut self, delta: i8) {
-    //    //Check we are not gonna go negative
-    //    let mwp = &mut self.main_width_percentage;
-    //    if (*mwp as i8) < -delta {
-    //        *mwp = 0;
-    //        return;
-    //    }
-    //    if delta.is_negative() {
-    //        *mwp -= delta.unsigned_abs();
-    //        return;
-    //    }
-    //    *mwp += delta as u8;
-    //    if *mwp > 100 {
-    //        *mwp = 100;
-    //    }
-    //}
 }
 
 #[cfg(test)]

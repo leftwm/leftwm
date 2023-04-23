@@ -25,10 +25,6 @@ impl State {
         self.focus_tag(&tag_id);
         self.update_static();
 
-        // TODO: ???
-        /*self.layout_manager
-        .update_layouts(&mut self.workspaces, self.tags.all_mut());*/
-
         Some(true)
     }
 }

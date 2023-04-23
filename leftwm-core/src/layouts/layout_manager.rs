@@ -191,24 +191,7 @@ impl LayoutManager {
         };
     }
 
-    // todo: reset fn, that resets all the layouts to their unchanged properties
-
-    /*pub fn apply(&self, name: &String, windows: &Vec<&mut Window>, ws: &Workspace) {
-        let def = self
-            .all_definitions
-            .iter()
-            .find(|x| x.name == *name)
-            .unwrap_or_default();
-
-        let container = Rect {
-            x: ws.x(),
-            y: ws.y(),
-            h: ws.height().unsigned_abs(),
-            w: ws.width().unsigned_abs(),
-        };
-
-        let rects = leftwm_layouts::apply(def, windows.len(), &container);
-    }*/
+    // todo - low priority: reset fn, that resets all the layouts to their unchanged properties
 }
 
 #[cfg(test)]
