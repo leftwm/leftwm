@@ -17,6 +17,8 @@ pub enum DisplayEvent {
     MoveWindow(WindowHandle, i32, i32),
     ResizeWindow(WindowHandle, i32, i32),
     ScreenCreate(Screen),
+    ScreenUpdate(Screen),
+    ScreenDelete(String),
     SendCommand(Command),
     ConfigureXlibWindow(WindowHandle),
     ChangeToNormalMode,

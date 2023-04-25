@@ -38,7 +38,7 @@ pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
     | xlib::ButtonPressMask
     | xlib::PointerMotionMask
     | xlib::StructureNotifyMask;
-const XRANDR_EVENT_MASK: c_int = xrandr::RRCrtcChangeNotifyMask; //xrandr::RRScreenChangeNotifyMask;
+const XRANDR_EVENT_MASK: c_int = xrandr::RRCrtcChangeNotifyMask | xrandr::RROutputChangeNotifyMask;
 
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
@@ -103,8 +103,8 @@ pub enum XlibError {
 /// Contains Xserver information and origins.
 pub struct XWrap {
     xlib: xlib::Xlib,
-    display: *mut xlib::Display,
-    root: xlib::Window,
+    pub display: *mut xlib::Display,
+    pub root: xlib::Window,
     pub atoms: XAtom,
     cursors: XCursor,
     colors: Colors,

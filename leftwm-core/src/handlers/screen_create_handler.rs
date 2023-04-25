@@ -7,15 +7,49 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
-        tracing::trace!("Screen create: {:?}", screen);
+        tracing::info!("Screen create handler on {}", screen.output);
+        let workspaces = self
+            .config
+            .workspaces()
+            .unwrap_or_default()
+            .into_iter()
+            .enumerate()
+            .filter(|(_, wsc)| wsc.output == screen.output)
+            .collect::<Vec<_>>();
+
+        if workspaces.is_empty() && self.config.auto_derive_workspaces() {
+            // If there is no workspace for this screen in the config and `auto_derive_workspaces` is set, create a workspace based on the screen.
+            self.create_workspace(screen);
+        } else {
+            for (i, wsc) in workspaces {
+                let mut new_screen = Screen::from(&wsc);
+                if wsc.relative == Some(true) {
+                    new_screen.bbox.add(screen.bbox);
+                }
+                new_screen.root = screen.root;
+                new_screen.id = Some(i + 1);
+                self.create_workspace(new_screen);
+            }
+        }
+
+        false
+    }
+
+    fn create_workspace(&mut self, screen: Screen) {
+        tracing::warn!("Creating Workspace on screen: {:?}", screen);
 
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
 
-        // Only used in tests, where there are multiple screens being created by `Screen::default()`
-        // The screen passed to this function should normally already have it's id given in the config serialization.
         let workspace_id = match screen.id {
-            None => self.state.workspaces.last().map_or(0, |ws| ws.id) + 1,
+            // Used in tests, where there are multiple screens being created by `Screen::default()`
+            // and for workspaces created by `auto_derive_worspaces`
+            // Selects the next auto-generated id, being minimally one higher than those already defined in the config.
+            None => {
+                let min_id_current = self.state.workspaces.iter().fold(0, |i, wsc| i.max(wsc.id));
+                let min_id_config = self.config.workspaces().map_or(0, |w| w.len());
+                min_id_current.max(min_id_config) + 1
+            }
             Some(set_id) => set_id,
         };
 
@@ -26,7 +60,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             workspace_id,
         );
         if self.state.workspaces.len() >= tag_len {
-            tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. No more workspaces will be added.");
+            tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. Unlabled tags will be automatically created.");
         }
         new_workspace.load_config(&self.config);
 
@@ -50,6 +84,20 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         self.state.workspaces.push(new_workspace.clone());
         self.state.screens.push(screen);
         self.state.focus_workspace(&new_workspace);
+    }
+
+    pub fn screen_update_handler(&mut self, screen: Screen) -> bool {
+        // TODO: Actually update
+        // Also recieves new screens, needs to ckeck that -> create or update.
+
+        tracing::warn!("Screen update handler on {}", screen.output);
+        false
+    }
+
+    pub fn screen_delete_handler(&mut self, output: String) -> bool {
+        // TODO: Actually delete
+
+        tracing::warn!("Screen delete handler on {}", output);
         false
     }
 }
@@ -104,5 +152,42 @@ mod tests {
         assert!(manager.state.workspaces[1].has_tag(&2));
         assert!(manager.state.workspaces[2].has_tag(&3));
         assert!(manager.state.workspaces[3].has_tag(&4));
+    }
+
+    #[test]
+    fn creating_workspaces_should_set_ids_correctly() {
+        let mut manager = Manager::new_test_with_outputs(vec![
+            "NOT-USED-1".to_string(),
+            "USED-1".to_string(),
+            "NOT-USED-2".to_string(),
+        ]);
+
+        // there should be no workspaces in the begining
+        assert_eq!(manager.state.workspaces.len(), 0);
+
+        manager.screen_create_handler(Screen {
+            output: "UNDEFINED-1".to_string(),
+            ..Default::default()
+        });
+        manager.screen_create_handler(Screen {
+            output: "USED-1".to_string(),
+            ..Default::default()
+        });
+        manager.screen_create_handler(Screen {
+            output: "UNDEFINED-2".to_string(),
+            ..Default::default()
+        });
+
+        // there should be 2 workspaces
+        assert_eq!(manager.state.workspaces.len(), 3);
+
+        // undefined workspace was added after last config ws
+        assert_eq!(manager.state.workspaces[0].id, 4);
+
+        // used workspace was the second in config
+        assert_eq!(manager.state.workspaces[1].id, 2);
+
+        // second undefined workspace increments count
+        assert_eq!(manager.state.workspaces[2].id, 5);
     }
 }
