@@ -246,29 +246,37 @@ fn from_xrandr_crtc_change(x_event: XEvent) -> Option<DisplayEvent> {
         xrandr::Xrandr::open().expect("Function ony called if `xrandr_event_base` is some");
     let event = xrandr::XRRCrtcChangeNotifyEvent::from(x_event.1);
 
-    unsafe {
-        let screen_resources = (xrandr.XRRGetScreenResources)(x_event.0.display, x_event.0.root);
-        let crtc_info = (xrandr.XRRGetCrtcInfo)(x_event.0.display, screen_resources, event.crtc);
-        let outputs = slice::from_raw_parts((*crtc_info).outputs, (*crtc_info).noutput as usize);
+    // Do not process a crtc that is not displayed (upcoming delete by OutpuChange)
+    if event.mode != 0 {
+        unsafe {
+            let screen_resources =
+                (xrandr.XRRGetScreenResources)(x_event.0.display, x_event.0.root);
+            let crtc_info =
+                (xrandr.XRRGetCrtcInfo)(x_event.0.display, screen_resources, event.crtc);
+            let outputs =
+                slice::from_raw_parts((*crtc_info).outputs, (*crtc_info).noutput as usize);
 
-        if outputs.len() > 1 {
-            tracing::error!(
-                r#"Leftwm does not support more than one output per crtc (if that is even possible to have). 
+            if outputs.len() > 1 {
+                tracing::error!(
+                    r#"Leftwm does not support more than one output per crtc (if that is even possible to have). 
                 LeftWM will only apply changes to the first output. 
                 If you are seing this error, please create an issue on our GitHub page and it will be resolved."#
-            );
-        }
+                );
+            }
 
-        return outputs.first().map(|output| {
-            let output_info =
-                (xrandr.XRRGetOutputInfo)(x_event.0.display, screen_resources, *output);
-            let mut s = Screen::from(*crtc_info);
-            s.root = x_event.0.get_default_root_handle();
-            s.output = std::ffi::CStr::from_ptr((*output_info).name)
-                .to_string_lossy()
-                .into_owned();
-            DisplayEvent::ScreenUpdate(s)
-        });
+            return outputs.first().map(|output| {
+                let output_info =
+                    (xrandr.XRRGetOutputInfo)(x_event.0.display, screen_resources, *output);
+                let mut s = Screen::from(*crtc_info);
+                s.root = x_event.0.get_default_root_handle();
+                s.output = std::ffi::CStr::from_ptr((*output_info).name)
+                    .to_string_lossy()
+                    .into_owned();
+                DisplayEvent::ScreenUpdate(s)
+            });
+        }
+    } else {
+        None
     }
 }
 
