@@ -12,7 +12,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         match event {
             DisplayEvent::ScreenCreate(s) => self.screen_create_handler(s),
             DisplayEvent::ScreenUpdate(s) => self.screen_update_handler(s),
-            DisplayEvent::ScreenDelete(s) => self.screen_delete_handler(s),
+            DisplayEvent::ScreenDelete(s) => self.screen_delete_handler(&s),
             DisplayEvent::WindowCreate(w, x, y) => self.window_created_handler(w, x, y),
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
             DisplayEvent::WindowDestroy(handle) => self.window_destroyed_handler(&handle),
@@ -91,7 +91,7 @@ fn from_change_to_normal_mode(state: &mut State) -> bool {
 }
 
 fn from_movement(state: &mut State, handle: WindowHandle, x: i32, y: i32) -> bool {
-    if state.screens.iter().any(|s| s.root == handle) {
+    if state.workspaces.iter().any(|s| s.root == handle) {
         state.focus_workspace_with_point(x, y);
     }
     false

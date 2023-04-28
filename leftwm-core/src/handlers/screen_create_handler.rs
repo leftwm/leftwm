@@ -1,6 +1,7 @@
 use super::{Manager, Screen, Workspace};
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
+use crate::models::BBox;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply the changes to a manager.
@@ -35,34 +36,29 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         false
     }
 
-    fn create_workspace(&mut self, screen: Screen) {
+    fn create_workspace(&mut self, mut screen: Screen) {
         tracing::warn!("Creating Workspace on screen: {:?}", screen);
 
         let tag_index = self.state.workspaces.len();
         let tag_len = self.state.tags.len_normal();
 
-        let workspace_id = match screen.id {
+        let screen_id = screen.id.unwrap_or_else(|| {
             // Used in tests, where there are multiple screens being created by `Screen::default()`
             // and for workspaces created by `auto_derive_worspaces`
             // Selects the next auto-generated id, being minimally one higher than those already defined in the config.
-            None => {
-                let min_id_current = self.state.workspaces.iter().fold(0, |i, wsc| i.max(wsc.id));
-                let min_id_config = self.config.workspaces().map_or(0, |w| w.len());
-                min_id_current.max(min_id_config) + 1
-            }
-            Some(set_id) => set_id,
-        };
+            let min_id_current = self.state.workspaces.iter().fold(0, |i, wsc| i.max(wsc.id));
+            let min_id_config = self.config.workspaces().map_or(0, |w| w.len());
+            min_id_current.max(min_id_config) + 1
+        });
+        screen.id = Some(screen_id);
+        screen.max_window_width = screen.max_window_width.or(self.state.max_window_width);
 
-        let mut new_workspace = Workspace::new(
-            screen.bbox,
-            self.state.layout_manager.new_layout(workspace_id),
-            screen.max_window_width.or(self.state.max_window_width),
-            workspace_id,
-        );
+        let mut new_workspace =
+            Workspace::new(screen, self.state.layout_manager.new_layout(screen_id));
+
         if self.state.workspaces.len() >= tag_len {
             tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. Unlabled tags will be automatically created.");
         }
-        new_workspace.load_config(&self.config);
 
         // Make sure there are enough tags for this new screen.
         let next_id = if tag_len > tag_index {
@@ -71,31 +67,62 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             // Add a new tag for the workspace.
             self.state
                 .tags
-                .add_new_unlabeled(self.state.layout_manager.new_layout(workspace_id))
+                .add_new_unlabeled(self.state.layout_manager.new_layout(screen_id))
         };
-
         if let Some(tag) = self.state.tags.get_mut(next_id) {
             tag.layout = new_workspace.layout;
         }
+
+        new_workspace.load_config(&self.config);
 
         self.state.focus_workspace(&new_workspace);
         self.state.focus_tag(&next_id);
         new_workspace.show_tag(&next_id);
         self.state.workspaces.push(new_workspace.clone());
-        self.state.screens.push(screen);
         self.state.focus_workspace(&new_workspace);
     }
 
     pub fn screen_update_handler(&mut self, screen: Screen) -> bool {
-        // TODO: Actually update
-        // Also recieves new screens, needs to ckeck that -> create or update.
-
         tracing::warn!("Screen update handler on {}", screen.output);
-        false
+        // Also recieves new screens, needs to ckeck that -> update or create.
+        let affected = self
+            .state
+            .workspaces
+            .iter_mut()
+            .filter(|ws| ws.output == screen.output)
+            .collect::<Vec<_>>();
+        if affected.is_empty() {
+            self.screen_create_handler(screen)
+        } else {
+            for wsc in affected {
+                // Apply config changes (if existing)
+                let bbox = if let Some(config_ws) = self
+                    .config
+                    .workspaces()
+                    .and_then(|wss| wss.get(wsc.id).cloned())
+                {
+                    let mut bbox = BBox {
+                        x: config_ws.x,
+                        y: config_ws.y,
+                        width: config_ws.width,
+                        height: config_ws.height,
+                    };
+                    if config_ws.relative == Some(true) {
+                        bbox.add(screen.bbox);
+                    }
+                    bbox
+                } else {
+                    screen.bbox
+                };
+
+                wsc.update_bbox(bbox);
+            }
+            false
+        }
     }
 
-    pub fn screen_delete_handler(&mut self, output: String) -> bool {
-        // TODO: Actually delete
+    pub fn screen_delete_handler(&mut self, output: &str) -> bool {
+        self.state.workspaces.retain(|wsc| wsc.output != output);
 
         tracing::warn!("Screen delete handler on {}", output);
         false

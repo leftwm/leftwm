@@ -147,7 +147,7 @@ mod tests {
     }
 
     fn workspace(id: WorkspaceId, layout: Layout) -> Workspace {
-        Workspace::new(
+        Workspace::test(
             BBox {
                 width: 0,
                 height: 0,
@@ -155,7 +155,6 @@ mod tests {
                 y: 0,
             },
             layout,
-            None,
             id,
         )
     }

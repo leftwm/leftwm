@@ -4,7 +4,7 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::Layout;
 use crate::models::{
-    FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, Tags, Window, WindowHandle,
+    FocusManager, LayoutManager, Mode, ScratchPadName, Size, Tags, Window, WindowHandle,
     WindowType, Workspace,
 };
 use crate::DisplayAction;
@@ -13,7 +13,6 @@ use std::collections::{HashMap, VecDeque};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct State {
-    pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
@@ -47,7 +46,6 @@ impl State {
             layout_manager,
             scratchpads: config.create_list_of_scratchpads(),
             layouts: config.layouts(),
-            screens: Default::default(),
             windows: Default::default(),
             workspaces: Default::default(),
             mode: Default::default(),
