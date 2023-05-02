@@ -176,9 +176,12 @@ fn boot_desktop_file(path: &Path) -> std::result::Result<Child, EntryBootError> 
         return Err(EntryBootError::Hidden);
     }
 
-    if entry.exec.is_none() {
+    let Some(exec) = entry.exec else {
         return Err(EntryBootError::NoExec);
-    }
+    };
+
+    let exec = remove_field_codes(&exec);
+
     let wd = entry
         .path
         .unwrap_or_else(|| dirs_next::home_dir().unwrap_or_else(|| PathBuf::from(".")));
@@ -186,9 +189,46 @@ fn boot_desktop_file(path: &Path) -> std::result::Result<Child, EntryBootError> 
     Command::new("sh")
         .current_dir(wd)
         .arg("-c")
-        .arg(entry.exec.unwrap())
+        .arg(exec)
         .spawn()
         .map_err(EntryBootError::Execute)
+}
+
+/// Removes [field codes](https://specifications.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html#exec-variables) from exec string
+///
+/// When encountering % at the end of the string or followed by non-alphabetic and non-% character
+/// the function leaves it unmodified in order to be more resilient.
+/// According to the spec, the input should be unquoted first (but this is not implemented currently).
+fn remove_field_codes(exec: &str) -> String {
+    let mut result = String::new();
+    let mut iter = exec.chars();
+    while let Some(ch) = iter.next() {
+        if ch == '%' {
+            let next = iter.next();
+            match next {
+                Some(next) if next.is_ascii_alphabetic() => {
+                    // field codes '%[a-zA-Z]' should be removed
+                    continue;
+                }
+                Some(next) if next == '%' => {
+                    // '%%' is escaped '%'
+                    result.push('%');
+                }
+                Some(next) => {
+                    // it is illegal for '%' to be followed by neither another '%' nor alphabetic charecters, but we leave it unmodified
+                    result.push('%');
+                    result.push(next);
+                }
+                None => {
+                    // it is illegal for '%' to be at the end of the string, but we leave it unmodified
+                    result.push('%');
+                }
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+    result
 }
 
 /// Refer to [Recognized desktop entry keys](https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s06.html)
@@ -344,6 +384,8 @@ pub fn exec_shell(command: &str, children: &mut Children) -> Option<ChildID> {
 #[cfg(test)]
 mod tests {
 
+    use crate::child_process::remove_field_codes;
+
     use super::DesktopEntry;
 
     #[test]
@@ -397,5 +439,38 @@ mod tests {
             "expect only show in not contains empty-str"
         );
         assert!(entry.not_show_in.is_none(), "expect not_show_in none");
+    }
+
+    #[test]
+    fn test_field_codes_removal() {
+        let sample_exec_with_field_code = "/path/to/app %u";
+        assert_eq!(
+            remove_field_codes(sample_exec_with_field_code),
+            "/path/to/app "
+        );
+
+        let sample_exec_with_multiple_field_codes = "/path/to/app %a %b";
+        assert_eq!(
+            remove_field_codes(sample_exec_with_multiple_field_codes),
+            "/path/to/app  "
+        );
+
+        let sample_exec_with_escaped_percentage_signs = "/path/to/app %%%%";
+        assert_eq!(
+            remove_field_codes(sample_exec_with_escaped_percentage_signs),
+            "/path/to/app %%"
+        );
+
+        let sample_exec_with_field_code_and_escaped_percentage_signs = "/path/to/app %%%%%u";
+        assert_eq!(
+            remove_field_codes(sample_exec_with_field_code_and_escaped_percentage_signs),
+            "/path/to/app %%"
+        );
+
+        let bad_exec1 = "/path/to/app %^";
+        assert_eq!(remove_field_codes(bad_exec1), bad_exec1);
+
+        let bad_exec2 = "/path/to/app %";
+        assert_eq!(remove_field_codes(bad_exec2), bad_exec2);
     }
 }
