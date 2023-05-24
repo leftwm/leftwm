@@ -431,35 +431,35 @@ fn set_layout(layout: Layout, state: &mut State) -> Option<bool> {
             None => false,
         };
         if !is_focused_floating {
-            let mut to_focus: Option<Window> = None;
+            let mut to_focus = None;
 
             if layout == Layout::Monocle {
                 to_focus = state
                     .windows
                     .iter()
-                    .find(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating())
-                    .cloned();
+                    .find(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating());
             } else if layout == Layout::MainAndDeck {
-                let tags_windows = state
-                    .windows
-                    .iter()
-                    .filter(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating())
-                    .collect::<Vec<&Window>>();
-                if let (Some(mw), Some(tdw)) = (tags_windows.get(0), tags_windows.get(1)) {
-                    // If the focused window is the main or the top of the deck, we don't do
-                    // anything.
-                    if let Some(&Some(h)) = focused_window {
+                if let Some(&Some(h)) = focused_window {
+                    let mut tags_windows = state
+                        .windows
+                        .iter()
+                        .filter(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating());
+
+                    let mw = tags_windows.next();
+                    let tdw = tags_windows.next();
+
+                    if let (Some(mw), Some(tdw)) = (mw, tdw) {
+                        // If the focused window is the main or the top of the deck, we don't do
+                        // anything.
                         if mw.handle != h && tdw.handle != h {
-                            if let Some(w) = tags_windows.get(1).copied() {
-                                to_focus = Some(w.clone());
-                            }
+                            to_focus = Some(tdw);
                         }
                     }
                 }
             }
 
-            if let Some(w) = to_focus {
-                state.focus_window(&w.handle);
+            if let Some(handle) = to_focus.map(|w| w.handle) {
+                state.focus_window(&handle);
             }
         }
     }
