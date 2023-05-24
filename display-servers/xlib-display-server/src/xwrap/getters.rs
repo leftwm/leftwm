@@ -269,11 +269,8 @@ impl XWrap {
                 .collect()
         } else {
             // NON-XINERAMA
-            let roots: Result<Vec<xlib::XWindowAttributes>, _> = self
-                .get_roots()
-                .iter()
-                .map(|w| self.get_window_attrs(*w))
-                .collect();
+            let roots: Result<Vec<xlib::XWindowAttributes>, _> =
+                self.get_roots().map(|w| self.get_window_attrs(w)).collect();
             let roots = roots.expect("Error: No screen were detected");
             roots.iter().map(Screen::from).collect()
         }
@@ -637,12 +634,9 @@ impl XWrap {
 
     /// Returns all the roots of the display.
     // `XRootWindowOfScreen`: https://tronche.com/gui/x/xlib/display/screen-information.html#RootWindowOfScreen
-    #[must_use]
-    fn get_roots(&self) -> Vec<xlib::Window> {
+    fn get_roots(&self) -> impl Iterator<Item = xlib::Window> + '_ {
         self.get_xscreens()
-            .into_iter()
             .map(|mut s| unsafe { (self.xlib.XRootWindowOfScreen)(&mut s) })
-            .collect()
     }
 
     /// Returns a text property for a window.
@@ -730,14 +724,12 @@ impl XWrap {
     /// Returns all the xscreens of the display.
     // `XScreenCount`: https://tronche.com/gui/x/xlib/display/display-macros.html#ScreenCount
     // `XScreenOfDisplay`: https://tronche.com/gui/x/xlib/display/display-macros.html#ScreensOfDisplay
-    #[must_use]
-    fn get_xscreens(&self) -> Vec<xlib::Screen> {
-        let mut screens = Vec::new();
+    fn get_xscreens(&self) -> impl Iterator<Item = xlib::Screen> + '_ {
         let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
-        for screen_id in 0..(screen_count) {
-            let screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_id) };
-            screens.push(screen);
-        }
-        screens
+
+        let screen_ids = 0..screen_count;
+
+        screen_ids
+            .map(|screen_id| unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_id) })
     }
 }
