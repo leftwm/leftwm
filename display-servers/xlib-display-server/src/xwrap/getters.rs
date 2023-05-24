@@ -634,7 +634,6 @@ impl XWrap {
 
     /// Returns all the roots of the display.
     // `XRootWindowOfScreen`: https://tronche.com/gui/x/xlib/display/screen-information.html#RootWindowOfScreen
-    #[must_use]
     fn get_roots(&self) -> impl Iterator<Item = xlib::Window> + '_ {
         self.get_xscreens()
             .map(|mut s| unsafe { (self.xlib.XRootWindowOfScreen)(&mut s) })
@@ -725,16 +724,12 @@ impl XWrap {
     /// Returns all the xscreens of the display.
     // `XScreenCount`: https://tronche.com/gui/x/xlib/display/display-macros.html#ScreenCount
     // `XScreenOfDisplay`: https://tronche.com/gui/x/xlib/display/display-macros.html#ScreensOfDisplay
-    #[must_use]
     fn get_xscreens(&self) -> impl Iterator<Item = xlib::Screen> + '_ {
         let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
 
         let screen_ids = 0..screen_count;
 
-        screen_ids.map(|screen_id| {
-            let screen = unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_id) };
-
-            screen
-        })
+        screen_ids
+            .map(|screen_id| unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_id) })
     }
 }
