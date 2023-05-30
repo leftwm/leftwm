@@ -1,0 +1,18 @@
+[package]
+name = "smithay-display-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+leftwm-core = { path = "../../leftwm-core", version = '0.4.1' }
+tracing = "0.1.36"
+
+[dependencies.smithay]
+git = "https://github.com/Smithay/smithay.git"
+rev = "138921b"
+
+[dependencies.smithay-drm-extras]
+git = "https://github.com/Smithay/smithay.git"
+rev = "138921b"
