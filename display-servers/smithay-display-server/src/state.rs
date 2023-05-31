@@ -1,18 +1,20 @@
 use std::{
     ffi::OsString,
     os::fd::AsRawFd,
-    sync::{mpsc::Sender, Arc},
+    sync::{atomic::AtomicBool, mpsc::Sender, Arc, Mutex},
     time::Instant,
 };
 
 use leftwm_core::DisplayEvent;
 use smithay::{
-    input::{Seat, SeatState},
+    desktop::{Space, Window},
+    input::{pointer::CursorImageStatus, Seat, SeatState},
     reexports::{
         calloop::{generic::Generic, Interest, LoopHandle, LoopSignal, Mode, PostAction},
         wayland_server::{backend::ClientData, Display, DisplayHandle},
     },
-    wayland::{compositor::CompositorState, socket::ListeningSocketSource},
+    utils::{Clock, Logical, Monotonic, Point},
+    wayland::{compositor::CompositorState, shm::ShmState, socket::ListeningSocketSource},
 };
 
 use crate::udev::UdevData;
@@ -23,12 +25,18 @@ pub struct SmithayState {
     pub start_time: Instant,
     pub loop_handle: LoopHandle<'static, CalloopData>,
     pub loop_signal: LoopSignal,
+    pub space: Space<Window>,
+    pub clock: Clock<Monotonic>,
+    pub running: Arc<AtomicBool>,
+
+    pub pointer_location: Point<f64, Logical>,
+    pub cursor_status: Arc<Mutex<CursorImageStatus>>,
 
     // Protocols
     pub compositor_state: CompositorState,
     // xdg_shell_state
     // xdg_decoration_state
-    // shm_state
+    pub shm_state: ShmState,
     // output_manager_State
     // data_device_state
     // primary_selection_state
@@ -61,11 +69,16 @@ impl SmithayState {
         loop_signal: LoopSignal,
     ) -> Self {
         let dh = display.handle();
+        let space = Space::default();
 
-        let compositor_state = CompositorState::new(&dh);
+        let compositor_state = CompositorState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
+        let shm_state = ShmState::new::<Self>(&dh, vec![]);
         let seat_name = udev_data.seat_name();
-        let mut seat = seat_state.new_wl_seat(&dh, seat_name.clone());
+        let seat = seat_state.new_wl_seat(&dh, seat_name.clone());
+        let cursor_status = Arc::new(Mutex::new(CursorImageStatus::Default));
+
+        let clock = Clock::new().unwrap();
 
         let socket_name = Self::init_wayland_listener(&mut loop_handle, display);
 
@@ -75,8 +88,15 @@ impl SmithayState {
             start_time: Instant::now(),
             loop_handle,
             loop_signal,
+            space,
+            clock,
+            running: Arc::new(AtomicBool::new(true)),
+
+            pointer_location: (0f64, 0f64).into(),
+            cursor_status,
 
             compositor_state,
+            shm_state,
             seat_state,
 
             seat,

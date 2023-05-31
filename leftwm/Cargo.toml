@@ -58,7 +58,8 @@ tracing-appender = {version = "0.2.2", optional = true}
 syslog-tracing = {version = "0.2.0", optional = true}
 
 # display_servers
-xlib-display-server = { path = "../display-servers/xlib-display-server", version = "0.1.1" }
+xlib-display-server = { path = "../display-servers/xlib-display-server", version = "0.1.0" }
+smithay-display-server = { path = "../display-servers/smithay-display-server", version = "0.1.0" }
 
 [dev-dependencies]
 tempfile = "3.2.0"

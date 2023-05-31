@@ -1,4 +1,13 @@
-use std::sync::mpsc::{self, Receiver};
+//TODO: This has to go asap
+#![allow(dead_code, unused_variables)]
+
+use std::{
+    sync::{
+        atomic::Ordering,
+        mpsc::{self, Receiver},
+    },
+    time::Duration,
+};
 
 use leftwm_core::{DisplayAction, DisplayEvent, DisplayServer};
 use smithay::{
@@ -6,7 +15,7 @@ use smithay::{
         input::{Event, InputEvent, KeyboardKeyEvent},
         libinput::{LibinputInputBackend, LibinputSessionInterface},
         session::{libseat::LibSeatSession, Event as SessionEvent, Session},
-        SwapBuffersError,
+        udev::UdevBackend,
     },
     input::keyboard::{xkb, FilterResult},
     reexports::{
@@ -22,12 +31,13 @@ use smithay::{
 use tracing::{error, info, warn};
 
 use crate::state::{CalloopData, SmithayState};
+mod cursor;
+mod drawing;
 mod handlers;
-mod rendering;
 mod state;
 mod udev;
 
-struct SmithayHandle {
+pub struct SmithayHandle {
     event_receiver: Receiver<DisplayEvent>,
     action_sender: CalloopSender<DisplayAction>,
 }
@@ -47,10 +57,17 @@ impl DisplayServer for SmithayHandle {
         let mut state = SmithayState::init(
             event_sender,
             &mut display,
-            udev::init_udev(session),
+            udev::init_udev_stage_1(session),
             event_loop.handle(),
             event_loop.get_signal(),
         );
+
+        let udev_backend = match UdevBackend::new(&state.seat_name) {
+            Ok(ret) => ret,
+            Err(err) => {
+                panic!("Failed to initialize udev backend");
+            }
+        };
 
         let mut libinput_context = Libinput::new_with_udev::<
             LibinputSessionInterface<LibSeatSession>,
@@ -94,7 +111,7 @@ impl DisplayServer for SmithayHandle {
                                 FilterResult::Forward
                             },
                         ) {
-                            calloopdata.state.udev_data.session.change_vt(vt);
+                            calloopdata.state.udev_data.session.change_vt(vt).unwrap();
                         };
                     }
                     InputEvent::DeviceAdded { mut device } => {
@@ -148,6 +165,22 @@ impl DisplayServer for SmithayHandle {
                 }
             })
             .unwrap();
+
+        state.init_udev_stage_2(udev_backend, &display);
+
+        while state.running.load(Ordering::SeqCst) {
+            let mut calloop_data = CalloopData { state, display };
+            let result = event_loop.dispatch(Some(Duration::from_millis(16)), &mut calloop_data);
+            CalloopData { state, display } = calloop_data;
+
+            if result.is_err() {
+                state.running.store(false, Ordering::SeqCst);
+            } else {
+                state.space.refresh();
+                // state.popups.cleanup();
+                display.flush_clients().unwrap();
+            }
+        }
 
         todo!()
     }
