@@ -120,7 +120,6 @@ impl DisplayServer for SmithayHandle {
                     }
                     _ => {}
                 };
-                ()
             })
             .unwrap();
 

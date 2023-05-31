@@ -275,6 +275,8 @@ impl SmithayState {
                 planes.overlay = vec![];
             }
 
+            // Because TODO
+            #[allow(clippy::let_and_return)]
             let compositor = match DrmCompositor::new(
                 &output,
                 surface,

@@ -74,7 +74,7 @@ fn frame(mut millis: u32, size: u32, images: &[Image]) -> Image {
 // TODO: Sensible error handling instead of a silent return
 fn load_icon(theme: &CursorTheme) -> Option<Vec<Image>> {
     let icon_path = theme.load_icon("default")?;
-    let mut cursor_file = std::fs::File::open(&icon_path).ok()?;
+    let mut cursor_file = std::fs::File::open(icon_path).ok()?;
     let mut cursor_data = Vec::new();
     cursor_file.read_to_end(&mut cursor_data).ok()?;
     parse_xcursor(&cursor_data)

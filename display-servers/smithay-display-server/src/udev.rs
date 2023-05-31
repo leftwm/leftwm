@@ -99,7 +99,7 @@ pub struct Surface {
 }
 
 pub fn init_udev_stage_1(session: LibSeatSession) -> UdevData {
-    let primary_gpu = udev::primary_gpu(&session.seat())
+    let primary_gpu = udev::primary_gpu(session.seat())
         .unwrap()
         .and_then(|gpu| {
             DrmNode::from_path(gpu)
@@ -108,7 +108,7 @@ pub fn init_udev_stage_1(session: LibSeatSession) -> UdevData {
                 .ok()
         })
         .unwrap_or_else(|| {
-            udev::all_gpus(&session.seat())
+            udev::all_gpus(session.seat())
                 .unwrap()
                 .into_iter()
                 .find_map(|gpu| {

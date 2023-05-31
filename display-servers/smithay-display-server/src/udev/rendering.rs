@@ -392,9 +392,9 @@ impl SmithayState {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn render_surface<'a, 'b>(
+fn render_surface<'a>(
     surface: &'a mut Surface,
-    renderer: &mut UdevRenderer<'a, 'b>,
+    renderer: &mut UdevRenderer<'a, '_>,
     space: &Space<Window>,
     output: &Output,
     input_method: &InputMethodHandle,
@@ -417,7 +417,7 @@ fn render_surface<'a, 'b>(
         rectangle.loc.y + rectangle.size.h,
     ));
     input_method.with_surface(|surface| {
-        custom_elements.extend(AsRenderElements::<UdevRenderer<'a, 'b>>::render_elements(
+        custom_elements.extend(AsRenderElements::<UdevRenderer<'a, '_>>::render_elements(
             &SurfaceTree::from_surface(surface),
             renderer,
             position.to_physical_precise_round(scale),
@@ -524,9 +524,9 @@ fn render_surface<'a, 'b>(
     Ok(result.damage.is_some())
 }
 
-pub fn output_elements<'a, R>(
+pub fn output_elements<R>(
     output: &Output,
-    space: &'a Space<Window>,
+    space: &Space<Window>,
     custom_elements: impl IntoIterator<Item = CustomRenderElements<R>>,
     renderer: &mut R,
     // show_window_preview: bool,
