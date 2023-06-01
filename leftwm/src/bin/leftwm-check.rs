@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
             config.check_keybinds(verbose);
         }
         Err(e) => {
-            println!("Configuration failed. Reason: {e:?}");
+            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m Configuration failed. Reason: {e:?}");
         }
     }
     println!("\x1b[0;94m::\x1b[0m Checking environment . . .");
