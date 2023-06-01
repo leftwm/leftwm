@@ -9,6 +9,7 @@ edition = "2021"
 leftwm-core = { path = "../../leftwm-core", version = '0.4.1' }
 tracing = "0.1.36"
 xcursor = "0.3.4"
+tokio = { version = "1.2.0", features = [ "sync" ] }
 
 [dependencies.smithay]
 git = "https://github.com/Smithay/smithay.git"

@@ -1,7 +1,7 @@
 use std::{
     ffi::OsString,
     os::fd::AsRawFd,
-    sync::{atomic::AtomicBool, mpsc::Sender, Arc, Mutex},
+    sync::{atomic::AtomicBool, mpsc::SendError, Arc, Mutex},
     time::Instant,
 };
 
@@ -17,7 +17,7 @@ use smithay::{
     wayland::{compositor::CompositorState, shm::ShmState, socket::ListeningSocketSource},
 };
 
-use crate::udev::UdevData;
+use crate::{event_channel::EventChannelSender, udev::UdevData};
 
 pub struct SmithayState {
     pub display_handle: DisplayHandle,
@@ -48,7 +48,7 @@ pub struct SmithayState {
     pub seat_name: String,
     pub socket_name: OsString,
 
-    event_sender: Sender<DisplayEvent>,
+    event_sender: EventChannelSender,
 }
 
 pub struct CalloopData {
@@ -62,7 +62,7 @@ impl ClientData for ClientState {}
 
 impl SmithayState {
     pub fn init(
-        event_sender: Sender<DisplayEvent>,
+        event_sender: EventChannelSender,
         display: &mut Display<SmithayState>,
         udev_data: UdevData,
         mut loop_handle: LoopHandle<'static, CalloopData>,
@@ -147,5 +147,9 @@ impl SmithayState {
             .unwrap();
 
         socket_name
+    }
+
+    fn send_event(&self, event: DisplayEvent) -> Result<(), SendError<()>> {
+        self.event_sender.send_event(event)
     }
 }

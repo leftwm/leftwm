@@ -6,9 +6,9 @@ use smithay::{
         drm::{DrmError, DrmEventMetadata, DrmNode},
         renderer::{
             element::{
-                default_primary_scanout_output_compare, solid::SolidColorRenderElement,
-                surface::WaylandSurfaceRenderElement, texture::TextureBuffer,
-                utils::select_dmabuf_feedback, AsRenderElements, RenderElementStates, Wrap,
+                solid::SolidColorRenderElement, surface::WaylandSurfaceRenderElement,
+                texture::TextureBuffer, utils::select_dmabuf_feedback, AsRenderElements,
+                RenderElementStates, Wrap,
             },
             gles::{GlesRenderer, GlesTexture},
             multigpu::{gbm::GbmGlesBackend, MultiRenderer, MultiTexture},
@@ -20,7 +20,7 @@ use smithay::{
         space::{SpaceRenderElements, SurfaceTree},
         utils::{
             surface_presentation_feedback_flags_from_states, surface_primary_scanout_output,
-            update_surface_primary_scanout_output, OutputPresentationFeedback,
+            OutputPresentationFeedback,
         },
         Space, Window,
     },
@@ -572,21 +572,22 @@ pub fn post_repaint(
     let throttle = Some(Duration::from_secs(1));
 
     space.elements().for_each(|window| {
-        window.with_surfaces(|surface, states| {
-            let primary_scanout_output = update_surface_primary_scanout_output(
-                surface,
-                output,
-                states,
-                render_element_states,
-                default_primary_scanout_output_compare,
-            );
-
-            // if let Some(output) = primary_scanout_output {
-            //     with_fractional_scale(states, |fraction_scale| {
-            //         fraction_scale.set_preferred_scale(output.current_scale().fractional_scale());
-            //     });
-            // }
-        });
+        // NOTE We currently don't do fraction_scale
+        // window.with_surfaces(|surface, states| {
+        //     let primary_scanout_output = update_surface_primary_scanout_output(
+        //         surface,
+        //         output,
+        //         states,
+        //         render_element_states,
+        //         default_primary_scanout_output_compare,
+        //     );
+        //
+        //     if let Some(output) = primary_scanout_output {
+        //         with_fractional_scale(states, |fraction_scale| {
+        //             fraction_scale.set_preferred_scale(output.current_scale().fractional_scale());
+        //         });
+        //     }
+        // });
 
         if space.outputs_for_element(window).contains(output) {
             window.send_frame(output, time, throttle, surface_primary_scanout_output);
@@ -608,21 +609,22 @@ pub fn post_repaint(
     });
     let map = smithay::desktop::layer_map_for_output(output);
     for layer_surface in map.layers() {
-        layer_surface.with_surfaces(|surface, states| {
-            let primary_scanout_output = update_surface_primary_scanout_output(
-                surface,
-                output,
-                states,
-                render_element_states,
-                default_primary_scanout_output_compare,
-            );
-
-            // if let Some(output) = primary_scanout_output {
-            //     with_fractional_scale(states, |fraction_scale| {
-            //         fraction_scale.set_preferred_scale(output.current_scale().fractional_scale());
-            //     });
-            // }
-        });
+        // NOTE We currently don't do fraction_scale
+        // layer_surface.with_surfaces(|surface, states| {
+        //     let primary_scanout_output = update_surface_primary_scanout_output(
+        //         surface,
+        //         output,
+        //         states,
+        //         render_element_states,
+        //         default_primary_scanout_output_compare,
+        //     );
+        //
+        //     if let Some(output) = primary_scanout_output {
+        //         with_fractional_scale(states, |fraction_scale| {
+        //             fraction_scale.set_preferred_scale(output.current_scale().fractional_scale());
+        //         });
+        //     }
+        // });
 
         layer_surface.send_frame(output, time, throttle, surface_primary_scanout_output);
         if let Some(dmabuf_feedback) = dmabuf_feedback {
