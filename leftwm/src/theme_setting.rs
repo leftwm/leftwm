@@ -58,8 +58,7 @@ fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
     if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
         let ron = Options::default().with_default_extension(
             Extensions::IMPLICIT_SOME
-                & Extensions::UNWRAP_NEWTYPES
-                & Extensions::UNWRAP_VARIANT_NEWTYPES,
+                | Extensions::UNWRAP_NEWTYPES,
         );
         let from_file: ThemeSetting = ron.from_str(&contents)?;
         Ok(from_file)

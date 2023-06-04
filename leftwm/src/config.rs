@@ -232,8 +232,7 @@ fn load_from_file() -> Result<Config> {
         tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
         let ron = Options::default().with_default_extension(
             Extensions::IMPLICIT_SOME
-                & Extensions::UNWRAP_NEWTYPES
-                & Extensions::UNWRAP_VARIANT_NEWTYPES,
+                | Extensions::UNWRAP_NEWTYPES,
         );
         let contents = fs::read_to_string(config_file_ron)?;
         let config: Config = ron.from_str(&contents)?;
@@ -253,8 +252,7 @@ fn load_from_file() -> Result<Config> {
         let config = Config::default();
         let ron_pretty_conf = PrettyConfig::new().depth_limit(2).extensions(
             Extensions::IMPLICIT_SOME
-                & Extensions::UNWRAP_NEWTYPES
-                & Extensions::UNWRAP_VARIANT_NEWTYPES,
+                | Extensions::UNWRAP_NEWTYPES,
         );
         let ron = to_string_pretty(&config, ron_pretty_conf).unwrap();
         let comment_header = String::from(
@@ -672,8 +670,7 @@ mod tests {
         // Check RON
         let ron_pretty_conf = ron::ser::PrettyConfig::new().depth_limit(2).extensions(
             ron::extensions::Extensions::IMPLICIT_SOME
-                & Extensions::UNWRAP_NEWTYPES
-                & Extensions::UNWRAP_VARIANT_NEWTYPES,
+                | Extensions::UNWRAP_NEWTYPES,
         );
         let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf);
         assert!(ron.is_ok(), "Could not serialize default config");
