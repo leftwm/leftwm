@@ -119,7 +119,11 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         dbg!(&contents);
     }
     if config_filename.as_path().extension() == Some(std::ffi::OsStr::new("ron")) {
-        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let ron = Options::default().with_default_extension(
+            Extensions::IMPLICIT_SOME
+                & Extensions::UNWRAP_NEWTYPES
+                & Extensions::UNWRAP_VARIANT_NEWTYPES,
+        );
         let config: Config = ron.from_str(&contents)?;
         Ok(config)
     } else {
@@ -129,9 +133,11 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
 }
 
 fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> {
-    let ron_pretty_conf = PrettyConfig::new()
-        .depth_limit(2)
-        .extensions(Extensions::IMPLICIT_SOME);
+    let ron_pretty_conf = PrettyConfig::new().depth_limit(2).extensions(
+        Extensions::IMPLICIT_SOME
+            & Extensions::UNWRAP_NEWTYPES
+            & Extensions::UNWRAP_VARIANT_NEWTYPES,
+    );
     let ron = to_string_pretty(&config, ron_pretty_conf)?;
     let comment_header = String::from(
         r#"//  _        ___                                      ___ _

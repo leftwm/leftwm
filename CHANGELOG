@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Change
 
-- The `layouts` and `workspace.layouts` in `config.ron` must be declared as Strings because they are no longer backed by an enum. (ie. `layouts: ["CenterMain"]` instead of `layouts: [CenterMain]`)
+- The `layouts` and `workspace.layouts` in `config.ron` must be declared as Strings because they are no longer backed by an enum. (ie. use `layouts: ["CenterMain"]` instead of `layouts: [CenterMain]`)
 - The `max_window_width` config was removed without direct replacement. The "always fill entire screen" behavior can now be addressed by creating a custom layout with an appropriate `Reserve` property.
 
 ### Deprecated
@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented the new [leftwm-layouts](https://github.com/leftwm/leftwm-layouts) library (via #1000 by @hertg)
 - Added `IncreaseMainSize` / `DecreaseMainSize` as a replacement for the deprecated `IncreaseMainWidth` / `DecreaseMainWidth` (closes #545 via #1000 by @hertg)
 - Add support for multiple main windows on all layouts that have a main column, new commands are `IncreaseMainCount` and `DecreaseMainCount` (closes #516 via #1000 by @hertg)
+- use `unwrap_variant_newtypes` extension in ron deserializer (via #1000 by @hertg)
+- use `unwrap_newtypes` extension in ron deserializer (via #1000 by @hertg)
+
 
 ### Fixed
 
