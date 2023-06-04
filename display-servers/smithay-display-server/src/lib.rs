@@ -1,6 +1,7 @@
 use std::{sync::atomic::Ordering, time::Duration};
 
 use event_channel::EventChannelReceiver;
+use internal_action::InternalAction;
 use leftwm_core::{DisplayAction, DisplayEvent, DisplayServer};
 use smithay::{
     backend::{
@@ -28,19 +29,20 @@ mod cursor;
 mod drawing;
 mod event_channel;
 mod handlers;
+mod internal_action;
 mod state;
 mod udev;
 
 pub struct SmithayHandle {
     event_receiver: EventChannelReceiver,
-    action_sender: CalloopSender<DisplayAction>,
+    action_sender: CalloopSender<InternalAction>,
 }
 
 impl DisplayServer for SmithayHandle {
     fn new(config: &impl leftwm_core::Config) -> Self {
         let (event_sender, event_receiver) = event_channel::event_channel();
         let (init_notify_sender, init_notify_reciever) = oneshot::channel::<()>();
-        let (action_sender, action_reciever) = channel::channel::<DisplayAction>();
+        let (action_sender, action_reciever) = channel::channel::<InternalAction>();
 
         std::thread::spawn(move || {
             let mut event_loop = EventLoop::<CalloopData>::try_new().unwrap();
@@ -165,7 +167,75 @@ impl DisplayServer for SmithayHandle {
             event_loop
                 .handle()
                 .insert_source(action_reciever, |event, _, data| match event {
-                    channel::Event::Msg(act) => info!("Recieved action from leftwm: {:?}", act),
+                    channel::Event::Msg(act) => {
+                        info!("Recieved action from leftwm: {:?}", act);
+                        match act {
+                            InternalAction::Flush => data.display.flush_clients().unwrap(),
+                            InternalAction::GenerateVerifyFocusEvent => (), //TODO: implement
+                            InternalAction::DisplayAction(DisplayAction::KillWindow(_)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::AddedWindow(_, _, _)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::MoveMouseOver(_, _)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::MoveMouseOverPoint(_)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::SetState(_, _, _)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::SetWindowOrder(_, _)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::MoveToTop(_)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::DestroyedWindow(_)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::WindowTakeFocus {
+                                ..
+                            }) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::Unfocus(_, _)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(
+                                DisplayAction::FocusWindowUnderCursor,
+                            ) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::ReplayClick(_, _)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::ReadyToResizeWindow(
+                                _,
+                            )) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::ReadyToMoveWindow(_)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::SetCurrentTags(_)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::SetWindowTag(_, _)) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::NormalMode) => {
+                                todo!()
+                            }
+                            InternalAction::DisplayAction(DisplayAction::ConfigureXlibWindow(
+                                _,
+                            )) => {
+                                todo!()
+                            }
+                        }
+                    }
                     channel::Event::Closed => {
                         info!("LeftWM closed the channel, assuming we're exiting.");
                         data.state.running.store(false, Ordering::SeqCst);
@@ -200,6 +270,7 @@ impl DisplayServer for SmithayHandle {
     }
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent> {
+        info!("LeftWM is collecting events");
         self.event_receiver.collect_events()
     }
 
@@ -210,11 +281,14 @@ impl DisplayServer for SmithayHandle {
     }
 
     fn flush(&self) {
-        todo!()
+        self.action_sender.send(InternalAction::Flush).unwrap();
     }
 
     fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
-        todo!()
+        self.action_sender
+            .send(InternalAction::GenerateVerifyFocusEvent)
+            .unwrap();
+        None
     }
 
     fn load_config(
@@ -230,7 +304,9 @@ impl DisplayServer for SmithayHandle {
     fn update_workspaces(&self, _focused: Option<&leftwm_core::Workspace>) {}
 
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
-        self.action_sender.send(act).unwrap();
+        self.action_sender
+            .send(InternalAction::DisplayAction(act))
+            .unwrap();
         None
     }
 }

@@ -8,7 +8,7 @@ use std::{
 use leftwm_core::DisplayEvent;
 use smithay::{
     desktop::{Space, Window},
-    input::{pointer::CursorImageStatus, Seat, SeatState},
+    input::{keyboard::XkbConfig, pointer::CursorImageStatus, Seat, SeatState},
     reexports::{
         calloop::{generic::Generic, Interest, LoopHandle, LoopSignal, Mode, PostAction},
         wayland_server::{backend::ClientData, Display, DisplayHandle},
@@ -74,8 +74,12 @@ impl SmithayState {
         let compositor_state = CompositorState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
+
         let seat_name = udev_data.seat_name();
-        let seat = seat_state.new_wl_seat(&dh, seat_name.clone());
+        let mut seat = seat_state.new_wl_seat(&dh, seat_name.clone());
+        seat.add_keyboard(XkbConfig::default(), 0, 0).unwrap();
+        seat.add_pointer();
+
         let cursor_status = Arc::new(Mutex::new(CursorImageStatus::Default));
 
         let clock = Clock::new().unwrap();

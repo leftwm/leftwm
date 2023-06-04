@@ -161,34 +161,30 @@ fn start_leftwm() {
 
     let flag = get_sigchld_flag();
 
-    let mut error_occured = false;
-    let mut session_exit_status: Option<ExitStatus> = None;
-    while !error_occured {
-        let mut leftwm_session = start_leftwm_session(&current_exe);
+    let mut leftwm_session = start_leftwm_session(&current_exe);
 
-        while session_is_running(&mut leftwm_session) {
-            // remove all child processes which finished
-            children.remove_finished_children();
+    while session_is_running(&mut leftwm_session) {
+        // remove all child processes which finished
+        children.remove_finished_children();
 
-            while is_suspending(&flag) {
-                nix::unistd::pause();
-            }
+        while is_suspending(&flag) {
+            nix::unistd::pause();
         }
+    }
 
-        // we don't want a rougue lefthk session so we kill it when the leftwm one ended
+    // we don't want a rougue lefthk session so we kill it when the leftwm one ended
 
-        session_exit_status = get_exit_status(&mut leftwm_session);
-        error_occured = check_error_occured(session_exit_status);
+    let session_exit_status = get_exit_status(&mut leftwm_session);
+    let error_occured = check_error_occured(session_exit_status);
 
-        // TODO: either add more details or find a better workaround.
-        //
-        // Left is too fast for some login managers. We need to
-        // wait to give the login manager a second to boot.
-        #[cfg(feature = "slow-dm-fix")]
-        {
-            let delay = std::time::Duration::from_millis(2000);
-            std::thread::sleep(delay);
-        }
+    // TODO: either add more details or find a better workaround.
+    //
+    // Left is too fast for some login managers. We need to
+    // wait to give the login manager a second to boot.
+    #[cfg(feature = "slow-dm-fix")]
+    {
+        let delay = std::time::Duration::from_millis(2000);
+        std::thread::sleep(delay);
     }
 
     if error_occured {
