@@ -30,7 +30,7 @@ tokio = { version = "1.2.0", features = [
   "sync",
   "time",
 ] }
-leftwm-layouts = "0.8.0"
+leftwm-layouts = "0.8.2"
 x11-dl = "2.18.4"
 xdg = "2.2.0"
 
