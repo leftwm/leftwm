@@ -5,19 +5,30 @@ use std::{
     time::Instant,
 };
 
-use leftwm_core::DisplayEvent;
+use leftwm_core::{DisplayEvent, Window};
 use smithay::{
-    desktop::{Space, Window},
+    desktop::{space::SpaceElement, Space},
     input::{keyboard::XkbConfig, pointer::CursorImageStatus, Seat, SeatState},
     reexports::{
         calloop::{generic::Generic, Interest, LoopHandle, LoopSignal, Mode, PostAction},
         wayland_server::{backend::ClientData, Display, DisplayHandle},
     },
-    utils::{Clock, Logical, Monotonic, Point},
-    wayland::{compositor::CompositorState, shm::ShmState, socket::ListeningSocketSource},
+    utils::{Clock, Logical, Monotonic, Point, SERIAL_COUNTER},
+    wayland::{
+        compositor::{CompositorClientState, CompositorState},
+        shell::xdg::XdgShellState,
+        shm::ShmState,
+        socket::ListeningSocketSource,
+    },
 };
+use tracing::{debug, warn};
 
-use crate::{event_channel::EventChannelSender, udev::UdevData};
+use crate::{
+    event_channel::EventChannelSender,
+    managed_window::ManagedWindow,
+    udev::UdevData,
+    window_registry::{WindowHandle, WindowRegisty},
+};
 
 pub struct SmithayState {
     pub display_handle: DisplayHandle,
@@ -25,7 +36,7 @@ pub struct SmithayState {
     pub start_time: Instant,
     pub loop_handle: LoopHandle<'static, CalloopData>,
     pub loop_signal: LoopSignal,
-    pub space: Space<Window>,
+    pub space: Space<ManagedWindow>,
     pub clock: Clock<Monotonic>,
     pub running: Arc<AtomicBool>,
 
@@ -34,7 +45,7 @@ pub struct SmithayState {
 
     // Protocols
     pub compositor_state: CompositorState,
-    // xdg_shell_state
+    pub xdg_shell_state: XdgShellState,
     // xdg_decoration_state
     pub shm_state: ShmState,
     // output_manager_State
@@ -48,6 +59,8 @@ pub struct SmithayState {
     pub seat_name: String,
     pub socket_name: OsString,
 
+    pub window_registry: WindowRegisty,
+
     event_sender: EventChannelSender,
 }
 
@@ -56,8 +69,10 @@ pub struct CalloopData {
     pub display: Display<SmithayState>,
 }
 
-pub struct ClientState;
-
+#[derive(Default)]
+pub struct ClientState {
+    pub compositor_state: CompositorClientState,
+}
 impl ClientData for ClientState {}
 
 impl SmithayState {
@@ -72,6 +87,7 @@ impl SmithayState {
         let space = Space::default();
 
         let compositor_state = CompositorState::new::<Self>(&dh);
+        let xdg_shell_state = XdgShellState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
 
@@ -79,6 +95,8 @@ impl SmithayState {
         let mut seat = seat_state.new_wl_seat(&dh, seat_name.clone());
         seat.add_keyboard(XkbConfig::default(), 0, 0).unwrap();
         seat.add_pointer();
+
+        let window_registry = WindowRegisty::new();
 
         let cursor_status = Arc::new(Mutex::new(CursorImageStatus::Default));
 
@@ -100,12 +118,15 @@ impl SmithayState {
             cursor_status,
 
             compositor_state,
+            xdg_shell_state,
             shm_state,
             seat_state,
 
             seat,
             seat_name,
             socket_name,
+
+            window_registry,
 
             event_sender,
         }
@@ -116,7 +137,7 @@ impl SmithayState {
         display: &mut Display<SmithayState>,
     ) -> OsString {
         // Creates a new listening socket, automatically choosing the next available `wayland` socket name.
-        let listening_socket = ListeningSocketSource::new_auto().unwrap();
+        let listening_socket = ListeningSocketSource::with_name("wayland-0").unwrap();
 
         // Get the name of the listening socket.
         // Clients will connect to this socket.
@@ -130,7 +151,7 @@ impl SmithayState {
                 state
                     .display
                     .handle()
-                    .insert_client(client_stream, Arc::new(ClientState))
+                    .insert_client(client_stream, Arc::new(ClientState::default()))
                     .unwrap();
             })
             .expect("Failed to init the wayland event source.");
@@ -150,10 +171,31 @@ impl SmithayState {
             )
             .unwrap();
 
+        println!("{:?}", socket_name);
+
+        std::env::set_var("WAYLAND_DISPLAY", socket_name.clone());
         socket_name
     }
 
-    fn send_event(&self, event: DisplayEvent) -> Result<(), SendError<()>> {
+    pub fn send_event(&self, event: DisplayEvent) -> Result<(), SendError<()>> {
+        debug!("Sending event: {:#?}", event);
         self.event_sender.send_event(event)
+    }
+
+    pub fn focus_window(&mut self, handle: WindowHandle) {
+        let serial = SERIAL_COUNTER.next_serial();
+        let Some(window) = self.window_registry.get(handle).cloned() else {
+            warn!("Trying to focus invalid window");
+            return;
+        };
+        let bbox = window.bbox();
+        self.seat
+            .get_keyboard()
+            .unwrap()
+            .set_focus(self, Some(window), serial);
+        let x = bbox.loc.x as f64 + bbox.size.w as f64 / 2f64;
+        let y = bbox.loc.y as f64 + bbox.size.h as f64 / 2f64;
+        self.pointer_location = (x, y).into();
+        self.window_registry.get_mut(handle).unwrap().focused = true;
     }
 }

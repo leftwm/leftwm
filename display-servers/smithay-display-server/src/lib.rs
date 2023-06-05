@@ -1,11 +1,11 @@
-use std::{sync::atomic::Ordering, time::Duration};
+use std::{process::Command, sync::atomic::Ordering, time::Duration};
 
 use event_channel::EventChannelReceiver;
 use internal_action::InternalAction;
-use leftwm_core::{DisplayAction, DisplayEvent, DisplayServer};
+use leftwm_core::{models::WindowHandle, DisplayAction, DisplayEvent, DisplayServer, Window};
 use smithay::{
     backend::{
-        input::{Event, InputEvent, KeyboardKeyEvent},
+        input::{Event, InputEvent, KeyState, KeyboardKeyEvent},
         libinput::{LibinputInputBackend, LibinputSessionInterface},
         session::{libseat::LibSeatSession, Event as SessionEvent, Session},
         udev::UdevBackend,
@@ -30,8 +30,10 @@ mod drawing;
 mod event_channel;
 mod handlers;
 mod internal_action;
+mod managed_window;
 mod state;
 mod udev;
+mod window_registry;
 
 pub struct SmithayHandle {
     event_receiver: EventChannelReceiver,
@@ -87,23 +89,38 @@ impl DisplayServer for SmithayHandle {
                                 event.state(),
                                 serial,
                                 time,
-                                |_, modifiers, handle| {
-                                    let mut leds = Led::empty();
-                                    if modifiers.caps_lock {
-                                        leds.insert(Led::CAPSLOCK);
-                                    }
-                                    if modifiers.num_lock {
-                                        leds.insert(Led::NUMLOCK);
-                                    }
-                                    event.device().led_update(leds);
-                                    if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12)
-                                        .contains(&handle.modified_sym())
-                                    {
-                                        // VTSwitch
-                                        let vt = (handle.modified_sym() - xkb::KEY_XF86Switch_VT_1
-                                            + 1)
-                                            as i32;
-                                        return FilterResult::Intercept(vt);
+                                |state, modifiers, handle| {
+                                    if event.state() == KeyState::Pressed {
+                                        let mut leds = Led::empty();
+                                        if modifiers.caps_lock {
+                                            leds.insert(Led::CAPSLOCK);
+                                        }
+                                        if modifiers.num_lock {
+                                            leds.insert(Led::NUMLOCK);
+                                        }
+                                        event.device().led_update(leds);
+                                        if modifiers.logo
+                                            && modifiers.shift
+                                            && handle.modified_sym() == xkb::KEY_Return
+                                        {
+                                            Command::new("weston-terminal").spawn().unwrap();
+                                        } else if modifiers.logo
+                                            && modifiers.shift
+                                            && handle.modified_sym() == xkb::KEY_Q
+                                        {
+                                            info!("Exiting");
+                                            state.running.store(false, Ordering::SeqCst);
+                                        } else if (xkb::KEY_XF86Switch_VT_1
+                                            ..=xkb::KEY_XF86Switch_VT_12)
+                                            .contains(&handle.modified_sym())
+                                        {
+                                            // VTSwitch
+                                            let vt = (handle.modified_sym()
+                                                - xkb::KEY_XF86Switch_VT_1
+                                                + 1)
+                                                as i32;
+                                            return FilterResult::Intercept(vt);
+                                        }
                                     }
                                     FilterResult::Forward
                                 },
@@ -168,15 +185,41 @@ impl DisplayServer for SmithayHandle {
                 .handle()
                 .insert_source(action_reciever, |event, _, data| match event {
                     channel::Event::Msg(act) => {
-                        info!("Recieved action from leftwm: {:?}", act);
+                        info!("Received action from leftwm: {:#?}", act);
                         match act {
                             InternalAction::Flush => data.display.flush_clients().unwrap(),
                             InternalAction::GenerateVerifyFocusEvent => (), //TODO: implement
+                            InternalAction::UpdateWindows(windows) => {
+                                for window in windows {
+                                    let WindowHandle::SmithayHandle(handle) = window.handle else {
+                                        panic!("LeftWM passed an invalid handle");
+                                    };
+                                    let managed_window = data.state.window_registry.get(handle).unwrap();
+                                    data.state.space.map_element(managed_window.clone(), (window.x(), window.y()), true);
+                                    managed_window.window.toplevel().with_pending_state(|state| {
+                                        state.size = Some((window.width(), window.height()).into());
+                                    });
+                                    managed_window.window.toplevel().send_configure();
+                                }
+                            }
                             InternalAction::DisplayAction(DisplayAction::KillWindow(_)) => {
                                 todo!()
                             }
-                            InternalAction::DisplayAction(DisplayAction::AddedWindow(_, _, _)) => {
-                                todo!()
+                            InternalAction::DisplayAction(DisplayAction::AddedWindow(
+                                handle,
+                                floating,
+                                focus,
+                            )) => {
+                                let WindowHandle::SmithayHandle(handle) = handle else {
+                                    panic!("LeftWM passed an invalid handle");
+                                };
+                                let window = data.state.window_registry.get_mut(handle).unwrap();
+                                window.floating = floating;
+                                window.managed = true;
+                                if focus {
+                                    data.state.window_registry.clear_focus();
+                                    data.state.focus_window(handle);
+                                }
                             }
                             InternalAction::DisplayAction(DisplayAction::MoveMouseOver(_, _)) => {
                                 todo!()
@@ -188,7 +231,7 @@ impl DisplayServer for SmithayHandle {
                                 todo!()
                             }
                             InternalAction::DisplayAction(DisplayAction::SetWindowOrder(_, _)) => {
-                                todo!()
+                                //TODO: no `todo!()` here because crash
                             }
                             InternalAction::DisplayAction(DisplayAction::MoveToTop(_)) => {
                                 todo!()
@@ -197,9 +240,19 @@ impl DisplayServer for SmithayHandle {
                                 todo!()
                             }
                             InternalAction::DisplayAction(DisplayAction::WindowTakeFocus {
-                                ..
+                                window,
+                                previous_window,
                             }) => {
-                                todo!()
+                                let WindowHandle::SmithayHandle(handle) = window.handle else {
+                                    panic!("LeftWM passed an invalid handle");
+                                };
+                                data.state.focus_window(handle);
+                                if let Some(prev_window) = previous_window {
+                                    let WindowHandle::SmithayHandle(prev_handle) = prev_window.handle else {
+                                        panic!("LeftWM passed an invalid handle");
+                                    };
+                                    data.state.window_registry.get_mut(prev_handle).and_then(|w| {w.focused = false; Some(w)});
+                                }
                             }
                             InternalAction::DisplayAction(DisplayAction::Unfocus(_, _)) => {
                                 todo!()
@@ -207,7 +260,7 @@ impl DisplayServer for SmithayHandle {
                             InternalAction::DisplayAction(
                                 DisplayAction::FocusWindowUnderCursor,
                             ) => {
-                                todo!()
+                                //TODO: no `todo!()` here because crash
                             }
                             InternalAction::DisplayAction(DisplayAction::ReplayClick(_, _)) => {
                                 todo!()
@@ -221,10 +274,17 @@ impl DisplayServer for SmithayHandle {
                                 todo!()
                             }
                             InternalAction::DisplayAction(DisplayAction::SetCurrentTags(_)) => {
-                                todo!()
+                                //TODO: no `todo!()` here because crash
                             }
-                            InternalAction::DisplayAction(DisplayAction::SetWindowTag(_, _)) => {
-                                todo!()
+                            InternalAction::DisplayAction(DisplayAction::SetWindowTag(
+                                handle,
+                                tag,
+                            )) => {
+                                let WindowHandle::SmithayHandle(handle) = handle else {
+                                    panic!("LeftWM passed an invalid handle");
+                                };
+                                let window = data.state.window_registry.get_mut(handle).unwrap();
+                                window.tag = tag;
                             }
                             InternalAction::DisplayAction(DisplayAction::NormalMode) => {
                                 todo!()
@@ -260,6 +320,8 @@ impl DisplayServer for SmithayHandle {
                 }
             }
         });
+
+        std::env::set_var("XDG_SESSION_TYPE", "wayland");
 
         init_notify_reciever.blocking_recv().unwrap();
 
@@ -299,7 +361,12 @@ impl DisplayServer for SmithayHandle {
     ) {
     }
 
-    fn update_windows(&self, _windows: Vec<&leftwm_core::Window>) {}
+    fn update_windows(&self, windows: Vec<&Window>) {
+        let windows = windows.into_iter().map(|w| w.clone()).collect();
+        self.action_sender
+            .send(InternalAction::UpdateWindows(windows))
+            .unwrap()
+    }
 
     fn update_workspaces(&self, _focused: Option<&leftwm_core::Workspace>) {}
 

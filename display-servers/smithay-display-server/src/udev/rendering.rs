@@ -43,6 +43,7 @@ use tracing::{error, trace, warn};
 
 use crate::{
     drawing::{PointerElement, PointerRenderElement, CLEAR_COLOR},
+    managed_window::ManagedWindow,
     state::SmithayState,
     udev::{Surface, UdevOutputId},
 };
@@ -395,7 +396,7 @@ impl SmithayState {
 fn render_surface<'a>(
     surface: &'a mut Surface,
     renderer: &mut UdevRenderer<'a, '_>,
-    space: &Space<Window>,
+    space: &Space<ManagedWindow>,
     output: &Output,
     input_method: &InputMethodHandle,
     pointer_location: Point<f64, Logical>,
@@ -526,7 +527,7 @@ fn render_surface<'a>(
 
 pub fn output_elements<R>(
     output: &Output,
-    space: &Space<Window>,
+    space: &Space<ManagedWindow>,
     custom_elements: impl IntoIterator<Item = CustomRenderElements<R>>,
     renderer: &mut R,
     // show_window_preview: bool,
@@ -543,7 +544,7 @@ where
         .map(OutputRenderElements::from)
         .collect::<Vec<_>>();
 
-    let space_elements = smithay::desktop::space::space_render_elements::<_, Window, _>(
+    let space_elements = smithay::desktop::space::space_render_elements::<_, ManagedWindow, _>(
         renderer,
         [space],
         output,
@@ -564,7 +565,7 @@ pub struct SurfaceDmabufFeedback<'a> {
 pub fn post_repaint(
     output: &Output,
     render_element_states: &RenderElementStates,
-    space: &Space<Window>,
+    space: &Space<ManagedWindow>,
     dmabuf_feedback: Option<SurfaceDmabufFeedback<'_>>,
     time: impl Into<Duration>,
 ) {

@@ -29,7 +29,7 @@ use smithay::{
         calloop::RegistrationToken,
         drm::control::crtc,
         wayland_protocols::wp::linux_dmabuf::zv1::server::zwp_linux_dmabuf_feedback_v1,
-        wayland_server::{backend::GlobalId, Display},
+        wayland_server::{backend::GlobalId, protocol::wl_surface, Display},
     },
     wayland::dmabuf::{DmabufFeedback, DmabufFeedbackBuilder, DmabufGlobal, DmabufState},
 };
@@ -64,6 +64,15 @@ pub struct UdevData {
 impl UdevData {
     pub fn seat_name(&self) -> String {
         self.session.seat()
+    }
+
+    pub fn early_import(&mut self, surface: &wl_surface::WlSurface) {
+        if let Err(err) =
+            self.gpu_manager
+                .early_import(Some(self.primary_gpu), self.primary_gpu, surface)
+        {
+            warn!("Early buffer import failed: {}", err);
+        }
     }
 }
 

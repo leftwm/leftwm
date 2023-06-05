@@ -1,5 +1,9 @@
 use std::{collections::HashMap, os::fd::FromRawFd, path::Path};
 
+use leftwm_core::{
+    models::{BBox, Screen},
+    DisplayEvent,
+};
 use smithay::{
     backend::{
         allocator::{
@@ -207,7 +211,7 @@ impl SmithayState {
 
         let (phys_w, phys_h) = connector.size().unwrap_or((0, 0));
         let output = Output::new(
-            output_name,
+            output_name.clone(),
             PhysicalProperties {
                 size: (phys_w as i32, phys_h as i32).into(),
                 subpixel: Subpixel::Unknown,
@@ -296,6 +300,7 @@ impl SmithayState {
             };
             //TODO
             // compositor.set_debug_flags(self.udev_data.debug_flags);
+
             compositor
         };
 
@@ -305,6 +310,12 @@ impl SmithayState {
             &mut self.udev_data.gpu_manager,
             &compositor,
         );
+
+        let mode = if let Some(mode) = output.current_mode() {
+            mode
+        } else {
+            *output.modes().get(0).unwrap()
+        };
 
         let surface = Surface {
             device_id: node,
@@ -316,6 +327,17 @@ impl SmithayState {
         };
 
         device.surfaces.insert(crtc, surface);
+
+        self.send_event(DisplayEvent::ScreenCreate(Screen::new(
+            BBox {
+                x: position.x,
+                y: position.y,
+                width: mode.size.w,
+                height: mode.size.h,
+            },
+            output_name,
+        )))
+        .unwrap();
 
         self.schedule_initial_render(node, crtc, self.loop_handle.clone());
     }

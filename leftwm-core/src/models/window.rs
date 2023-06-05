@@ -17,6 +17,7 @@ type MockHandle = i32;
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
+    SmithayHandle(usize),
 }
 
 impl std::convert::From<xlib::Window> for WindowHandle {
@@ -30,6 +31,15 @@ impl WindowHandle {
         match self {
             WindowHandle::MockHandle(_) => None,
             WindowHandle::XlibHandle(h) => Some(h),
+            WindowHandle::SmithayHandle(_) => None,
+        }
+    }
+
+    pub fn smithay_handle(self) -> Option<usize> {
+        match self {
+            WindowHandle::MockHandle(_) => None,
+            WindowHandle::XlibHandle(_) => None,
+            WindowHandle::SmithayHandle(h) => Some(h),
         }
     }
 }
