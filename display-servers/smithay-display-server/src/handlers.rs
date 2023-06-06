@@ -8,8 +8,8 @@ use smithay::{
         renderer::{utils::on_commit_buffer_handler, ImportDma},
     },
     delegate_compositor, delegate_dmabuf, delegate_output, delegate_seat, delegate_shm,
-    desktop::{layer_map_for_output, Space, Window, WindowSurfaceType},
-    input::{Seat, SeatHandler, SeatState},
+    desktop::{layer_map_for_output, Space, WindowSurfaceType},
+    input::{SeatHandler, SeatState},
     reexports::{
         calloop::Interest,
         wayland_server::{

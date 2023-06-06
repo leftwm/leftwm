@@ -16,15 +16,15 @@ use smithay::{
     },
 };
 
-use crate::state::SmithayState;
+use crate::{state::SmithayState, window_registry::WindowHandle};
 
 #[derive(PartialEq, Clone)]
 pub struct ManagedWindow {
     pub window: Window,
     pub managed: bool,
     pub floating: bool,
-    pub focused: bool,
     pub tag: Option<TagId>,
+    pub handle: Option<WindowHandle>,
     visible: bool,
 }
 
@@ -199,8 +199,8 @@ impl ManagedWindow {
             window,
             managed: false,
             floating: false,
-            focused: false,
             tag: None,
+            handle: None,
             visible: false,
         }
     }

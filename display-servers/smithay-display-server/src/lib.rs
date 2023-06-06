@@ -2,7 +2,11 @@ use std::{process::Command, sync::atomic::Ordering, time::Duration};
 
 use event_channel::EventChannelReceiver;
 use internal_action::InternalAction;
-use leftwm_core::{models::WindowHandle, DisplayAction, DisplayEvent, DisplayServer, Window};
+use leftwm_config::LeftwmConfig;
+use leftwm_core::{
+    models::{FocusBehaviour, WindowHandle},
+    DisplayAction, DisplayEvent, DisplayServer, Window,
+};
 use smithay::{
     backend::{
         input::{Event, InputEvent, KeyState, KeyboardKeyEvent},
@@ -25,12 +29,14 @@ use tokio::sync::oneshot;
 use tracing::{error, info, warn};
 
 use crate::state::{CalloopData, SmithayState};
-mod cursor;
 mod drawing;
 mod event_channel;
 mod handlers;
+mod input_handler;
 mod internal_action;
+mod leftwm_config;
 mod managed_window;
+mod pointer;
 mod state;
 mod udev;
 mod window_registry;
@@ -46,6 +52,11 @@ impl DisplayServer for SmithayHandle {
         let (init_notify_sender, init_notify_reciever) = oneshot::channel::<()>();
         let (action_sender, action_reciever) = channel::channel::<InternalAction>();
 
+        let config = LeftwmConfig {
+            focus_behavior: config.focus_behaviour(),
+            sloppy_mouse_follows_focus: config.sloppy_mouse_follows_focus(),
+        };
+
         std::thread::spawn(move || {
             let mut event_loop = EventLoop::<CalloopData>::try_new().unwrap();
             let mut display = Display::<SmithayState>::new().unwrap();
@@ -56,6 +67,7 @@ impl DisplayServer for SmithayHandle {
                 event_sender,
                 &mut display,
                 udev::init_udev_stage_1(session),
+                config,
                 event_loop.handle(),
                 event_loop.get_signal(),
             );
@@ -103,7 +115,7 @@ impl DisplayServer for SmithayHandle {
                                             && modifiers.shift
                                             && handle.modified_sym() == xkb::KEY_Return
                                         {
-                                            Command::new("weston-terminal").spawn().unwrap();
+                                            Command::new("kitty").spawn().unwrap();
                                         } else if modifiers.logo
                                             && modifiers.shift
                                             && handle.modified_sym() == xkb::KEY_Q
@@ -127,6 +139,14 @@ impl DisplayServer for SmithayHandle {
                             ) {
                                 calloopdata.state.udev_data.session.change_vt(vt).unwrap();
                             };
+                        }
+                        InputEvent::PointerMotion { event } => {
+                            calloopdata
+                                .state
+                                .on_pointer_move::<LibinputInputBackend>(event);
+                        }
+                        InputEvent::PointerMotionAbsolute { event } => {
+                            todo!()
                         }
                         InputEvent::DeviceAdded { mut device } => {
                             device.config_tap_set_enabled(true).ok();
@@ -194,11 +214,22 @@ impl DisplayServer for SmithayHandle {
                                     let WindowHandle::SmithayHandle(handle) = window.handle else {
                                         panic!("LeftWM passed an invalid handle");
                                     };
-                                    let managed_window = data.state.window_registry.get(handle).unwrap();
-                                    data.state.space.map_element(managed_window.clone(), (window.x(), window.y()), true);
-                                    managed_window.window.toplevel().with_pending_state(|state| {
-                                        state.size = Some((window.width(), window.height()).into());
-                                    });
+                                    let managed_window =
+                                        data.state.window_registry.get(handle).unwrap();
+                                    data.state.space.unmap_elem(managed_window);
+                                    data.state.space.map_element(
+                                        managed_window.clone(),
+                                        (window.x(), window.y()),
+                                        false,
+                                    );
+
+                                    managed_window
+                                        .window
+                                        .toplevel()
+                                        .with_pending_state(|state| {
+                                            state.size =
+                                                Some((window.width(), window.height()).into());
+                                        });
                                     managed_window.window.toplevel().send_configure();
                                 }
                             }
@@ -217,8 +248,7 @@ impl DisplayServer for SmithayHandle {
                                 window.floating = floating;
                                 window.managed = true;
                                 if focus {
-                                    data.state.window_registry.clear_focus();
-                                    data.state.focus_window(handle);
+                                    data.state.focus_window(handle, true);
                                 }
                             }
                             InternalAction::DisplayAction(DisplayAction::MoveMouseOver(_, _)) => {
@@ -241,18 +271,15 @@ impl DisplayServer for SmithayHandle {
                             }
                             InternalAction::DisplayAction(DisplayAction::WindowTakeFocus {
                                 window,
-                                previous_window,
+                                previous_window: _,
                             }) => {
                                 let WindowHandle::SmithayHandle(handle) = window.handle else {
                                     panic!("LeftWM passed an invalid handle");
                                 };
-                                data.state.focus_window(handle);
-                                if let Some(prev_window) = previous_window {
-                                    let WindowHandle::SmithayHandle(prev_handle) = prev_window.handle else {
-                                        panic!("LeftWM passed an invalid handle");
-                                    };
-                                    data.state.window_registry.get_mut(prev_handle).and_then(|w| {w.focused = false; Some(w)});
-                                }
+                                data.state.focus_window(
+                                    handle,
+                                    data.state.config.sloppy_mouse_follows_focus,
+                                );
                             }
                             InternalAction::DisplayAction(DisplayAction::Unfocus(_, _)) => {
                                 todo!()
@@ -260,7 +287,7 @@ impl DisplayServer for SmithayHandle {
                             InternalAction::DisplayAction(
                                 DisplayAction::FocusWindowUnderCursor,
                             ) => {
-                                //TODO: no `todo!()` here because crash
+                                data.state.focus_window_under();
                             }
                             InternalAction::DisplayAction(DisplayAction::ReplayClick(_, _)) => {
                                 todo!()

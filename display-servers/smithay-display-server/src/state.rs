@@ -5,7 +5,7 @@ use std::{
     time::Instant,
 };
 
-use leftwm_core::{DisplayEvent, Window};
+use leftwm_core::{models::FocusBehaviour, DisplayEvent};
 use smithay::{
     desktop::{space::SpaceElement, Space},
     input::{keyboard::XkbConfig, pointer::CursorImageStatus, Seat, SeatState},
@@ -25,6 +25,7 @@ use tracing::{debug, warn};
 
 use crate::{
     event_channel::EventChannelSender,
+    leftwm_config::LeftwmConfig,
     managed_window::ManagedWindow,
     udev::UdevData,
     window_registry::{WindowHandle, WindowRegisty},
@@ -60,6 +61,8 @@ pub struct SmithayState {
     pub socket_name: OsString,
 
     pub window_registry: WindowRegisty,
+    pub config: LeftwmConfig,
+    pub focussed_window: Option<WindowHandle>,
 
     event_sender: EventChannelSender,
 }
@@ -80,6 +83,7 @@ impl SmithayState {
         event_sender: EventChannelSender,
         display: &mut Display<SmithayState>,
         udev_data: UdevData,
+        config: LeftwmConfig,
         mut loop_handle: LoopHandle<'static, CalloopData>,
         loop_signal: LoopSignal,
     ) -> Self {
@@ -127,6 +131,8 @@ impl SmithayState {
             socket_name,
 
             window_registry,
+            config,
+            focussed_window: None,
 
             event_sender,
         }
@@ -182,7 +188,7 @@ impl SmithayState {
         self.event_sender.send_event(event)
     }
 
-    pub fn focus_window(&mut self, handle: WindowHandle) {
+    pub fn focus_window(&mut self, handle: WindowHandle, move_cursor: bool) {
         let serial = SERIAL_COUNTER.next_serial();
         let Some(window) = self.window_registry.get(handle).cloned() else {
             warn!("Trying to focus invalid window");
@@ -193,9 +199,28 @@ impl SmithayState {
             .get_keyboard()
             .unwrap()
             .set_focus(self, Some(window), serial);
-        let x = bbox.loc.x as f64 + bbox.size.w as f64 / 2f64;
-        let y = bbox.loc.y as f64 + bbox.size.h as f64 / 2f64;
-        self.pointer_location = (x, y).into();
-        self.window_registry.get_mut(handle).unwrap().focused = true;
+        if move_cursor {
+            let x = bbox.loc.x as f64 + bbox.size.w as f64 / 2f64;
+            let y = bbox.loc.y as f64 + bbox.size.h as f64 / 2f64;
+            self.pointer_location = (x, y).into();
+        }
+        self.focussed_window = Some(handle);
+    }
+
+    pub fn focus_window_under(&mut self) {
+        let under = self.surface_under();
+        if self.config.focus_behavior == FocusBehaviour::Sloppy {
+            if let Some((window, _)) = under.clone() {
+                if window.handle != self.focussed_window {
+                    if let Some(h) = window.handle {
+                        self.focus_window(h, false);
+                        // self.send_event(DisplayEvent::WindowTakeFocus(
+                        //     WindowHandle::SmithayHandle(h),
+                        // ))
+                        // .unwrap();
+                    }
+                }
+            }
+        }
     }
 }

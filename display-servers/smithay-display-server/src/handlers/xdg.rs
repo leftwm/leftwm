@@ -38,7 +38,7 @@ impl XdgShellHandler for SmithayState {
         });
         window.window.toplevel().send_configure();
 
-        self.space.map_element(window, (0, 0), true);
+        // self.space.map_element(window, (0, 0), true);
     }
 
     fn new_popup(&mut self, _surface: PopupSurface, _positioner: PositionerState) {

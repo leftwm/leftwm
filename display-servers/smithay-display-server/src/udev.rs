@@ -37,7 +37,7 @@ use smithay_drm_extras::drm_scanner::DrmScanner;
 use tracing::{error, info, warn};
 use xcursor::parser::Image;
 
-use crate::{cursor, drawing::PointerElement, state::SmithayState};
+use crate::{drawing::PointerElement, pointer, state::SmithayState};
 
 use self::devices::DeviceAddError;
 
@@ -56,7 +56,7 @@ pub struct UdevData {
     pub allocator: Option<Box<dyn Allocator<Buffer = Dmabuf, Error = AnyError>>>,
     pub dmabuf_state: Option<(DmabufState, DmabufGlobal)>,
 
-    pub pointer_image: crate::cursor::Cursor,
+    pub pointer_image: crate::pointer::Cursor,
     pub pointer_images: Vec<(Image, TextureBuffer<MultiTexture>)>,
     pub pointer_element: PointerElement<MultiTexture>,
 }
@@ -139,7 +139,7 @@ pub fn init_udev_stage_1(session: LibSeatSession) -> UdevData {
         allocator: None,
         dmabuf_state: None,
 
-        pointer_image: cursor::Cursor::load(),
+        pointer_image: pointer::Cursor::load(),
         pointer_images: Vec::new(),
         pointer_element: Default::default(),
     }

@@ -27,9 +27,10 @@ impl WindowRegisty {
         self.map.get_mut(&key)
     }
 
-    pub fn insert(&mut self, window: ManagedWindow) -> WindowHandle {
+    pub fn insert(&mut self, mut window: ManagedWindow) -> WindowHandle {
         let key = self.next_key;
         self.next_key += 1;
+        window.handle = Some(key);
         self.map.insert(key, window);
         return key;
     }
@@ -40,11 +41,5 @@ impl WindowRegisty {
 
     pub fn windows(&self) -> Iter<'_, WindowHandle, ManagedWindow> {
         self.map.iter()
-    }
-
-    pub fn clear_focus(&mut self) {
-        for w in self.map.values_mut() {
-            w.focused = false;
-        }
     }
 }
