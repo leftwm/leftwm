@@ -837,32 +837,27 @@ mod tests {
         >,
     ) {
         while let Some(act) = manager.state.actions.pop_front() {
-            match act {
-                DisplayAction::SetState(window_handle, toggle_to, window_state) => {
-                    if let Some(window) = manager
-                        .state
-                        .windows
-                        .iter_mut()
-                        .find(|w| w.handle == window_handle)
-                    {
-                        if window_state == WindowState::Fullscreen {
-                            if toggle_to {
-                                window.set_states(vec![WindowState::Fullscreen]);
-                            } else {
-                                if let Some(state_pos) = window
-                                    .states()
-                                    .iter()
-                                    .position(|s| *s == WindowState::Fullscreen)
-                                {
-                                    let mut states = window.states();
-                                    states.remove(state_pos);
-                                    window.set_states(states);
-                                }
-                            }
+            if let DisplayAction::SetState(window_handle, toggle_to, window_state) = act {
+                if let Some(window) = manager
+                    .state
+                    .windows
+                    .iter_mut()
+                    .find(|w| w.handle == window_handle)
+                {
+                    if window_state == WindowState::Fullscreen {
+                        if toggle_to {
+                            window.set_states(vec![WindowState::Fullscreen]);
+                        } else if let Some(state_pos) = window
+                            .states()
+                            .iter()
+                            .position(|s| *s == WindowState::Fullscreen)
+                        {
+                            let mut states = window.states();
+                            states.remove(state_pos);
+                            window.set_states(states);
                         }
                     }
                 }
-                _ => {}
             }
         }
     }
@@ -884,26 +879,20 @@ mod tests {
 
         let expected = get_current_handles(&mut manager, Some(tag_id));
 
-        assert_eq!(
-            manager
-                .state
-                .windows
-                .iter()
-                .any(|w| w.has_state(&WindowState::Fullscreen)),
-            false
-        );
+        assert!(!manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Fullscreen)));
 
         manager.command_handler(&Command::ToggleFullScreen);
 
         mock_update(&mut manager);
-        assert_eq!(
-            manager
-                .state
-                .windows
-                .iter()
-                .any(|w| w.has_state(&WindowState::Fullscreen)),
-            true
-        );
+        assert!(manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Fullscreen)));
 
         //Mess with the window positions
         manager.state.windows.reverse();
@@ -938,26 +927,20 @@ mod tests {
 
         let expected_first_tag_window_order = get_current_handles(&mut manager, Some(first_tag));
 
-        assert_eq!(
-            manager
-                .state
-                .windows
-                .iter()
-                .any(|w| w.has_state(&WindowState::Fullscreen)),
-            false
-        );
+        assert!(!manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Fullscreen)));
 
         manager.command_handler(&Command::ToggleFullScreen);
         mock_update(&mut manager);
 
-        assert_eq!(
-            manager
-                .state
-                .windows
-                .iter()
-                .any(|w| w.has_state(&WindowState::Fullscreen)),
-            true
-        );
+        assert!(manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Fullscreen)));
 
         //Mess with the window positions
         manager.state.windows.reverse();
