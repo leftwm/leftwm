@@ -51,7 +51,14 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    match check_enabled_features() {
+    match check_enabled_features(verbose) {
+        Ok(_) => {}
+        Err(err) => {
+            println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
+        }
+    }
+
+    match check_binaries(verbose) {
         Ok(_) => {}
         Err(err) => {
             println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
@@ -387,7 +394,15 @@ where
     }
 }
 
-fn check_enabled_features() -> Result<()> {
+/// Checks the enabled features and attempts to find their dependencies/binaries as applicable
+///
+/// # Errors
+/// - An enabled feature is missing a dependency
+///     Resolutions may include:
+///         - Disable the feature (remove from --features at compile time)
+///         - Install any dependency/dependencies which are missing
+///         - Ensure all binaries are installed to a location in your PATH
+fn check_enabled_features(verbose: bool) -> Result<()> {
     if env!("LEFTWM_FEATURES").is_empty() {
         println!("\x1b[0;94m::\x1b[0m Built with no enabled features.");
         return Ok(());
@@ -404,17 +419,72 @@ fn check_enabled_features() -> Result<()> {
     check_feature("journald-log", tracing_journald::layer)?;
     #[cfg(feature = "lefthk")]
     // TODO once we refactor all file handling into a utiliy module, we want to call a `path-builder` method from that module
-    check_feature("lefthk", || {
-        if let Ok(path) = env::var("PATH") {
-            for p in path.split(':') {
-                let path = format!("{p}/{}", "lefthk-worker");
-                if Path::new(&path).exists() {
-                    return Ok(());
-                }
-            }
-        }
-        Err("Could not find lefthk")
-    })?;
+    check_feature("lefthk", || check_binary("lefthk-worker", verbose))?;
 
     Ok(())
+}
+
+/// Check to determine if the standard leftwm binaries are present
+///
+/// Binaries checked in this function: leftwm-worker, leftwm, leftwm-state, leftwm-check, leftwm-command
+///
+/// # Errors
+/// - At least one binary has failed to be found in your PATH variable
+fn check_binaries(verbose: bool) -> Result<()> {
+    // Assumption: Required binaries are leftwm-worker, leftwm-state, leftwm, leftwm-check,
+    // leftwm-command
+    // Assumption: lefthk-worker is checked in check_enabled_features if needed
+    println!("\x1b[0;94m::\x1b[0m Checking for leftwm binaries . . .");
+    let binaries: [&str; 5] = [
+        "leftwm",
+        "leftwm-worker",
+        "leftwm-state",
+        "leftwm-command",
+        "leftwm-check",
+    ];
+    let mut failures: bool = false;
+    for binary in binaries {
+        match check_binary(binary, verbose) {
+            Ok(_) => {}
+            Err(err) => {
+                failures = true;
+                println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
+            }
+        }
+    }
+    if failures {
+        bail!("Not all required binaries are present");
+    }
+    println!("\x1b[0;92m    -> Binaries OK \x1b[0m");
+    Ok(())
+}
+
+/// Check to determine if `binary` exists in PATH
+///
+/// # Errors
+/// - Will return an error if the listed `binary` can not be found in PATH
+///     Resolutions may include:
+///         - Installing leftwm using `cargo install --path {path}` where {path} is a directory in
+///         PATH
+///         - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
+///         shell
+/// - Will return an error if the PATH environmental variable is not set
+///     Resolutions may include:
+///         - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
+///         shell
+fn check_binary(binary: &str, verbose: bool) -> Result<()> {
+    if let Ok(path) = env::var("PATH") {
+        for p in path.split(':') {
+            let path = format!("{p}/{binary}");
+            if Path::new(&path).exists() {
+                if verbose {
+                    println!("In search for binaries, found {}", &path);
+                }
+                return Ok(());
+            }
+        }
+        bail!("Could not find binary {} in PATH", binary)
+    }
+
+    bail!("Binaries not checked. This is an error with leftwm-check, we would appreciate a bug report: https://github.com/leftwm/leftwm/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml")
 }
