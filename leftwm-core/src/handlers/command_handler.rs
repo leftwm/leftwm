@@ -1,6 +1,7 @@
 #![allow(clippy::wildcard_imports)]
 
 mod scratchpad_handler;
+
 // Make public to the rest of the crate without exposing other internal
 // details of the scratchpad handling code
 pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
@@ -149,6 +150,34 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     let handle = window.handle;
     let toggle_to = !window.has_state(&window_state);
+    let tag_id = state.focus_manager.tag(0)?;
+
+    if window_state == WindowState::Fullscreen {
+        //Going to fullscreen, so we save the window order
+        //or else, we restore it!
+        if toggle_to {
+            let handles = state
+                .windows
+                .iter()
+                .filter(|window| window.tag == Some(tag_id) && window.is_managed())
+                .map(|w| w.handle)
+                .collect();
+
+            state.window_history.insert(tag_id, handles);
+        } else if let Some(window_order) = state.window_history.get(&tag_id) {
+            for window_handle in window_order {
+                if let Some(pos) = state
+                    .windows
+                    .iter()
+                    .position(|w| w.handle == *window_handle)
+                {
+                    let window = state.windows.remove(pos);
+                    state.windows.push(window);
+                }
+            }
+        }
+    }
+
     let act = DisplayAction::SetState(handle, toggle_to, window_state);
     state.actions.push_back(act);
     state.handle_window_focus(&handle);
@@ -787,6 +816,227 @@ fn send_workspace_to_tag(state: &mut State, ws_index: usize, tag_index: usize) -
 mod tests {
     use super::*;
     use crate::models::Tags;
+
+    fn split_window_vec(windows: Vec<Window>, first_tag_id: usize) -> (Vec<Window>, Vec<Window>) {
+        let mut windows_first_tag = vec![];
+        let mut windows_second_tag = vec![];
+
+        for w in windows {
+            if w.tag == Some(first_tag_id) {
+                windows_first_tag.push(w);
+            } else {
+                windows_second_tag.push(w);
+            }
+        }
+
+        (windows_first_tag, windows_second_tag)
+    }
+
+    fn get_current_handles(
+        manager: &mut Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        >,
+        tag_id: Option<TagId>,
+    ) -> Vec<WindowHandle> {
+        manager
+            .state
+            .windows
+            .iter()
+            .filter(|window| window.tag == tag_id && window.is_managed())
+            .map(|w| w.handle)
+            .collect::<Vec<_>>()
+    }
+
+    fn mock_update(
+        manager: &mut Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        >,
+    ) {
+        while let Some(act) = manager.state.actions.pop_front() {
+            if let DisplayAction::SetState(window_handle, toggle_to, window_state) = act {
+                if let Some(window) = manager
+                    .state
+                    .windows
+                    .iter_mut()
+                    .find(|w| w.handle == window_handle)
+                {
+                    if window_state == WindowState::Fullscreen {
+                        if toggle_to {
+                            window.set_states(vec![WindowState::Fullscreen]);
+                        } else if let Some(state_pos) = window
+                            .states()
+                            .iter()
+                            .position(|s| *s == WindowState::Fullscreen)
+                        {
+                            let mut states = window.states();
+                            states.remove(state_pos);
+                            window.set_states(states);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn toggle_fullscreen() {
+        let mut manager = Manager::new_test(vec!["1".to_string()]);
+        let tag_id = manager.state.tags.get(1).unwrap().id;
+
+        manager.screen_create_handler(Screen::default());
+
+        for i in 1..=3 {
+            manager.window_created_handler(
+                Window::new(WindowHandle::MockHandle(i), None, None),
+                -1,
+                -1,
+            );
+        }
+
+        let expected = get_current_handles(&mut manager, Some(tag_id));
+
+        assert!(!manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Fullscreen)));
+
+        manager.command_handler(&Command::ToggleFullScreen);
+
+        mock_update(&mut manager);
+        assert!(manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Fullscreen)));
+
+        //Mess with the window positions
+        manager.state.windows.reverse();
+
+        let actual = get_current_handles(&mut manager, Some(tag_id));
+
+        assert_ne!(expected, actual);
+
+        manager.command_handler(&Command::ToggleFullScreen);
+        mock_update(&mut manager);
+
+        let actual = get_current_handles(&mut manager, Some(tag_id));
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn toggle_fullscreen_with_multiple_tags() {
+        let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
+
+        let first_tag = manager.state.tags.get(1).unwrap().id;
+        let second_tag = manager.state.tags.get(2).unwrap().id;
+
+        manager.screen_create_handler(Screen::default());
+
+        for i in 1..=3 {
+            manager.window_created_handler(
+                Window::new(WindowHandle::MockHandle(i), None, None),
+                -1,
+                -1,
+            );
+        }
+
+        let expected_first_tag_window_order = get_current_handles(&mut manager, Some(first_tag));
+
+        assert!(!manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Fullscreen)));
+
+        manager.command_handler(&Command::ToggleFullScreen);
+        mock_update(&mut manager);
+
+        assert!(manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Fullscreen)));
+
+        //Mess with the window positions
+        manager.state.windows.reverse();
+
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 2,
+            swap: false
+        }));
+
+        for i in 4..=6 {
+            manager.window_created_handler(
+                Window::new(WindowHandle::MockHandle(i), None, None),
+                -1,
+                -1,
+            );
+        }
+
+        let expected_second_tag_window_order = get_current_handles(&mut manager, Some(second_tag));
+
+        assert_eq!(
+            manager
+                .state
+                .windows
+                .iter()
+                .find(|w| w.has_state(&WindowState::Fullscreen))
+                .iter()
+                .count(),
+            1
+        );
+
+        manager.command_handler(&Command::ToggleFullScreen);
+        mock_update(&mut manager);
+
+        assert_eq!(
+            manager
+                .state
+                .windows
+                .iter()
+                .filter(|w| w.has_state(&WindowState::Fullscreen))
+                .count(),
+            2
+        );
+
+        //Mess with the windows positions of the second tag
+        let (mut windows_first_tag, mut windows_second_tag) =
+            split_window_vec(manager.state.windows, first_tag);
+        windows_second_tag.reverse();
+        windows_first_tag.append(&mut windows_second_tag);
+        manager.state.windows = windows_first_tag;
+
+        manager.command_handler(&Command::GoToTag {
+            tag: 1,
+            swap: false,
+        });
+
+        manager.command_handler(&Command::ToggleFullScreen);
+        mock_update(&mut manager);
+
+        manager.command_handler(&Command::GoToTag {
+            tag: 2,
+            swap: false,
+        });
+
+        manager.command_handler(&Command::ToggleFullScreen);
+        mock_update(&mut manager);
+
+        let actual_first_tag_window_order = get_current_handles(&mut manager, Some(first_tag));
+        let actual_second_tag_window_order = get_current_handles(&mut manager, Some(second_tag));
+
+        assert_eq!(
+            expected_first_tag_window_order,
+            actual_first_tag_window_order
+        );
+        assert_eq!(
+            expected_second_tag_window_order,
+            actual_second_tag_window_order
+        );
+    }
 
     #[test]
     fn return_to_last_tag_should_go_back_to_last_tag() {

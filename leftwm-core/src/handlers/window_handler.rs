@@ -69,8 +69,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn window_destroyed_handler(&mut self, handle: &WindowHandle) -> bool {
-        // Find the next or previous window on the workspace.
-        let new_handle = self.get_next_or_previous_handle(handle);
+        // Get the previous focused window else find the next or previous window on the workspace.
+        let new_handle = if let Some(Some(last_focused_window)) =
+            self.state.focus_manager.window_history.get(1)
+        {
+            Some(*last_focused_window)
+        } else {
+            self.get_next_or_previous_handle(handle)
+        };
         // If there is a parent we would want to focus it.
         let (transient, floating, visible) =
             match self.state.windows.iter().find(|w| &w.handle == handle) {
