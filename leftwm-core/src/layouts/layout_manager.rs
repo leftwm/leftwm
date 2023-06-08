@@ -93,7 +93,19 @@ impl LayoutManager {
             tracing::debug!("The LayoutMode has changed, layouts will not be restored");
             return;
         }
-        tracing::debug!("Restoring layouts is currently not implemented");
+        // TODO we could eventually try to map available layouts as best as we can
+        //      and only fallback to default for layouts not avialable anymore
+        if self.available_layouts != old.available_layouts {
+            tracing::debug!("The available Layouts have changed, layouts will not be restored");
+            return;
+        }
+        if self.available_layouts_per_ws != old.available_layouts_per_ws {
+            tracing::debug!(
+                "The available Layouts per Workspace have changed, layouts will not be restored"
+            );
+            return;
+        }
+        self.layouts = old.layouts.clone();
     }
 
     /// Get back either the workspace ID or the tag ID, based on the current [`LayoutMode`]

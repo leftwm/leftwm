@@ -195,7 +195,6 @@ impl State {
         for old_tag in old_state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {
                 tag.hidden = old_tag.hidden;
-                //tag.layout = old_tag.layout.to_owned();
             }
         }
 
