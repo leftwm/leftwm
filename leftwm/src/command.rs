@@ -26,6 +26,7 @@ pub enum BaseCommand {
     ToggleFullScreen,
     ToggleSticky,
     GotoTag,
+    GotoNextEmptyTag,
     ReturnToLastTag,
     FloatingToTile,
     TileToFloating,
@@ -66,6 +67,7 @@ impl std::convert::From<BaseCommand> for String {
             // Special cases that have different names.
             BaseCommand::SwapTags => "SwapScreens".to_owned(),
             BaseCommand::GotoTag => "GoToTag".to_owned(),
+            BaseCommand::GotoNextEmptyTag => "GoToNextEmptyTag".to_owned(),
             BaseCommand::MoveToTag => "SendWindowToTag".to_owned(),
             BaseCommand::MoveToLastWorkspace => "MoveWindowToLastWorkspace".to_owned(),
             BaseCommand::Execute => String::new(),

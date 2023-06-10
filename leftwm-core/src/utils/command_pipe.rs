@@ -138,6 +138,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleFloating" => Ok(Command::ToggleFloating),
         // Workspace/Tag
         "GoToTag" => build_go_to_tag(rest),
+        "GoToNextEmptyTag" => Ok(Command::GoToNextEmptyTag),
         "ReturnToLastTag" => Ok(Command::ReturnToLastTag),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SwapScreens" => Ok(Command::SwapScreens),

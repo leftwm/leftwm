@@ -82,6 +82,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SwapWindowTop { swap } => move_focus_common_vars!(swap_window_top(state, *swap)),
 
         Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
+        Command::GoToNextEmptyTag => goto_next_empty_tag(state),
         Command::ReturnToLastTag => return_to_last_tag(state),
 
         Command::CloseWindow => close_window(state),
@@ -138,6 +139,28 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::CloseAllOtherWindows => close_all_other_windows(state),
         Command::Other(cmd) => Some(C::command_handler(cmd, manager)),
     }
+}
+
+fn goto_next_empty_tag(state: &mut State) -> Option<bool> {
+    let used_tags: Vec<usize> = state.windows.iter().filter_map(|w| w.tag).collect();
+    let unused_tags: Vec<usize> = state
+        .tags
+        .normal()
+        .iter()
+        .filter(|t| !used_tags.contains(&t.to_owned().id))
+        .map(|t| t.id)
+        .collect();
+    let next_unused_tag = match unused_tags
+        .iter()
+        .find(|t| **t > state.focus_manager.tag(0).unwrap_or_default())
+    {
+        Some(t) => t,
+        None => match unused_tags.first() {
+            Some(t) => t,
+            None => return Some(false),
+        },
+    };
+    state.goto_tag_handler(*next_unused_tag)
 }
 
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
@@ -1396,5 +1419,88 @@ mod tests {
 
         assert_eq!(manager.state.windows[0].border(), 1);
         assert_eq!(manager.state.windows[1].border(), 1);
+    }
+
+    #[test]
+
+    fn goto_next_empty_tag_while_in_used_tag() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.state.focus_tag(&1);
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
+    }
+
+    #[test]
+    fn goto_next_empty_tag_while_in_empty_tag() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec!["Emtpy_One".to_string(), "Empty".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.state.focus_tag(&1);
+
+        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
+    }
+
+    #[test]
+    fn goto_next_empty_tag_multiple_tags() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec![
+            "A".to_string(),
+            "B".to_string(),
+            "C".to_string(),
+            "D".to_string(),
+        ]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.state.focus_tag(&1);
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&1);
+        manager.window_created_handler(second_window, -1, -1);
+
+        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        third_window.tag(&2);
+        let third_window_handle = third_window.handle;
+        manager.window_created_handler(third_window, -1, -1);
+
+        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
+
+        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
+
+        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
+
+        manager.window_destroyed_handler(&third_window_handle);
+
+        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
 }
