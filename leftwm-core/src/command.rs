@@ -32,8 +32,6 @@ pub enum Command {
         tag: TagId,
         swap: bool,
     },
-    FocusNextEmptyTag,
-    FocusPreviousEmptyTag,
     ReturnToLastTag,
     FloatingToTile,
     TileToFloating,
@@ -46,8 +44,12 @@ pub enum Command {
     SwapWindowTop {
         swap: bool,
     },
-    FocusNextTag,
-    FocusPreviousTag,
+    FocusNextTag{
+        ignore_used: bool,
+    },
+    FocusPreviousTag{
+        ignore_used: bool,
+    },
     FocusWindow(String),
     FocusWindowUp,
     FocusWindowDown,

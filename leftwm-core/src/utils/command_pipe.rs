@@ -110,8 +110,8 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
         "FocusWindowTop" => build_focus_window_top(rest),
         "FocusWindowUp" => Ok(Command::FocusWindowUp),
-        "FocusNextTag" => Ok(Command::FocusNextTag),
-        "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
+        "FocusNextTag" => build_focus_next_tag(rest),
+        "FocusPreviousTag" => build_focus_previous_tag(rest),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
         // Layout
@@ -138,8 +138,6 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleFloating" => Ok(Command::ToggleFloating),
         // Workspace/Tag
         "GoToTag" => build_go_to_tag(rest),
-        "FocusNextEmptyTag" => Ok(Command::FocusNextEmptyTag),
-        "FocusPreviousEmptyTag" => Ok(Command::FocusPreviousEmptyTag),
         "ReturnToLastTag" => Ok(Command::ReturnToLastTag),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SwapScreens" => Ok(Command::SwapScreens),
@@ -303,6 +301,24 @@ fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::E
     Ok(Command::DecreaseMainWidth(change))
 }
 
+fn build_focus_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let ignore_used = if raw.is_empty() {
+        false
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::FocusNextTag { ignore_used })
+}
+
+fn build_focus_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let ignore_used = if raw.is_empty() {
+        false
+    } else {
+        bool::from_str(raw)?
+    };
+    Ok(Command::FocusPreviousTag { ignore_used })
+}
+
 fn without_head<'a>(s: &'a str, head: &'a str) -> &'a str {
     if !s.starts_with(head) {
         return s;
@@ -442,5 +458,21 @@ mod test {
             build_move_window_to_previous_tag("").unwrap(),
             Command::MoveWindowToPreviousTag { follow: true }
         );
+    }
+
+    #[test]
+    fn build_focus_next_tag_without_parameter(){
+        assert_eq!(
+            build_focus_next_tag("").unwrap(),
+            Command::FocusNextTag { ignore_used: false }
+        )
+    }
+
+    #[test]
+    fn build_focus_previous_tag_without_parameter(){
+        assert_eq!(
+            build_focus_previous_tag("").unwrap(),
+            Command::FocusPreviousTag { ignore_used: false }
+        )
     }
 }

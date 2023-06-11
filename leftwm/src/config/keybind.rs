@@ -76,6 +76,12 @@ impl Keybind {
                 f32::from_str(&self.value)
                     .context("invalid margin multiplier for SetMarginMultiplier")?;
             }
+            BaseCommand::FocusNextTag if value_is_some => {
+                bool::from_str(&self.value).context("invalid boolean value for FocusNextTag")?;
+            }
+            BaseCommand::FocusPreviousTag if value_is_some => {
+                bool::from_str(&self.value).context("invalid boolean value for FocusPreviousTag")?;
+            }
             _ => {}
         }
 

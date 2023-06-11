@@ -82,8 +82,6 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SwapWindowTop { swap } => move_focus_common_vars!(swap_window_top(state, *swap)),
 
         Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
-        Command::FocusNextEmptyTag => focus_next_empty_tag(state),
-        Command::FocusPreviousEmptyTag => focus_previous_empty_tag(state),
         Command::ReturnToLastTag => return_to_last_tag(state),
 
         Command::CloseWindow => close_window(state),
@@ -97,8 +95,14 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::TileToFloating => tile_to_floating(state),
         Command::ToggleFloating => toggle_floating(state),
 
-        Command::FocusNextTag => focus_tag_change(state, 1),
-        Command::FocusPreviousTag => focus_tag_change(state, -1),
+        Command::FocusNextTag{ignore_used} => match *ignore_used {
+            true => focus_next_empty_tag(state),
+            false => focus_tag_change(state, 1),
+        },
+        Command::FocusPreviousTag{ignore_used} => match *ignore_used{
+            true => focus_previous_empty_tag(state),
+            false => focus_tag_change(state, -1),
+        },
         Command::FocusWindow(param) => focus_window(state, param),
         Command::FocusWindowUp => move_focus_common_vars!(focus_window_change(state, -1)),
         Command::FocusWindowDown => move_focus_common_vars!(focus_window_change(state, 1)),
@@ -1358,7 +1362,7 @@ mod tests {
 
         (0..3).for_each(|_| {
             manager.command_handler(&Command::MoveWindowToNextTag { follow: false });
-            manager.command_handler(&Command::FocusNextTag);
+            manager.command_handler(&Command::FocusNextTag {ignore_used: false});
         });
         assert!(manager.state.windows[0].has_tag(&third_tag));
     }
@@ -1460,7 +1464,7 @@ mod tests {
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
@@ -1475,7 +1479,7 @@ mod tests {
 
         manager.state.focus_tag(&1);
 
-        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
@@ -1508,22 +1512,22 @@ mod tests {
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
 
-        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
 
-        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
 
         manager.window_destroyed_handler(&third_window_handle);
 
-        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
-        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
@@ -1543,7 +1547,7 @@ mod tests {
         first_window.tag(&2);
         manager.window_created_handler(first_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::FocusPreviousEmptyTag));
+        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
     }
@@ -1558,7 +1562,7 @@ mod tests {
 
         manager.state.focus_tag(&2);
 
-        assert!(manager.command_handler(&Command::FocusPreviousEmptyTag));
+        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
     }
@@ -1591,21 +1595,21 @@ mod tests {
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::FocusPreviousEmptyTag));
+        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
 
-        assert!(manager.command_handler(&Command::FocusPreviousEmptyTag));
+        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
 
-        assert!(manager.command_handler(&Command::FocusPreviousEmptyTag));
+        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
 
         manager.window_destroyed_handler(&third_window_handle);
-        assert!(manager.command_handler(&Command::FocusPreviousEmptyTag));
-        assert!(manager.command_handler(&Command::FocusPreviousEmptyTag));
+        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
 
