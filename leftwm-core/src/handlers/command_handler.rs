@@ -82,7 +82,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SwapWindowTop { swap } => move_focus_common_vars!(swap_window_top(state, *swap)),
 
         Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
-        Command::GoToNextEmptyTag => goto_next_empty_tag(state),
+        Command::FocusNextEmptyTag => focus_next_empty_tag(state),
         Command::ReturnToLastTag => return_to_last_tag(state),
 
         Command::CloseWindow => close_window(state),
@@ -141,7 +141,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
     }
 }
 
-fn goto_next_empty_tag(state: &mut State) -> Option<bool> {
+fn focus_next_empty_tag(state: &mut State) -> Option<bool> {
     let used_tags: Vec<usize> = state.windows.iter().filter_map(|w| w.tag).collect();
     let unused_tags: Vec<usize> = state
         .tags
@@ -1436,7 +1436,7 @@ mod tests {
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
@@ -1451,7 +1451,7 @@ mod tests {
 
         manager.state.focus_tag(&1);
 
-        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
@@ -1484,22 +1484,22 @@ mod tests {
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
 
-        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
 
-        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
 
         manager.window_destroyed_handler(&third_window_handle);
 
-        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
-        assert!(manager.command_handler(&Command::GoToNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
+        assert!(manager.command_handler(&Command::FocusNextEmptyTag));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }

@@ -32,7 +32,7 @@ pub enum Command {
         tag: TagId,
         swap: bool,
     },
-    GoToNextEmptyTag,
+    FocusNextEmptyTag,
     ReturnToLastTag,
     FloatingToTile,
     TileToFloating,
