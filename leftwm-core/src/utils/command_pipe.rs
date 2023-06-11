@@ -139,6 +139,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         // Workspace/Tag
         "GoToTag" => build_go_to_tag(rest),
         "FocusNextEmptyTag" => Ok(Command::FocusNextEmptyTag),
+        "FocusPreviousEmptyTag" => Ok(Command::FocusPreviousEmptyTag),
         "ReturnToLastTag" => Ok(Command::ReturnToLastTag),
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SwapScreens" => Ok(Command::SwapScreens),

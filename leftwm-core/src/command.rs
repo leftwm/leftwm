@@ -33,6 +33,7 @@ pub enum Command {
         swap: bool,
     },
     FocusNextEmptyTag,
+    FocusPreviousEmptyTag,
     ReturnToLastTag,
     FloatingToTile,
     TileToFloating,
