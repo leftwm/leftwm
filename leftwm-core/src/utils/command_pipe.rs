@@ -488,6 +488,6 @@ mod test {
             Command::FocusPreviousTag {
                 behavior: command::FocusDeltaBehavior::Default
             }
-        )
+        );
     }
 }
