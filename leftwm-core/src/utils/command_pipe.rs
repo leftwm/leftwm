@@ -1,7 +1,8 @@
 //! Creates a pipe to listen for external commands.
+
 use crate::layouts::Layout;
 use crate::models::TagId;
-use crate::{Command, ReleaseScratchPadOption};
+use crate::{command, Command, ReleaseScratchPadOption};
 use std::env;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -110,8 +111,8 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
         "FocusWindowTop" => build_focus_window_top(rest),
         "FocusWindowUp" => Ok(Command::FocusWindowUp),
-        "FocusNextTag" => build_focus_next_tag(rest),
-        "FocusPreviousTag" => build_focus_previous_tag(rest),
+        "FocusNextTag" => Ok(build_focus_next_tag(rest)),
+        "FocusPreviousTag" => Ok(build_focus_previous_tag(rest)),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
         // Layout
@@ -301,22 +302,32 @@ fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::E
     Ok(Command::DecreaseMainWidth(change))
 }
 
-fn build_focus_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let ignore_used = if raw.is_empty() {
-        false
-    } else {
-        bool::from_str(raw)?
-    };
-    Ok(Command::FocusNextTag { ignore_used })
+fn build_focus_next_tag(raw: &str) -> Command {
+    match raw {
+        "ignore_empty" | "goto_used" => Command::FocusNextTag {
+            behavior: command::FocusDeltaBehavior::IgnoreEmpty,
+        },
+        "ignore_used" | "goto_empty" => Command::FocusNextTag {
+            behavior: command::FocusDeltaBehavior::IgnoreUsed,
+        },
+        _ => Command::FocusNextTag {
+            behavior: command::FocusDeltaBehavior::Default,
+        },
+    }
 }
 
-fn build_focus_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let ignore_used = if raw.is_empty() {
-        false
-    } else {
-        bool::from_str(raw)?
-    };
-    Ok(Command::FocusPreviousTag { ignore_used })
+fn build_focus_previous_tag(raw: &str) -> Command {
+    match raw {
+        "ignore_empty" | "goto_used" => Command::FocusPreviousTag {
+            behavior: command::FocusDeltaBehavior::IgnoreEmpty,
+        },
+        "ignore_used" | "goto_empty" => Command::FocusPreviousTag {
+            behavior: command::FocusDeltaBehavior::IgnoreUsed,
+        },
+        _ => Command::FocusPreviousTag {
+            behavior: command::FocusDeltaBehavior::Default,
+        },
+    }
 }
 
 fn without_head<'a>(s: &'a str, head: &'a str) -> &'a str {
@@ -461,18 +472,22 @@ mod test {
     }
 
     #[test]
-    fn build_focus_next_tag_without_parameter(){
+    fn build_focus_next_tag_without_parameter() {
         assert_eq!(
-            build_focus_next_tag("").unwrap(),
-            Command::FocusNextTag { ignore_used: false }
+            build_focus_next_tag(""),
+            Command::FocusNextTag {
+                behavior: command::FocusDeltaBehavior::Default
+            }
         )
     }
 
     #[test]
-    fn build_focus_previous_tag_without_parameter(){
+    fn build_focus_previous_tag_without_parameter() {
         assert_eq!(
-            build_focus_previous_tag("").unwrap(),
-            Command::FocusPreviousTag { ignore_used: false }
+            build_focus_previous_tag(""),
+            Command::FocusPreviousTag {
+                behavior: command::FocusDeltaBehavior::Default
+            }
         )
     }
 }

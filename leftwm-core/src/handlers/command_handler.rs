@@ -7,6 +7,7 @@ mod scratchpad_handler;
 pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
 
 use super::*;
+use crate::command::FocusDeltaBehavior;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::Layout;
@@ -95,13 +96,15 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::TileToFloating => tile_to_floating(state),
         Command::ToggleFloating => toggle_floating(state),
 
-        Command::FocusNextTag{ignore_used} => match *ignore_used {
-            true => focus_next_empty_tag(state),
-            false => focus_tag_change(state, 1),
+        Command::FocusNextTag { behavior } => match *behavior {
+            FocusDeltaBehavior::Default => focus_tag_change(state, 1),
+            FocusDeltaBehavior::IgnoreEmpty => focus_next_used_tag(state),
+            FocusDeltaBehavior::IgnoreUsed => focus_next_empty_tag(state),
         },
-        Command::FocusPreviousTag{ignore_used} => match *ignore_used{
-            true => focus_previous_empty_tag(state),
-            false => focus_tag_change(state, -1),
+        Command::FocusPreviousTag { behavior } => match *behavior {
+            FocusDeltaBehavior::Default => focus_tag_change(state, -1),
+            FocusDeltaBehavior::IgnoreEmpty => focus_previous_used_tag(state),
+            FocusDeltaBehavior::IgnoreUsed => focus_previous_empty_tag(state),
         },
         Command::FocusWindow(param) => focus_window(state, param),
         Command::FocusWindowUp => move_focus_common_vars!(focus_window_change(state, -1)),
@@ -179,8 +182,7 @@ fn focus_previous_empty_tag(state: &mut State) -> Option<bool> {
         .collect();
     let previous_unused_tag = match unused_tags
         .iter()
-        .rev()
-        .find(|t| **t < state.focus_manager.tag(0).unwrap_or_default())
+        .rfind(|t| **t < state.focus_manager.tag(0).unwrap_or_default())
     {
         Some(t) => t,
         None => match unused_tags.last() {
@@ -189,6 +191,39 @@ fn focus_previous_empty_tag(state: &mut State) -> Option<bool> {
         },
     };
     state.goto_tag_handler(*previous_unused_tag)
+}
+
+fn focus_next_used_tag(state: &mut State) -> Option<bool> {
+    let mut used_tags: Vec<usize> = state.windows.iter().filter_map(|w| w.tag).collect();
+    used_tags.sort_unstable();
+    let next_used_tag = match used_tags
+        .iter()
+        .find(|t| **t > state.focus_manager.tag(0).unwrap_or_default())
+    {
+        Some(t) => t,
+        None => match used_tags.first() {
+            Some(t) => t,
+            None => return Some(false),
+        },
+    };
+    state.goto_tag_handler(*next_used_tag)
+}
+
+fn focus_previous_used_tag(state: &mut State) -> Option<bool> {
+    let mut used_tags: Vec<usize> = state.windows.iter().filter_map(|w| w.tag).collect();
+    used_tags.sort_unstable();
+    used_tags.reverse();
+    let previous_used_tag = match used_tags
+        .iter()
+        .find(|t| **t < state.focus_manager.tag(0).unwrap_or_default())
+    {
+        Some(t) => t,
+        None => match used_tags.first() {
+            Some(t) => t,
+            None => return Some(false),
+        },
+    };
+    state.goto_tag_handler(*previous_used_tag)
 }
 
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
@@ -1362,7 +1397,9 @@ mod tests {
 
         (0..3).for_each(|_| {
             manager.command_handler(&Command::MoveWindowToNextTag { follow: false });
-            manager.command_handler(&Command::FocusNextTag {ignore_used: false});
+            manager.command_handler(&Command::FocusNextTag {
+                behavior: FocusDeltaBehavior::Default,
+            });
         });
         assert!(manager.state.windows[0].has_tag(&third_tag));
     }
@@ -1464,7 +1501,9 @@ mod tests {
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
@@ -1479,7 +1518,9 @@ mod tests {
 
         manager.state.focus_tag(&1);
 
-        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
@@ -1512,22 +1553,32 @@ mod tests {
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
 
-        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
 
-        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
 
         manager.window_destroyed_handler(&third_window_handle);
 
-        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
-        assert!(manager.command_handler(&Command::FocusNextTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
     }
@@ -1541,13 +1592,15 @@ mod tests {
         > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
         manager.screen_create_handler(Screen::default());
 
-        manager.state.focus_tag(&2);
-
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&2);
         manager.window_created_handler(first_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
+        manager.state.focus_tag(&2);
+
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
     }
@@ -1562,7 +1615,9 @@ mod tests {
 
         manager.state.focus_tag(&2);
 
-        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
     }
@@ -1595,24 +1650,268 @@ mod tests {
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
 
-        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
 
-        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
 
-        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
 
         manager.window_destroyed_handler(&third_window_handle);
-        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
-        assert!(manager.command_handler(&Command::FocusPreviousTag { ignore_used: true }));
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreUsed
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
+    }
+
+    #[test]
+
+    fn goto_next_used_tag_while_in_used_tag() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.state.focus_tag(&1);
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
+    }
+
+    #[test]
+    fn goto_next_used_tag_while_in_empty_tag() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec!["Emtpy_One".to_string(), "Used".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&2);
+        manager.window_created_handler(first_window, -1, -1);
+
+        manager.state.focus_tag(&1);
+
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
+    }
+
+    #[test]
+    fn goto_next_used_tag_multiple_tags() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec![
+            "A".to_string(),
+            "B".to_string(),
+            "C".to_string(),
+            "D".to_string(),
+        ]);
+        manager.screen_create_handler(Screen::default());
+
+        manager.state.focus_tag(&1);
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        third_window.tag(&4);
+        let third_window_handle = third_window.handle;
+        manager.window_created_handler(third_window, -1, -1);
+
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
 
         assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
 
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
 
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
+
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
+
+        manager.window_destroyed_handler(&third_window_handle);
+
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+        assert!(manager.command_handler(&Command::FocusNextTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
+    }
+
+    #[test]
+
+    fn goto_previous_used_tag_while_in_used_tag() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec!["A".to_string(), "B".to_string(), "C".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        manager.state.focus_tag(&2);
+
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
+    }
+
+    #[test]
+    fn goto_previous_used_tag_while_in_empty_tag() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec!["Emtpy_One".to_string(), "Used".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&2);
+        manager.window_created_handler(first_window, -1, -1);
+
+        manager.state.focus_tag(&1);
+
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
+    }
+
+    #[test]
+    fn goto_previous_used_tag_multiple_tags() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec![
+            "A".to_string(),
+            "B".to_string(),
+            "C".to_string(),
+            "D".to_string(),
+            "E".to_string(),
+        ]);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&1);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        third_window.tag(&4);
+        let third_window_handle = third_window.handle;
+        manager.window_created_handler(third_window, -1, -1);
+
+        manager.state.focus_tag(&4);
+
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 2);
+
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
+
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 4);
+
+        manager.window_destroyed_handler(&third_window_handle);
+
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 1);
+    }
+
+    #[test]
+    fn goto_previous_used_tag_wraparound() {
+        let mut manager: Manager<
+            crate::config::tests::TestConfig,
+            crate::display_servers::MockDisplayServer,
+        > = Manager::new_test(vec!["A".to_string(), "B".to_string(), "C".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        first_window.tag(&3);
+        manager.window_created_handler(first_window, -1, -1);
+
+        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        second_window.tag(&2);
+        manager.window_created_handler(second_window, -1, -1);
+
+        manager.state.focus_tag(&2);
+
+        assert!(manager.command_handler(&Command::FocusPreviousTag {
+            behavior: FocusDeltaBehavior::IgnoreEmpty
+        }));
+
+        assert_eq!(manager.state.focus_manager.tag(0).unwrap(), 3);
     }
 }
