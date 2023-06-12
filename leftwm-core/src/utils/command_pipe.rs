@@ -478,7 +478,7 @@ mod test {
             Command::FocusNextTag {
                 behavior: command::FocusDeltaBehavior::Default
             }
-        )
+        );
     }
 
     #[test]
