@@ -542,7 +542,7 @@ mod test {
                 }
             })
             .to_string()
-        )
+        );
     }
 
     #[test]
@@ -556,6 +556,6 @@ mod test {
                 }
             })
             .to_string()
-        )
+        );
     }
 }
