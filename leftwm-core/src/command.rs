@@ -41,8 +41,12 @@ pub enum Command {
     SwapWindowTop {
         swap: bool,
     },
-    FocusNextTag,
-    FocusPreviousTag,
+    FocusNextTag {
+        behavior: FocusDeltaBehavior,
+    },
+    FocusPreviousTag {
+        behavior: FocusDeltaBehavior,
+    },
     FocusWindow(String),
     FocusWindowUp,
     FocusWindowDown,
@@ -78,4 +82,11 @@ pub enum Command {
     SendWorkspaceToTag(usize, usize),
     CloseAllOtherWindows,
     Other(String),
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub enum FocusDeltaBehavior {
+    Default,
+    IgnoreUsed,
+    IgnoreEmpty,
 }

@@ -77,6 +77,13 @@ impl Keybind {
                 f32::from_str(&self.value)
                     .context("invalid margin multiplier for SetMarginMultiplier")?;
             }
+            BaseCommand::FocusNextTag | BaseCommand::FocusPreviousTag if value_is_some => {
+                ensure!(
+                usize::from_str(&self.value).is_ok()
+                || matches!(&self.value.as_str(), &""|&"goto_empty"|&"ignore_empty"|&"goto_used"|&"ignore_used"|&"default"),
+            "Value should be empty, or one of 'default', 'goto_empty', 'ignore_empty', 'goto_used', 'ignore_used'"
+                );
+            }
             _ => {}
         }
 

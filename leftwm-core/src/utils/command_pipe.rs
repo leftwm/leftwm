@@ -1,9 +1,10 @@
 //! Creates a pipe to listen for external commands.
 use crate::models::TagId;
-use crate::{Command, ReleaseScratchPadOption};
-use std::env;
+use crate::{command, Command, ReleaseScratchPadOption};
+use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::{env, fmt};
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
@@ -109,8 +110,8 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
         "FocusWindowTop" => build_focus_window_top(rest),
         "FocusWindowUp" => Ok(Command::FocusWindowUp),
-        "FocusNextTag" => Ok(Command::FocusNextTag),
-        "FocusPreviousTag" => Ok(Command::FocusPreviousTag),
+        "FocusNextTag" => build_focus_next_tag(rest),
+        "FocusPreviousTag" => build_focus_previous_tag(rest),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
         // Layout
@@ -300,11 +301,78 @@ fn build_decrease_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Er
     Ok(Command::DecreaseMainSize(change))
 }
 
+fn build_focus_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    match raw {
+        "ignore_empty" | "goto_used" => Ok(Command::FocusNextTag {
+            behavior: command::FocusDeltaBehavior::IgnoreEmpty,
+        }),
+        "ignore_used" | "goto_empty" => Ok(Command::FocusNextTag {
+            behavior: command::FocusDeltaBehavior::IgnoreUsed,
+        }),
+        "default" | "" => Ok(Command::FocusNextTag {
+            behavior: command::FocusDeltaBehavior::Default,
+        }),
+        _ => Err(Box::new(InvalidFocusDeltaBehaviorError {
+            attempted_value: raw.to_owned(),
+            command: Command::FocusNextTag {
+                behavior: command::FocusDeltaBehavior::Default,
+            },
+        })),
+    }
+}
+
+fn build_focus_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    match raw {
+        "ignore_empty" | "goto_used" => Ok(Command::FocusPreviousTag {
+            behavior: command::FocusDeltaBehavior::IgnoreEmpty,
+        }),
+        "ignore_used" | "goto_empty" => Ok(Command::FocusPreviousTag {
+            behavior: command::FocusDeltaBehavior::IgnoreUsed,
+        }),
+
+        "default" | "" => Ok(Command::FocusPreviousTag {
+            behavior: command::FocusDeltaBehavior::Default,
+        }),
+        _ => Err(Box::new(InvalidFocusDeltaBehaviorError {
+            attempted_value: raw.to_owned(),
+            command: Command::FocusPreviousTag {
+                behavior: command::FocusDeltaBehavior::Default,
+            },
+        })),
+    }
+}
+
 fn without_head<'a>(s: &'a str, head: &'a str) -> &'a str {
     if !s.starts_with(head) {
         return s;
     }
     &s[head.len()..]
+}
+
+#[derive(Debug)]
+struct InvalidFocusDeltaBehaviorError {
+    attempted_value: String,
+    command: Command,
+}
+
+impl Error for InvalidFocusDeltaBehaviorError {}
+
+impl fmt::Display for InvalidFocusDeltaBehaviorError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self.command {
+            Command::FocusNextTag { .. } => write!(
+                f,
+                "Invalid behavior for FocusNextTag: {}",
+                &self.attempted_value
+            ),
+            Command::FocusPreviousTag { .. } => write!(
+                f,
+                "Invalid behavior for FocusPreviousTag: {}",
+                &self.attempted_value
+            ),
+            _ => write!(f, "Invalid behavior: {}", &self.attempted_value),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -438,6 +506,54 @@ mod test {
         assert_eq!(
             build_move_window_to_previous_tag("").unwrap(),
             Command::MoveWindowToPreviousTag { follow: true }
+        );
+    }
+
+    #[test]
+    fn build_focus_next_tag_without_parameter() {
+        assert_eq!(
+            build_focus_next_tag("").unwrap(),
+            Command::FocusNextTag {
+                behavior: command::FocusDeltaBehavior::Default
+            }
+        );
+    }
+
+    #[test]
+    fn build_focus_previous_tag_without_parameter() {
+        assert_eq!(
+            build_focus_previous_tag("").unwrap(),
+            Command::FocusPreviousTag {
+                behavior: command::FocusDeltaBehavior::Default
+            }
+        );
+    }
+
+    #[test]
+    fn build_focus_next_tag_with_invalid() {
+        assert_eq!(
+            build_focus_next_tag("gurke").unwrap_err().to_string(),
+            (InvalidFocusDeltaBehaviorError {
+                attempted_value: String::from("gurke"),
+                command: Command::FocusNextTag {
+                    behavior: command::FocusDeltaBehavior::Default,
+                }
+            })
+            .to_string()
+        );
+    }
+
+    #[test]
+    fn build_focus_previous_tag_with_invalid() {
+        assert_eq!(
+            build_focus_previous_tag("gurke").unwrap_err().to_string(),
+            (InvalidFocusDeltaBehaviorError {
+                attempted_value: String::from("gurke"),
+                command: Command::FocusPreviousTag {
+                    behavior: command::FocusDeltaBehavior::Default,
+                }
+            })
+            .to_string()
         );
     }
 }
