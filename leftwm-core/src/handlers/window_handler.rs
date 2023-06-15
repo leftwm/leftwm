@@ -63,6 +63,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             exec_shell(cmd, &mut self.children);
         }
 
+        
+
         true
     }
 
@@ -388,6 +390,9 @@ fn setup_window(
         if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
             // This is currently for vlc, this probably will need to be more general if another
             // case comes up where we don't want to move the window.
+            if let Some(parent_tag) = parent.tag {
+                window.tag(&parent_tag);
+            }
             if window.r#type != WindowType::Utility {
                 set_relative_floating(window, ws, parent.exact_xyhw());
                 return;
