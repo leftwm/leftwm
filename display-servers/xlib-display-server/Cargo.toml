@@ -1,6 +1,6 @@
 [package]
 name = "xlib-display-server"
-version = "0.1.0"
+version = "0.1.1"
 description = "A display server library for LeftWM" 
 license = "MIT"
 edition = "2021"
