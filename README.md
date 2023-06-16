@@ -8,7 +8,7 @@
         <img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
     </a>
     <a href="https://github.com/leftwm/leftwm/wiki">
-        <img src="https://img.shields.io/badge/wiki-0.4.1-green.svg" alt="wiki" />
+        <img src="https://img.shields.io/badge/wiki-0.4.2-green.svg" alt="wiki" />
     </a>
     <a href="https://docs.rs/leftwm/">
         <img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" />
