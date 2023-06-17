@@ -581,7 +581,7 @@ impl leftwm_core::Config for Config {
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
     fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
-        // fix thunderbird maybe
+        // fix thunderbird
         if &window.name == &Some("".to_string()){
             return false;
         }

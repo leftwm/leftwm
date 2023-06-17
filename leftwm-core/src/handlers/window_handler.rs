@@ -386,14 +386,9 @@ fn setup_window(
             }
         }
 
-        //Thunderbird
         
         // Setup a child window.
         if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
-            // fixes certain windows spawning on last tag (uncomment if other thing doesn't work)
-             if let Some(parent_tag) = parent.tag {
-                window.tag(&parent_tag);
-             }
             // This is currently for vlc, this probably will need to be more general if another
             // case comes up where we don't want to move the window.
             if window.r#type != WindowType::Utility {
