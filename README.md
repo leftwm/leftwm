@@ -8,13 +8,24 @@
         <img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
     </a>
     <a href="https://github.com/leftwm/leftwm/wiki">
-        <img src="https://img.shields.io/badge/wiki-0.4.1-green.svg" alt="wiki" />
-    </a>
-    <a href="https://discord.gg/c9rB3wDnVs">
-        <img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
+        <img src="https://img.shields.io/badge/wiki-0.4.2-green.svg" alt="wiki" />
     </a>
     <a href="https://docs.rs/leftwm/">
         <img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" />
+    </a><br />
+    <a href="https://discord.gg/c9rB3wDnVs">
+        <img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
+    </a>
+    <a href="https://matrix.to/#/#leftwm-announcements:matrix.org">
+        <img src="https://img.shields.io/badge/matrix%20chat-Announcements-green.svg" alt="Matrix Chat: Announcements" />
+    </a>
+    </a>
+    <a href="https://matrix.to/#/#leftwm-general:matrix.org">
+            <img src="https://img.shields.io/badge/matrix%20chat-General-green.svg" alt="Matrix Chat: General" />
+    </a>
+    </a>
+    <a href="https://matrix.to/#/#leftwm-support:matrix.org">
+            <img src="https://img.shields.io/badge/matrix%20chat-Support-green.svg" alt="Matrix Chat: Support" />
     </a>
   </p>
 </div>
