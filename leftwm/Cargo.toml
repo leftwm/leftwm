@@ -1,6 +1,6 @@
 [package]
 name = "leftwm"
-version = "0.4.1"
+version = "0.4.2"
 rust-version = "1.65.0"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["window manager"]
@@ -20,7 +20,7 @@ dirs-next = "2.0.0"
 futures = "0.3.21"
 git-version = "0.3.5"
 lefthk-core = { version = '0.1.8', optional = true }
-leftwm-core = { path = "../leftwm-core", version = '0.4.1' }
+leftwm-core = { path = "../leftwm-core", version = '0.4.2' }
 liquid = "0.26.0"
 mio = "0.8.0"
 nix = "0.26.2"
@@ -56,7 +56,7 @@ tracing-appender = {version = "0.2.2", optional = true}
 syslog-tracing = {version = "0.1.0", optional = true}
 
 # display_servers
-xlib-display-server = { path = "../display-servers/xlib-display-server", version = "0.1.0" }
+xlib-display-server = { path = "../display-servers/xlib-display-server", version = "0.1.1" }
 
 [dev-dependencies]
 tempfile = "3.2.0"
