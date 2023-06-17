@@ -581,7 +581,7 @@ impl leftwm_core::Config for Config {
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
     fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
-        // fix degenerate case where window title is empty string
+        // bypass degenerate case in WindowHook::score_window when window title is empty string
         // basically, unless there's a window rule specifically targeting windows with empty string titles, don't apply any hooks
         if &window.name == &Some("".to_string()){
             if let Some(rules) = &self.window_rules{
