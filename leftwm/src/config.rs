@@ -581,8 +581,18 @@ impl leftwm_core::Config for Config {
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
     fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
-        // fix thunderbird
+        // fix degenerate case where window title is empty string
+        // basically, unless there's a window rule specifically targeting windows with empty string titles, don't apply any hooks
         if &window.name == &Some("".to_string()){
+            if let Some(rules) = &self.window_rules{
+                if let Some(h) = rules.iter().find(|wh| match &wh.window_title{
+                    Some(t) => t.as_str() == "",
+                    None => false,
+                }){
+                    h.apply(state, window);
+                    return true;
+                }
+            }
             return false;
         }
         if let Some(window_rules) = &self.window_rules {
