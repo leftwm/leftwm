@@ -581,6 +581,10 @@ impl leftwm_core::Config for Config {
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
     fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
+        // fix thunderbird maybe
+        if &window.name == &Some("".to_string()){
+            return false;
+        }
         if let Some(window_rules) = &self.window_rules {
             let best_match = window_rules
                 .iter()
