@@ -63,8 +63,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             exec_shell(cmd, &mut self.children);
         }
 
-        
-
         true
     }
 
@@ -386,7 +384,6 @@ fn setup_window(
             }
         }
 
-        
         // Setup a child window.
         if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
             // This is currently for vlc, this probably will need to be more general if another

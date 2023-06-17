@@ -583,12 +583,12 @@ impl leftwm_core::Config for Config {
     fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
         // bypass degenerate case in WindowHook::score_window when window title is empty string
         // basically, unless there's a window rule specifically targeting windows with empty string titles, don't apply any hooks
-        if &window.name == &Some("".to_string()){
-            if let Some(rules) = &self.window_rules{
-                if let Some(h) = rules.iter().find(|wh| match &wh.window_title{
+        if window.name == Some(String::new()) {
+            if let Some(rules) = &self.window_rules {
+                if let Some(h) = rules.iter().find(|wh| match &wh.window_title {
                     Some(t) => t.as_str() == "",
                     None => false,
-                }){
+                }) {
                     h.apply(state, window);
                     return true;
                 }
