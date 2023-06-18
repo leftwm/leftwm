@@ -1,6 +1,6 @@
 [package]
 name = "leftwm"
-version = "0.4.2"
+version = "6.9.420"
 rust-version = "1.65.0"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["window manager"]

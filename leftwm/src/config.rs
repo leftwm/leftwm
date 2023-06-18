@@ -99,7 +99,7 @@ impl WindowHook {
         // returns true if any of the items in the provided `Vec<&Option<String>>` is Some and matches the `&Regex`
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
             strs.iter()
-                .any(|str| str.as_ref().map_or(false, |s| re.replace(s, "") == ""))
+                .any(|str| str.as_ref().map_or(false, |s| re.replace(s, "") == "" && (s != "" || re.as_str() == "")))
         };
 
         let class_score = self.window_class.as_ref().map_or(0, |re| {
@@ -581,20 +581,6 @@ impl leftwm_core::Config for Config {
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
     fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
-        // bypass degenerate case in WindowHook::score_window when window title is empty string
-        // basically, unless there's a window rule specifically targeting windows with empty string titles, don't apply any hooks
-        if window.name == Some(String::new()) {
-            if let Some(rules) = &self.window_rules {
-                if let Some(h) = rules.iter().find(|wh| match &wh.window_title {
-                    Some(t) => t.as_str() == "",
-                    None => false,
-                }) {
-                    h.apply(state, window);
-                    return true;
-                }
-            }
-            return false;
-        }
         if let Some(window_rules) = &self.window_rules {
             let best_match = window_rules
                 .iter()

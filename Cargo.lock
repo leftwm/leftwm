@@ -557,7 +557,7 @@ dependencies = [
 
 [[package]]
 name = "leftwm"
-version = "0.4.2"
+version = "6.9.420"
 dependencies = [
  "anyhow",
  "clap",
