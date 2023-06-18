@@ -100,7 +100,7 @@ impl WindowHook {
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
             strs.iter().any(|str| {
                 str.as_ref().map_or(false, |s| {
-                    re.replace(s, "") == "" && (s != "" || re.as_str() == "")
+                    re.replace(s, "") == "" && (!s.is_empty() || re.as_str().is_empty())
                 })
             })
         };
