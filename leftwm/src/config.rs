@@ -98,8 +98,11 @@ impl WindowHook {
     fn score_window(&self, window: &Window) -> u8 {
         // returns true if any of the items in the provided `Vec<&Option<String>>` is Some and matches the `&Regex`
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
-            strs.iter()
-                .any(|str| str.as_ref().map_or(false, |s| re.replace(s, "") == "" && (s != "" || re.as_str() == "")))
+            strs.iter().any(|str| {
+                str.as_ref().map_or(false, |s| {
+                    re.replace(s, "") == "" && (s != "" || re.as_str() == "")
+                })
+            })
         };
 
         let class_score = self.window_class.as_ref().map_or(0, |re| {
