@@ -100,6 +100,11 @@ impl WindowHook {
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
             strs.iter().any(|str| {
                 str.as_ref().map_or(false, |s| {
+                    // we match the class/title to the window rule by checking if replacing the text
+                    // with the regex makes the string empty. if the original string is already
+                    // empty, this will match it to every regex, so we need to check for that.
+                    // however, if the window rule is explicitly for empty strings, we still
+                    // want empty strings to match to it.
                     re.replace(s, "") == "" && (!s.is_empty() || re.as_str().is_empty())
                 })
             })
