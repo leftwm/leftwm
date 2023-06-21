@@ -5,7 +5,7 @@ use tracing_subscriber::{layer::SubscriberExt, EnvFilter};
 mod journald;
 
 #[cfg(feature = "file-log")]
-mod file;
+pub mod file;
 
 #[cfg(feature = "sys-log")]
 mod sys;
