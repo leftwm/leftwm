@@ -8,20 +8,18 @@ fn main() {
     let follow = matches.get_flag("follow");
 
     if matches.get_flag("journald") {
-        match cfg!(feature = "journald-log") || matches.get_flag("ignore-build-opts") {
-            true => journald_log(follow),
-            false => {
-                eprintln!("Failed to execute: leftwm was not built with journald logging");
-                exit(1)
-            }
+        if cfg!(feature = "journald-log") || matches.get_flag("ignore-build-opts") {
+            journald_log(follow)
+        } else {
+            eprintln!("Failed to execute: leftwm was not built with journald logging");
+            exit(1)
         }
     } else if matches.get_flag("syslog") {
-        match cfg!(feature = "sys-log") || matches.get_flag("ignore-build-opts") {
-            true => syslog(follow),
-            false => {
-                eprintln!("Failed to execute: leftwm was not built with syslog logging");
-                exit(1)
-            }
+        if cfg!(feature = "sys-log") || matches.get_flag("ignore-build-opts") {
+            syslog(follow)
+        } else {
+            eprintln!("Failed to execute: leftwm was not built with syslog logging");
+            exit(1)
         }
     } else if matches.get_flag("file") {
         #[cfg(feature = "file-log")]
@@ -63,10 +61,7 @@ fn get_command() -> clap::Command {
 }
 
 fn journald_log(follow: bool) {
-    let flag = match follow {
-        true => " -f",
-        false => "",
-    };
+    let flag = if follow { " -f" } else { "" };
     match &mut Command::new("/bin/sh")
         .args([
             "-c",
@@ -86,10 +81,7 @@ fn journald_log(follow: bool) {
 }
 
 fn syslog(follow: bool) {
-    let cmd = match follow {
-        true => "tail -f",
-        false => "cat",
-    };
+    let cmd = if follow { "tail -f" } else { "cat" };
     match &mut Command::new("/bin/sh")
         .args([
             "-c",
