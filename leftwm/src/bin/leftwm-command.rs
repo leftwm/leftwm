@@ -21,6 +21,8 @@ async fn main() -> Result<()> {
         for command in commands {
             if let Err(e) = writeln!(file, "{command}") {
                 eprintln!(" ERROR: Couldn't write to commands.pipe: {e}");
+            } else {
+                println!("command \"{command}\" executed! check the logs or use \"leftwm-log\" to see any errors");
             }
         }
     }
@@ -33,7 +35,7 @@ async fn main() -> Result<()> {
 
 fn get_command() -> clap::Command {
     command!("LeftWM Command")
-        .about("Sends external commands to LeftWM")
+        .about("Sends external commands to LeftWM. After executing a command, check the logs or use \"leftwm-log\" to see any errors")
         .help_template(leftwm::utils::get_help_template())
         .args(&[
             arg!(-l --list "Print a list of available commands with their arguments."),
@@ -80,7 +82,7 @@ fn print_commandlist() {
             leftwm-command \"<command> <args>\"
 
         LoadTheme              Args: <Path_to/theme.ron>
-            Note: `theme.toml` will be deprecated but stays for backwards compatibility for a while 
+            Note: `theme.toml` will be deprecated but stays for backwards compatibility for a while
         AttachScratchPad       Args: <ScratchpadName>
         ReleaseScratchPad      Args: <tag_index> or <ScratchpadName>
         NextScratchPadWindow   Args: <ScratchpadName>
