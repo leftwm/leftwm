@@ -9,14 +9,14 @@ fn main() {
 
     if matches.get_flag("journald") {
         if cfg!(feature = "journald-log") || matches.get_flag("ignore-build-opts") {
-            journald_log(follow)
+            journald_log(follow);
         } else {
             eprintln!("Failed to execute: leftwm was not built with journald logging");
             exit(1)
         }
     } else if matches.get_flag("syslog") {
         if cfg!(feature = "sys-log") || matches.get_flag("ignore-build-opts") {
-            syslog(follow)
+            syslog(follow);
         } else {
             eprintln!("Failed to execute: leftwm was not built with syslog logging");
             exit(1)
