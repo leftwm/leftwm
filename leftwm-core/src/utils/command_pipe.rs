@@ -196,8 +196,14 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
 fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "GoToTag ");
     let mut parts = headless.split(' ');
-    let tag: TagId = parts.next().ok_or("missing argument tag_id")?.parse()?;
-    let swap: bool = parts.next().ok_or("missing argument swap")?.parse()?;
+    let tag: TagId = match parts.next().ok_or("missing argument tag_id")?.parse() {
+        Ok(i) => i,
+        Err(_) => Err("argument tag_id was missing or not a valid tag number")?,
+    };
+    let swap: bool = match parts.next().ok_or("missing argument swap")?.parse() {
+        Ok(b) => b,
+        Err(_) => Err("argument swap was not true or false")?,
+    };
     Ok(Command::GoToTag { tag, swap })
 }
 
@@ -205,7 +211,10 @@ fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Er
     let tag_id = if raw.is_empty() {
         return Err("missing argument tag_id".into());
     } else {
-        TagId::from_str(raw)?
+        match TagId::from_str(raw) {
+            Ok(tag) => tag,
+            Err(_) => Err("argument tag_id was not a valid tag number")?,
+        }
     };
     Ok(Command::SendWindowToTag {
         window: None,
@@ -217,12 +226,19 @@ fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error:
     if raw.is_empty() {
         return Err("missing argument workspace index".into());
     }
-    let mut parts = raw.split(' ');
-    let ws_index: usize = parts
+    let mut parts: std::str::Split<'_, char> = raw.split(' ');
+    let ws_index: usize = match parts
         .next()
         .expect("split() always returns an array of at least 1 element")
-        .parse()?;
-    let tag_index: usize = parts.next().ok_or("missing argument tag index")?.parse()?;
+        .parse()
+    {
+        Ok(ws) => ws,
+        Err(_) => Err("argument workspace index was not a valid workspace number")?,
+    };
+    let tag_index: usize = match parts.next().ok_or("missing argument tag index")?.parse() {
+        Ok(tag) => tag,
+        Err(_) => Err("argument tag index was not a valid tag number")?,
+    };
     Ok(Command::SendWorkspaceToTag(ws_index, tag_index))
 }
 
@@ -248,7 +264,10 @@ fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Erro
     let swap = if raw.is_empty() {
         false
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument swap was not true or false")?,
+        }
     };
     Ok(Command::FocusWindowTop { swap })
 }
@@ -257,7 +276,10 @@ fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     let swap = if raw.is_empty() {
         true
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument swap was not true or false")?,
+        }
     };
     Ok(Command::MoveWindowTop { swap })
 }
@@ -266,7 +288,10 @@ fn build_swap_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     let swap = if raw.is_empty() {
         true
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument swap was not true or false")?,
+        }
     };
     Ok(Command::SwapWindowTop { swap })
 }
@@ -275,7 +300,10 @@ fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::erro
     let follow = if raw.is_empty() {
         true
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument follow was not true or false")?,
+        }
     };
     Ok(Command::MoveWindowToNextTag { follow })
 }
@@ -284,7 +312,10 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
     let follow = if raw.is_empty() {
         true
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument follow was not true or false")?,
+        }
     };
     Ok(Command::MoveWindowToPreviousTag { follow })
 }
@@ -292,14 +323,20 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
 fn build_increase_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "IncreaseMainWidth ");
     let mut parts = headless.split(' ');
-    let change: i8 = parts.next().ok_or("missing argument change")?.parse()?;
+    let change: i8 = match parts.next().ok_or("missing argument change")?.parse() {
+        Ok(num) => num,
+        Err(_) => Err("argument change was missing or invalid")?,
+    };
     Ok(Command::IncreaseMainWidth(change))
 }
 
 fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "DecreaseMainWidth ");
     let mut parts = headless.split(' ');
-    let change: i8 = parts.next().ok_or("missing argument change")?.parse()?;
+    let change: i8 = match parts.next().ok_or("missing argument change")?.parse() {
+        Ok(num) => num,
+        Err(_) => Err("argument change was missing or invalid")?,
+    };
     Ok(Command::DecreaseMainWidth(change))
 }
 
