@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{arg, command};
-use leftwm_core::utils::return_pipe::ReturnPipe;
 use leftwm_core::CommandPipe;
+use leftwm_core::ReturnPipe;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
@@ -20,13 +20,13 @@ async fn main() -> Result<()> {
         .open(file_path)
         .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
     if let Some(commands) = matches.get_many::<String>("COMMAND") {
+        let mut ret_pipe = get_return_pipe().await?;
         for command in commands {
-            let mut ret_pipe = get_return_pipe().await?;
             if let Err(e) = writeln!(file, "{command}") {
                 eprintln!(" ERROR: Couldn't write to commands.pipe: {e}");
             }
             tokio::select! {
-                Some(res) = ret_pipe.read_return() => println!("{res}"),
+                Some(res) = ret_pipe.read_return() => println!("{command}: {res}"),
                 _ = timeout(5000) => eprintln!(" WARN: timeout connecting to return pipe. Command may have executed, but errors will not be displayed."),
             }
         }

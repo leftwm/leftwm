@@ -25,7 +25,7 @@ impl Drop for ReturnPipe {
             .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
             .open(&self.pipe_file)
         {
-            eprintln!(
+            tracing::error!(
                 "Failed to open {} when dropping ReturnPipe: {err}",
                 self.pipe_file.display()
             );
