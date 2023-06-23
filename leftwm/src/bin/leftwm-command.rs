@@ -24,8 +24,7 @@ async fn main() -> Result<()> {
         for command in commands {
             if let Err(e) = writeln!(file, "{command}") {
                 eprintln!(" ERROR: Couldn't write to commands.pipe: {e}");
-            } else {
-                println!("command \"{command}\" executed! check the logs or use \"leftwm-log\" to see any errors");
+                continue;
             }
             tokio::select! {
                 Some(res) = ret_pipe.read_return() => println!("{command}: {res}"),
