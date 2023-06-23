@@ -92,7 +92,7 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
                     if let Some(file_path) = file_path.find_runtime_file(&file_name) {
                         if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
                             if let Err(e) = writeln!(file, "command executed successfully") {
-                                tracing::error!("Unable to write to return pipe: {e}")
+                                tracing::error!("Unable to write to return pipe: {e}");
                             }
                         }
                     }
@@ -104,10 +104,10 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
                 // return to stdout
                 let file_name = ReturnPipe::pipe_name();
                 if let Ok(file_path) = BaseDirectories::with_prefix("leftwm") {
-                    if let Some(file_path) = file_path.find_runtime_file(&file_name) {
+                    if let Some(file_path) = file_path.find_runtime_file(file_name) {
                         if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
                             if let Err(e) = writeln!(file, "Error parsing command: {err}") {
-                                tracing::error!("Unable to write error to return pipe: {e}")
+                                tracing::error!("Unable to write error to return pipe: {e}");
                             }
                         }
                     }
