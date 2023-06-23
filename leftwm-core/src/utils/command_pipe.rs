@@ -2,14 +2,18 @@
 
 use crate::layouts::Layout;
 use crate::models::TagId;
+use crate::utils::return_pipe::ReturnPipe;
 use crate::{command, Command, ReleaseScratchPadOption};
 use std::error::Error;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{env, fmt};
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
+use xdg::BaseDirectories;
 
 /// Holds pipe file location and a receiver.
 #[derive(Debug)]
@@ -82,9 +86,33 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
 
     while let Some(line) = lines.next_line().await.ok()? {
         let cmd = match parse_command(&line) {
-            Ok(cmd) => cmd,
+            Ok(cmd) => {
+                let file_name = ReturnPipe::pipe_name();
+                if let Ok(file_path) = BaseDirectories::with_prefix("leftwm") {
+                    if let Some(file_path) = file_path.find_runtime_file(&file_name) {
+                        if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
+                            if let Err(e) = writeln!(file, "command executed successfully") {
+                                tracing::error!("Unable to write to return pipe: {e}");
+                            }
+                        }
+                    }
+                }
+                cmd
+            }
             Err(err) => {
                 tracing::error!("An error occurred while parsing the command: {}", err);
+                // return to stdout
+                let file_name = ReturnPipe::pipe_name();
+                if let Ok(file_path) = BaseDirectories::with_prefix("leftwm") {
+                    if let Some(file_path) = file_path.find_runtime_file(file_name) {
+                        if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
+                            if let Err(e) = writeln!(file, "Error parsing command: {err}") {
+                                tracing::error!("Unable to write error to return pipe: {e}");
+                            }
+                        }
+                    }
+                }
+
                 return None;
             }
         };
