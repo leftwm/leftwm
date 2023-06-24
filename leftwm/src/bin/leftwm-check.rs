@@ -1,18 +1,15 @@
 use anyhow::{bail, Result};
 use clap::{arg, command};
-use leftwm::{Config, ThemeSetting};
-use ron::{
-    extensions::Extensions,
-    ser::{to_string_pretty, PrettyConfig},
-    Options,
+use leftwm::utils::file_handler::{
+    check_file_type, check_path, get_default_path, load_config_file, migrate_config,
 };
-use std::env;
-use std::fs;
-use std::fs::File;
-use std::io::Write;
-use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
-use std::path::PathBuf;
+use leftwm::Config;
+use leftwm::ThemeSetting;
+use std::{
+    env, fs,
+    os::unix::fs::PermissionsExt,
+    path::{Path, PathBuf},
+};
 use xdg::BaseDirectories;
 
 #[tokio::main]
@@ -40,13 +37,12 @@ async fn main() -> Result<()> {
     );
     if matches.get_flag("migrate") {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
-        let path = BaseDirectories::with_prefix("leftwm")?;
-        let ron_file = path.place_config_file("config.ron")?;
-        let toml_file = path.place_config_file("config.toml")?;
-
-        let config = load_from_file(toml_file.as_os_str().to_str(), verbose)?;
-
-        write_to_file(&ron_file, &config)?;
+        let toml_file = if let Some(config_file) = config_file {
+            PathBuf::from(config_file)
+        } else {
+            get_default_path()?.with_extension("toml")
+        };
+        migrate_config(toml_file, verbose)?;
 
         return Ok(());
     }
@@ -66,7 +62,7 @@ async fn main() -> Result<()> {
     }
 
     println!("\x1b[0;94m::\x1b[0m Loading configuration . . .");
-    match load_from_file(config_file, verbose) {
+    match check_config_file(config_file, verbose) {
         Ok(config) => {
             println!("\x1b[0;92m    -> Configuration loaded OK \x1b[0m");
             if verbose {
@@ -96,25 +92,18 @@ async fn main() -> Result<()> {
 /// Errors if file cannot be read. Indicates filesystem error
 /// (inadequate permissions, disk full, etc.)
 /// If a path is specified and does not exist, returns `LeftError`.
-pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
-    let config_filename = if let Some(fspath) = fspath {
-        println!("\x1b[1;35mNote: Using file {fspath} \x1b[0m");
-        PathBuf::from(fspath)
+fn check_config_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
+    let config_path = if let Some(fspath) = fspath {
+        Some(PathBuf::from(fspath))
     } else {
-        let ron_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
-        let toml_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
-        if Path::new(&ron_file).exists() {
-            ron_file
-        } else if Path::new(&toml_file).exists() {
-            println!(
-                "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
-            );
-            toml_file
-        } else {
-            let config = Config::default();
-            write_to_file(&ron_file, &config)?;
-            return Ok(config);
+        None
+    };
+
+    let config_filename = match check_path(config_path, verbose) {
+        Ok(path) => path,
+        Err(_) => {
+            load_config_file(None)?;
+            get_default_path()?
         }
     };
 
@@ -125,37 +114,10 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
     if verbose {
         dbg!(&contents);
     }
-    if config_filename.as_path().extension() == Some(std::ffi::OsStr::new("ron")) {
-        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
-        let config: Config = ron.from_str(&contents)?;
-        Ok(config)
-    } else {
-        let config = toml::from_str(&contents)?;
-        Ok(config)
-    }
-}
-
-fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> {
-    let ron_pretty_conf = PrettyConfig::new()
-        .depth_limit(2)
-        .extensions(Extensions::IMPLICIT_SOME);
-    let ron = to_string_pretty(&config, ron_pretty_conf)?;
-    let comment_header = String::from(
-        r#"//  _        ___                                      ___ _
-// | |      / __)_                                   / __|_)
-// | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
-// | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
-// | ( (/ /| |  | |_| | | | | | |  ( (__| |_| | | | | |  | ( ( | |_| |  | |_| | | | |
-// |_|\____)_|   \___)____|_|_|_|   \____)___/|_| |_|_|  |_|\_|| (_)_|   \___/|_| |_|
-// A WindowManager for Adventurers                         (____/
-// For info about configuration please visit https://github.com/leftwm/leftwm/wiki
-
-"#,
-    );
-    let ron_with_header = comment_header + &ron;
-    let mut file = File::create(ron_file)?;
-    file.write_all(ron_with_header.as_bytes())?;
-    Ok(())
+    if check_file_type(&config_filename) == leftwm::utils::file_handler::ConfigFileType::TomlFile {
+        println!("\x1b[1;35mYou are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki. \x1b[0m");
+    };
+    load_config_file(Some(config_filename))
 }
 
 fn check_elogind(verbose: bool) -> Result<()> {
@@ -198,8 +160,8 @@ fn check_elogind(verbose: bool) -> Result<()> {
                 println!(":: XDG_RUNTIME_DIR: {e:?}, LOGINCTL OKAY");
             }
             println!(
-                "\x1b[1;93mWARN: Elogind/systemd installed but XDG_RUNTIME_DIR not set.\nThis may be because elogind isn't started. \x1b[0m",
-            );
+                    "\x1b[1;93mWARN: Elogind/systemd installed but XDG_RUNTIME_DIR not set.\nThis may be because elogind isn't started. \x1b[0m",
+                );
             Ok(())
         }
     }

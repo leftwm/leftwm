@@ -1,3 +1,4 @@
+pub mod file_handler;
 pub mod log;
 
 pub const fn get_help_template() -> &'static str {
