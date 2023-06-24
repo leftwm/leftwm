@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 while true; do
-  date +'C%a %d %b %Y %H:%M:%S'
+  printf "C%(%a %d %b %Y %H:%M:%S)T\n"
   sleep 1
 done

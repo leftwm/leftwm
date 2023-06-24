@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
@@ -6,7 +6,7 @@ leftwm-command 'UnloadTheme'
 
 # Remove pipe
 pipe='/tmp/lemonbar-fifo'
-[ -p "$pipe" ] && rm "$pipe"
+[[ -p "$pipe" ]] && rm "$pipe"
 
 # Remove background
 feh --bg-scale "$SCRIPTPATH/down.jpg"
