@@ -1,0 +1,6 @@
+#!/bin/sh
+
+while true; do
+  date +'C%a %d %b %Y %H:%M:%S'
+  sleep 1
+done
