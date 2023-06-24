@@ -44,8 +44,10 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
                         xrandr::RRNotify => {
                             // Xrandr XRRNotifyEvent has multiple subtypes, match them too.
                             match xrandr::XRRNotifyEvent::from(raw_event).subtype {
-                                xrandr::RRNotify_CrtcChange => from_xrandr_crtc_change(x_event),
-                                xrandr::RRNotify_OutputChange => from_xrandr_output_change(x_event),
+                                xrandr::RRNotify_CrtcChange => from_xrandr_crtc_change(&x_event),
+                                xrandr::RRNotify_OutputChange => {
+                                    from_xrandr_output_change(&x_event)
+                                }
                                 _other => None,
                             }
                         }
@@ -238,7 +240,7 @@ fn from_button_release(x_event: XEvent) -> DisplayEvent {
 /// If it cannot open xrandr.
 /// This should normally only be called if `x_event.0.xrandr_event_base` is `Some`,
 /// indicating a succesful connection to xrandr was made previously.
-fn from_xrandr_crtc_change(x_event: XEvent) -> Option<DisplayEvent> {
+fn from_xrandr_crtc_change(x_event: &XEvent) -> Option<DisplayEvent> {
     use leftwm_core::models::Screen;
     use std::slice;
 
@@ -246,8 +248,10 @@ fn from_xrandr_crtc_change(x_event: XEvent) -> Option<DisplayEvent> {
         xrandr::Xrandr::open().expect("Function ony called if `xrandr_event_base` is some");
     let event = xrandr::XRRCrtcChangeNotifyEvent::from(x_event.1);
 
-    // Do not process a crtc that is not displayed (upcoming delete by OutpuChange)
-    if event.mode != 0 {
+    // Do not process a crtc that is not displayed (upcoming delete by OutputChange)
+    if event.mode == 0 {
+        None
+    } else {
         unsafe {
             let screen_resources =
                 (xrandr.XRRGetScreenResources)(x_event.0.display, x_event.0.root);
@@ -264,7 +268,7 @@ fn from_xrandr_crtc_change(x_event: XEvent) -> Option<DisplayEvent> {
                 );
             }
 
-            return outputs.first().map(|output| {
+            outputs.first().map(|output| {
                 let output_info =
                     (xrandr.XRRGetOutputInfo)(x_event.0.display, screen_resources, *output);
                 let mut s = Screen::from(*crtc_info);
@@ -273,10 +277,8 @@ fn from_xrandr_crtc_change(x_event: XEvent) -> Option<DisplayEvent> {
                     .to_string_lossy()
                     .into_owned();
                 DisplayEvent::ScreenUpdate(s)
-            });
+            })
         }
-    } else {
-        None
     }
 }
 
@@ -284,7 +286,7 @@ fn from_xrandr_crtc_change(x_event: XEvent) -> Option<DisplayEvent> {
 /// If it cannot open xrandr.
 /// This should normally only be called if `x_event.0.xrandr_event_base` is `Some`,
 /// indicating a succesful connection to xrandr was made previously.
-fn from_xrandr_output_change(x_event: XEvent) -> Option<DisplayEvent> {
+fn from_xrandr_output_change(x_event: &XEvent) -> Option<DisplayEvent> {
     let event = xrandr::XRROutputChangeNotifyEvent::from(x_event.1);
     let xrandr =
         xrandr::Xrandr::open().expect("Function ony called if `xrandr_event_base` is some");

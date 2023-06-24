@@ -309,7 +309,7 @@ impl XWrap {
                 self.xrandr_event_base = Some(0);
                 (xrandr.XRRQueryExtension)(
                     self.display,
-                    self.xrandr_event_base.as_mut().unwrap(),
+                    self.xrandr_event_base.as_mut().expect("Unreachable!"),
                     &mut 0,
                 );
             }
