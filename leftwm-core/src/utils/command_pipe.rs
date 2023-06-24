@@ -48,7 +48,10 @@ impl CommandPipe {
     ///
     /// Will error if unable to `mkfifo`, likely a filesystem issue
     /// such as inadequate permissions.
-    pub async fn new(pipe_file: PathBuf) -> Result<Self, std::io::Error> {
+    pub async fn new(
+        pipe_file: PathBuf,
+        valid_custom_commands: Vec<String>,
+    ) -> Result<Self, std::io::Error> {
         fs::remove_file(pipe_file.as_path()).await.ok();
         if let Err(e) = nix::unistd::mkfifo(&pipe_file, nix::sys::stat::Mode::S_IRWXU) {
             tracing::error!("Failed to create new fifo {:?}", e);
@@ -58,7 +61,7 @@ impl CommandPipe {
         let (tx, rx) = mpsc::unbounded_channel();
         tokio::spawn(async move {
             while !tx.is_closed() {
-                read_from_pipe(&path, &tx).await;
+                read_from_pipe(&path, &tx, &valid_custom_commands).await;
             }
             fs::remove_file(path).await.ok();
         });
@@ -80,12 +83,16 @@ impl CommandPipe {
     }
 }
 
-async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -> Option<()> {
+async fn read_from_pipe(
+    pipe_file: &Path,
+    tx: &mpsc::UnboundedSender<Command>,
+    c: &[String],
+) -> Option<()> {
     let file = fs::File::open(pipe_file).await.ok()?;
     let mut lines = BufReader::new(file).lines();
 
     while let Some(line) = lines.next_line().await.ok()? {
-        let cmd = match parse_command(&line) {
+        let cmd = match parse_command(&line, c) {
             Ok(cmd) => {
                 let file_name = ReturnPipe::pipe_name();
                 if let Ok(file_path) = BaseDirectories::with_prefix("leftwm") {
@@ -122,7 +129,7 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
     Some(())
 }
 
-fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn parse_command(s: &str, c: &[String]) -> Result<Command, Box<dyn std::error::Error>> {
     let (head, rest) = s.split_once(' ').unwrap_or((s, ""));
     match head {
         // Move Window
@@ -177,7 +184,13 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "CloseWindow" => Ok(Command::CloseWindow),
         "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),
         "SoftReload" => Ok(Command::SoftReload),
-        _ => Ok(Command::Other(s.into())),
+        _ => {
+            if c.contains(&head.to_string()) {
+                Ok(Command::Other(head.into()))
+            } else {
+                Err(format!("Unrecognized command {head}").into())
+            }
+        }
     }
 }
 
@@ -452,7 +465,9 @@ mod test {
     #[tokio::test]
     async fn read_good_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::new(pipe_file.clone(), vec!["SoftReload".to_owned()])
+            .await
+            .unwrap();
 
         // Write some meaningful command to the pipe and close it.
         {
@@ -474,7 +489,9 @@ mod test {
     #[tokio::test]
     async fn read_bad_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::new(pipe_file.clone(), vec!["SoftReload".to_owned()])
+            .await
+            .unwrap();
 
         // Write some custom command and close it.
         {
@@ -500,7 +517,9 @@ mod test {
 
         // Write to pipe.
         {
-            let _command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+            let _command_pipe = CommandPipe::new(pipe_file.clone(), vec!["SoftReload".to_owned()])
+                .await
+                .unwrap();
             let mut pipe = fs::OpenOptions::new()
                 .write(true)
                 .open(&pipe_file)

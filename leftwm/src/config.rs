@@ -431,6 +431,9 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
+    fn get_valid_commands(&self) -> Vec<String> {
+        vec!["LoadTheme".to_owned(), "UnloadTheme".to_owned()]
+    }
     fn command_handler<SERVER: DisplayServer>(
         command: &str,
         manager: &mut Manager<Self, SERVER>,

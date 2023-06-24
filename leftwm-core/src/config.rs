@@ -54,6 +54,7 @@ pub trait Config {
     fn disable_tile_drag(&self) -> bool;
     fn disable_window_snap(&self) -> bool;
     fn sloppy_mouse_follows_focus(&self) -> bool;
+    fn get_valid_commands(&self) -> Vec<String>;
 
     /// Attempt to write current state to a file.
     ///
@@ -131,6 +132,9 @@ pub(crate) mod tests {
 
         fn focus_new_windows(&self) -> bool {
             false
+        }
+        fn get_valid_commands(&self) -> Vec<String> {
+            vec!["GoToTag2".to_owned()]
         }
         fn command_handler<SERVER>(command: &str, manager: &mut Manager<Self, SERVER>) -> bool
         where

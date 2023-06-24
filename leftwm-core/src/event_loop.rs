@@ -28,9 +28,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     ///
     /// # Errors
     /// `EventResponse` if the initialisation of the command pipe or/and the state socket failed.
-    pub async fn start_event_loop(mut self) -> Result<(), Error> {
+    pub async fn start_event_loop(
+        mut self,
+        valid_custom_commands: Vec<String>,
+    ) -> Result<(), Error> {
         let state_socket = get_state_socket().await?;
-        let command_pipe = get_command_pipe().await?;
+        let command_pipe = get_command_pipe(valid_custom_commands).await?;
 
         self.call_up_scripts();
         self.event_loop(state_socket, command_pipe).await
@@ -194,13 +197,13 @@ async fn get_state_socket() -> Result<StateSocket, Error> {
     Ok(state_socket)
 }
 
-async fn get_command_pipe() -> Result<CommandPipe, Error> {
+async fn get_command_pipe(valid_custom_commands: Vec<String>) -> Result<CommandPipe, Error> {
     let file_name = CommandPipe::pipe_name();
 
     let pipe_file =
         place_runtime_file(&file_name).map_err(|_| Error::CreateFile(file_name.clone()))?;
 
-    CommandPipe::new(pipe_file)
+    CommandPipe::new(pipe_file, valid_custom_commands)
         .await
         .map_err(|_| Error::ConnectToFile(file_name))
 }
