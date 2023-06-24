@@ -30,7 +30,7 @@ impl State {
             .find(|ws| ws.is_displaying(&window))
             .map(|ws| ws.id)
         {
-            let _ = self.focus_workspace_work(workspace_id);
+            _ = self.focus_workspace_work(workspace_id);
         }
 
         // Make sure the focused window's tag is focused.

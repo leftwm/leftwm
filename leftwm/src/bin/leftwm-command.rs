@@ -67,8 +67,6 @@ fn print_commandlist() {
         FocusWindowUp
         FocusWindowDown
         FocusWindowTop
-        FocusNextTag
-        FocusPreviousTag
         FocusWorkspaceNext
         FocusWorkspacePrevious
         NextLayout
@@ -93,6 +91,8 @@ fn print_commandlist() {
         SetLayout              Args: <LayoutName>
         SetMarginMultiplier    Args: <multiplier-value> (float)
         FocusWindow            Args: <WindowClass> or <visible-window-index> (int)
+        FocusNextTag           Args: <behavior> (string, optional)
+        FocusPreviousTag       Args: <behavior> (string, optional)
 
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands

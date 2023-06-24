@@ -9,7 +9,6 @@ pub struct Screen {
     pub root: WindowHandle,
     pub output: String,
     pub id: Option<WorkspaceId>,
-    #[serde(flatten)]
     pub bbox: BBox,
     pub max_window_width: Option<Size>,
 }

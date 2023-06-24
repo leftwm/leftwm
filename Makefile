@@ -92,7 +92,7 @@ install-linked: build
 uninstall:
 	sudo rm -f $(SHARE_DIR)/leftwm.desktop
 	sudo rm /usr/local/share/man/man1/leftwm.1
-	sudo rm -f $(SHARE_DIR)/leftwm
+	sudo rm -rf $(SHARE_DIR)/leftwm
 	sudo rm -f\
 		$(TARGET_DIR)/leftwm\
 		$(TARGET_DIR)/leftwm-worker\

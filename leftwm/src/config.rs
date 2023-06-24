@@ -98,8 +98,16 @@ impl WindowHook {
     fn score_window(&self, window: &Window) -> u8 {
         // returns true if any of the items in the provided `Vec<&Option<String>>` is Some and matches the `&Regex`
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
-            strs.iter()
-                .any(|str| str.as_ref().map_or(false, |s| re.replace(s, "") == ""))
+            strs.iter().any(|str| {
+                str.as_ref().map_or(false, |s| {
+                    // we match the class/title to the window rule by checking if replacing the text
+                    // with the regex makes the string empty. if the original string is already
+                    // empty, this will match it to every regex, so we need to check for that.
+                    // however, if the window rule is explicitly for empty strings, we still
+                    // want empty strings to match to it.
+                    re.replace(s, "") == "" && (!s.is_empty() || re.as_str().is_empty())
+                })
+            })
         };
 
         let class_score = self.window_class.as_ref().map_or(0, |re| {
@@ -556,7 +564,7 @@ impl leftwm_core::Config for Config {
                 return;
             }
         };
-        if let Err(err) = serde_json::to_writer(state_file, state) {
+        if let Err(err) = ron::ser::to_writer(state_file, state) {
             tracing::error!("Cannot save state: {}", err);
         }
     }
@@ -565,10 +573,11 @@ impl leftwm_core::Config for Config {
         let path = self.state_file().to_owned();
         match File::open(&path) {
             Ok(file) => {
-                match serde_json::from_reader(file) {
+                match ron::de::from_reader(file) {
                     Ok(old_state) => state.restore_state(&old_state),
                     Err(err) => tracing::error!("Cannot load old state: {}", err),
                 }
+
                 // Clean old state.
                 if let Err(err) = std::fs::remove_file(&path) {
                     tracing::error!("Cannot remove old state file: {}", err);
