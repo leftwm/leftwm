@@ -441,21 +441,21 @@ impl leftwm_core::Config for Config {
                 "LoadTheme" => {
                     if let Some(absolute) = absolute_path(value.trim()) {
                         manager.config.theme_setting.load(absolute);
-                        write_to_pipe(&mut return_pipe, "Command executed successfully");
+                        write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
                     } else {
                         tracing::warn!("Path submitted does not exist.");
-                        write_to_pipe(&mut return_pipe, "Path submitted does not exist.");
+                        write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist.");
                     }
                     manager.reload_config()
                 }
                 "UnloadTheme" => {
                     manager.config.theme_setting = ThemeSetting::default();
-                    write_to_pipe(&mut return_pipe, "Command executed successfully");
+                    write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
                     manager.reload_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
-                    write_to_pipe(&mut return_pipe, "Command not recognized");
+                    write_to_pipe(&mut return_pipe, "ERROR: Command not recognized");
                     false
                 }
             }
@@ -463,17 +463,17 @@ impl leftwm_core::Config for Config {
             match command {
                 "LoadTheme" => {
                     tracing::warn!("missing parameter theme_path");
-                    write_to_pipe(&mut return_pipe, "missing parameter theme_path");
+                    write_to_pipe(&mut return_pipe, "ERROR: missing parameter theme_path");
                     false
                 }
                 "UnloadTheme" => {
                     manager.config.theme_setting = ThemeSetting::default();
-                    write_to_pipe(&mut return_pipe, "Command executed successfully");
+                    write_to_pipe(&mut return_pipe, "ERROR: Command executed successfully");
                     manager.reload_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
-                    write_to_pipe(&mut return_pipe, "Command not recognized");
+                    write_to_pipe(&mut return_pipe, "ERROR: Command not recognized");
                     false
                 }
             }

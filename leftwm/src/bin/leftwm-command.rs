@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use anyhow::{Context, Result};
 use clap::{arg, command};
 use leftwm_core::CommandPipe;
@@ -5,6 +6,7 @@ use leftwm_core::ReturnPipe;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use std::process::exit;
 use xdg::BaseDirectories;
 
 #[tokio::main]
@@ -19,6 +21,7 @@ async fn main() -> Result<()> {
         .append(true)
         .open(file_path)
         .with_context(|| format!("ERROR: Couldn't open {}", file_name.display()))?;
+    let mut exit_state = Ok(());
     if let Some(commands) = matches.get_many::<String>("COMMAND") {
         let mut ret_pipe = get_return_pipe().await?;
         for command in commands {
@@ -27,8 +30,18 @@ async fn main() -> Result<()> {
                 continue;
             }
             tokio::select! {
-                Some(res) = ret_pipe.read_return() => println!("{command}: {res}"),
-                _ = timeout(5000) => eprintln!(" WARN: timeout connecting to return pipe. Command may have executed, but errors will not be displayed."),
+                Some(res) = ret_pipe.read_return() => {
+                if let Some((result, msg)) = res.split_once(' '){
+                        match result{
+                            "OK:" => println!("{command}: {msg}"),
+                            "ERROR:" => {eprintln!("{command}: {msg}");exit_state = Err(anyhow!("one or more errors occured when parsing commands"));},
+                            _ => println!("{command}: {res}"),
+                        }
+                    }else{
+                        println!("{command}: {res}");
+                    }
+            }
+                _ = timeout(5000) => {eprintln!(" WARN: timeout connecting to return pipe. Command may have executed, but errors will not be displayed."); exit(1)},
             }
         }
     }
@@ -36,7 +49,7 @@ async fn main() -> Result<()> {
     if matches.get_flag("list") {
         print_commandlist();
     }
-    Ok(())
+    exit_state
 }
 
 fn get_command() -> clap::Command {
