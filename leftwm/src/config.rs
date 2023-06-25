@@ -17,7 +17,7 @@ use leftwm_core::{
     layouts::{Layout, LAYOUTS},
     models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowState, WindowType},
     state::State,
-    DisplayAction, DisplayServer, Manager,
+    DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
 use regex::Regex;
 use ron::{
@@ -26,13 +26,13 @@ use ron::{
     Options,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryInto;
-use std::default::Default;
 use std::env;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::Write;
 use std::path::{Path, PathBuf};
+use std::{convert::TryInto, fs::OpenOptions};
+use std::{default::Default, error::Error};
 use xdg::BaseDirectories;
 
 /// Path to file where state will be dumped upon soft reload.
@@ -435,27 +435,49 @@ impl leftwm_core::Config for Config {
         command: &str,
         manager: &mut Manager<Self, SERVER>,
     ) -> bool {
+        let mut return_pipe = get_return_pipe();
         if let Some((command, value)) = command.split_once(' ') {
             match command {
                 "LoadTheme" => {
                     if let Some(absolute) = absolute_path(value.trim()) {
                         manager.config.theme_setting.load(absolute);
+                        write_to_pipe(&mut return_pipe, "Command executed successfully")
                     } else {
                         tracing::warn!("Path submitted does not exist.");
+                        write_to_pipe(&mut return_pipe, "Path submitted does not exist.")
                     }
-                    return manager.reload_config();
+                    manager.reload_config()
                 }
                 "UnloadTheme" => {
                     manager.config.theme_setting = ThemeSetting::default();
-                    return manager.reload_config();
+                    write_to_pipe(&mut return_pipe, "Command executed successfully");
+                    manager.reload_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
-                    return false;
+                    write_to_pipe(&mut return_pipe, "Command not recognized");
+                    false
+                }
+            }
+        } else {
+            match command {
+                "LoadTheme" => {
+                    tracing::warn!("missing parameter theme_path");
+                    write_to_pipe(&mut return_pipe, "missing parameter theme_path");
+                    false
+                }
+                "UnloadTheme" => {
+                    manager.config.theme_setting = ThemeSetting::default();
+                    write_to_pipe(&mut return_pipe, "Command executed successfully");
+                    manager.reload_config()
+                }
+                _ => {
+                    tracing::warn!("Command not recognized: {}", command);
+                    write_to_pipe(&mut return_pipe, "Command not recognized");
+                    false
                 }
             }
         }
-        false
     }
 
     fn border_width(&self) -> i32 {
@@ -654,6 +676,21 @@ fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S:
     match wc {
         Some(ref re) => s.serialize_some(re.as_str()),
         None => s.serialize_none(),
+    }
+}
+
+fn get_return_pipe() -> Result<File, Box<dyn std::error::Error>> {
+    let file_name = ReturnPipe::pipe_name();
+    let file_path = BaseDirectories::with_prefix("leftwm")?;
+    let Some(file_path) = file_path.find_runtime_file(file_name) else {Err("Unable to open return pipe")?};
+    Ok(OpenOptions::new().append(true).open(file_path)?)
+}
+
+fn write_to_pipe(return_pipe: &mut Result<File, Box<dyn Error>>, msg: &str) {
+    if let Ok(pipefile) = return_pipe {
+        if let Err(e) = writeln!(pipefile, "{msg}") {
+            tracing::warn!("Unable to connect to return pipe: {e}");
+        }
     }
 }
 
