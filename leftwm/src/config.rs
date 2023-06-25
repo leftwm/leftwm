@@ -441,10 +441,10 @@ impl leftwm_core::Config for Config {
                 "LoadTheme" => {
                     if let Some(absolute) = absolute_path(value.trim()) {
                         manager.config.theme_setting.load(absolute);
-                        write_to_pipe(&mut return_pipe, "Command executed successfully")
+                        write_to_pipe(&mut return_pipe, "Command executed successfully");
                     } else {
                         tracing::warn!("Path submitted does not exist.");
-                        write_to_pipe(&mut return_pipe, "Path submitted does not exist.")
+                        write_to_pipe(&mut return_pipe, "Path submitted does not exist.");
                     }
                     manager.reload_config()
                 }
