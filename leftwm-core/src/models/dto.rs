@@ -1,4 +1,3 @@
-use crate::layouts::Layout;
 use crate::state::State;
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +9,7 @@ pub struct Viewport {
     pub w: u32,
     pub x: i32,
     pub y: i32,
-    pub layout: Layout,
+    pub layout: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -41,7 +40,7 @@ pub struct DisplayWorkspace {
     pub w: u32,
     pub x: i32,
     pub y: i32,
-    pub layout: Layout,
+    pub layout: String,
     pub index: usize,
     pub tags: Vec<TagsForWorkspace>,
 }
@@ -106,8 +105,8 @@ fn viewport_into_display_workspace(
         w: viewport.w,
         x: viewport.x,
         y: viewport.y,
-        layout: viewport.layout,
         index: ws_index,
+        layout: viewport.layout.clone(),
     }
 }
 
@@ -136,6 +135,11 @@ impl From<&State> for ManagerState {
                 .unwrap()
                 .unwrap();
 
+            let layout_name: String = ws
+                .tag
+                .and_then(|tagid| state.layout_manager.layout_maybe(ws.id, tagid))
+                .map_or_else(|| String::from("N/A"), |layout| layout.name.clone());
+
             viewports.push(Viewport {
                 id: ws.id,
                 tag: tag_label,
@@ -143,7 +147,7 @@ impl From<&State> for ManagerState {
                 y: ws.xyhw.y(),
                 h: ws.xyhw.h() as u32,
                 w: ws.xyhw.w() as u32,
-                layout: ws.layout,
+                layout: layout_name,
             });
         }
         let active_desktop = match state.focus_manager.workspace(&state.workspaces) {

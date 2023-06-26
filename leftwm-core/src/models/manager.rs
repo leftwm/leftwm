@@ -1,3 +1,6 @@
+#[cfg(test)]
+use leftwm_layouts::layouts::Layouts;
+
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
 use crate::state::State;
@@ -59,16 +62,24 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDisplayServer> {
     pub fn new_test(tags: Vec<String>) -> Self {
         use crate::config::tests::TestConfig;
+        let defs = Layouts::default().layouts;
+        let names = defs.iter().map(|def| def.name.clone()).collect();
         Self::new(TestConfig {
             tags,
+            layouts: names,
+            layout_definitions: defs,
             ..TestConfig::default()
         })
     }
 
     pub fn new_test_with_border(tags: Vec<String>, border_width: i32) -> Self {
         use crate::config::tests::TestConfig;
+        let defs = Layouts::default().layouts;
+        let names = defs.iter().map(|def| def.name.clone()).collect();
         Self::new(TestConfig {
             tags,
+            layouts: names,
+            layout_definitions: defs,
             border_width,
             single_window_border: false,
             ..TestConfig::default()

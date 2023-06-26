@@ -14,11 +14,13 @@ use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
-    layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowState, WindowType},
+    layouts::LayoutMode,
+    models::{FocusBehaviour, Gutter, Margins, Size, Window, WindowState, WindowType},
     state::State,
     DisplayAction, DisplayServer, Manager,
 };
+use leftwm_layouts::layouts::Layouts;
+use leftwm_layouts::Layout;
 use regex::Regex;
 use ron::{
     extensions::Extensions,
@@ -129,7 +131,7 @@ impl WindowHook {
             if let Some(workspace) = state
                 .workspaces
                 .iter()
-                .find(|ws| &ws.id == self.spawn_on_workspace.as_ref().unwrap())
+                .find(|ws| Some(ws.id) == self.spawn_on_workspace)
             {
                 if let Some(tag) = workspace.tag {
                     // In order to apply the correct margin multiplier we want to copy this value
@@ -182,7 +184,8 @@ pub struct Config {
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
-    pub layouts: Vec<Layout>,
+    pub layouts: Vec<String>,
+    pub layout_definitions: Vec<Layout>,
     pub layout_mode: LayoutMode,
     pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
@@ -235,9 +238,10 @@ fn load_from_file() -> Result<Config> {
 
     if Path::new(&config_file_ron).exists() {
         tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
-        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let ron = Options::default()
+            .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
         let contents = fs::read_to_string(config_file_ron)?;
-        let config = ron.from_str(&contents)?;
+        let config: Config = ron.from_str(&contents)?;
         Ok(config)
     } else if Path::new(&config_file_toml).exists() {
         tracing::debug!(
@@ -254,7 +258,7 @@ fn load_from_file() -> Result<Config> {
         let config = Config::default();
         let ron_pretty_conf = PrettyConfig::new()
             .depth_limit(2)
-            .extensions(Extensions::IMPLICIT_SOME);
+            .extensions(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
         let ron = to_string_pretty(&config, ron_pretty_conf).unwrap();
         let comment_header = String::from(
             r#"//  _        ___                                      ___ _
@@ -411,8 +415,16 @@ impl leftwm_core::Config for Config {
         vec![]
     }
 
-    fn layouts(&self) -> Vec<Layout> {
+    fn layouts(&self) -> Vec<String> {
         self.layouts.clone()
+    }
+
+    fn layout_definitions(&self) -> Vec<Layout> {
+        let mut layouts = Layouts::default().layouts;
+        for custom_layout in &self.layout_definitions {
+            layouts.push(custom_layout.clone());
+        }
+        layouts
     }
 
     fn layout_mode(&self) -> LayoutMode {
@@ -547,10 +559,6 @@ impl leftwm_core::Config for Config {
         self.theme_setting.gutter.clone().unwrap_or_default()
     }
 
-    fn max_window_width(&self) -> Option<Size> {
-        self.max_window_width
-    }
-
     fn disable_tile_drag(&self) -> bool {
         self.disable_tile_drag
     }
@@ -599,7 +607,7 @@ impl leftwm_core::Config for Config {
                 .max_by_key(|(_wh, score)| *score);
             if let Some((hook, _)) = best_match {
                 hook.apply(state, window);
-                tracing::debug!(
+                tracing::trace!(
                     "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
                     window.name,
                     window.legacy_name,
@@ -668,7 +676,7 @@ mod tests {
         // Check RON
         let ron_pretty_conf = ron::ser::PrettyConfig::new()
             .depth_limit(2)
-            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+            .extensions(ron::extensions::Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
         let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf);
         assert!(ron.is_ok(), "Could not serialize default config");
 

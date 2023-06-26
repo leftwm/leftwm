@@ -1,8 +1,5 @@
 pub use crate::handlers::command_handler::ReleaseScratchPadOption;
-use crate::{
-    layouts::Layout,
-    models::{ScratchPadName, TagId, WindowHandle},
-};
+use crate::models::{ScratchPadName, TagId, WindowHandle};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -73,10 +70,14 @@ pub enum Command {
     MoveWindowToPreviousWorkspace,
     NextLayout,
     PreviousLayout,
-    SetLayout(Layout),
+    SetLayout(String),
     RotateTag,
-    IncreaseMainWidth(i8),
-    DecreaseMainWidth(i8),
+    IncreaseMainWidth(i32), // deprecated: use IncreaseMainSize instead
+    DecreaseMainWidth(i32), // deprecated: use DecreaseMainSize instead
+    IncreaseMainSize(i32),
+    DecreaseMainSize(i32),
+    IncreaseMainCount(),
+    DecreaseMainCount(),
     SetMarginMultiplier(f32),
     SendWorkspaceToTag(usize, usize),
     CloseAllOtherWindows,

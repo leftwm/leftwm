@@ -19,12 +19,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Some(set_id) => set_id,
         };
 
-        let mut new_workspace = Workspace::new(
-            screen.bbox,
-            self.state.layout_manager.new_layout(workspace_id),
-            screen.max_window_width.or(self.state.max_window_width),
-            workspace_id,
-        );
+        let mut new_workspace = Workspace::new(screen.bbox, workspace_id);
         if self.state.workspaces.len() >= tag_len {
             tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. No more workspaces will be added.");
         }
@@ -35,14 +30,8 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             tag_index + 1
         } else {
             // Add a new tag for the workspace.
-            self.state
-                .tags
-                .add_new_unlabeled(self.state.layout_manager.new_layout(workspace_id))
+            self.state.tags.add_new_unlabeled()
         };
-
-        if let Some(tag) = self.state.tags.get_mut(next_id) {
-            tag.layout = new_workspace.layout;
-        }
 
         self.state.focus_workspace(&new_workspace);
         self.state.focus_tag(&next_id);

@@ -2,12 +2,13 @@
 
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
-use crate::layouts::Layout;
+use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, LayoutManager, Mode, ScratchPadName, Screen, Size, TagId, Tags, Window,
-    WindowHandle, WindowType, Workspace,
+    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowType,
+    Workspace,
 };
 use crate::DisplayAction;
+use leftwm_layouts::Layout;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
@@ -20,13 +21,12 @@ pub struct State {
     pub focus_manager: FocusManager,
     pub layout_manager: LayoutManager,
     pub mode: Mode,
-    pub layouts: Vec<Layout>,
+    pub layout_definitions: Vec<Layout>,
     pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
     pub mousekey: Vec<String>,
-    pub max_window_width: Option<Size>,
     pub default_width: i32,
     pub default_height: i32,
     pub disable_tile_drag: bool,
@@ -36,19 +36,18 @@ pub struct State {
 
 impl State {
     pub(crate) fn new(config: &impl Config) -> Self {
-        let layout_manager = LayoutManager::new(config);
         let mut tags = Tags::new();
         config.create_list_of_tag_labels().iter().for_each(|label| {
-            tags.add_new(label.as_str(), Layout::default());
+            tags.add_new(label.as_str());
         });
         tags.add_new_hidden("NSP");
 
         Self {
             window_history: HashMap::new(),
             focus_manager: FocusManager::new(config),
-            layout_manager,
+            layout_manager: LayoutManager::new(config),
             scratchpads: config.create_list_of_scratchpads(),
-            layouts: config.layouts(),
+            layout_definitions: config.layout_definitions(),
             screens: Default::default(),
             windows: Default::default(),
             workspaces: Default::default(),
@@ -56,7 +55,6 @@ impl State {
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
-            max_window_width: config.max_window_width(),
             mousekey: config.mousekey(),
             default_width: config.default_width(),
             default_height: config.default_height(),
@@ -131,7 +129,13 @@ impl State {
                 .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
                 .collect();
 
-            if tag.layout == Layout::Monocle {
+            let wsid = self
+                .workspaces
+                .iter()
+                .find(|ws| ws.has_tag(&tag.id))
+                .map(|w| w.id);
+            let layout = self.layout_manager.layout(wsid.unwrap_or(1), tag.id);
+            if layout.is_monocle() {
                 windows_on_tag.iter_mut().for_each(|w| w.border = 0);
                 continue;
             }
@@ -175,7 +179,6 @@ impl State {
 
     pub(crate) fn load_config(&mut self, config: &impl Config) {
         self.mousekey = config.mousekey();
-        self.max_window_width = config.max_window_width();
         for win in &mut self.windows {
             config.load_window(win);
         }
@@ -186,15 +189,12 @@ impl State {
 
     /// Apply saved state to a running manager.
     pub fn restore_state(&mut self, old_state: &Self) {
+        tracing::debug!("Restoring old state");
+
         // Restore tags.
         for old_tag in old_state.tags.all() {
             if let Some(tag) = self.tags.get_mut(old_tag.id) {
                 tag.hidden = old_tag.hidden;
-                tag.layout = old_tag.layout;
-                tag.layout_rotation = old_tag.layout_rotation;
-                tag.flipped_vertical = old_tag.flipped_vertical;
-                tag.flipped_horizontal = old_tag.flipped_horizontal;
-                tag.main_width_percentage = old_tag.main_width_percentage;
             }
         }
 
@@ -250,9 +250,8 @@ impl State {
 
         // Restore workspaces.
         for workspace in &mut self.workspaces {
-            if let Some(old_workspace) = old_state.workspaces.iter().find(|&w| w == workspace) {
-                workspace.layout = old_workspace.layout;
-                workspace.main_width_percentage = old_workspace.main_width_percentage;
+            if let Some(old_workspace) = old_state.workspaces.iter().find(|w| w.id == workspace.id)
+            {
                 workspace.margin_multiplier = old_workspace.margin_multiplier;
                 if are_tags_equal {
                     workspace.tag = old_workspace.tag;
@@ -294,6 +293,9 @@ impl State {
             },
         };
         self.focus_tag(&tag_id);
+
+        // Restore layout manager
+        self.layout_manager.restore(&old_state.layout_manager);
     }
 }
 

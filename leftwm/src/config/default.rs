@@ -2,7 +2,7 @@ use leftwm_core::models::{ScratchPad, Size};
 
 #[cfg(feature = "lefthk")]
 use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
-use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeSetting, LAYOUTS};
+use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeSetting};
 
 impl Default for Config {
     // We allow this because this function would be difficult to reduce. If someone would like to
@@ -210,10 +210,13 @@ impl Default for Config {
             width: Some(Size::Pixel(200)),
         };
 
+        let layouts = leftwm_layouts::layouts::Layouts::default();
+
         Self {
             workspaces: Some(vec![]),
             tags: Some(tags),
-            layouts: LAYOUTS.to_vec(),
+            layouts: layouts.names(),
+            layout_definitions: layouts.layouts,
             layout_mode: LayoutMode::Tag,
             // TODO: add sane default for scratchpad config.
             // Currently default values are set in sane_dimension fn.

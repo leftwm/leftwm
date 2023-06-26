@@ -2,12 +2,13 @@ mod insert_behavior;
 mod workspace_config;
 
 use crate::display_servers::DisplayServer;
-use crate::layouts::Layout;
+use crate::layouts::LayoutMode;
 pub use crate::models::ScratchPad;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
-use crate::models::{LayoutMode, Manager, Window, WindowType};
+use crate::models::{Manager, Window, WindowType};
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
+use leftwm_layouts::Layout;
 pub use workspace_config::Workspace;
 
 pub trait Config {
@@ -21,7 +22,9 @@ pub trait Config {
 
     fn create_list_of_scratchpads(&self) -> Vec<ScratchPad>;
 
-    fn layouts(&self) -> Vec<Layout>;
+    fn layouts(&self) -> Vec<String>;
+
+    fn layout_definitions(&self) -> Vec<Layout>;
 
     fn layout_mode(&self) -> LayoutMode;
 
@@ -49,7 +52,6 @@ pub trait Config {
     fn background_color(&self) -> String;
     fn on_new_window_cmd(&self) -> Option<String>;
     fn get_list_of_gutters(&self) -> Vec<Gutter>;
-    fn max_window_width(&self) -> Option<Size>;
     fn auto_derive_workspaces(&self) -> bool;
     fn disable_tile_drag(&self) -> bool;
     fn disable_window_snap(&self) -> bool;
@@ -91,7 +93,8 @@ pub(crate) mod tests {
     #[derive(Default)]
     pub struct TestConfig {
         pub tags: Vec<String>,
-        pub layouts: Vec<Layout>,
+        pub layouts: Vec<String>,
+        pub layout_definitions: Vec<Layout>,
         pub workspaces: Option<Vec<Workspace>>,
         pub insert_behavior: InsertBehavior,
         pub border_width: i32,
@@ -114,8 +117,11 @@ pub(crate) mod tests {
         fn create_list_of_scratchpads(&self) -> Vec<ScratchPad> {
             vec![]
         }
-        fn layouts(&self) -> Vec<Layout> {
+        fn layouts(&self) -> Vec<String> {
             self.layouts.clone()
+        }
+        fn layout_definitions(&self) -> Vec<Layout> {
+            self.layout_definitions.clone()
         }
         fn layout_mode(&self) -> LayoutMode {
             LayoutMode::Workspace
@@ -182,9 +188,6 @@ pub(crate) mod tests {
         }
         fn get_list_of_gutters(&self) -> Vec<Gutter> {
             Default::default()
-        }
-        fn max_window_width(&self) -> Option<Size> {
-            None
         }
         fn disable_tile_drag(&self) -> bool {
             false
