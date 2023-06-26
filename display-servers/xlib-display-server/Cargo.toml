@@ -1,6 +1,6 @@
 [package]
 name = "xlib-display-server"
-version = "0.1.0"
+version = "0.1.1"
 description = "A display server library for LeftWM" 
 license = "MIT"
 edition = "2021"
@@ -8,7 +8,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-leftwm-core = { path = "../../leftwm-core", version = '0.4.1' }
+leftwm-core = { path = "../../leftwm-core", version = '0.4.2' }
 x11-dl = "2.18.4"
 futures = "0.3.21"
 tracing = "0.1.36"
