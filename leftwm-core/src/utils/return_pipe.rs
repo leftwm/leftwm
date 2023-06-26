@@ -20,15 +20,20 @@ impl Drop for ReturnPipe {
 
         // Open fifo for write to unblock pending open for read operation that prevents tokio runtime
         // from shutting down.
-        if let Err(err) = std::fs::OpenOptions::new()
+        match std::fs::OpenOptions::new()
             .write(true)
             .custom_flags(nix::fcntl::OFlag::O_NONBLOCK.bits())
             .open(&self.pipe_file)
         {
-            tracing::error!(
+            Err(err) => tracing::error!(
                 "Failed to open {} when dropping ReturnPipe: {err}",
                 self.pipe_file.display()
-            );
+            ),
+            Ok(f) => drop(f),
+        };
+        match std::fs::remove_file(&self.pipe_file) {
+            Ok(_) => {}
+            Err(e) => tracing::error!("Failed to delete pipe file: {e}"),
         }
     }
 }
