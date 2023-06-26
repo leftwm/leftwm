@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
 
 fn get_command() -> clap::Command {
     command!("LeftWM Command")
-        .about("Sends external commands to LeftWM. After executing a command, check the logs or use \"leftwm-log\" to see any errors")
+        .about("Sends external commands to LeftWM. After executing a command, errors will be logged to both stderr and to the log (see leftwm-log for more details)")
         .help_template(leftwm::utils::get_help_template())
         .args(&[
             arg!(-l --list "Print a list of available commands with their arguments."),
