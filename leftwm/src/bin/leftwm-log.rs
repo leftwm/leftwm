@@ -62,10 +62,11 @@ fn get_command() -> clap::Command {
 
 fn journald_log(follow: bool) {
     let flag = if follow { " -f" } else { "" };
+    let final_pipe = if follow { "" } else { " | less" };
     match &mut Command::new("/bin/sh")
         .args([
             "-c",
-            format!("journalctl{flag} | grep \"left[wh][mk].*\" | less").as_str(),
+            format!("journalctl{flag} | grep \"left[wh][mk].*\"{final_pipe}").as_str(),
         ])
         .spawn()
     {
