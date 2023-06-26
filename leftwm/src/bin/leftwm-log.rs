@@ -65,7 +65,7 @@ fn journald_log(follow: bool) {
     match &mut Command::new("/bin/sh")
         .args([
             "-c",
-            format!("journalctl{flag} | grep \"left[wh][mk].*\"").as_str(),
+            format!("journalctl{flag} | grep \"left[wh][mk].*\" | less").as_str(),
         ])
         .spawn()
     {
