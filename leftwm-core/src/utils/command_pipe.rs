@@ -353,7 +353,6 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
     Ok(Command::MoveWindowToPreviousTag { follow })
 }
 
-
 fn build_increase_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let mut parts = raw.split(' ');
     let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
@@ -365,7 +364,7 @@ fn build_increase_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Er
 
 fn build_decrease_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let mut parts = raw.split(' ');
-   let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
+    let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
         Ok(num) => num,
         Err(_) => Err("argument change was missing or invalid")?,
     };
