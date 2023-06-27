@@ -91,6 +91,10 @@ fn print_commandlist() {
         FocusWindowTop
         FocusWorkspaceNext
         FocusWorkspacePrevious
+        IncreaseMainSize
+        DecreaseMainSize
+        IncreaseMainCount
+        DecreaseMainCount
         NextLayout
         PreviousLayout
         RotateTag

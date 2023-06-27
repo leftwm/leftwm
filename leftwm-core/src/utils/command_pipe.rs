@@ -1,6 +1,4 @@
 //! Creates a pipe to listen for external commands.
-
-use crate::layouts::Layout;
 use crate::models::TagId;
 use crate::utils::return_pipe::ReturnPipe;
 use crate::{command, Command, ReleaseScratchPadOption};
@@ -150,8 +148,10 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
         // Layout
-        "DecreaseMainWidth" => build_decrease_main_width(rest),
-        "IncreaseMainWidth" => build_increase_main_width(rest),
+        "DecreaseMainWidth" | "DecreaseMainSize" => build_decrease_main_size(rest), // 'DecreaseMainWidth' deprecated
+        "IncreaseMainWidth" | "IncreaseMainSize" => build_increase_main_size(rest), // 'IncreaseMainWidth' deprecated
+        "DecreaseMainCount" => Ok(Command::DecreaseMainCount()),
+        "IncreaseMainCount" => Ok(Command::IncreaseMainCount()),
         "NextLayout" => Ok(Command::NextLayout),
         "PreviousLayout" => Ok(Command::PreviousLayout),
         "RotateTag" => Ok(Command::RotateTag),
@@ -281,7 +281,7 @@ fn build_set_layout(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     } else {
         raw
     };
-    Ok(Command::SetLayout(Layout::from_str(layout_name)?))
+    Ok(Command::SetLayout(String::from(layout_name)))
 }
 
 fn build_set_margin_multiplier(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
@@ -353,24 +353,23 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
     Ok(Command::MoveWindowToPreviousTag { follow })
 }
 
-fn build_increase_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "IncreaseMainWidth ");
-    let mut parts = headless.split(' ');
-    let change: i8 = match parts.next().ok_or("missing argument change")?.parse() {
+
+fn build_increase_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let mut parts = raw.split(' ');
+    let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
         Ok(num) => num,
         Err(_) => Err("argument change was missing or invalid")?,
     };
-    Ok(Command::IncreaseMainWidth(change))
+    Ok(Command::IncreaseMainSize(change))
 }
 
-fn build_decrease_main_width(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
-    let headless = without_head(raw, "DecreaseMainWidth ");
-    let mut parts = headless.split(' ');
-    let change: i8 = match parts.next().ok_or("missing argument change")?.parse() {
+fn build_decrease_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let mut parts = raw.split(' ');
+   let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
         Ok(num) => num,
         Err(_) => Err("argument change was missing or invalid")?,
     };
-    Ok(Command::DecreaseMainWidth(change))
+    Ok(Command::DecreaseMainSize(change))
 }
 
 fn build_focus_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {

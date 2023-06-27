@@ -1,5 +1,5 @@
-use super::TagId;
-use crate::{layouts::Layout, Window, Workspace};
+use super::{TagId, Xyhw};
+use crate::{layouts::LayoutManager, Window, Workspace};
 use serde::{Deserialize, Serialize};
 
 /// Wrapper struct holding all the tags.
@@ -56,9 +56,9 @@ impl Tags {
     /// Create a new tag with the provided label and layout,
     /// and append it to the list of normal tags.
     /// The ID will be assigned automatically and returned.
-    pub fn add_new(&mut self, label: &str, layout: Layout) -> TagId {
+    pub fn add_new(&mut self, label: &str) -> TagId {
         let next_id = self.normal.len() + 1; // tag id starts at 1
-        let tag = Tag::new(next_id, label, layout);
+        let tag = Tag::new(next_id, label);
         let id = tag.id;
         self.normal.push(tag);
         id
@@ -67,9 +67,9 @@ impl Tags {
     /// Create a new tag with the provided layout, labelling it directly with its ID,
     /// and append it to the list of normal tags.
     /// The ID will be assigned automatically and returned.
-    pub fn add_new_unlabeled(&mut self, layout: Layout) -> TagId {
+    pub fn add_new_unlabeled(&mut self) -> TagId {
         let next_id = self.normal.len() + 1; // tag id starts at 1
-        self.add_new(next_id.to_string().as_str(), layout)
+        self.add_new(next_id.to_string().as_str())
     }
 
     // todo: add_new_at(position, label, layout)
@@ -94,7 +94,6 @@ impl Tags {
                 id: next_id,
                 label: label.to_string(),
                 hidden: true,
-                ..Tag::default()
             };
             let id = tag.id;
             self.hidden.push(tag);
@@ -208,38 +207,24 @@ pub struct Tag {
     /// Hidden tags are internal only, and
     /// are unknown to other programs (eg. polybar)
     pub hidden: bool,
-
-    /// The layout in which the windows
-    /// on this Tag are arranged
-    pub layout: Layout,
-
-    /// The percentage of available space
-    /// which is designated for the "main"
-    /// column of the layout, compared
-    /// to the secondary column(s).
-    pub main_width_percentage: u8,
-
-    pub flipped_horizontal: bool,
-    pub flipped_vertical: bool,
-    pub layout_rotation: usize,
 }
 
 impl Tag {
     #[must_use]
-    pub fn new(id: TagId, label: &str, layout: Layout) -> Self {
+    pub fn new(id: TagId, label: &str) -> Self {
         Self {
             id,
             label: label.to_owned(),
             hidden: false,
-            layout,
-            main_width_percentage: layout.main_width(),
-            flipped_horizontal: false,
-            flipped_vertical: false,
-            layout_rotation: 0,
         }
     }
 
-    pub fn update_windows(&self, windows: &mut [Window], workspace: &Workspace) {
+    pub fn update_windows(
+        &self,
+        windows: &mut [Window],
+        workspace: &Workspace,
+        layout_manager: &mut LayoutManager,
+    ) {
         if let Some(window) = windows
             .iter_mut()
             .find(|w| w.has_tag(&self.id) && w.is_fullscreen())
@@ -263,16 +248,26 @@ impl Tag {
             let mut all_mine: Vec<&mut Window> =
                 windows.iter_mut().filter(|w| w.has_tag(&self.id)).collect();
             all_mine.iter_mut().for_each(|w| w.set_visible(true));
-            // Update the location of all non-floating windows.
+
+            // Update the location / visibility of all non-floating windows.
             let mut managed_nonfloat: Vec<&mut Window> = windows
                 .iter_mut()
                 .filter(|w| w.has_tag(&self.id) && w.is_managed() && !w.floating())
                 .collect();
-            self.layout
-                .update_windows(workspace, &mut managed_nonfloat, self);
-            for w in &mut managed_nonfloat {
-                w.container_size = Some(workspace.xyhw);
+            let def = layout_manager.layout(workspace.id, workspace.tag.unwrap_or(1));
+            let rects = leftwm_layouts::apply(def, managed_nonfloat.len(), &workspace.rect());
+            for (i, window) in managed_nonfloat.iter_mut().enumerate() {
+                match rects.get(i) {
+                    Some(rect) => {
+                        window.normal = Xyhw::from(*rect);
+                        window.container_size = Some(workspace.xyhw);
+                    }
+                    None => {
+                        window.set_visible(false);
+                    }
+                }
             }
+
             // Update the location of all floating windows.
             windows
                 .iter_mut()
@@ -280,61 +275,19 @@ impl Tag {
                 .for_each(|w| w.normal = workspace.xyhw);
         }
     }
-
-    /// Changes the main width percentage by the provided delta.
-    /// Result is sanitized, so the percentage can't go below 0 or above 100.
-    ///
-    /// ## Arguments
-    /// * `delta` - increase/decrease main width percentage by this amount
-    pub fn change_main_width(&mut self, delta: i8) {
-        // not smaller than 0 and not larger than 100
-        self.main_width_percentage = (self.main_width_percentage as i8 + delta).clamp(0, 100) as u8;
-    }
-
-    /// Sets the main width percentage
-    ///
-    /// ## Arguments
-    /// * `val` - the new with percentage
-    pub fn set_main_width(&mut self, val: u8) {
-        self.main_width_percentage = val.min(100); // not larger than 100
-    }
-
-    #[must_use]
-    pub fn main_width_percentage(&self) -> f32 {
-        f32::from(self.main_width_percentage)
-    }
-
-    pub fn set_layout(&mut self, layout: Layout, main_width_percentage: u8) {
-        self.layout = layout;
-        self.set_main_width(main_width_percentage);
-        self.layout_rotation = 0;
-    }
-
-    pub fn rotate_layout(&mut self) -> Option<()> {
-        let rotations = self.layout.rotations();
-        self.layout_rotation += 1;
-        if self.layout_rotation >= rotations.len() {
-            self.layout_rotation = 0;
-        }
-        let (horz, vert) = rotations.get(self.layout_rotation)?;
-        self.flipped_horizontal = *horz;
-        self.flipped_vertical = *vert;
-        Some(())
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Tags;
-    use crate::layouts::Layout;
 
     #[test]
     fn normal_tags_are_numbered_in_order() {
         let mut tags = Tags::new();
-        let home_id = tags.add_new("home", Layout::default());
-        let chat_id = tags.add_new("chat", Layout::default());
-        let surf_id = tags.add_new("surf", Layout::default());
-        let code_id = tags.add_new("code", Layout::default());
+        let home_id = tags.add_new("home");
+        let chat_id = tags.add_new("chat");
+        let surf_id = tags.add_new("surf");
+        let code_id = tags.add_new("code");
         assert_eq!(home_id, 1);
         assert_eq!(chat_id, 2);
         assert_eq!(surf_id, 3);
@@ -353,8 +306,8 @@ mod tests {
     #[test]
     fn multiple_normal_tags_can_have_same_label() {
         let mut tags = Tags::new();
-        let first_id = tags.add_new("home", Layout::default());
-        let second_id = tags.add_new("home", Layout::default());
+        let first_id = tags.add_new("home");
+        let second_id = tags.add_new("home");
         assert_eq!(first_id, 1);
         assert_eq!(second_id, 2);
     }
@@ -362,8 +315,8 @@ mod tests {
     #[test]
     fn unlabelled_tags_are_automatically_labelled_with_their_id() {
         let mut tags = Tags::new();
-        let first_tag = tags.add_new_unlabeled(Layout::default());
-        let second_tag = tags.add_new_unlabeled(Layout::default());
+        let first_tag = tags.add_new_unlabeled();
+        let second_tag = tags.add_new_unlabeled();
         let first_label = tags.get(first_tag).map(|tag| tag.label.clone());
         let second_label = tags.get(second_tag).map(|tag| tag.label.clone());
         assert_eq!(first_label, Some(String::from("1")));
@@ -385,10 +338,10 @@ mod tests {
     #[test]
     fn must_be_able_to_only_get_normal_tags() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
-        tags.add_new("chat", Layout::default());
-        tags.add_new("surf", Layout::default());
-        tags.add_new("code", Layout::default());
+        tags.add_new("home");
+        tags.add_new("chat");
+        tags.add_new("surf");
+        tags.add_new("code");
         tags.add_new_hidden("NSP");
 
         assert_eq!(tags.len_normal(), 4);
@@ -398,10 +351,10 @@ mod tests {
     #[test]
     fn must_be_able_to_get_all_tags() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
-        tags.add_new("chat", Layout::default());
-        tags.add_new("surf", Layout::default());
-        tags.add_new("code", Layout::default());
+        tags.add_new("home");
+        tags.add_new("chat");
+        tags.add_new("surf");
+        tags.add_new("code");
         tags.add_new_hidden("NSP");
 
         assert_eq!(tags.all().len(), 5);
@@ -410,7 +363,7 @@ mod tests {
     #[test]
     fn hidden_tags_must_be_retrievable_by_label() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
+        tags.add_new("home");
         tags.add_new_hidden("NSP");
         tags.add_new_hidden("whatever");
 
@@ -426,7 +379,7 @@ mod tests {
     #[test]
     fn only_hidden_tags_can_be_retrieved_by_label() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
+        tags.add_new("home");
         let tag = tags.get_hidden_by_label("home");
         assert!(tag.is_none());
     }
@@ -434,9 +387,9 @@ mod tests {
     #[test]
     fn tags_can_be_mutable() {
         let mut tags = Tags::new();
-        tags.add_new("home", Layout::default());
-        tags.add_new("chat", Layout::default());
-        tags.add_new("surf", Layout::default());
+        tags.add_new("home");
+        tags.add_new("chat");
+        tags.add_new("surf");
 
         let first_retrieve = tags.get_mut(2).unwrap();
         assert_eq!(first_retrieve.label, String::from("chat"));

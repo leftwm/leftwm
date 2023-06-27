@@ -3,7 +3,7 @@ use crate::child_process::exec_shell;
 use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::layouts::Layout;
+use crate::layouts::{self, MAIN_AND_VERT_STACK};
 use crate::models::{WindowHandle, WindowState, Xyhw};
 use crate::state::State;
 use crate::utils::helpers;
@@ -25,7 +25,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         let mut is_first = false;
         let mut on_same_tag = true;
         // Random value
-        let mut layout: Layout = Layout::MainAndVertStack;
+        let mut layout = MAIN_AND_VERT_STACK.to_string();
         setup_window(
             &mut self.state,
             &mut window,
@@ -35,7 +35,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut on_same_tag,
         );
         self.config.load_window(&mut window);
-        insert_window(&mut self.state, &mut window, layout);
+        insert_window(&mut self.state, &mut window, &layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour.is_sloppy()
@@ -237,7 +237,7 @@ fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) ->
     }
 }
 
-fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
+fn insert_window(state: &mut State, window: &mut Window, layout: &str) {
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
         let for_active_workspace = |x: &Window| -> bool { window.tag == x.tag && x.is_managed() };
@@ -252,10 +252,12 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
             state.actions.push_back(act);
             was_fullscreen = true;
         }
-        if matches!(layout, Layout::Monocle | Layout::MainAndDeck) {
+        let monocle = layouts::MONOCLE;
+        let main_and_deck = layouts::MAIN_AND_DECK;
+        if layout == monocle || layout == main_and_deck {
             // Extract the current windows on the same workspace.
             let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
-            if layout == Layout::Monocle || to_reorder.is_empty() {
+            if layout == monocle || to_reorder.is_empty() {
                 // When in monocle we want the new window to be fullscreen if the previous window was
                 // fullscreen.
                 if was_fullscreen {
@@ -340,7 +342,7 @@ fn setup_window(
     state: &mut State,
     window: &mut Window,
     xy: (i32, i32),
-    layout: &mut Layout,
+    layout: &mut String,
     is_first: &mut bool,
     on_same_tag: &mut bool,
 ) {
@@ -363,7 +365,11 @@ fn setup_window(
                 find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
         }
         *on_same_tag = ws.tag == window.tag;
-        *layout = ws.layout;
+        *layout = state
+            .layout_manager
+            .layout(ws.id, window.tag.unwrap())
+            .name
+            .clone();
 
         // Setup a scratchpad window.
         if let Some((scratchpad_name, _)) = state
@@ -436,7 +442,7 @@ fn update_workspace_avoid_list(state: &mut State) {
         .filter(|w| w.r#type == WindowType::Dock)
         .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
         .for_each(|(handle, to_avoid)| {
-            tracing::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
+            tracing::trace!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
             avoid.push(to_avoid);
         });
     for ws in &mut state.workspaces {
@@ -456,6 +462,7 @@ fn update_workspace_avoid_list(state: &mut State) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layouts::MONOCLE;
     use crate::models::Screen;
     use crate::Manager;
 
@@ -692,14 +699,8 @@ mod tests {
     fn monocle_layout_only_has_single_windows() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string()], 1);
         manager.screen_create_handler(Screen::default());
-
-        manager
-            .state
-            .tags
-            .get_mut(1)
-            .unwrap()
-            .set_layout(Layout::Monocle, 0);
-
+        manager.state.layout_manager.set_layout(1, 1, MONOCLE);
+        //manager.state.tags.get_mut(1).unwrap().set_layout(String::from("Monocle"));
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -710,7 +711,6 @@ mod tests {
             -1,
             -1,
         );
-
         assert_eq!((manager.state.windows[0]).border(), 0);
         assert_eq!((manager.state.windows[1]).border(), 0);
     }

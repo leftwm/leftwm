@@ -1,5 +1,6 @@
 //! Various window and workspace sizing structs.
 #![allow(clippy::module_name_repetitions)]
+use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::ops::Add;
@@ -108,6 +109,29 @@ impl From<XyhwBuilder> for Xyhw {
         };
         b.update_limits();
         b
+    }
+}
+
+impl From<Rect> for Xyhw {
+    fn from(rect: Rect) -> Self {
+        Self {
+            x: rect.x,
+            y: rect.y,
+            w: rect.w as i32,
+            h: rect.h as i32,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<Xyhw> for Rect {
+    fn from(xyhw: Xyhw) -> Self {
+        Rect {
+            x: xyhw.x,
+            y: xyhw.y,
+            w: xyhw.w.unsigned_abs(),
+            h: xyhw.h.unsigned_abs(),
+        }
     }
 }
 

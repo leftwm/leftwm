@@ -21,6 +21,7 @@ futures = "0.3.21"
 git-version = "0.3.5"
 lefthk-core = { version = '0.1.8', optional = true }
 leftwm-core = { path = "../leftwm-core", version = '0.4.2' }
+leftwm-layouts = "0.8.4"
 liquid = "0.26.0"
 mio = "0.8.0"
 nix = "0.26.2"
