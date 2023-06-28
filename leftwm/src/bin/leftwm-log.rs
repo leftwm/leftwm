@@ -8,14 +8,14 @@ fn main() {
     let follow = matches.get_flag("follow");
 
     if matches.get_flag("journald") {
-        if cfg!(feature = "journald-log") || matches.get_flag("ignore-build-opts") {
+        if cfg!(feature = "journald-log") {
             journald_log(follow);
         } else {
             eprintln!("Failed to execute: leftwm was not built with journald logging");
             exit(1)
         }
     } else if matches.get_flag("syslog") {
-        if cfg!(feature = "sys-log") || matches.get_flag("ignore-build-opts") {
+        if cfg!(feature = "sys-log") {
             syslog(follow);
         } else {
             eprintln!("Failed to execute: leftwm was not built with syslog logging");
@@ -48,9 +48,8 @@ fn get_command() -> clap::Command {
         .help_template(leftwm::utils::get_help_template())
         .args(&[
             arg!(-J --journald "use journald log (default)"),
-            arg!(-S --syslog "use syslog (default if built with no journald support"),
-            arg!(-F --file "use file (default if built with no syslog support"),
-            arg!(-i --"ignore-build-opts" "attempt logging regardless of build options"),
+            arg!(-S --syslog "use syslog (default if built with no journald support)"),
+            arg!(-F --file "use file (default if built with no syslog support)"),
             arg!(-f --follow "output appended data as the log grows"),
         ])
         .group(
@@ -108,6 +107,7 @@ fn file_log(follow: bool) {
     };
     match {
         let file_path = get_log_path();
+        println!("output from {}:", file_path.display());
         &mut Command::new("/bin/sh")
             .args([
                 "-c",
