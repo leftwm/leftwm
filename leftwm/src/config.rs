@@ -456,7 +456,7 @@ impl leftwm_core::Config for Config {
                         write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
                     } else {
                         tracing::warn!("Path submitted does not exist.");
-                        write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist.");
+                        write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist");
                     }
                     manager.reload_config()
                 }
@@ -474,13 +474,13 @@ impl leftwm_core::Config for Config {
         } else {
             match command {
                 "LoadTheme" => {
-                    tracing::warn!("missing parameter theme_path");
-                    write_to_pipe(&mut return_pipe, "ERROR: missing parameter theme_path");
+                    tracing::warn!("Missing parameter theme_path");
+                    write_to_pipe(&mut return_pipe, "ERROR: Missing parameter theme_path");
                     false
                 }
                 "UnloadTheme" => {
                     manager.config.theme_setting = ThemeSetting::default();
-                    write_to_pipe(&mut return_pipe, "ERROR: Command executed successfully");
+                    write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
                     manager.reload_config()
                 }
                 _ => {
