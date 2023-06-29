@@ -229,10 +229,11 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
 fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "GoToTag ");
     let mut parts = headless.split(' ');
-    let tag: TagId = match parts.next().ok_or("missing argument tag_id")?.parse() {
-        Ok(i) => i,
-        Err(_) => Err("argument tag_id was missing or not a valid tag number")?,
-    };
+    let tag: TagId = parts
+      .next()
+      .ok_or("missing argument tag_id")?
+      .parse()
+      .or(Err("argument tag_id was missing or not a valid tag number")?);
     let swap: bool = match parts.next().ok_or("missing argument swap")?.parse() {
         Ok(b) => b,
         Err(_) => Err("argument swap was not true or false")?,
