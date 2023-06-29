@@ -690,7 +690,9 @@ fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S:
 fn get_return_pipe() -> Result<File, Box<dyn std::error::Error>> {
     let file_name = ReturnPipe::pipe_name();
     let file_path = BaseDirectories::with_prefix("leftwm")?;
-    let file_path = file_path.find_runtime_file(file_name).ok_or("Unable to open return pipe")?;
+    let file_path = file_path
+        .find_runtime_file(file_name)
+        .ok_or("Unable to open return pipe")?;
     Ok(OpenOptions::new().append(true).open(file_path)?)
 }
 
