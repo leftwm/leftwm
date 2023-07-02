@@ -233,9 +233,7 @@ fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
         .next()
         .ok_or("missing argument tag_id")?
         .parse()
-        .unwrap_or(Err(
-            "argument tag_id was missing or not a valid tag number",
-        )?);
+        .or(Err("argument tag_id was missing or not a valid tag number"))?;
     let swap: bool = match parts.next().ok_or("missing argument swap")?.parse() {
         Ok(b) => b,
         Err(_) => Err("argument swap was not true or false")?,
