@@ -1,4 +1,8 @@
-use std::time::Duration;
+use std::{
+    rc::Rc,
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 
 use leftwm_core::models::TagId;
 use smithay::{
@@ -18,14 +22,28 @@ use smithay::{
 
 use crate::{state::SmithayState, window_registry::WindowHandle};
 
-#[derive(PartialEq, Clone)]
-pub struct ManagedWindow {
-    pub window: Window,
+#[derive(PartialEq, Clone, Debug)]
+pub struct ManagedWindowData {
     pub managed: bool,
     pub floating: bool,
     pub tag: Option<TagId>,
-    pub handle: Option<WindowHandle>,
     visible: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct ManagedWindow {
+    pub window: Window,
+    pub handle: Option<WindowHandle>,
+    pub data: Arc<RwLock<ManagedWindowData>>,
+}
+
+impl PartialEq for ManagedWindow {
+    fn eq(&self, other: &Self) -> bool {
+        // We assume that if both windows have a handle and they are the same the windows should be
+        // the same
+        self.handle
+            .is_some_and(|h1| other.handle.is_some_and(|h2| h2 == h1))
+    }
 }
 
 impl IsAlive for ManagedWindow {
@@ -197,11 +215,13 @@ impl ManagedWindow {
     pub fn new(window: Window) -> Self {
         Self {
             window,
-            managed: false,
-            floating: false,
-            tag: None,
+            data: Arc::new(RwLock::new(ManagedWindowData {
+                managed: false,
+                floating: false,
+                tag: None,
+                visible: false,
+            })),
             handle: None,
-            visible: false,
         }
     }
 
