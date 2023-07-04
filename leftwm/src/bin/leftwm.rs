@@ -21,12 +21,13 @@ const SUBCOMMAND_PREFIX: &str = "leftwm-";
 
 const SUBCOMMAND_NAME_INDEX: usize = 0;
 const SUBCOMMAND_DESCRIPTION_INDEX: usize = 1;
-const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 5] = [
+const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 6] = [
     ["check", "Check syntax of the configuration file"],
     ["command", "Send external commands to LeftWM"],
     ["state", "Print the current state of LeftWM"],
     ["theme", "Manage LeftWM themes"],
     ["config", "Manage LeftWM configuration file"],
+    ["log", "Retrieves information logged by leftwm-worker"],
 ];
 
 fn main() {

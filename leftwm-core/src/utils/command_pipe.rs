@@ -1,13 +1,17 @@
 //! Creates a pipe to listen for external commands.
 use crate::models::TagId;
+use crate::utils::return_pipe::ReturnPipe;
 use crate::{command, Command, ReleaseScratchPadOption};
 use std::error::Error;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{env, fmt};
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
+use xdg::BaseDirectories;
 
 /// Holds pipe file location and a receiver.
 #[derive(Debug)]
@@ -80,9 +84,38 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
 
     while let Some(line) = lines.next_line().await.ok()? {
         let cmd = match parse_command(&line) {
-            Ok(cmd) => cmd,
+            Ok(cmd) => {
+                if let Command::Other(_) = cmd {
+                    cmd
+                } else {
+                    let file_name = ReturnPipe::pipe_name();
+                    if let Ok(file_path) = BaseDirectories::with_prefix("leftwm") {
+                        if let Some(file_path) = file_path.find_runtime_file(&file_name) {
+                            if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
+                                if let Err(e) = writeln!(file, "OK: command executed successfully")
+                                {
+                                    tracing::error!("Unable to write to return pipe: {e}");
+                                }
+                            }
+                        }
+                    }
+                    cmd
+                }
+            }
             Err(err) => {
                 tracing::error!("An error occurred while parsing the command: {}", err);
+                // return to stdout
+                let file_name = ReturnPipe::pipe_name();
+                if let Ok(file_path) = BaseDirectories::with_prefix("leftwm") {
+                    if let Some(file_path) = file_path.find_runtime_file(file_name) {
+                        if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
+                            if let Err(e) = writeln!(file, "ERROR: Error parsing command: {err}") {
+                                tracing::error!("Unable to write error to return pipe: {e}");
+                            }
+                        }
+                    }
+                }
+
                 return None;
             }
         };
@@ -196,8 +229,15 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
 fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "GoToTag ");
     let mut parts = headless.split(' ');
-    let tag: TagId = parts.next().ok_or("missing argument tag_id")?.parse()?;
-    let swap: bool = parts.next().ok_or("missing argument swap")?.parse()?;
+    let tag: TagId = parts
+        .next()
+        .ok_or("missing argument tag_id")?
+        .parse()
+        .or(Err("argument tag_id was missing or not a valid tag number"))?;
+    let swap: bool = match parts.next().ok_or("missing argument swap")?.parse() {
+        Ok(b) => b,
+        Err(_) => Err("argument swap was not true or false")?,
+    };
     Ok(Command::GoToTag { tag, swap })
 }
 
@@ -205,7 +245,10 @@ fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Er
     let tag_id = if raw.is_empty() {
         return Err("missing argument tag_id".into());
     } else {
-        TagId::from_str(raw)?
+        match TagId::from_str(raw) {
+            Ok(tag) => tag,
+            Err(_) => Err("argument tag_id was not a valid tag number")?,
+        }
     };
     Ok(Command::SendWindowToTag {
         window: None,
@@ -217,12 +260,19 @@ fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error:
     if raw.is_empty() {
         return Err("missing argument workspace index".into());
     }
-    let mut parts = raw.split(' ');
-    let ws_index: usize = parts
+    let mut parts: std::str::Split<'_, char> = raw.split(' ');
+    let ws_index: usize = match parts
         .next()
         .expect("split() always returns an array of at least 1 element")
-        .parse()?;
-    let tag_index: usize = parts.next().ok_or("missing argument tag index")?.parse()?;
+        .parse()
+    {
+        Ok(ws) => ws,
+        Err(_) => Err("argument workspace index was not a valid workspace number")?,
+    };
+    let tag_index: usize = match parts.next().ok_or("missing argument tag index")?.parse() {
+        Ok(tag) => tag,
+        Err(_) => Err("argument tag index was not a valid tag number")?,
+    };
     Ok(Command::SendWorkspaceToTag(ws_index, tag_index))
 }
 
@@ -248,7 +298,10 @@ fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Erro
     let swap = if raw.is_empty() {
         false
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument swap was not true or false")?,
+        }
     };
     Ok(Command::FocusWindowTop { swap })
 }
@@ -257,7 +310,10 @@ fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     let swap = if raw.is_empty() {
         true
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument swap was not true or false")?,
+        }
     };
     Ok(Command::MoveWindowTop { swap })
 }
@@ -266,7 +322,10 @@ fn build_swap_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     let swap = if raw.is_empty() {
         true
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument swap was not true or false")?,
+        }
     };
     Ok(Command::SwapWindowTop { swap })
 }
@@ -275,7 +334,10 @@ fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::erro
     let follow = if raw.is_empty() {
         true
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument follow was not true or false")?,
+        }
     };
     Ok(Command::MoveWindowToNextTag { follow })
 }
@@ -284,20 +346,29 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
     let follow = if raw.is_empty() {
         true
     } else {
-        bool::from_str(raw)?
+        match bool::from_str(raw) {
+            Ok(bl) => bl,
+            Err(_) => Err("Argument follow was not true or false")?,
+        }
     };
     Ok(Command::MoveWindowToPreviousTag { follow })
 }
 
 fn build_increase_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let mut parts = raw.split(' ');
-    let change: i32 = parts.next().ok_or("missing argument change")?.parse()?;
+    let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
+        Ok(num) => num,
+        Err(_) => Err("argument change was missing or invalid")?,
+    };
     Ok(Command::IncreaseMainSize(change))
 }
 
 fn build_decrease_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     let mut parts = raw.split(' ');
-    let change: i32 = parts.next().ok_or("missing argument change")?.parse()?;
+    let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
+        Ok(num) => num,
+        Err(_) => Err("argument change was missing or invalid")?,
+    };
     Ok(Command::DecreaseMainSize(change))
 }
 
