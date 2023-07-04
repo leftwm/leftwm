@@ -1,5 +1,4 @@
 use std::{
-    rc::Rc,
     sync::{Arc, RwLock},
     time::Duration,
 };
@@ -10,13 +9,19 @@ use smithay::{
         element::{surface::WaylandSurfaceRenderElement, AsRenderElements},
         ImportAll, Renderer,
     },
-    desktop::{space::SpaceElement, Window},
+    desktop::{space::SpaceElement, utils::OutputPresentationFeedback, Window},
     input::{keyboard::KeyboardTarget, pointer::PointerTarget},
     output::Output,
-    reexports::wayland_server::protocol::wl_surface::WlSurface,
+    reexports::{
+        wayland_protocols::wp::presentation_time::server::wp_presentation_feedback::Kind,
+        wayland_server::protocol::wl_surface::WlSurface,
+    },
     utils::{IsAlive, Logical, Point, Rectangle},
     wayland::{
-        compositor, dmabuf::DmabufFeedback, seat::WaylandFocus, shell::xdg::ToplevelSurface,
+        compositor::{self, SurfaceData},
+        dmabuf::DmabufFeedback,
+        seat::WaylandFocus,
+        shell::xdg::ToplevelSurface,
     },
 };
 
@@ -258,5 +263,21 @@ impl ManagedWindow {
     {
         self.window
             .send_dmabuf_feedback(output, primary_scan_out_output, select_dmabuf_feedback)
+    }
+
+    pub fn take_presentation_feedback<F1, F2>(
+        &self,
+        output_feedback: &mut OutputPresentationFeedback,
+        primary_scan_out_output: F1,
+        presentation_feedback_flags: F2,
+    ) where
+        F1: FnMut(&WlSurface, &SurfaceData) -> Option<Output> + Copy,
+        F2: FnMut(&WlSurface, &SurfaceData) -> Kind + Copy,
+    {
+        self.window.take_presentation_feedback(
+            output_feedback,
+            primary_scan_out_output,
+            presentation_feedback_flags,
+        )
     }
 }

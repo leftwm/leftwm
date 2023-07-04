@@ -321,9 +321,9 @@ impl SmithayState {
             device_id: node,
             render_node: device.render_node,
             dmabuf_feedback,
-            global,
+            _global: global,
             compositor,
-            output,
+            _output: output,
         };
 
         device.surfaces.insert(crtc, surface);

@@ -3,10 +3,7 @@ use std::{process::Command, sync::atomic::Ordering, time::Duration};
 use event_channel::EventChannelReceiver;
 use internal_action::InternalAction;
 use leftwm_config::LeftwmConfig;
-use leftwm_core::{
-    models::{FocusBehaviour, WindowHandle},
-    DisplayAction, DisplayEvent, DisplayServer, Window,
-};
+use leftwm_core::{models::WindowHandle, DisplayAction, DisplayEvent, DisplayServer, Window};
 use smithay::{
     backend::{
         input::{Event, InputEvent, KeyState, KeyboardKeyEvent},
@@ -26,7 +23,7 @@ use smithay::{
     utils::SERIAL_COUNTER,
 };
 use tokio::sync::oneshot;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use crate::state::{CalloopData, SmithayState};
 mod drawing;
@@ -149,7 +146,7 @@ impl DisplayServer for SmithayHandle {
                                 .state
                                 .on_pointer_move::<LibinputInputBackend>(event);
                         }
-                        InputEvent::PointerMotionAbsolute { event } => {
+                        InputEvent::PointerMotionAbsolute { event: _event } => {
                             todo!()
                         }
                         InputEvent::DeviceAdded { mut device } => {

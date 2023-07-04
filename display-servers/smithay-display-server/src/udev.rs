@@ -101,10 +101,10 @@ pub struct Surface {
     pub device_id: DrmNode,
     pub render_node: DrmNode,
     pub dmabuf_feedback: Option<DrmSurfaceDmabufFeedback>,
-    global: GlobalId,
+    _global: GlobalId,
     // NOTE: Currently only doing hardware compositing, do we wanna have the oprion for software.
     pub compositor: GbmDrmCompositor,
-    output: Output,
+    _output: Output,
 }
 
 pub fn init_udev_stage_1(session: LibSeatSession) -> UdevData {

@@ -1,4 +1,3 @@
-use leftwm_core::models::FocusBehaviour;
 use smithay::{
     backend::input::{Event, InputBackend, PointerMotionEvent},
     input::pointer::{MotionEvent, RelativeMotionEvent},

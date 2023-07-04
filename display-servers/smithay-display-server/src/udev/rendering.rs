@@ -22,7 +22,7 @@ use smithay::{
             surface_presentation_feedback_flags_from_states, surface_primary_scanout_output,
             OutputPresentationFeedback,
         },
-        Space, Window,
+        Space,
     },
     input::pointer::{CursorImageAttributes, CursorImageStatus},
     output::Output,
@@ -513,12 +513,11 @@ fn render_surface<'a>(
     );
 
     if result.damage.is_some() {
-        // let output_presentation_feedback =
-        // take_presentation_feedback(output, space, &result.states);
+        let output_presentation_feedback =
+            take_presentation_feedback(output, space, &result.states);
         surface
             .compositor
-            // .queue_frame(Some(output_presentation_feedback))
-            .queue_frame(None)
+            .queue_frame(Some(output_presentation_feedback))
             .map_err(Into::<SwapBuffersError>::into)?;
     }
 
@@ -647,7 +646,7 @@ pub fn post_repaint(
 
 pub fn take_presentation_feedback(
     output: &Output,
-    space: &Space<Window>,
+    space: &Space<ManagedWindow>,
     render_element_states: &RenderElementStates,
 ) -> OutputPresentationFeedback {
     let mut output_presentation_feedback = OutputPresentationFeedback::new(output);
