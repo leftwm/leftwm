@@ -7,6 +7,7 @@ use smithay::{
         allocator::Fourcc,
         drm::{compositor::RenderFrameResult, DrmError, DrmNode},
         renderer::{
+            buffer_dimensions, buffer_type,
             element::{
                 surface::WaylandSurfaceRenderElement, texture::TextureBuffer, AsRenderElements,
                 RenderElementStates,
@@ -14,7 +15,7 @@ use smithay::{
             gles::GlesTexture,
             glow::GlowRenderer,
             multigpu::{gbm::GbmGlesBackend, MultiFrame, MultiRenderer},
-            Renderer,
+            Bind, BufferType, ExportMem, Offscreen, Renderer,
         },
         SwapBuffersError,
     },
@@ -31,15 +32,17 @@ use smithay::{
     reexports::{
         calloop::timer::{TimeoutAction, Timer},
         drm::{control::crtc, SystemError},
+        wayland_server::protocol::wl_shm,
     },
-    utils::{IsAlive, Scale, Transform},
-    wayland::{compositor, dmabuf::DmabufFeedback, shell::wlr_layer::Layer},
+    utils::{IsAlive, Point, Rectangle, Scale, Size, Transform},
+    wayland::{compositor, dmabuf::DmabufFeedback, shell::wlr_layer::Layer, shm},
 };
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::{
     drawing::{border::BorderRenderer, CLEAR_COLOR},
     managed_window::ManagedWindow,
+    protocols::screencopy::frame::Screencopy,
     state::SmithayState,
     udev::UdevOutputId,
 };
@@ -52,7 +55,12 @@ type UdevFrame<'a, 'b, 'frame> =
     MultiFrame<'a, 'a, 'b, 'frame, GbmGlesBackend<GlowRenderer>, GbmGlesBackend<GlowRenderer>>;
 
 impl SmithayState {
-    pub fn render(&mut self, node: DrmNode, crtc: crtc::Handle) -> Result<bool, SwapBuffersError> {
+    pub fn render(
+        &mut self,
+        node: DrmNode,
+        crtc: crtc::Handle,
+        screencopy: Option<Screencopy>,
+    ) -> Result<bool, SwapBuffersError> {
         let device = self.udev_data.devices.get_mut(&node).unwrap();
         let surface = device.surfaces.get_mut(&crtc).unwrap();
         let mut renderer = self
@@ -76,7 +84,13 @@ impl SmithayState {
 
         let mut cursor_status = self.cursor_status.lock().unwrap();
 
-        if output_geometry.to_f64().contains(self.pointer_location) {
+        let should_render_cursor = if let Some(screencopy) = &screencopy {
+            screencopy.overlay_cursor
+        } else {
+            true
+        };
+
+        if should_render_cursor && output_geometry.to_f64().contains(self.pointer_location) {
             let frame = self
                 .udev_data
                 .pointer_image
@@ -168,6 +182,7 @@ impl SmithayState {
             //     }
             // }
         }
+
         let layer_map = layer_map_for_output(output);
         let (lower, upper): (Vec<&LayerSurface>, Vec<&LayerSurface>) = layer_map
             .layers()
@@ -246,7 +261,75 @@ impl SmithayState {
                 _ => unreachable!(),
             });
 
-        //TODO: screencopy
+        if let Some(mut screencopy) = screencopy {
+            if let Ok(frame_result) = &frame_result {
+                let region = screencopy.region();
+                if let Some(damage) = frame_result.damage.clone() {
+                    screencopy.damage(&damage);
+                }
+
+                let shm_buffer = screencopy.buffer();
+
+                if !matches!(buffer_type(shm_buffer), Some(BufferType::Shm)) {
+                    warn!("Trying to screencopy with unknow buffer");
+                } else {
+                    let buffer_dimentions = buffer_dimensions(shm_buffer).unwrap();
+                    let offscreen_buffer = Offscreen::<GlesTexture>::create_buffer(
+                        &mut renderer,
+                        Fourcc::Argb8888,
+                        buffer_dimentions,
+                    )
+                    .unwrap();
+                    renderer.bind(offscreen_buffer).unwrap();
+
+                    let output = &screencopy.output;
+                    let scale = output.current_scale().fractional_scale();
+                    let output_size = output.current_mode().unwrap().size;
+                    let transform = output.current_transform();
+
+                    let damage = transform.transform_rect_in(region, &output_size);
+
+                    frame_result
+                        .blit_frame_result(
+                            damage.size,
+                            transform,
+                            scale,
+                            &mut renderer,
+                            [damage],
+                            [],
+                        )
+                        .unwrap()
+                        .wait();
+
+                    let region = Rectangle {
+                        loc: Point::from((region.loc.x, region.loc.y)),
+                        size: Size::from((region.size.w, region.size.h)),
+                    };
+                    let mapping = renderer.copy_framebuffer(region, Fourcc::Argb8888).unwrap();
+                    let buffer = renderer.map_texture(&mapping).unwrap();
+
+                    shm::with_buffer_contents_mut(
+                        shm_buffer,
+                        |shm_buffer_ptr, shm_len, buffer_data| {
+                            if buffer_data.format != wl_shm::Format::Argb8888
+                                || buffer_data.stride != region.size.w * 4
+                                || buffer_data.height != region.size.h
+                                || shm_len as i32 != buffer_data.stride * buffer_data.height
+                            {
+                                error!("Invalid buffer format");
+                                return;
+                            }
+
+                            unsafe { shm_buffer_ptr.copy_from(buffer.as_ptr(), shm_len) };
+                        },
+                    )
+                    .unwrap();
+                }
+                screencopy.submit();
+            } else {
+                screencopy.failed();
+            }
+        }
 
         if let Ok(result) = &frame_result {
             if result.damage.is_some() {
@@ -293,7 +376,7 @@ impl SmithayState {
             let timer = Timer::from_duration(duration);
             self.loop_handle
                 .insert_source(timer, move |_, _, data| {
-                    data.state.render(node, crtc).unwrap();
+                    data.state.render(node, crtc, None).unwrap();
                     TimeoutAction::Drop
                 })
                 .unwrap();

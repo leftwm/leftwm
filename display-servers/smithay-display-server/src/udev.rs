@@ -104,7 +104,7 @@ pub struct Surface {
     _global: GlobalId,
     // NOTE: Currently only doing hardware compositing, do we wanna have the oprion for software.
     pub compositor: GbmDrmCompositor,
-    _output: Output,
+    pub output: Output,
 }
 
 pub fn init_udev_stage_1(session: LibSeatSession) -> UdevData {

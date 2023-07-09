@@ -1,3 +1,4 @@
+mod screencopy;
 mod xdg;
 
 use std::cell::RefCell;

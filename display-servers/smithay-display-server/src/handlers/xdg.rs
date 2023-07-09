@@ -1,21 +1,25 @@
 use smithay::{
     delegate_xdg_decoration, delegate_xdg_shell,
     desktop::Window,
+    output::Output,
     reexports::{
         wayland_protocols::xdg::{
             decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode,
             shell::server::xdg_toplevel::State,
         },
-        wayland_server::protocol::wl_seat::WlSeat,
+        wayland_server::protocol::{wl_output::WlOutput, wl_seat::WlSeat},
     },
-    utils::Serial,
+    utils::{Logical, Rectangle, Serial},
     wayland::shell::xdg::{
         decoration::XdgDecorationHandler, PopupSurface, PositionerState, ToplevelSurface,
         XdgShellHandler, XdgShellState,
     },
 };
 
-use crate::{managed_window::ManagedWindow, state::SmithayState};
+use crate::{
+    delegate_xdg_output_handler, managed_window::ManagedWindow,
+    protocols::xdg_output_manager::XdgOutputHandler, state::SmithayState,
+};
 use leftwm_core::{models::WindowHandle, DisplayEvent, Window as WMWindow};
 
 impl XdgShellHandler for SmithayState {
@@ -80,3 +84,11 @@ impl XdgDecorationHandler for SmithayState {
 }
 
 delegate_xdg_decoration!(SmithayState);
+
+impl XdgOutputHandler for SmithayState {
+    fn output(&mut self, output: &WlOutput) -> &(Output, Rectangle<i32, Logical>) {
+        self.outputs.iter().find(|(o, _)| o.owns(output)).unwrap()
+    }
+}
+
+delegate_xdg_output_handler!(SmithayState);

@@ -26,6 +26,7 @@ use tracing::{debug, warn};
 use crate::{
     event_channel::EventChannelSender,
     leftwm_config::LeftwmConfig,
+    protocols::{screencopy::ScreencopyManagerState, xdg_output_manager::XdgOutputManagerState},
     udev::UdevData,
     window_registry::{WindowHandle, WindowRegisty},
 };
@@ -55,7 +56,9 @@ pub struct SmithayState {
     pub seat_state: SeatState<Self>,
     // layer_shell_state
     // popup_manager
-    //
+    pub screencopy_state: ScreencopyManagerState,
+    pub xdg_output_manager_state: XdgOutputManagerState,
+
     pub seat: Seat<Self>,
     pub seat_name: String,
     pub socket_name: OsString,
@@ -95,6 +98,8 @@ impl SmithayState {
         let xdg_decoration_state = XdgDecorationState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
+        let screencopy_state = ScreencopyManagerState::new::<Self>(&dh);
+        let xdg_output_manager_state = XdgOutputManagerState::new::<Self>(&dh);
 
         let seat_name = udev_data.seat_name();
         let mut seat = seat_state.new_wl_seat(&dh, seat_name.clone());
@@ -128,6 +133,8 @@ impl SmithayState {
             xdg_decoration_state,
             shm_state,
             seat_state,
+            screencopy_state,
+            xdg_output_manager_state,
 
             seat,
             seat_name,

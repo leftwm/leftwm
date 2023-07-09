@@ -87,7 +87,7 @@ impl SmithayState {
                         let device = data.state.udev_data.devices.get_mut(&node).unwrap();
                         let surface = device.surfaces.get_mut(&crtc).unwrap();
                         surface.compositor.frame_submitted().unwrap();
-                        data.state.render(node, crtc).unwrap();
+                        data.state.render(node, crtc, None).unwrap();
                     }
                     DrmEvent::Error(error) => {
                         error!("{:?}", error);
@@ -330,7 +330,7 @@ impl SmithayState {
             dmabuf_feedback,
             _global: global,
             compositor,
-            _output: output,
+            output,
         };
 
         device.surfaces.insert(crtc, surface);
@@ -347,7 +347,7 @@ impl SmithayState {
         .unwrap();
 
         // self.schedule_initial_render(node, crtc, self.loop_handle.clone());
-        self.render(node, crtc).unwrap();
+        self.render(node, crtc, None).unwrap();
     }
 
     fn connector_disconnected(
