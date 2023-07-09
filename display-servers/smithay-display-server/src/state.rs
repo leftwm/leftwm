@@ -17,7 +17,7 @@ use smithay::{
     utils::{Clock, Logical, Monotonic, Point, Rectangle, SERIAL_COUNTER},
     wayland::{
         compositor::{CompositorClientState, CompositorState},
-        shell::xdg::XdgShellState,
+        shell::xdg::{decoration::XdgDecorationState, XdgShellState},
         shm::ShmState,
         socket::ListeningSocketSource,
     },
@@ -48,7 +48,7 @@ pub struct SmithayState {
     // Protocols
     pub compositor_state: CompositorState,
     pub xdg_shell_state: XdgShellState,
-    // xdg_decoration_state
+    pub xdg_decoration_state: XdgDecorationState,
     pub shm_state: ShmState,
     // output_manager_State
     // data_device_state
@@ -93,6 +93,7 @@ impl SmithayState {
 
         let compositor_state = CompositorState::new::<Self>(&dh);
         let xdg_shell_state = XdgShellState::new::<Self>(&dh);
+        let xdg_decoration_state = XdgDecorationState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
 
@@ -125,6 +126,7 @@ impl SmithayState {
 
             compositor_state,
             xdg_shell_state,
+            xdg_decoration_state,
             shm_state,
             seat_state,
 

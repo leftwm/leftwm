@@ -1,13 +1,17 @@
 use smithay::{
-    delegate_xdg_shell,
+    delegate_xdg_decoration, delegate_xdg_shell,
     desktop::Window,
     reexports::{
-        wayland_protocols::xdg::shell::server::xdg_toplevel::State,
+        wayland_protocols::xdg::{
+            decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode,
+            shell::server::xdg_toplevel::State,
+        },
         wayland_server::protocol::wl_seat::WlSeat,
     },
     utils::Serial,
     wayland::shell::xdg::{
-        PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState,
+        decoration::XdgDecorationHandler, PopupSurface, PositionerState, ToplevelSurface,
+        XdgShellHandler, XdgShellState,
     },
 };
 
@@ -63,3 +67,16 @@ impl XdgShellHandler for SmithayState {
 }
 
 delegate_xdg_shell!(SmithayState);
+
+impl XdgDecorationHandler for SmithayState {
+    fn new_decoration(&mut self, toplevel: ToplevelSurface) {
+        toplevel.with_pending_state(|state| state.decoration_mode = Some(Mode::ServerSide));
+        toplevel.send_configure();
+    }
+
+    fn request_mode(&mut self, _toplevel: ToplevelSurface, _mode: Mode) {}
+
+    fn unset_mode(&mut self, _toplevel: ToplevelSurface) {}
+}
+
+delegate_xdg_decoration!(SmithayState);
