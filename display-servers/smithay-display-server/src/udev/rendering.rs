@@ -1,6 +1,6 @@
 mod render_elements;
 
-use std::{cell::RefMut, sync::Mutex, time::Duration};
+use std::{borrow::BorrowMut, cell::RefMut, sync::Mutex, time::Duration};
 
 use smithay::{
     backend::{
@@ -14,6 +14,7 @@ use smithay::{
             gles::GlesTexture,
             glow::GlowRenderer,
             multigpu::{gbm::GbmGlesBackend, MultiFrame, MultiRenderer},
+            Renderer,
         },
         SwapBuffersError,
     },
@@ -31,13 +32,16 @@ use smithay::{
         calloop::timer::{TimeoutAction, Timer},
         drm::{control::crtc, SystemError},
     },
-    utils::{IsAlive, Scale, Transform},
+    utils::{IsAlive, Logical, Point, Scale, Transform},
     wayland::{compositor, dmabuf::DmabufFeedback, shell::wlr_layer::Layer},
 };
 use tracing::warn;
 
 use crate::{
-    drawing::CLEAR_COLOR, managed_window::ManagedWindow, state::SmithayState, udev::UdevOutputId,
+    drawing::{border::BorderRenderer, PointerRenderElement, CLEAR_COLOR},
+    managed_window::ManagedWindow,
+    state::SmithayState,
+    udev::UdevOutputId,
 };
 
 use self::render_elements::CustomRenderElements;
@@ -199,6 +203,7 @@ impl SmithayState {
             w.render_elements(
                 &mut renderer,
                 &self.focused_window,
+                &self.config.borders,
                 w.data.read().unwrap().geometry.unwrap().loc.to_physical(1),
                 Scale::from(1.0),
                 1.0,
@@ -303,7 +308,37 @@ impl SmithayState {
             );
         }
 
+        BorderRenderer::cleanup(&mut renderer.as_mut().borrow_mut());
+
         frame_result.map(|frame_result| frame_result.damage.is_some())
+    }
+}
+
+pub trait AsGlowRenderer
+where
+    Self: Renderer,
+{
+    fn glow_renderer(&self) -> &GlowRenderer;
+    fn glow_renderer_mut(&mut self) -> &mut GlowRenderer;
+}
+
+impl AsGlowRenderer for GlowRenderer {
+    fn glow_renderer(&self) -> &GlowRenderer {
+        self
+    }
+
+    fn glow_renderer_mut(&mut self) -> &mut GlowRenderer {
+        self
+    }
+}
+
+impl<'a, 'b> AsGlowRenderer for UdevRenderer<'a, 'b> {
+    fn glow_renderer(&self) -> &GlowRenderer {
+        self.as_ref()
+    }
+
+    fn glow_renderer_mut(&mut self) -> &mut GlowRenderer {
+        self.as_mut()
     }
 }
 

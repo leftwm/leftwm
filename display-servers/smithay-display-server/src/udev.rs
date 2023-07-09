@@ -1,5 +1,5 @@
 pub mod devices;
-mod rendering;
+pub mod rendering;
 
 use std::collections::{HashMap, HashSet};
 

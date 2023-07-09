@@ -1,3 +1,5 @@
+pub mod border;
+
 use smithay::{
     backend::renderer::{
         element::{

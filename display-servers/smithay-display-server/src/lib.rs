@@ -2,7 +2,7 @@ use std::{process::Command, sync::atomic::Ordering, time::Duration};
 
 use event_channel::EventChannelReceiver;
 use internal_action::InternalAction;
-use leftwm_config::LeftwmConfig;
+use leftwm_config::{BorderConfig, LeftwmConfig};
 use leftwm_core::{models::WindowHandle, DisplayAction, DisplayEvent, DisplayServer, Window};
 use smithay::{
     backend::{
@@ -24,7 +24,7 @@ use smithay::{
     utils::{Rectangle, SERIAL_COUNTER},
 };
 use tokio::sync::oneshot;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::state::{CalloopData, SmithayState};
 mod drawing;
@@ -38,9 +38,6 @@ mod pointer;
 mod state;
 mod udev;
 mod window_registry;
-
-const OFFSET_X: i32 = 0;
-const OFFSET_Y: i32 = -25; // height of decotations
 
 pub struct SmithayHandle {
     event_receiver: EventChannelReceiver,
@@ -56,7 +53,19 @@ impl DisplayServer for SmithayHandle {
         let config = LeftwmConfig {
             focus_behavior: config.focus_behaviour(),
             sloppy_mouse_follows_focus: config.sloppy_mouse_follows_focus(),
+
+            borders: BorderConfig {
+                border_width: config.border_width(),
+                default_border_color: read_color::rgb(&mut config.default_border_color().chars())
+                    .map_or([0, 0, 0].into(), Into::into),
+                floating_border_color: read_color::rgb(&mut config.floating_border_color().chars())
+                    .map_or([0, 0, 0].into(), Into::into),
+                focused_border_color: read_color::rgb(&mut config.focused_border_color().chars())
+                    .map_or([255, 0, 0].into(), Into::into),
+            },
         };
+
+        debug!("{:#?}", config.borders);
 
         std::thread::spawn(move || {
             let mut event_loop = EventLoop::<CalloopData>::try_new().unwrap();
@@ -215,6 +224,7 @@ impl DisplayServer for SmithayHandle {
                         match act {
                             InternalAction::Flush => data.display.flush_clients().unwrap(),
                             InternalAction::GenerateVerifyFocusEvent => (), //TODO: implement
+                            InternalAction::UpdateConfig(config) => data.state.config = config,
                             InternalAction::UpdateWindows(windows) => {
                                 info!("Received window update: {:#?}", windows);
                                 for window in windows {
@@ -222,17 +232,27 @@ impl DisplayServer for SmithayHandle {
                                         panic!("LeftWM passed an invalid handle");
                                     };
                                     let managed_window =
-                                        data.state.window_registry.get(handle).unwrap();
+                                        data.state.window_registry.get_mut(handle).unwrap();
+
+                                    let border_width = data.state.config.borders.border_width;
+                                    // let border_width = 0;
+                                    let loc =
+                                        (window.x() + border_width, window.y() + border_width)
+                                            .into();
+                                    debug!("Window Pos: {:?}", loc);
+                                    let size = (
+                                        window.width() - 2 * border_width,
+                                        window.height() - 2 * border_width,
+                                    )
+                                        .into();
+                                    debug!("Window Size: {:?}", size);
+                                    managed_window.set_geometry(Rectangle { loc, size });
 
                                     let mut managed_window_data =
                                         managed_window.data.write().unwrap();
 
                                     managed_window_data.floating = window.floating();
                                     managed_window_data.visible = window.visible();
-                                    managed_window_data.geometry = Some(Rectangle {
-                                        loc: (window.x() - OFFSET_X, window.y() - OFFSET_Y).into(),
-                                        size: (window.width(), window.height()).into(),
-                                    });
 
                                     managed_window
                                         .window
@@ -387,10 +407,28 @@ impl DisplayServer for SmithayHandle {
 
     fn load_config(
         &mut self,
-        _config: &impl leftwm_core::Config,
+        config: &impl leftwm_core::Config,
         _focused: Option<&Option<leftwm_core::models::WindowHandle>>,
         _windows: &[leftwm_core::Window],
     ) {
+        let config = LeftwmConfig {
+            focus_behavior: config.focus_behaviour(),
+            sloppy_mouse_follows_focus: config.sloppy_mouse_follows_focus(),
+
+            borders: BorderConfig {
+                border_width: config.border_width(),
+                default_border_color: read_color::rgb(&mut config.default_border_color().chars())
+                    .map_or([0, 0, 0].into(), Into::into),
+                floating_border_color: read_color::rgb(&mut config.floating_border_color().chars())
+                    .map_or([0, 0, 0].into(), Into::into),
+                focused_border_color: read_color::rgb(&mut config.focused_border_color().chars())
+                    .map_or([255, 0, 0].into(), Into::into),
+            },
+        };
+        debug!("{:#?}", config.borders);
+        self.action_sender
+            .send(InternalAction::UpdateConfig(config))
+            .unwrap();
     }
 
     fn update_windows(&self, windows: Vec<&Window>) {

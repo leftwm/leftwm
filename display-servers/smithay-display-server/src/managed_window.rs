@@ -6,6 +6,7 @@ use std::{
 use smithay::{
     backend::renderer::{
         element::{surface::WaylandSurfaceRenderElement, AsRenderElements},
+        gles::element::PixelShaderElement,
         ImportAll, Renderer,
     },
     desktop::{space::SpaceElement, utils::OutputPresentationFeedback, Window},
@@ -24,7 +25,13 @@ use smithay::{
     },
 };
 
-use crate::{state::SmithayState, window_registry::WindowHandle};
+use crate::{
+    drawing::border::{BorderRenderer, WindowState},
+    leftwm_config::BorderConfig,
+    state::SmithayState,
+    udev::rendering::AsGlowRenderer,
+    window_registry::WindowHandle,
+};
 
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct ManagedWindowData {
@@ -53,40 +60,6 @@ impl PartialEq for ManagedWindow {
 impl IsAlive for ManagedWindow {
     fn alive(&self) -> bool {
         self.window.alive()
-    }
-}
-
-impl SpaceElement for ManagedWindow {
-    fn bbox(&self) -> Rectangle<i32, Logical> {
-        self.window.bbox()
-    }
-
-    fn is_in_input_region(&self, point: &Point<f64, Logical>) -> bool {
-        self.window.is_in_input_region(point)
-    }
-
-    fn set_activate(&self, activated: bool) {
-        self.window.set_activate(activated)
-    }
-
-    fn output_enter(&self, output: &smithay::output::Output, overlap: Rectangle<i32, Logical>) {
-        self.window.output_enter(output, overlap)
-    }
-
-    fn output_leave(&self, output: &smithay::output::Output) {
-        self.window.output_leave(output)
-    }
-
-    fn geometry(&self) -> Rectangle<i32, Logical> {
-        self.bbox()
-    }
-
-    fn z_index(&self) -> u8 {
-        smithay::desktop::space::RenderZindex::Overlay as u8
-    }
-
-    fn refresh(&self) {
-        self.window.refresh()
     }
 }
 
@@ -209,23 +182,43 @@ impl ManagedWindow {
         &self,
         renderer: &mut R,
         focused_window: &Option<WindowHandle>,
+        borders: &BorderConfig,
         location: Point<i32, smithay::utils::Physical>,
         scale: smithay::utils::Scale<f64>,
         alpha: f32,
     ) -> Vec<C>
     where
-        C: From<WaylandSurfaceRenderElement<R>>,
-        R: Renderer + ImportAll,
+        C: From<WaylandSurfaceRenderElement<R>> + From<PixelShaderElement>,
+        R: Renderer + ImportAll + AsGlowRenderer,
         <R as Renderer>::TextureId: 'static,
     {
         let mut elements = Vec::new();
+
         // borders
         if self.handle == *focused_window {
-            // focused
+            elements.push(C::from(BorderRenderer::render_element(
+                renderer.glow_renderer_mut(),
+                self,
+                borders,
+                WindowState::Focused,
+                self.data.read().unwrap().geometry.unwrap().loc,
+            )));
         } else if self.data.read().unwrap().floating {
-            // floating
+            elements.push(C::from(BorderRenderer::render_element(
+                renderer.glow_renderer_mut(),
+                self,
+                borders,
+                WindowState::Floating,
+                self.data.read().unwrap().geometry.unwrap().loc,
+            )));
         } else {
-            // normal border
+            elements.push(C::from(BorderRenderer::render_element(
+                renderer.glow_renderer_mut(),
+                self,
+                borders,
+                WindowState::Default,
+                self.data.read().unwrap().geometry.unwrap().loc,
+            )));
         }
 
         elements.append(
@@ -234,6 +227,7 @@ impl ManagedWindow {
                 .render_elements(renderer, location, scale, alpha),
         );
 
+        elements.reverse();
         elements
     }
 
@@ -254,6 +248,14 @@ impl ManagedWindow {
 
     pub fn on_commit(&self) {
         self.window.on_commit()
+    }
+
+    pub fn set_geometry(&mut self, geometry: Rectangle<i32, Logical>) {
+        self.data.write().unwrap().geometry = Some(geometry);
+        self.window
+            .toplevel()
+            .with_pending_state(|state| state.size = Some(geometry.size));
+        self.window.toplevel().send_configure();
     }
 
     pub fn send_frame<T, F>(

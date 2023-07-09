@@ -1,4 +1,4 @@
-use std::{collections::HashMap, os::fd::FromRawFd, path::Path};
+use std::{borrow::BorrowMut, collections::HashMap, os::fd::FromRawFd, path::Path};
 
 use leftwm_core::{
     models::{BBox, Screen},
@@ -35,6 +35,7 @@ use smithay_drm_extras::{
 use tracing::{error, info, warn};
 
 use crate::{
+    drawing::border::BorderRenderer,
     state::{CalloopData, SmithayState},
     udev::{get_surface_dmabuf_feedback, Surface, UdevOutputId},
 };
@@ -307,6 +308,8 @@ impl SmithayState {
 
             compositor
         };
+
+        BorderRenderer::new(renderer.as_mut().borrow_mut());
 
         let dmabuf_feedback = get_surface_dmabuf_feedback(
             self.udev_data.primary_gpu,
