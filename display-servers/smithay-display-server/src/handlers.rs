@@ -180,6 +180,7 @@ pub struct ResizeData {
 
 //TODO: Move Out
 // State of the resize operation.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ResizeState {
     /// The surface is not being resized.

@@ -7,7 +7,6 @@ use std::{
 
 use leftwm_core::{models::FocusBehaviour, DisplayEvent};
 use smithay::{
-    desktop::space::SpaceElement,
     input::{keyboard::XkbConfig, pointer::CursorImageStatus, Seat, SeatState},
     output::Output,
     reexports::{

@@ -1,8 +1,7 @@
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, rc::Rc};
+use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap};
 
 use smithay::{
     backend::renderer::{
-        element::Element,
         gles::{
             element::PixelShaderElement, GlesPixelProgram, GlesRenderer, Uniform, UniformName,
             UniformType,

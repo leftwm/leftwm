@@ -32,13 +32,13 @@ use smithay::{
         calloop::timer::{TimeoutAction, Timer},
         drm::{control::crtc, SystemError},
     },
-    utils::{IsAlive, Logical, Point, Scale, Transform},
+    utils::{IsAlive, Scale, Transform},
     wayland::{compositor, dmabuf::DmabufFeedback, shell::wlr_layer::Layer},
 };
 use tracing::warn;
 
 use crate::{
-    drawing::{border::BorderRenderer, PointerRenderElement, CLEAR_COLOR},
+    drawing::{border::BorderRenderer, CLEAR_COLOR},
     managed_window::ManagedWindow,
     state::SmithayState,
     udev::UdevOutputId,

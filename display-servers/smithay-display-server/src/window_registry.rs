@@ -36,6 +36,7 @@ impl WindowRegisty {
         return key;
     }
 
+    #[allow(dead_code)]
     pub fn remove(&mut self, key: WindowHandle) -> Option<ManagedWindow> {
         self.map.remove(&key)
     }

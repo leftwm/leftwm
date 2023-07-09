@@ -9,7 +9,7 @@ use smithay::{
         gles::element::PixelShaderElement,
         ImportAll, Renderer,
     },
-    desktop::{space::SpaceElement, utils::OutputPresentationFeedback, Window},
+    desktop::{utils::OutputPresentationFeedback, Window},
     input::{keyboard::KeyboardTarget, pointer::PointerTarget},
     output::Output,
     reexports::{
