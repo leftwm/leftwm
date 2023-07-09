@@ -14,7 +14,7 @@ use smithay::{
         drm::{compositor::DrmCompositor, DrmDevice, DrmDeviceFd, DrmNode, NodeType},
         renderer::{
             element::texture::TextureBuffer,
-            gles::GlesRenderer,
+            glow::GlowRenderer,
             multigpu::{gbm::GbmGlesBackend, GpuManager, MultiTexture},
             ImportDma, ImportEgl, ImportMemWl,
         },
@@ -51,7 +51,7 @@ pub type GbmDrmCompositor = DrmCompositor<
 pub struct UdevData {
     pub session: LibSeatSession,
     pub primary_gpu: DrmNode,
-    pub gpu_manager: GpuManager<GbmGlesBackend<GlesRenderer>>,
+    pub gpu_manager: GpuManager<GbmGlesBackend<GlowRenderer>>,
     pub devices: HashMap<DrmNode, Device>,
     pub allocator: Option<Box<dyn Allocator<Buffer = Dmabuf, Error = AnyError>>>,
     pub dmabuf_state: Option<(DmabufState, DmabufGlobal)>,
@@ -245,7 +245,7 @@ impl SmithayState {
 pub fn get_surface_dmabuf_feedback(
     primary_gpu: DrmNode,
     render_node: DrmNode,
-    gpus: &mut GpuManager<GbmGlesBackend<GlesRenderer>>,
+    gpus: &mut GpuManager<GbmGlesBackend<GlowRenderer>>,
     composition: &GbmDrmCompositor,
 ) -> Option<DrmSurfaceDmabufFeedback> {
     let primary_formats = gpus

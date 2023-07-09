@@ -42,23 +42,18 @@ impl SmithayState {
     }
 
     fn clamp_coords(&self, pos: Point<f64, Logical>) -> Point<f64, Logical> {
-        if self.space.outputs().next().is_none() {
+        if self.outputs.len() == 0 {
             return pos;
         }
 
         let (pos_x, pos_y) = pos.into();
-        let max_x = self.space.outputs().fold(0, |acc, o| {
-            acc + self.space.output_geometry(o).unwrap().size.w
-        });
+        let max_x = self.outputs.iter().fold(0, |acc, (_, g)| acc + g.size.w);
         let clamped_x = pos_x.max(0.0).min(max_x as f64);
         let max_y = self
-            .space
-            .outputs()
-            .find(|o| {
-                let geo = self.space.output_geometry(o).unwrap();
-                geo.contains((clamped_x as i32, 0))
-            })
-            .map(|o| self.space.output_geometry(o).unwrap().size.h);
+            .outputs
+            .iter()
+            .find(|(_, g)| g.contains((clamped_x as i32, 0)))
+            .map(|(_, g)| g.size.h);
 
         if let Some(max_y) = max_y {
             let clamped_y = pos_y.max(0.0).min(max_y as f64);
@@ -70,11 +65,10 @@ impl SmithayState {
 
     pub fn surface_under(&self) -> Option<(ManagedWindow, Point<i32, Logical>)> {
         let pos = self.pointer_location;
-        // let output = self.space.outputs().find(|o| {
-        // let geometry = self.space.output_geometry(o).unwrap();
-        // geometry.contains(pos.to_i32_round())
-        // })?;
-        // let output_geo = self.space.output_geometry(output).unwrap();
+        // let (output, output_geo) = self
+        //     .outputs
+        //     .iter()
+        //     .find(|(_, g)| g.contains(pos.to_i32_round()))?;
         // let layers = layer_map_for_output(output);
 
         let mut under = None;
@@ -99,7 +93,7 @@ impl SmithayState {
         //     let layer_loc = layers.layer_geometry(layer).unwrap().loc;
         //     under = Some((layer.clone().into(), output_geo.loc + layer_loc));
         // };
-        if let Some((window, location)) = self.space.element_under(pos) {
+        if let Some((window, location)) = self.window_registry.window_under(pos.to_i32_ceil()) {
             under = Some((window.clone().into(), location))
         }
 

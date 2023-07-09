@@ -16,7 +16,7 @@ nohash-hasher = "0.2.0"
 git = "https://github.com/Smithay/smithay.git"
 # rev = "138921b"
 rev = "cfc3545"
-features = ["backend_egl", "wayland_frontend", "use_system_lib"]
+features = ["backend_egl", "wayland_frontend", "use_system_lib", "renderer_glow"]
 
 [dependencies.smithay-drm-extras]
 git = "https://github.com/Smithay/smithay.git"

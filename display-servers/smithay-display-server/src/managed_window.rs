@@ -3,7 +3,6 @@ use std::{
     time::Duration,
 };
 
-use leftwm_core::models::TagId;
 use smithay::{
     backend::renderer::{
         element::{surface::WaylandSurfaceRenderElement, AsRenderElements},
@@ -27,18 +26,18 @@ use smithay::{
 
 use crate::{state::SmithayState, window_registry::WindowHandle};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Default)]
 pub struct ManagedWindowData {
     pub managed: bool,
     pub floating: bool,
-    pub tag: Option<TagId>,
-    visible: bool,
+    pub visible: bool,
+    pub geometry: Option<Rectangle<i32, Logical>>,
 }
 
 #[derive(Clone, Debug)]
 pub struct ManagedWindow {
     pub window: Window,
-    pub handle: Option<WindowHandle>,
+    handle: Option<WindowHandle>,
     pub data: Arc<RwLock<ManagedWindowData>>,
 }
 
@@ -197,37 +196,56 @@ impl PointerTarget<SmithayState> for ManagedWindow {
     }
 }
 
-impl<R> AsRenderElements<R> for ManagedWindow
-where
-    R: Renderer + ImportAll,
-    <R as Renderer>::TextureId: 'static,
-{
-    type RenderElement = WaylandSurfaceRenderElement<R>;
-
-    fn render_elements<C: From<Self::RenderElement>>(
-        &self,
-        renderer: &mut R,
-        location: Point<i32, smithay::utils::Physical>,
-        scale: smithay::utils::Scale<f64>,
-        alpha: f32,
-    ) -> Vec<C> {
-        self.window
-            .render_elements(renderer, location, scale, alpha)
-    }
-}
-
 impl ManagedWindow {
     pub fn new(window: Window) -> Self {
         Self {
             window,
-            data: Arc::new(RwLock::new(ManagedWindowData {
-                managed: false,
-                floating: false,
-                tag: None,
-                visible: false,
-            })),
+            data: Arc::new(RwLock::new(ManagedWindowData::default())),
             handle: None,
         }
+    }
+
+    pub fn render_elements<C, R>(
+        &self,
+        renderer: &mut R,
+        focused_window: &Option<WindowHandle>,
+        location: Point<i32, smithay::utils::Physical>,
+        scale: smithay::utils::Scale<f64>,
+        alpha: f32,
+    ) -> Vec<C>
+    where
+        C: From<WaylandSurfaceRenderElement<R>>,
+        R: Renderer + ImportAll,
+        <R as Renderer>::TextureId: 'static,
+    {
+        let mut elements = Vec::new();
+        // borders
+        if self.handle == *focused_window {
+            // focused
+        } else if self.data.read().unwrap().floating {
+            // floating
+        } else {
+            // normal border
+        }
+
+        elements.append(
+            &mut self
+                .window
+                .render_elements(renderer, location, scale, alpha),
+        );
+
+        elements
+    }
+
+    /// Sets the window handle only if the current handle is `None`
+    pub fn set_handle(&mut self, handle: WindowHandle) {
+        if self.handle.is_none() {
+            self.handle = Some(handle);
+        }
+    }
+
+    pub fn get_handle(&self) -> Option<WindowHandle> {
+        self.handle
     }
 
     pub fn toplevel(&self) -> &ToplevelSurface {
@@ -252,7 +270,7 @@ impl ManagedWindow {
             .send_frame(output, time, throttle, primary_scan_out_output)
     }
 
-    pub fn send_dmabuf_feedback<'a, P, F>(
+    pub fn _send_dmabuf_feedback<'a, P, F>(
         &self,
         output: &Output,
         primary_scan_out_output: P,

@@ -10,6 +10,7 @@ use smithay::{
         libinput::{LibinputInputBackend, LibinputSessionInterface},
         session::{libseat::LibSeatSession, Event as SessionEvent, Session},
         udev::UdevBackend,
+        SwapBuffersError,
     },
     input::keyboard::{xkb, FilterResult},
     reexports::{
@@ -20,7 +21,7 @@ use smithay::{
         input::{Led, Libinput},
         wayland_server::Display,
     },
-    utils::SERIAL_COUNTER,
+    utils::{Rectangle, SERIAL_COUNTER},
 };
 use tokio::sync::oneshot;
 use tracing::{error, info, warn};
@@ -38,9 +39,8 @@ mod state;
 mod udev;
 mod window_registry;
 
-// FIXME: For some reason windows are placed at an offset, I have now idea why. This const corrects
-// for that offset.
-const OFFSET: i32 = 11;
+const OFFSET_X: i32 = 0;
+const OFFSET_Y: i32 = -25; // height of decotations
 
 pub struct SmithayHandle {
     event_receiver: EventChannelReceiver,
@@ -158,7 +158,6 @@ impl DisplayServer for SmithayHandle {
                 })
                 .unwrap();
 
-            let handle = event_loop.handle();
             event_loop
                 .handle()
                 .insert_source(notifier, move |event, &mut (), data| match event {
@@ -184,17 +183,23 @@ impl DisplayServer for SmithayHandle {
                             .map(|(handle, backend)| (*handle, backend))
                         {
                             backend.drm.activate();
-                            for surface in backend.surfaces.values_mut() {
+                            for (crtc, surface) in backend
+                                .surfaces
+                                .iter_mut()
+                                .map(|(handle, backend)| (*handle, backend))
+                            {
                                 if let Err(err) = surface.compositor.surface().reset_state() {
-                                    warn!("Failed to reset drm surface state: {}", err);
+                                    warn!("Failed to reset crtc state: {:?}", err);
                                 }
-                                // reset the buffers after resume to trigger a full redraw
-                                // this is important after a vt switch as the primary plane
-                                // has no content and damage tracking may prevent a redraw
-                                // otherwise
                                 surface.compositor.reset_buffers();
+                                data.state.loop_handle.insert_idle(move |data| {
+                                    if let Some(SwapBuffersError::ContextLost(_)) =
+                                        data.state.render(node, crtc).err()
+                                    {
+                                        panic!("Device context lost ({})", node);
+                                    }
+                                });
                             }
-                            handle.insert_idle(move |data| data.state.render(node, None));
                         }
                     }
                 })
@@ -218,14 +223,16 @@ impl DisplayServer for SmithayHandle {
                                     };
                                     let managed_window =
                                         data.state.window_registry.get(handle).unwrap();
-                                    data.state.space.unmap_elem(managed_window);
-                                    data.state.space.map_element(
-                                        managed_window.clone(),
-                                        // FIXME: For some reason windows are placed at an offset,
-                                        // I have now idea why
-                                        (window.x() - OFFSET, window.y() - OFFSET),
-                                        false,
-                                    );
+
+                                    let mut managed_window_data =
+                                        managed_window.data.write().unwrap();
+
+                                    managed_window_data.floating = window.floating();
+                                    managed_window_data.visible = window.visible();
+                                    managed_window_data.geometry = Some(Rectangle {
+                                        loc: (window.x() - OFFSET_X, window.y() - OFFSET_Y).into(),
+                                        size: (window.width(), window.height()).into(),
+                                    });
 
                                     managed_window
                                         .window
@@ -310,17 +317,7 @@ impl DisplayServer for SmithayHandle {
                             InternalAction::DisplayAction(DisplayAction::SetCurrentTags(_)) => {
                                 //TODO: no `todo!()` here because crash
                             }
-                            InternalAction::DisplayAction(DisplayAction::SetWindowTag(
-                                handle,
-                                tag,
-                            )) => {
-                                info!("Setting tag {:?} for window {:?}", tag, handle);
-                                let WindowHandle::SmithayHandle(handle) = handle else {
-                                    panic!("LeftWM passed an invalid handle");
-                                };
-                                let window = data.state.window_registry.get_mut(handle).unwrap();
-                                window.data.write().unwrap().tag = tag;
-                            }
+                            InternalAction::DisplayAction(DisplayAction::SetWindowTag(..)) => {}
                             InternalAction::DisplayAction(DisplayAction::NormalMode) => {
                                 todo!()
                             }
@@ -349,7 +346,7 @@ impl DisplayServer for SmithayHandle {
                 if result.is_err() {
                     state.running.store(false, Ordering::SeqCst);
                 } else {
-                    state.space.refresh();
+                    state.window_registry.clean();
                     // state.popups.cleanup();
                     display.flush_clients().unwrap();
                 }

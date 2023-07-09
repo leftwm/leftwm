@@ -16,18 +16,16 @@ use smithay::{
         },
         egl::{self, EGLDevice, EGLDisplay},
         session::{libseat, Session},
-        SwapBuffersError,
     },
     output::{Mode as WlMode, Output, PhysicalProperties, Subpixel},
     reexports::{
-        calloop::LoopHandle,
         drm::{
             control::{connector, crtc, ModeTypeFlags},
             Device,
         },
         nix::fcntl::OFlag,
     },
-    utils::DeviceFd,
+    utils::{DeviceFd, Logical, Rectangle, Size},
 };
 
 use smithay_drm_extras::{
@@ -41,7 +39,7 @@ use crate::{
     udev::{get_surface_dmabuf_feedback, Surface, UdevOutputId},
 };
 
-use super::{rendering::initial_render, Device as UdevDevice};
+use super::Device as UdevDevice;
 
 pub const SUPPORTED_FORMATS: &[Fourcc] = &[
     Fourcc::Abgr2101010,
@@ -83,9 +81,12 @@ impl SmithayState {
             .loop_handle
             .insert_source(
                 notifier,
-                move |event, metadata, data: &mut CalloopData| match event {
+                move |event, _, data: &mut CalloopData| match event {
                     DrmEvent::VBlank(crtc) => {
-                        data.state.frame_finish(node, crtc, metadata);
+                        let device = data.state.udev_data.devices.get_mut(&node).unwrap();
+                        let surface = device.surfaces.get_mut(&crtc).unwrap();
+                        surface.compositor.frame_submitted().unwrap();
+                        data.state.render(node, crtc).unwrap();
                     }
                     DrmEvent::Error(error) => {
                         error!("{:?}", error);
@@ -149,6 +150,7 @@ impl SmithayState {
 
         //TODO: fixup window coordinates
     }
+
     fn connector_connected(
         &mut self,
         node: DrmNode,
@@ -221,15 +223,17 @@ impl SmithayState {
         );
         let global = output.create_global::<SmithayState>(&self.display_handle);
 
-        let x = self.space.outputs().fold(0, |acc, o| {
-            acc + self.space.output_geometry(o).unwrap().size.w
-        });
+        let x = self.outputs.iter().fold(0, |acc, (_, r)| acc + r.size.w);
         //TODO: Set pos based on config
         let position = (x, 0).into();
 
         output.set_preferred(wl_mode);
         output.change_current_state(Some(wl_mode), None, None, Some(position));
-        self.space.map_output(&output, position);
+        let geomitry = Rectangle {
+            loc: position,
+            size: output_size(&output).unwrap(),
+        };
+        self.outputs.push((output.clone(), geomitry));
 
         output.user_data().insert_if_missing(|| UdevOutputId {
             crtc,
@@ -339,7 +343,8 @@ impl SmithayState {
         )))
         .unwrap();
 
-        self.schedule_initial_render(node, crtc, self.loop_handle.clone());
+        // self.schedule_initial_render(node, crtc, self.loop_handle.clone());
+        self.render(node, crtc).unwrap();
     }
 
     fn connector_disconnected(
@@ -357,9 +362,9 @@ impl SmithayState {
         device.surfaces.remove(&crtc);
 
         let output = self
-            .space
-            .outputs()
-            .find(|o| {
+            .outputs
+            .iter()
+            .find(|(o, _)| {
                 o.user_data()
                     .get::<UdevOutputId>()
                     .map(|id| id.device_id == node && id.crtc == crtc)
@@ -368,47 +373,18 @@ impl SmithayState {
             .cloned();
 
         if let Some(output) = output {
-            self.space.unmap_output(&output);
+            self.outputs.retain(|o| o != &output)
         }
     }
+}
 
-    fn schedule_initial_render(
-        &mut self,
-        node: DrmNode,
-        crtc: crtc::Handle,
-        evt_handle: LoopHandle<'static, CalloopData>,
-    ) {
-        let device = if let Some(device) = self.udev_data.devices.get_mut(&node) {
-            device
-        } else {
-            return;
-        };
-
-        let surface = if let Some(surface) = device.surfaces.get_mut(&crtc) {
-            surface
-        } else {
-            return;
-        };
-
-        let node = surface.render_node;
-        let result = {
-            let mut renderer = self.udev_data.gpu_manager.single_renderer(&node).unwrap();
-            initial_render(surface, &mut renderer)
-        };
-
-        if let Err(err) = result {
-            match err {
-                SwapBuffersError::AlreadySwapped => {}
-                SwapBuffersError::TemporaryFailure(err) => {
-                    // TODO dont reschedule after 3(?) retries
-                    warn!("Failed to submit page_flip: {}", err);
-                    let handle = evt_handle.clone();
-                    evt_handle.insert_idle(move |data| {
-                        data.state.schedule_initial_render(node, crtc, handle)
-                    });
-                }
-                SwapBuffersError::ContextLost(err) => panic!("Rendering loop lost: {}", err),
-            }
-        }
-    }
+fn output_size(output: &Output) -> Option<Size<i32, Logical>> {
+    let transform = output.current_transform();
+    output.current_mode().map(|mode| {
+        transform
+            .transform_size(mode.size)
+            .to_f64()
+            .to_logical(output.current_scale().fractional_scale())
+            .to_i32_ceil::<i32>()
+    })
 }

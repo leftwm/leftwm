@@ -7,13 +7,14 @@ use std::{
 
 use leftwm_core::{models::FocusBehaviour, DisplayEvent};
 use smithay::{
-    desktop::{space::SpaceElement, Space},
+    desktop::space::SpaceElement,
     input::{keyboard::XkbConfig, pointer::CursorImageStatus, Seat, SeatState},
+    output::Output,
     reexports::{
         calloop::{generic::Generic, Interest, LoopHandle, LoopSignal, Mode, PostAction},
         wayland_server::{backend::ClientData, Display, DisplayHandle},
     },
-    utils::{Clock, Logical, Monotonic, Point, SERIAL_COUNTER},
+    utils::{Clock, Logical, Monotonic, Point, Rectangle, SERIAL_COUNTER},
     wayland::{
         compositor::{CompositorClientState, CompositorState},
         shell::xdg::XdgShellState,
@@ -26,7 +27,6 @@ use tracing::{debug, warn};
 use crate::{
     event_channel::EventChannelSender,
     leftwm_config::LeftwmConfig,
-    managed_window::ManagedWindow,
     udev::UdevData,
     window_registry::{WindowHandle, WindowRegisty},
 };
@@ -37,7 +37,8 @@ pub struct SmithayState {
     pub start_time: Instant,
     pub loop_handle: LoopHandle<'static, CalloopData>,
     pub loop_signal: LoopSignal,
-    pub space: Space<ManagedWindow>,
+    // pub space: Space<ManagedWindow>,
+    pub outputs: Vec<(Output, Rectangle<i32, Logical>)>,
     pub clock: Clock<Monotonic>,
     pub running: Arc<AtomicBool>,
 
@@ -62,7 +63,7 @@ pub struct SmithayState {
 
     pub window_registry: WindowRegisty,
     pub config: LeftwmConfig,
-    pub focussed_window: Option<WindowHandle>,
+    pub focused_window: Option<WindowHandle>,
 
     event_sender: EventChannelSender,
 }
@@ -88,7 +89,7 @@ impl SmithayState {
         loop_signal: LoopSignal,
     ) -> Self {
         let dh = display.handle();
-        let space = Space::default();
+        let outputs = Vec::new();
 
         let compositor_state = CompositorState::new::<Self>(&dh);
         let xdg_shell_state = XdgShellState::new::<Self>(&dh);
@@ -114,7 +115,8 @@ impl SmithayState {
             start_time: Instant::now(),
             loop_handle,
             loop_signal,
-            space,
+            // space,
+            outputs,
             clock,
             running: Arc::new(AtomicBool::new(true)),
 
@@ -132,7 +134,7 @@ impl SmithayState {
 
             window_registry,
             config,
-            focussed_window: None,
+            focused_window: None,
 
             event_sender,
         }
@@ -204,15 +206,15 @@ impl SmithayState {
             let y = bbox.loc.y as f64 + bbox.size.h as f64 / 2f64;
             self.pointer_location = (x, y).into();
         }
-        self.focussed_window = Some(handle);
+        self.focused_window = Some(handle);
     }
 
     pub fn focus_window_under(&mut self) {
         let under = self.surface_under();
         if self.config.focus_behavior == FocusBehaviour::Sloppy {
             if let Some((window, _)) = under.clone() {
-                if window.handle != self.focussed_window {
-                    if let Some(h) = window.handle {
+                if window.get_handle() != self.focused_window {
+                    if let Some(h) = window.get_handle() {
                         self.focus_window(h, false);
                         // self.send_event(DisplayEvent::WindowTakeFocus(
                         //     WindowHandle::SmithayHandle(h),

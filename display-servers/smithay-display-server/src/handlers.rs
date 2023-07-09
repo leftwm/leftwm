@@ -8,8 +8,9 @@ use smithay::{
         renderer::{utils::on_commit_buffer_handler, ImportDma},
     },
     delegate_compositor, delegate_dmabuf, delegate_output, delegate_seat, delegate_shm,
-    desktop::{layer_map_for_output, Space, WindowSurfaceType},
+    desktop::{layer_map_for_output, WindowSurfaceType},
     input::{SeatHandler, SeatState},
+    output::Output,
     reexports::{
         calloop::Interest,
         wayland_server::{
@@ -36,6 +37,7 @@ use smithay::{
 use crate::{
     managed_window::ManagedWindow,
     state::{ClientState, SmithayState},
+    window_registry::WindowRegisty,
 };
 
 impl CompositorHandler for SmithayState {
@@ -66,7 +68,11 @@ impl CompositorHandler for SmithayState {
 
         // self.popups.commit(surface);
 
-        ensure_initial_configure(surface, &self.space)
+        ensure_initial_configure(
+            surface,
+            &self.window_registry,
+            &self.outputs.iter().map(|(o, _)| o.clone()).collect(),
+        )
     }
 
     fn new_surface(&mut self, surface: &WlSurface) {
@@ -153,9 +159,10 @@ delegate_output!(SmithayState);
 
 impl SmithayState {
     pub fn window_for_surface(&self, surface: &WlSurface) -> Option<ManagedWindow> {
-        self.space
-            .elements()
-            .find(|window| window.wl_surface().map(|s| s == *surface).unwrap_or(false))
+        self.window_registry
+            .windows()
+            .find(|(_, w)| w.wl_surface().map(|s| s == *surface).unwrap_or(false))
+            .map(|(_, w)| w)
             .cloned()
     }
 }
@@ -199,7 +206,8 @@ pub struct SurfaceData {
 
 fn ensure_initial_configure(
     surface: &WlSurface,
-    space: &Space<ManagedWindow>,
+    windows: &WindowRegisty,
+    outputs: &Vec<Output>,
     // popups: &mut PopupManager,
 ) {
     with_surface_tree_upward(
@@ -214,8 +222,9 @@ fn ensure_initial_configure(
         |_, _, _| true,
     );
 
-    if let Some(window) = space
-        .elements()
+    if let Some(window) = windows
+        .windows()
+        .map(|(_, w)| w)
         .find(|window| window.wl_surface().map(|s| s == *surface).unwrap_or(false))
         .cloned()
     {
@@ -270,7 +279,7 @@ fn ensure_initial_configure(
     //     return;
     // };
 
-    if let Some(output) = space.outputs().find(|o| {
+    if let Some(output) = outputs.iter().find(|o| {
         let map = layer_map_for_output(o);
         map.layer_for_surface(surface, WindowSurfaceType::TOPLEVEL)
             .is_some()
