@@ -1,0 +1,123 @@
+use leftwm_core::{models::WindowHandle, DisplayAction, DisplayEvent};
+use smithay::{reexports::wayland_server::Display, utils::Rectangle};
+use tracing::info;
+
+use crate::{internal_action::InternalAction, state::SmithayState};
+
+impl SmithayState {
+    pub fn handle_action(&mut self, action: InternalAction, display: &mut Display<Self>) {
+        match action {
+            InternalAction::Flush => display.flush_clients().unwrap(),
+            InternalAction::GenerateVerifyFocusEvent => {
+                if let Some(handle) = self.focused_window {
+                    self.send_event(DisplayEvent::VerifyFocusedAt(WindowHandle::SmithayHandle(
+                        handle,
+                    )))
+                    .unwrap();
+                }
+            } //NOTE: We should probably send an event too when nothing is focused
+            InternalAction::UpdateConfig(config) => self.config = config,
+            InternalAction::UpdateWindows(windows) => {
+                info!("Received window update: {:#?}", windows);
+                for window in windows {
+                    let WindowHandle::SmithayHandle(handle) = window.handle else {
+                                        panic!("LeftWM passed an invalid handle");
+                                    };
+                    let managed_window = self.window_registry.get_mut(handle).unwrap();
+
+                    let border_width = self.config.borders.border_width;
+                    // let border_width = 0;
+                    let loc = (window.x() + border_width, window.y() + border_width).into();
+                    let size = (
+                        window.width() - 2 * border_width,
+                        window.height() - 2 * border_width,
+                    )
+                        .into();
+                    managed_window.set_geometry(Rectangle { loc, size });
+
+                    let mut managed_window_data = managed_window.data.write().unwrap();
+
+                    managed_window_data.floating = window.floating();
+                    managed_window_data.visible = window.visible();
+
+                    managed_window
+                        .window
+                        .toplevel()
+                        .with_pending_state(|state| {
+                            state.size = Some((window.width(), window.height()).into());
+                        });
+                    managed_window.window.toplevel().send_configure();
+                }
+            }
+            InternalAction::DisplayAction(DisplayAction::KillWindow(_)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::AddedWindow(handle, floating, focus)) => {
+                let WindowHandle::SmithayHandle(handle) = handle else {
+                                    panic!("LeftWM passed an invalid handle");
+                                };
+                let window = self.window_registry.get_mut(handle).unwrap();
+                let mut window_data = window.data.write().unwrap();
+                window_data.floating = floating;
+                window_data.managed = true;
+                drop(window_data);
+                drop(window);
+                if focus {
+                    self.focus_window(handle, true);
+                }
+            }
+            InternalAction::DisplayAction(DisplayAction::MoveMouseOver(_, _)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::MoveMouseOverPoint(_)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::SetState(_, _, _)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::SetWindowOrder(_, _)) => {
+                //TODO: no `todo!()` here because crash
+            }
+            InternalAction::DisplayAction(DisplayAction::MoveToTop(_)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::DestroyedWindow(_)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::WindowTakeFocus {
+                window,
+                previous_window: _,
+            }) => {
+                let WindowHandle::SmithayHandle(handle) = window.handle else {
+                                    panic!("LeftWM passed an invalid handle");
+                                };
+                self.focus_window(handle, self.config.sloppy_mouse_follows_focus);
+            }
+            InternalAction::DisplayAction(DisplayAction::Unfocus(_, _)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::FocusWindowUnderCursor) => {
+                self.focus_window_under();
+            }
+            InternalAction::DisplayAction(DisplayAction::ReplayClick(_, _)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::ReadyToResizeWindow(_)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::ReadyToMoveWindow(_)) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::SetCurrentTags(_)) => {
+                //TODO: no `todo!()` here because crash
+            }
+            InternalAction::DisplayAction(DisplayAction::SetWindowTag(..)) => {}
+            InternalAction::DisplayAction(DisplayAction::NormalMode) => {
+                todo!()
+            }
+            InternalAction::DisplayAction(DisplayAction::ConfigureXlibWindow(_)) => {
+                todo!()
+            }
+        }
+    }
+}

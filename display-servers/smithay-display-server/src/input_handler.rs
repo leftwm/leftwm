@@ -1,5 +1,5 @@
 use smithay::{
-    backend::input::{Event, InputBackend, PointerMotionEvent},
+    backend::input::{AbsolutePositionEvent, Event, InputBackend, PointerMotionEvent},
     input::pointer::{MotionEvent, RelativeMotionEvent},
     utils::{Logical, Point, SERIAL_COUNTER},
 };
@@ -36,6 +36,37 @@ impl SmithayState {
                     delta: event.delta(),
                     delta_unaccel: event.delta_unaccel(),
                     utime: event.time(),
+                },
+            )
+        }
+    }
+
+    pub fn on_pointer_move_absolute<B: InputBackend>(
+        &mut self,
+        event: B::PointerMotionAbsoluteEvent,
+    ) {
+        let serial = SERIAL_COUNTER.next_serial();
+
+        let max_x = self.outputs.iter().fold(0, |acc, (_, g)| acc + g.size.w);
+
+        let highest_output = self.outputs.iter().max_by_key(|(_, o)| o.size.h).unwrap();
+
+        let max_y = highest_output.1.size.h;
+
+        self.pointer_location.x = event.x_transformed(max_x);
+        self.pointer_location.y = event.y_transformed(max_y);
+
+        self.pointer_location = self.clamp_coords(self.pointer_location);
+
+        let under = self.surface_under();
+        if let Some(ptr) = self.seat.get_pointer() {
+            ptr.motion(
+                self,
+                under,
+                &MotionEvent {
+                    location: self.pointer_location,
+                    serial,
+                    time: event.time_msec(),
                 },
             )
         }
