@@ -21,7 +21,7 @@ use smithay::{
         socket::ListeningSocketSource,
     },
 };
-use tracing::{debug, warn};
+use tracing::{info, warn};
 
 use crate::{
     event_channel::EventChannelSender,
@@ -194,7 +194,7 @@ impl SmithayState {
     }
 
     pub fn send_event(&self, event: DisplayEvent) -> Result<(), SendError<()>> {
-        debug!("Sending event: {:#?}", event);
+        info!("Sending event: {:#?}", event);
         self.event_sender.send_event(event)
     }
 

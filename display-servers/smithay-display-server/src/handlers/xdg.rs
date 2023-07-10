@@ -10,9 +10,12 @@ use smithay::{
         wayland_server::protocol::{wl_output::WlOutput, wl_seat::WlSeat},
     },
     utils::{Logical, Rectangle, Serial},
-    wayland::shell::xdg::{
-        decoration::XdgDecorationHandler, PopupSurface, PositionerState, ToplevelSurface,
-        XdgShellHandler, XdgShellState,
+    wayland::{
+        compositor::with_states,
+        shell::xdg::{
+            decoration::XdgDecorationHandler, PopupSurface, PositionerState, ToplevelSurface,
+            XdgShellHandler, XdgShellState, XdgToplevelSurfaceData,
+        },
     },
 };
 
@@ -31,8 +34,21 @@ impl XdgShellHandler for SmithayState {
         let window = ManagedWindow::new(Window::new(surface));
         let id = self.window_registry.insert(window.clone());
 
+        let (name, class) = with_states(window.window.toplevel().wl_surface(), |states| {
+            let data = states
+                .data_map
+                .get::<XdgToplevelSurfaceData>()
+                .unwrap()
+                .lock()
+                .unwrap();
+
+            (data.title.clone(), data.app_id.clone())
+        });
+
+        let mut wm_window = WMWindow::new(WindowHandle::SmithayHandle(id), name, None);
+        wm_window.res_class = class;
         self.send_event(DisplayEvent::WindowCreate(
-            WMWindow::new(WindowHandle::SmithayHandle(id), None, None),
+            wm_window,
             self.pointer_location.x as i32,
             self.pointer_location.y as i32,
         ))
@@ -58,12 +74,17 @@ impl XdgShellHandler for SmithayState {
     }
 
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
+        let mut handle = None;
         for (h, w) in self.window_registry.windows() {
             if *w.toplevel() == surface {
+                handle = Some(*h);
                 self.send_event(DisplayEvent::WindowDestroy(WindowHandle::SmithayHandle(*h)))
                     .unwrap();
-                return;
+                break;
             }
+        }
+        if let Some(h) = handle {
+            self.window_registry.remove(h);
         }
     }
 
