@@ -106,7 +106,8 @@ impl BorderRenderer {
             .borrow_mut();
 
         let Some(window_handle) = window.get_handle() else {
-            panic!("This window does not have a handle, it should not be rendered"); //TODO: get a better solution
+            panic!("This window does not have a handle, it should not be rendered");
+            //TODO: get a better solution
         };
 
         let color = match window_state {

@@ -1,5 +1,8 @@
 use leftwm_core::{models::WindowHandle, DisplayAction, DisplayEvent};
-use smithay::{reexports::wayland_server::Display, utils::Rectangle};
+use smithay::{
+    reexports::wayland_server::Display,
+    utils::{Logical, Point, Rectangle},
+};
 use tracing::info;
 
 use crate::{internal_action::InternalAction, state::SmithayState};
@@ -21,8 +24,8 @@ impl SmithayState {
                 info!("Received window update: {:#?}", windows);
                 for window in windows {
                     let WindowHandle::SmithayHandle(handle) = window.handle else {
-                                        panic!("LeftWM passed an invalid handle");
-                                    };
+                        panic!("LeftWM passed an invalid handle");
+                    };
                     let managed_window = self.window_registry.get_mut(handle).unwrap();
 
                     let border_width = self.config.borders.border_width;
@@ -49,13 +52,18 @@ impl SmithayState {
                     managed_window.window.toplevel().send_configure();
                 }
             }
-            InternalAction::DisplayAction(DisplayAction::KillWindow(_)) => {
-                todo!()
+            InternalAction::DisplayAction(DisplayAction::KillWindow(handle)) => {
+                let WindowHandle::SmithayHandle(handle) = handle else {
+                    panic!("LeftWM passed an invalid handle");
+                };
+                let window = self.window_registry.get_mut(handle);
+                //NOTE: Nothing happens if the window doesnt exist;
+                window.map(|w| w.toplevel().send_close());
             }
             InternalAction::DisplayAction(DisplayAction::AddedWindow(handle, floating, focus)) => {
                 let WindowHandle::SmithayHandle(handle) = handle else {
-                                    panic!("LeftWM passed an invalid handle");
-                                };
+                    panic!("LeftWM passed an invalid handle");
+                };
                 let window = self.window_registry.get_mut(handle).unwrap();
                 let mut window_data = window.data.write().unwrap();
                 window_data.floating = floating;
@@ -66,11 +74,20 @@ impl SmithayState {
                     self.focus_window(handle, true);
                 }
             }
-            InternalAction::DisplayAction(DisplayAction::MoveMouseOver(_, _)) => {
-                todo!()
+            InternalAction::DisplayAction(DisplayAction::MoveMouseOver(handle, force)) => {
+                let WindowHandle::SmithayHandle(handle) = handle else {
+                    panic!("LeftWM passed an invalid handle");
+                };
+                if Some(handle) != self.focused_window || force {
+                    let window = self.window_registry.get(handle).unwrap();
+                    let geometry = window.data.read().unwrap().geometry.unwrap();
+                    let center =
+                        Point::<i32, Logical>::from((geometry.size.w / 2, geometry.size.h / 2));
+                    self.pointer_location = geometry.loc.to_f64() + center.to_f64();
+                }
             }
-            InternalAction::DisplayAction(DisplayAction::MoveMouseOverPoint(_)) => {
-                todo!()
+            InternalAction::DisplayAction(DisplayAction::MoveMouseOverPoint(point)) => {
+                self.pointer_location = Point::from(point).to_f64();
             }
             InternalAction::DisplayAction(DisplayAction::SetState(_, _, _)) => {
                 todo!()
@@ -89,8 +106,8 @@ impl SmithayState {
                 previous_window: _,
             }) => {
                 let WindowHandle::SmithayHandle(handle) = window.handle else {
-                                    panic!("LeftWM passed an invalid handle");
-                                };
+                    panic!("LeftWM passed an invalid handle");
+                };
                 self.focus_window(handle, self.config.sloppy_mouse_follows_focus);
             }
             InternalAction::DisplayAction(DisplayAction::Unfocus(_, _)) => {
