@@ -9,14 +9,15 @@ use smithay::{
         allocator::dmabuf::Dmabuf,
         renderer::{utils::on_commit_buffer_handler, ImportDma},
     },
-    delegate_compositor, delegate_dmabuf, delegate_output, delegate_seat, delegate_shm,
-    desktop::{layer_map_for_output, WindowSurfaceType},
+    delegate_compositor, delegate_dmabuf, delegate_layer_shell, delegate_output, delegate_seat,
+    delegate_shm,
+    desktop::{layer_map_for_output, LayerSurface, Window, WindowSurfaceType},
     input::{SeatHandler, SeatState},
     output::Output,
     reexports::{
         calloop::Interest,
         wayland_server::{
-            protocol::{wl_buffer::WlBuffer, wl_surface::WlSurface},
+            protocol::{wl_buffer::WlBuffer, wl_output::WlOutput, wl_surface::WlSurface},
             Client, Resource,
         },
     },
@@ -30,7 +31,13 @@ use smithay::{
         },
         dmabuf::{get_dmabuf, DmabufGlobal, DmabufHandler, DmabufState, ImportError},
         seat::WaylandFocus,
-        shell::{wlr_layer::LayerSurfaceData, xdg::XdgToplevelSurfaceData},
+        shell::{
+            wlr_layer::{
+                Layer, LayerSurface as WlrLayerSurface, LayerSurfaceData, WlrLayerShellHandler,
+                WlrLayerShellState,
+            },
+            xdg::XdgToplevelSurfaceData,
+        },
         shm::{ShmHandler, ShmState},
     },
     xwayland::xwm::ResizeEdge,
@@ -41,6 +48,7 @@ use crate::{
     state::{ClientState, SmithayState},
     window_registry::WindowRegisty,
 };
+use leftwm_core::{models::WindowHandle, DisplayEvent, Window as WMWindow};
 
 impl CompositorHandler for SmithayState {
     fn compositor_state(&mut self) -> &mut CompositorState {
@@ -65,6 +73,32 @@ impl CompositorHandler for SmithayState {
             }
             if let Some(window) = self.window_for_surface(&root) {
                 window.on_commit();
+            }
+        }
+
+        if let Some((output, _)) = self.outputs.iter().find(|(o, _)| {
+            let map = layer_map_for_output(o);
+            map.layer_for_surface(surface, WindowSurfaceType::TOPLEVEL)
+                .is_some()
+        }) {
+            let initial_configure_sent = with_states(surface, |states| {
+                states
+                    .data_map
+                    .get::<LayerSurfaceData>()
+                    .unwrap()
+                    .lock()
+                    .unwrap()
+                    .initial_configure_sent
+            });
+            let mut map = layer_map_for_output(&output);
+            map.arrange();
+
+            if !initial_configure_sent {
+                let layer = map
+                    .layer_for_surface(surface, WindowSurfaceType::TOPLEVEL)
+                    .unwrap();
+
+                layer.layer_surface().send_configure();
             }
         }
 
@@ -111,6 +145,43 @@ impl CompositorHandler for SmithayState {
 }
 
 delegate_compositor!(SmithayState);
+
+impl WlrLayerShellHandler for SmithayState {
+    fn shell_state(&mut self) -> &mut WlrLayerShellState {
+        &mut self.layer_shell_state
+    }
+
+    fn new_layer_surface(
+        &mut self,
+        surface: WlrLayerSurface,
+        output: Option<WlOutput>,
+        _layer: Layer,
+        namespace: String,
+    ) {
+        let output = output
+            .as_ref()
+            .and_then(Output::from_resource)
+            .unwrap_or_else(|| self.outputs.iter().next().map(|(o, _)| o).unwrap().clone());
+        let mut map = layer_map_for_output(&output);
+        let layer_surface = LayerSurface::new(surface, namespace);
+        map.map_layer(&layer_surface).unwrap();
+    }
+
+    fn layer_destroyed(&mut self, surface: WlrLayerSurface) {
+        if let Some((mut map, layer)) = self.outputs.iter().find_map(|(o, _)| {
+            let map = layer_map_for_output(o);
+            let layer = map
+                .layers()
+                .find(|&layer| layer.layer_surface() == &surface)
+                .cloned();
+            layer.map(|layer| (map, layer))
+        }) {
+            map.unmap_layer(&layer);
+        }
+    }
+}
+
+delegate_layer_shell!(SmithayState);
 
 impl SeatHandler for SmithayState {
     type KeyboardFocus = ManagedWindow;
