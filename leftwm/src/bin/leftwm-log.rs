@@ -1,44 +1,23 @@
-use clap::{arg, command, ArgGroup};
-#[cfg(feature = "file-log")]
-use leftwm::utils::log::file::get_log_path;
+use clap::{arg, command, ArgGroup, Id};
 use std::process::{exit, Command};
 
 fn main() {
     let matches = get_command().get_matches();
     let follow = matches.get_flag("follow");
 
-    if matches.get_flag("journald") {
-        if cfg!(feature = "journald-log") {
-            journald_log(follow);
-        } else {
-            eprintln!("Failed to execute: leftwm was not built with journald logging");
-            exit(1)
-        }
-    } else if matches.get_flag("syslog") {
-        if cfg!(feature = "sys-log") {
-            syslog(follow);
-        } else {
-            eprintln!("Failed to execute: leftwm was not built with syslog logging");
-            exit(1)
-        }
-    } else if matches.get_flag("file") {
+    match matches.get_one::<Id>("log").map(clap::Id::as_str) {
+        #[cfg(feature = "journald-log")]
+        Some("journald") | None => journald_log(follow),
+        #[cfg(feature = "sys-log")]
+        Some("syslog") | None => syslog(follow),
         #[cfg(feature = "file-log")]
-        file_log(follow);
-        #[cfg(not(feature = "file-log"))]
-        {
-            eprintln!("Failed to execute: leftwm was not built with file logging");
+        Some("file") | None => file_log(follow),
+        #[cfg(not(any(feature = "journald-log", feature = "sys-log", feature = "file-log")))]
+        _ => {
+            eprintln!("Failed to execute: logging not enabled");
             exit(1);
         }
-    } else if cfg!(feature = "journald-log") {
-        journald_log(follow);
-    } else if cfg!(feature = "sys-log") {
-        syslog(follow);
-    } else if cfg!(feature = "file-log") {
-        #[cfg(feature = "file-log")]
-        file_log(follow);
-    } else {
-        eprintln!("Failed to execute: logging not enabled");
-        exit(1);
+        _ => unreachable!("Unreachable feature set!"),
     }
 }
 
@@ -59,6 +38,7 @@ fn get_command() -> clap::Command {
         )
 }
 
+#[cfg(feature = "journald-log")]
 fn journald_log(follow: bool) {
     let flag = if follow { " -f" } else { "" };
     match &mut Command::new("/bin/sh")
@@ -79,6 +59,7 @@ fn journald_log(follow: bool) {
     }
 }
 
+#[cfg(feature = "sys-log")]
 fn syslog(follow: bool) {
     let cmd = if follow { "tail -f" } else { "cat" };
     match &mut Command::new("/bin/sh")
@@ -106,7 +87,7 @@ fn file_log(follow: bool) {
         false => "cat",
     };
     match {
-        let file_path = get_log_path();
+        let file_path = leftwm::utils::log::file::get_log_path();
         println!("output from {}:", file_path.display());
         &mut Command::new("/bin/sh")
             .args([
