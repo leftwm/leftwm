@@ -92,16 +92,17 @@ fn file_log(follow: bool, level: u8) {
         2 => "ERROR|WARN|INFO|DEBUG",
         _ => "ERROR|WARN|INFO|DEBUG|TRACE",
     };
-    const TIME_REGEX: &'static str =
+    const TIME_REGEX: &str =
         "[0-9]{4}-[01][1-9]-[1-3][0-9]T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z.{10}";
     match {
         let file_path = leftwm::utils::log::file::get_log_path();
+        // ugly shadowing to make the borrow checker happy
+        let file_path = file_path.to_string_lossy();
         println!("Output from {file_path} - {filter}:");
         &mut Command::new("/bin/sh")
             .args([
                 "-c",
-                format!("{cmd} {file_path} | grep -E \"{TIME_REGEX}{filter}\"")
-                .as_str(),
+                format!("{cmd} {file_path} | grep -E \"{TIME_REGEX}{filter}\"").as_str(),
             ])
             .spawn()
     } {
