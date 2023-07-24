@@ -366,7 +366,9 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             println!("Found: {}", filepath.display());
         }
 
-        match ron::from_str::<ThemeSetting>(&contents) {
+        let ron = Options::default()
+            .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
+        match ron.from_str::<ThemeSetting>(&contents) {
             Ok(_) => {
                 if verbose {
                     println!("The theme file looks OK.");
