@@ -266,7 +266,7 @@ If your goal is to continuously build leftwm and keep up to date with the latest
 prefer to symlink the leftwm executables instead of copying them.  If you choose to install this
 way, make sure you do not move the build directory as it will break your installation.
 
-Note that if you want to build leftwm with an other build profile, you will have to change the
+Note that if you want to build leftwm with another build profile, you will have to change the
 `--profile <profile-name>` option and the target folder to `target/<profile-name>`.
 Currently available are `dev`, `release` and `optimized`.
 
