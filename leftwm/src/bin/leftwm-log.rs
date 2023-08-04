@@ -6,6 +6,7 @@ fn main() {
     let follow = matches.get_flag("follow");
     let level = matches.get_count("verbose");
 
+    #[allow(unreachable_patterns)]
     match matches.get_one::<Id>("log").map(clap::Id::as_str) {
         #[cfg(feature = "journald-log")]
         Some("journald") | None => journald_log(follow, level),
