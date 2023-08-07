@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{arg, command};
 use leftwm_core::CommandPipe;
+use leftwm::BaseCommand;
 use leftwm_core::ReturnPipe;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
@@ -68,6 +69,8 @@ fn print_commandlist() {
         "
         Available Commands:
 
+        {}
+
         Commands without arguments:
 
         UnloadTheme
@@ -122,7 +125,7 @@ fn print_commandlist() {
 
         For more information please visit:
         https://github.com/leftwm/leftwm/wiki/External-Commands
-         "
+         ", BaseCommand::variant_names().join("\n        ")
     );
 }
 

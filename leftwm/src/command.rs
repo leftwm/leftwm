@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-
+use leftwm_macros::VariantNames;
 /*  TODO this code is temporary. Due to the limitations of TOML we cannot serialize leftwm_core::Command
 *      easily. If we replace TOML by JSON/JSON5/YAML we will be able to remove this code and a
 *      bunch of validation in leftwm-check.rs. This requires to deprecate the TOML config file,
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 // Because this is temporary, we will allow this clippy lint to be bypassed
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(VariantNames, Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum BaseCommand {
     Execute,
     CloseWindow,
