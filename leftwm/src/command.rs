@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use leftwm_macros::VariantNames;
+use serde::{Deserialize, Serialize};
 /*  TODO this code is temporary. Due to the limitations of TOML we cannot serialize leftwm_core::Command
 *      easily. If we replace TOML by JSON/JSON5/YAML we will be able to remove this code and a
 *      bunch of validation in leftwm-check.rs. This requires to deprecate the TOML config file,
@@ -18,10 +18,15 @@ pub enum BaseCommand {
     SwapTags,
     SoftReload,
     HardReload,
+    /// Args: <ScratchpadName>
     AttachScratchPad,
+    /// Args: <tag_index> or <ScratchpadName>
     ReleaseScratchPad,
+    /// Args: <ScratchpadName>
     NextScratchPadWindow,
+    /// Args: <ScratchpadName>
     PrevScratchPadWindow,
+    /// Args: <ScratchpadName>
     ToggleScratchPad,
     ToggleFullScreen,
     ToggleSticky,
@@ -34,14 +39,19 @@ pub enum BaseCommand {
     MoveWindowDown,
     MoveWindowTop,
     SwapWindowTop,
+    /// Args: <behavior> (string, optional)
     FocusNextTag,
+    /// Args: <behavior> (string, optional)
     FocusPreviousTag,
+    /// Args: <WindowClass> or <visible-window-index> (int)
     FocusWindow,
     FocusWindowUp,
     FocusWindowDown,
     FocusWindowTop,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
+    /// Args: <tag_index> (int)
+    /// Note: Please use `SendWindowToTag` instead.
     MoveToTag,
     MoveWindowToNextTag,
     MoveWindowToPreviousTag,
@@ -50,17 +60,22 @@ pub enum BaseCommand {
     MoveWindowToPreviousWorkspace,
     NextLayout,
     PreviousLayout,
+    /// Args: <LayoutName>
     SetLayout,
     RotateTag,
+    /// Note: This is deprecated and will be dropped in a future release.
     IncreaseMainWidth, //deprecated
+    /// Note: This is deprecated and will be dropped in a future release.
     DecreaseMainWidth, //deprecated
     IncreaseMainSize,
     DecreaseMainSize,
     IncreaseMainCount,
     DecreaseMainCount,
+    /// Args: <multiplier-value> (float)
     SetMarginMultiplier,
-    // Custom commands
     UnloadTheme,
+    /// Args: <Path_to/theme.ron>
+    /// Note: `theme.toml` will be deprecated but stays for backwards compatibility for a while
     LoadTheme,
 }
 

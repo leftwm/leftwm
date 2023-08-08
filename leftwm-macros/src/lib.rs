@@ -14,6 +14,22 @@ macro_rules! derive_error {
     };
 }
 
+fn parse_enum_doc_comment(attrs: &[syn::Attribute]) -> String {
+    let mut ret = String::from("");
+    for attr in attrs {
+        let meta = &attr.meta;
+        if let syn::Meta::NameValue(meta) = meta {
+            if let syn::Expr::Lit(syn::ExprLit { lit, .. }) = &meta.value {
+                if let syn::Lit::Str(l) = lit {
+                    ret.push_str(&format!("\n          {}", l.value().trim()));
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
 #[proc_macro_derive(VariantNames)]
 /// Returns a Vec<String> for the Enum to which it applies.
 ///
@@ -25,7 +41,7 @@ macro_rules! derive_error {
 ///   Two
 /// }
 ///
-/// assert_eq!(LeftWm::variant_names(), vec!["One", "Two"]);
+/// assert_eq!(LeftWm::variant_names(), vec!["        One", "        Two"]);
 /// ```
 ///
 /// The purpose of this macro is for serializing options of the BaseCommand for `leftwm-command`
@@ -49,9 +65,10 @@ pub fn derive_variant_names(input: TokenStream) -> TokenStream {
 
             // For each variant, push its name onto `names`
             let mut names = Vec::new();
-
             for variant in &data_enum.variants {
-                names.push(variant.ident.to_string())
+                let doc = parse_enum_doc_comment(&variant.attrs);
+
+                names.push(format!("{} {}", variant.ident.to_string(), doc))
             }
 
             // Construct the variant_names function for the Enum using `names`
