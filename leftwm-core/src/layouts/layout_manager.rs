@@ -47,7 +47,7 @@ impl LayoutManager {
 
         let mut available_layouts_per_ws: HashMap<usize, Vec<Layout>> = HashMap::new();
 
-        for (i, ws) in config.workspaces().unwrap_or(vec![]).iter().enumerate() {
+        for (i, ws) in config.workspaces().unwrap_or_default().iter().enumerate() {
             if let Some(ws_layout_names) = &ws.layouts {
                 let wsid = i + 1;
                 for ws_layout_name in ws_layout_names {

@@ -66,7 +66,7 @@ impl ReturnPipe {
         let display = env::var("DISPLAY")
             .ok()
             .and_then(|d| d.rsplit_once(':').map(|(_, r)| r.to_owned()))
-            .unwrap_or(String::from("0"));
+            .unwrap_or_else(|| String::from("0"));
 
         PathBuf::from(format!("return-{display}.pipe"))
     }
