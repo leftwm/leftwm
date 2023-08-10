@@ -84,7 +84,7 @@ pub enum Command {
     Other(String),
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub enum FocusDeltaBehavior {
     Default,
     IgnoreUsed,

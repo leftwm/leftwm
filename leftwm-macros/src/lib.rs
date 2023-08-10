@@ -19,15 +19,13 @@ fn parse_enum_doc_comment(attrs: &[syn::Attribute]) -> String {
     for attr in attrs {
         let meta = &attr.meta;
         if let syn::Meta::NameValue(meta) = meta {
-            if let syn::Expr::Lit(syn::ExprLit { lit, .. }) = &meta.value {
-                if let syn::Lit::Str(l) = lit {
-                    ret.push_str(&format!("\n          {}", l.value().trim()));
-                }
+            if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(l), .. }) = &meta.value {
+                ret.push_str(&format!("\n          {}", l.value().trim()));
             }
         }
     }
 
-    return ret;
+    ret
 }
 
 #[proc_macro_derive(VariantNames)]
@@ -49,9 +47,9 @@ pub fn derive_variant_names(input: TokenStream) -> TokenStream {
     let input: DeriveInput = parse_macro_input!(input as DeriveInput);
 
     // Get the enum name for use later
-    let ref name = input.ident;
+    let name = &input.ident;
     // Get the variants
-    let ref data = input.data;
+    let data = &input.data;
 
     let mut variant_checker_functions;
 
@@ -68,7 +66,7 @@ pub fn derive_variant_names(input: TokenStream) -> TokenStream {
             for variant in &data_enum.variants {
                 let doc = parse_enum_doc_comment(&variant.attrs);
 
-                names.push(format!("{} {}", variant.ident.to_string(), doc))
+                names.push(format!("{} {}", variant.ident, doc))
             }
 
             // Construct the variant_names function for the Enum using `names`
