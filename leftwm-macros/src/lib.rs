@@ -19,7 +19,11 @@ fn parse_enum_doc_comment(attrs: &[syn::Attribute]) -> String {
     for attr in attrs {
         let meta = &attr.meta;
         if let syn::Meta::NameValue(meta) = meta {
-            if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(l), .. }) = &meta.value {
+            if let syn::Expr::Lit(syn::ExprLit {
+                lit: syn::Lit::Str(l),
+                ..
+            }) = &meta.value
+            {
                 ret.push_str(&format!("\n          {}", l.value().trim()));
             }
         }
