@@ -138,7 +138,8 @@ pub enum Error {
 async fn get_return_pipe() -> Result<ReturnPipe, Error> {
     let file_name = ReturnPipe::pipe_name();
 
-    let pipe_file = place_runtime_file(&file_name).or(Err(Error::CreateFile(file_name.clone())))?;
+    let pipe_file =
+        place_runtime_file(&file_name).map_err(|_| Error::CreateFile(file_name.clone()))?;
 
     ReturnPipe::new(pipe_file)
         .await
