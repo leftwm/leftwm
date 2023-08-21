@@ -259,6 +259,15 @@ impl Tag {
                 .for_each(|w| {
                     w.set_visible(true);
                 });
+
+            // Update the location and visibility of all floating windows.
+            windows
+                .iter_mut()
+                .filter(|w| w.has_tag(&self.id) && w.is_managed() && w.floating())
+                .for_each(|w| {
+                    w.set_visible(true);
+                    w.normal = workspace.xyhw
+                });
         } else {
             // Don't bother updating the other windows when a window is fullscreen.
             // Mark all windows for this workspace as visible.
