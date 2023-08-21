@@ -266,7 +266,7 @@ impl Tag {
                 .filter(|w| w.has_tag(&self.id) && w.is_managed() && w.floating())
                 .for_each(|w| {
                     w.set_visible(true);
-                    w.normal = workspace.xyhw
+                    w.normal = workspace.xyhw;
                 });
         } else {
             // Don't bother updating the other windows when a window is fullscreen.
