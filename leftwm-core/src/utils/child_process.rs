@@ -284,7 +284,7 @@ impl DesktopEntry {
     }
 
     fn split_line(line: &str) -> Option<(&str, &str)> {
-        line.find('=')?; //Check we have an equals, if we don't return None
+        line.find('=')?; // Check we have an equals, if we don't return None
         line.split_once('=')
     }
     fn split_to_set(value: &str) -> HashSet<String> {

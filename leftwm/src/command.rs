@@ -52,8 +52,8 @@ pub enum BaseCommand {
     PreviousLayout,
     SetLayout,
     RotateTag,
-    IncreaseMainWidth, //deprecated
-    DecreaseMainWidth, //deprecated
+    IncreaseMainWidth, // deprecated
+    DecreaseMainWidth, // deprecated
     IncreaseMainSize,
     DecreaseMainSize,
     IncreaseMainCount,

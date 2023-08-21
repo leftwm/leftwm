@@ -229,8 +229,8 @@ impl Default for Config {
             focus_new_windows: true, // default behaviour: focuses windows on creation
             single_window_border: true,
             insert_behavior: leftwm_core::config::InsertBehavior::Bottom,
-            modkey: "Mod4".to_owned(),     //win key
-            mousekey: Some("Mod4".into()), //win key
+            modkey: "Mod4".to_owned(),     // win key
+            mousekey: Some("Mod4".into()), // win key
             #[cfg(feature = "lefthk")]
             keybind: commands,
             theme_setting: ThemeSetting::default(),
