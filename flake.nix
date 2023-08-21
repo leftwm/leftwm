@@ -1,77 +1,106 @@
 {
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    fenix = {
-      url = "github:nix-community/fenix";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    naersk = {
-      url = "github:nix-community/naersk";
+    crane = {
+      url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, fenix, flake-utils, naersk, nixpkgs }:
-    (flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        deps = with pkgs; [
-          xorg.libX11
-          xorg.libXinerama
+  outputs = inputs@{ self, flake-parts, rust-overlay, crane, nixpkgs, ... }: 
+    flake-parts.lib.mkFlake {inherit inputs;} {
+        systems = [
+          "x86_64-linux"
+          "aarch64-linux"
         ];
 
-        devToolchain = fenix.packages.${system}.stable;
-
-        leftwm = ((naersk.lib.${system}.override {
-          inherit (fenix.packages.${system}.minimal) cargo rustc;
-        }).buildPackage {
-          name = "leftwm";
-          src = ./.;
-          buildInputs = deps;
-          postFixup = ''
-            for p in $out/bin/left*; do
-              patchelf --set-rpath "${pkgs.lib.makeLibraryPath deps}" $p
-            done
-          '';
-
-          GIT_HASH = self.shortRev or "dirty";
-        });
-      in
-      rec {
-        # `nix build`
-        packages = {
-          inherit leftwm;
-          default = leftwm;
-        };
-
-        # `nix run`
-        apps = {
-          leftwm = flake-utils.lib.mkApp {
-            drv = packages.leftwm;
+        perSystem = { pkgs, system, ... }: 
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ (import rust-overlay) ];
           };
-          default = apps.leftwm;
+
+          deps = with pkgs; [
+            xorg.libX11
+            xorg.libXinerama
+          ];
+
+          commonArgs = {
+            src = craneLib.cleanCargoSource (craneLib.path ./.);
+            version = (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; }).version;
+            buildInputs = deps;
+          };
+          
+          rustToolchain = pkgs.rust-bin.stable.latest.default;
+          craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+
+          cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
+            pname = "leftwm-deps";
+          });
+
+          leftwm = craneLib.buildPackage (commonArgs // rec {
+            inherit cargoArtifacts;
+            pname = "leftwm";
+            
+            postFixup = ''
+              for p in $out/bin/left*; do
+                patchelf --set-rpath "${pkgs.lib.makeLibraryPath deps}" $p
+              done
+            '';
+            GIT_HASH = self.shortRev or "dirty";
+          });
+        in rec {
+
+          # `nix build`
+          packages = {
+            inherit leftwm;
+            default = leftwm;
+          };
+
+          # `nix develop`
+          devShells.default = pkgs.mkShell
+            {
+              buildInputs = deps ++ [ pkgs.pkg-config pkgs.systemd ];
+              nativeBuildInputs = with pkgs; [
+                gnumake
+                (rustToolchain.override { extensions = [
+                  "cargo"
+                  "clippy"
+                  "rust-src"
+                  "rust-analyzer"
+                  "rustc"
+                  "rustfmt"
+                ];})
+              ];
+
+              shellHook = ''
+                source './nixos-vm/vm.sh'                
+              '';
+            };
         };
 
-        # `nix develop`
-        devShells.default = pkgs.mkShell
+        flake = rec {
+          overlays.default = final: prev: {
+            leftwm = self.packages.${final.system}.leftwm;
+          };
+
+          # nixos development vm
+          nixosConfigurations.leftwm = nixpkgs.lib.nixosSystem 
           {
-            buildInputs = deps ++ [ pkgs.pkg-config pkgs.systemd ];
-            nativeBuildInputs = with pkgs; [
-              gnumake
-              (devToolchain.withComponents [
-                "cargo"
-                "clippy"
-                "rust-src"
-                "rustc"
-                "rustfmt"
-              ])
-              fenix.packages.${system}.rust-analyzer
-            ];
+            system = "x86_64-linux";
+            modules = [
+                {nixpkgs.overlays = [
+                  overlays.default
+                ];}
+               ./nixos-vm/configuration.nix
+            ]; 
           };
-      })) // {
-      overlay = final: prev: {
-        leftwm = self.packages.${final.system}.leftwm;
-      };
+        };
     };
 }
