@@ -106,7 +106,7 @@ fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<Windo
     let mut change = WindowChange::new(handle);
     let hint = xw.get_hint_sizing_as_xyhw(window)?;
     if hint.x.is_none() && hint.y.is_none() && hint.w.is_none() && hint.h.is_none() {
-        //junk hint; change change anything
+        // junk hint; change change anything
         return None;
     }
     let mut xyhw = Xyhw::default();

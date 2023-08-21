@@ -29,7 +29,7 @@ impl DisplayServer for XlibDisplayServer {
     fn new(config: &impl Config) -> Self {
         let mut wrap = XWrap::new();
 
-        wrap.init(config); //setup events masks
+        wrap.init(config); // setup events masks
 
         let root = wrap.get_default_root();
         let instance = Self {

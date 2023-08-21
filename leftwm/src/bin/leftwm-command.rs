@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{arg, command};
+use leftwm::BaseCommand;
 use leftwm_core::CommandPipe;
 use leftwm_core::ReturnPipe;
 use std::fs::OpenOptions;
@@ -66,64 +67,19 @@ fn get_command() -> clap::Command {
 fn print_commandlist() {
     println!(
         "
-        Available Commands:
+    Available Commands:
+        {}
+        SendWorkspaceToTag     Args: <workspace_index> <tag_index> (int)
+        SendWindowToTag        Args: <tag_index> (int)
 
-        Commands without arguments:
-
-        UnloadTheme
-        SoftReload
-        ToggleFullScreen
-        ToggleMaximized
-        ToggleSticky
-        SwapScreens
-        MoveWindowToNextTag
-        MoveWindowToPreviousTag
-        MoveWindowToLastWorkspace
-        MoveWindowToNextWorkspace
-        MoveWindowToPreviousWorkspace
-        FloatingToTile
-        TileToFloating
-        ToggleFloating
-        MoveWindowUp
-        MoveWindowDown
-        MoveWindowTop
-        FocusWindowUp
-        FocusWindowDown
-        FocusWindowTop
-        FocusWorkspaceNext
-        FocusWorkspacePrevious
-        IncreaseMainSize
-        DecreaseMainSize
-        IncreaseMainCount
-        DecreaseMainCount
-        NextLayout
-        PreviousLayout
-        RotateTag
-        ReturnToLastTag
-        CloseWindow
-
-        Commands with arguments:
+    Note about commands with arguments:
             Use quotations for the command and arguments, like this:
             leftwm-command \"<command> <args>\"
 
-        LoadTheme              Args: <Path_to/theme.ron>
-            Note: `theme.toml` will be deprecated but stays for backwards compatibility for a while
-        AttachScratchPad       Args: <ScratchpadName>
-        ReleaseScratchPad      Args: <tag_index> or <ScratchpadName>
-        NextScratchPadWindow   Args: <ScratchpadName>
-        PrevScratchPadWindow   Args: <ScratchpadName>
-        ToggleScratchPad       Args: <ScratchpadName>
-        SendWorkspaceToTag     Args: <workspaxe_index> <tag_index> (int)
-        SendWindowToTag        Args: <tag_index> (int)
-        SetLayout              Args: <LayoutName>
-        SetMarginMultiplier    Args: <multiplier-value> (float)
-        FocusWindow            Args: <WindowClass> or <visible-window-index> (int)
-        FocusNextTag           Args: <behavior> (string, optional)
-        FocusPreviousTag       Args: <behavior> (string, optional)
-
-        For more information please visit:
-        https://github.com/leftwm/leftwm/wiki/External-Commands
-         "
+    For more information please visit:
+    https://github.com/leftwm/leftwm/wiki/External-Commands
+         ",
+        BaseCommand::variant_names().join("\n        ")
     );
 }
 

@@ -116,7 +116,7 @@ impl Window {
 
     pub fn set_floating(&mut self, value: bool) {
         if !self.is_floating && value && self.floating.is_none() {
-            //NOTE: We float relative to the normal position.
+            // NOTE: We float relative to the normal position.
             self.reset_float_offset();
         }
         self.is_floating = value;
