@@ -68,6 +68,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
             scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Backward)
         }
 
+        Command::ToggleMaximized => toggle_state(state, WindowState::Maximized),
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
 
@@ -238,8 +239,8 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let toggle_to = !window.has_state(&window_state);
     let tag_id = state.focus_manager.tag(0)?;
 
-    if window_state == WindowState::Fullscreen {
-        //Going to fullscreen, so we save the window order
+    if window_state == WindowState::Fullscreen || window_state == WindowState::Maximized {
+        //Going to fullscreen/maximized, so we save the window order
         //or else, we restore it!
         if toggle_to {
             let handles = state
@@ -269,6 +270,7 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     state.handle_window_focus(&handle);
     match window_state {
         WindowState::Fullscreen => Some(true),
+        WindowState::Maximized => Some(true),
         _ => Some(false),
     }
 }

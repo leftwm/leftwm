@@ -73,6 +73,7 @@ fn print_commandlist() {
         UnloadTheme
         SoftReload
         ToggleFullScreen
+        ToggleMaximized
         ToggleSticky
         SwapScreens
         MoveWindowToNextTag

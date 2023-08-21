@@ -24,6 +24,7 @@ pub enum BaseCommand {
     PrevScratchPadWindow,
     ToggleScratchPad,
     ToggleFullScreen,
+    ToggleMaximized,
     ToggleSticky,
     GotoTag,
     ReturnToLastTag,

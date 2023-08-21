@@ -24,6 +24,7 @@ pub enum Command {
     },
     ToggleScratchPad(ScratchPadName),
     ToggleFullScreen,
+    ToggleMaximized,
     ToggleSticky,
     GoToTag {
         tag: TagId,

@@ -177,6 +177,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "SendWorkspaceToTag" => build_send_workspace_to_tag(rest),
         "SwapScreens" => Ok(Command::SwapScreens),
         "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
+        "ToggleMaximized" => Ok(Command::ToggleMaximized),
         "ToggleSticky" => Ok(Command::ToggleSticky),
         // General
         "CloseWindow" => Ok(Command::CloseWindow),

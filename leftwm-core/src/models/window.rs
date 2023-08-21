@@ -157,6 +157,11 @@ impl Window {
     }
 
     #[must_use]
+    pub fn is_maximized(&self) -> bool {
+        self.states.contains(&WindowState::Maximized)
+    }
+
+    #[must_use]
     pub fn is_sticky(&self) -> bool {
         self.states.contains(&WindowState::Sticky)
     }

@@ -261,6 +261,7 @@ fn insert_window(state: &mut State, window: &mut Window, layout: &str) {
                 // When in monocle we want the new window to be fullscreen if the previous window was
                 // fullscreen.
                 if was_fullscreen {
+                    // un-fullscreen window
                     let act = DisplayAction::SetState(
                         window.handle,
                         !window.is_fullscreen(),

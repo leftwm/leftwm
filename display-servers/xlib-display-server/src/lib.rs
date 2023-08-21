@@ -289,6 +289,11 @@ fn from_set_state(
         WindowState::Fullscreen => xw.atoms.NetWMStateFullscreen,
         WindowState::Above => xw.atoms.NetWMStateAbove,
         WindowState::Below => xw.atoms.NetWMStateBelow,
+        WindowState::Maximized => {
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedVert);
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedHorz);
+            return None;
+        }
     };
     xw.set_state(handle, toggle_to, state);
     None
