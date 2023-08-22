@@ -256,9 +256,14 @@ fn insert_window(state: &mut State, window: &mut Window, layout: &str) {
             .iter_mut()
             .find(|w| for_active_workspace(w) && w.is_maximized())
         {
-            let act =
-                DisplayAction::SetState(fsw.handle, !fsw.is_maximized(), WindowState::Maximized);
-            state.actions.push_back(act);
+            if !window.floating() {
+                let act = DisplayAction::SetState(
+                    fsw.handle,
+                    !fsw.is_maximized(),
+                    WindowState::Maximized,
+                );
+                state.actions.push_back(act);
+            }
         }
         let monocle = layouts::MONOCLE;
         let main_and_deck = layouts::MAIN_AND_DECK;
