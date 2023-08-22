@@ -56,6 +56,7 @@ pub trait Config {
     fn disable_tile_drag(&self) -> bool;
     fn disable_window_snap(&self) -> bool;
     fn sloppy_mouse_follows_focus(&self) -> bool;
+    fn reposition_cursor_on_resize(&self) -> bool;
 
     /// Attempt to write current state to a file.
     ///
@@ -214,6 +215,10 @@ pub(crate) mod tests {
         }
 
         fn auto_derive_workspaces(&self) -> bool {
+            true
+        }
+
+        fn reposition_cursor_on_resize(&self) -> bool {
             true
         }
     }

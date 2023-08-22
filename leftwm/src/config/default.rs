@@ -237,6 +237,7 @@ impl Default for Config {
             max_window_width: None,
             state_path: None,
             sloppy_mouse_follows_focus: true,
+            disable_cursor_reposition_on_resize: false,
             auto_derive_workspaces: true,
         }
     }
