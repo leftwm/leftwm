@@ -263,7 +263,9 @@ impl Tag {
             // Update the location and visibility of all floating windows.
             windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.id) && w.is_managed() && w.floating())
+                .filter(|w| {
+                    w.has_tag(&self.id) && w.is_managed() && w.floating() && !w.is_maximized()
+                })
                 .for_each(|w| {
                     w.set_visible(true);
                     w.normal = workspace.xyhw;

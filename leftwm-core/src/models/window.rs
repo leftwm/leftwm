@@ -179,7 +179,7 @@ impl Window {
     }
     #[must_use]
     pub fn can_resize(&self) -> bool {
-        self.can_resize && self.is_managed()
+        self.can_resize && self.is_managed() && !self.is_fullscreen() && !self.is_maximized()
     }
 
     #[must_use]
@@ -227,7 +227,7 @@ impl Window {
     #[must_use]
     pub fn width(&self) -> i32 {
         let mut value;
-        if self.is_fullscreen() {
+        if self.is_fullscreen() || self.is_maximized() {
             value = self.normal.w();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
@@ -250,7 +250,7 @@ impl Window {
     #[must_use]
     pub fn height(&self) -> i32 {
         let mut value;
-        if self.is_fullscreen() {
+        if self.is_fullscreen() || self.is_maximized() {
             value = self.normal.h();
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
@@ -288,7 +288,7 @@ impl Window {
 
     #[must_use]
     pub fn x(&self) -> i32 {
-        if self.is_fullscreen() {
+        if self.is_fullscreen() || self.is_maximized() {
             self.normal.x()
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
@@ -300,7 +300,7 @@ impl Window {
 
     #[must_use]
     pub fn y(&self) -> i32 {
-        if self.is_fullscreen() {
+        if self.is_fullscreen() || self.is_maximized() {
             self.normal.y()
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();

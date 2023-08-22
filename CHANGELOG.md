@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implemented the new [leftwm-layouts](https://github.com/leftwm/leftwm-layouts) library (via #1000 by @hertg)
 - Added `IncreaseMainSize` / `DecreaseMainSize` as a replacement for the deprecated `IncreaseMainWidth` / `DecreaseMainWidth` (closes #545 via #1000 by @hertg)
+- Added `ToggleMaximized` command (closes #973 via #1121 by @bksalman)
 - Add support for multiple main windows on all layouts that have a main column, new commands are `IncreaseMainCount` and `DecreaseMainCount` (closes #516 via #1000 by @hertg)
 - use `unwrap_newtypes` extension in ron deserializer (via #1000 by @hertg)
 
