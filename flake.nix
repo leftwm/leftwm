@@ -27,6 +27,7 @@
           };
 
           deps = with pkgs; [
+            git
             xorg.libX11
             xorg.libXinerama
           ];
