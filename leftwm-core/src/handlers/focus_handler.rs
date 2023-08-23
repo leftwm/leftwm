@@ -124,7 +124,7 @@ impl State {
             .map(|w| w.handle);
         match handle_found {
             Some(found) => self.focus_window(&found),
-            //backup plan, move focus closest window in workspace
+            // backup plan, move focus closest window in workspace
             None => self.focus_closest_window(x, y),
         }
     }
@@ -224,7 +224,7 @@ impl State {
     }
 
     fn focus_workspace_work(&mut self, ws_id: usize) -> bool {
-        //no new history if no change
+        // no new history if no change
         if let Some(fws) = self.focus_manager.workspace(&self.workspaces) {
             if fws.id == ws_id {
                 return false;

@@ -141,7 +141,7 @@ impl Workspace {
     pub fn height(&self) -> i32 {
         let top = self.margin.top as f32;
         let bottom = self.margin.bottom as f32;
-        //Only one side
+        // Only one side
         let gutter = self.get_gutter(&Side::Top) + self.get_gutter(&Side::Bottom);
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
@@ -152,7 +152,7 @@ impl Workspace {
     pub fn width(&self) -> i32 {
         let left = self.margin.left as f32;
         let right = self.margin.right as f32;
-        //Only one side
+        // Only one side
         let gutter = self.get_gutter(&Side::Left) + self.get_gutter(&Side::Right);
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
     }

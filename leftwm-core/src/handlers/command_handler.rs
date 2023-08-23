@@ -239,8 +239,8 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let tag_id = state.focus_manager.tag(0)?;
 
     if window_state == WindowState::Fullscreen {
-        //Going to fullscreen, so we save the window order
-        //or else, we restore it!
+        // Going to fullscreen, so we save the window order
+        // or else, we restore it!
         if toggle_to {
             let handles = state
                 .windows
@@ -385,7 +385,7 @@ fn return_to_last_tag(state: &mut State) -> Option<bool> {
 fn focus_window(state: &mut State, param: &str) -> Option<bool> {
     match param.parse::<usize>() {
         Ok(index) if index > 0 => {
-            //1-based index seems more user-friendly to me in this context
+            // 1-based index seems more user-friendly to me in this context
             let handle = state
                 .windows
                 .iter()
@@ -484,7 +484,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
     if state.workspaces.len() >= 2 && state.focus_manager.workspace_history.len() >= 2 {
         let hist_a = *state.focus_manager.workspace_history.get(0)?;
         let hist_b = *state.focus_manager.workspace_history.get(1)?;
-        //Update workspace tags
+        // Update workspace tags
         let mut temp = None;
         std::mem::swap(&mut state.workspaces.get_mut(hist_a)?.tag, &mut temp);
         std::mem::swap(&mut state.workspaces.get_mut(hist_b)?.tag, &mut temp);
@@ -541,7 +541,7 @@ fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
     // When switching to Monocle or MainAndDeck layout while in Driven
     // or ClickTo focus mode, we check if the focus is given to a visible window.
     if state.focus_manager.behaviour != FocusBehaviour::Sloppy {
-        //if the currently focused window is floating, nothing will be done
+        // if the currently focused window is floating, nothing will be done
         let focused_window = state.focus_manager.window_history.get(0);
         let is_focused_floating = match state
             .windows
@@ -597,8 +597,8 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     if window.must_float() {
         return None;
     }
-    //Not ideal as is_floating and must_float are connected so have to check
-    //them separately
+    // Not ideal as is_floating and must_float are connected so have to check
+    // them separately
     if !window.floating() {
         return None;
     }
@@ -617,8 +617,8 @@ fn tile_to_floating(state: &mut State) -> Option<bool> {
     if window.must_float() {
         return None;
     }
-    //Not ideal as is_floating and must_float are connected so have to check
-    //them separately
+    // Not ideal as is_floating and must_float are connected so have to check
+    // them separately
     if window.floating() {
         return None;
     }
@@ -998,7 +998,7 @@ mod tests {
             .iter()
             .any(|w| w.has_state(&WindowState::Fullscreen)));
 
-        //Mess with the window positions
+        // Mess with the window positions
         manager.state.windows.reverse();
 
         let actual = get_current_handles(&mut manager, Some(tag_id));
@@ -1046,7 +1046,7 @@ mod tests {
             .iter()
             .any(|w| w.has_state(&WindowState::Fullscreen)));
 
-        //Mess with the window positions
+        // Mess with the window positions
         manager.state.windows.reverse();
 
         assert!(manager.command_handler(&Command::GoToTag {
@@ -1088,7 +1088,7 @@ mod tests {
             2
         );
 
-        //Mess with the windows positions of the second tag
+        // Mess with the windows positions of the second tag
         let (mut windows_first_tag, mut windows_second_tag) =
             split_window_vec(manager.state.windows, first_tag);
         windows_second_tag.reverse();

@@ -115,7 +115,7 @@ impl Tags {
     /// Get a list of all tags, including hidden ones.
     /// The hidden tags are at the end of the list.
     pub fn all(&self) -> Vec<&Tag> {
-        //&self.normal.append(&self.hidden)
+        // &self.normal.append(&self.hidden)
         let mut result: Vec<&Tag> = vec![];
         self.normal.iter().for_each(|tag| result.push(tag));
         self.hidden.iter().for_each(|tag| result.push(tag));
@@ -125,7 +125,7 @@ impl Tags {
     /// Get a list of all tags as mutable, including hidden ones.
     /// The hidden tags are at the end of the list
     pub fn all_mut(&mut self) -> Vec<&mut Tag> {
-        //&self.normal.append(&self.hidden)
+        // &self.normal.append(&self.hidden)
         let mut result: Vec<&mut Tag> = vec![];
         self.normal.iter_mut().for_each(|tag| result.push(tag));
         self.hidden.iter_mut().for_each(|tag| result.push(tag));
