@@ -260,15 +260,16 @@ impl Tag {
                     w.set_visible(true);
                 });
 
-            // Update the location and visibility of all floating windows.
+            // Update the location and visibility of non-normal + non-maximized windows.
             windows
                 .iter_mut()
-                .filter(|w| {
-                    w.has_tag(&self.id) && w.is_managed() && w.floating() && !w.is_maximized()
-                })
+                .filter(|w| w.has_tag(&self.id) && !w.is_normal() && !w.is_maximized())
                 .for_each(|w| {
                     w.set_visible(true);
-                    w.normal = workspace.xyhw;
+                    // Don't change docks and desktop xyhw
+                    if w.is_managed() {
+                        w.normal = workspace.xyhw;
+                    }
                 });
         } else {
             // Don't bother updating the other windows when a window is fullscreen.
