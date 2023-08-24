@@ -8,5 +8,6 @@ left-vm () {
   cd "$SCRIPTPATH"
   nixos-rebuild build-vm --flake ../#leftwm
   ./result/bin/run-leftwm-vm
+  cd -
 }
 
