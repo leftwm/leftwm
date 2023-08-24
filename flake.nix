@@ -26,37 +26,32 @@
             overlays = [ (import rust-overlay) ];
           };
 
-          deps = with pkgs; [
-            git
-            xorg.libX11
-            xorg.libXinerama
-          ];
-
           commonArgs = {
             src = craneLib.cleanCargoSource (craneLib.path ./.);
-            version = (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; }).version;
-            buildInputs = deps;
-          };
+
+            buildInputs = with pkgs; [
+              git
+              xorg.libX11
+              xorg.libXinerama
+            ];
+          } // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
           
           rustToolchain = pkgs.rust-bin.stable.latest.default;
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
-          cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
-            pname = "leftwm-deps";
-          });
+          cargoArtifacts = craneLib.buildDepsOnly (commonArgs);
 
-          leftwm = craneLib.buildPackage (commonArgs // rec {
+          leftwm = craneLib.buildPackage (commonArgs // {
             inherit cargoArtifacts;
-            pname = "leftwm";
             
             postFixup = ''
               for p in $out/bin/left*; do
-                patchelf --set-rpath "${pkgs.lib.makeLibraryPath deps}" $p
+                patchelf --set-rpath "${pkgs.lib.makeLibraryPath commonArgs.buildInputs}" $p
               done
             '';
             GIT_HASH = self.shortRev or "dirty";
           });
-        in rec {
+        in {
 
           # `nix build`
           packages = {
@@ -67,7 +62,7 @@
           # `nix develop`
           devShells.default = pkgs.mkShell
             {
-              buildInputs = deps ++ [ pkgs.pkg-config pkgs.systemd ];
+              buildInputs = commonArgs.buildInputs ++ [ pkgs.pkg-config pkgs.systemd ];
               nativeBuildInputs = with pkgs; [
                 gnumake
                 (rustToolchain.override { extensions = [
@@ -86,7 +81,7 @@
             };
         };
 
-        flake = rec {
+        flake = {
           overlays.default = final: prev: {
             leftwm = self.packages.${final.system}.leftwm;
           };
@@ -97,8 +92,9 @@
             system = "x86_64-linux";
             modules = [
                 {nixpkgs.overlays = [
-                  overlays.default
+                  self.overlays.default
                 ];}
+                "${nixpkgs}/nixos/modules/profiles/qemu-guest.nix"
                ./nixos-vm/configuration.nix
             ]; 
           };
