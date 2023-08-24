@@ -195,6 +195,16 @@ focus_new_windows = true
 sloppy_mouse_follows_focus = true # Only active with the Sloppy behaviour
 \f[R]
 .fi
+.SS Cursor Behaviour on Resize
+.PP
+LeftWM automatically snaps the mouse to the lower right hand corner
+when a window is being resized. This behaviour is controlled by the
+disable_cursor_reposition_on_resize setting. When true, the
+cursor will not be repositioned on resize start. When false or unspecified,
+the cursor will be snapped to the lower right corner of the window which is
+being resized.
+.PP
+Default: \f[C]disable_cursor_reposition_on_resize = false\f[R]
 .SS Layouts
 .PP
 Leftwm supports variety of layouts, which define the way that windows are tiled in the workspace

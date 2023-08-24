@@ -199,6 +199,7 @@ pub struct Config {
     pub single_window_border: bool,
     pub sloppy_mouse_follows_focus: bool,
     pub auto_derive_workspaces: bool,
+    pub disable_cursor_reposition_on_resize: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -655,6 +656,10 @@ impl leftwm_core::Config for Config {
 
     fn auto_derive_workspaces(&self) -> bool {
         self.auto_derive_workspaces
+    }
+
+    fn reposition_cursor_on_resize(&self) -> bool {
+        !self.disable_cursor_reposition_on_resize
     }
 }
 
