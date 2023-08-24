@@ -334,7 +334,7 @@ impl Children {
 
     /// Merge another `Children` into this `Children`.
     pub fn merge(&mut self, reaper: Self) {
-        self.inner.extend(reaper.inner.into_iter());
+        self.inner.extend(reaper.inner);
     }
 
     /// Remove all children precosses which finished

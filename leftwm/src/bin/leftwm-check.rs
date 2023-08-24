@@ -142,7 +142,7 @@ fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> 
         .extensions(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
     let ron = to_string_pretty(&config, ron_pretty_conf)?;
     let comment_header = String::from(
-        r#"//  _        ___                                      ___ _
+        r"//  _        ___                                      ___ _
 // | |      / __)_                                   / __|_)
 // | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
 // | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
@@ -151,7 +151,7 @@ fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> 
 // A WindowManager for Adventurers                         (____/
 // For info about configuration please visit https://github.com/leftwm/leftwm/wiki
 
-"#,
+",
     );
     let ron_with_header = comment_header + &ron;
     let mut file = File::create(ron_file)?;
