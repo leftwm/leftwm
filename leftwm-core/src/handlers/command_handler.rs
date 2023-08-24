@@ -68,7 +68,9 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
             scratchpad_handler::cycle_scratchpad_window(manager, scratchpad, Direction::Backward)
         }
 
+        Command::ToggleMaximized => toggle_state(state, WindowState::Maximized),
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
+
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
 
         Command::SendWindowToTag { window, tag } => move_to_tag(*window, *tag, manager),
@@ -238,8 +240,8 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let toggle_to = !window.has_state(&window_state);
     let tag_id = state.focus_manager.tag(0)?;
 
-    if window_state == WindowState::Fullscreen {
-        // Going to fullscreen, so we save the window order
+    if window_state == WindowState::Fullscreen || window_state == WindowState::Maximized {
+        // Going to fullscreen or maximized, so we save the window order
         // or else, we restore it!
         if toggle_to {
             let handles = state
@@ -269,6 +271,7 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     state.handle_window_focus(&handle);
     match window_state {
         WindowState::Fullscreen => Some(true),
+        WindowState::Maximized => Some(true),
         _ => Some(false),
     }
 }
@@ -948,13 +951,13 @@ mod tests {
                     .iter_mut()
                     .find(|w| w.handle == window_handle)
                 {
-                    if window_state == WindowState::Fullscreen {
+                    if window_state == WindowState::Fullscreen
+                        || window_state == WindowState::Maximized
+                    {
                         if toggle_to {
-                            window.set_states(vec![WindowState::Fullscreen]);
-                        } else if let Some(state_pos) = window
-                            .states()
-                            .iter()
-                            .position(|s| *s == WindowState::Fullscreen)
+                            window.set_states(vec![window_state]);
+                        } else if let Some(state_pos) =
+                            window.states().iter().position(|s| *s == window_state)
                         {
                             let mut states = window.states();
                             states.remove(state_pos);
@@ -1109,6 +1112,164 @@ mod tests {
         });
 
         manager.command_handler(&Command::ToggleFullScreen);
+        mock_update(&mut manager);
+
+        let actual_first_tag_window_order = get_current_handles(&mut manager, Some(first_tag));
+        let actual_second_tag_window_order = get_current_handles(&mut manager, Some(second_tag));
+
+        assert_eq!(
+            expected_first_tag_window_order,
+            actual_first_tag_window_order
+        );
+        assert_eq!(
+            expected_second_tag_window_order,
+            actual_second_tag_window_order
+        );
+    }
+
+    #[test]
+    fn toggle_maximized() {
+        let mut manager = Manager::new_test(vec!["1".to_string()]);
+        let tag_id = manager.state.tags.get(1).unwrap().id;
+
+        manager.screen_create_handler(Screen::default());
+
+        for i in 1..=3 {
+            manager.window_created_handler(
+                Window::new(WindowHandle::MockHandle(i), None, None),
+                -1,
+                -1,
+            );
+        }
+
+        let expected = get_current_handles(&mut manager, Some(tag_id));
+
+        assert!(!manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Maximized)));
+
+        manager.command_handler(&Command::ToggleMaximized);
+
+        mock_update(&mut manager);
+        assert!(manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Maximized)));
+
+        // Mess with the window positions
+        manager.state.windows.reverse();
+
+        let actual = get_current_handles(&mut manager, Some(tag_id));
+
+        assert_ne!(expected, actual);
+
+        manager.command_handler(&Command::ToggleMaximized);
+        mock_update(&mut manager);
+
+        let actual = get_current_handles(&mut manager, Some(tag_id));
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn toggle_maximized_with_multiple_tags() {
+        let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
+
+        let first_tag = manager.state.tags.get(1).unwrap().id;
+        let second_tag = manager.state.tags.get(2).unwrap().id;
+
+        manager.screen_create_handler(Screen::default());
+
+        for i in 1..=3 {
+            manager.window_created_handler(
+                Window::new(WindowHandle::MockHandle(i), None, None),
+                -1,
+                -1,
+            );
+        }
+
+        let expected_first_tag_window_order = get_current_handles(&mut manager, Some(first_tag));
+
+        assert!(!manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Maximized)));
+
+        manager.command_handler(&Command::ToggleMaximized);
+        mock_update(&mut manager);
+
+        assert!(manager
+            .state
+            .windows
+            .iter()
+            .any(|w| w.has_state(&WindowState::Maximized)));
+
+        // Mess with the window positions
+        manager.state.windows.reverse();
+
+        assert!(manager.command_handler(&Command::GoToTag {
+            tag: 2,
+            swap: false
+        }));
+
+        for i in 4..=6 {
+            manager.window_created_handler(
+                Window::new(WindowHandle::MockHandle(i), None, None),
+                -1,
+                -1,
+            );
+        }
+
+        let expected_second_tag_window_order = get_current_handles(&mut manager, Some(second_tag));
+
+        assert_eq!(
+            manager
+                .state
+                .windows
+                .iter()
+                .find(|w| w.has_state(&WindowState::Maximized))
+                .iter()
+                .count(),
+            1
+        );
+
+        manager.command_handler(&Command::ToggleMaximized);
+        mock_update(&mut manager);
+
+        assert_eq!(
+            manager
+                .state
+                .windows
+                .iter()
+                .filter(|w| w.has_state(&WindowState::Maximized))
+                .count(),
+            2
+        );
+
+        // Mess with the windows positions of the second tag
+        let (mut windows_first_tag, mut windows_second_tag) =
+            split_window_vec(manager.state.windows, first_tag);
+        windows_second_tag.reverse();
+        windows_first_tag.append(&mut windows_second_tag);
+        manager.state.windows = windows_first_tag;
+
+        manager.command_handler(&Command::GoToTag {
+            tag: 1,
+            swap: false,
+        });
+
+        manager.command_handler(&Command::ToggleMaximized);
+        mock_update(&mut manager);
+
+        manager.command_handler(&Command::GoToTag {
+            tag: 2,
+            swap: false,
+        });
+
+        manager.command_handler(&Command::ToggleMaximized);
         mock_update(&mut manager);
 
         let actual_first_tag_window_order = get_current_handles(&mut manager, Some(first_tag));
