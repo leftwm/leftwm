@@ -270,8 +270,7 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     state.actions.push_back(act);
     state.handle_window_focus(&handle);
     match window_state {
-        WindowState::Fullscreen => Some(true),
-        WindowState::Maximized => Some(true),
+        WindowState::Fullscreen | WindowState::Maximized => Some(true),
         _ => Some(false),
     }
 }
