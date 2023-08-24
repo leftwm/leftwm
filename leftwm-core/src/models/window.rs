@@ -354,6 +354,11 @@ impl Window {
         self.r#type != WindowType::Desktop && self.r#type != WindowType::Dock
     }
 
+    #[must_use]
+    pub fn is_normal(&self) -> bool {
+        self.r#type == WindowType::Normal
+    }
+
     pub fn snap_to_workspace(&mut self, workspace: &Workspace) -> bool {
         self.set_floating(false);
 
