@@ -227,8 +227,14 @@ impl Window {
     #[must_use]
     pub fn width(&self) -> i32 {
         let mut value;
-        if self.is_fullscreen() || self.is_maximized() {
+        if self.is_fullscreen() {
             value = self.normal.w();
+        } else if self.is_maximized() {
+            // duplicate code to short circuit make sure maximized floating windows
+            // aren't treated as normal floating windows
+            value = self.normal.w()
+                - (((self.margin.left + self.margin.right) as f32) * self.margin_multiplier) as i32
+                - (self.border * 2);
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
             value = relative.w() - (self.border * 2);
@@ -250,8 +256,14 @@ impl Window {
     #[must_use]
     pub fn height(&self) -> i32 {
         let mut value;
-        if self.is_fullscreen() || self.is_maximized() {
+        if self.is_fullscreen() {
             value = self.normal.h();
+        } else if self.is_maximized() {
+            // duplicate code to short circuit make sure maximized floating windows
+            // aren't treated as normal floating windows
+            value = self.normal.h()
+                - (((self.margin.top + self.margin.bottom) as f32) * self.margin_multiplier) as i32
+                - (self.border * 2);
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
             value = relative.h() - (self.border * 2);
@@ -288,8 +300,12 @@ impl Window {
 
     #[must_use]
     pub fn x(&self) -> i32 {
-        if self.is_fullscreen() || self.is_maximized() {
+        if self.is_fullscreen() {
             self.normal.x()
+        } else if self.is_maximized() {
+            // duplicate code to short circuit make sure maximized floating windows
+            // aren't treated as normal floating windows
+            self.normal.x() + (self.margin.left as f32 * self.margin_multiplier) as i32
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.x()
@@ -300,8 +316,12 @@ impl Window {
 
     #[must_use]
     pub fn y(&self) -> i32 {
-        if self.is_fullscreen() || self.is_maximized() {
+        if self.is_fullscreen() {
             self.normal.y()
+        } else if self.is_maximized() {
+            // duplicate code to short circuit make sure maximized floating windows
+            // aren't treated as normal floating windows
+            self.normal.y() + (self.margin.top as f32 * self.margin_multiplier) as i32
         } else if self.floating() && self.floating.is_some() {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.y()
