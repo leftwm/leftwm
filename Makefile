@@ -61,7 +61,7 @@ install: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/xsessions/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo mkdir $(SHARE_DIR)/leftwm
-	sudo cp -r $(ROOT_DIR)/themes $(SHARE_DIR)/leftwm
+	sudo cp -r $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo install -s -Dm755\
 		$(ROOT_DIR)/target/$(folder)/leftwm\
 		$(ROOT_DIR)/target/$(folder)/leftwm-worker\
@@ -71,7 +71,7 @@ install: build
 		$(ROOT_DIR)/target/$(folder)/leftwm-command\
 		-t $(TARGET_DIR)
 	cd $(ROOT_DIR) && cargo clean
-	@echo "Binaries, '.desktop' file, theme templates and manual page have been installed"
+	@echo "Binaries, '.desktop' file, manpage, theme and config templates have been installed"
 
 # Function to build and link a specific profile
 install-linked: build
@@ -79,14 +79,14 @@ install-linked: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo mkdir $(SHARE_DIR)/leftwm
-	sudo cp -r $(ROOT_DIR)/themes $(SHARE_DIR)/leftwm
+	sudo cp -r $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm $(TARGET_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-worker $(TARGET_DIR)/leftwm-worker
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/lefthk-worker $(TARGET_DIR)/lefthk-worker
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-state $(TARGET_DIR)/leftwm-state
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-check $(TARGET_DIR)/leftwm-check
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-command $(TARGET_DIR)/leftwm-command
-	@echo "binaries have been linked, manpage, theme templates and '.desktop' file have been installed"
+	@echo "binaries have been linked, '.desktop' file, manpage, theme and config templates have been installed"
 
 # Uninstalls leftwm from the system.
 uninstall:
@@ -100,4 +100,4 @@ uninstall:
 		$(TARGET_DIR)/leftwm-state\
 		$(TARGET_DIR)/leftwm-check\
 		$(TARGET_DIR)/leftwm-command
-	@echo "Binaries and manpage have been uninstalled and '.desktop' file and theme templates have been removed"
+	@echo "Binaries and manpage have been uninstalled and '.desktop' file, theme and config templates have been removed"
