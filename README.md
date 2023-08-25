@@ -92,6 +92,8 @@ With LeftWM, there are two types of configuration files:
   these settings out into themes, you can now easily tweak, switch, and share your experiences. This
   configuration is spread between `theme.toml` and related files contained within a theme's folder.
 
+**Note:** some example config and themes can be found in the share dir, e.g. `/usr/share/leftwm` oh Arch based disros.
+
 [ricing]: https://www.reddit.com/r/unixporn/comments/3iy3wd/stupid_question_what_is_ricing/
 
 # Dependencies
