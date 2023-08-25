@@ -61,7 +61,7 @@ install: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/xsessions/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo mkdir $(SHARE_DIR)/leftwm
-	sudo cp -r $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
+	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo install -s -Dm755\
 		$(ROOT_DIR)/target/$(folder)/leftwm\
 		$(ROOT_DIR)/target/$(folder)/leftwm-worker\
@@ -79,7 +79,7 @@ install-linked: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
 	sudo mkdir $(SHARE_DIR)/leftwm
-	sudo cp -r $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
+	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm $(TARGET_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-worker $(TARGET_DIR)/leftwm-worker
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/lefthk-worker $(TARGET_DIR)/lefthk-worker
