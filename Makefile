@@ -60,7 +60,7 @@ clean:
 install: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/xsessions/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
-	sudo mkdir $(SHARE_DIR)/leftwm
+	[ -d '/usr/share/leftwm' ] || sudo mkdir $(SHARE_DIR)/leftwm
 	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo install -s -Dm755\
 		$(ROOT_DIR)/target/$(folder)/leftwm\
@@ -75,10 +75,9 @@ install: build
 
 # Function to build and link a specific profile
 install-linked: build
-	cd $(ROOT_DIR) && cargo build --profile $(profile)
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
-	sudo mkdir $(SHARE_DIR)/leftwm
+	[ -d '/usr/share/leftwm' ] || sudo mkdir $(SHARE_DIR)/leftwm
 	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm $(TARGET_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-worker $(TARGET_DIR)/leftwm-worker
