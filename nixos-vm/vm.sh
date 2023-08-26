@@ -16,7 +16,7 @@ left-vm () {
 
     export QEMU_OPTS="
       -vga qxl
-      -spice port=5930,disable-ticketing=on
+      -spice unix=on,addr=/tmp/vm_spice.socket,disable-ticketing=on
       -device virtio-serial-pci
       -chardev spicevmc,id=spicechannel0,name=vdagent
       -device virtserialport,chardev=spicechannel0,name=com.redhat.spice.0
@@ -24,7 +24,7 @@ left-vm () {
     nixos-rebuild build-vm --flake ../#leftwm
     ./result/bin/run-leftwm-vm & PID_QEMU="$!"
     sleep 1
-    remote-viewer spice://127.0.0.1:5930
+    remote-viewer spice+unix:///tmp/vm_spice.socket
     kill $PID_QEMU
     cd -
 
