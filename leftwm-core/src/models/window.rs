@@ -179,7 +179,7 @@ impl Window {
     }
     #[must_use]
     pub fn can_resize(&self) -> bool {
-        self.can_resize && self.is_managed() && !self.is_fullscreen() && !self.is_maximized()
+        self.can_resize && self.is_managed()
     }
 
     #[must_use]
@@ -197,6 +197,10 @@ impl Window {
 
     pub fn set_states(&mut self, states: Vec<WindowState>) {
         self.states = states;
+    }
+
+    pub fn drop_state(&mut self, state: &WindowState) {
+        self.states.retain(|s| s != state);
     }
 
     #[must_use]
