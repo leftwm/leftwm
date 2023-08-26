@@ -73,6 +73,7 @@
                   "rustc"
                   "rustfmt"
                 ];})
+                virt-viewer
               ];
 
               shellHook = ''
@@ -94,7 +95,6 @@
                 {nixpkgs.overlays = [
                   self.overlays.default
                 ];}
-                "${nixpkgs}/nixos/modules/profiles/qemu-guest.nix"
                ./nixos-vm/configuration.nix
             ]; 
           };
