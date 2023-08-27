@@ -135,14 +135,22 @@ fn prepare_window(state: &mut State, handle: WindowHandle) {
         // Un-pin window if maximized or in fullscreen
         if w.is_fullscreen() {
             w.reset_float_offset();
-            state.actions.push_back(DisplayAction::SetState(handle, false, WindowState::Fullscreen));
+            state.actions.push_back(DisplayAction::SetState(
+                handle,
+                false,
+                WindowState::Fullscreen,
+            ));
             w.drop_state(&WindowState::Fullscreen);
             // Force update for all windows
             state.mode = Mode::ReadyToResize(handle);
         }
         if w.is_maximized() {
             w.reset_float_offset();
-            state.actions.push_back(DisplayAction::SetState(handle, false, WindowState::Maximized));
+            state.actions.push_back(DisplayAction::SetState(
+                handle,
+                false,
+                WindowState::Maximized,
+            ));
             w.drop_state(&WindowState::Maximized);
             w.drop_state(&WindowState::MaximizedHorz);
             w.drop_state(&WindowState::MaximizedVert);
