@@ -199,10 +199,10 @@ impl XlibDisplayServer {
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
                 let Ok(attrs) = self.xw.get_window_attrs(handle) else {
-                    return
+                    return;
                 };
                 let Some(state) = self.xw.get_wm_state(handle) else {
-                    return
+                    return;
                 };
                 if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
                     if let Some(event) = self.xw.setup_window(handle) {

@@ -20,7 +20,7 @@ impl State {
     /// Focuses the given window.
     pub fn focus_window(&mut self, handle: &WindowHandle) {
         let Some(window) = self.focus_window_work(handle) else {
-            return
+            return;
         };
 
         // Make sure the focused window's workspace is focused.
@@ -100,7 +100,11 @@ impl State {
 
     /// Focuses the workspace containing a given point.
     pub fn focus_workspace_with_point(&mut self, x: i32, y: i32) {
-        let Some(focused_id) = self.focus_manager.workspace(&self.workspaces).map(|ws| ws.id) else {
+        let Some(focused_id) = self
+            .focus_manager
+            .workspace(&self.workspaces)
+            .map(|ws| ws.id)
+        else {
             return;
         };
 
@@ -151,7 +155,7 @@ impl State {
 
     fn focus_closest_window(&mut self, x: i32, y: i32) {
         let Some(ws) = self.workspaces.iter().find(|ws| ws.contains_point(x, y)) else {
-            return
+            return;
         };
         let mut dists: Vec<(i32, &Window)> = self
             .windows

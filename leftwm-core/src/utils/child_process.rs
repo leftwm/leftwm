@@ -334,7 +334,7 @@ impl Children {
 
     /// Merge another `Children` into this `Children`.
     pub fn merge(&mut self, reaper: Self) {
-        self.inner.extend(reaper.inner.into_iter());
+        self.inner.extend(reaper.inner);
     }
 
     /// Remove all children precosses which finished
@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let content = r###"
+        let content = r"
             [Desktop Action Gallery]
         Exec=fooview --gallery
         Name=Browse Gallery
@@ -417,7 +417,7 @@ mod tests {
         Exec=fooview --create-new
         Name=Create a new Foo!
         Icon=fooview-new
-                "###;
+                ";
 
         let entry = DesktopEntry::parse(content);
 
