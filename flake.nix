@@ -77,7 +77,7 @@
               ];
 
               shellHook = ''
-                source './nixos-vm/vm.sh'                
+                source './.nixos-vm/vm.sh'                
               '';
             };
         };
@@ -95,7 +95,7 @@
                 {nixpkgs.overlays = [
                   self.overlays.default
                 ];}
-               ./nixos-vm/configuration.nix
+               ./.nixos-vm/configuration.nix
             ]; 
           };
         };

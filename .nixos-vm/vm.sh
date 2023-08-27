@@ -11,8 +11,9 @@ left-vm () {
   else
   
     echo building a leftwm virtual machine...
-    echo $SCRIPTPATH
     cd "$SCRIPTPATH" # nixos-rebuild build-vm dumps result into current directory
+
+    nixos-rebuild build-vm --flake ../#leftwm
 
     export QEMU_OPTS="
       -vga qxl
@@ -21,13 +22,15 @@ left-vm () {
       -chardev spicevmc,id=spicechannel0,name=vdagent
       -device virtserialport,chardev=spicechannel0,name=com.redhat.spice.0
     "
-    nixos-rebuild build-vm --flake ../#leftwm
     ./result/bin/run-leftwm-vm & PID_QEMU="$!"
     sleep 1
     remote-viewer spice+unix:///tmp/vm_spice.socket
     kill $PID_QEMU
     cd -
 
+    unset QEMU_OPTS
   fi
+
+  unset SCRIPTPATH
 }
 
