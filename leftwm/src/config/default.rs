@@ -196,7 +196,7 @@ impl Default for Config {
             });
         }
 
-        let tags = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+        let tags = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
             .iter()
             .map(|s| (*s).to_string())
             .collect();
