@@ -134,7 +134,9 @@ impl XWrap {
                 }
                 states.push(atom);
             } else {
-                let Some(index) = states.iter().position(|s| s == &atom) else { return };
+                let Some(index) = states.iter().position(|s| s == &atom) else {
+                    return;
+                };
                 states.remove(index);
             }
             self.set_window_states_atoms(h, &states);

@@ -242,6 +242,35 @@ impl Tag {
                 .for_each(|w| {
                     w.set_visible(true);
                 });
+        } else if let Some(window) = windows
+            .iter_mut()
+            .find(|w| w.has_tag(&self.id) && w.is_maximized())
+        {
+            window.set_visible(true);
+            window.normal = Xyhw::from(workspace.rect());
+            let handle = window.handle;
+            windows
+                .iter_mut()
+                .filter(|w| {
+                    w.has_tag(&self.id)
+                        && w.transient.unwrap_or_else(|| 0.into()) == handle
+                        && w.is_managed()
+                })
+                .for_each(|w| {
+                    w.set_visible(true);
+                });
+
+            // Update the location and visibility of non-normal + non-maximized windows.
+            windows
+                .iter_mut()
+                .filter(|w| w.has_tag(&self.id) && !w.is_normal() && !w.is_maximized())
+                .for_each(|w| {
+                    w.set_visible(true);
+                    // Don't change docks and desktop xyhw
+                    if w.is_managed() {
+                        w.normal = workspace.xyhw;
+                    }
+                });
         } else {
             // Don't bother updating the other windows when a window is fullscreen.
             // Mark all windows for this workspace as visible.

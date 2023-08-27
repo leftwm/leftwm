@@ -365,8 +365,16 @@ impl XWrap {
             if status == 0 {
                 return None;
             }
-            let Ok(res_name) = CString::from_raw(class_return.res_name.cast::<c_char>()).into_string() else  {return None};
-            let Ok(res_class) =CString::from_raw(class_return.res_class.cast::<c_char>()).into_string() else { return None};
+            let Ok(res_name) =
+                CString::from_raw(class_return.res_name.cast::<c_char>()).into_string()
+            else {
+                return None;
+            };
+            let Ok(res_class) =
+                CString::from_raw(class_return.res_class.cast::<c_char>()).into_string()
+            else {
+                return None;
+            };
             Some((res_name, res_class))
         }
     }
@@ -446,13 +454,25 @@ impl XWrap {
     /// Returns the states of a window.
     #[must_use]
     pub fn get_window_states(&self, window: xlib::Window) -> Vec<WindowState> {
-        self.get_window_states_atoms(window)
+        let window_states_atoms = self.get_window_states_atoms(window);
+
+        // if window is maximized both horizontally and vertically
+        // `WindowState::Maximized` is used
+        // instead of `WindowState::MaximizedVert` and `WindowState::MaximizedHorz`
+        let maximized = window_states_atoms.contains(&self.atoms.NetWMStateMaximizedVert)
+            && window_states_atoms.contains(&self.atoms.NetWMStateMaximizedHorz);
+
+        let mut window_states: Vec<WindowState> = window_states_atoms
             .iter()
             .map(|a| match a {
                 x if x == &self.atoms.NetWMStateModal => WindowState::Modal,
                 x if x == &self.atoms.NetWMStateSticky => WindowState::Sticky,
-                x if x == &self.atoms.NetWMStateMaximizedVert => WindowState::MaximizedVert,
-                x if x == &self.atoms.NetWMStateMaximizedHorz => WindowState::MaximizedHorz,
+                x if x == &self.atoms.NetWMStateMaximizedVert && !maximized => {
+                    WindowState::MaximizedVert
+                }
+                x if x == &self.atoms.NetWMStateMaximizedHorz && !maximized => {
+                    WindowState::MaximizedHorz
+                }
                 x if x == &self.atoms.NetWMStateShaded => WindowState::Shaded,
                 x if x == &self.atoms.NetWMStateSkipTaskbar => WindowState::SkipTaskbar,
                 x if x == &self.atoms.NetWMStateSkipPager => WindowState::SkipPager,
@@ -462,7 +482,13 @@ impl XWrap {
                 x if x == &self.atoms.NetWMStateBelow => WindowState::Below,
                 _ => WindowState::Modal,
             })
-            .collect()
+            .collect();
+
+        if maximized {
+            window_states.push(WindowState::Maximized);
+        }
+
+        window_states
     }
 
     /// Returns the atom states of a window.

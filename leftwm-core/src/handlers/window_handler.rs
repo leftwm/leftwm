@@ -251,6 +251,19 @@ fn insert_window(state: &mut State, window: &mut Window, layout: &str) {
                 DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
             state.actions.push_back(act);
             was_fullscreen = true;
+        } else if let Some(fsw) = state
+            .windows
+            .iter_mut()
+            .find(|w| for_active_workspace(w) && w.is_maximized())
+        {
+            if !window.floating() {
+                let act = DisplayAction::SetState(
+                    fsw.handle,
+                    !fsw.is_maximized(),
+                    WindowState::Maximized,
+                );
+                state.actions.push_back(act);
+            }
         }
         let monocle = layouts::MONOCLE;
         let main_and_deck = layouts::MAIN_AND_DECK;

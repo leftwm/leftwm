@@ -199,10 +199,10 @@ impl XlibDisplayServer {
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
                 let Ok(attrs) = self.xw.get_window_attrs(handle) else {
-                    return
+                    return;
                 };
                 let Some(state) = self.xw.get_wm_state(handle) else {
-                    return
+                    return;
                 };
                 if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
                     if let Some(event) = self.xw.setup_window(handle) {
@@ -289,6 +289,11 @@ fn from_set_state(
         WindowState::Fullscreen => xw.atoms.NetWMStateFullscreen,
         WindowState::Above => xw.atoms.NetWMStateAbove,
         WindowState::Below => xw.atoms.NetWMStateBelow,
+        WindowState::Maximized => {
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedVert);
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedHorz);
+            return None;
+        }
     };
     xw.set_state(handle, toggle_to, state);
     None

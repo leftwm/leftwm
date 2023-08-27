@@ -6,6 +6,7 @@ pub enum WindowState {
     Sticky,
     MaximizedVert,
     MaximizedHorz,
+    Maximized,
     Shaded,
     SkipTaskbar,
     SkipPager,

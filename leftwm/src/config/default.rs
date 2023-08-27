@@ -196,7 +196,7 @@ impl Default for Config {
             });
         }
 
-        let tags = vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+        let tags = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
             .iter()
             .map(|s| (*s).to_string())
             .collect();
@@ -237,6 +237,7 @@ impl Default for Config {
             max_window_width: None,
             state_path: None,
             sloppy_mouse_follows_focus: true,
+            disable_cursor_reposition_on_resize: false,
             auto_derive_workspaces: true,
         }
     }

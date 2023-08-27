@@ -199,6 +199,7 @@ pub struct Config {
     pub single_window_border: bool,
     pub sloppy_mouse_follows_focus: bool,
     pub auto_derive_workspaces: bool,
+    pub disable_cursor_reposition_on_resize: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -261,7 +262,7 @@ fn load_from_file() -> Result<Config> {
             .extensions(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
         let ron = to_string_pretty(&config, ron_pretty_conf).unwrap();
         let comment_header = String::from(
-            r#"//  _        ___                                      ___ _
+            r"//  _        ___                                      ___ _
 // | |      / __)_                                   / __|_)
 // | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
 // | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
@@ -270,7 +271,7 @@ fn load_from_file() -> Result<Config> {
 // A WindowManager for Adventurers                         (____/
 // For info about configuration please visit https://github.com/leftwm/leftwm/wiki
 
-"#,
+",
         );
         let ron_with_header = comment_header + &ron;
 
@@ -655,6 +656,10 @@ impl leftwm_core::Config for Config {
 
     fn auto_derive_workspaces(&self) -> bool {
         self.auto_derive_workspaces
+    }
+
+    fn reposition_cursor_on_resize(&self) -> bool {
+        !self.disable_cursor_reposition_on_resize
     }
 }
 
