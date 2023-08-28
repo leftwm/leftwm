@@ -1,7 +1,7 @@
 use super::{Config, DisplayEvent, Manager, Mode};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::models::WindowHandle;
+use crate::models::{WindowHandle, WindowState};
 use crate::State;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
@@ -132,6 +132,31 @@ fn from_configure_xlib_window(state: &mut State, handle: WindowHandle) -> bool {
 // Save off the info about position of the window when we start to move/resize.
 fn prepare_window(state: &mut State, handle: WindowHandle) {
     if let Some(w) = state.windows.iter_mut().find(|w| w.handle == handle) {
+        // Un-pin window if maximized or in fullscreen
+        if w.is_fullscreen() {
+            w.reset_float_offset();
+            state.actions.push_back(DisplayAction::SetState(
+                handle,
+                false,
+                WindowState::Fullscreen,
+            ));
+            w.drop_state(&WindowState::Fullscreen);
+            // Force update for all windows
+            state.mode = Mode::ReadyToResize(handle);
+        }
+        if w.is_maximized() {
+            w.reset_float_offset();
+            state.actions.push_back(DisplayAction::SetState(
+                handle,
+                false,
+                WindowState::Maximized,
+            ));
+            w.drop_state(&WindowState::Maximized);
+            w.drop_state(&WindowState::MaximizedHorz);
+            w.drop_state(&WindowState::MaximizedVert);
+            // Force update for all windows
+            state.mode = Mode::ReadyToResize(handle);
+        }
         if w.floating() {
             let offset = w.get_floating_offsets().unwrap_or_default();
             w.start_loc = Some(offset);
@@ -142,6 +167,8 @@ fn prepare_window(state: &mut State, handle: WindowHandle) {
             w.set_floating_offsets(Some(floating));
             w.start_loc = Some(floating);
             w.set_floating(true);
+            // Force update for all windows
+            state.mode = Mode::ReadyToResize(handle);
         }
     }
     state.move_to_top(&handle);
