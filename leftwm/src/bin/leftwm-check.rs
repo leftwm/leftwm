@@ -36,7 +36,11 @@ async fn main() -> Result<()> {
     );
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
-        git_version::git_version!(fallback = "unknown")
+        if let Some(git_hash) = option_env!("GIT_HASH") {
+            git_hash
+        } else {
+            git_version::git_version!(fallback = "unknown")
+        }
     );
     if matches.get_flag("migrate") {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");

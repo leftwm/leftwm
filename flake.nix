@@ -13,7 +13,9 @@
   };
 
   outputs = inputs@{ self, flake-parts, rust-overlay, crane, nixpkgs, ... }: 
-    flake-parts.lib.mkFlake {inherit inputs;} {
+    let 
+      GIT_HASH = self.shortRev or self.dirtyShortRev;
+    in flake-parts.lib.mkFlake {inherit inputs;} {
         systems = [
           "x86_64-linux"
           "aarch64-linux"
@@ -34,6 +36,7 @@
               xorg.libXinerama
             ];
 
+            inherit GIT_HASH;
           } // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
           
           craneLib = (crane.mkLib pkgs).overrideToolchain pkgs.rust-bin.stable.latest.minimal;
@@ -79,6 +82,8 @@
               shellHook = ''
                 source './.nixos-vm/vm.sh'                
               '';              
+
+              inherit GIT_HASH;
             };
         };
 
