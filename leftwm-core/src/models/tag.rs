@@ -246,6 +246,7 @@ impl Tag {
             .iter_mut()
             .find(|w| w.has_tag(&self.id) && w.is_maximized())
         {
+            // Update maximized window
             window.set_visible(true);
             window.normal = Xyhw::from(workspace.rect());
             let handle = window.handle;
@@ -260,10 +261,12 @@ impl Tag {
                     w.set_visible(true);
                 });
 
-            // Update the location and visibility of non-normal + non-maximized windows.
+            // Update all windows except normal non-floating windoows and maximized window
             windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.id) && !w.is_normal() && !w.is_maximized())
+                .filter(|w| {
+                    w.has_tag(&self.id) && (!w.is_normal() || w.floating()) && !w.is_maximized()
+                })
                 .for_each(|w| {
                     w.set_visible(true);
                     // Don't change docks and desktop xyhw

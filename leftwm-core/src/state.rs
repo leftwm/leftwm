@@ -96,25 +96,32 @@ impl State {
                 w.r#type == WindowType::Normal && w.floating()
             });
 
+        // Maximized windows.
+        let (level5, maximized, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
+            partition_windows(other.iter(), |w| {
+                w.r#type == WindowType::Normal && w.is_maximized()
+            });
+
         // Tiled windows.
-        let (level5, tiled, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
+        let (level6, tiled, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
             partition_windows(other.iter(), |w| w.r#type == WindowType::Normal);
 
         // Last docks.
-        let level6: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+        let level7: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
 
         self.windows = [
             fullscreen_children,
             fullscreen_windows,
             dialogs,
             floating,
+            maximized,
             tiled,
             other,
         ]
         .concat();
 
         let fullscreen: Vec<WindowHandle> = [level1, level2].concat();
-        let handles: Vec<WindowHandle> = [level3, level4, level5, level6].concat();
+        let handles: Vec<WindowHandle> = [level3, level4, level5, level6, level7].concat();
         let act = DisplayAction::SetWindowOrder(fullscreen, handles);
         self.actions.push_back(act);
     }
