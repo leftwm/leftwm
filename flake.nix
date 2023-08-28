@@ -28,28 +28,28 @@
 
           commonArgs = {
             src = craneLib.cleanCargoSource (craneLib.path ./.);
-
+            
             buildInputs = with pkgs; [
-              git
               xorg.libX11
               xorg.libXinerama
             ];
+
           } // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
           
-          rustToolchain = pkgs.rust-bin.stable.latest.default;
-          craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+          craneLib = (crane.mkLib pkgs).overrideToolchain pkgs.rust-bin.stable.latest.minimal;
 
-          cargoArtifacts = craneLib.buildDepsOnly (commonArgs);
+          cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
+            panme = "leftwm-deps";
+          });
 
           leftwm = craneLib.buildPackage (commonArgs // {
             inherit cargoArtifacts;
-            
+
             postFixup = ''
               for p in $out/bin/left*; do
                 patchelf --set-rpath "${pkgs.lib.makeLibraryPath commonArgs.buildInputs}" $p
               done
             '';
-            GIT_HASH = self.shortRev or "dirty";
           });
         in {
 
@@ -65,7 +65,7 @@
               buildInputs = commonArgs.buildInputs ++ [ pkgs.pkg-config pkgs.systemd ];
               nativeBuildInputs = with pkgs; [
                 gnumake
-                (rustToolchain.override { extensions = [
+                (rust-bin.stable.latest.default.override { extensions = [
                   "cargo"
                   "clippy"
                   "rust-src"
@@ -78,7 +78,7 @@
 
               shellHook = ''
                 source './.nixos-vm/vm.sh'                
-              '';
+              '';              
             };
         };
 
