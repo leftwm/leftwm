@@ -32,6 +32,8 @@
             src = craneLib.cleanCargoSource (craneLib.path ./.);
             
             buildInputs = with pkgs; [
+              mold
+              clang
               xorg.libX11
               xorg.libXrandr
               xorg.libXinerama
@@ -54,6 +56,8 @@
                 patchelf --set-rpath "${pkgs.lib.makeLibraryPath commonArgs.buildInputs}" $p
               done
             '';
+
+              NIX_CFLAGS_LINK = "-fuse-ld=mold";
           });
         in {
 
@@ -66,7 +70,14 @@
           # `nix develop`
           devShells.default = pkgs.mkShell
             {
-              buildInputs = commonArgs.buildInputs ++ [ pkgs.pkg-config pkgs.systemd ];
+              NIX_CFLAGS_LINK = "-fuse-ld=mold";
+              
+              buildInputs = with pkgs;[
+                mold
+                clang
+                pkg-config
+                systemd
+              ] ++ commonArgs.buildInputs;
               nativeBuildInputs = with pkgs; [
                 gnumake
                 (rust-bin.stable.latest.default.override { extensions = [
@@ -81,8 +92,8 @@
               ];
 
               shellHook = ''
-                source './.nixos-vm/vm.sh'                
-              '';              
+                source './.nixos-vm/vm.sh'
+              '';
 
               inherit GIT_HASH;
             };
