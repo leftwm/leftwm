@@ -9,7 +9,7 @@ use crate::models::{Manager, Window, WindowType};
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
 use leftwm_layouts::Layout;
-pub use workspace_config::Workspace;
+pub use workspace_config::{Workspace, WorkspaceOptions, WorkspaceOutput};
 
 pub trait Config {
     fn create_list_of_tag_labels(&self) -> Vec<String>;
@@ -85,6 +85,7 @@ pub trait Config {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use super::workspace_config::Workspace;
     use super::*;
     use crate::models::Screen;
     use crate::models::Window;

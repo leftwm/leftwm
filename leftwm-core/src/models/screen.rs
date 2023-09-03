@@ -1,5 +1,5 @@
 use super::{DockArea, Size, WindowHandle, WorkspaceId};
-use crate::config::Workspace;
+use crate::config::WorkspaceOutput;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
 use x11_dl::xlib;
@@ -70,8 +70,8 @@ impl BBox {
     }
 }
 
-impl From<&Workspace> for Screen {
-    fn from(wsc: &Workspace) -> Self {
+impl From<&WorkspaceOutput> for Screen {
+    fn from(wsc: &WorkspaceOutput) -> Self {
         Self {
             bbox: BBox {
                 height: wsc.height,
@@ -80,7 +80,6 @@ impl From<&Workspace> for Screen {
                 y: wsc.y,
             },
             output: wsc.output.clone(),
-            max_window_width: wsc.max_window_width,
             ..Default::default()
         }
     }

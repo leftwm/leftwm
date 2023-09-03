@@ -144,10 +144,11 @@ impl XlibDisplayServer {
     /// Return a vec of events for setting up state of WM.
     fn initial_events(&self, config: &impl Config) -> Vec<DisplayEvent> {
         let mut events = vec![];
-        if let Some(workspaces) = config.workspaces() {
+        if let Some(mut workspaces) = config.workspaces() {
             let screens = self.xw.get_screens();
-            for (i, wsc) in workspaces.iter().enumerate() {
-                let mut screen = Screen::from(wsc);
+            for (i, wsc) in workspaces.iter_mut().enumerate() {
+                let wsc = wsc.output.clone().unwrap_or_default();
+                let mut screen = Screen::from(&wsc);
                 screen.root = self.root.into();
                 // If there is a screen corresponding to the given output, create the workspace
                 match screens.iter().find(|i| i.output == wsc.output) {
@@ -178,7 +179,13 @@ impl XlibDisplayServer {
             if auto_derive_workspaces {
                 screens
                     .iter()
-                    .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
+                    .filter(|screen| {
+                        !workspaces.iter().any(|wsc| {
+                            wsc.output
+                                .as_ref()
+                                .is_some_and(|wsc| wsc.output == screen.output)
+                        })
+                    })
                     .for_each(|screen| {
                         let mut s = screen.clone();
                         s.id = Some(next_id);
