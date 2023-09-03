@@ -33,6 +33,7 @@
             
             buildInputs = with pkgs; [
               xorg.libX11
+              xorg.libXrandr
               xorg.libXinerama
             ];
 
