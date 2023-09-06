@@ -13,7 +13,7 @@ left-vm () {
     echo building a leftwm virtual machine...
     cd "$SCRIPTPATH" # nixos-rebuild build-vm dumps result into current directory
 
-    nixos-rebuild build-vm --flake ../#leftwm
+    nix build ..#nixosConfigurations.leftwm.config.system.build.vm
 
     export QEMU_OPTS="
       -vga qxl
