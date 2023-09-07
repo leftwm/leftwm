@@ -22,8 +22,7 @@ impl State {
             let old_tag_ws = self
                 .workspaces
                 .iter()
-                .find(|ws| ws.tag == Some(old_tag) && ws.pinned_tags.contains(&old_tag))
-                .is_some();
+                .any(|ws| ws.tag == Some(old_tag) && ws.pinned_tags.contains(&old_tag));
 
             if let Some(ws) = self
                 .workspaces

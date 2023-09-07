@@ -134,8 +134,7 @@ impl From<&State> for ManagerState {
         for ws in &state.workspaces {
             let tag_label = ws
                 .tag
-                .map(|tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
-                .unwrap_or(None)
+                .and_then(|tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
                 .unwrap_or(String::from("Unlabeled tag"));
 
             let layout_name: String = ws
