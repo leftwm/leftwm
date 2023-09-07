@@ -34,6 +34,7 @@
             buildInputs = with pkgs; [
               xorg.libX11
               xorg.libXinerama
+              xorg.libXrandr
             ];
 
             inherit GIT_HASH;
