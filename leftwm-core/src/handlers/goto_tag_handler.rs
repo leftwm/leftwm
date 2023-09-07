@@ -8,17 +8,34 @@ impl State {
 
         let new_tag = Some(tag_id);
         // No focus safety check.
-        let old_tag = self.focus_manager.workspace(&self.workspaces)?.tag?;
-        if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
-            let old_handle = self
-                .focus_manager
-                .tags_last_window
-                .entry(old_tag)
-                .or_insert(handle);
-            *old_handle = handle;
-        }
-        if let Some(ws) = self.workspaces.iter_mut().find(|ws| ws.tag == new_tag) {
-            ws.tag = Some(old_tag);
+        let old_tag = self.focus_manager.workspace(&self.workspaces)?.tag;
+        if let Some(old_tag) = old_tag {
+            if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
+                let old_handle = self
+                    .focus_manager
+                    .tags_last_window
+                    .entry(old_tag)
+                    .or_insert(handle);
+                *old_handle = handle;
+            }
+
+            let old_tag_ws = self
+                .workspaces
+                .iter()
+                .find(|ws| ws.tag == Some(old_tag) && ws.pinned_tags.contains(&old_tag))
+                .is_some();
+
+            if let Some(ws) = self
+                .workspaces
+                .iter_mut()
+                .find(|ws| ws.tag == new_tag && !ws.pinned_tags.contains(&old_tag))
+            {
+                if old_tag_ws {
+                    ws.tag = None;
+                } else {
+                    ws.tag = Some(old_tag);
+                }
+            }
         }
 
         if let Some(workspace) = self
@@ -29,7 +46,7 @@ impl State {
         {
             tracing::debug!("tag is pinned to: {workspace:#?}");
             self.focus_workspace(&workspace);
-            self.focus_tag(&tag_id);
+            // self.focus_tag(&tag_id);
         }
 
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tag = new_tag;
