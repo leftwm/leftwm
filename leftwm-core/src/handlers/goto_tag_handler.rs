@@ -27,9 +27,9 @@ impl State {
             .into_iter()
             .find(|w| w.pinned_tags.contains(&tag_id))
         {
-            self.focus_workspace(&workspace);
             tracing::debug!("tag is pinned to: {workspace:#?}");
-            *self.focus_manager.workspace_mut(&mut self.workspaces)? = workspace;
+            self.focus_workspace(&workspace);
+            self.focus_tag(&tag_id);
         }
 
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tag = new_tag;
