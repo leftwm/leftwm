@@ -4,7 +4,9 @@ use crate::models::Size;
 
 #[derive(Serialize, Default, Deserialize, Debug, Clone, PartialEq)]
 pub struct Workspace {
+    #[serde(flatten)]
     pub output: Option<WorkspaceOutput>,
+    #[serde(flatten)]
     pub options: Option<WorkspaceOptions>,
 }
 

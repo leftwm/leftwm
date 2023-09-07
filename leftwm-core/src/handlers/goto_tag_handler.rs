@@ -21,7 +21,19 @@ impl State {
             ws.tag = Some(old_tag);
         }
 
+        if let Some(workspace) = self
+            .workspaces
+            .clone()
+            .into_iter()
+            .find(|w| w.pinned_tags.contains(&tag_id))
+        {
+            self.focus_workspace(&workspace);
+            tracing::debug!("tag is pinned to: {workspace:#?}");
+            *self.focus_manager.workspace_mut(&mut self.workspaces)? = workspace;
+        }
+
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tag = new_tag;
+
         self.focus_tag(&tag_id);
         self.update_static();
 
@@ -37,8 +49,8 @@ mod tests {
     #[test]
     fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         manager.state.goto_tag_handler(1);
         assert_eq!(manager.state.workspaces[0].tag, Some(2));
         assert_eq!(manager.state.workspaces[1].tag, Some(1));

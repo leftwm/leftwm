@@ -973,7 +973,7 @@ mod tests {
         let mut manager = Manager::new_test(vec!["1".to_string()]);
         let tag_id = manager.state.tags.get(1).unwrap().id;
 
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         for i in 1..=3 {
             manager.window_created_handler(
@@ -1021,7 +1021,7 @@ mod tests {
         let first_tag = manager.state.tags.get(1).unwrap().id;
         let second_tag = manager.state.tags.get(2).unwrap().id;
 
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         for i in 1..=3 {
             manager.window_created_handler(
@@ -1131,7 +1131,7 @@ mod tests {
         let mut manager = Manager::new_test(vec!["1".to_string()]);
         let tag_id = manager.state.tags.get(1).unwrap().id;
 
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         for i in 1..=3 {
             manager.window_created_handler(
@@ -1179,7 +1179,7 @@ mod tests {
         let first_tag = manager.state.tags.get(1).unwrap().id;
         let second_tag = manager.state.tags.get(2).unwrap().id;
 
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         for i in 1..=3 {
             manager.window_created_handler(
@@ -1294,8 +1294,8 @@ mod tests {
             "E39".to_string(),
             "F67".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
 
         assert!(manager.command_handler(&Command::GoToTag {
             tag: 1,
@@ -1337,8 +1337,8 @@ mod tests {
     #[test]
     fn go_to_tag_should_create_at_least_one_tag_per_screen_no_more() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         // no tag creation here but one tag per screen is created
         assert!(manager.command_handler(&Command::GoToTag {
             tag: 2,
@@ -1358,7 +1358,7 @@ mod tests {
     #[test]
     fn go_to_tag_should_return_false_on_invalid_input() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.state.tags = Tags::new();
         manager.state.tags.add_new("A15");
         manager.state.tags.add_new("B24");
@@ -1386,8 +1386,8 @@ mod tests {
             "E39".to_string(),
             "F67".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
 
         assert!(manager.command_handler(&Command::GoToTag {
             tag: 6,
@@ -1433,7 +1433,7 @@ mod tests {
             "E39".to_string(),
             "F67".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         let state = &mut manager.state;
 
         state.focus_tag(&2);
@@ -1461,7 +1461,7 @@ mod tests {
     #[test]
     fn focus_window_top() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
@@ -1515,7 +1515,7 @@ mod tests {
     #[test]
     fn move_window_top() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
@@ -1557,7 +1557,7 @@ mod tests {
             "HT".to_string(),
             "NS".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -1585,7 +1585,7 @@ mod tests {
     #[test]
     fn move_window_to_next_or_prev_tag_should_be_able_to_keep_window_focused() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -1615,7 +1615,7 @@ mod tests {
     #[test]
     fn after_moving_second_window_remaining_single_window_has_no_border() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
@@ -1644,7 +1644,7 @@ mod tests {
     #[test]
     fn after_moving_single_window_to_another_single_window_both_have_borders() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&1);
@@ -1671,7 +1671,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.state.focus_tag(&1);
 
@@ -1692,7 +1692,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Empty".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.state.focus_tag(&1);
 
@@ -1714,7 +1714,7 @@ mod tests {
             "C".to_string(),
             "D".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.state.focus_tag(&1);
 
@@ -1768,7 +1768,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&2);
@@ -1789,7 +1789,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Empty".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.state.focus_tag(&2);
 
@@ -1811,7 +1811,7 @@ mod tests {
             "C".to_string(),
             "D".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.state.focus_tag(&1);
 
@@ -1864,7 +1864,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.state.focus_tag(&1);
 
@@ -1889,7 +1889,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Used".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&2);
@@ -1915,7 +1915,7 @@ mod tests {
             "C".to_string(),
             "D".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.state.focus_tag(&1);
 
@@ -1969,7 +1969,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["A".to_string(), "B".to_string(), "C".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&1);
@@ -1994,7 +1994,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Used".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&2);
@@ -2021,7 +2021,7 @@ mod tests {
             "D".to_string(),
             "E".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&1);
@@ -2074,7 +2074,7 @@ mod tests {
             crate::config::tests::TestConfig,
             crate::display_servers::MockDisplayServer,
         > = Manager::new_test(vec!["A".to_string(), "B".to_string(), "C".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&3);

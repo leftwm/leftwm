@@ -177,7 +177,7 @@ impl Default for Tags {
 /// the same set of tags and windows are shared among
 /// all Workspaces, this means there aren't multiple instances of
 /// the same Tag on different Screens.
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Tag {
     /// Unique identifier for the tag,
     /// this is automatically assigned by `LeftWM`.

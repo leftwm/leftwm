@@ -1,12 +1,17 @@
 use super::{Manager, Screen, Workspace};
-use crate::config::Config;
+use crate::config::{Config, WorkspaceOptions};
 use crate::display_servers::DisplayServer;
+use crate::models::TagId;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Process a collection of events, and apply the changes to a manager.
     ///
     /// Returns `true` if changes need to be rendered.
-    pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
+    pub fn screen_create_handler(
+        &mut self,
+        screen: Screen,
+        workspace_options: Option<WorkspaceOptions>,
+    ) -> bool {
         tracing::trace!("Screen create: {:?}", screen);
 
         let tag_index = self.state.workspaces.len();
@@ -19,7 +24,39 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Some(set_id) => set_id,
         };
 
-        let mut new_workspace = Workspace::new(screen.bbox, workspace_id);
+        tracing::debug!("workspace options {workspace_options:?}");
+
+        let pinned_tags: Option<(Vec<usize>, Vec<usize>)> = workspace_options
+            .map(|ws_options| {
+                ws_options
+                    .pinned_tags
+                    .map(|tags| {
+                        tags.into_iter()
+                            .filter_map(|t| {
+                                self.state
+                                    .tags
+                                    .all()
+                                    .into_iter()
+                                    .enumerate()
+                                    .find(|(_, tag)| *t == tag.label)
+                                    .map(|(i, t)| (i, t.id))
+                            })
+                            .collect::<Vec<(usize, TagId)>>()
+                    })
+                    .map(|t| {
+                        let tags: (Vec<usize>, Vec<usize>) = t.into_iter().unzip();
+                        tags
+                    })
+            })
+            .unwrap_or_default();
+
+        tracing::debug!("workspace {workspace_id} has {pinned_tags:?} as pinned tags");
+
+        let mut new_workspace = Workspace::new(
+            screen.bbox,
+            workspace_id,
+            pinned_tags.clone().map(|(_, t)| t),
+        );
         if self.state.workspaces.len() >= tag_len {
             tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. No more workspaces will be added.");
         }
@@ -27,7 +64,26 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
         // Make sure there are enough tags for this new screen.
         let next_id = if tag_len > tag_index {
-            tag_index + 1
+            let mut next_id = tag_index + 1;
+            let workspaces: Vec<Vec<TagId>> = self
+                .state
+                .workspaces
+                .iter()
+                .filter(|w| w.id != workspace_id)
+                .map(|w| w.pinned_tags.clone())
+                .collect();
+
+            while workspaces
+                .iter()
+                .filter_map(|pinned_tags| pinned_tags.iter().clone().find(|i| next_id == **i))
+                .count()
+                > 0
+                && tag_len > tag_index
+            {
+                tracing::debug!("increasing next_id: {next_id}");
+                next_id += 1;
+            }
+            next_id
         } else {
             // Add a new tag for the workspace.
             self.state.tags.add_new_unlabeled()
@@ -51,8 +107,8 @@ mod tests {
     #[test]
     fn creating_two_screens_should_tag_them_with_first_and_second_tags() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         assert!(manager.state.workspaces[0].has_tag(&1));
         assert!(manager.state.workspaces[1].has_tag(&2));
     }
@@ -64,8 +120,8 @@ mod tests {
             "console".to_string(),
             "code".to_string(),
         ]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         assert!(manager.state.workspaces[0].has_tag(&1));
         assert!(manager.state.workspaces[1].has_tag(&2));
     }
@@ -77,10 +133,10 @@ mod tests {
         // there should be 2 tags in the beginning
         assert_eq!(manager.state.tags.len_normal(), 2);
 
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
 
         // there should be 4 workspaces
         assert_eq!(manager.state.workspaces.len(), 4);

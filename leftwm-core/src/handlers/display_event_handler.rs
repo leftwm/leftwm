@@ -10,7 +10,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn display_event_handler(&mut self, event: DisplayEvent) -> bool {
         let state = &mut self.state;
         match event {
-            DisplayEvent::ScreenCreate(s) => self.screen_create_handler(s),
+            DisplayEvent::ScreenCreate(s, ws_options) => self.screen_create_handler(s, ws_options),
             DisplayEvent::WindowCreate(w, x, y) => self.window_created_handler(w, x, y),
             DisplayEvent::WindowChange(w) => self.window_changed_handler(w),
             DisplayEvent::WindowDestroy(handle) => self.window_destroyed_handler(&handle),

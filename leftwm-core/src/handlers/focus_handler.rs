@@ -277,8 +277,8 @@ mod tests {
     #[test]
     fn focusing_a_workspace_should_make_it_active() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         let expected = manager.state.workspaces[0].clone();
         manager.state.focus_workspace(&expected);
         let actual = manager
@@ -292,8 +292,8 @@ mod tests {
     #[test]
     fn focusing_a_workspace_should_focus_its_last_active_window() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         manager
             .state
             .focus_workspace(&manager.state.workspaces[0].clone());
@@ -334,8 +334,8 @@ mod tests {
     #[test]
     fn focusing_the_same_workspace_shouldnt_add_to_the_history() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         let ws = manager.state.workspaces[0].clone();
         manager.state.focus_workspace(&ws);
         let start_length = manager.state.focus_manager.workspace_history.len();
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn focusing_a_window_should_make_it_active() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -372,7 +372,7 @@ mod tests {
     #[test]
     fn focusing_the_same_window_shouldnt_add_to_the_history() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         let window = Window::new(WindowHandle::MockHandle(1), None, None);
         manager.window_created_handler(window.clone(), -1, -1);
         manager.state.focus_window(&window.handle);
@@ -386,7 +386,7 @@ mod tests {
     #[test]
     fn focusing_a_tag_should_make_it_active() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         let state = &mut manager.state;
         let expected: usize = 1;
         state.focus_tag(&expected);
@@ -397,7 +397,7 @@ mod tests {
     #[test]
     fn focusing_the_same_tag_shouldnt_add_to_the_history() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         let state = &mut manager.state;
         let tag: usize = 1;
         state.focus_tag(&tag);
@@ -410,8 +410,8 @@ mod tests {
     #[test]
     fn focusing_a_tag_should_focus_its_workspace() {
         let mut manager = Manager::new_test(vec!["1".to_string()]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         manager.state.focus_tag(&1);
         let actual = manager
             .state
@@ -424,9 +424,9 @@ mod tests {
     #[test]
     fn focusing_a_workspace_should_focus_its_tag() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         let ws = manager.state.workspaces[1].clone();
         manager.state.focus_workspace(&ws);
         let actual = manager.state.focus_manager.tag(0).unwrap();
@@ -436,9 +436,9 @@ mod tests {
     #[test]
     fn focusing_a_window_should_focus_its_tag() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag(&2);
         manager.state.windows.push(window.clone());
@@ -450,9 +450,9 @@ mod tests {
     #[test]
     fn focusing_a_window_should_focus_workspace() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
+        manager.screen_create_handler(Screen::default(), None);
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag(&2);
         manager.state.windows.push(window.clone());
@@ -469,7 +469,7 @@ mod tests {
     #[test]
     fn focusing_an_empty_tag_should_unfocus_any_focused_window() {
         let mut manager = Manager::new_test(vec![]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
         window.tag(&1);
         manager.state.windows.push(window.clone());

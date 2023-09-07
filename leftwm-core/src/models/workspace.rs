@@ -10,6 +10,7 @@ use super::WorkspaceId;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
     pub tag: Option<TagId>, // TODO: Make this a list.
+    pub pinned_tags: Vec<TagId>,
     pub margin: Margins,
     pub margin_multiplier: f32,
     pub gutters: Vec<Gutter>,
@@ -42,9 +43,10 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(bbox: BBox, id: usize) -> Self {
+    pub fn new(bbox: BBox, id: usize, pinned_tags: Option<Vec<TagId>>) -> Self {
         Self {
             tag: None,
+            pinned_tags: pinned_tags.unwrap_or_default(),
             margin: Margins::new(10),
             margin_multiplier: 1.0,
             gutters: vec![],
@@ -213,6 +215,7 @@ mod tests {
                 y: 0,
             },
             0,
+            None,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
         assert!(
@@ -232,6 +235,7 @@ mod tests {
                 y: 0,
             },
             0,
+            None,
         );
         let tag = crate::models::Tag::new(TAG_ID, "test");
         subject.show_tag(&tag.id);
