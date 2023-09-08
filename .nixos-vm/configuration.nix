@@ -1,17 +1,10 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
-
   system.stateVersion = "23.05";
   boot.initrd.availableKernelModules = [ "virtio_net" "virtio_pci" "virtio_mmio" "virtio_blk" "virtio_scsi" "9p" "9pnet_virtio" ];
   boot.initrd.kernelModules = [ "virtio_balloon" "virtio_console" "virtio_rng" ];
 
-  # this willl get overriden
-  # just to silence CI
-  boot.loader.grub.device = "/dev/vda";
-  fileSystems."/" = {
-    device = "/dev/disk/by-label/nixos";
-    fsType = "ext4";
-  };
+  virtualisation.diskImage = "./.nixos-vm/${config.system.name}.qcow2";
 
   users.users.leftwm = {
     isNormalUser = true;
@@ -34,7 +27,7 @@
     openssh.enable = true;
     spice-vdagentd.enable = true;
     qemuGuest.enable = true;
-  
+
     xserver = {
       videoDrivers = [ "qxl" ];
       enable = true;

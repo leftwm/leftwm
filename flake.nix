@@ -21,7 +21,7 @@
           "aarch64-linux"
         ];
 
-        perSystem = { pkgs, system, ... }: 
+        perSystem = {pkgs, system, ... }: 
         let
           pkgs = import nixpkgs {
             inherit system;
@@ -92,7 +92,7 @@
               ];
 
               shellHook = ''
-                source './.nixos-vm/vm.sh'
+                source ./.nixos-vm/vm.sh
               '';
 
               inherit GIT_HASH;
@@ -112,6 +112,7 @@
                 {nixpkgs.overlays = [
                   self.overlays.default
                 ];}
+                "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
                ./.nixos-vm/configuration.nix
             ]; 
           };
