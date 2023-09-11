@@ -44,7 +44,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                             .collect::<Vec<(usize, TagId)>>()
                     })
                     .map(|t| {
-                        let tags: (Vec<usize>, Vec<usize>) = t.into_iter().unzip();
+                        let tags: (Vec<usize>, Vec<TagId>) = t.into_iter().unzip();
                         tags
                     })
             })
@@ -62,18 +62,24 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
         new_workspace.load_config(&self.config);
 
+        self.state.tags.all_mut().into_iter().for_each(|t| {
+            if let Some((_, pinned_tags)) = &pinned_tags {
+                t.is_pinned = pinned_tags.contains(&t.id);
+            }
+        });
+
         // Make sure there are enough tags for this new screen.
         let next_id = if tag_len > tag_index {
             let mut next_id = tag_index + 1;
-            let workspaces: Vec<Vec<TagId>> = self
+            let workspaces_pinned_tags: Vec<Vec<TagId>> = self
                 .state
                 .workspaces
                 .iter()
-                .filter(|w| w.id != workspace_id)
+                .filter(|w| w.id != new_workspace.id)
                 .map(|w| w.pinned_tags.clone())
                 .collect();
 
-            while workspaces
+            while workspaces_pinned_tags
                 .iter()
                 .filter_map(|pinned_tags| pinned_tags.iter().clone().find(|i| next_id == **i))
                 .count()
@@ -83,6 +89,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 tracing::debug!("increasing next_id: {next_id}");
                 next_id += 1;
             }
+
             next_id
         } else {
             // Add a new tag for the workspace.

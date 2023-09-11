@@ -161,7 +161,7 @@ impl XlibDisplayServer {
                     }
                     None => continue,
                 }
-                tracing::debug!("initial_events:: workspace options: {:?}", wsc.options);
+                tracing::debug!("workspace options: {:?}", wsc.options);
                 let e = DisplayEvent::ScreenCreate(screen, wsc.options.clone());
                 events.push(e);
             }

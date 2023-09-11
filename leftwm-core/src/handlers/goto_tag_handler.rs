@@ -19,21 +19,35 @@ impl State {
                 *old_handle = handle;
             }
 
-            let old_tag_ws = self
+            let old_tag_pinned = self
                 .workspaces
-                .iter()
-                .any(|ws| ws.tag == Some(old_tag) && ws.pinned_tags.contains(&old_tag));
+                .clone()
+                .into_iter()
+                .find(|ws| ws.tag == Some(old_tag) && ws.pinned_tags.contains(&old_tag));
 
             if let Some(ws) = self
                 .workspaces
                 .iter_mut()
                 .find(|ws| ws.tag == new_tag && !ws.pinned_tags.contains(&old_tag))
             {
-                if old_tag_ws {
-                    ws.tag = None;
+                // the old tag is pinned
+                if let Some(_old_tag_ws) = old_tag_pinned {
+                    if ws.pinned_tags.is_empty() {
+                        ws.tag = self
+                            .tags
+                            .non_pinned()
+                            .iter()
+                            .filter(|t| t.id != tag_id)
+                            .map(|t| t.id)
+                            .next();
+                    } else {
+                        ws.tag = ws.pinned_tags.iter().next().copied();
+                    }
                 } else {
                     ws.tag = Some(old_tag);
                 }
+
+                tracing::debug!("new tag workspace current tag: {:#?}", ws.tag);
             }
         }
 
@@ -45,7 +59,6 @@ impl State {
         {
             tracing::debug!("tag is pinned to: {workspace:#?}");
             self.focus_workspace(&workspace);
-            // self.focus_tag(&tag_id);
         }
 
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tag = new_tag;

@@ -94,6 +94,7 @@ impl Tags {
                 id: next_id,
                 label: label.to_string(),
                 hidden: true,
+                is_pinned: false,
             };
             let id = tag.id;
             self.hidden.push(tag);
@@ -105,6 +106,16 @@ impl Tags {
             );
             None
         }
+    }
+
+    /// Get all pinned tags
+    pub fn pinned(&self) -> Vec<&Tag> {
+        self.normal.iter().filter(|t| t.is_pinned).collect()
+    }
+
+    /// Get all non-pinned tags
+    pub fn non_pinned(&self) -> Vec<&Tag> {
+        self.normal.iter().filter(|t| !t.is_pinned).collect()
     }
 
     /// Get all normal tags
@@ -207,6 +218,9 @@ pub struct Tag {
     /// Hidden tags are internal only, and
     /// are unknown to other programs (eg. polybar)
     pub hidden: bool,
+
+    /// Indicated whether the tag is pinned to a workspace
+    pub is_pinned: bool,
 }
 
 impl Tag {
@@ -216,6 +230,7 @@ impl Tag {
             id,
             label: label.to_owned(),
             hidden: false,
+            is_pinned: false,
         }
     }
 
