@@ -12,16 +12,17 @@
     };
   };
 
-  outputs = inputs@{ self, flake-parts, rust-overlay, crane, nixpkgs, ... }: 
-    let 
+  outputs = inputs@{ self, flake-parts, rust-overlay, crane, nixpkgs, ... }:
+    let
       GIT_HASH = self.shortRev or self.dirtyShortRev;
-    in flake-parts.lib.mkFlake {inherit inputs;} {
-        systems = [
-          "x86_64-linux"
-          "aarch64-linux"
-        ];
+    in
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
 
-        perSystem = {pkgs, system, ... }: 
+      perSystem = { pkgs, system, ... }:
         let
           pkgs = import nixpkgs {
             inherit system;
@@ -30,7 +31,7 @@
 
           commonArgs = {
             src = craneLib.cleanCargoSource (craneLib.path ./.);
-            
+
             buildInputs = with pkgs; [
               mold
               clang
@@ -41,7 +42,7 @@
 
             inherit GIT_HASH;
           } // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
-          
+
           craneLib = (crane.mkLib pkgs).overrideToolchain pkgs.rust-bin.stable.latest.minimal;
 
           cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
@@ -57,9 +58,10 @@
               done
             '';
 
-              NIX_CFLAGS_LINK = "-fuse-ld=mold";
+            NIX_CFLAGS_LINK = "-fuse-ld=mold";
           });
-        in {
+        in
+        {
 
           # `nix build`
           packages = {
@@ -71,7 +73,7 @@
           devShells.default = pkgs.mkShell
             {
               NIX_CFLAGS_LINK = "-fuse-ld=mold";
-              
+
               buildInputs = with pkgs;[
                 mold
                 clang
@@ -80,14 +82,16 @@
               ] ++ commonArgs.buildInputs;
               nativeBuildInputs = with pkgs; [
                 gnumake
-                (rust-bin.stable.latest.default.override { extensions = [
-                  "cargo"
-                  "clippy"
-                  "rust-src"
-                  "rust-analyzer"
-                  "rustc"
-                  "rustfmt"
-                ];})
+                (rust-bin.stable.latest.default.override {
+                  extensions = [
+                    "cargo"
+                    "clippy"
+                    "rust-src"
+                    "rust-analyzer"
+                    "rustc"
+                    "rustfmt"
+                  ];
+                })
                 virt-viewer
               ];
 
@@ -99,23 +103,26 @@
             };
         };
 
-        flake = {
-          overlays.default = final: prev: {
-            leftwm = self.packages.${final.system}.leftwm;
-          };
+      flake = {
+        formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
+        overlays.default = final: prev: {
+          leftwm = self.packages.${final.system}.leftwm;
+        };
 
-          # nixos development vm
-          nixosConfigurations.leftwm = nixpkgs.lib.nixosSystem 
+        # nixos development vm
+        nixosConfigurations.leftwm = nixpkgs.lib.nixosSystem
           {
             system = "x86_64-linux";
             modules = [
-                {nixpkgs.overlays = [
+              {
+                nixpkgs.overlays = [
                   self.overlays.default
-                ];}
-                "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
-               ./.nixos-vm/configuration.nix
-            ]; 
+                ];
+              }
+              "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
+              ./.nixos-vm/configuration.nix
+            ];
           };
-        };
+      };
     };
 }
