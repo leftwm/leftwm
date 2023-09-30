@@ -10,6 +10,9 @@ pub mod file;
 #[cfg(feature = "sys-log")]
 mod sys;
 
+/// # Panics
+///
+/// Will panic if can't get any subscriber
 pub fn setup_logging() {
     let subscribers = get_subscribers();
 

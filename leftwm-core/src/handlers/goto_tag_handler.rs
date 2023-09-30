@@ -41,7 +41,7 @@ impl State {
                             .map(|t| t.id)
                             .next();
                     } else {
-                        ws.tag = ws.pinned_tags.iter().next().copied();
+                        ws.tag = ws.pinned_tags.first().copied();
                     }
                 } else {
                     ws.tag = Some(old_tag);
