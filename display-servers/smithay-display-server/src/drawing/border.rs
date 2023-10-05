@@ -94,7 +94,8 @@ impl BorderRenderer {
         let border_width = borders.border_width;
         let geometry = Rectangle::from_loc_and_size(
             loc - Point::from((border_width, border_width)), // offset by a border width
-            window.window.geometry().size + (border_width * 2, border_width * 2).into(), // size the box to include the border
+            // Unwrap should be safe as anything that is not a window does not get a border.
+            window.get_geometry().unwrap().size + (border_width * 2, border_width * 2).into(), // size the box to include the border
         );
 
         let elements = &mut renderer
@@ -129,7 +130,8 @@ impl BorderRenderer {
         );
         elements.insert(
             window_handle.clone(),
-            (element.clone(), window.window.clone()),
+            // Unwrap should be safe as anything that is not a window does not get a border.
+            (element.clone(), window.get_window().unwrap().clone()),
         );
         element
     }

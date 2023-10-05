@@ -68,11 +68,15 @@ impl State {
 
     // Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
+        // remove any surfaces, placement of them will be done by wayland
+        let (_, _, windows) =
+            partition_windows(self.windows.iter(), |w| w.r#type == WindowType::WlrSurface);
+
         // The windows we are managing should be behind unmanaged windows. Unless they are
         // fullscreen, or their children.
         // Fullscreen windows.
         let (level2, fullscreen_windows, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(self.windows.iter(), Window::is_fullscreen);
+            partition_windows(windows.iter(), Window::is_fullscreen);
 
         // Fullscreen windows children.
         let (level1, fullscreen_children, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =

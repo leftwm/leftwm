@@ -1,9 +1,12 @@
-use leftwm_core::{models::WindowHandle, DisplayAction, DisplayEvent};
+use leftwm_core::{
+    models::{WindowHandle, WindowType},
+    DisplayAction, DisplayEvent,
+};
 use smithay::{
     reexports::wayland_server::Display,
     utils::{Logical, Point, Rectangle},
 };
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::{internal_action::InternalAction, state::SmithayState};
 
@@ -26,30 +29,42 @@ impl SmithayState {
                     let WindowHandle::SmithayHandle(handle) = window.handle else {
                         panic!("LeftWM passed an invalid handle");
                     };
-                    let managed_window = self.window_registry.get_mut(handle).unwrap();
+                    if window.r#type == WindowType::WlrSurface {
+                        warn!("LeftWM is trying to manage a surface, discarding")
+                    } else {
+                        let Some(managed_window) = self.window_registry.get_mut(handle) else {
+                            warn!("LeftWM is trying to manage a nonexistent window, discarding");
+                            return;
+                        };
 
-                    let border_width = self.config.borders.border_width;
-                    // let border_width = 0;
-                    let loc = (window.x() + border_width, window.y() + border_width).into();
-                    let size = (
-                        window.width() - 2 * border_width,
-                        window.height() - 2 * border_width,
-                    )
-                        .into();
-                    managed_window.set_geometry(Rectangle { loc, size });
+                        let border_width = self.config.borders.border_width;
+                        // let border_width = 0;
+                        let loc = (window.x() + border_width, window.y() + border_width).into();
+                        let size = (
+                            window.width() - 2 * border_width,
+                            window.height() - 2 * border_width,
+                        )
+                            .into();
+                        managed_window.set_geometry(Rectangle { loc, size });
 
-                    let mut managed_window_data = managed_window.data.write().unwrap();
+                        let mut managed_window_data = managed_window.data.write().unwrap();
 
-                    managed_window_data.floating = window.floating();
-                    managed_window_data.visible = window.visible();
+                        managed_window_data.floating = window.floating();
+                        managed_window_data.visible = window.visible();
 
-                    managed_window
-                        .window
-                        .toplevel()
-                        .with_pending_state(|state| {
-                            state.size = Some((window.width(), window.height()).into());
-                        });
-                    managed_window.window.toplevel().send_configure();
+                        managed_window
+                            .get_window()
+                            .unwrap()
+                            .toplevel()
+                            .with_pending_state(|state| {
+                                state.size = Some((window.width(), window.height()).into());
+                            });
+                        managed_window
+                            .get_window()
+                            .unwrap()
+                            .toplevel()
+                            .send_configure();
+                    }
                 }
             }
             InternalAction::DisplayAction(DisplayAction::KillWindow(handle)) => {
@@ -58,7 +73,7 @@ impl SmithayState {
                 };
                 let window = self.window_registry.get_mut(handle);
                 //NOTE: Nothing happens if the window doesnt exist;
-                window.map(|w| w.toplevel().send_close());
+                window.map(|w| w.send_close());
             }
             InternalAction::DisplayAction(DisplayAction::AddedWindow(handle, floating, focus)) => {
                 let WindowHandle::SmithayHandle(handle) = handle else {

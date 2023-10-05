@@ -458,7 +458,8 @@ fn update_workspace_avoid_list(state: &mut State) {
     state
         .windows
         .iter()
-        .filter(|w| w.r#type == WindowType::Dock)
+        // Also ignore surfaces since we dont know what they are, rather have wofi ignore workspaces than your background moving with them.
+        .filter(|w| w.r#type == WindowType::Dock || w.r#type == WindowType::WlrSurface)
         .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
         .for_each(|(handle, to_avoid)| {
             tracing::trace!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);

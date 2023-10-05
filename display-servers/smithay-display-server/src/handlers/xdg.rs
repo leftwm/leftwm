@@ -31,10 +31,10 @@ impl XdgShellHandler for SmithayState {
     }
 
     fn new_toplevel(&mut self, surface: ToplevelSurface) {
-        let window = ManagedWindow::new(Window::new(surface));
+        let window = ManagedWindow::from_window(Window::new(surface));
         let id = self.window_registry.insert(window.clone());
 
-        let (name, class) = with_states(window.window.toplevel().wl_surface(), |states| {
+        let (name, class) = with_states(window.toplevel().unwrap().wl_surface(), |states| {
             let data = states
                 .data_map
                 .get::<XdgToplevelSurfaceData>()
@@ -54,15 +54,13 @@ impl XdgShellHandler for SmithayState {
         ))
         .unwrap();
 
-        window.window.toplevel().with_pending_state(|state| {
+        window.toplevel().unwrap().with_pending_state(|state| {
             state.states.set(State::TiledTop);
             state.states.set(State::TiledBottom);
             state.states.set(State::TiledRight);
             state.states.set(State::TiledLeft);
         });
-        window.window.toplevel().send_configure();
-
-        // self.space.map_element(window, (0, 0), true);
+        window.toplevel().unwrap().send_configure();
     }
 
     fn new_popup(&mut self, _surface: PopupSurface, _positioner: PositionerState) {
@@ -76,7 +74,7 @@ impl XdgShellHandler for SmithayState {
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
         let mut handle = None;
         for (h, w) in self.window_registry.windows() {
-            if *w.toplevel() == surface {
+            if *w.toplevel().unwrap() == surface {
                 handle = Some(*h);
                 self.send_event(DisplayEvent::WindowDestroy(WindowHandle::SmithayHandle(*h)))
                     .unwrap();

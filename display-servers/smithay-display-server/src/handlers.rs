@@ -35,7 +35,10 @@ use smithay::{
         dmabuf::{get_dmabuf, DmabufGlobal, DmabufHandler, DmabufState, ImportError},
         seat::WaylandFocus,
         shell::{
-            wlr_layer::{Layer, LayerSurfaceData, WlrLayerShellHandler, WlrLayerShellState},
+            wlr_layer::{
+                Layer, LayerSurface as WlrLayerSurface, LayerSurfaceData, WlrLayerShellHandler,
+                WlrLayerShellState,
+            },
             xdg::XdgToplevelSurfaceData,
         },
         shm::{ShmHandler, ShmState},
@@ -47,6 +50,10 @@ use crate::{
     managed_window::ManagedWindow,
     state::{ClientState, SmithayState},
     window_registry::WindowRegisty,
+};
+use leftwm_core::{
+    models::{WindowHandle, WindowType},
+    DisplayEvent, Window as WMWindow,
 };
 
 impl CompositorHandler for SmithayState {
@@ -177,6 +184,18 @@ impl WlrLayerShellHandler for SmithayState {
         let mut map = layer_map_for_output(&output);
         let layer_surface = LayerSurface::new(surface, namespace);
         map.map_layer(&layer_surface).unwrap();
+
+        let window = ManagedWindow::from_surface(layer_surface);
+        let id = self.window_registry.insert(window.clone());
+
+        let mut wm_window = WMWindow::new(WindowHandle::SmithayHandle(id), None, None);
+        wm_window.r#type = WindowType::WlrSurface;
+        self.send_event(DisplayEvent::WindowCreate(
+            wm_window,
+            self.pointer_location.x as i32,
+            self.pointer_location.y as i32,
+        ))
+        .unwrap();
     }
 
     fn layer_destroyed(&mut self, surface: WlrLayerSurface) {
@@ -314,35 +333,38 @@ fn ensure_initial_configure(
         .find(|window| window.wl_surface().map(|s| s == *surface).unwrap_or(false))
         .cloned()
     {
-        // send the initial configure if relevant
+        if !window.is_wlr_surface() {
+            // send the initial configure if relevant
 
-        let initial_configure_sent = with_states(surface, |states| {
-            states
-                .data_map
-                .get::<XdgToplevelSurfaceData>()
-                .unwrap()
-                .lock()
-                .unwrap()
-                .initial_configure_sent
-        });
-        if !initial_configure_sent {
-            window.toplevel().send_configure();
-        }
-
-        with_states(surface, |states| {
-            let mut data = states
-                .data_map
-                .get::<RefCell<SurfaceData>>()
-                .unwrap()
-                .borrow_mut();
-
-            // Finish resizing.
-            if let ResizeState::WaitingForCommit(_) = data.resize_state {
-                data.resize_state = ResizeState::NotResizing;
+            let initial_configure_sent = with_states(surface, |states| {
+                states
+                    .data_map
+                    .get::<XdgToplevelSurfaceData>()
+                    .unwrap()
+                    .lock()
+                    .unwrap()
+                    .initial_configure_sent
+            });
+            if !initial_configure_sent {
+                //Unwrapping is safe since this window is never a wlr layer surface
+                window.toplevel().unwrap().send_configure();
             }
-        });
 
-        return;
+            with_states(surface, |states| {
+                let mut data = states
+                    .data_map
+                    .get::<RefCell<SurfaceData>>()
+                    .unwrap()
+                    .borrow_mut();
+
+                // Finish resizing.
+                if let ResizeState::WaitingForCommit(_) = data.resize_state {
+                    data.resize_state = ResizeState::NotResizing;
+                }
+            });
+
+            return;
+        }
     }
 
     // if let Some(popup) = popups.find_popup(surface) {

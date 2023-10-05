@@ -9,7 +9,7 @@ use smithay::{
         gles::element::PixelShaderElement,
         ImportAll, Renderer,
     },
-    desktop::{utils::OutputPresentationFeedback, Window},
+    desktop::{utils::OutputPresentationFeedback, LayerSurface, Window},
     input::{keyboard::KeyboardTarget, pointer::PointerTarget},
     output::Output,
     reexports::{
@@ -33,6 +33,12 @@ use crate::{
     window_registry::WindowHandle,
 };
 
+#[derive(Clone, Debug)]
+enum InnerManagedWindow {
+    Window(Window),
+    Surface(LayerSurface),
+}
+
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct ManagedWindowData {
     pub managed: bool,
@@ -43,7 +49,7 @@ pub struct ManagedWindowData {
 
 #[derive(Clone, Debug)]
 pub struct ManagedWindow {
-    pub window: Window,
+    window: InnerManagedWindow,
     handle: Option<WindowHandle>,
     pub data: Arc<RwLock<ManagedWindowData>>,
 }
@@ -59,13 +65,19 @@ impl PartialEq for ManagedWindow {
 
 impl IsAlive for ManagedWindow {
     fn alive(&self) -> bool {
-        self.window.alive()
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.alive(),
+            InnerManagedWindow::Surface(s) => s.alive(),
+        }
     }
 }
 
 impl WaylandFocus for ManagedWindow {
     fn wl_surface(&self) -> Option<WlSurface> {
-        self.window.wl_surface()
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.wl_surface(),
+            InnerManagedWindow::Surface(s) => Some(s.wl_surface().clone()),
+        }
     }
 }
 
@@ -77,7 +89,12 @@ impl KeyboardTarget<SmithayState> for ManagedWindow {
         keys: Vec<smithay::input::keyboard::KeysymHandle<'_>>,
         serial: smithay::utils::Serial,
     ) {
-        KeyboardTarget::enter(&self.window, seat, data, keys, serial);
+        match &self.window {
+            InnerManagedWindow::Window(w) => KeyboardTarget::enter(w, seat, data, keys, serial),
+            InnerManagedWindow::Surface(s) => {
+                KeyboardTarget::enter(s.wl_surface(), seat, data, keys, serial)
+            }
+        }
     }
 
     fn leave(
@@ -86,7 +103,12 @@ impl KeyboardTarget<SmithayState> for ManagedWindow {
         data: &mut SmithayState,
         serial: smithay::utils::Serial,
     ) {
-        KeyboardTarget::leave(&self.window, seat, data, serial);
+        match &self.window {
+            InnerManagedWindow::Window(w) => KeyboardTarget::leave(w, seat, data, serial),
+            InnerManagedWindow::Surface(s) => {
+                KeyboardTarget::leave(s.wl_surface(), seat, data, serial)
+            }
+        }
     }
 
     fn key(
@@ -98,7 +120,12 @@ impl KeyboardTarget<SmithayState> for ManagedWindow {
         serial: smithay::utils::Serial,
         time: u32,
     ) {
-        self.window.key(seat, data, key, state, serial, time);
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.key(seat, data, key, state, serial, time),
+            InnerManagedWindow::Surface(s) => {
+                s.wl_surface().key(seat, data, key, state, serial, time)
+            }
+        }
     }
 
     fn modifiers(
@@ -108,7 +135,12 @@ impl KeyboardTarget<SmithayState> for ManagedWindow {
         modifiers: smithay::input::keyboard::ModifiersState,
         serial: smithay::utils::Serial,
     ) {
-        self.window.modifiers(seat, data, modifiers, serial);
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.modifiers(seat, data, modifiers, serial),
+            InnerManagedWindow::Surface(s) => {
+                s.wl_surface().modifiers(seat, data, modifiers, serial)
+            }
+        }
     }
 }
 
@@ -119,7 +151,12 @@ impl PointerTarget<SmithayState> for ManagedWindow {
         data: &mut SmithayState,
         event: &smithay::input::pointer::MotionEvent,
     ) {
-        PointerTarget::enter(&self.window, seat, data, event);
+        match &self.window {
+            InnerManagedWindow::Window(w) => PointerTarget::enter(w, seat, data, event),
+            InnerManagedWindow::Surface(s) => {
+                PointerTarget::enter(s.wl_surface(), seat, data, event)
+            }
+        }
     }
 
     fn motion(
@@ -128,7 +165,10 @@ impl PointerTarget<SmithayState> for ManagedWindow {
         data: &mut SmithayState,
         event: &smithay::input::pointer::MotionEvent,
     ) {
-        self.window.motion(seat, data, event);
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.motion(seat, data, event),
+            InnerManagedWindow::Surface(s) => s.wl_surface().motion(seat, data, event),
+        }
     }
 
     fn relative_motion(
@@ -137,7 +177,10 @@ impl PointerTarget<SmithayState> for ManagedWindow {
         data: &mut SmithayState,
         event: &smithay::input::pointer::RelativeMotionEvent,
     ) {
-        self.window.relative_motion(seat, data, event);
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.relative_motion(seat, data, event),
+            InnerManagedWindow::Surface(s) => s.wl_surface().relative_motion(seat, data, event),
+        }
     }
 
     fn button(
@@ -146,7 +189,10 @@ impl PointerTarget<SmithayState> for ManagedWindow {
         data: &mut SmithayState,
         event: &smithay::input::pointer::ButtonEvent,
     ) {
-        self.window.button(seat, data, event);
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.button(seat, data, event),
+            InnerManagedWindow::Surface(s) => s.wl_surface().button(seat, data, event),
+        }
     }
 
     fn axis(
@@ -155,7 +201,10 @@ impl PointerTarget<SmithayState> for ManagedWindow {
         data: &mut SmithayState,
         frame: smithay::input::pointer::AxisFrame,
     ) {
-        self.window.axis(seat, data, frame);
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.axis(seat, data, frame),
+            InnerManagedWindow::Surface(s) => s.wl_surface().axis(seat, data, frame),
+        }
     }
 
     fn leave(
@@ -165,16 +214,36 @@ impl PointerTarget<SmithayState> for ManagedWindow {
         serial: smithay::utils::Serial,
         time: u32,
     ) {
-        PointerTarget::leave(&self.window, seat, data, serial, time);
+        match &self.window {
+            InnerManagedWindow::Window(w) => PointerTarget::leave(w, seat, data, serial, time),
+            InnerManagedWindow::Surface(s) => {
+                PointerTarget::leave(s.wl_surface(), seat, data, serial, time)
+            }
+        }
     }
 }
 
 impl ManagedWindow {
-    pub fn new(window: Window) -> Self {
+    pub fn from_window(window: Window) -> Self {
         Self {
-            window,
+            window: InnerManagedWindow::Window(window),
             data: Arc::new(RwLock::new(ManagedWindowData::default())),
             handle: None,
+        }
+    }
+
+    pub fn from_surface(surface: LayerSurface) -> Self {
+        Self {
+            window: InnerManagedWindow::Surface(surface),
+            data: Arc::new(RwLock::new(ManagedWindowData::default())),
+            handle: None,
+        }
+    }
+
+    pub fn is_wlr_surface(&self) -> bool {
+        match self.window {
+            InnerManagedWindow::Window(_) => false,
+            InnerManagedWindow::Surface(_) => true,
         }
     }
 
@@ -221,11 +290,12 @@ impl ManagedWindow {
             )));
         }
 
-        elements.append(
-            &mut self
-                .window
-                .render_elements(renderer, location, scale, alpha),
-        );
+        match &self.window {
+            InnerManagedWindow::Window(w) => {
+                elements.append(&mut w.render_elements(renderer, location, scale, alpha))
+            }
+            InnerManagedWindow::Surface(_) => (),
+        }
 
         elements.reverse();
         elements
@@ -242,20 +312,51 @@ impl ManagedWindow {
         self.handle
     }
 
-    pub fn toplevel(&self) -> &ToplevelSurface {
-        self.window.toplevel()
+    pub fn send_close(&self) {
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.toplevel().send_close(),
+            InnerManagedWindow::Surface(s) => s.layer_surface().send_close(),
+        }
+    }
+
+    pub fn toplevel(&self) -> Option<&ToplevelSurface> {
+        match &self.window {
+            InnerManagedWindow::Window(w) => Some(w.toplevel()),
+            InnerManagedWindow::Surface(_) => None,
+        }
     }
 
     pub fn on_commit(&self) {
-        self.window.on_commit()
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.on_commit(),
+            InnerManagedWindow::Surface(_) => (),
+        }
+    }
+
+    pub fn get_window(&self) -> Option<&Window> {
+        match &self.window {
+            InnerManagedWindow::Window(w) => Some(w),
+            InnerManagedWindow::Surface(_) => None,
+        }
     }
 
     pub fn set_geometry(&mut self, geometry: Rectangle<i32, Logical>) {
         self.data.write().unwrap().geometry = Some(geometry);
-        self.window
-            .toplevel()
-            .with_pending_state(|state| state.size = Some(geometry.size));
-        self.window.toplevel().send_configure();
+        match &self.window {
+            InnerManagedWindow::Window(w) => {
+                w.toplevel()
+                    .with_pending_state(|state| state.size = Some(geometry.size));
+                w.toplevel().send_configure();
+            }
+            InnerManagedWindow::Surface(_) => (),
+        }
+    }
+
+    pub fn get_geometry(&self) -> Option<Rectangle<i32, Logical>> {
+        match &self.window {
+            InnerManagedWindow::Window(w) => Some(w.geometry()),
+            InnerManagedWindow::Surface(_) => None,
+        }
     }
 
     pub fn send_frame<T, F>(
@@ -268,8 +369,12 @@ impl ManagedWindow {
         T: Into<Duration>,
         F: FnMut(&WlSurface, &compositor::SurfaceData) -> Option<Output> + Copy,
     {
-        self.window
-            .send_frame(output, time, throttle, primary_scan_out_output)
+        match &self.window {
+            InnerManagedWindow::Window(w) => {
+                w.send_frame(output, time, throttle, primary_scan_out_output)
+            }
+            InnerManagedWindow::Surface(_) => (),
+        }
     }
 
     pub fn _send_dmabuf_feedback<'a, P, F>(
@@ -281,8 +386,12 @@ impl ManagedWindow {
         P: FnMut(&WlSurface, &compositor::SurfaceData) -> Option<Output> + Copy,
         F: Fn(&WlSurface, &compositor::SurfaceData) -> &'a DmabufFeedback + Copy,
     {
-        self.window
-            .send_dmabuf_feedback(output, primary_scan_out_output, select_dmabuf_feedback)
+        match &self.window {
+            InnerManagedWindow::Window(w) => {
+                w.send_dmabuf_feedback(output, primary_scan_out_output, select_dmabuf_feedback)
+            }
+            InnerManagedWindow::Surface(_) => (),
+        }
     }
 
     pub fn take_presentation_feedback<F1, F2>(
@@ -294,10 +403,13 @@ impl ManagedWindow {
         F1: FnMut(&WlSurface, &SurfaceData) -> Option<Output> + Copy,
         F2: FnMut(&WlSurface, &SurfaceData) -> Kind + Copy,
     {
-        self.window.take_presentation_feedback(
-            output_feedback,
-            primary_scan_out_output,
-            presentation_feedback_flags,
-        )
+        match &self.window {
+            InnerManagedWindow::Window(w) => w.take_presentation_feedback(
+                output_feedback,
+                primary_scan_out_output,
+                presentation_feedback_flags,
+            ),
+            InnerManagedWindow::Surface(_) => (),
+        }
     }
 }

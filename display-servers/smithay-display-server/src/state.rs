@@ -211,15 +211,18 @@ impl SmithayState {
             warn!("Trying to focus invalid window");
             return;
         };
-        let geometry = window.data.read().unwrap().geometry.unwrap();
+        info!("focussing, {}", handle);
+        let geometry = window.data.read().unwrap().geometry;
         self.seat
             .get_keyboard()
             .unwrap()
             .set_focus(self, Some(window), serial);
-        if move_cursor {
-            let x = geometry.loc.x as f64 + geometry.size.w as f64 / 2f64;
-            let y = geometry.loc.y as f64 + geometry.size.h as f64 / 2f64;
-            self.pointer_location = (x, y).into();
+        if let Some(geometry) = geometry {
+            if move_cursor {
+                let x = geometry.loc.x as f64 + geometry.size.w as f64 / 2f64;
+                let y = geometry.loc.y as f64 + geometry.size.h as f64 / 2f64;
+                self.pointer_location = (x, y).into();
+            }
         }
         self.focused_window = Some(handle);
     }

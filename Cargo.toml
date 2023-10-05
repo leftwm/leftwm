@@ -1,6 +1,7 @@
 [workspace]
 default-members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server", "display-servers/smithay-display-server"]
 members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server", "display-servers/smithay-display-server"]
+resolver = "1"
 
 [profile.optimized]
 inherits = "release"
