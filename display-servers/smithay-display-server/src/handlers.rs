@@ -9,9 +9,9 @@ use smithay::{
         allocator::dmabuf::Dmabuf,
         renderer::{utils::on_commit_buffer_handler, ImportDma},
     },
-    delegate_compositor, delegate_dmabuf, delegate_layer_shell, delegate_output, delegate_seat,
-    delegate_shm,
-    desktop::{layer_map_for_output, LayerSurface, Window, WindowSurfaceType},
+    delegate_compositor, delegate_data_device, delegate_dmabuf, delegate_layer_shell,
+    delegate_output, delegate_seat, delegate_shm,
+    desktop::{layer_map_for_output, LayerSurface, WindowSurfaceType},
     input::{SeatHandler, SeatState},
     output::Output,
     reexports::{
@@ -29,13 +29,13 @@ use smithay::{
             with_surface_tree_upward, BufferAssignment, CompositorClientState, CompositorHandler,
             CompositorState, SurfaceAttributes, TraversalAction,
         },
+        data_device::{
+            ClientDndGrabHandler, DataDeviceHandler, DataDeviceState, ServerDndGrabHandler,
+        },
         dmabuf::{get_dmabuf, DmabufGlobal, DmabufHandler, DmabufState, ImportError},
         seat::WaylandFocus,
         shell::{
-            wlr_layer::{
-                Layer, LayerSurface as WlrLayerSurface, LayerSurfaceData, WlrLayerShellHandler,
-                WlrLayerShellState,
-            },
+            wlr_layer::{Layer, LayerSurfaceData, WlrLayerShellHandler, WlrLayerShellState},
             xdg::XdgToplevelSurfaceData,
         },
         shm::{ShmHandler, ShmState},
@@ -48,7 +48,6 @@ use crate::{
     state::{ClientState, SmithayState},
     window_registry::WindowRegisty,
 };
-use leftwm_core::{models::WindowHandle, DisplayEvent, Window as WMWindow};
 
 impl CompositorHandler for SmithayState {
     fn compositor_state(&mut self) -> &mut CompositorState {
@@ -145,6 +144,19 @@ impl CompositorHandler for SmithayState {
 }
 
 delegate_compositor!(SmithayState);
+
+impl DataDeviceHandler for SmithayState {
+    type SelectionUserData = ();
+
+    fn data_device_state(&self) -> &DataDeviceState {
+        &self.data_device_state
+    }
+}
+
+impl ClientDndGrabHandler for SmithayState {}
+impl ServerDndGrabHandler for SmithayState {}
+
+delegate_data_device!(SmithayState);
 
 impl WlrLayerShellHandler for SmithayState {
     fn shell_state(&mut self) -> &mut WlrLayerShellState {

@@ -69,7 +69,6 @@ impl SmithayState {
                 window_data.floating = floating;
                 window_data.managed = true;
                 drop(window_data);
-                drop(window);
                 if focus {
                     self.focus_window(handle, true);
                 }
