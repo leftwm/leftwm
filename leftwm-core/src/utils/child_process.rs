@@ -200,29 +200,21 @@ fn boot_desktop_file(path: &Path) -> std::result::Result<Child, EntryBootError> 
 /// the function leaves it unmodified in order to be more resilient.
 /// According to the spec, the input should be unquoted first (but this is not implemented currently).
 fn remove_field_codes(exec: &str) -> String {
-    let mut result = String::new();
-    let mut iter = exec.chars();
-    while let Some(ch) = iter.next() {
-        if ch == '%' {
-            let next = iter.next();
-            match next {
-                Some(next) if next.is_ascii_alphabetic() => {
-                    // field codes '%[a-zA-Z]' should be removed
-                    continue;
-                }
-                Some('%') | None => {
-                    // Some -> '%%' is escaped '%'
-                    // None -> it is illegal for '%' to be at the end of the string, but we leave it unmodified
-                    result.push('%');
-                }
-                Some(next) => {
-                    // it is illegal for '%' to be followed by neither another '%' nor alphabetic characters, but we leave it unmodified
+    let mut result = String::with_capacity(exec.len());
+    let mut chars = exec.chars();
+    while let Some(char) = chars.next() {
+        if char == '%' {
+            match chars.next() {
+                Some('%') | None => result.push('%'), // '%%' is '%' but escaped. '%\0' is illegal but leave it untouched.
+                Some(next) if !next.is_ascii_alphabetic() => {
+                    // illegal (not a field code) but leave it untouched
                     result.push('%');
                     result.push(next);
                 }
+                _ => (), // this is a field code, remove it by not pushing it
             }
         } else {
-            result.push(ch);
+            result.push(char); // "normal" character, leave it untouched
         }
     }
     result
