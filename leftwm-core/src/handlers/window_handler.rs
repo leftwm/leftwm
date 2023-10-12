@@ -371,7 +371,7 @@ fn setup_window(
     if let Some(ws) = ws {
         // Setup basic variables.
         let for_active_workspace = |x: &Window| -> bool { ws.tag == x.tag && x.is_managed() };
-        *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
+        *is_first = !state.windows.iter().any(for_active_workspace);
         // May have been set by a predefined tag.
         if window.tag.is_none() {
             window.tag =

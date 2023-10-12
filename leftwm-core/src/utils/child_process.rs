@@ -210,18 +210,15 @@ fn remove_field_codes(exec: &str) -> String {
                     // field codes '%[a-zA-Z]' should be removed
                     continue;
                 }
-                Some(next) if next == '%' => {
-                    // '%%' is escaped '%'
+                Some('%') | None => {
+                    // Some -> '%%' is escaped '%'
+                    // None -> it is illegal for '%' to be at the end of the string, but we leave it unmodified
                     result.push('%');
                 }
                 Some(next) => {
-                    // it is illegal for '%' to be followed by neither another '%' nor alphabetic charecters, but we leave it unmodified
+                    // it is illegal for '%' to be followed by neither another '%' nor alphabetic characters, but we leave it unmodified
                     result.push('%');
                     result.push(next);
-                }
-                None => {
-                    // it is illegal for '%' to be at the end of the string, but we leave it unmodified
-                    result.push('%');
                 }
             }
         } else {

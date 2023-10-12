@@ -31,9 +31,8 @@ impl Drop for ReturnPipe {
             ),
             Ok(f) => drop(f),
         };
-        match std::fs::remove_file(&self.pipe_file) {
-            Ok(_) => {}
-            Err(e) => tracing::error!("Failed to delete pipe file: {e}"),
+        if let Err(e) = std::fs::remove_file(&self.pipe_file) {
+            tracing::error!("Failed to delete pipe file: {e}");
         }
     }
 }

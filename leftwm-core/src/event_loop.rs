@@ -48,14 +48,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.display_server.flush();
 
             let response: EventResponse = tokio::select! {
-                _ = self.display_server.wait_readable(), if event_buffer.is_empty() => {
+                () = self.display_server.wait_readable(), if event_buffer.is_empty() => {
                     self.add_events(&mut event_buffer);
                     continue;
                 }
                 // When a mouse button is pressed or enter/motion notifies are blocked and only appear
                 // once the button is released. This is to double check that we know which window
                 // is currently focused.
-                _ = timeout(100), if event_buffer.is_empty()
+                () = timeout(100), if event_buffer.is_empty()
                     && self.state.focus_manager.sloppy_mouse_follows_focus
                     && self.state.focus_manager.behaviour.is_sloppy() => {
                         self.refresh_focus(&mut event_buffer);
