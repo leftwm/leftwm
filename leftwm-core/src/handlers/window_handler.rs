@@ -442,7 +442,7 @@ fn setup_window(
         return;
     }
 
-    // Setup a window is workspace is `None`. This shouldn't really happen.
+    // Setup a window if workspace is `None`. This shouldn't really happen.
     window.tag = Some(1);
     if is_scratchpad(state, window) {
         if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
