@@ -359,14 +359,19 @@ fn setup_window(
     is_first: &mut bool,
     on_same_tag: &mut bool,
 ) {
-    // When adding a window we add to the workspace under the cursor, This isn't necessarily the
-    // focused workspace. If the workspace is empty, it might not have received focus. This is so
-    // the workspace that has windows on its is still active not the empty workspace.
-    let ws: Option<&Workspace> = state
-        .workspaces
-        .iter()
-        .find(|ws| ws.xyhw.contains_point(xy.0, xy.1) && state.focus_manager.behaviour.is_sloppy())
-        .or_else(|| state.focus_manager.workspace(&state.workspaces)); // Backup plan.
+    // Identify the workspace in which to create the window.
+    let ws = state
+        .focus_manager
+        .create_follows_cursor() // If the window must be created under the cursor...
+        .then_some(
+            // ...look for the workspace with the cursor.
+            state
+                .workspaces
+                .iter()
+                .find(|ws| ws.xyhw.contains_point(xy.0, xy.1)),
+        )
+        .flatten()
+        .or(state.focus_manager.workspace(&state.workspaces)); // Else, use the workspace which has the focus.
 
     if let Some(ws) = ws {
         // Setup basic variables.
