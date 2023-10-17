@@ -374,8 +374,8 @@ fn setup_window(
         .or(state.focus_manager.workspace(&state.workspaces)); // Else, use the workspace which has the focus.
 
     // If no workspace was found, put the window on tag 1.
-    // As it shouldn't happen, this function should either be made fallible or logs should be printed somewhere
     let Some(ws) = ws else {
+        tracing::warn!("setup_window failed to identify workspace. Falling back to tag 1");
         window.tag = Some(1);
         if is_scratchpad(state, window) {
             if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
