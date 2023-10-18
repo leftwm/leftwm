@@ -25,7 +25,7 @@ leftwm-macros = {path = "../leftwm-macros", version = '0.4.2'}
 leftwm-layouts = "0.8.4"
 liquid = "0.26.0"
 mio = "0.8.0"
-nix = "0.26.2"
+nix = {version = "0.27.1", features = ["fs", "signal"]}
 regex = "1"
 ron = "0.8.0"
 serde = { version = "1.0.104", features = ["derive", "rc"] }
@@ -47,7 +47,7 @@ tokio = { version = "1.2.0", features = [
   "sync",
   "time",
 ] }
-toml = "0.7.2"
+toml = "0.8.2"
 xdg = "2.2.0"
 
 # logging

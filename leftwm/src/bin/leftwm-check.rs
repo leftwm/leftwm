@@ -52,14 +52,14 @@ async fn main() -> Result<()> {
     }
 
     match check_enabled_features(verbose) {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(err) => {
             println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
         }
     }
 
     match check_binaries(verbose) {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(err) => {
             println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
         }
@@ -242,7 +242,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
         match filepath {
             f if f.ends_with("up") => match check_permissions(f, verbose) {
                 Ok(fp) => match check_up_file(fp) {
-                    Ok(_) => continue,
+                    Ok(()) => continue,
                     Err(e) => returns.push(e.to_string()),
                 },
                 Err(e) => returns.push(e.to_string()),
@@ -448,7 +448,7 @@ fn check_binaries(verbose: bool) -> Result<()> {
     let mut failures: bool = false;
     for binary in binaries {
         match check_binary(binary, verbose) {
-            Ok(_) => {}
+            Ok(()) => {}
             Err(err) => {
                 failures = true;
                 println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
