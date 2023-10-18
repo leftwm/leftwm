@@ -4,6 +4,7 @@ use super::BaseCommand;
 use crate::Config;
 #[cfg(feature = "lefthk")]
 use anyhow::{ensure, Context, Result};
+#[cfg(feature = "lefthk")]
 use lefthk_core::config::Command;
 #[cfg(feature = "lefthk")]
 use serde::{Deserialize, Serialize};
