@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
                         println!("{command}: {res}");
                     }
             }
-                _ = timeout(5000) => {eprintln!(" WARN: timeout connecting to return pipe. Command may have executed, but errors will not be displayed."); exit_code = 1;},
+                () = timeout(5000) => {eprintln!(" WARN: timeout connecting to return pipe. Command may have executed, but errors will not be displayed."); exit_code = 1;},
                 else => {eprintln!("WARN: timeout connection to return pipe. Command may have executed, but errors will not be displayed."); exit_code = 1;},
             }
         }

@@ -21,7 +21,7 @@ fn main() {
         });
 
         match exit_status {
-            Ok(_) => tracing::info!("Completed"),
+            Ok(()) => tracing::info!("Completed"),
             Err(err) => tracing::error!("Completed with error: {:?}", err),
         }
     }
