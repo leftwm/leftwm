@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn correctly_identifies_partial_template_filenames() {
-        let file_names = vec![
+        let file_names = [
             "main.liquid",
             "_partial.liquid",
             "\u{7c0}nonascii-in-filename.liquid", // first char U07C0
