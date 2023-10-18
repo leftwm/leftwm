@@ -4,6 +4,7 @@ use super::BaseCommand;
 use crate::Config;
 #[cfg(feature = "lefthk")]
 use anyhow::{ensure, Context, Result};
+use lefthk_core::config::Command;
 #[cfg(feature = "lefthk")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "lefthk")]
@@ -104,7 +105,7 @@ impl Keybind {
             head
         };
         Ok(lefthk_core::config::Keybind {
-            command: lefthk_core::config::Command::Execute(command),
+            command: lefthk_core::config::command::Execute::new(&command).normalize(),
             modifier: self
                 .modifier
                 .as_ref()
