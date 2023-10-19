@@ -505,6 +505,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "inventory"
+version = "0.3.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1be380c410bf0595e94992a648ea89db4dd3f3354ba54af206fd2a68cf5ac8e"
+
+[[package]]
 name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -537,16 +543,19 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "lefthk-core"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bc9c7fbe62556de24a1cc06990be6d4ed9d26711d58163e43a7231cedd015b7"
+checksum = "c9551a0424abef2e998b6d60b1e58ba865bcdd513c89f2695616f7b84e59ac04"
 dependencies = [
- "log",
+ "inventory",
  "mio",
- "nix 0.23.2",
+ "nix",
+ "ron",
+ "serde",
  "signal-hook",
  "thiserror",
  "tokio",
+ "tracing",
  "x11-dl",
  "xdg",
 ]
@@ -567,7 +576,7 @@ dependencies = [
  "leftwm-macros",
  "liquid",
  "mio",
- "nix 0.27.1",
+ "nix",
  "once_cell",
  "regex",
  "ron",
@@ -597,7 +606,7 @@ dependencies = [
  "futures",
  "leftwm-layouts",
  "mio",
- "nix 0.27.1",
+ "nix",
  "serde",
  "serde_json",
  "signal-hook",
@@ -718,15 +727,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f665ee40bc4a3c5590afb1e9677db74a508659dfd71e126420da8274909a0167"
 
 [[package]]
-name = "memoffset"
-version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
-dependencies = [
- "autocfg",
-]
-
-[[package]]
 name = "miniz_oxide"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -745,19 +745,6 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys",
-]
-
-[[package]]
-name = "nix"
-version = "0.23.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f3790c00a0150112de0f4cd161e3d7fc4b2d8a5542ffc35f099a2562aecb35c"
-dependencies = [
- "bitflags 1.3.2",
- "cc",
- "cfg-if",
- "libc",
- "memoffset",
 ]
 
 [[package]]
