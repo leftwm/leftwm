@@ -586,6 +586,7 @@ impl XWrap {
         if nitems_return == 0 {
             return None;
         }
+        #[allow(clippy::cast_ptr_alignment)]
         Some(unsafe { *prop_return.cast::<c_long>() })
     }
 

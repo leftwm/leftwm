@@ -692,7 +692,7 @@ fn move_window_top(
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     let list = &mut to_reorder;
     let len = list.len();
-    let index = list.iter().position(|x| is_handle(x))?;
+    let index = list.iter().position(is_handle)?;
     let item = list.get(index)?.clone();
     list.remove(index);
     dbg!(swap);
@@ -725,7 +725,7 @@ fn swap_window_top(
     let is_handle = |x: &Window| -> bool { x.handle == handle };
     let list = &mut to_reorder;
     let len = list.len();
-    let index = list.iter().position(|x| is_handle(x))?;
+    let index = list.iter().position(is_handle)?;
 
     let mut new_index: usize = match index {
         0 if swap => 1,

@@ -94,7 +94,7 @@ impl XWrap {
 
     /// Sets a desktop property.
     pub fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
-        let x_data: Vec<c_long> = data.iter().map(|x| *x as c_long).collect();
+        let x_data: Vec<c_long> = data.iter().map(|x| i64::from(*x)).collect();
         self.replace_property_long(self.root, atom, xlib::XA_CARDINAL, &x_data);
     }
 

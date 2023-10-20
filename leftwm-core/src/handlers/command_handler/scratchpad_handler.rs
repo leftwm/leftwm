@@ -851,7 +851,7 @@ mod tests {
         let mock_window3 = 3_u32;
         let mock_window4 = 4_u32;
 
-        let mut managed_windows = vec![mock_window1, mock_window2, mock_window3, mock_window4]
+        let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
             .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
             .collect::<Vec<Window>>();
@@ -885,7 +885,7 @@ mod tests {
         let mock_window3 = 3_u32;
         let mock_window4 = 4_u32;
 
-        let mut managed_windows = vec![mock_window1, mock_window2, mock_window3, mock_window4]
+        let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
             .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
             .collect::<Vec<Window>>();
