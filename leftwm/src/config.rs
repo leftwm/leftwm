@@ -198,6 +198,7 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub single_window_border: bool,
     pub sloppy_mouse_follows_focus: bool,
+    pub create_follows_cursor: Option<bool>,
     pub auto_derive_workspaces: bool,
     pub disable_cursor_reposition_on_resize: bool,
     #[cfg(feature = "lefthk")]
@@ -660,6 +661,14 @@ impl leftwm_core::Config for Config {
 
     fn reposition_cursor_on_resize(&self) -> bool {
         !self.disable_cursor_reposition_on_resize
+    }
+
+    // Determines if a new window should be created under the cursor or on the workspace which has the focus
+    fn create_follows_cursor(&self) -> bool {
+        // If follow behaviour has been explicitly set, use that value.
+        // If not, set it to true in Sloppy mode only.
+        self.create_follows_cursor
+            .unwrap_or(self.focus_behaviour == FocusBehaviour::Sloppy)
     }
 }
 

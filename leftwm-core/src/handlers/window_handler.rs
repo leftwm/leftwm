@@ -359,91 +359,97 @@ fn setup_window(
     is_first: &mut bool,
     on_same_tag: &mut bool,
 ) {
-    // When adding a window we add to the workspace under the cursor, This isn't necessarily the
-    // focused workspace. If the workspace is empty, it might not have received focus. This is so
-    // the workspace that has windows on its is still active not the empty workspace.
-    let ws: Option<&Workspace> = state
-        .workspaces
-        .iter()
-        .find(|ws| ws.xyhw.contains_point(xy.0, xy.1) && state.focus_manager.behaviour.is_sloppy())
-        .or_else(|| state.focus_manager.workspace(&state.workspaces)); // Backup plan.
-
-    if let Some(ws) = ws {
-        // Setup basic variables.
-        let for_active_workspace = |x: &Window| -> bool { ws.tag == x.tag && x.is_managed() };
-        *is_first = !state.windows.iter().any(for_active_workspace);
-        // May have been set by a predefined tag.
-        if window.tag.is_none() {
-            window.tag =
-                find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
-        }
-        *on_same_tag = ws.tag == window.tag;
-        *layout = state
-            .layout_manager
-            .layout(ws.id, window.tag.unwrap())
-            .name
-            .clone();
-
-        // Setup a scratchpad window.
-        if let Some((scratchpad_name, _)) = state
-            .active_scratchpads
-            .iter()
-            .find(|(_, id)| id.iter().any(|id| Some(*id) == window.pid))
-        {
-            window.set_floating(true);
-            if let Some(s) = state
-                .scratchpads
+    // Identify the workspace in which to create the window.
+    let ws = state
+        .focus_manager
+        .create_follows_cursor() // If the window must be created under the cursor...
+        .then_some(
+            // ...look for the workspace with the cursor.
+            state
+                .workspaces
                 .iter()
-                .find(|s| *scratchpad_name == s.name)
-            {
-                let new_float_exact = s.xyhw(&ws.xyhw);
-                window.normal = ws.xyhw;
-                window.set_floating_exact(new_float_exact);
-                return;
-            }
-        }
+                .find(|ws| ws.xyhw.contains_point(xy.0, xy.1)),
+        )
+        .flatten()
+        .or(state.focus_manager.workspace(&state.workspaces)); // Else, use the workspace which has the focus.
 
-        // Setup a child window.
-        if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
-            // This is currently for vlc, this probably will need to be more general if another
-            // case comes up where we don't want to move the window.
-            if window.r#type != WindowType::Utility {
-                set_relative_floating(window, ws, parent.exact_xyhw());
-                return;
+    // If no workspace was found, put the window on tag 1.
+    let Some(ws) = ws else {
+        tracing::warn!("setup_window failed to identify workspace. Falling back to tag 1");
+        window.tag = Some(1);
+        if is_scratchpad(state, window) {
+            if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
+                window.tag(&scratchpad_tag.id);
+                window.set_floating(true);
             }
-        }
-
-        // Setup window based on type.
-        match window.r#type {
-            WindowType::Normal => {
-                window.apply_margin_multiplier(ws.margin_multiplier);
-                if window.floating() {
-                    set_relative_floating(window, ws, ws.xyhw);
-                }
-            }
-            WindowType::Dialog => {
-                if window.can_resize() {
-                    window.set_floating(true);
-                    let new_float_exact = ws.center_halfed();
-                    window.normal = ws.xyhw;
-                    window.set_floating_exact(new_float_exact);
-                } else {
-                    set_relative_floating(window, ws, ws.xyhw);
-                }
-            }
-            WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
-            _ => {}
         }
         return;
+    };
+
+    // Setup basic variables.
+    let for_active_workspace = |x: &Window| -> bool { ws.tag == x.tag && x.is_managed() };
+    *is_first = !state.windows.iter().any(for_active_workspace);
+    // May have been set by a predefined tag.
+    if window.tag.is_none() {
+        window.tag =
+            find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
+    }
+    *on_same_tag = ws.tag == window.tag;
+    *layout = state
+        .layout_manager
+        .layout(ws.id, window.tag.unwrap())
+        .name
+        .clone();
+
+    // Setup a scratchpad window.
+    if let Some((scratchpad_name, _)) = state
+        .active_scratchpads
+        .iter()
+        .find(|(_, id)| id.iter().any(|id| Some(*id) == window.pid))
+    {
+        window.set_floating(true);
+        if let Some(s) = state
+            .scratchpads
+            .iter()
+            .find(|s| *scratchpad_name == s.name)
+        {
+            let new_float_exact = s.xyhw(&ws.xyhw);
+            window.normal = ws.xyhw;
+            window.set_floating_exact(new_float_exact);
+            return;
+        }
     }
 
-    // Setup a window is workspace is `None`. This shouldn't really happen.
-    window.tag = Some(1);
-    if is_scratchpad(state, window) {
-        if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
-            window.tag(&scratchpad_tag.id);
-            window.set_floating(true);
+    // Setup a child window.
+    if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
+        // This is currently for vlc, this probably will need to be more general if another
+        // case comes up where we don't want to move the window.
+        if window.r#type != WindowType::Utility {
+            set_relative_floating(window, ws, parent.exact_xyhw());
+            return;
         }
+    }
+
+    // Setup window based on type.
+    match window.r#type {
+        WindowType::Normal => {
+            window.apply_margin_multiplier(ws.margin_multiplier);
+            if window.floating() {
+                set_relative_floating(window, ws, ws.xyhw);
+            }
+        }
+        WindowType::Dialog => {
+            if window.can_resize() {
+                window.set_floating(true);
+                let new_float_exact = ws.center_halfed();
+                window.normal = ws.xyhw;
+                window.set_floating_exact(new_float_exact);
+            } else {
+                set_relative_floating(window, ws, ws.xyhw);
+            }
+        }
+        WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
+        _ => {}
     }
 }
 
