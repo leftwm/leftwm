@@ -70,8 +70,20 @@ impl State {
     pub fn sort_windows(&mut self) {
         let mut sorter = WindowSorter::new(self.windows.iter().collect());
 
+        // Transient windows should be above a fullscreen/maximized parent
+        sorter.sort(|w| {
+            w.transient.is_some_and(|trans| {
+                self.windows
+                    .iter()
+                    .any(|w| w.handle == trans && (w.is_fullscreen() || w.is_maximized()))
+            })
+        });
+
         // Fullscreen windows
         sorter.sort(Window::is_fullscreen);
+
+        // Maximized windows.
+        sorter.sort(|w| w.r#type == WindowType::Normal && w.is_maximized());
 
         // Dialogs and modals.
         sorter.sort(|w| {
@@ -84,9 +96,6 @@ impl State {
         // Floating windows.
         sorter.sort(|w| w.r#type == WindowType::Normal && w.floating());
 
-        // Maximized windows.
-        sorter.sort(|w| w.r#type == WindowType::Normal && w.is_maximized());
-
         // Tiled windows.
         sorter.sort(|w| w.r#type == WindowType::Normal);
 
@@ -96,24 +105,8 @@ impl State {
         // Finish and put all unsorted at the end.
         let windows = sorter.finish();
 
-        // Insert transient windows on top of their parent
-        let (transient_windows, mut windows_reordered) = windows
-            .into_iter()
-            .partition::<Vec<_>, _>(|w| w.transient.is_some());
-
-        for w in transient_windows {
-            if let Some(index) = windows_reordered
-                .iter()
-                // Cannot panic, `None` values are being filtered above.
-                .position(|wr| wr.handle == w.transient.unwrap_or(WindowHandle::MockHandle(-1)))
-            {
-                windows_reordered.insert(index, w);
-            } else {
-                windows_reordered.push(w);
-            }
-        }
-        let handles = windows_reordered.iter().map(|w| w.handle).collect();
-        self.windows = windows_reordered.into_iter().cloned().collect();
+        let handles = windows.iter().map(|w| w.handle).collect();
+        self.windows = windows.into_iter().cloned().collect();
 
         let act = DisplayAction::SetWindowOrder(handles);
         self.actions.push_back(act);
