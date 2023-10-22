@@ -237,7 +237,7 @@ fn focus_previous_used_tag(state: &mut State) -> Option<bool> {
 fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     let handle = window.handle;
-    let toggle_to = !window.has_state(&window_state);
+    let toggle_to = !window.states.contains(&window_state);
     let tag_id = state.focus_manager.tag(0)?;
 
     if window_state == WindowState::Fullscreen || window_state == WindowState::Maximized {
@@ -954,13 +954,9 @@ mod tests {
                         || window_state == WindowState::Maximized
                     {
                         if toggle_to {
-                            window.set_states(vec![window_state]);
-                        } else if let Some(state_pos) =
-                            window.states().iter().position(|s| *s == window_state)
-                        {
-                            let mut states = window.states();
-                            states.remove(state_pos);
-                            window.set_states(states);
+                            window.states = vec![window_state];
+                        } else {
+                            window.states.retain(|s| s != &window_state);
                         }
                     }
                 }
@@ -989,7 +985,7 @@ mod tests {
             .state
             .windows
             .iter()
-            .any(|w| w.has_state(&WindowState::Fullscreen)));
+            .any(|w| w.states.contains(&WindowState::Fullscreen)));
 
         manager.command_handler(&Command::ToggleFullScreen);
 
@@ -998,7 +994,7 @@ mod tests {
             .state
             .windows
             .iter()
-            .any(|w| w.has_state(&WindowState::Fullscreen)));
+            .any(|w| w.states.contains(&WindowState::Fullscreen)));
 
         // Mess with the window positions
         manager.state.windows.reverse();
@@ -1037,7 +1033,7 @@ mod tests {
             .state
             .windows
             .iter()
-            .any(|w| w.has_state(&WindowState::Fullscreen)));
+            .any(|w| w.states.contains(&WindowState::Fullscreen)));
 
         manager.command_handler(&Command::ToggleFullScreen);
         mock_update(&mut manager);
@@ -1046,7 +1042,7 @@ mod tests {
             .state
             .windows
             .iter()
-            .any(|w| w.has_state(&WindowState::Fullscreen)));
+            .any(|w| w.states.contains(&WindowState::Fullscreen)));
 
         // Mess with the window positions
         manager.state.windows.reverse();
@@ -1071,7 +1067,7 @@ mod tests {
                 .state
                 .windows
                 .iter()
-                .find(|w| w.has_state(&WindowState::Fullscreen))
+                .find(|w| w.states.contains(&WindowState::Fullscreen))
                 .iter()
                 .count(),
             1
@@ -1085,7 +1081,7 @@ mod tests {
                 .state
                 .windows
                 .iter()
-                .filter(|w| w.has_state(&WindowState::Fullscreen))
+                .filter(|w| w.states.contains(&WindowState::Fullscreen))
                 .count(),
             2
         );
@@ -1147,7 +1143,7 @@ mod tests {
             .state
             .windows
             .iter()
-            .any(|w| w.has_state(&WindowState::Maximized)));
+            .any(|w| w.states.contains(&WindowState::Maximized)));
 
         manager.command_handler(&Command::ToggleMaximized);
 
@@ -1156,7 +1152,7 @@ mod tests {
             .state
             .windows
             .iter()
-            .any(|w| w.has_state(&WindowState::Maximized)));
+            .any(|w| w.states.contains(&WindowState::Maximized)));
 
         // Mess with the window positions
         manager.state.windows.reverse();
@@ -1195,7 +1191,7 @@ mod tests {
             .state
             .windows
             .iter()
-            .any(|w| w.has_state(&WindowState::Maximized)));
+            .any(|w| w.states.contains(&WindowState::Maximized)));
 
         manager.command_handler(&Command::ToggleMaximized);
         mock_update(&mut manager);
@@ -1204,7 +1200,7 @@ mod tests {
             .state
             .windows
             .iter()
-            .any(|w| w.has_state(&WindowState::Maximized)));
+            .any(|w| w.states.contains(&WindowState::Maximized)));
 
         // Mess with the window positions
         manager.state.windows.reverse();
@@ -1229,7 +1225,7 @@ mod tests {
                 .state
                 .windows
                 .iter()
-                .find(|w| w.has_state(&WindowState::Maximized))
+                .find(|w| w.states.contains(&WindowState::Maximized))
                 .iter()
                 .count(),
             1
@@ -1243,7 +1239,7 @@ mod tests {
                 .state
                 .windows
                 .iter()
-                .filter(|w| w.has_state(&WindowState::Maximized))
+                .filter(|w| w.states.contains(&WindowState::Maximized))
                 .count(),
             2
         );

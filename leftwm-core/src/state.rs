@@ -4,8 +4,8 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowType,
-    Workspace,
+    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowState,
+    WindowType, Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::Layout;
@@ -226,7 +226,7 @@ impl State {
                     new_tag.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
                 new_window.strut = old_window.strut;
-                new_window.set_states(old_window.states());
+                new_window.states = old_window.states.clone();
                 ordered.push(new_window.clone());
                 self.windows.remove(index);
 
