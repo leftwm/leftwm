@@ -22,22 +22,6 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         // Setup any predifined hooks.
         self.config
             .setup_predefined_window(&mut self.state, &mut window);
-
-        if let Some(transient_handle) = window.transient {
-            if let Some(parent) = self
-                .state
-                .windows
-                .iter()
-                .find(|w| w.handle == transient_handle)
-            {
-                if parent.is_fullscreen() || parent.is_maximized() {
-                    let act = DisplayAction::SetState(window.handle, true, WindowState::Above);
-                    self.state.actions.push_back(act);
-                    window.states.push(WindowState::Above);
-                }
-            }
-        }
-
         let mut is_first = false;
         let mut on_same_tag = true;
         // Random value

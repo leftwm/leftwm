@@ -70,8 +70,14 @@ impl State {
     pub fn sort_windows(&mut self) {
         let mut sorter = WindowSorter::new(self.windows.iter().collect());
 
-        // Windows explicitly marked as on top
-        sorter.sort(|w| w.states.contains(&WindowState::Above));
+        // Transient windows should be above a fullscreen/maximized parent
+        sorter.sort(|w| {
+            w.transient.is_some_and(|trans| {
+                self.windows
+                    .iter()
+                    .any(|w| w.handle == trans && (w.is_fullscreen() || w.is_maximized()))
+            })
+        });
 
         // Fullscreen windows
         sorter.sort(Window::is_fullscreen);
