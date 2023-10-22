@@ -122,6 +122,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn window_changed_handler(&mut self, change: WindowChange) -> bool {
         let mut changed = false;
         let mut fullscreen_changed = false;
+        let mut above_changed = false;
         let strut_changed = change.strut.is_some();
         let windows = self.state.windows.clone();
         if let Some(window) = self
@@ -130,9 +131,11 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .iter_mut()
             .find(|w| w.handle == change.handle)
         {
-            if let Some(ref states) = change.states {
-                let change_contains = states.contains(&WindowState::Fullscreen);
-                fullscreen_changed = change_contains || window.is_fullscreen();
+            if let Some(states) = &change.states {
+                fullscreen_changed =
+                    states.contains(&WindowState::Fullscreen) != window.is_fullscreen();
+                above_changed = states.contains(&WindowState::Above)
+                    != window.states().contains(&WindowState::Above);
             }
             let container = match find_transient_parent(&windows, window.transient) {
                 Some(parent) => Some(parent.exact_xyhw()),
@@ -163,7 +166,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             {
                 self.display_server.update_windows(vec![windows]);
             }
+        }
 
+        if fullscreen_changed || above_changed {
             // Reorder windows.
             self.state.sort_windows();
         }

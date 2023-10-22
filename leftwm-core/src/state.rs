@@ -4,8 +4,8 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowType,
-    Workspace,
+    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowState,
+    WindowType, Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::Layout;
@@ -68,11 +68,16 @@ impl State {
 
     // Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
+        let (level0, above_windows, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
+            partition_windows(self.windows.iter(), |w| {
+                w.states().contains(&WindowState::Above) && w.floating()
+            });
+
         // The windows we are managing should be behind unmanaged windows. Unless they are
         // fullscreen, or their children.
         // Fullscreen windows.
         let (level2, fullscreen_windows, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(self.windows.iter(), Window::is_fullscreen);
+            partition_windows(other.iter(), Window::is_fullscreen);
 
         // Fullscreen windows children.
         let (level1, fullscreen_children, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
@@ -110,6 +115,7 @@ impl State {
         let level7: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
 
         self.windows = [
+            above_windows,
             fullscreen_children,
             fullscreen_windows,
             dialogs,
@@ -120,7 +126,7 @@ impl State {
         ]
         .concat();
 
-        let fullscreen: Vec<WindowHandle> = [level1, level2].concat();
+        let fullscreen: Vec<WindowHandle> = [level0, level1, level2].concat();
         let handles: Vec<WindowHandle> = [level3, level4, level5, level6, level7].concat();
         let act = DisplayAction::SetWindowOrder(fullscreen, handles);
         self.actions.push_back(act);

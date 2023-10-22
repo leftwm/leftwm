@@ -26,6 +26,7 @@ pub enum Command {
     ToggleFullScreen,
     ToggleMaximized,
     ToggleSticky,
+    ToggleAbove,
     GoToTag {
         tag: TagId,
         swap: bool,
