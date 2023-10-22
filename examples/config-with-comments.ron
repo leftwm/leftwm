@@ -69,6 +69,7 @@
     create_follows_cursor: true,
     single_window_border: true,
     sloppy_mouse_follows_focus: true,
+    reposition_cursor_on_resize: true,
     auto_derive_workspaces: true,
     keybind: [
         (command: Execute, value: "dmenu_run", modifier: ["modkey"], key: "p"),
