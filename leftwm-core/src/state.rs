@@ -4,8 +4,8 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowState,
-    WindowType, Workspace,
+    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowType,
+    Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::Layout;
@@ -82,9 +82,6 @@ impl State {
         // Fullscreen windows
         sorter.sort(Window::is_fullscreen);
 
-        // Maximized windows.
-        sorter.sort(|w| w.r#type == WindowType::Normal && w.is_maximized());
-
         // Dialogs and modals.
         sorter.sort(|w| {
             w.r#type == WindowType::Dialog
@@ -95,6 +92,9 @@ impl State {
 
         // Floating windows.
         sorter.sort(|w| w.r#type == WindowType::Normal && w.floating());
+
+        // Maximized windows.
+        sorter.sort(|w| w.r#type == WindowType::Normal && w.is_maximized());
 
         // Tiled windows.
         sorter.sort(|w| w.r#type == WindowType::Normal);
