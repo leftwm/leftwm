@@ -19,7 +19,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             return false;
         }
 
-        // Setup any predifined hooks.
+        // Setup any predefined hooks.
         self.config
             .setup_predefined_window(&mut self.state, &mut window);
         let mut is_first = false;
