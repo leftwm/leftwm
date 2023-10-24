@@ -171,7 +171,6 @@ impl State {
     }
 
     pub fn update_static(&mut self) {
-        let workspaces = self.workspaces.clone();
         self.windows
             .iter_mut()
             .filter(|w| w.strut.is_some() || w.is_sticky())
@@ -180,7 +179,7 @@ impl State {
                     Some(strut) => strut.center(),
                     None => w.calculated_xyhw().center(),
                 };
-                if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
+                if let Some(ws) = self.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
                     w.tag = ws.tag;
                 }
             });
