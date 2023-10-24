@@ -35,7 +35,7 @@ pub trait DisplayServer {
         None
     }
 
-    fn wait_readable(&self) -> Pin<Box<dyn Future<Output = ()>>>;
+    fn wait_readable(&self) -> Pin<Box<dyn Future<Output = ()> + '_>>;
 
     fn flush(&self);
 

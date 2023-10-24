@@ -17,6 +17,7 @@ type MockHandle = i32;
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
+    SmithayHandle(usize),
 }
 
 impl std::convert::From<xlib::Window> for WindowHandle {
@@ -30,6 +31,15 @@ impl WindowHandle {
         match self {
             WindowHandle::MockHandle(_) => None,
             WindowHandle::XlibHandle(h) => Some(h),
+            WindowHandle::SmithayHandle(_) => None,
+        }
+    }
+
+    pub fn smithay_handle(self) -> Option<usize> {
+        match self {
+            WindowHandle::MockHandle(_) => None,
+            WindowHandle::XlibHandle(_) => None,
+            WindowHandle::SmithayHandle(h) => Some(h),
         }
     }
 }
@@ -184,7 +194,8 @@ impl Window {
 
     #[must_use]
     pub fn can_focus(&self) -> bool {
-        !self.never_focus && self.is_managed() && self.visible()
+        !self.never_focus
+            && ((self.is_managed() && self.visible()) || self.r#type == WindowType::WlrSurface)
     }
 
     pub fn set_width(&mut self, width: i32) {
@@ -355,7 +366,9 @@ impl Window {
 
     #[must_use]
     pub fn is_managed(&self) -> bool {
-        self.r#type != WindowType::Desktop && self.r#type != WindowType::Dock
+        self.r#type != WindowType::Desktop
+            && self.r#type != WindowType::Dock
+            && self.r#type != WindowType::WlrSurface
     }
 
     #[must_use]
