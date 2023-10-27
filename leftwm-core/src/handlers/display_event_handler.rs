@@ -140,7 +140,7 @@ fn prepare_window(state: &mut State, handle: WindowHandle) {
                 false,
                 WindowState::Fullscreen,
             ));
-            w.drop_state(&WindowState::Fullscreen);
+            w.states.retain(|s| s != &WindowState::Fullscreen);
             // Force update for all windows
             state.mode = Mode::ReadyToResize(handle);
         }
@@ -151,9 +151,9 @@ fn prepare_window(state: &mut State, handle: WindowHandle) {
                 false,
                 WindowState::Maximized,
             ));
-            w.drop_state(&WindowState::Maximized);
-            w.drop_state(&WindowState::MaximizedHorz);
-            w.drop_state(&WindowState::MaximizedVert);
+            w.states.retain(|s| s != &WindowState::Maximized);
+            w.states.retain(|s| s != &WindowState::MaximizedHorz);
+            w.states.retain(|s| s != &WindowState::MaximizedVert);
             // Force update for all windows
             state.mode = Mode::ReadyToResize(handle);
         }

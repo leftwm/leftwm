@@ -68,61 +68,47 @@ impl State {
 
     // Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
-        // The windows we are managing should be behind unmanaged windows. Unless they are
-        // fullscreen, or their children.
-        // Fullscreen windows.
-        let (level2, fullscreen_windows, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(self.windows.iter(), Window::is_fullscreen);
+        let mut sorter = WindowSorter::new(self.windows.iter().collect());
 
-        // Fullscreen windows children.
-        let (level1, fullscreen_children, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| {
-                level2.contains(&w.transient.unwrap_or_else(|| 0.into()))
-            });
+        // Transient windows should be above a fullscreen/maximized parent
+        sorter.sort(|w| {
+            w.transient.is_some_and(|trans| {
+                self.windows
+                    .iter()
+                    .any(|w| w.handle == trans && (w.is_fullscreen() || w.is_maximized()))
+            })
+        });
 
-        // Left over managed windows.
+        // Fullscreen windows
+        sorter.sort(Window::is_fullscreen);
+
         // Dialogs and modals.
-        let (level3, dialogs, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| {
-                w.r#type == WindowType::Dialog
-                    || w.r#type == WindowType::Splash
-                    || w.r#type == WindowType::Utility
-                    || w.r#type == WindowType::Menu
-            });
+        sorter.sort(|w| {
+            w.r#type == WindowType::Dialog
+                || w.r#type == WindowType::Splash
+                || w.r#type == WindowType::Utility
+                || w.r#type == WindowType::Menu
+        });
 
         // Floating windows.
-        let (level4, floating, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| {
-                w.r#type == WindowType::Normal && w.floating()
-            });
+        sorter.sort(|w| w.r#type == WindowType::Normal && w.floating());
 
         // Maximized windows.
-        let (level5, maximized, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| {
-                w.r#type == WindowType::Normal && w.is_maximized()
-            });
+        sorter.sort(|w| w.r#type == WindowType::Normal && w.is_maximized());
 
         // Tiled windows.
-        let (level6, tiled, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| w.r#type == WindowType::Normal);
+        sorter.sort(|w| w.r#type == WindowType::Normal);
 
         // Last docks.
-        let level7: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+        sorter.sort(|w| w.r#type == WindowType::Dock);
 
-        self.windows = [
-            fullscreen_children,
-            fullscreen_windows,
-            dialogs,
-            floating,
-            maximized,
-            tiled,
-            other,
-        ]
-        .concat();
+        // Finish and put all unsorted at the end.
+        let windows = sorter.finish();
 
-        let fullscreen: Vec<WindowHandle> = [level1, level2].concat();
-        let handles: Vec<WindowHandle> = [level3, level4, level5, level6, level7].concat();
-        let act = DisplayAction::SetWindowOrder(fullscreen, handles);
+        let handles = windows.iter().map(|w| w.handle).collect();
+        self.windows = windows.into_iter().cloned().collect();
+
+        let act = DisplayAction::SetWindowOrder(handles);
         self.actions.push_back(act);
     }
 
@@ -239,7 +225,7 @@ impl State {
                     new_tag.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
                 new_window.strut = old_window.strut;
-                new_window.set_states(old_window.states());
+                new_window.states = old_window.states.clone();
                 ordered.push(new_window.clone());
                 self.windows.remove(index);
 
@@ -307,31 +293,32 @@ impl State {
     }
 }
 
-fn partition_windows<'a, I, F>(windows: I, f: F) -> (Vec<WindowHandle>, Vec<Window>, Vec<Window>)
-where
-    I: Iterator<Item = &'a Window>,
-    F: FnMut(&Window) -> bool + 'a,
-{
-    #[inline]
-    fn extend<'a>(
-        mut f: impl FnMut(&Window) -> bool + 'a,
-        handles: &'a mut Vec<WindowHandle>,
-        left: &'a mut Vec<Window>,
-        right: &'a mut Vec<Window>,
-    ) -> impl FnMut((), &Window) + 'a {
-        move |(), x| {
-            if f(x) {
-                handles.push(x.handle);
-                left.push(x.clone());
-            } else {
-                right.push(x.clone());
-            }
+struct WindowSorter<'a> {
+    stack: Vec<&'a Window>,
+    unsorted: Vec<&'a Window>,
+}
+
+impl<'a> WindowSorter<'a> {
+    pub fn new(windows: Vec<&'a Window>) -> Self {
+        Self {
+            stack: Vec::with_capacity(windows.len()),
+            unsorted: windows,
         }
     }
 
-    let mut handles: Vec<WindowHandle> = Default::default();
-    let mut left: Vec<Window> = Default::default();
-    let mut right: Vec<Window> = Default::default();
-    windows.fold((), extend(f, &mut handles, &mut left, &mut right));
-    (handles, left, right)
+    pub fn sort<F: Fn(&Window) -> bool>(&mut self, filter: F) {
+        self.unsorted.retain(|window| {
+            if filter(window) {
+                self.stack.push(window);
+                false
+            } else {
+                true
+            }
+        });
+    }
+
+    pub fn finish(mut self) -> Vec<&'a Window> {
+        self.stack.append(&mut self.unsorted);
+        self.stack
+    }
 }
