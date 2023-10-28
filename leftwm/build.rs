@@ -17,6 +17,6 @@ fn main() {
     #[cfg(all(feature = "lefthk", not(target_os = "netbsd")))]
     match std::process::Command::new("lefthk-worker").spawn() {
         Ok(mut p) => p.kill().unwrap(),
-        Err(_) => println!("cargo:warning=When first time building with `lefthk` you need to completely restart `leftwm` in order to start the hotkey daemon proprerly. A `SoftReload` or `HardReload` will leave you with a session non responsive to keybinds but otherwise running well."),
+        Err(_) => println!("cargo:warning=When building with `lefthk` for the first time, you will need to completely restart `leftwm` in order to start the hotkey daemon properly. A `SoftReload` or `HardReload` will leave you with a session that is not responsive to keybinds but otherwise running well."),
     }
 }
