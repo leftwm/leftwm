@@ -4,8 +4,7 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowType,
-    Workspace,
+    FocusManager, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowType, Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::Layout;
@@ -16,7 +15,6 @@ use std::collections::{HashMap, VecDeque};
 pub struct State {
     pub screens: Vec<Screen>,
     pub windows: Vec<Window>,
-    pub window_history: HashMap<TagId, Vec<WindowHandle>>,
     pub workspaces: Vec<Workspace>,
     pub focus_manager: FocusManager,
     pub layout_manager: LayoutManager,
@@ -44,7 +42,6 @@ impl State {
         tags.add_new_hidden("NSP");
 
         Self {
-            window_history: HashMap::new(),
             focus_manager: FocusManager::new(config),
             layout_manager: LayoutManager::new(config),
             scratchpads: config.create_list_of_scratchpads(),
@@ -104,9 +101,7 @@ impl State {
 
         // Finish and put all unsorted at the end.
         let windows = sorter.finish();
-
         let handles = windows.iter().map(|w| w.handle).collect();
-        self.windows = windows.into_iter().cloned().collect();
 
         let act = DisplayAction::SetWindowOrder(handles);
         self.actions.push_back(act);
