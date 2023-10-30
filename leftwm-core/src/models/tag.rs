@@ -252,7 +252,7 @@ impl Tag {
 
             windows
                 .iter_mut()
-                .filter(|w| w.has_tag(&self.id) && w.floating() && w.is_managed())
+                .filter(|w| w.has_tag(&self.id) && w.floating())
                 .for_each(|w| {
                     w.set_visible(true);
                 });
