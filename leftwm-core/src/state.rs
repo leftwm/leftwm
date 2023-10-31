@@ -4,7 +4,8 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowType, Workspace,
+    FocusManager, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowState,
+    WindowType, Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::Layout;
@@ -66,6 +67,9 @@ impl State {
     // Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
         let mut sorter = WindowSorter::new(self.windows.iter().collect());
+
+        // Windows explicitly marked as on top
+        sorter.sort(|w| w.states.contains(&WindowState::Above) && w.floating());
 
         // Transient windows should be above a fullscreen/maximized parent
         sorter.sort(|w| {

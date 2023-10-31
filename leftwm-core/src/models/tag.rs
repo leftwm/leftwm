@@ -237,7 +237,8 @@ impl Tag {
                 .iter_mut()
                 .filter(|w| {
                     w.has_tag(&self.id)
-                        && w.transient.unwrap_or_else(|| 0.into()) == handle
+                        && (w.transient == Some(handle)
+                            || w.states.contains(&super::WindowState::Above) && w.floating())
                         && w.is_managed()
                 })
                 .for_each(|w| {

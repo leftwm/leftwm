@@ -70,8 +70,8 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
 
         Command::ToggleMaximized => toggle_state(state, WindowState::Maximized),
         Command::ToggleFullScreen => toggle_state(state, WindowState::Fullscreen),
-
         Command::ToggleSticky => toggle_state(state, WindowState::Sticky),
+        Command::ToggleAbove => toggle_state(state, WindowState::Above),
 
         Command::SendWindowToTag { window, tag } => move_to_tag(*window, *tag, manager),
         Command::MoveWindowToNextTag { follow } => move_to_tag_relative(manager, *follow, 1),
