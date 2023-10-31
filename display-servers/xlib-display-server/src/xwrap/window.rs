@@ -41,7 +41,7 @@ impl XWrap {
         }
         w.legacy_name = legacy_name;
         w.r#type = r#type.clone();
-        w.set_states(states);
+        w.states = states;
         if let Some(trans) = trans {
             w.transient = Some(trans.into());
         }

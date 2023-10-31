@@ -58,7 +58,7 @@ pub struct Window {
     pub border: i32,
     pub margin: Margins,
     pub margin_multiplier: f32,
-    states: Vec<WindowState>,
+    pub states: Vec<WindowState>,
     pub requested: Option<Xyhw>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
@@ -193,24 +193,6 @@ impl Window {
 
     pub fn set_height(&mut self, height: i32) {
         self.normal.set_h(height);
-    }
-
-    pub fn set_states(&mut self, states: Vec<WindowState>) {
-        self.states = states;
-    }
-
-    pub fn drop_state(&mut self, state: &WindowState) {
-        self.states.retain(|s| s != state);
-    }
-
-    #[must_use]
-    pub fn has_state(&self, state: &WindowState) -> bool {
-        self.states.contains(state)
-    }
-
-    #[must_use]
-    pub fn states(&self) -> Vec<WindowState> {
-        self.states.clone()
     }
 
     pub fn apply_margin_multiplier(&mut self, value: f32) {

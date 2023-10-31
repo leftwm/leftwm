@@ -19,7 +19,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             return false;
         }
 
-        // Setup any predifined hooks.
+        // Setup any predefined hooks.
         self.config
             .setup_predefined_window(&mut self.state, &mut window);
         let mut is_first = false;
@@ -135,7 +135,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 fullscreen_changed =
                     states.contains(&WindowState::Fullscreen) != window.is_fullscreen();
                 above_changed = states.contains(&WindowState::Above)
-                    != window.states().contains(&WindowState::Above);
+                    != window.states.contains(&WindowState::Above);
             }
             let container = match find_transient_parent(&windows, window.transient) {
                 Some(parent) => Some(parent.exact_xyhw()),
