@@ -10,7 +10,6 @@ pub mod file;
 #[cfg(feature = "sys-log")]
 mod sys;
 
-
 /// Set up logging by connecting to subscribers
 ///
 /// # Panics

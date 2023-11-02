@@ -64,12 +64,25 @@ fn from_change_to_normal_mode(state: &mut State) -> bool {
             // it is only called once the window has stopped moving.
             if let Some(window) = state.windows.iter_mut().find(|w| w.handle == h) {
                 let loc = window.calculated_xyhw();
-                let (x, y) = loc.center();
-                let (margin_multiplier, tag, normal) =
-                    match state.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
-                        Some(ws) => (ws.margin_multiplier(), ws.tag, ws.xyhw),
-                        None => (1.0, Some(1), window.normal),
-                    };
+                let (center_x, center_y) = loc.center();
+                let (margin_multiplier, tag, normal) = if let Some(ws) = state
+                    .workspaces
+                    .iter()
+                    .find(|ws| ws.contains_point(center_x, center_y))
+                {
+                    (ws.margin_multiplier(), ws.tag, ws.xyhw)
+                } else if let Some(ws) = state.workspaces.iter().find(|ws| {
+                    let dx =
+                        ws.xyhw.x() <= loc.x() + loc.w() && ws.xyhw.x() + ws.xyhw.w() >= loc.x();
+                    let dy =
+                        ws.xyhw.y() <= loc.y() + loc.h() && ws.xyhw.y() + ws.xyhw.h() >= loc.y();
+                    dx && dy
+                }) {
+                    (ws.margin_multiplier(), ws.tag, ws.xyhw)
+                } else {
+                    tracing::debug!("No matching workspace found for {:?}", window.handle);
+                    (1.0, Some(1), window.normal)
+                };
                 let mut offset = window.get_floating_offsets().unwrap_or_default();
                 // Re-adjust the floating offsets to the new workspace.
                 let exact = window.normal + offset;
@@ -140,7 +153,7 @@ fn prepare_window(state: &mut State, handle: WindowHandle) {
                 false,
                 WindowState::Fullscreen,
             ));
-            w.drop_state(&WindowState::Fullscreen);
+            w.states.retain(|s| s != &WindowState::Fullscreen);
             // Force update for all windows
             state.mode = Mode::ReadyToResize(handle);
         }
@@ -151,9 +164,9 @@ fn prepare_window(state: &mut State, handle: WindowHandle) {
                 false,
                 WindowState::Maximized,
             ));
-            w.drop_state(&WindowState::Maximized);
-            w.drop_state(&WindowState::MaximizedHorz);
-            w.drop_state(&WindowState::MaximizedVert);
+            w.states.retain(|s| s != &WindowState::Maximized);
+            w.states.retain(|s| s != &WindowState::MaximizedHorz);
+            w.states.retain(|s| s != &WindowState::MaximizedVert);
             // Force update for all windows
             state.mode = Mode::ReadyToResize(handle);
         }

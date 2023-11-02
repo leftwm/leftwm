@@ -246,12 +246,14 @@ impl Tag {
         {
             window.set_visible(true);
             window.normal = workspace.xyhw;
+
             let handle = window.handle;
             windows
                 .iter_mut()
                 .filter(|w| {
                     w.has_tag(&self.id)
-                        && w.transient.unwrap_or_else(|| 0.into()) == handle
+                        && (w.transient == Some(handle)
+                            || w.states.contains(&super::WindowState::Above) && w.floating())
                         && w.is_managed()
                 })
                 .for_each(|w| {
@@ -261,33 +263,14 @@ impl Tag {
             .iter_mut()
             .find(|w| w.has_tag(&self.id) && w.is_maximized())
         {
-            // Update maximized window
             window.set_visible(true);
-            window.normal = Xyhw::from(workspace.rect());
-            let handle = window.handle;
-            windows
-                .iter_mut()
-                .filter(|w| {
-                    w.has_tag(&self.id)
-                        && w.transient.unwrap_or_else(|| 0.into()) == handle
-                        && w.is_managed()
-                })
-                .for_each(|w| {
-                    w.set_visible(true);
-                });
+            window.normal = workspace.rect().into();
 
-            // Update all windows except normal non-floating windoows and maximized window
             windows
                 .iter_mut()
-                .filter(|w| {
-                    w.has_tag(&self.id) && (!w.is_normal() || w.floating()) && !w.is_maximized()
-                })
+                .filter(|w| w.has_tag(&self.id) && w.floating())
                 .for_each(|w| {
                     w.set_visible(true);
-                    // Don't change docks and desktop xyhw
-                    if w.is_managed() {
-                        w.normal = workspace.xyhw;
-                    }
                 });
         } else {
             // Don't bother updating the other windows when a window is fullscreen.

@@ -179,6 +179,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "ToggleFullScreen" => Ok(Command::ToggleFullScreen),
         "ToggleMaximized" => Ok(Command::ToggleMaximized),
         "ToggleSticky" => Ok(Command::ToggleSticky),
+        "ToggleAbove" => Ok(Command::ToggleAbove),
         // General
         "CloseWindow" => Ok(Command::CloseWindow),
         "CloseAllOtherWindows" => Ok(Command::CloseAllOtherWindows),

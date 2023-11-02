@@ -31,6 +31,7 @@ pub enum BaseCommand {
     ToggleFullScreen,
     ToggleMaximized,
     ToggleSticky,
+    ToggleAbove,
     GotoTag,
     ReturnToLastTag,
     FloatingToTile,
