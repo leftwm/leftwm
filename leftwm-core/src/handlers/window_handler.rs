@@ -440,17 +440,27 @@ fn setup_window(
         WindowType::Normal => {
             window.apply_margin_multiplier(ws.margin_multiplier);
             if window.floating() {
-                set_relative_floating(window, ws, ws.xyhw);
+                match window.requested {
+                    Some(xyhw) => set_relative_floating(window, ws, xyhw),
+                    None => set_relative_floating(window, ws, ws.xyhw),
+                };
             }
         }
         WindowType::Dialog => {
             if window.can_resize() {
                 window.set_floating(true);
-                let new_float_exact = ws.center_halfed();
-                window.normal = ws.xyhw;
-                window.set_floating_exact(new_float_exact);
+                if let Some(xyhw) = window.requested {
+                    set_relative_floating(window, ws, xyhw);
+                } else {
+                    let new_float_exact = ws.center_halfed();
+                    window.normal = ws.xyhw;
+                    window.set_floating_exact(new_float_exact);
+                };
             } else {
-                set_relative_floating(window, ws, ws.xyhw);
+                match window.requested {
+                    Some(xyhw) => set_relative_floating(window, ws, xyhw),
+                    None => set_relative_floating(window, ws, ws.xyhw),
+                };
             }
         }
         WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
