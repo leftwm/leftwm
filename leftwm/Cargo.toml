@@ -19,7 +19,7 @@ once_cell = "1.13.0"
 dirs-next = "2.0.0"
 futures = "0.3.21"
 git-version = "0.3.5"
-lefthk-core = { version = '0.1.9', optional = true }
+lefthk-core = { version = '0.2', optional = true }
 leftwm-core = { path = "../leftwm-core", version = '0.4.2' }
 leftwm-macros = {path = "../leftwm-macros", version = '0.4.2'}
 leftwm-layouts = "0.8.4"
