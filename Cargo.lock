@@ -600,7 +600,7 @@ dependencies = [
 
 [[package]]
 name = "leftwm-core"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "dirs-next",
  "futures",
@@ -629,7 +629,7 @@ dependencies = [
 
 [[package]]
 name = "leftwm-macros"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1581,7 +1581,7 @@ checksum = "213b7324336b53d2414b2db8537e56544d981803139155afa84f76eeebb7a546"
 
 [[package]]
 name = "xlib-display-server"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "futures",
  "leftwm-core",
