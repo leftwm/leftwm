@@ -8,6 +8,8 @@ jobs:
   mirror:
     name: Mirror to Codeberg
     runs-on: ubuntu-latest
+    # Only run for the main repo, not for forks
+    if: ${{ github.repository == 'leftwm/leftwm' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -15,11 +17,9 @@ jobs:
           fetch-depth: 0
 
       - name: Load ssh key
-        env: 
-          SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
         run: |
           umask 066
-          echo "$SSH_KEY" > ~/codeberg_key
+          echo "${{ secrets.CODEBERG_SSH_KEY }}" > ~/codeberg_key
 
       - name: Add Codeberg to known hosts
         run: echo "codeberg.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIVIC02vnjFyL+I4RHfvIGNtOgJMe769VTF1VR4EB3ZB" > ~/known_hosts
@@ -28,7 +28,7 @@ jobs:
         env:
           BRANCH: ${{ github.event_name == 'pull_request' && format('refs/heads/pull/{0}', github.event.number) || github.ref_name }}
           GIT_SSH_COMMAND: 'ssh -i ~/codeberg_key -o IdentitiesOnly=yes -o GlobalKnownHostsFile=~/known_hosts -o StrictHostKeyChecking=yes'
-        run: git push --force git@codeberg.org:Eskaan/leftwm-mirror-testing.git HEAD:$BRANCH
+        run: git push --force git@codeberg.org:leftwm/leftwm.git HEAD:$BRANCH
 
       - name: Delete key file
         run: rm ~/codeberg_key
