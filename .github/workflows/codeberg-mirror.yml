@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        run: git clone --mirror
+        uses: actions/checkout@v2
 
       - name: Load ssh key
         env: 
