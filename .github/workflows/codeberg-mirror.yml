@@ -13,7 +13,7 @@ jobs:
 #        uses: actions/checkout@v2
 
       - name: ls
-        run: ls -A / ~ /etc/
+        run: ls -A /etc/ssh
 
 #      - name: Load ssh key
 #        env: 
