@@ -15,7 +15,9 @@ jobs:
       - name: Load ssh key
         env: 
           SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
-        run: echo "$SSH_KEY" > ~/codeberg_key
+        run: |
+          umask 600
+          echo "$SSH_KEY" > ~/codeberg_key
 
       - name: Add Codeberg to known hosts
         run: echo "codeberg.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIVIC02vnjFyL+I4RHfvIGNtOgJMe769VTF1VR4EB3ZB" > ~/known_hosts
