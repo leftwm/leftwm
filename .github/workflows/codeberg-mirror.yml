@@ -16,15 +16,12 @@ jobs:
         env: 
           SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
         run: |
-          umask 600
+          umask 066
           echo "$SSH_KEY" > ~/codeberg_key
 
       - name: Add Codeberg to known hosts
         run: echo "codeberg.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIVIC02vnjFyL+I4RHfvIGNtOgJMe769VTF1VR4EB3ZB" > ~/known_hosts
 
-      - name: ls
-        run: ls -l ~/codeberg_key ~/known_hosts; whoami
-          
       - name: Push repo
         env:
           GIT_SSH_COMMAND: 'ssh -i ~/codeberg_key -o IdentitiesOnly=yes -o GlobalKnownHostsFile=~/known_hosts -o StrictHostKeyChecking=yes'
