@@ -11,7 +11,7 @@ jobs:
     # Only run if the secret is set
     env:
       MIRROR_REPO: ${{ secrets.MIRROR_REPO }}
-    if: env.MIRROR_REPO != ''
+    if: ${{ env.MIRROR_REPO != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
