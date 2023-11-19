@@ -10,8 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        run: |
-          git clone --bare
+        uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
 
       - name: Load ssh key
         env: 
