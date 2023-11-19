@@ -8,29 +8,32 @@ jobs:
   mirror:
     name: Mirror to Codeberg
     runs-on: ubuntu-latest
-    # Only run if the secret is set
-    env:
+    env: 
       MIRROR_REPO: ${{ secrets.MIRROR_REPO }}
-    if: $MIRROR_REPO != ''
     steps:
       - name: Checkout
+        if: env.MIRROR_REPO != ''
         uses: actions/checkout@v2
         with: 
           fetch-depth: 0
 
       - name: Load ssh key
+        if: env.MIRROR_REPO != ''
         run: |
           umask 066
           echo "${{ secrets.CODEBERG_SSH_KEY }}" > ~/codeberg_key
 
       - name: Add Codeberg to known hosts
+        if: env.MIRROR_REPO != ''
         run: echo "codeberg.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIVIC02vnjFyL+I4RHfvIGNtOgJMe769VTF1VR4EB3ZB" > ~/known_hosts
 
       - name: Push to Codeberg
+        if: env.MIRROR_REPO != ''
         env:
           BRANCH: ${{ github.event_name == 'pull_request' && format('refs/heads/pull/{0}', github.event.number) || github.ref }}
           GIT_SSH_COMMAND: 'ssh -i ~/codeberg_key -o IdentitiesOnly=yes -o GlobalKnownHostsFile=~/known_hosts -o StrictHostKeyChecking=yes'
         run: git push --force $MIRROR_REPO HEAD:$BRANCH
 
       - name: Delete key file
+        if: env.MIRROR_REPO != ''
         run: rm ~/codeberg_key
