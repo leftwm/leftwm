@@ -8,8 +8,10 @@ jobs:
   mirror:
     name: Mirror to Codeberg
     runs-on: ubuntu-latest
-    # Only run for the main repo, not for forks
-    if: ${{ secrets.MIRROR_REPO != null }}
+    # Only run if the secret is set
+    env:
+      MIRROR_REPO: ${{ secrets.MIRROR_REPO }}
+    if: env.MIRROR_REPO != ''
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -28,7 +30,7 @@ jobs:
         env:
           BRANCH: ${{ github.event_name == 'pull_request' && format('refs/heads/pull/{0}', github.event.number) || github.ref }}
           GIT_SSH_COMMAND: 'ssh -i ~/codeberg_key -o IdentitiesOnly=yes -o GlobalKnownHostsFile=~/known_hosts -o StrictHostKeyChecking=yes'
-        run: git push --force ${{ secrets.MIRROR_REPO }} HEAD:$BRANCH
+        run: git push --force $MIRROR_REPO HEAD:$BRANCH
 
       - name: Delete key file
         run: rm ~/codeberg_key
