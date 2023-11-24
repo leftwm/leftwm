@@ -9,7 +9,7 @@ jobs:
     name: Mirror to Codeberg
     runs-on: ubuntu-latest
     env: 
-      MIRROR_REPO: ${{ secrets.MIRROR_REPO }}
+      MIRROR_REPO: ${{ secrets.CODEBERG_MIRROR_LEFTWM }}
     steps:
       - name: Checkout
         if: env.MIRROR_REPO != ''
@@ -21,7 +21,7 @@ jobs:
         if: env.MIRROR_REPO != ''
         run: |
           umask 066
-          echo "${{ secrets.MIRROR_SSH_KEY }}" > ~/mirror_key
+          echo "${{ secrets.CODEBERG_MIRROR_LEFTWM_SSH_KEY }}" > ~/mirror_key
 
       - name: Add Codeberg to known hosts
         if: env.MIRROR_REPO != ''
