@@ -31,18 +31,18 @@ async fn main() -> Result<()> {
             }
             tokio::select! {
                 Some(res) = ret_pipe.read_return() => {
-                if let Some((result, msg)) = res.split_once(' '){
+                    if let Some((result, msg)) = res.split_once(' ') {
                         match result {
                             "OK:" => println!("{command}: {msg}"),
-                            "ERROR:" => {eprintln!("{command}: {msg}");exit_code = 1;},
+                            "ERROR:" => {eprintln!("{command}: {msg}"); exit_code = 1;},
                             _ => println!("{command}: {res}"),
                         }
-                    }else{
+                    } else {
                         println!("{command}: {res}");
                     }
-            }
-                () = timeout(5000) => {eprintln!("WARN: timeout connecting to return pipe. Command may have executed, but errors will not be displayed."); exit_code = 1;},
-                else => {eprintln!("WARN: timeout connection to return pipe. Command may have executed, but errors will not be displayed."); exit_code = 1;},
+                }
+                _ = timeout(5000) => {eprintln!("WARN: timeout connecting to return pipe. Command may have executed, but errors will not be displayed."); exit_code = 1;}
+                else => {eprintln!("WARN: timeout connection to return pipe. Command may have executed, but errors will not be displayed."); exit_code = 1;}
             }
         }
         drop(ret_pipe);
