@@ -1,4 +1,4 @@
-use leftwm_macros::VariantNames;
+use leftwm_macros::EnumDocs;
 use serde::{Deserialize, Serialize};
 /*  TODO this code is temporary. Due to the limitations of TOML we cannot serialize leftwm_core::Command
 *      easily. If we replace TOML by JSON/JSON5/YAML we will be able to remove this code and a
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 // Because this is temporary, we will allow this clippy lint to be bypassed
 #[allow(clippy::module_name_repetitions)]
-#[derive(VariantNames, Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(EnumDocs, Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum BaseCommand {
     Execute,
     CloseWindow,
