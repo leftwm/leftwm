@@ -69,15 +69,15 @@ pub fn derive_enum_docs(input: TokenStream) -> TokenStream {
             // The enum's name
             let name = &input.ident;
             let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-            return quote! {
+            quote! {
                 impl #impl_generics #name #ty_generics #where_clause {
                     pub const fn documentation() -> &'static str {
                         #names
                     }
                 }
             }
-            .into();
+            .into()
         }
-        _ => return derive_error!("EnumDocs can only be implemented for enums"),
-    };
+        _ => derive_error!("EnumDocs can only be implemented for enums"),
+    }
 }

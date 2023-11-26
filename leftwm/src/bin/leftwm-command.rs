@@ -79,7 +79,7 @@ Note about commands with arguments:
 For more information please visit:
 https://github.com/leftwm/leftwm/wiki/External-Commands\
 ",
-        BaseCommand::documentation().replace("\n", "\n    ")
+        BaseCommand::documentation().replace('\n', "\n    ")
     );
 }
 
