@@ -32,7 +32,7 @@ async fn main() -> Result<()> {
             tokio::select! {
                 Some(res) = ret_pipe.read_return() => {
                 if let Some((result, msg)) = res.split_once(' '){
-                        match result{
+                        match result {
                             "OK:" => println!("{command}: {msg}"),
                             "ERROR:" => {eprintln!("{command}: {msg}");exit_code = 1;},
                             _ => println!("{command}: {res}"),
