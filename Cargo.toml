@@ -1,6 +1,10 @@
 [workspace]
-default-members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server"]
-members = ["leftwm", "leftwm-macros", "leftwm-core", "display-servers/xlib-display-server"]
+members = [
+    "leftwm",
+    "leftwm-core",
+    "leftwm-macros",
+    "display-servers/xlib-display-server",
+]
 resolver = "2"
 
 [profile.optimized]

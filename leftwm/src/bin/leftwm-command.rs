@@ -66,20 +66,20 @@ fn get_command() -> clap::Command {
 
 fn print_commandlist() {
     println!(
-        "
-    Available Commands:
-        {}
-        SendWorkspaceToTag     Args: <workspace_index> <tag_index> (int)
-        SendWindowToTag        Args: <tag_index> (int)
+        "\
+Available Commands:{}
+    SendWorkspaceToTag
+        Args: <workspace_index> <tag_index> (int)
+    SendWindowToTag
+        Args: <tag_index> (int)
 
-    Note about commands with arguments:
-            Use quotations for the command and arguments, like this:
-            leftwm-command \"<command> <args>\"
-
-    For more information please visit:
-    https://github.com/leftwm/leftwm/wiki/External-Commands
-         ",
-        BaseCommand::variant_names().join("\n        ")
+Note about commands with arguments:
+    Use quotations for the command and arguments, like this:
+    leftwm-command \"<command> <args>\"
+For more information please visit:
+https://github.com/leftwm/leftwm/wiki/External-Commands\
+",
+        BaseCommand::documentation().replace('\n', "\n    ")
     );
 }
 

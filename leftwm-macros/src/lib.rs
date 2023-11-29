@@ -1,7 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro2::Span;
 
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Error};
@@ -24,7 +24,7 @@ fn parse_enum_doc_comment(attrs: &[syn::Attribute]) -> String {
                 ..
             }) = &meta.value
             {
-                ret.push_str(&format!("\n          {}", l.value().trim()));
+                ret.push_str(&format!("\n    {}", l.value().trim()));
             }
         }
     }
@@ -32,64 +32,52 @@ fn parse_enum_doc_comment(attrs: &[syn::Attribute]) -> String {
     ret
 }
 
-#[proc_macro_derive(VariantNames)]
-/// Returns a Vec<String> for the Enum to which it applies.
+#[proc_macro_derive(EnumDocs)]
+/// Returns a const str for the Enum to which it applies.
 ///
 /// # Example:
 /// ```
-/// #[derive(VariantNames)]
+/// #[derive(leftwm_macros::EnumDocs)]
 /// enum LeftWm {
 ///   One,
+///   /// Doc comment
 ///   Two
 /// }
 ///
-/// assert_eq!(LeftWm::variant_names(), vec!["        One", "        Two"]);
+/// assert_eq!(LeftWm::documentation(), "\nOne\nTwo\n    Doc comment");
 /// ```
 ///
 /// The purpose of this macro is for serializing options of the `BaseCommand` for `leftwm-command`
-pub fn derive_variant_names(input: TokenStream) -> TokenStream {
-    let input: DeriveInput = parse_macro_input!(input as DeriveInput);
+pub fn derive_enum_docs(input: TokenStream) -> TokenStream {
+    let input: DeriveInput = parse_macro_input!(input);
 
-    // Get the enum name for use later
-    let name = &input.ident;
-    // Get the variants
-    let data = &input.data;
-
-    let mut variant_checker_functions;
-
-    match data {
+    match &input.data {
         // Only if data is an enum, we do parsing
         Data::Enum(data_enum) => {
             // data_enum is of type syn::DataEnum
             // https://doc.servo.org/syn/struct.DataEnum.html
 
-            variant_checker_functions = TokenStream2::new();
+            let mut names = String::new();
 
             // For each variant, push its name onto `names`
-            let mut names = Vec::new();
             for variant in &data_enum.variants {
                 let doc = parse_enum_doc_comment(&variant.attrs);
 
-                names.push(format!("{} {}", variant.ident, doc));
+                names.push_str(&format!("\n{}{}", variant.ident, doc));
             }
 
-            // Construct the variant_names function for the Enum using `names`
-            variant_checker_functions.extend(quote! {
-                pub fn variant_names() -> Vec<String> {
-                    return vec![#(#names,)*].into_iter().map(String::from).collect();
+            // The enum's name
+            let name = &input.ident;
+            let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+            quote! {
+                impl #impl_generics #name #ty_generics #where_clause {
+                    pub const fn documentation() -> &'static str {
+                        #names
+                    }
                 }
-            });
+            }
+            .into()
         }
-        _ => return derive_error!("VariantNames can only be implemented for enums"),
-    };
-
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-
-    let expanded = quote! {
-        impl #impl_generics #name #ty_generics #where_clause {
-            #variant_checker_functions
-        }
-    };
-
-    TokenStream::from(expanded)
+        _ => derive_error!("EnumDocs can only be implemented for enums"),
+    }
 }
