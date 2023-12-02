@@ -34,6 +34,7 @@ impl XWrap {
     // `XDefaultScreen`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultScreen
     // `XDefaultColormap`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultColormap
     // `XAllocNamedColor`: https://tronche.com/gui/x/xlib/color/XAllocNamedColor.html
+    #[must_use]
     pub fn get_color(&self, color: String) -> c_ulong {
         unsafe {
             let screen = (self.xlib.XDefaultScreen)(self.display);
@@ -182,6 +183,7 @@ impl XWrap {
 
     /// Returns the next `Xevent` that matches the mask of the xserver.
     // `XMaskEvent`: https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XMaskEvent.html
+    #[must_use]
     pub fn get_mask_event(&self) -> xlib::XEvent {
         unsafe {
             let mut event: xlib::XEvent = std::mem::zeroed();
@@ -579,6 +581,7 @@ impl XWrap {
     }
 
     /// Returns the `WM_STATE` of a window.
+    #[must_use]
     pub fn get_wm_state(&self, window: xlib::Window) -> Option<c_long> {
         let (prop_return, nitems_return) = self
             .get_property(window, self.atoms.WMState, self.atoms.WMState)
