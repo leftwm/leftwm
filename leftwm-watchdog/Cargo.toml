@@ -23,6 +23,7 @@ xdg = "2.2.0"
 tempfile = "3.2.0"
 
 [features]
+default = ["lefthk"]
 lefthk = []
 
 # Sleep on restart
