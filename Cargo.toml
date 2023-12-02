@@ -3,6 +3,7 @@ members = [
     "leftwm",
     "leftwm-core",
     "leftwm-macros",
+    "leftwm-watchdog",
     "display-servers/xlib-display-server",
 ]
 resolver = "2"

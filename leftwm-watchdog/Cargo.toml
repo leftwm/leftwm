@@ -1,0 +1,27 @@
+[package]
+name = "leftwm"
+version = "0.5.1"
+rust-version = "1.70.0"
+authors = ["Lex Childs <lexchilds@gmail.com>"]
+categories = ["window manager"]
+edition = "2021"
+keywords = ["wm", "window", "manager"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/leftwm/leftwm"
+description = "A window manager for Adventurers"
+
+[dependencies]
+clap = { version = "4.0.0", features = ["cargo"] }
+
+[dev-dependencies]
+tempfile = "3.2.0"
+
+[features]
+lefthk = []
+
+# Sleep on restart
+slow-dm-fix = []
+
+[[bin]]
+

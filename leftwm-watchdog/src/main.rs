@@ -4,7 +4,6 @@
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
 use clap::command;
-use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
 use std::process::{exit, Child, Command, ExitStatus};
@@ -12,6 +11,9 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+
+mod util;
+use util::{self, Nanny};
 
 type Subcommand<'a> = &'a str;
 type SubcommandArgs = Vec<String>;
