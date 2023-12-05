@@ -14,7 +14,7 @@ jobs:
         if: env.MIRROR_REPO != ''
         run: |
           git config --global url."https://${{ secrets.GITHUB_TOKEN }}@github.com".insteadOf https://github.com
-          git clone --bare --mirror "${{ github.repositoryUrl }}"
+          git clone --bare --mirror "${{ github.repositoryUrl }}" clone.git
 
       - name: Load ssh key
         if: env.MIRROR_REPO != ''
@@ -30,7 +30,7 @@ jobs:
         if: env.MIRROR_REPO != ''
         env:
           GIT_SSH_COMMAND: 'ssh -i ~/mirror_key -o IdentitiesOnly=yes -o GlobalKnownHostsFile=~/known_hosts -o StrictHostKeyChecking=yes'
-        run: git push --mirror "$MIRROR_REPO" 
+        run: git -C clone.git push --mirror "$MIRROR_REPO" 
 
       - name: Delete key file
         if: env.MIRROR_REPO != ''
