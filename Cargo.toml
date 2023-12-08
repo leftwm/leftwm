@@ -1,6 +1,6 @@
 [workspace]
-default-members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server"]
-members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server"]
+default-members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server", "display-servers/x11rb-display-server"]
+members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server", "display-servers/x11rb-display-server"]
 
 [profile.optimized]
 inherits = "release"

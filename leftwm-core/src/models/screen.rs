@@ -100,6 +100,20 @@ impl From<x11_dl::xrandr::XRRCrtcInfo> for Screen {
     }
 }
 
+impl From<x11rb::protocol::randr::GetCrtcInfoReply> for Screen {
+    fn from(root: x11rb::protocol::randr::GetCrtcInfoReply) -> Self {
+        Self {
+            bbox: BBox {
+                x: root.x as i32,
+                y: root.y as i32,
+                width: root.width as i32,
+                height: root.height as i32,
+            },
+            ..Default::default()
+        }
+    }
+}
+
 impl From<&xlib::XWindowAttributes> for Screen {
     fn from(root: &xlib::XWindowAttributes) -> Self {
         Self {
@@ -117,6 +131,20 @@ impl From<&xlib::XWindowAttributes> for Screen {
 
 impl From<&x11_dl::xinerama::XineramaScreenInfo> for Screen {
     fn from(root: &x11_dl::xinerama::XineramaScreenInfo) -> Self {
+        Self {
+            bbox: BBox {
+                height: root.height.into(),
+                width: root.width.into(),
+                x: root.x_org.into(),
+                y: root.y_org.into(),
+            },
+            ..Default::default()
+        }
+    }
+}
+
+impl From<&x11rb::protocol::xinerama::ScreenInfo> for Screen {
+    fn from(root: &x11rb::protocol::xinerama::ScreenInfo) -> Self {
         Self {
             bbox: BBox {
                 height: root.height.into(),

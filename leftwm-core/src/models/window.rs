@@ -10,6 +10,7 @@ use crate::Workspace;
 use serde::{Deserialize, Serialize};
 
 use x11_dl::xlib;
+use x11rb::protocol::xproto;
 
 type MockHandle = i32;
 
@@ -17,6 +18,7 @@ type MockHandle = i32;
 pub enum WindowHandle {
     MockHandle(MockHandle),
     XlibHandle(xlib::Window),
+    X11rbHandle(xproto::Window),
 }
 
 impl std::convert::From<xlib::Window> for WindowHandle {
@@ -28,8 +30,8 @@ impl std::convert::From<xlib::Window> for WindowHandle {
 impl WindowHandle {
     pub fn xlib_handle(self) -> Option<xlib::Window> {
         match self {
-            WindowHandle::MockHandle(_) => None,
             WindowHandle::XlibHandle(h) => Some(h),
+            _ => None
         }
     }
 }

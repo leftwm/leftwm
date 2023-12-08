@@ -1,6 +1,7 @@
 use std::os::raw::c_uint;
 use x11_dl::xlib;
 
+//TODO: Change this to either an enum or a bitfield
 pub type ModMask = c_uint;
 pub type Button = c_uint;
 

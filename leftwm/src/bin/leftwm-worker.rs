@@ -1,6 +1,7 @@
 use leftwm_core::Manager;
 use std::panic;
-use xlib_display_server::XlibDisplayServer;
+
+use x11rb_display_server::X11rbDisplayServer;
 
 fn main() {
     leftwm::utils::log::setup_logging();
@@ -21,7 +22,8 @@ fn main() {
         #[cfg(not(feature = "lefthk"))]
         let config = leftwm::load();
 
-        let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
+        let manager = Manager::<leftwm::Config, X11rbDisplayServer>::new(config);
+
         manager.register_child_hook();
         rt.block_on(manager.start_event_loop())
     });
