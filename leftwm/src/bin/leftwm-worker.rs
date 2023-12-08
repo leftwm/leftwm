@@ -1,10 +1,20 @@
 use leftwm_core::Manager;
-use std::panic;
+use std::{env, panic, process::exit};
 
+#[cfg(feature = "x11rb")]
 use x11rb_display_server::X11rbDisplayServer;
+#[cfg(feature = "xlib")]
+use xlib_display_server::XlibDisplayServer;
 
 fn main() {
     leftwm::utils::log::setup_logging();
+
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        tracing::error!("You need to specify a backend, as argument.");
+        tracing::error!("Backends must be one of the following: xlib, x11rb");
+        exit(1);
+    }
 
     tracing::info!("leftwm-worker booted!");
 
@@ -22,10 +32,32 @@ fn main() {
         #[cfg(not(feature = "lefthk"))]
         let config = leftwm::load();
 
-        let manager = Manager::<leftwm::Config, X11rbDisplayServer>::new(config);
+        let manager: Result<(), ()> = match args.get(1) {
+            #[cfg(feature = "xlib")]
+            Some(name) if name == "xlib" => {
+                let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
 
-        manager.register_child_hook();
-        rt.block_on(manager.start_event_loop())
+                manager.register_child_hook();
+                //TODO: Error handling
+                rt.block_on(manager.start_event_loop());
+                Ok(())
+            }
+
+            #[cfg(feature = "x11rb")]
+            Some(name) if name == "x11rb" => {
+                let manager = Manager::<leftwm::Config, X11rbDisplayServer>::new(config);
+
+                manager.register_child_hook();
+                //TODO: Error handling
+                rt.block_on(manager.start_event_loop());
+                Ok(())
+            }
+            _ => {
+                tracing::error!("Invalid backend.");
+                tracing::error!("Backends must be one of the following: xlib, x11rb");
+                exit(1);
+            }
+        };
     });
 
     match exit_status {
