@@ -12,7 +12,10 @@ use x11rb::{
     },
 };
 
-use crate::xatom::WMStateWindowState;
+use crate::{
+    error::{Error, Result},
+    xatom::WMStateWindowState,
+};
 
 use super::{XWrap, MAX_PROPERTY_VALUE_LEN};
 
@@ -24,7 +27,7 @@ impl XWrap {
     ///
     /// Will error if root has no windows or there is an error
     /// obtaining the root windows. See `get_windows_for_root`.
-    pub fn get_all_windows(&self) -> Result<Vec<xproto::Window>, Box<dyn std::error::Error>> {
+    pub fn get_all_windows(&self) -> Result<Vec<xproto::Window>> {
         let mut all = Vec::new();
         for root in self.get_roots() {
             let some_windows = self.get_windows_for_root(root)?;
@@ -36,23 +39,21 @@ impl XWrap {
     }
 
     /// Returns a `XColor` for a color.
-    pub fn get_color(&self, color: String) -> u32 {
+    pub fn get_color(&self, color: String) -> Result<u32> {
         let screen = &self.conn.setup().roots[self.display];
         let (red, green, blue) = parse_color_string(color);
         let rep = self
             .conn
-            .alloc_color(screen.default_colormap, red, green, blue)
-            .unwrap()
-            .reply()
-            .unwrap();
-        rep.pixel
+            .alloc_color(screen.default_colormap, red, green, blue)?
+            .reply()?;
+        Ok(rep.pixel)
     }
 
     /// Returns the current position of the cursor.
     /// # Errors
     ///
     /// Will error if root window cannot be found.
-    pub fn get_cursor_point(&self) -> Result<(i32, i32), Box<dyn std::error::Error>> {
+    pub fn get_cursor_point(&self) -> Result<(i32, i32)> {
         let roots = self.get_roots();
         for w in roots {
             let reply = xproto::query_pointer(&self.conn, w)?.reply();
@@ -60,14 +61,14 @@ impl XWrap {
                 return Ok((reply.win_x.into(), reply.win_y.into()));
             }
         }
-        Err(Box::from("Root window not found"))
+        Err(Error::RootWindowNotFound)
     }
 
     /// Returns the current window under the cursor.
     /// # Errors
     ///
     /// Will error if root window cannot be found.
-    pub fn get_cursor_window(&self) -> Result<WindowHandle, Box<dyn std::error::Error>> {
+    pub fn get_cursor_window(&self) -> Result<WindowHandle> {
         let roots = self.get_roots();
         for w in roots {
             let reply = xproto::query_pointer(&self.conn, w)?.reply();
@@ -75,7 +76,7 @@ impl XWrap {
                 return Ok(WindowHandle::X11rbHandle(reply.child));
             }
         }
-        Err(Box::from("Root window not found"))
+        Err(Error::RootWindowNotFound)
     }
 
     /// Returns the handle of the default root.
@@ -92,9 +93,9 @@ impl XWrap {
 
     /// Returns the `WM_SIZE_HINTS`/`WM_NORMAL_HINTS` of a window as a `XyhwChange`.
     #[must_use]
-    pub fn get_hint_sizing_as_xyhw(&self, window: xproto::Window) -> Option<XyhwChange> {
-        let hint = self.get_hint_sizing(window);
-        if let Some(size) = hint {
+    pub fn get_hint_sizing_as_xyhw(&self, window: xproto::Window) -> Result<Option<XyhwChange>> {
+        let hints = self.get_hint_sizing(window)?;
+        if let Some(size) = hints {
             let mut xyhw = XyhwChange::default();
 
             if let Some((_specification, width, height)) = size.size {
@@ -136,9 +137,9 @@ impl XWrap {
             //     //c->maxa = (float)size.max_aspect.x / size.max_aspect.y;
             // }
 
-            return Some(xyhw);
+            return Ok(Some(xyhw));
         }
-        None
+        Ok(None)
     }
 
     /// Returns the next `Xevent` that matches the mask of the xserver.
@@ -156,8 +157,8 @@ impl XWrap {
 
     /// Returns the next `Xevent` of the xserver.
     #[must_use]
-    pub fn poll_next_event(&self) -> Option<x11rb::protocol::Event> {
-        self.conn.poll_for_event().unwrap()
+    pub fn poll_next_event(&self) -> Result<Option<x11rb::protocol::Event>> {
+        Ok(self.conn.poll_for_event()?)
     }
 
     /// Returns all the screens of the display.
@@ -165,13 +166,11 @@ impl XWrap {
     ///
     /// Panics if xorg cannot be contacted (xlib missing, not started, etc.)
     /// Also panics if window attrs cannot be obtained.
+    /// TODO: Check if this is working, because it's most likely not
     #[must_use]
-    pub fn get_screens(&self) -> Vec<Screen> {
-        if let Ok(screen_resources) = randr::get_screen_resources(&self.conn, self.root)
-            .unwrap()
-            .reply()
-        {
-            return screen_resources
+    pub fn get_screens(&self) -> Result<Vec<Screen>> {
+        if let Ok(screen_resources) = randr::get_screen_resources(&self.conn, self.root)?.reply() {
+            return Ok(screen_resources
                 .outputs
                 .iter()
                 .filter_map(|&output| {
@@ -211,17 +210,20 @@ impl XWrap {
                     s.output = name.to_string();
                     s
                 })
-                .collect();
+                .collect());
         }
 
-        let is_active = xinerama::is_active(&self.conn).unwrap().reply().unwrap();
+        let is_active = xinerama::is_active(&self.conn)?.reply()?;
 
         if is_active.state == 0 {
             // NON-XINERAMA
             // Idk if this works
-            return self
+            return Ok(self
                 .get_roots()
-                .filter_map(|w| self.get_hint_sizing_as_xyhw(w))
+                .map(|w| self.get_hint_sizing_as_xyhw(w))
+                .collect::<Result<Vec<Option<XyhwChange>>>>()?
+                .into_iter()
+                .filter_map(std::convert::identity)
                 .map(|xyhw| Screen {
                     bbox: BBox {
                         x: xyhw.x.unwrap_or_default(),
@@ -231,15 +233,12 @@ impl XWrap {
                     },
                     ..Default::default()
                 })
-                .collect();
+                .collect());
         }
 
         let root = self.get_default_root_handle();
-        let screens = xinerama::query_screens(&self.conn)
-            .unwrap()
-            .reply()
-            .unwrap();
-        screens
+        let screens = xinerama::query_screens(&self.conn)?.reply()?;
+        Ok(screens
             .screen_info
             .iter()
             .map(|screen_info| {
@@ -257,25 +256,25 @@ impl XWrap {
                 s.root = root;
                 s
             })
-            .collect()
+            .collect())
     }
 
     /// Returns the dimensions of the screens.
     #[must_use]
-    pub fn get_screens_area_dimensions(&self) -> (i32, i32) {
+    pub fn get_screens_area_dimensions(&self) -> Result<(i32, i32)> {
         let mut height = 0;
         let mut width = 0;
-        for s in self.get_screens() {
+        for s in self.get_screens()? {
             height = std::cmp::max(height, s.bbox.height + s.bbox.y);
             width = std::cmp::max(width, s.bbox.width + s.bbox.x);
         }
-        (height, width)
+        Ok((height, width))
     }
 
     /// Returns the transient parent of a window.
     #[must_use]
-    pub fn get_transient_for(&self, window: xproto::Window) -> Option<xproto::Window> {
-        xproto::get_property(
+    pub fn get_transient_for(&self, window: xproto::Window) -> Result<Option<xproto::Window>> {
+        match xproto::get_property(
             &self.conn,
             false,
             window,
@@ -283,18 +282,19 @@ impl XWrap {
             xproto::AtomEnum::WINDOW,
             0,
             1,
-        )
-        .ok()?
-        .reply()
-        .ok()?
-        .value32()?
-        .next()
+        )?
+        .reply()?
+        .value32()
+        {
+            Some(mut i) => Ok(i.next()),
+            None => Ok(None),
+        }
     }
 
     /// Returns the atom actions of a window.
     #[must_use]
-    pub fn get_window_actions_atoms(&self, window: xproto::Window) -> Vec<xproto::Atom> {
-        let Ok(cookie) = xproto::get_property(
+    pub fn get_window_actions_atoms(&self, window: xproto::Window) -> Result<Vec<xproto::Atom>> {
+        let reply = xproto::get_property(
             &self.conn,
             false,
             window,
@@ -302,19 +302,10 @@ impl XWrap {
             xproto::AtomEnum::ATOM,
             0,
             0,
-        ) else {
-            return vec![];
-        };
+        )?
+        .reply()?;
 
-        let Ok(reply) = cookie.reply() else {
-            return vec![];
-        };
-
-        let rt = match reply.value32() {
-            Some(values) => values.collect(),
-            None => vec![],
-        };
-        rt
+        Ok(reply.value32().map(|v| v.collect()).unwrap_or(Vec::new()))
     }
 
     /// Returns the attributes of a window.
@@ -325,19 +316,15 @@ impl XWrap {
     pub fn get_window_attrs(
         &self,
         window: xproto::Window,
-    ) -> Result<xproto::GetWindowAttributesReply, Box<dyn std::error::Error>> {
+    ) -> Result<xproto::GetWindowAttributesReply> {
         Ok(xproto::get_window_attributes(&self.conn, window)?.reply()?)
     }
 
     /// Returns a windows class `WM_CLASS`
     // `XGetClassHint`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetClassHint.html
     #[must_use]
-    pub fn get_window_class(&self, window: xproto::Window) -> Option<WmClass> {
-        WmClass::get(&self.conn, window)
-            .unwrap()
-            .reply()
-            .ok()
-            .flatten()
+    pub fn get_window_class(&self, window: xproto::Window) -> Result<Option<WmClass>> {
+        Ok(WmClass::get(&self.conn, window)?.reply()?)
     }
 
     /// Returns the geometry of a window as a `XyhwChange` struct.
@@ -345,10 +332,7 @@ impl XWrap {
     ///
     /// Errors if Xlib returns a status of 0.
     // `XGetGeometry`: https://tronche.com/gui/x/xlib/window-information/XGetGeometry.html
-    pub fn get_window_geometry(
-        &self,
-        window: xproto::Window,
-    ) -> Result<XyhwChange, Box<dyn std::error::Error>> {
+    pub fn get_window_geometry(&self, window: xproto::Window) -> Result<XyhwChange> {
         let geo = xproto::get_geometry(&self.conn, window)?.reply()?;
         Ok(XyhwChange {
             x: Some(geo.x.into()),
@@ -361,9 +345,9 @@ impl XWrap {
 
     /// Returns a windows name.
     #[must_use]
-    pub fn get_window_name(&self, window: xproto::Window) -> Option<String> {
+    pub fn get_window_name(&self, window: xproto::Window) -> Result<String> {
         if let Ok(text) = self.get_text_prop(window, self.atoms.NetWMName) {
-            return Some(text);
+            return Ok(text);
         }
         // fallback to legacy name
         self.get_window_legacy_name(window)
@@ -371,30 +355,26 @@ impl XWrap {
 
     /// Returns a `WM_NAME` (not `_NET`windows name).
     #[must_use]
-    pub fn get_window_legacy_name(&self, window: xproto::Window) -> Option<String> {
-        if let Ok(text) = self.get_text_prop(window, xproto::AtomEnum::WM_NAME.into()) {
-            return Some(text);
-        }
-        None
+    pub fn get_window_legacy_name(&self, window: xproto::Window) -> Result<String> {
+        self.get_text_prop(window, xproto::AtomEnum::WM_NAME.into())
     }
 
     /// Returns a windows `_NET_WM_PID`.
     #[must_use]
-    pub fn get_window_pid(&self, window: xproto::Window) -> Option<u32> {
-        let prop = self
-            .get_property(
-                window,
-                self.atoms.NetWMPid,
-                xproto::AtomEnum::CARDINAL.into(),
-            )
-            .ok()?;
-        Some(prop[0])
+    pub fn get_window_pid(&self, window: xproto::Window) -> Result<u32> {
+        let prop = self.get_property(
+            window,
+            self.atoms.NetWMPid,
+            xproto::AtomEnum::CARDINAL.into(),
+        )?;
+        Ok(prop[0])
     }
 
     /// Returns the states of a window.
     #[must_use]
-    pub fn get_window_states(&self, window: xproto::Window) -> Vec<WindowState> {
-        self.get_window_states_atoms(window)
+    pub fn get_window_states(&self, window: xproto::Window) -> Result<Vec<WindowState>> {
+        Ok(self
+            .get_window_states_atoms(window)?
             .iter()
             .map(|a| match a {
                 x if x == &self.atoms.NetWMStateModal => WindowState::Modal,
@@ -410,14 +390,14 @@ impl XWrap {
                 x if x == &self.atoms.NetWMStateBelow => WindowState::Below,
                 _ => WindowState::Modal,
             })
-            .collect()
+            .collect())
     }
 
     /// Returns the atom states of a window.
     // `XGetWindowProperty`: https://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
     #[must_use]
-    pub fn get_window_states_atoms(&self, window: xproto::Window) -> Vec<xproto::Atom> {
-        let Ok(cookie) = xproto::get_property(
+    pub fn get_window_states_atoms(&self, window: xproto::Window) -> Result<Vec<xproto::Atom>> {
+        let reply = xproto::get_property(
             &self.conn,
             false,
             window,
@@ -425,41 +405,32 @@ impl XWrap {
             xproto::AtomEnum::ATOM,
             0,
             MAX_PROPERTY_VALUE_LEN / 4,
-        ) else {
-            return vec![];
-        };
+        )?
+        .reply()?;
 
-        let Ok(rep) = cookie.reply() else {
-            return vec![];
-        };
-
-        let rt = match rep.value32() {
-            Some(atoms) => atoms.collect(),
-            None => vec![],
-        };
-        rt
+        Ok(reply.value32().map(|v| v.collect()).unwrap_or(Vec::new()))
     }
 
     /// Returns structure of a window as a `DockArea`.
     #[must_use]
-    pub fn get_window_strut_array(&self, window: xproto::Window) -> Option<DockArea> {
+    pub fn get_window_strut_array(&self, window: xproto::Window) -> Result<Option<DockArea>> {
         // More modern structure.
-        if let Some(d) = self.get_window_strut_array_strut_partial(window) {
+        if let Some(d) = self.get_window_strut_array_strut_partial(window)? {
             tracing::debug!("STRUT:[{:?}] {:?}", window, d);
-            return Some(d);
+            return Ok(Some(d));
         }
         // Older structure.
-        if let Some(d) = self.get_window_strut_array_strut(window) {
+        if let Some(d) = self.get_window_strut_array_strut(window)? {
             tracing::debug!("STRUT:[{:?}] {:?}", window, d);
-            return Some(d);
+            return Ok(Some(d));
         }
-        None
+        Ok(None)
     }
 
     /// Returns the type of a window.
     #[must_use]
-    pub fn get_window_type(&self, window: xproto::Window) -> WindowType {
-        let Ok(cookie) = xproto::get_property(
+    pub fn get_window_type(&self, window: xproto::Window) -> Result<WindowType> {
+        let reply = xproto::get_property(
             &self.conn,
             false,
             window,
@@ -467,19 +438,14 @@ impl XWrap {
             xproto::AtomEnum::ATOM,
             0,
             1,
-        ) else {
-            return WindowType::Normal;
+        )?
+        .reply()?;
+
+        let Some(mut val) = reply.value32() else {
+            return Ok(WindowType::Normal);
         };
 
-        let Ok(res) = cookie.reply() else {
-            return WindowType::Normal;
-        };
-
-        let Some(mut val) = res.value32() else {
-            return WindowType::Normal;
-        };
-
-        match val.next() {
+        Ok(match val.next() {
             x if x == Some(self.atoms.NetWMWindowTypeDesktop) => WindowType::Desktop,
             x if x == Some(self.atoms.NetWMWindowTypeDock) => WindowType::Dock,
             x if x == Some(self.atoms.NetWMWindowTypeToolbar) => WindowType::Toolbar,
@@ -488,25 +454,21 @@ impl XWrap {
             x if x == Some(self.atoms.NetWMWindowTypeSplash) => WindowType::Splash,
             x if x == Some(self.atoms.NetWMWindowTypeDialog) => WindowType::Dialog,
             _ => WindowType::Normal,
-        }
+        })
     }
 
     /// Returns the `WM_HINTS` of a window.
     // `XGetWMHints`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMHints.html
     #[must_use]
-    pub fn get_wmhints(&self, window: xproto::Window) -> Option<WmHints> {
-        WmHints::get(&self.conn, window)
-            .unwrap()
-            .reply()
-            .ok()
-            .flatten()
+    pub fn get_wmhints(&self, window: xproto::Window) -> Result<Option<WmHints>> {
+        Ok(WmHints::get(&self.conn, window)?.reply()?)
     }
 
     /// Returns the `WM_STATE` of a window.
     pub fn get_wm_state(
         &self,
         window: xproto::Window,
-    ) -> Option<(WMStateWindowState, Option<xproto::Window>)> {
+    ) -> Result<(WMStateWindowState, Option<xproto::Window>)> {
         // `WM_STATE` contains 2 properties:
         //   - state (CARD32)
         //   - icon (WINDOW)
@@ -518,13 +480,20 @@ impl XWrap {
             self.atoms.WMState,
             0,
             2,
-        )
-        .ok()?
-        .reply()
-        .ok()?;
+        )?
+        .reply()?;
 
-        let values: Vec<u32> = rep.value32()?.collect();
-        Some((values.get(0)?.try_into().ok()?, values.get(1).copied()))
+        let Some(values) = rep.value32().map(|it| it.collect::<Vec<u32>>()) else {
+            return Ok((WMStateWindowState::Normal, None));
+        };
+        Ok((
+            values
+                .get(0)
+                .map(|v| v.try_into().ok())
+                .flatten()
+                .unwrap_or(WMStateWindowState::Normal),
+            values.get(1).copied(),
+        ))
     }
 
     /// Returns the name of a `XAtom`.
@@ -532,21 +501,18 @@ impl XWrap {
     ///
     /// Errors if `XAtom` is not valid.
     // `XGetAtomName`: https://tronche.com/gui/x/xlib/window-information/XGetAtomName.html
-    pub fn get_xatom_name(&self, atom: xproto::Atom) -> Result<String, Box<dyn std::error::Error>> {
+    pub fn get_xatom_name(&self, atom: xproto::Atom) -> Result<String> {
         let mut name = xproto::get_atom_name(&self.conn, atom)?.reply()?.name;
-        Ok(unsafe { CString::from_raw(name.as_mut_ptr() as *mut c_char) }.into_string()?)
+        let oui = unsafe { CString::from_raw(name.as_mut_ptr() as *mut c_char) }.into_string()?;
+        Ok(oui)
     }
 
     // Internal functions.
 
     /// Returns the `WM_SIZE_HINTS`/`WM_NORMAL_HINTS` of a window.
     #[must_use]
-    pub fn get_hint_sizing(&self, window: xproto::Window) -> Option<WmSizeHints> {
-        WmSizeHints::get(&self.conn, window, self.atoms.WMNormalHints)
-            .unwrap()
-            .reply()
-            .ok()
-            .flatten()
+    pub fn get_hint_sizing(&self, window: xproto::Window) -> Result<Option<WmSizeHints>> {
+        Ok(WmSizeHints::get(&self.conn, window, self.atoms.WMNormalHints)?.reply()?)
     }
 
     /// Returns a cardinal property of a window.
@@ -559,8 +525,7 @@ impl XWrap {
         window: xproto::Window,
         property: xproto::Atom,
         r#type: xproto::Atom,
-        // ) -> Result<(*const c_uchar, c_ulong), XlibError> {
-    ) -> Result<Vec<xproto::Atom>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<xproto::Atom>> {
         let res =
             xproto::get_property(&self.conn, false, window, property, r#type, 0, 0)?.reply()?;
 
@@ -583,11 +548,7 @@ impl XWrap {
     // `XGetTextProperty`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetTextProperty.html
     // `XTextPropertyToStringList`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XTextPropertyToStringList.html
     // `XmbTextPropertyToTextList`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XmbTextPropertyToTextList.html
-    fn get_text_prop(
-        &self,
-        window: xproto::Window,
-        atom: xproto::Atom,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    fn get_text_prop(&self, window: xproto::Window, atom: xproto::Atom) -> Result<String> {
         // Not sure for the type atom here...
         let prop = xproto::get_property(
             &self.conn,
@@ -607,16 +568,13 @@ impl XWrap {
     /// # Errors
     ///
     /// Will error if unknown window status is returned.
-    fn get_windows_for_root<'w>(
-        &self,
-        root: xproto::Window,
-    ) -> Result<Vec<xproto::Window>, Box<dyn std::error::Error>> {
+    fn get_windows_for_root<'w>(&self, root: xproto::Window) -> Result<Vec<xproto::Window>> {
         let oui = xproto::query_tree(&self.conn, root)?.reply()?;
         Ok(oui.children)
     }
 
     /// Returns the `_NET_WM_STRUT` as a `DockArea`.
-    fn get_window_strut_array_strut(&self, window: xproto::Window) -> Option<DockArea> {
+    fn get_window_strut_array_strut(&self, window: xproto::Window) -> Result<Option<DockArea>> {
         let res = xproto::get_property(
             &self.conn,
             false,
@@ -625,17 +583,20 @@ impl XWrap {
             xproto::AtomEnum::CARDINAL,
             0,
             12,
-        )
-        .ok()?
-        .reply()
-        .ok()?;
+        )?
+        .reply()?;
 
-        let values: Vec<i32> = res.value32()?.map(|v| v as i32).collect();
-        Some(DockArea::from(&values[..]))
+        Ok(res.value32().map(|v| {
+            let values: Vec<i32> = v.map(|elem| elem as i32).collect();
+            DockArea::from(&values[..])
+        }))
     }
 
     /// Returns the `_NET_WM_STRUT_PARTIAL` as a `DockArea`.
-    fn get_window_strut_array_strut_partial(&self, window: xproto::Window) -> Option<DockArea> {
+    fn get_window_strut_array_strut_partial(
+        &self,
+        window: xproto::Window,
+    ) -> Result<Option<DockArea>> {
         let res = xproto::get_property(
             &self.conn,
             false,
@@ -644,13 +605,13 @@ impl XWrap {
             xproto::AtomEnum::CARDINAL,
             0,
             12,
-        )
-        .ok()?
-        .reply()
-        .ok()?;
+        )?
+        .reply()?;
 
-        let values: Vec<i32> = res.value32()?.map(|v| v as i32).collect();
-        Some(DockArea::from(&values[..]))
+        Ok(res.value32().map(|v| {
+            let values: Vec<i32> = v.map(|elem| elem as i32).collect();
+            DockArea::from(&values[..])
+        }))
     }
 
     // /// Returns all the xscreens of the display.

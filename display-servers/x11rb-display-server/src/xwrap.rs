@@ -9,15 +9,17 @@ use x11rb::{
     connection::{Connection, RequestConnection},
     cursor::Handle as CursorHandle,
     protocol::{
-        randr::ConnectionExt as RandrConnectionExtention,
+        randr,
         xproto::{self, ChangeWindowAttributesAux},
     },
     resource_manager::Database,
     rust_connection::RustConnection,
-    x11_utils::Serialize,
+    x11_utils::Serialize, wrapper::ConnectionExt,
 };
 
-use crate::xatom::AtomCollection;
+use crate::{xatom::AtomCollection, error::Error};
+
+use crate::error::Result;
 
 mod getters;
 mod mouse;
@@ -55,7 +57,7 @@ pub struct Colors {
 }
 
 /// Contains Xserver information and origins.
-pub struct XWrap {
+pub(crate) struct XWrap {
     conn: RustConnection,
     display: usize,
     root: xproto::Window,
@@ -141,32 +143,21 @@ impl XWrap {
             background: 0,
         };
 
-        fn get_refresh_rate(
-            conn: &RustConnection,
-            root: xproto::Window,
-        ) -> Result<u32, Box<dyn std::error::Error>> {
-            let screen_resources =
-                <RustConnection as RandrConnectionExtention>::randr_get_screen_resources(
-                    &conn, root,
-                )?
-                .reply()?;
+        fn get_refresh_rate(conn: &RustConnection, root: xproto::Window) -> Result<u32> {
+            let screen_resources = randr::get_screen_resources(conn, root)?.reply()?;
             // RandrConnectionExtention::randr_get_screen_resources(&conn, root)?.reply()?;
             let active_modes: Vec<u32> = screen_resources
                 .crtcs
                 .iter()
-                .map(|crtc| {
-                    <RustConnection as RandrConnectionExtention>::randr_get_crtc_info(
-                        &conn,
-                        *crtc,
-                        screen_resources.config_timestamp,
-                    )
-                })
-                .filter_map(Result::ok)
+                .map(|crtc| randr::get_crtc_info(conn, *crtc, screen_resources.config_timestamp))
+                .collect::<std::result::Result<Vec<_>, _>>()?
+                .into_iter()
                 .map(|res| res.reply())
-                .filter_map(Result::ok)
-                .filter(|crtc| crtc.mode != 0)
+                .collect::<std::result::Result<Vec<_>, _>>()?
+                .into_iter()
                 .map(|crtc_info| crtc_info.mode)
                 .collect();
+
             Ok(screen_resources
                 .modes
                 .iter()
@@ -209,7 +200,7 @@ impl XWrap {
                 .event_mask(xproto::EventMask::PROPERTY_CHANGE),
         )
         .unwrap();
-        xw.sync();
+        xw.sync().expect("Unable to sync the connection");
 
         xw
     }
@@ -219,11 +210,12 @@ impl XWrap {
         config: &impl Config,
         focused: Option<&Option<WindowHandle>>,
         windows: &[Window],
-    ) {
+    ) -> Result<()> {
         self.focus_behaviour = config.focus_behaviour();
         self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
-        self.load_colors(config, focused, Some(windows));
+        self.load_colors(config, focused, Some(windows))?;
         self.tag_labels = config.create_list_of_tag_labels();
+        Ok(())
     }
 
     /// Load the colors of our theme.
@@ -232,12 +224,12 @@ impl XWrap {
         config: &impl Config,
         focused: Option<&Option<WindowHandle>>,
         windows: Option<&[Window]>,
-    ) {
+    ) -> Result<()> {
         self.colors = Colors {
-            normal: self.get_color(config.default_border_color()),
-            floating: self.get_color(config.floating_border_color()),
-            active: self.get_color(config.focused_border_color()),
-            background: self.get_color(config.background_color()),
+            normal: self.get_color(config.default_border_color())?,
+            floating: self.get_color(config.floating_border_color())?,
+            active: self.get_color(config.focused_border_color())?,
+            background: self.get_color(config.background_color())?,
         };
         // Update all the windows with the new colors.
         if let Some(windows) = windows {
@@ -252,29 +244,29 @@ impl XWrap {
                     } else {
                         self.colors.normal
                     };
-                    self.set_window_border_color(handle, color);
+                    self.set_window_border_color(handle, color)?;
                 }
             }
         }
-        self.set_background_color(self.colors.background);
+        self.set_background_color(self.colors.background)?;
+        Ok(())
     }
 
-    pub fn init(&mut self, config: &impl Config) {
+    pub fn init(&mut self, config: &impl Config) -> Result<()> {
         self.focus_behaviour = config.focus_behaviour();
         self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
 
         let root = self.root;
-        self.load_colors(config, None, None);
+        self.load_colors(config, None, None)?;
 
-        let cursor = self.cursors.load_cursor(&self.conn, "normal").unwrap();
+        let cursor = self.cursors.load_cursor(&self.conn, "normal")?;
         xproto::change_window_attributes(
             &self.conn,
             root,
             &ChangeWindowAttributesAux::new()
                 .cursor(cursor)
                 .event_mask(root_event_mask()),
-        )
-        .unwrap();
+        )?;
 
         // EWMH compliance.
         let supported: Vec<xproto::Atom> = self.atoms.net_supported();
@@ -283,14 +275,15 @@ impl XWrap {
             self.atoms.NetSupported,
             xproto::AtomEnum::ATOM.into(),
             &supported,
-        );
-        xproto::delete_property(&self.conn, root, self.atoms.NetClientList).unwrap();
+        )?;
+        xproto::delete_property(&self.conn, root, self.atoms.NetClientList)?;
 
         // EWMH compliance for desktops.
         self.tag_labels = config.create_list_of_tag_labels();
-        self.init_desktops_hints();
+        self.init_desktops_hints()?;
 
-        self.sync();
+        self.sync()?;
+        Ok(())
     }
 
     /// EWMH support used for bars such as polybar.
@@ -299,15 +292,15 @@ impl XWrap {
     ///  Panics if a new Cstring cannot be formed
     // `Xutf8TextListToTextProperty`: https://linux.die.net/man/3/xutf8textlisttotextproperty
     // `XSetTextProperty`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XSetTextProperty.html
-    pub fn init_desktops_hints(&self) {
+    pub fn init_desktops_hints(&self) -> Result<()> {
         let tag_labels = &self.tag_labels;
         let tag_length = tag_labels.len();
 
         // Set the number of desktop.
-        self.set_desktop_prop(&[tag_length as u32], self.atoms.NetNumberOfDesktops);
+        self.set_desktop_prop(&[tag_length as u32], self.atoms.NetNumberOfDesktops)?;
 
         // Set a current desktop.
-        self.set_desktop_prop(&[0_u32, x11rb::CURRENT_TIME], self.atoms.NetCurrentDesktop);
+        self.set_desktop_prop(&[0_u32, x11rb::CURRENT_TIME], self.atoms.NetCurrentDesktop)?;
 
         // Set desktop names.
         //
@@ -331,32 +324,32 @@ impl XWrap {
             // null byte
             bytes.len() as u32 - 1,
             &bytes[..bytes.len() - 1],
-        )
-        .unwrap();
+        )?;
 
         // Set the WM NAME.
-        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName, self.atoms.UTF8String);
+        self.set_desktop_prop_string("LeftWM", self.atoms.NetWMName, self.atoms.UTF8String)?;
 
         self.set_desktop_prop_string(
             "LeftWM",
             self.atoms.WMClass,
             xproto::AtomEnum::STRING.into(),
-        );
+        )?;
 
         self.set_desktop_prop_u32(
             self.root,
             self.atoms.NetSupportingWmCheck,
             xproto::AtomEnum::STRING.into(),
-        );
+        )?;
 
         // Set a viewport.
-        self.set_desktop_prop(&[0_u32, 0_u32], self.atoms.NetDesktopViewport);
+        self.set_desktop_prop(&[0_u32, 0_u32], self.atoms.NetDesktopViewport)?;
+        Ok(())
     }
 
     /// Send a xevent atom for a window to X.
     // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
-    fn send_xevent_atom(&self, window: xproto::Window, atom: xproto::Atom) -> bool {
-        if self.can_send_xevent_atom(window, atom) {
+    fn send_xevent_atom(&self, window: xproto::Window, atom: xproto::Atom) -> Result<bool> {
+        if self.can_send_xevent_atom(window, atom)? {
             let mut msg: xproto::ClientMessageEvent = unsafe { std::mem::zeroed() };
             msg.type_ = self.atoms.WMProtocols;
             msg.window = window;
@@ -367,10 +360,10 @@ impl XWrap {
             data[1] = x11rb::CURRENT_TIME;
             msg.data = data.into();
 
-            self.send_xevent(window, false, xproto::EventMask::NO_EVENT, &msg.serialize());
-            return true;
+            self.send_xevent(window, false, xproto::EventMask::NO_EVENT, &msg.serialize())?;
+            return Ok(true);
         }
-        false
+        Ok(false)
     }
 
     /// Send a xevent for a window to X.
@@ -381,19 +374,20 @@ impl XWrap {
         propagate: bool,
         mask: xproto::EventMask,
         event: &[u8],
-    ) {
+    ) -> Result<()> {
         let mut data = [0u8; 32];
         for i in 0..event.len() {
             data[i] = event[i];
         }
-        xproto::send_event(&self.conn, propagate, window, mask, data).unwrap();
-        self.sync();
+        xproto::send_event(&self.conn, propagate, window, mask, data)?;
+        self.sync()?;
+        Ok(())
     }
 
     /// Returns whether a window can recieve a xevent atom.
     // `XGetWMProtocols`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMProtocols.html
-    fn can_send_xevent_atom(&self, window: xproto::Window, atom: xproto::Atom) -> bool {
-        let Ok(cookie) = xproto::get_property(
+    fn can_send_xevent_atom(&self, window: xproto::Window, atom: xproto::Atom) -> Result<bool> {
+        let reply = xproto::get_property(
             &self.conn,
             false,
             window,
@@ -401,24 +395,18 @@ impl XWrap {
             xproto::AtomEnum::ATOM,
             0,
             MAX_PROPERTY_VALUE_LEN / 4,
-        ) else {
-            return false;
-        };
+        )?
+        .reply()?;
 
-        let Ok(res) = cookie.reply() else {
-            return false;
-        };
-
-        let Some(values) = res.value32() else {
-            return false;
-        };
-
-        values.collect::<Vec<xproto::Atom>>().contains(&atom)
+        Ok(reply
+            .value32()
+            .map(|v| v.collect::<Vec<xproto::Atom>>().contains(&atom))
+            .unwrap_or(false))
     }
 
     /// Sets the mode within our xwrapper.
-    pub fn set_mode(&mut self, mode: Mode) {
-        match mode {
+    pub fn set_mode(&mut self, mode: Mode) -> Result<()> {
+        let rt = match mode {
             // Prevent resizing and moving of root.
             Mode::MovingWindow(h)
             | Mode::ResizingWindow(h)
@@ -427,42 +415,50 @@ impl XWrap {
                 if h == self.get_default_root_handle() => {}
             Mode::ReadyToMove(_) | Mode::ReadyToResize(_) if self.mode == Mode::Normal => {
                 self.mode = mode;
-                if let Ok(loc) = self.get_cursor_point() {
-                    self.mode_origin = loc;
+                match self.get_cursor_point() {
+                    Ok(loc) => self.mode_origin = loc,
+                    Err(e) => {
+                        if let Error::RootWindowNotFound = e {
+                            ()
+                        } else {
+                            return Err(e);
+                        }
+                    }
                 }
                 let cursor = match mode {
                     Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, "resize").unwrap()
+                        self.cursors.load_cursor(&self.conn, "resize")?
                     }
                     Mode::ReadyToMove(_) | Mode::MovingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, "move").unwrap()
+                        self.cursors.load_cursor(&self.conn, "move")?
                     }
-                    Mode::Normal => self.cursors.load_cursor(&self.conn, "normal").unwrap(),
+                    Mode::Normal => self.cursors.load_cursor(&self.conn, "normal")?,
                 };
-                self.grab_pointer(cursor);
+                self.grab_pointer(cursor)?;
             }
             Mode::MovingWindow(h) | Mode::ResizingWindow(h)
                 if self.mode == Mode::ReadyToMove(h) || self.mode == Mode::ReadyToResize(h) =>
             {
-                self.ungrab_pointer();
+                self.ungrab_pointer()?;
                 self.mode = mode;
                 let cursor = match mode {
                     Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, "resize").unwrap()
+                        self.cursors.load_cursor(&self.conn, "resize")?
                     }
                     Mode::ReadyToMove(_) | Mode::MovingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, "move").unwrap()
+                        self.cursors.load_cursor(&self.conn, "move")?
                     }
-                    Mode::Normal => self.cursors.load_cursor(&self.conn, "normal").unwrap(),
+                    Mode::Normal => self.cursors.load_cursor(&self.conn, "normal")?,
                 };
-                self.grab_pointer(cursor);
+                self.grab_pointer(cursor)?;
             }
             Mode::Normal => {
-                self.ungrab_pointer();
+                self.ungrab_pointer()?;
                 self.mode = mode;
             }
             _ => {}
-        }
+        };
+        Ok(rt)
     }
 
     /// Wait until readable.
@@ -471,14 +467,16 @@ impl XWrap {
     // }
 
     /// Flush and sync the xserver.
-    pub fn sync(&self) {
-        <RustConnection as x11rb::wrapper::ConnectionExt>::sync(&self.conn).unwrap();
+    pub fn sync(&self) -> Result<()> {
+        self.conn.sync()?;
+        Ok(())
     }
 
     /// Flush the xserver.
     // `XFlush`: https://tronche.com/gui/x/xlib/event-handling/XFlush.html
-    pub fn flush(&self) {
-        self.conn.flush().unwrap();
+    pub fn flush(&self) -> Result<()> {
+        self.conn.flush()?;
+        Ok(())
     }
 
     // /// Returns how many events are waiting.

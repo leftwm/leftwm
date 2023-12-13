@@ -9,7 +9,9 @@ use leftwm_core::{
 use x11rb::protocol::xproto;
 
 use crate::xwrap::XWrap;
+use error::Result;
 
+mod error;
 mod event_translate;
 mod xatom;
 mod xwrap;
@@ -24,7 +26,7 @@ impl DisplayServer for X11rbDisplayServer {
     fn new(config: &impl Config) -> Self {
         let mut xwrap = XWrap::new();
 
-        xwrap.init(config);
+        xwrap.init(config).expect("XWrap initialisation failed.");
 
         let root = xwrap.get_default_root();
         let mut instance = Self {
@@ -43,33 +45,52 @@ impl DisplayServer for X11rbDisplayServer {
         focused: Option<&Option<WindowHandle>>,
         windows: &[leftwm_core::Window],
     ) {
-        self.xw.load_config(config, focused, windows);
+        if let Err(e) = self.xw.load_config(config, focused, windows) {
+            tracing::error!(error = ?e, "Error when loading config.");
+        }
     }
 
     fn update_windows(&self, windows: Vec<&Window>) {
         for window in &windows {
-            self.xw.update_window(window);
+            if let Err(e) = self.xw.update_window(window) {
+                tracing::error!(error = ?e, "Error when updating window {:?}", window);
+            }
         }
     }
 
     fn update_workspaces(&self, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
-            self.xw.set_current_desktop(focused.tag);
+            if let Err(e) = self.xw.set_current_desktop(focused.tag) {
+                tracing::error!(error = ?e, "Error when setting current desktop to {:?}", focused);
+            }
         }
     }
 
     fn get_next_events(&mut self) -> Vec<leftwm_core::DisplayEvent> {
         let mut events = std::mem::take(&mut self.initial_events);
 
-        while let Some(ev) = self.xw.poll_next_event() {
-            if let Some(ev) = event_translate::translate(ev, &mut self.xw) {
-                events.push(ev);
+        loop {
+            match self.xw.poll_next_event() {
+                Ok(ev) => {
+                    let Some(ev) = ev else {
+                        break;
+                    };
+                    if let Some(ev) = event_translate::translate(ev, &mut self.xw) {
+                        events.push(ev);
+                    }
+                }
+                Err(e) => {
+                    tracing::error!(error = ?e, "An error occurred when polling for events.");
+                    break;
+                }
             }
         }
 
         for event in &events {
             if let DisplayEvent::WindowDestroy(WindowHandle::X11rbHandle(w)) = event {
-                self.xw.force_unmapped(*w);
+                if let Err(e) = self.xw.force_unmapped(*w) {
+                    tracing::error!(error = ?e, "Error when forcing unmapping of window {}", w);
+                };
             }
         }
 
@@ -79,9 +100,9 @@ impl DisplayServer for X11rbDisplayServer {
     fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
         tracing::trace!("DisplayAction: {:?}", act);
         let xw = &mut self.xw;
-        let event: Option<DisplayEvent> = match act {
+        let event: Result<Option<DisplayEvent>> = match act.clone() {
             DisplayAction::KillWindow(h) => from_kill_window(xw, h),
-            DisplayAction::AddedWindow(h, f, fm) => from_added_window(xw, h, f, fm),
+            DisplayAction::AddedWindow(h, f, fm) => xw.setup_managed_window(h, f, fm),
             DisplayAction::MoveMouseOver(h, f) => from_move_mouse_over(xw, h, f),
             DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
             DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
@@ -104,10 +125,18 @@ impl DisplayServer for X11rbDisplayServer {
             DisplayAction::FocusWindowUnderCursor => from_focus_window_under_cursor(xw),
             DisplayAction::NormalMode => from_normal_mode(xw),
         };
-        if event.is_some() {
-            tracing::trace!("DisplayEvent: {:?}", event);
+        match event {
+            Ok(ev) => {
+                if ev.is_some() {
+                    tracing::trace!("DisplayEvent: {:?}", ev);
+                }
+                ev
+            }
+            Err(e) => {
+                tracing::error!(action = ?act, error = ?e, "Error when processing a display action.");
+                None
+            }
         }
-        event
     }
 
     fn wait_readable(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = ()>>> {
@@ -115,7 +144,9 @@ impl DisplayServer for X11rbDisplayServer {
     }
 
     fn flush(&self) {
-        self.xw.flush();
+        if let Err(e) = self.xw.flush() {
+            tracing::error!(error = ?e, "Error when flushing the connection.");
+        }
     }
 
     fn generate_verify_focus_event(&self) -> Option<leftwm_core::DisplayEvent> {
@@ -128,7 +159,14 @@ impl X11rbDisplayServer {
     fn initial_events(&self, config: &impl Config) -> Vec<DisplayEvent> {
         let mut events = vec![];
         if let Some(workspaces) = config.workspaces() {
-            let screens = self.xw.get_screens();
+            let screens = match self.xw.get_screens() {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::error!(error = ?e, "An error occurred when trying to get screens.");
+                    return events;
+                }
+            };
+
             for (i, wsc) in workspaces.iter().enumerate() {
                 let mut screen = Screen::from(wsc);
                 screen.root = WindowHandle::X11rbHandle(self.root);
@@ -181,22 +219,32 @@ impl X11rbDisplayServer {
         let mut all: Vec<DisplayEvent> = Vec::new();
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
-                let Ok(attrs) = self.xw.get_window_attrs(handle) else {
-                    return;
+                let attrs = match self.xw.get_window_attrs(handle) {
+                    Ok(a) => a,
+                    Err(e) => {
+                        return tracing::error!(window_handle = handle, error = ?e, "Error when getting window attributes.");
+                    }
                 };
-                let Some((state, _)) = self.xw.get_wm_state(handle) else {
-                    return;
+                let state = match self.xw.get_wm_state(handle) {
+                    Ok((s, _)) => s,
+                    Err(e) => {
+                        return tracing::error!(window_handle = handle, error = ?e, "Error when getting WM_STATE atom.");
+                    }
                 };
                 if attrs.map_state == xproto::MapState::VIEWABLE
                     || state == xatom::WMStateWindowState::Iconic
                 {
-                    if let Some(event) = self.xw.setup_window(handle) {
-                        all.push(event);
+                    match self.xw.setup_window(handle) {
+                        Ok(Some(event)) => {
+                            all.push(event);
+                        }
+                        Err(e) => tracing::error!(window_handle = handle, error = ?e, "Error when setting up window."),
+                        _ => (),
                     }
                 }
             }),
             Err(err) => {
-                println!("ERROR: {err}");
+                tracing::error!(error = ?err, "An error occurred.");
             }
         }
         all
@@ -204,56 +252,55 @@ impl X11rbDisplayServer {
 }
 
 // Display actions.
-fn from_kill_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
-    xw.kill_window(&handle);
-    None
+fn from_kill_window(xw: &mut XWrap, handle: WindowHandle) -> Result<Option<DisplayEvent>> {
+    xw.kill_window(&handle)?;
+    Ok(None)
 }
 
-fn from_added_window(
+fn from_move_mouse_over(
     xw: &mut XWrap,
     handle: WindowHandle,
-    floating: bool,
-    follow_mouse: bool,
-) -> Option<DisplayEvent> {
-    xw.setup_managed_window(handle, floating, follow_mouse)
-}
-
-fn from_move_mouse_over(xw: &mut XWrap, handle: WindowHandle, force: bool) -> Option<DisplayEvent> {
-    match (handle, xw.get_cursor_window()) {
-        (WindowHandle::X11rbHandle(window), Ok(WindowHandle::X11rbHandle(cursor_window)))
+    force: bool,
+) -> Result<Option<DisplayEvent>> {
+    match (handle, xw.get_cursor_window()?) {
+        (WindowHandle::X11rbHandle(window), WindowHandle::X11rbHandle(cursor_window))
             if force || cursor_window != window =>
         {
-            _ = xw.move_cursor_to_window(window);
+            _ = xw.move_cursor_to_window(window)?;
         }
         _ => {}
     }
-    None
+    Ok(None)
 }
 
-fn from_move_mouse_over_point(xw: &mut XWrap, point: (i32, i32)) -> Option<DisplayEvent> {
-    _ = xw.move_cursor_to_point(point);
-    None
+fn from_move_mouse_over_point(xw: &mut XWrap, point: (i32, i32)) -> Result<Option<DisplayEvent>> {
+    xw.move_cursor_to_point(point)?;
+    Ok(None)
 }
 
-fn from_destroyed_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
-    xw.teardown_managed_window(&handle, true);
-    None
+fn from_destroyed_window(xw: &mut XWrap, handle: WindowHandle) -> Result<Option<DisplayEvent>> {
+    xw.teardown_managed_window(&handle, true)?;
+    Ok(None)
 }
 
 fn from_unfocus(
     xw: &mut XWrap,
     handle: Option<WindowHandle>,
     floating: bool,
-) -> Option<DisplayEvent> {
-    xw.unfocus(handle, floating);
-    None
+) -> Result<Option<DisplayEvent>> {
+    xw.unfocus(handle, floating)?;
+    Ok(None)
 }
 
-fn from_replay_click(xw: &mut XWrap, handle: WindowHandle, button: xproto::Button) -> Option<DisplayEvent> {
+fn from_replay_click(
+    xw: &mut XWrap,
+    handle: WindowHandle,
+    button: xproto::Button,
+) -> Result<Option<DisplayEvent>> {
     if let WindowHandle::X11rbHandle(handle) = handle {
-        xw.replay_click(handle, button);
+        xw.replay_click(handle, button)?;
     }
-    None
+    Ok(None)
 }
 
 fn from_set_state(
@@ -261,7 +308,7 @@ fn from_set_state(
     handle: WindowHandle,
     toggle_to: bool,
     window_state: WindowState,
-) -> Option<DisplayEvent> {
+) -> Result<Option<DisplayEvent>> {
     // TODO: impl from for windowstate and xlib::Atom
     let state = match window_state {
         WindowState::Modal => xw.atoms.NetWMStateModal,
@@ -276,88 +323,91 @@ fn from_set_state(
         WindowState::Above => xw.atoms.NetWMStateAbove,
         WindowState::Below => xw.atoms.NetWMStateBelow,
     };
-    xw.set_state(handle, toggle_to, state);
-    None
+    xw.set_state(handle, toggle_to, state)?;
+    Ok(None)
 }
 
 fn from_set_window_order(
     xw: &mut XWrap,
     fullscreen: Vec<WindowHandle>,
     windows: Vec<WindowHandle>,
-) -> Option<DisplayEvent> {
+) -> Result<Option<DisplayEvent>> {
     // Unmanaged windows.
     let unmanaged: Vec<WindowHandle> = xw
-        .get_all_windows()
-        .unwrap_or_default()
+        .get_all_windows()?
         .iter()
         .filter(|&w| *w != xw.get_default_root())
         .map(|&w| WindowHandle::X11rbHandle(w))
         .filter(|&h| !windows.iter().any(|&w| w == h) || !fullscreen.iter().any(|&w| w == h))
         .collect();
     let all: Vec<WindowHandle> = [fullscreen, unmanaged, windows].concat();
-    xw.restack(all);
-    None
+    xw.restack(all)?;
+    Ok(None)
 }
 
-fn from_move_to_top(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
-    xw.move_to_top(&handle);
-    None
+fn from_move_to_top(xw: &mut XWrap, handle: WindowHandle) -> Result<Option<DisplayEvent>> {
+    xw.move_to_top(&handle)?;
+    Ok(None)
 }
 
-fn from_ready_to_move_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
-    xw.set_mode(Mode::ReadyToMove(handle));
-    None
+fn from_ready_to_move_window(xw: &mut XWrap, handle: WindowHandle) -> Result<Option<DisplayEvent>> {
+    xw.set_mode(Mode::ReadyToMove(handle))?;
+    Ok(None)
 }
 
-fn from_ready_to_resize_window(xw: &mut XWrap, handle: WindowHandle) -> Option<DisplayEvent> {
-    xw.set_mode(Mode::ReadyToResize(handle));
-    None
+fn from_ready_to_resize_window(
+    xw: &mut XWrap,
+    handle: WindowHandle,
+) -> Result<Option<DisplayEvent>> {
+    xw.set_mode(Mode::ReadyToResize(handle))?;
+    Ok(None)
 }
 
-fn from_set_current_tags(xw: &mut XWrap, tag: Option<TagId>) -> Option<DisplayEvent> {
-    xw.set_current_desktop(tag);
-    None
+fn from_set_current_tags(xw: &mut XWrap, tag: Option<TagId>) -> Result<Option<DisplayEvent>> {
+    xw.set_current_desktop(tag)?;
+    Ok(None)
 }
 
 fn from_set_window_tag(
     xw: &mut XWrap,
     handle: WindowHandle,
     tag: Option<TagId>,
-) -> Option<DisplayEvent> {
+) -> Result<Option<DisplayEvent>> {
     if let WindowHandle::X11rbHandle(window) = handle {
-        let tag = tag?;
-        xw.set_window_desktop(window, &tag);
+        match tag {
+            Some(tag) => xw.set_window_desktop(window, &tag)?,
+            None => (),
+        }
     }
-    None
+    Ok(None)
 }
 
-fn from_configure_xlib_window(xw: &mut XWrap, window: &Window) -> Option<DisplayEvent> {
-    xw.configure_window(window);
-    None
+fn from_configure_xlib_window(xw: &mut XWrap, window: &Window) -> Result<Option<DisplayEvent>> {
+    xw.configure_window(window)?;
+    Ok(None)
 }
 
 fn from_window_take_focus(
     xw: &mut XWrap,
     window: &Window,
     previous_window: &Option<Window>,
-) -> Option<DisplayEvent> {
-    xw.window_take_focus(window, previous_window.as_ref());
-    None
+) -> Result<Option<DisplayEvent>> {
+    xw.window_take_focus(window, previous_window.as_ref())?;
+    Ok(None)
 }
 
-fn from_focus_window_under_cursor(xw: &mut XWrap) -> Option<DisplayEvent> {
-    if let Ok(mut window) = xw.get_cursor_window() {
-        if window == WindowHandle::XlibHandle(0) {
-            window = xw.get_default_root_handle();
-        }
-        return Some(DisplayEvent::WindowTakeFocus(window));
+fn from_focus_window_under_cursor(xw: &mut XWrap) -> Result<Option<DisplayEvent>> {
+    let mut window = xw.get_cursor_window()?;
+    if window == WindowHandle::X11rbHandle(0) {
+        window = xw.get_default_root_handle();
+        return Ok(Some(DisplayEvent::WindowTakeFocus(window)));
     }
-    let point = xw.get_cursor_point().ok()?;
+    let point = xw.get_cursor_point()?;
     let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
-    Some(evt)
+    Ok(Some(evt))
 }
 
-fn from_normal_mode(xw: &mut XWrap) -> Option<DisplayEvent> {
-    xw.set_mode(Mode::Normal);
-    None
+fn from_normal_mode(xw: &mut XWrap) -> Result<Option<DisplayEvent>> {
+    xw.set_mode(Mode::Normal)?;
+    Ok(None)
 }
