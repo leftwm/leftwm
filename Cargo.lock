@@ -1642,7 +1642,6 @@ dependencies = [
  "futures",
  "leftwm-core",
  "mio",
- "thiserror",
  "tokio",
  "tracing",
  "x11rb 0.12.0 (git+https://github.com/psychon/x11rb)",

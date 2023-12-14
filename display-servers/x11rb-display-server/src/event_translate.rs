@@ -1,3 +1,5 @@
+use std::backtrace::BacktraceStatus;
+
 use leftwm_core::{
     models::{WindowChange, WindowHandle, WindowType, XyhwChange},
     DisplayEvent, Mode,
@@ -32,7 +34,18 @@ pub(crate) fn translate(event: Event, xw: &mut XWrap) -> Option<DisplayEvent> {
     match res {
         Ok(display_event) => display_event,
         Err(e) => {
-            tracing::error!(error = ?e, "An error occured when processing the event {:?}", event);
+            tracing::error!(
+                "An error occured when processing the event {:?}: {:?}",
+                event,
+                e
+            );
+            #[cfg(debug_assertions)]
+            {
+                let trace = e.backtrace;
+                if trace.status() == BacktraceStatus::Captured {
+                    tracing::error!("{}", trace);
+                }
+            }
             None
         }
     }

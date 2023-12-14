@@ -14,10 +14,11 @@ use x11rb::{
     },
     resource_manager::Database,
     rust_connection::RustConnection,
-    x11_utils::Serialize, wrapper::ConnectionExt,
+    wrapper::ConnectionExt,
+    x11_utils::Serialize,
 };
 
-use crate::{xatom::AtomCollection, error::Error};
+use crate::{error::ErrorKind, xatom::AtomCollection};
 
 use crate::error::Result;
 
@@ -418,7 +419,7 @@ impl XWrap {
                 match self.get_cursor_point() {
                     Ok(loc) => self.mode_origin = loc,
                     Err(e) => {
-                        if let Error::RootWindowNotFound = e {
+                        if let ErrorKind::RootWindowNotFound = e.kind {
                             ()
                         } else {
                             return Err(e);

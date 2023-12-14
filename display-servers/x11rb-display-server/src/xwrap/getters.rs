@@ -1,4 +1,4 @@
-use std::ffi::{c_char, CStr, CString};
+use std::{ffi::{c_char, CStr, CString}, backtrace::Backtrace};
 
 use leftwm_core::models::{
     BBox, DockArea, Screen, WindowHandle, WindowState, WindowType, XyhwChange,
@@ -13,7 +13,7 @@ use x11rb::{
 };
 
 use crate::{
-    error::{Error, Result},
+    error::{Result, BackendError, ErrorKind},
     xatom::WMStateWindowState,
 };
 
@@ -61,7 +61,12 @@ impl XWrap {
                 return Ok((reply.win_x.into(), reply.win_y.into()));
             }
         }
-        Err(Error::RootWindowNotFound)
+        Err(BackendError {
+            src: None,
+            msg: "No root window",
+            backtrace: Backtrace::capture(),
+            kind: ErrorKind::RootWindowNotFound,
+        })
     }
 
     /// Returns the current window under the cursor.
@@ -76,7 +81,12 @@ impl XWrap {
                 return Ok(WindowHandle::X11rbHandle(reply.child));
             }
         }
-        Err(Error::RootWindowNotFound)
+        Err(BackendError {
+            src: None,
+            msg: "No root window",
+            backtrace: Backtrace::capture(),
+            kind: ErrorKind::RootWindowNotFound,
+        })
     }
 
     /// Returns the handle of the default root.

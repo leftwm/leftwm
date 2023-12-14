@@ -1,9 +1,11 @@
 //! Xlib calls related to a mouse.
+use std::backtrace::Backtrace;
+
 use x11rb::{protocol::xproto, x11_utils::Serialize};
 
 use super::{button_event_mask, mouse_event_mask, XWrap};
 
-use crate::error::{Error, Result};
+use crate::error::{BackendError, ErrorKind, Result};
 
 impl XWrap {
     /// Grabs the mouse clicks of a window.
@@ -99,11 +101,20 @@ impl XWrap {
     ///
     /// Will error if unable to obtain window attributes. See `get_window_attrs`.
     pub fn move_cursor_to_window(&self, window: xproto::Window) -> Result<()> {
-        let size_hints = self.get_hint_sizing(window)?.ok_or(Error::NoSizingHints)?;
-        let (_, x, y) = size_hints.position.ok_or(Error::NoSizingHints)?;
-        let (_, width, height) = size_hints.size.ok_or(Error::NoSizingHints)?;
+        #[inline]
+        fn gen_error() -> BackendError {
+            BackendError {
+                src: None,
+                msg: "No sizing hints",
+                backtrace: Backtrace::capture(),
+                kind: ErrorKind::NoSizingHints,
+            }
+        }
+        let size_hints = self.get_hint_sizing(window)?.ok_or(gen_error())?;
+        let (_, x, y) = size_hints.position.ok_or(gen_error())?;
+        let (_, width, height) = size_hints.size.ok_or(gen_error())?;
         let point = (x + (width / 2), y + (height / 2));
-        return self.move_cursor_to_point(point);
+        self.move_cursor_to_point(point)
     }
 
     /// Move the cursor to a point.
