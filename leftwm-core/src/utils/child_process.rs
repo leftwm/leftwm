@@ -73,6 +73,7 @@ impl Nanny {
         Command::new(path)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .spawn()
             .map_err(Into::into)
     }
@@ -190,6 +191,9 @@ fn boot_desktop_file(path: &Path) -> std::result::Result<Child, EntryBootError> 
         .current_dir(wd)
         .arg("-c")
         .arg(exec)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .map_err(EntryBootError::Execute)
 }
@@ -356,13 +360,14 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 }
 
 /// Sends command to shell for execution
-/// Assumes STDIN/STDOUT unwanted.
+/// Assumes STDIN/STDERR/STDOUT unwanted.
 pub fn exec_shell(command: &str, children: &mut Children) -> Option<ChildID> {
     let child = Command::new("sh")
         .arg("-c")
         .arg(command)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .ok()?;
     let pid = child.id();
