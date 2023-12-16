@@ -4,7 +4,6 @@
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
 use clap::command;
-use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
 use std::process::{exit, Child, Command, ExitStatus};
@@ -12,6 +11,8 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
+
+mod utils;
 
 type Subcommand<'a> = &'a str;
 type SubcommandArgs = Vec<String>;
@@ -79,13 +80,14 @@ fn print_help_page() {
     };
 
     command!()
+        .bin_name("leftwm")
         .about(
             "Starts LeftWM if no arguments are supplied. If a subcommand is given, executes the \
              the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
              it is installed.",
         )
         .subcommands(subcommands)
-        .help_template(leftwm::utils::get_help_template())
+        .help_template(utils::get_help_template())
         .print_help()
         .unwrap();
 }
@@ -158,7 +160,7 @@ fn start_leftwm() {
     set_env_vars();
 
     // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
-    let mut children = Nanny::autostart();
+    let mut children = utils::autostart();
 
     let flag = get_sigchld_flag();
 
@@ -171,7 +173,7 @@ fn start_leftwm() {
 
         while session_is_running(&mut leftwm_session) {
             // remove all child processes which finished
-            children.remove_finished_children();
+            utils::remove_finished_children(&mut children);
 
             while is_suspending(&flag) {
                 nix::unistd::pause();
@@ -251,7 +253,7 @@ fn kill_lefthk_session(lefthk_session: &mut Child) {
 /// example-description.
 fn get_sigchld_flag() -> Arc<AtomicBool> {
     let flag = Arc::new(AtomicBool::new(false));
-    child_process::register_child_hook(flag.clone());
+    utils::register_child_hook(flag.clone());
 
     flag
 }

@@ -565,7 +565,6 @@ dependencies = [
  "anyhow",
  "clap",
  "const_format",
- "dirs-next",
  "futures",
  "git-version",
  "lefthk-core",
@@ -574,7 +573,6 @@ dependencies = [
  "leftwm-macros",
  "liquid",
  "mio",
- "nix",
  "once_cell",
  "regex",
  "ron",
@@ -632,6 +630,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "leftwm-watchdog"
+version = "0.5.1"
+dependencies = [
+ "clap",
+ "dirs-next",
+ "nix",
+ "signal-hook",
+ "tempfile",
+ "thiserror",
+ "xdg",
 ]
 
 [[package]]
