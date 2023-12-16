@@ -11,6 +11,7 @@ use x11_dl::xlib;
 
 impl XWrap {
     /// Sets up a window before we manage it.
+    #[must_use]
     pub fn setup_window(&self, window: xlib::Window) -> Option<DisplayEvent> {
         // Check that the window isn't requesting to be unmanaged
         let attrs = match self.get_window_attrs(window) {
