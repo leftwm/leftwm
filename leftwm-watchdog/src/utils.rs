@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
-    process::{Child, Command},
+    process::{Child, Command, Stdio},
     sync::{atomic::AtomicBool, Arc},
 };
 
@@ -110,6 +110,9 @@ fn boot_desktop_file(path: &Path) -> std::result::Result<Child, EntryBootError> 
         .current_dir(wd)
         .arg("-c")
         .arg(exec)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .map_err(EntryBootError::Execute)
 }
