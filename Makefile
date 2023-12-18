@@ -64,6 +64,7 @@ install: build
 	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo install -s -Dm755\
 		$(ROOT_DIR)/target/$(folder)/leftwm\
+		$(ROOT_DIR)/target/$(folder)/leftwm-log\
 		$(ROOT_DIR)/target/$(folder)/leftwm-worker\
 		$(ROOT_DIR)/target/$(folder)/lefthk-worker\
 		$(ROOT_DIR)/target/$(folder)/leftwm-state\
@@ -80,6 +81,7 @@ install-linked: build
 	[ -d '/usr/share/leftwm' ] || sudo mkdir $(SHARE_DIR)/leftwm
 	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm $(TARGET_DIR)/leftwm
+	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-log $(TARGET_DIR)/leftwm-log
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-worker $(TARGET_DIR)/leftwm-worker
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/lefthk-worker $(TARGET_DIR)/lefthk-worker
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-state $(TARGET_DIR)/leftwm-state
@@ -94,6 +96,7 @@ uninstall:
 	sudo rm -rf $(SHARE_DIR)/leftwm
 	sudo rm -f\
 		$(TARGET_DIR)/leftwm\
+		$(TARGET_DIR)/leftwm-log\
 		$(TARGET_DIR)/leftwm-worker\
 		$(TARGET_DIR)/lefthk-worker\
 		$(TARGET_DIR)/leftwm-state\
