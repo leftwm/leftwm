@@ -345,12 +345,10 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         || ws.center_halfed(),
         |mut requested| {
             requested.center_relative(outer, window.border);
-            if ws.xyhw.contains_xyhw(&requested) {
-                requested
-            } else {
+            if !ws.xyhw.contains_xyhw(&requested) {
                 requested.center_relative(ws.xyhw, window.border);
-                requested
             }
+            requested
         },
     );
     window.set_floating_exact(xyhw);
