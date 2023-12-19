@@ -338,6 +338,8 @@ fn is_scratchpad(state: &State, window: &Window) -> bool {
         .any(|(_, id)| id.iter().any(|id| window.pid == Some(*id)))
 }
 
+/// Tries to position a window according to the requested sizes.
+/// When no size was requested, defaults to `ws.center_halfed()`
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.set_floating(true);
     window.normal = ws.xyhw;
@@ -441,16 +443,7 @@ fn setup_window(
                 set_relative_floating(window, ws, ws.xyhw);
             }
         }
-        WindowType::Dialog => {
-            if window.can_resize() {
-                window.set_floating(true);
-                let new_float_exact = ws.center_halfed();
-                window.normal = ws.xyhw;
-                window.set_floating_exact(new_float_exact);
-            } else {
-                set_relative_floating(window, ws, ws.xyhw);
-            }
-        }
+        WindowType::Dialog => set_relative_floating(window, ws, ws.xyhw),
         WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
         _ => {}
     }
