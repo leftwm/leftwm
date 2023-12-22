@@ -374,7 +374,7 @@ For conveniece we also have a Makefile with the following rules:
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | all            | implies `build` and `test`                                                                                                   |
 | test           | runs same tests as CI on github                                                                                              |
-| test-full      | same as `test` but additionally with pedantic clippy lints                                                                   |
+| test-full      | deprecated, do not use                                                                                                       |
 | test-full-nix  | same as `test-full` but additionally compiles the nix package, resulting in a full representation of ci checks               |
 | build          | builds with cargo profile `optimized` by default; read build output on how to change the profile.                            |
 | clean          | clean all buildfiles                                                                                                         |
