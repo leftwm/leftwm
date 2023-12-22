@@ -2,8 +2,9 @@
 
 use std::{
     backtrace::Backtrace,
-    ffi::{FromVecWithNulError, IntoStringError, NulError},
+    ffi::{IntoStringError, NulError},
     fmt::Display,
+    string::FromUtf8Error,
 };
 
 use x11rb::rust_connection::{ConnectionError, ReplyError, ReplyOrIdError};
@@ -102,12 +103,12 @@ macro_rules! from_err {
 from_err!(
     NulError,
     ErrorKind::StringConversion,
-    "Provided string contains NULL bytes"
+    "Unable to parse nul terminated string"
 );
 from_err!(
-    FromVecWithNulError,
+    FromUtf8Error,
     ErrorKind::StringConversion,
-    "Provided bytes contains NULL bytes"
+    "Unable to parse utf-8 string"
 );
 from_err!(
     IntoStringError,

@@ -71,16 +71,14 @@ impl DisplayServer for X11rbDisplayServer {
 
         loop {
             match self.xw.poll_next_event() {
-                Ok(ev) => {
-                    let Some(ev) = ev else {
-                        break;
-                    };
+                Ok(Some(ev)) => {
                     if let Some(ev) = event_translate::translate(ev, &mut self.xw) {
                         events.push(ev);
                     }
                 }
+                Ok(None) => break,
                 Err(e) => {
-                    tracing::error!(error = ?e, "An error occurred when polling for events.");
+                    tracing::error!("An error occurred when polling for events. {:?}", e);
                     break;
                 }
             }
@@ -133,14 +131,17 @@ impl DisplayServer for X11rbDisplayServer {
                 ev
             }
             Err(e) => {
-                tracing::error!(action = ?act, error = ?e, "Error when processing a display action.");
+                tracing::error!("Error when processing a display action:\n\tAction: {:?}\n\tError: {:?}", act, e);
                 None
             }
         }
     }
 
     fn wait_readable(&self) -> std::pin::Pin<Box<dyn futures::Future<Output = ()>>> {
-        todo!()
+        let task_notify = self.xw.task_notify.clone();
+        Box::pin(async move {
+            task_notify.notified().await;
+        })
     }
 
     fn flush(&self) {

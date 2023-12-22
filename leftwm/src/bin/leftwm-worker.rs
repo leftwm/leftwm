@@ -7,6 +7,12 @@ use x11rb_display_server::X11rbDisplayServer;
 use xlib_display_server::XlibDisplayServer;
 
 fn main() {
+    // INFO: This is used when attaching to leftwm-worker with lldb using `--waitfor` to ensure
+    //       the process don't run further.
+    //       Should probably be removed in the future if it is not needed
+    #[cfg(debug_assertions)]
+    std::thread::sleep(std::time::Duration::from_secs(1));
+
     leftwm::utils::log::setup_logging();
 
     let args: Vec<String> = env::args().collect();
@@ -32,15 +38,14 @@ fn main() {
         #[cfg(not(feature = "lefthk"))]
         let config = leftwm::load();
 
-        let manager: Result<(), ()> = match args.get(1) {
+        match args.get(1) {
             #[cfg(feature = "xlib")]
             Some(name) if name == "xlib" => {
                 let manager = Manager::<leftwm::Config, XlibDisplayServer>::new(config);
 
                 manager.register_child_hook();
                 //TODO: Error handling
-                rt.block_on(manager.start_event_loop());
-                Ok(())
+                rt.block_on(manager.start_event_loop())
             }
 
             #[cfg(feature = "x11rb")]
@@ -49,19 +54,19 @@ fn main() {
 
                 manager.register_child_hook();
                 //TODO: Error handling
-                rt.block_on(manager.start_event_loop());
-                Ok(())
+                rt.block_on(manager.start_event_loop())
             }
             _ => {
                 tracing::error!("Invalid backend.");
                 tracing::error!("Backends must be one of the following: xlib, x11rb");
-                exit(1);
+                exit(1)
             }
-        };
+        }
     });
 
     match exit_status {
-        Ok(_) => tracing::info!("Completed"),
+        Ok(Ok(_)) => tracing::info!("Completed"),
+        Ok(Err(err)) => tracing::info!("Completed with event loop error: {}", err),
         Err(err) => tracing::info!("Completed with error: {:?}", err),
     }
 }

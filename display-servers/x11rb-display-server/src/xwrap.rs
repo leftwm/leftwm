@@ -1,10 +1,11 @@
-use std::io::IoSlice;
+use std::{io::IoSlice, os::fd::AsRawFd, sync::Arc, time::Duration};
 
 use leftwm_core::{
     models::{FocusBehaviour, WindowHandle},
     utils::{self, modmask_lookup::ModMask},
     Config, Mode, Window,
 };
+use tokio::sync::{oneshot, Notify};
 use x11rb::{
     connection::{Connection, RequestConnection},
     cursor::Handle as CursorHandle,
@@ -74,47 +75,49 @@ pub(crate) struct XWrap {
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
 
+    _task_guard: oneshot::Receiver<()>,
+    pub task_notify: Arc<Notify>,
     pub motion_event_limiter: u32,
     pub refresh_rate: u32,
 }
 
 impl XWrap {
     pub fn new() -> Self {
-        // const SERVER: mio::Token = mio::Token(0);
+        const SERVER: mio::Token = mio::Token(0);
         let (conn, display) = x11rb::connect(None).expect("Couldn't not connect to Xorg Server");
 
-        // let fd = unsafe { (xlib.XConnectionNumber)(display) };
+        let fd = conn.stream().as_raw_fd();
 
-        // let (guard, _task_guard) = oneshot::channel();
-        // let notify = Arc::new(Notify::new());
-        // let task_notify = notify.clone();
+        let (guard, _task_guard) = oneshot::channel::<()>();
+        let notify = Arc::new(Notify::new());
+        let task_notify = notify.clone();
 
-        //TODO: Figure out what this is doing
-        // let mut poll = mio::Poll::new().expect("Unable to boot Mio");
-        // let mut events = mio::Events::with_capacity(1);
-        // poll.registry()
-        //     .register(
-        //         &mut mio::unix::SourceFd(&fd),
-        //         SERVER,
-        //         mio::Interest::READABLE,
-        //     )
-        //     .expect("Unable to boot Mio");
-        // let timeout = Duration::from_millis(100);
-        // tokio::task::spawn_blocking(move || loop {
-        //     if guard.is_closed() {
-        //         return;
-        //     }
-        //
-        //     if let Err(err) = poll.poll(&mut events, Some(timeout)) {
-        //         tracing::warn!("Xlib socket poll failed with {:?}", err);
-        //         continue;
-        //     }
-        //
-        //     events
-        //         .iter()
-        //         .filter(|event| SERVER == event.token())
-        //         .for_each(|_| notify.notify_one());
-        // });
+        let mut poll = mio::Poll::new().expect("Unable to boot Mio");
+        let mut events = mio::Events::with_capacity(1);
+        poll.registry()
+            .register(
+                &mut mio::unix::SourceFd(&fd),
+                SERVER,
+                mio::Interest::READABLE,
+            )
+            .expect("Unable to boot Mio");
+        let timeout = Duration::from_millis(100);
+        tokio::task::spawn_blocking(move || loop {
+            if guard.is_closed() {
+                tracing::info!("x11rb socket closed");
+                return;
+            }
+
+            if let Err(err) = poll.poll(&mut events, Some(timeout)) {
+                tracing::warn!("x11rb socket poll failed with {:?}", err);
+                continue;
+            }
+
+            events
+                .iter()
+                .filter(|event| SERVER == event.token())
+                .for_each(|_| notify.notify_one());
+        });
 
         let atoms = AtomCollection::new(&conn)
             .expect("Unable to load atoms")
@@ -163,7 +166,9 @@ impl XWrap {
                 .modes
                 .iter()
                 .filter(|mode_info| active_modes.contains(&mode_info.id))
-                .map(|mode_info| mode_info.dot_clock / (mode_info.htotal * mode_info.vtotal) as u32)
+                .map(|mode_info| {
+                    mode_info.dot_clock / (mode_info.htotal as u32 * mode_info.vtotal as u32)
+                })
                 .max()
                 .unwrap_or(60))
         }
@@ -189,6 +194,8 @@ impl XWrap {
             mouse_key_mask: 0,
             mode_origin: (0, 0),
 
+            _task_guard,
+            task_notify,
             motion_event_limiter: 0,
             refresh_rate,
         };

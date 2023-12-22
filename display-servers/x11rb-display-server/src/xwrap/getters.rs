@@ -1,4 +1,4 @@
-use std::{ffi::{c_char, CStr, CString}, backtrace::Backtrace};
+use std::{ffi::CStr, backtrace::Backtrace};
 
 use leftwm_core::models::{
     BBox, DockArea, Screen, WindowHandle, WindowState, WindowType, XyhwChange,
@@ -189,6 +189,7 @@ impl XWrap {
                 })
                 .filter_map(|res| res.reply().ok())
                 .filter_map(|output_info| {
+                    //FIX: This always fails
                     let name = match CStr::from_bytes_with_nul(&output_info.name) {
                         Ok(name) => name.to_str().unwrap(),
                         Err(_) => "output_name",
@@ -377,6 +378,9 @@ impl XWrap {
             self.atoms.NetWMPid,
             xproto::AtomEnum::CARDINAL.into(),
         )?;
+        if prop.len() == 0 {
+            return Ok(x11rb::NONE);
+        }
         Ok(prop[0])
     }
 
@@ -512,9 +516,8 @@ impl XWrap {
     /// Errors if `XAtom` is not valid.
     // `XGetAtomName`: https://tronche.com/gui/x/xlib/window-information/XGetAtomName.html
     pub fn get_xatom_name(&self, atom: xproto::Atom) -> Result<String> {
-        let mut name = xproto::get_atom_name(&self.conn, atom)?.reply()?.name;
-        let oui = unsafe { CString::from_raw(name.as_mut_ptr() as *mut c_char) }.into_string()?;
-        Ok(oui)
+        let name = xproto::get_atom_name(&self.conn, atom)?.reply()?.name;
+        Ok(String::from_utf8(name)?)
     }
 
     // Internal functions.
@@ -570,8 +573,8 @@ impl XWrap {
             MAX_PROPERTY_VALUE_LEN,
         )?
         .reply()?;
-        let s = CString::from_vec_with_nul(prop.value)?;
-        Ok(s.into_string()?)
+        let s = String::from_utf8(prop.value)?;
+        Ok(s)
     }
 
     /// Returns the child windows of a root.
