@@ -443,8 +443,7 @@ fn setup_window(
                 set_relative_floating(window, ws, ws.xyhw);
             }
         }
-        WindowType::Dialog => set_relative_floating(window, ws, ws.xyhw),
-        WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
+        WindowType::Dialog | WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
         _ => {}
     }
 }
