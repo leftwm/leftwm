@@ -338,6 +338,8 @@ fn is_scratchpad(state: &State, window: &Window) -> bool {
         .any(|(_, id)| id.iter().any(|id| window.pid == Some(*id)))
 }
 
+/// Tries to position a window according to the requested sizes.
+/// When no size was requested, defaults to `ws.center_halfed()`
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.set_floating(true);
     window.normal = ws.xyhw;
@@ -345,12 +347,10 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         || ws.center_halfed(),
         |mut requested| {
             requested.center_relative(outer, window.border);
-            if ws.xyhw.contains_xyhw(&requested) {
-                requested
-            } else {
+            if !ws.xyhw.contains_xyhw(&requested) {
                 requested.center_relative(ws.xyhw, window.border);
-                requested
             }
+            requested
         },
     );
     window.set_floating_exact(xyhw);
@@ -440,30 +440,10 @@ fn setup_window(
         WindowType::Normal => {
             window.apply_margin_multiplier(ws.margin_multiplier);
             if window.floating() {
-                match window.requested {
-                    Some(xyhw) => set_relative_floating(window, ws, xyhw),
-                    None => set_relative_floating(window, ws, ws.xyhw),
-                };
+                set_relative_floating(window, ws, ws.xyhw);
             }
         }
-        WindowType::Dialog => {
-            if window.can_resize() {
-                window.set_floating(true);
-                if let Some(xyhw) = window.requested {
-                    set_relative_floating(window, ws, xyhw);
-                } else {
-                    let new_float_exact = ws.center_halfed();
-                    window.normal = ws.xyhw;
-                    window.set_floating_exact(new_float_exact);
-                };
-            } else {
-                match window.requested {
-                    Some(xyhw) => set_relative_floating(window, ws, xyhw),
-                    None => set_relative_floating(window, ws, ws.xyhw),
-                };
-            }
-        }
-        WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
+        WindowType::Dialog | WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
         _ => {}
     }
 }
