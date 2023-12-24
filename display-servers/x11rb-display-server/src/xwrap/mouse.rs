@@ -101,19 +101,11 @@ impl XWrap {
     ///
     /// Will error if unable to obtain window attributes. See `get_window_attrs`.
     pub fn move_cursor_to_window(&self, window: xproto::Window) -> Result<()> {
-        #[inline]
-        fn gen_error() -> BackendError {
-            BackendError {
-                src: None,
-                msg: "No sizing hints",
-                backtrace: Backtrace::capture(),
-                kind: ErrorKind::NoSizingHints,
-            }
-        }
-        let size_hints = self.get_hint_sizing(window)?.ok_or(gen_error())?;
-        let (_, x, y) = size_hints.position.ok_or(gen_error())?;
-        let (_, width, height) = size_hints.size.ok_or(gen_error())?;
-        let point = (x + (width / 2), y + (height / 2));
+        let geo = xproto::get_geometry(&self.conn, window)?.reply()?;
+        let point = (
+            geo.x as i32 + (geo.width as i32 / 2),
+            geo.y as i32 + (geo.height as i32 / 2),
+        );
         self.move_cursor_to_point(point)
     }
 

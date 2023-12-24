@@ -359,6 +359,7 @@ impl XWrap {
     fn send_xevent_atom(&self, window: xproto::Window, atom: xproto::Atom) -> Result<bool> {
         if self.can_send_xevent_atom(window, atom)? {
             let mut msg: xproto::ClientMessageEvent = unsafe { std::mem::zeroed() };
+            msg.response_type = xproto::CLIENT_MESSAGE_EVENT;
             msg.type_ = self.atoms.WMProtocols;
             msg.window = window;
             msg.format = 32;
