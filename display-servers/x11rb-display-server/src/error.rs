@@ -50,10 +50,12 @@ impl Display for BackendError {
         match &self.src {
             Some(e) => {
                 f.write_str(": ")?;
-                e.fmt(f)
+                e.fmt(f)?;
             }
-            None => Ok(()),
-        }
+            None => (),
+        };
+        f.write_str("\nBacktrace:\n")?;
+        self.backtrace.fmt(f)
     }
 }
 

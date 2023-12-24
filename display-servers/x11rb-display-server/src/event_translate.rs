@@ -35,7 +35,7 @@ pub(crate) fn translate(event: Event, xw: &mut XWrap) -> Option<DisplayEvent> {
         Ok(display_event) => display_event,
         Err(e) => {
             tracing::error!(
-                "An error occured when processing the event {:?}: {:?}",
+                "An error occured when processing the event {:?}: {}",
                 event,
                 e
             );

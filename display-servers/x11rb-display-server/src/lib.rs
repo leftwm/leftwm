@@ -131,7 +131,7 @@ impl DisplayServer for X11rbDisplayServer {
                 ev
             }
             Err(e) => {
-                tracing::error!("Error when processing a display action:\n\tAction: {:?}\n\tError: {:?}", act, e);
+                tracing::error!("Error when processing a display action:\n\tAction: {:?}\n\tError: {}", act, e);
                 None
             }
         }
