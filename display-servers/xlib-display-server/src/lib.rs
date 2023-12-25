@@ -1,3 +1,9 @@
+// allow casting types
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::cast_sign_loss)]
+
 mod event_translate;
 mod event_translate_client_message;
 mod event_translate_property_notify;

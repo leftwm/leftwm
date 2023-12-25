@@ -25,24 +25,17 @@ all: build test
 test:
 	cd $(ROOT_DIR) && cargo test --all-targets --all-features
 	cd $(ROOT_DIR) && cargo fmt -- --check
-	cd $(ROOT_DIR) && cargo clippy
+	cd $(ROOT_DIR) && cargo clippy -- -D warnings -W clippy::pedantic
 
 test-nix:
 	cd $(ROOT_DIR) && NIX_PATH=nixpkgs=channel:nixos-unstable nix flake check --extra-experimental-features "nix-command flakes" --verbose
 	cd $(ROOT_DIR) && NIX_PATH=nixpkgs=channel:nixos-unstable nix build --extra-experimental-features "nix-command flakes" --verbose
 
+# deprecated
 test-full: test
-	cargo clippy --\
-		-D warnings\
-		-W clippy::pedantic\
-		-A clippy::must_use_candidate\
-		-A clippy::cast_precision_loss\
-		-A clippy::cast_possible_truncation\
-		-A clippy::cast_possible_wrap\
-		-A clippy::cast_sign_loss\
-		-A clippy::mut_mut
+	@printf '\n\033[38;5;9mNote: \"make test-full\" is deprecated. You can use \"make test\" instead with the same functionality\n'
 
-test-full-nix: test-full test-nix
+test-full-nix: test test-nix
 
 # builds the project
 build:

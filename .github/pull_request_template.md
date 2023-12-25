@@ -23,7 +23,7 @@ See [CONTRIBUTING.md User Documentation section](../CONTRIBUTING.md#user-documen
 
 # Checklist:
 
-- [ ] Ran `make test-full` locally with no errors or warnings reported
+- [ ] Ran `make test` locally with no errors or warnings reported
   Note: To fully reproduce CI checks, you will need to run `make test-full-nix`. Usually, this is not necessary.
 - [ ] Manual page has been updated accordingly
 - [ ] Wiki pages have been updated accordingly (to perform **after** merge)
