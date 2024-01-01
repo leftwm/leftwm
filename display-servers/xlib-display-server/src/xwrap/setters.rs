@@ -93,6 +93,9 @@ impl XWrap {
     // }
 
     /// Sets a desktop property.
+    // We allow the lossless cast here so that 32 bit systems may work with
+    // leftwm. See https://github.com/leftwm/leftwm/discussions/1201 for
+    // more details.
     #[allow(clippy::cast_lossless)]
     pub fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
         let x_data: Vec<c_long> = data.iter().map(|x| *x as c_long).collect();
