@@ -19,7 +19,7 @@ use leftwm_core::{
     state::State,
     DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
-use leftwm_layouts::layouts::Layouts;
+
 use leftwm_layouts::Layout;
 use regex::Regex;
 use ron::{
@@ -422,7 +422,7 @@ impl leftwm_core::Config for Config {
     }
 
     fn layout_definitions(&self) -> Vec<Layout> {
-        let mut layouts = Layouts::default().layouts;
+        let mut layouts = vec![];
         for custom_layout in &self.layout_definitions {
             layouts.push(custom_layout.clone());
         }
