@@ -167,6 +167,8 @@ impl XWrap {
             self.root,
             &ChangeWindowAttributesAux::new().background_pixel(color),
         )?;
+        xproto::clear_area(&self.conn, false, self.root, 0, 0, 0, 0)?;
+        self.sync()?;
         Ok(())
     }
 
