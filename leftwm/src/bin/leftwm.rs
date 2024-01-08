@@ -3,7 +3,7 @@
 //! If no arguments are passed, starts `leftwm-worker`. If arguments are passed, starts
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
-use clap::{command, Parser, Subcommand};
+use clap::command;
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
@@ -13,75 +13,31 @@ use std::sync::{
     Arc,
 };
 
+type Subcommand<'a> = &'a str;
 type SubcommandArgs = Vec<String>;
 type LeftwmArgs = Vec<String>;
 
 const SUBCOMMAND_PREFIX: &str = "leftwm-";
 
-#[derive(Debug, Parser)]
-#[command(
-    author,
-    version,
-    about,
-    long_about = "Starts LeftWM if no arguments are supplied. If a subcommand is given, executes the \
-             the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
-             it is installed."
-)]
-struct LeftwmCli {
-    /// The backend used to run leftwm on.
-    /// Can be either of xlib or x11rb
-    #[arg(short, long)]
-    backend: Option<String>,
-
-    /// Execute a leftwm subcommand
-    #[command(subcommand)]
-    subcommand: Option<LeftwmSubcommand>,
-
-    // /// Remaining args for subcommands
-    // args: Vec<String>
-}
-
-/// Every leftwm subcommand
-#[derive(Debug, Subcommand)]
-enum LeftwmSubcommand {
-    /// Check syntax of the configuration file
-    Check,
-    /// Send external commands to LeftWM
-    Command,
-    /// Print the current state of LeftWM
-    State,
-    /// Manage LeftWM themes
-    Theme,
-    /// Manage LeftWM configuration file
-    Config,
-}
-
-impl ToString for LeftwmSubcommand {
-    fn to_string(&self) -> String {
-        String::from(match self {
-            LeftwmSubcommand::Check => "check",
-            LeftwmSubcommand::Command => "command",
-            LeftwmSubcommand::State => "state",
-            LeftwmSubcommand::Theme => "theme",
-            LeftwmSubcommand::Config => "config",
-        })
-    }
-}
+const SUBCOMMAND_NAME_INDEX: usize = 0;
+const SUBCOMMAND_DESCRIPTION_INDEX: usize = 1;
+const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 5] = [
+    ["check", "Check syntax of the configuration file"],
+    ["command", "Send external commands to LeftWM"],
+    ["state", "Print the current state of LeftWM"],
+    ["theme", "Manage LeftWM themes"],
+    ["config", "Manage LeftWM configuration file"],
+];
 
 fn main() {
     let args: LeftwmArgs = env::args().collect();
-    let cli = LeftwmCli::parse();
 
-    if let Some(subcommand) = cli.subcommand {
-        let mut subcommand_args = args[1..].to_vec();
-        subcommand_args.retain(|f| f != &subcommand.to_string());
-        execute_subcommand(subcommand, subcommand_args);
-    } else if let Some(backend) = cli.backend {
-        start_leftwm(&backend);
-    } else {
-        println!("You need to specify a backend or a subcommand.");
-        println!("Type 'leftwm --help' for more informations.");
+    let has_subcommands = args.len() > 1;
+    if has_subcommands && args[1] != "x11rb" && args[1] != "xlib" {
+        parse_subcommands(&args);
     }
+
+    start_leftwm(&args[1]);
 }
 
 /// Executes a subcommand.
@@ -94,18 +50,78 @@ fn main() {
 ///
 /// - `subcommand`: The `leftwm-{subcommand}` which should be executed
 /// - `subcommand_args`: The arguments which should be given to the `leftwm-{subcommand}`
-fn execute_subcommand(subcommand: LeftwmSubcommand, subcommand_args: SubcommandArgs) -> ! {
-    let subcommand_file = format!("{SUBCOMMAND_PREFIX}{}", subcommand.to_string());
+fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -> ! {
+    let subcommand_file = format!("{SUBCOMMAND_PREFIX}{subcommand}");
     match &mut Command::new(subcommand_file).args(subcommand_args).spawn() {
         Ok(child) => {
             let status = child.wait().expect("Failed to wait for child.");
             exit(status.code().unwrap_or(0));
         }
         Err(e) => {
-            eprintln!("Failed to execute {}. {e}", subcommand.to_string());
+            eprintln!("Failed to execute {subcommand}. {e}");
             exit(1);
         }
     };
+}
+
+/// Prints the help page of leftwm (the output of `leftwm --help`)
+fn print_help_page() {
+    let subcommands = {
+        let mut subcommands = Vec::new();
+        for entry in AVAILABLE_SUBCOMMANDS {
+            let subcommand_name = entry[SUBCOMMAND_NAME_INDEX];
+            let subcommand_description = entry[SUBCOMMAND_DESCRIPTION_INDEX];
+
+            subcommands.push(clap::Command::new(subcommand_name).about(subcommand_description));
+        }
+        subcommands
+    };
+
+    command!()
+        .about(
+            "Starts LeftWM if no arguments are supplied. If a subcommand is given, executes the \
+             the corresponding leftwm program, e.g. 'leftwm theme' will execute 'leftwm-theme', if \
+             it is installed.",
+        )
+        .subcommands(subcommands)
+        .help_template(leftwm::utils::get_help_template())
+        .print_help()
+        .unwrap();
+}
+
+/// Checks if the given subcommand-string is a `leftwm-{subcommand}`
+fn is_subcommand(subcommand: &str) -> bool {
+    AVAILABLE_SUBCOMMANDS
+        .into_iter()
+        .any(|entry| entry[SUBCOMMAND_NAME_INDEX] == subcommand)
+}
+
+/// Tries to parse the subcommands from the arguments of leftwm and executes them if suitalbe.
+/// Otherwise it's calling the help-page.
+fn parse_subcommands(args: &LeftwmArgs) -> ! {
+    const SUBCOMMAND_INDEX: usize = 1;
+    const SUBCOMMAND_ARGS_INDEX: usize = 2;
+
+    let subcommand = &args[SUBCOMMAND_INDEX];
+    let subcommand_args = args[SUBCOMMAND_ARGS_INDEX..].to_vec();
+
+    if is_subcommand(subcommand) {
+        execute_subcommand(subcommand, subcommand_args);
+    } else if subcommand == "help" {
+        if subcommand_args.is_empty() {
+            print_help_page();
+        } else if is_subcommand(&subcommand_args[0]) {
+            execute_subcommand(&subcommand_args[0], vec!["--help".to_string()]);
+        } else {
+            println!("No such subcommand. Try 'leftwm --help' to find valid subcommands.");
+        }
+    } else if subcommand == "--version" || subcommand == "-v" {
+        println!("leftwm {}", env!("CARGO_PKG_VERSION"));
+    } else {
+        print_help_page();
+    }
+
+    exit(0);
 }
 
 /// Sets some relevant environment variables for leftwm

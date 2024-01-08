@@ -1,14 +1,6 @@
 use std::env;
 
 fn main() {
-        println!("cargo:error=No backend feature selected: You need to build with at least one backend.");
-        println!("cargo:error=Available backends are `xlib` and `x11rb`");
-    #[cfg(all(not(feature = "x11rb"), not(feature = "xlib")))]
-    {
-        println!("cargo:error=No backend feature selected: You need to build with at least one backend.");
-        println!("cargo:error=Available backends are `xlib` and `x11rb`");
-    }
-
     let mut features_string = String::new();
     env::vars().for_each(|(name, _)| {
         if let Some(name) = name.strip_prefix("CARGO_FEATURE_") {
