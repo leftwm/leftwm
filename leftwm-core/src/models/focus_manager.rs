@@ -67,7 +67,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let index = *self.workspace_history.get(0)?;
+        let index = *self.workspace_history.front()?;
         workspaces.get(index)
     }
 
@@ -79,7 +79,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let index = *self.workspace_history.get(0)?;
+        let index = *self.workspace_history.front()?;
         workspaces.get_mut(index)
     }
 
@@ -95,7 +95,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let handle = *self.window_history.get(0)?;
+        let handle = *self.window_history.front()?;
         if let Some(handle) = handle {
             return windows.iter().find(|w| w.handle == handle);
         }
@@ -107,7 +107,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let handle = *self.window_history.get(0)?;
+        let handle = *self.window_history.front()?;
         if let Some(handle) = handle {
             return windows.iter_mut().find(|w| w.handle == handle);
         }

@@ -261,7 +261,7 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
         None => 1.0,
     };
 
-    let handle = window.or(*manager.state.focus_manager.window_history.get(0)?)?;
+    let handle = window.or(*manager.state.focus_manager.window_history.front()?)?;
     // Only handle the focus when moving the focused window.
     let handle_focus = window.is_none();
     // Focus the next or previous window on the workspace.
@@ -456,7 +456,7 @@ fn focus_tag_change(state: &mut State, delta: i8) -> Option<bool> {
 
 fn swap_tags(state: &mut State) -> Option<bool> {
     if state.workspaces.len() >= 2 && state.focus_manager.workspace_history.len() >= 2 {
-        let hist_a = *state.focus_manager.workspace_history.get(0)?;
+        let hist_a = *state.focus_manager.workspace_history.front()?;
         let hist_b = *state.focus_manager.workspace_history.get(1)?;
         // Update workspace tags
         let mut temp = None;
@@ -516,7 +516,7 @@ fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
     // or ClickTo focus mode, we check if the focus is given to a visible window.
     if state.focus_manager.behaviour != FocusBehaviour::Sloppy {
         // if the currently focused window is floating, nothing will be done
-        let focused_window = state.focus_manager.window_history.get(0);
+        let focused_window = state.focus_manager.window_history.front();
         let is_focused_floating = match state
             .windows
             .iter()
@@ -993,7 +993,7 @@ mod tests {
             WindowHandle::MockHandle(4),
         ];
 
-        match manager.state.actions.get(0).unwrap() {
+        match manager.state.actions.front().unwrap() {
             DisplayAction::SetWindowOrder(order) => assert_eq!(order, &expected_order),
             _ => unreachable!("No other update should be left"),
         }
@@ -1321,7 +1321,7 @@ mod tests {
         manager.command_handler(&Command::MoveWindowToNextTag { follow: true });
 
         assert_eq!(
-            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag
         );
         assert_eq!(manager.state.windows[0].handle, initial.handle);

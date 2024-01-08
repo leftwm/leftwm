@@ -94,7 +94,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         // Make sure the workspaces do not draw on the docks.
         update_workspace_avoid_list(&mut self.state);
 
-        let focused = self.state.focus_manager.window_history.get(0);
+        let focused = self.state.focus_manager.window_history.front();
         // Make sure focus is recalculated if we closed the currently focused window
         if focused == Some(&Some(*handle)) {
             if self.state.focus_manager.behaviour.is_sloppy()
