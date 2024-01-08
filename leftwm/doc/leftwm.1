@@ -260,11 +260,11 @@ layout_definitions = [(
   rotate: North,
   reserve: ReserveAndCenter,
   columns: (
-  flip: None,
-  rotate: North,
-  main: (count: 1, size: 0.8, flip: None, rotate: North, split: None),
-  stack: (flip: None, rotate: North, split: Horizontal),
-  second_stack: None)
+    flip: None,
+    rotate: North,
+    main: (count: 1, size: 0.8, flip: None, rotate: North, split: None),
+    stack: (flip: None, rotate: North, split: Horizontal),
+    second_stack: None)
   ),
 ]
 \f[R]
@@ -312,8 +312,8 @@ Again the example for an ultra-wide screen, splitting workspaces by substracting
 .nf
 \f[C]
 workspaces: [
-    { output: "HDMI-1", y: 0, x: 0, height: 1440, width: -1720 },
-    { output: "HDMI-1", y: 0, x: 1720, height: 1440, width: -1720 },
+    ( output: "HDMI-1", y: 0, x: 0, height: 1440, width: -1720 ),
+    ( output: "HDMI-1", y: 0, x: 1720, height: 1440, width: -1720 ),
 ]
 \f[R]
 .fi
