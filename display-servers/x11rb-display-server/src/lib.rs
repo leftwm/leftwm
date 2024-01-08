@@ -107,7 +107,7 @@ impl DisplayServer for X11rbDisplayServer {
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
             DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b.try_into().unwrap_or(0)),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
-            DisplayAction::SetWindowOrder(fs, ws) => from_set_window_order(xw, fs, ws),
+            DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
             DisplayAction::ReadyToMoveWindow(h) => from_ready_to_move_window(xw, h),
             DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
@@ -323,6 +323,11 @@ fn from_set_state(
         WindowState::Fullscreen => xw.atoms.NetWMStateFullscreen,
         WindowState::Above => xw.atoms.NetWMStateAbove,
         WindowState::Below => xw.atoms.NetWMStateBelow,
+        WindowState::Maximized => {
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedVert)?;
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedVert)?;
+            return Ok(None);
+        }
     };
     xw.set_state(handle, toggle_to, state)?;
     Ok(None)
@@ -330,7 +335,6 @@ fn from_set_state(
 
 fn from_set_window_order(
     xw: &mut XWrap,
-    fullscreen: Vec<WindowHandle>,
     windows: Vec<WindowHandle>,
 ) -> Result<Option<DisplayEvent>> {
     // Unmanaged windows.
@@ -339,9 +343,9 @@ fn from_set_window_order(
         .iter()
         .filter(|&w| *w != xw.get_default_root())
         .map(|&w| WindowHandle::X11rbHandle(w))
-        .filter(|&h| !windows.iter().any(|&w| w == h) || !fullscreen.iter().any(|&w| w == h))
+        .filter(|h| !windows.iter().any(|&w| w == *h))
         .collect();
-    let all: Vec<WindowHandle> = [fullscreen, unmanaged, windows].concat();
+    let all: Vec<WindowHandle> = [unmanaged, windows].concat();
     xw.restack(all)?;
     Ok(None)
 }

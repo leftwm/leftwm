@@ -44,7 +44,7 @@ impl XWrap {
             .flatten();
         w.legacy_name = Some(legacy_name);
         w.r#type = r#type.clone();
-        w.set_states(states);
+        w.states = states;
         w.transient = trans.map(|h| WindowHandle::X11rbHandle(h));
         // // Initialise the windows floating with the pre-mapped settings.
         // let xyhw = XyhwChange {
