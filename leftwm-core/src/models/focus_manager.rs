@@ -42,6 +42,7 @@ pub struct FocusManager {
     pub tag_history: VecDeque<TagId>,
     pub tags_last_window: HashMap<TagId, WindowHandle>,
     pub sloppy_mouse_follows_focus: bool,
+    pub create_follows_cursor: bool,
     pub last_mouse_position: Option<(i32, i32)>,
 }
 
@@ -55,6 +56,7 @@ impl FocusManager {
             tag_history: Default::default(),
             tags_last_window: Default::default(),
             sloppy_mouse_follows_focus: config.sloppy_mouse_follows_focus(),
+            create_follows_cursor: config.create_follows_cursor(),
             last_mouse_position: None,
         }
     }
@@ -65,7 +67,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let index = *self.workspace_history.get(0)?;
+        let index = *self.workspace_history.front()?;
         workspaces.get(index)
     }
 
@@ -77,7 +79,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let index = *self.workspace_history.get(0)?;
+        let index = *self.workspace_history.front()?;
         workspaces.get_mut(index)
     }
 
@@ -93,7 +95,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let handle = *self.window_history.get(0)?;
+        let handle = *self.window_history.front()?;
         if let Some(handle) = handle {
             return windows.iter().find(|w| w.handle == handle);
         }
@@ -105,10 +107,14 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let handle = *self.window_history.get(0)?;
+        let handle = *self.window_history.front()?;
         if let Some(handle) = handle {
             return windows.iter_mut().find(|w| w.handle == handle);
         }
         None
+    }
+
+    pub fn create_follows_cursor(&self) -> bool {
+        self.create_follows_cursor
     }
 }

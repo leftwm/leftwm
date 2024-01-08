@@ -195,6 +195,33 @@ focus_new_windows = true
 sloppy_mouse_follows_focus = true # Only active with the Sloppy behaviour
 \f[R]
 .fi
+.SS Cursor Behaviour on Resize
+.PP
+LeftWM automatically snaps the mouse to the lower right hand corner
+when a window is being resized. This behaviour is controlled by the
+disable_cursor_reposition_on_resize setting. When true, the
+cursor will not be repositioned on resize start. When false or unspecified,
+the cursor will be snapped to the lower right corner of the window which is
+being resized.
+.PP
+Default: \f[C]disable_cursor_reposition_on_resize = false\f[R]
+.SS Window Creation and Cursor Focus
+.PP
+In multi-workspace layouts (such as with multiple monitors), LeftWM
+will, by default, create the new window on the workspace where the cursor
+is currently located, even if that workspace is not the workspace which is focused.
+In Click-to-Focus and Driven Focus modes, however, it is often desirable to create
+the window in the focused workspace, not the one wherein the mouse is located. The
+\f[C]create_follows_cursor\f[R] feature allows for changing this behavior.
+New windows will be created in the workspace:
+.IP "-"
+.B  Containing the cursor
+when unset (\f[C]None\f[R]), \f[C]Some(true)\f[R], or when the cursor is in \f[C]Sloppy\f[R] mode
+.IP "-" 
+.B Which is focused
+when set to \f[C]Some(false)\f[R]
+.PP
+Default: \f[C]create_follows_cursor = None\f[R]
 .SS Layouts
 .PP
 Leftwm supports variety of layouts, which define the way that windows are tiled in the workspace

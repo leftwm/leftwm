@@ -60,7 +60,7 @@ pub struct Window {
     pub border: i32,
     pub margin: Margins,
     pub margin_multiplier: f32,
-    states: Vec<WindowState>,
+    pub states: Vec<WindowState>,
     pub requested: Option<Xyhw>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
@@ -118,7 +118,7 @@ impl Window {
 
     pub fn set_floating(&mut self, value: bool) {
         if !self.is_floating && value && self.floating.is_none() {
-            //NOTE: We float relative to the normal position.
+            // NOTE: We float relative to the normal position.
             self.reset_float_offset();
         }
         self.is_floating = value;
@@ -159,6 +159,11 @@ impl Window {
     }
 
     #[must_use]
+    pub fn is_maximized(&self) -> bool {
+        self.states.contains(&WindowState::Maximized)
+    }
+
+    #[must_use]
     pub fn is_sticky(&self) -> bool {
         self.states.contains(&WindowState::Sticky)
     }
@@ -192,20 +197,6 @@ impl Window {
         self.normal.set_h(height);
     }
 
-    pub fn set_states(&mut self, states: Vec<WindowState>) {
-        self.states = states;
-    }
-
-    #[must_use]
-    pub fn has_state(&self, state: &WindowState) -> bool {
-        self.states.contains(state)
-    }
-
-    #[must_use]
-    pub fn states(&self) -> Vec<WindowState> {
-        self.states.clone()
-    }
-
     pub fn apply_margin_multiplier(&mut self, value: f32) {
         self.margin_multiplier = value.abs();
         if value < 0 as f32 {
@@ -226,7 +217,7 @@ impl Window {
         let mut value;
         if self.is_fullscreen() {
             value = self.normal.w();
-        } else if self.floating() && self.floating.is_some() {
+        } else if self.floating() && self.floating.is_some() && !self.is_maximized() {
             let relative = self.normal + self.floating.unwrap_or_default();
             value = relative.w() - (self.border * 2);
         } else {
@@ -249,7 +240,7 @@ impl Window {
         let mut value;
         if self.is_fullscreen() {
             value = self.normal.h();
-        } else if self.floating() && self.floating.is_some() {
+        } else if self.floating() && self.floating.is_some() && !self.is_maximized() {
             let relative = self.normal + self.floating.unwrap_or_default();
             value = relative.h() - (self.border * 2);
         } else {
@@ -287,7 +278,7 @@ impl Window {
     pub fn x(&self) -> i32 {
         if self.is_fullscreen() {
             self.normal.x()
-        } else if self.floating() && self.floating.is_some() {
+        } else if self.floating() && self.floating.is_some() && !self.is_maximized() {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.x()
         } else {
@@ -299,7 +290,7 @@ impl Window {
     pub fn y(&self) -> i32 {
         if self.is_fullscreen() {
             self.normal.y()
-        } else if self.floating() && self.floating.is_some() {
+        } else if self.floating() && self.floating.is_some() && !self.is_maximized() {
             let relative = self.normal + self.floating.unwrap_or_default();
             relative.y()
         } else {
@@ -349,6 +340,11 @@ impl Window {
     #[must_use]
     pub fn is_managed(&self) -> bool {
         self.r#type != WindowType::Desktop && self.r#type != WindowType::Dock
+    }
+
+    #[must_use]
+    pub fn is_normal(&self) -> bool {
+        self.r#type == WindowType::Normal
     }
 
     pub fn snap_to_workspace(&mut self, workspace: &Workspace) -> bool {

@@ -57,7 +57,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         return None;
     }
 
-    //if the client is trying to toggle fullscreen without changing the window state, change it too
+    // if the client is trying to toggle fullscreen without changing the window state, change it too
     if event.message_type == xw.atoms.NetWMState
         && (event.data.get_long(1) == xw.atoms.NetWMStateFullscreen as c_long
             || event.data.get_long(2) == xw.atoms.NetWMStateFullscreen as c_long)
@@ -65,13 +65,13 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         let set_fullscreen = event.data.get_long(0) == 1;
         let toggle_fullscreen = event.data.get_long(0) == 2;
         let mut states = xw.get_window_states_atoms(event.window);
-        //determine what to change the state to
+        // determine what to change the state to
         let fullscreen = if toggle_fullscreen {
             !states.contains(&xw.atoms.NetWMStateFullscreen)
         } else {
             set_fullscreen
         };
-        //update the list of states
+        // update the list of states
         if fullscreen {
             states.push(xw.atoms.NetWMStateFullscreen);
         } else {
@@ -79,11 +79,11 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
         }
         states.sort_unstable();
         states.dedup();
-        //set the windows state
+        // set the windows state
         xw.set_window_states_atoms(event.window, &states);
     }
 
-    //update the window states
+    // update the window states
     if event.message_type == xw.atoms.NetWMState {
         let handle = event.window.into();
         let mut change = WindowChange::new(handle);

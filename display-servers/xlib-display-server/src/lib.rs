@@ -1,3 +1,9 @@
+// allow casting types
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::cast_sign_loss)]
+
 mod event_translate;
 mod event_translate_client_message;
 mod event_translate_property_notify;
@@ -29,7 +35,7 @@ impl DisplayServer for XlibDisplayServer {
     fn new(config: &impl Config) -> Self {
         let mut wrap = XWrap::new();
 
-        wrap.init(config); //setup events masks
+        wrap.init(config); // setup events masks
 
         let root = wrap.get_default_root();
         let instance = Self {
@@ -100,7 +106,7 @@ impl DisplayServer for XlibDisplayServer {
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
             DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
-            DisplayAction::SetWindowOrder(fs, ws) => from_set_window_order(xw, fs, ws),
+            DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
             DisplayAction::ReadyToMoveWindow(h) => from_ready_to_move_window(xw, h),
             DisplayAction::ReadyToResizeWindow(h) => from_ready_to_resize_window(xw, h),
@@ -199,10 +205,10 @@ impl XlibDisplayServer {
         match self.xw.get_all_windows() {
             Ok(handles) => handles.into_iter().for_each(|handle| {
                 let Ok(attrs) = self.xw.get_window_attrs(handle) else {
-                    return
+                    return;
                 };
                 let Some(state) = self.xw.get_wm_state(handle) else {
-                    return
+                    return;
                 };
                 if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
                     if let Some(event) = self.xw.setup_window(handle) {
@@ -289,16 +295,17 @@ fn from_set_state(
         WindowState::Fullscreen => xw.atoms.NetWMStateFullscreen,
         WindowState::Above => xw.atoms.NetWMStateAbove,
         WindowState::Below => xw.atoms.NetWMStateBelow,
+        WindowState::Maximized => {
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedVert);
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedHorz);
+            return None;
+        }
     };
     xw.set_state(handle, toggle_to, state);
     None
 }
 
-fn from_set_window_order(
-    xw: &mut XWrap,
-    fullscreen: Vec<WindowHandle>,
-    windows: Vec<WindowHandle>,
-) -> Option<DisplayEvent> {
+fn from_set_window_order(xw: &mut XWrap, windows: Vec<WindowHandle>) -> Option<DisplayEvent> {
     // Unmanaged windows.
     let unmanaged: Vec<WindowHandle> = xw
         .get_all_windows()
@@ -306,10 +313,10 @@ fn from_set_window_order(
         .iter()
         .filter(|&w| *w != xw.get_default_root())
         .map(|&w| w.into())
-        .filter(|&h| !windows.iter().any(|&w| w == h) || !fullscreen.iter().any(|&w| w == h))
+        .filter(|h| !windows.iter().any(|w| w == h))
         .collect();
-    let all: Vec<WindowHandle> = [fullscreen, unmanaged, windows].concat();
-    xw.restack(all);
+    // Unmanaged windows on top.
+    xw.restack([unmanaged, windows].concat());
     None
 }
 

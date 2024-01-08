@@ -1,0 +1,20 @@
+[package]
+name = "leftwm-macros"
+version = "0.5.0"
+rust-version = "1.70.0"
+authors = ["Lex Childs <lexchilds@gmail.com>"]
+categories = ["window manager"]
+edition = "2021"
+keywords = ["wm", "window", "manager"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/leftwm/leftwm"
+description = "A window manager for Adventurers"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = {version = "1", features = ["nightly"]}
+quote = "1"
+syn = {version = "2.0.17", features = ["full", "parsing", "fold"]}

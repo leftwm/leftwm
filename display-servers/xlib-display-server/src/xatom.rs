@@ -59,8 +59,8 @@ pub struct XAtom {
     pub NetCurrentDesktop: xlib::Atom,
     pub NetDesktopNames: xlib::Atom,
     pub NetWMDesktop: xlib::Atom,
-    pub NetWMStrutPartial: xlib::Atom, //net version - Reserve Screen Space
-    pub NetWMStrut: xlib::Atom,        //old version
+    pub NetWMStrutPartial: xlib::Atom, // net version - Reserve Screen Space
+    pub NetWMStrut: xlib::Atom,        // old version
 
     pub UTF8String: xlib::Atom,
 }

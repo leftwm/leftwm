@@ -1,7 +1,6 @@
 use crate::config::Config;
-use crate::models::{
-    layouts::Layout, BBox, Gutter, Margins, Side, Size, TagId, Window, Xyhw, XyhwBuilder,
-};
+use crate::models::{BBox, Gutter, Margins, Side, TagId, Window, Xyhw, XyhwBuilder};
+use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -10,8 +9,6 @@ use super::WorkspaceId;
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
-    pub layout: Layout,
-    pub main_width_percentage: u8,
     pub tag: Option<TagId>, // TODO: Make this a list.
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -20,7 +17,6 @@ pub struct Workspace {
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
     xyhw_avoided: Xyhw,
-    pub max_window_width: Option<Size>,
     /// ID of workspace. Starts with 1.
     pub id: WorkspaceId,
 }
@@ -46,10 +42,8 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(bbox: BBox, layout: Layout, max_window_width: Option<Size>, id: usize) -> Self {
+    pub fn new(bbox: BBox, id: usize) -> Self {
         Self {
-            layout,
-            main_width_percentage: layout.main_width(),
             tag: None,
             margin: Margins::new(10),
             margin_multiplier: 1.0,
@@ -71,7 +65,6 @@ impl Workspace {
                 ..XyhwBuilder::default()
             }
             .into(),
-            max_window_width,
             id,
         }
     }
@@ -137,16 +130,6 @@ impl Workspace {
         self.xyhw_avoided.x() + (self.margin_multiplier * left) as i32 + gutter
     }
 
-    /// Returns the x position for the workspace,
-    /// while accounting for the optional `max_window_width` configuration
-    #[must_use]
-    pub fn x_limited(&self, column_count: usize) -> i32 {
-        match self.width() - self.width_limited(column_count) {
-            0 => self.x(),
-            remainder => self.x() + (remainder / 2),
-        }
-    }
-
     #[must_use]
     pub fn y(&self) -> i32 {
         let top = self.margin.top as f32;
@@ -158,7 +141,7 @@ impl Workspace {
     pub fn height(&self) -> i32 {
         let top = self.margin.top as f32;
         let bottom = self.margin.bottom as f32;
-        //Only one side
+        // Only one side
         let gutter = self.get_gutter(&Side::Top) + self.get_gutter(&Side::Bottom);
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
@@ -169,20 +152,9 @@ impl Workspace {
     pub fn width(&self) -> i32 {
         let left = self.margin.left as f32;
         let right = self.margin.right as f32;
-        //Only one side
+        // Only one side
         let gutter = self.get_gutter(&Side::Left) + self.get_gutter(&Side::Right);
         self.xyhw_avoided.w() - (self.margin_multiplier * (left + right)) as i32 - gutter
-    }
-
-    /// Returns the width of the workspace,
-    /// while accounting for the optional `max_window_width` configuration
-    #[must_use]
-    pub fn width_limited(&self, column_count: usize) -> i32 {
-        let width = self.width();
-        match self.max_window_width {
-            Some(size) => std::cmp::min(size.into_absolute(width) * column_count as i32, width),
-            None => width,
-        }
     }
 
     fn get_gutter(&self, side: &Side) -> i32 {
@@ -216,20 +188,12 @@ impl Workspace {
         self.margin_multiplier
     }
 
-    pub fn change_main_width(&mut self, delta: i8) {
-        //Check we are not gonna go negative
-        let mwp = &mut self.main_width_percentage;
-        if (*mwp as i8) < -delta {
-            *mwp = 0;
-            return;
-        }
-        if delta.is_negative() {
-            *mwp -= delta.unsigned_abs();
-            return;
-        }
-        *mwp += delta as u8;
-        if *mwp > 100 {
-            *mwp = 100;
+    pub fn rect(&self) -> Rect {
+        Rect {
+            x: self.x(),
+            y: self.y(),
+            w: self.width().unsigned_abs(),
+            h: self.height().unsigned_abs(),
         }
     }
 }
@@ -248,8 +212,6 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            Layout::default(),
-            None,
             0,
         );
         let w = Window::new(WindowHandle::MockHandle(1), None, None);
@@ -269,11 +231,9 @@ mod tests {
                 x: 0,
                 y: 0,
             },
-            Layout::default(),
-            None,
             0,
         );
-        let tag = crate::models::Tag::new(TAG_ID, "test", Layout::default());
+        let tag = crate::models::Tag::new(TAG_ID, "test");
         subject.show_tag(&tag.id);
         let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
         w.tag(&TAG_ID);

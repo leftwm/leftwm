@@ -3,7 +3,7 @@ use crate::child_process::exec_shell;
 use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::layouts::Layout;
+use crate::layouts::{self, MAIN_AND_VERT_STACK};
 use crate::models::{WindowHandle, WindowState, Xyhw};
 use crate::state::State;
 use crate::utils::helpers;
@@ -19,13 +19,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             return false;
         }
 
-        // Setup any predifined hooks.
+        // Setup any predefined hooks.
         self.config
             .setup_predefined_window(&mut self.state, &mut window);
         let mut is_first = false;
         let mut on_same_tag = true;
         // Random value
-        let mut layout: Layout = Layout::MainAndVertStack;
+        let mut layout = MAIN_AND_VERT_STACK.to_string();
         setup_window(
             &mut self.state,
             &mut window,
@@ -35,7 +35,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             &mut on_same_tag,
         );
         self.config.load_window(&mut window);
-        insert_window(&mut self.state, &mut window, layout);
+        insert_window(&mut self.state, &mut window, &layout);
 
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour.is_sloppy()
@@ -94,7 +94,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         // Make sure the workspaces do not draw on the docks.
         update_workspace_avoid_list(&mut self.state);
 
-        let focused = self.state.focus_manager.window_history.get(0);
+        let focused = self.state.focus_manager.window_history.front();
         // Make sure focus is recalculated if we closed the currently focused window
         if focused == Some(&Some(*handle)) {
             if self.state.focus_manager.behaviour.is_sloppy()
@@ -122,6 +122,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     pub fn window_changed_handler(&mut self, change: WindowChange) -> bool {
         let mut changed = false;
         let mut fullscreen_changed = false;
+        let mut above_changed = false;
         let strut_changed = change.strut.is_some();
         let windows = self.state.windows.clone();
         if let Some(window) = self
@@ -130,9 +131,11 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .iter_mut()
             .find(|w| w.handle == change.handle)
         {
-            if let Some(ref states) = change.states {
-                let change_contains = states.contains(&WindowState::Fullscreen);
-                fullscreen_changed = change_contains || window.is_fullscreen();
+            if let Some(states) = &change.states {
+                fullscreen_changed =
+                    states.contains(&WindowState::Fullscreen) != window.is_fullscreen();
+                above_changed = states.contains(&WindowState::Above)
+                    != window.states.contains(&WindowState::Above);
             }
             let container = match find_transient_parent(&windows, window.transient) {
                 Some(parent) => Some(parent.exact_xyhw()),
@@ -163,7 +166,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             {
                 self.display_server.update_windows(vec![windows]);
             }
+        }
 
+        if fullscreen_changed || above_changed {
             // Reorder windows.
             self.state.sort_windows();
         }
@@ -237,7 +242,7 @@ fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) ->
     }
 }
 
-fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
+fn insert_window(state: &mut State, window: &mut Window, layout: &str) {
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
         let for_active_workspace = |x: &Window| -> bool { window.tag == x.tag && x.is_managed() };
@@ -251,11 +256,26 @@ fn insert_window(state: &mut State, window: &mut Window, layout: Layout) {
                 DisplayAction::SetState(fsw.handle, !fsw.is_fullscreen(), WindowState::Fullscreen);
             state.actions.push_back(act);
             was_fullscreen = true;
+        } else if let Some(fsw) = state
+            .windows
+            .iter_mut()
+            .find(|w| for_active_workspace(w) && w.is_maximized())
+        {
+            if !window.floating() {
+                let act = DisplayAction::SetState(
+                    fsw.handle,
+                    !fsw.is_maximized(),
+                    WindowState::Maximized,
+                );
+                state.actions.push_back(act);
+            }
         }
-        if matches!(layout, Layout::Monocle | Layout::MainAndDeck) {
+        let monocle = layouts::MONOCLE;
+        let main_and_deck = layouts::MAIN_AND_DECK;
+        if layout == monocle || layout == main_and_deck {
             // Extract the current windows on the same workspace.
             let mut to_reorder = helpers::vec_extract(&mut state.windows, for_active_workspace);
-            if layout == Layout::Monocle || to_reorder.is_empty() {
+            if layout == monocle || to_reorder.is_empty() {
                 // When in monocle we want the new window to be fullscreen if the previous window was
                 // fullscreen.
                 if was_fullscreen {
@@ -318,6 +338,8 @@ fn is_scratchpad(state: &State, window: &Window) -> bool {
         .any(|(_, id)| id.iter().any(|id| window.pid == Some(*id)))
 }
 
+/// Tries to position a window according to the requested sizes.
+/// When no size was requested, defaults to `ws.center_halfed()`
 fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.set_floating(true);
     window.normal = ws.xyhw;
@@ -325,12 +347,10 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         || ws.center_halfed(),
         |mut requested| {
             requested.center_relative(outer, window.border);
-            if ws.xyhw.contains_xyhw(&requested) {
-                requested
-            } else {
+            if !ws.xyhw.contains_xyhw(&requested) {
                 requested.center_relative(ws.xyhw, window.border);
-                requested
             }
+            requested
         },
     );
     window.set_floating_exact(xyhw);
@@ -340,91 +360,91 @@ fn setup_window(
     state: &mut State,
     window: &mut Window,
     xy: (i32, i32),
-    layout: &mut Layout,
+    layout: &mut String,
     is_first: &mut bool,
     on_same_tag: &mut bool,
 ) {
-    // When adding a window we add to the workspace under the cursor, This isn't necessarily the
-    // focused workspace. If the workspace is empty, it might not have received focus. This is so
-    // the workspace that has windows on its is still active not the empty workspace.
-    let ws: Option<&Workspace> = state
-        .workspaces
-        .iter()
-        .find(|ws| ws.xyhw.contains_point(xy.0, xy.1) && state.focus_manager.behaviour.is_sloppy())
-        .or_else(|| state.focus_manager.workspace(&state.workspaces)); // Backup plan.
-
-    if let Some(ws) = ws {
-        // Setup basic variables.
-        let for_active_workspace = |x: &Window| -> bool { ws.tag == x.tag && x.is_managed() };
-        *is_first = !state.windows.iter().any(|w| for_active_workspace(w));
-        // May have been set by a predefined tag.
-        if window.tag.is_none() {
-            window.tag =
-                find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
-        }
-        *on_same_tag = ws.tag == window.tag;
-        *layout = ws.layout;
-
-        // Setup a scratchpad window.
-        if let Some((scratchpad_name, _)) = state
-            .active_scratchpads
-            .iter()
-            .find(|(_, id)| id.iter().any(|id| Some(*id) == window.pid))
-        {
-            window.set_floating(true);
-            if let Some(s) = state
-                .scratchpads
+    // Identify the workspace in which to create the window.
+    let ws = state
+        .focus_manager
+        .create_follows_cursor() // If the window must be created under the cursor...
+        .then_some(
+            // ...look for the workspace with the cursor.
+            state
+                .workspaces
                 .iter()
-                .find(|s| *scratchpad_name == s.name)
-            {
-                let new_float_exact = s.xyhw(&ws.xyhw);
-                window.normal = ws.xyhw;
-                window.set_floating_exact(new_float_exact);
-                return;
-            }
-        }
+                .find(|ws| ws.xyhw.contains_point(xy.0, xy.1)),
+        )
+        .flatten()
+        .or(state.focus_manager.workspace(&state.workspaces)); // Else, use the workspace which has the focus.
 
-        // Setup a child window.
-        if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
-            // This is currently for vlc, this probably will need to be more general if another
-            // case comes up where we don't want to move the window.
-            if window.r#type != WindowType::Utility {
-                set_relative_floating(window, ws, parent.exact_xyhw());
-                return;
+    // If no workspace was found, put the window on tag 1.
+    let Some(ws) = ws else {
+        tracing::warn!("setup_window failed to identify workspace. Falling back to tag 1");
+        window.tag = Some(1);
+        if is_scratchpad(state, window) {
+            if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
+                window.tag(&scratchpad_tag.id);
+                window.set_floating(true);
             }
-        }
-
-        // Setup window based on type.
-        match window.r#type {
-            WindowType::Normal => {
-                window.apply_margin_multiplier(ws.margin_multiplier);
-                if window.floating() {
-                    set_relative_floating(window, ws, ws.xyhw);
-                }
-            }
-            WindowType::Dialog => {
-                if window.can_resize() {
-                    window.set_floating(true);
-                    let new_float_exact = ws.center_halfed();
-                    window.normal = ws.xyhw;
-                    window.set_floating_exact(new_float_exact);
-                } else {
-                    set_relative_floating(window, ws, ws.xyhw);
-                }
-            }
-            WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
-            _ => {}
         }
         return;
+    };
+
+    // Setup basic variables.
+    let for_active_workspace = |x: &Window| -> bool { ws.tag == x.tag && x.is_managed() };
+    *is_first = !state.windows.iter().any(for_active_workspace);
+    // May have been set by a predefined tag.
+    if window.tag.is_none() {
+        window.tag =
+            find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
+    }
+    *on_same_tag = ws.tag == window.tag;
+    *layout = state
+        .layout_manager
+        .layout(ws.id, window.tag.unwrap())
+        .name
+        .clone();
+
+    // Setup a scratchpad window.
+    if let Some((scratchpad_name, _)) = state
+        .active_scratchpads
+        .iter()
+        .find(|(_, id)| id.iter().any(|id| Some(*id) == window.pid))
+    {
+        window.set_floating(true);
+        if let Some(s) = state
+            .scratchpads
+            .iter()
+            .find(|s| *scratchpad_name == s.name)
+        {
+            let new_float_exact = s.xyhw(&ws.xyhw);
+            window.normal = ws.xyhw;
+            window.set_floating_exact(new_float_exact);
+            return;
+        }
     }
 
-    // Setup a window is workspace is `None`. This shouldn't really happen.
-    window.tag = Some(1);
-    if is_scratchpad(state, window) {
-        if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
-            window.tag(&scratchpad_tag.id);
-            window.set_floating(true);
+    // Setup a child window.
+    if let Some(parent) = find_transient_parent(&state.windows, window.transient) {
+        // This is currently for vlc, this probably will need to be more general if another
+        // case comes up where we don't want to move the window.
+        if window.r#type != WindowType::Utility {
+            set_relative_floating(window, ws, parent.exact_xyhw());
+            return;
         }
+    }
+
+    // Setup window based on type.
+    match window.r#type {
+        WindowType::Normal => {
+            window.apply_margin_multiplier(ws.margin_multiplier);
+            if window.floating() {
+                set_relative_floating(window, ws, ws.xyhw);
+            }
+        }
+        WindowType::Dialog | WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
+        _ => {}
     }
 }
 
@@ -436,7 +456,7 @@ fn update_workspace_avoid_list(state: &mut State) {
         .filter(|w| w.r#type == WindowType::Dock)
         .filter_map(|w| w.strut.map(|strut| (w.handle, strut)))
         .for_each(|(handle, to_avoid)| {
-            tracing::debug!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
+            tracing::trace!("AVOID STRUT:[{:?}] {:?}", handle, to_avoid);
             avoid.push(to_avoid);
         });
     for ws in &mut state.workspaces {
@@ -456,6 +476,7 @@ fn update_workspace_avoid_list(state: &mut State) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layouts::MONOCLE;
     use crate::models::Screen;
     use crate::Manager;
 
@@ -692,14 +713,8 @@ mod tests {
     fn monocle_layout_only_has_single_windows() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string()], 1);
         manager.screen_create_handler(Screen::default());
-
-        manager
-            .state
-            .tags
-            .get_mut(1)
-            .unwrap()
-            .set_layout(Layout::Monocle, 0);
-
+        manager.state.layout_manager.set_layout(1, 1, MONOCLE);
+        // manager.state.tags.get_mut(1).unwrap().set_layout(String::from("Monocle"));
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -710,7 +725,6 @@ mod tests {
             -1,
             -1,
         );
-
         assert_eq!((manager.state.windows[0]).border(), 0);
         assert_eq!((manager.state.windows[1]).border(), 0);
     }

@@ -5,7 +5,8 @@ use crate::Config;
 #[cfg(feature = "lefthk")]
 use anyhow::{ensure, Context, Result};
 #[cfg(feature = "lefthk")]
-use leftwm_core::layouts::Layout;
+use lefthk_core::config::Command;
+#[cfg(feature = "lefthk")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "lefthk")]
 use std::fmt::Write;
@@ -63,8 +64,10 @@ impl Keybind {
                 usize::from_str(&self.value).context("invalid index value for SendWindowToTag")?;
             }
             BaseCommand::SetLayout => {
-                Layout::from_str(&self.value)
-                    .context("could not parse layout for command SetLayout")?;
+                ensure!(
+                    config.layouts.contains(&self.value),
+                    "could not parse layout for command SetLayout"
+                );
             }
             BaseCommand::IncreaseMainWidth => {
                 i8::from_str(&self.value).context("invalid width value for IncreaseMainWidth")?;
@@ -103,7 +106,7 @@ impl Keybind {
             head
         };
         Ok(lefthk_core::config::Keybind {
-            command: lefthk_core::config::Command::Execute(command),
+            command: lefthk_core::config::command::Execute::new(&command).normalize(),
             modifier: self
                 .modifier
                 .as_ref()

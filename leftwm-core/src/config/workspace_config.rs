@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::layouts::Layout;
 use crate::models::Size;
 
 #[derive(Serialize, Default, Deserialize, Debug, Clone, PartialEq)]
@@ -12,5 +11,5 @@ pub struct Workspace {
     pub output: String,
     pub relative: Option<bool>,
     pub max_window_width: Option<Size>,
-    pub layouts: Option<Vec<Layout>>,
+    pub layouts: Option<Vec<String>>,
 }

@@ -281,7 +281,7 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .state
             .focus_manager
             .window_history
-            .get(0)?
+            .front()?
             .as_ref()
             .copied();
 
@@ -361,7 +361,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
     let destination_tag =
-        tag.or_else(|| manager.state.focus_manager.tag_history.get(0).copied())?;
+        tag.or_else(|| manager.state.focus_manager.tag_history.front().copied())?;
 
     // If `None`, replace with current window
     let window = if window == ReleaseScratchPadOption::None {
@@ -370,7 +370,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .state
                 .focus_manager
                 .window_history
-                .get(0)?
+                .front()?
                 .as_ref()
                 .copied()?,
         )
@@ -701,7 +701,7 @@ mod tests {
             .get(&scratchpad_name)
             .is_none());
         assert_eq!(
-            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag
         );
     }
@@ -767,7 +767,7 @@ mod tests {
         assert_eq!(scratchpad.pop_front(), None);
 
         assert_eq!(
-            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag
         );
     }
@@ -851,7 +851,7 @@ mod tests {
         let mock_window3 = 3_u32;
         let mock_window4 = 4_u32;
 
-        let mut managed_windows = vec![mock_window1, mock_window2, mock_window3, mock_window4]
+        let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
             .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
             .collect::<Vec<Window>>();
@@ -885,7 +885,7 @@ mod tests {
         let mock_window3 = 3_u32;
         let mock_window4 = 4_u32;
 
-        let mut managed_windows = vec![mock_window1, mock_window2, mock_window3, mock_window4]
+        let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
             .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
             .collect::<Vec<Window>>();

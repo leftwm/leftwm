@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,7 +12,6 @@ env:
   RUSTDOCFLAGS: -Dwarnings
 
 jobs:
-
   test:
     name: Run tests
     uses: ./.github/workflows/run-tests.yml
@@ -25,13 +24,13 @@ jobs:
     name: Check MSRV
     strategy:
       matrix:
-        toolchain: [ '1.65.0' ]
-        target: [ 'x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu' ]
+        toolchain: ["1.70.0"]
+        target: ["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]
     uses: ./.github/workflows/check-msrv.yml
     with:
       toolchain: ${{ matrix.toolchain }}
       target: ${{ matrix.target }}
-    
+
   nix-flake:
     name: Nix Flake
     uses: ./.github/workflows/nix-flake.yml

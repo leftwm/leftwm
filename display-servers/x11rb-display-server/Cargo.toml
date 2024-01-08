@@ -8,7 +8,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-leftwm-core = { path = "../../leftwm-core", version = '0.4.2' }
+leftwm-core = { path = "../../leftwm-core", version = '0.5.0' }
 futures = "0.3.21"
 tracing = "0.1.36"
 tokio = { version = "1.2.0", features = [ "sync", "time" ] }

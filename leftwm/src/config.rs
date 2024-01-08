@@ -14,11 +14,13 @@ use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
-    layouts::{Layout, LAYOUTS},
-    models::{FocusBehaviour, Gutter, LayoutMode, Margins, Size, Window, WindowState, WindowType},
+    layouts::LayoutMode,
+    models::{FocusBehaviour, Gutter, Margins, Size, Window, WindowState, WindowType},
     state::State,
-    DisplayAction, DisplayServer, Manager,
+    DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
+
+use leftwm_layouts::Layout;
 use regex::Regex;
 use ron::{
     extensions::Extensions,
@@ -26,13 +28,13 @@ use ron::{
     Options,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::convert::TryInto;
-use std::default::Default;
 use std::env;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::Write;
 use std::path::{Path, PathBuf};
+use std::{convert::TryInto, fs::OpenOptions};
+use std::{default::Default, error::Error};
 use xdg::BaseDirectories;
 
 /// Path to file where state will be dumped upon soft reload.
@@ -129,7 +131,7 @@ impl WindowHook {
             if let Some(workspace) = state
                 .workspaces
                 .iter()
-                .find(|ws| &ws.id == self.spawn_on_workspace.as_ref().unwrap())
+                .find(|ws| Some(ws.id) == self.spawn_on_workspace)
             {
                 if let Some(tag) = workspace.tag {
                     // In order to apply the correct margin multiplier we want to copy this value
@@ -182,7 +184,8 @@ pub struct Config {
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
     pub max_window_width: Option<Size>,
-    pub layouts: Vec<Layout>,
+    pub layouts: Vec<String>,
+    pub layout_definitions: Vec<Layout>,
     pub layout_mode: LayoutMode,
     pub insert_behavior: InsertBehavior,
     pub scratchpad: Option<Vec<ScratchPad>>,
@@ -195,7 +198,9 @@ pub struct Config {
     pub focus_new_windows: bool,
     pub single_window_border: bool,
     pub sloppy_mouse_follows_focus: bool,
+    pub create_follows_cursor: Option<bool>,
     pub auto_derive_workspaces: bool,
+    pub disable_cursor_reposition_on_resize: bool,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -235,9 +240,10 @@ fn load_from_file() -> Result<Config> {
 
     if Path::new(&config_file_ron).exists() {
         tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
-        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let ron = Options::default()
+            .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
         let contents = fs::read_to_string(config_file_ron)?;
-        let config = ron.from_str(&contents)?;
+        let config: Config = ron.from_str(&contents)?;
         Ok(config)
     } else if Path::new(&config_file_toml).exists() {
         tracing::debug!(
@@ -254,10 +260,10 @@ fn load_from_file() -> Result<Config> {
         let config = Config::default();
         let ron_pretty_conf = PrettyConfig::new()
             .depth_limit(2)
-            .extensions(Extensions::IMPLICIT_SOME);
+            .extensions(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
         let ron = to_string_pretty(&config, ron_pretty_conf).unwrap();
         let comment_header = String::from(
-            r#"//  _        ___                                      ___ _
+            r"//  _        ___                                      ___ _
 // | |      / __)_                                   / __|_)
 // | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
 // | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
@@ -266,7 +272,7 @@ fn load_from_file() -> Result<Config> {
 // A WindowManager for Adventurers                         (____/
 // For info about configuration please visit https://github.com/leftwm/leftwm/wiki
 
-"#,
+",
         );
         let ron_with_header = comment_header + &ron;
 
@@ -411,8 +417,16 @@ impl leftwm_core::Config for Config {
         vec![]
     }
 
-    fn layouts(&self) -> Vec<Layout> {
+    fn layouts(&self) -> Vec<String> {
         self.layouts.clone()
+    }
+
+    fn layout_definitions(&self) -> Vec<Layout> {
+        let mut layouts = vec![];
+        for custom_layout in &self.layout_definitions {
+            layouts.push(custom_layout.clone());
+        }
+        layouts
     }
 
     fn layout_mode(&self) -> LayoutMode {
@@ -435,27 +449,49 @@ impl leftwm_core::Config for Config {
         command: &str,
         manager: &mut Manager<Self, SERVER>,
     ) -> bool {
+        let mut return_pipe = get_return_pipe();
         if let Some((command, value)) = command.split_once(' ') {
             match command {
                 "LoadTheme" => {
                     if let Some(absolute) = absolute_path(value.trim()) {
                         manager.config.theme_setting.load(absolute);
+                        write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
                     } else {
                         tracing::warn!("Path submitted does not exist.");
+                        write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist");
                     }
-                    return manager.reload_config();
+                    manager.reload_config()
                 }
                 "UnloadTheme" => {
                     manager.config.theme_setting = ThemeSetting::default();
-                    return manager.reload_config();
+                    write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
+                    manager.reload_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
-                    return false;
+                    write_to_pipe(&mut return_pipe, "ERROR: Command not recognized");
+                    false
+                }
+            }
+        } else {
+            match command {
+                "LoadTheme" => {
+                    tracing::warn!("Missing parameter theme_path");
+                    write_to_pipe(&mut return_pipe, "ERROR: Missing parameter theme_path");
+                    false
+                }
+                "UnloadTheme" => {
+                    manager.config.theme_setting = ThemeSetting::default();
+                    write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
+                    manager.reload_config()
+                }
+                _ => {
+                    tracing::warn!("Command not recognized: {}", command);
+                    write_to_pipe(&mut return_pipe, "ERROR: Command not recognized");
+                    false
                 }
             }
         }
-        false
     }
 
     fn border_width(&self) -> i32 {
@@ -547,10 +583,6 @@ impl leftwm_core::Config for Config {
         self.theme_setting.gutter.clone().unwrap_or_default()
     }
 
-    fn max_window_width(&self) -> Option<Size> {
-        self.max_window_width
-    }
-
     fn disable_tile_drag(&self) -> bool {
         self.disable_tile_drag
     }
@@ -599,7 +631,7 @@ impl leftwm_core::Config for Config {
                 .max_by_key(|(_wh, score)| *score);
             if let Some((hook, _)) = best_match {
                 hook.apply(state, window);
-                tracing::debug!(
+                tracing::trace!(
                     "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
                     window.name,
                     window.legacy_name,
@@ -625,6 +657,18 @@ impl leftwm_core::Config for Config {
 
     fn auto_derive_workspaces(&self) -> bool {
         self.auto_derive_workspaces
+    }
+
+    fn reposition_cursor_on_resize(&self) -> bool {
+        !self.disable_cursor_reposition_on_resize
+    }
+
+    // Determines if a new window should be created under the cursor or on the workspace which has the focus
+    fn create_follows_cursor(&self) -> bool {
+        // If follow behaviour has been explicitly set, use that value.
+        // If not, set it to true in Sloppy mode only.
+        self.create_follows_cursor
+            .unwrap_or(self.focus_behaviour == FocusBehaviour::Sloppy)
     }
 }
 
@@ -657,6 +701,23 @@ fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S:
     }
 }
 
+fn get_return_pipe() -> Result<File, Box<dyn std::error::Error>> {
+    let file_name = ReturnPipe::pipe_name();
+    let file_path = BaseDirectories::with_prefix("leftwm")?;
+    let file_path = file_path
+        .find_runtime_file(file_name)
+        .ok_or("Unable to open return pipe")?;
+    Ok(OpenOptions::new().append(true).open(file_path)?)
+}
+
+fn write_to_pipe(return_pipe: &mut Result<File, Box<dyn Error>>, msg: &str) {
+    if let Ok(pipefile) = return_pipe {
+        if let Err(e) = writeln!(pipefile, "{msg}") {
+            tracing::warn!("Unable to connect to return pipe: {e}");
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -668,7 +729,7 @@ mod tests {
         // Check RON
         let ron_pretty_conf = ron::ser::PrettyConfig::new()
             .depth_limit(2)
-            .extensions(ron::extensions::Extensions::IMPLICIT_SOME);
+            .extensions(ron::extensions::Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
         let ron = ron::ser::to_string_pretty(&config, ron_pretty_conf);
         assert!(ron.is_ok(), "Could not serialize default config");
 

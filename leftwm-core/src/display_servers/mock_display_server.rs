@@ -13,7 +13,7 @@ impl DisplayServer for MockDisplayServer {
         Self { screens: vec![] }
     }
 
-    //testing a couple mock event
+    // testing a couple mock event
     fn get_next_events(&mut self) -> Vec<DisplayEvent> {
         vec![]
     }
