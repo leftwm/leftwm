@@ -1,32 +1,32 @@
 <div align="center">
   <h1><strong>LeftWM</strong></h1>
   <p>
-    <strong>A window manager for adventurers</strong>
+	<strong>A window manager for adventurers</strong>
   </p>
   <p>
-    <a href="https://github.com/leftwm/leftwm/actions?query=workflow%3ACI">
-        <img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
-    </a>
-    <a href="https://github.com/leftwm/leftwm/wiki">
-        <img src="https://img.shields.io/badge/wiki-0.5.0-green.svg" alt="wiki" />
-    </a>
-    <a href="https://docs.rs/leftwm/">
-        <img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" />
-    </a><br />
-    <a href="https://discord.gg/c9rB3wDnVs">
-        <img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
-    </a>
-    <a href="https://matrix.to/#/#leftwm-announcements:matrix.org">
-        <img src="https://img.shields.io/badge/matrix%20chat-Announcements-green.svg" alt="Matrix Chat: Announcements" />
-    </a>
-    </a>
-    <a href="https://matrix.to/#/#leftwm-general:matrix.org">
-            <img src="https://img.shields.io/badge/matrix%20chat-General-green.svg" alt="Matrix Chat: General" />
-    </a>
-    </a>
-    <a href="https://matrix.to/#/#leftwm-support:matrix.org">
-            <img src="https://img.shields.io/badge/matrix%20chat-Support-green.svg" alt="Matrix Chat: Support" />
-    </a>
+	<a href="https://github.com/leftwm/leftwm/actions?query=workflow%3ACI">
+		<img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
+	</a>
+	<a href="https://github.com/leftwm/leftwm/wiki">
+		<img src="https://img.shields.io/badge/wiki-0.5.0-green.svg" alt="wiki" />
+	</a>
+	<a href="https://docs.rs/leftwm/">
+		<img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" />
+	</a><br />
+	<a href="https://discord.gg/c9rB3wDnVs">
+		<img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
+	</a>
+	<a href="https://matrix.to/#/#leftwm-announcements:matrix.org">
+		<img src="https://img.shields.io/badge/matrix%20chat-Announcements-green.svg" alt="Matrix Chat: Announcements" />
+	</a>
+	</a>
+	<a href="https://matrix.to/#/#leftwm-general:matrix.org">
+			<img src="https://img.shields.io/badge/matrix%20chat-General-green.svg" alt="Matrix Chat: General" />
+	</a>
+	</a>
+	<a href="https://matrix.to/#/#leftwm-support:matrix.org">
+			<img src="https://img.shields.io/badge/matrix%20chat-Support-green.svg" alt="Matrix Chat: Support" />
+	</a>
   </p>
 </div>
 
@@ -63,8 +63,8 @@ LeftWM is a tiling window manager written in [Rust] that aims to be stable and p
 [designed to do one thing and to do that one thing well][unix-philosophy]: _be a window manager_.
 LeftWM follows the following mantra:
 
-> LeftWM is not a compositor.  
-> LeftWM is not a lock screen.  
+> LeftWM is not a compositor.
+> LeftWM is not a lock screen.
 > LeftWM is not a bar. But, there are lots of good bars out there. With themes, picking one is as
 > simple as setting a symlink.
 
@@ -84,13 +84,13 @@ With LeftWM, there are two types of configuration files:
 
 - **LeftWM Configuration files:** LeftWM configurations are specific to you and don’t change for
   different themes. These are settings like keybindings, workspace locations, and names of
-  desktops/tags. These settings can be found in `~/.config/leftwm/config.toml`.
+  desktops/tags. These settings can be found in `$XDG_CONFIG_HOME/leftwm/config.ron`.
 
 - **Theme Configuration files:** The appearance of your desktop is different. It’s fun to try new
   looks and feels. It’s fun to tweak and customize the appearance (AKA: [ricing]). It’s fun to share
   so others can experience your awesome desktop! LeftWM is built around this concept. By pulling all
   these settings out into themes, you can now easily tweak, switch, and share your experiences. This
-  configuration is spread between `theme.toml` and related files contained within a theme's folder.
+  configuration is spread between `theme.ron` and related files contained within a theme's folder.
 
 **Note:** some example config and themes can be found in the share dir, e.g. `/usr/share/leftwm` oh Arch based disros.
 
@@ -139,7 +139,7 @@ List of common dependencies for themes:
 [dmenu-git]: https://git.suckless.org/dmenu
 [dmenu-pkg]: https://pkgs.org/download/dmenu
 
-> \* You can use whichever AUR wrapper you like. See [paru] and [yay].  
+> \* You can use whichever AUR wrapper you like. See [paru] and [yay].
 > \*\* See the git page (link in first column) for how to install these manually
 
 # Installation (with package manager)
@@ -420,24 +420,24 @@ leftwm-theme apply NAME_OF_THEME_YOU_LIKE
 
 ## Without [LeftWM-Theme](https://github.com/leftwm/leftwm-theme)
 
-```bash
-mkdir -p ~/.config/leftwm/themes
-cd ~/.config/leftwm/themes
-ln -s PATH_TO_THE_THEME_YOU_LIKE current
-```
+To set up your own custom theme, you will need to create a directory containing the theme files and then symlink it to `$XDG_CONFIG_HOME/leftwm/themes/current`.
 
-LeftWM comes packaged with a couple of default themes. There is also a
+A theme directory contains at least 2 files:
+
+- `up`: a script which is loaded with the theme.
+- `down`: a script which is called when the theme is unloaded.
+
+These files need to be made executable. Many theme directories also contain:
+
+- `theme.ron`: which contains additional configuration options specific to the theme.
+- `polybar.ini`: a configuration file for the `polybar` application. *Need to have polybar installed!*
+- `picom.conf`: a configuration file for the `picom` compositor. *Need to have picom installed!*
+
+See the [theme guide][theme-guide] for examples and further information. There is also a
 [community repository][community-repo] for sharing themes.
 
-For more information about themes check out our [theme guide][theme-guide] or the [wiki].
-
 [community-repo]: https://github.com/leftwm/leftwm-community-themes
-[theme-guide]: https://github.com/leftwm/leftwm/tree/main/themes
-[wiki]: https://github.com/leftwm/leftwm/wiki/Themes
-
----
-
-**Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.
+[theme-guide]: /themes
 
 ---
 
@@ -453,19 +453,15 @@ leftwm-config    # Open configuration file in $EDITOR
 leftwm-config -t # Edit configuration via TUI (Beta)
 ```
 
-## Without via editing the file
+## Manually editing the configuration file
 
 ```bash
-~/.config/leftwm/config.ron
+$XDG_CONFIG_HOME/leftwm/config.ron
 ```
 
 ---
 
 **Note:** The configuration file is automatically generated when leftwm or leftwm-check is run for the first time.
-
----
-
-**Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.
 
 ---
 
@@ -523,34 +519,22 @@ You can optionally switch between tiling or floating mode for any window.
 
 ## Workspaces
 
-By default, workspaces have a one-to-one relationship with screens, but this is configurable. There
-are many reasons you might want to change this, but the main reason is for ultrawide monitors. You
-might want to have two or even three workspaces on a single screen.
+Workspaces are how you view tags (desktops). A workspace is an area on a screen or most likely the whole screen. in these areas you can view a given tag.
 
-Here is an example config changing the way workspaces are defined (~/.config/leftwm/config.toml)
+Default: `workspaces: []` (one workspace per screen)
 
-```rust
-workspaces: [
-    ( y: 0, x: 0, height: 1440, width: 1720 ),
-    ( y: 0, x: 1720, height: 1440, width: 1720 ),
-],
-```
+Workspaces are only applied if the specified output is the name of a connected screen. The output is also used as identifier of the workspace.
 
-You may optionally specify an ID for your defined workspaces. This is helpful if you want to assign different gutter settings to each workspace in your theme.
+You can get the output names by running xrandr in your terminal.
+
+Example (two workspaces on a single ultrawide):
 
 ```rust
 workspaces: [
-    ( y: 0, x: 0, height: 1440, width: 1720, id: 0 ),
-    ( y: 0, x: 1720, height: 1440, width: 1720, id: 1 ),
+	( output: "HDMI-1", y: 0, x: 0, height: 1440, width: 1720 ),
+	( output: "HDMI-1", y: 0, x: 1720, height: 1440, width: 1720 ),
 ],
 ```
-
----
-
-**NOTE**
-You do not have to define an ID for each workspace, but if you assign an ID to one workspace all subsequently defined workspaces without an ID will be assigned an ID incrementing from the largest ID currently assigned to any workspace. In the above example if the second workspace was not defined with ID = 0 it would be assigned ID = 2. Keep this in mind when creating or customizing themes.
-
----
 
 ## Tags / Desktops
 
@@ -558,7 +542,7 @@ The default tags are 1-9. They can be renamed in the config file by setting the
 list of tags.
 
 Here is an example config changing the list of available tags. NOTE: tag navigation (Mod + #)
-doesn't change based on the name of the tag.
+is based on the index of the tag in the list (starting with index 1).
 
 ```rust
 tags: ["Web", "Code", "Shell", "Music", "Connect"],
@@ -566,31 +550,25 @@ tags: ["Web", "Code", "Shell", "Music", "Connect"],
 
 ## Layouts
 
-By default, all layouts are enabled. There are a lot of layouts so you might want to consider only
-enabling the ones you use. To do this add a layout section to your config.toml file. This enables
-only the layouts you specify.
+
+Leftwm supports user definable layouts. The relevant entries in the configuration file are the `layouts` and `layout_definitions` lists.
+
+Only the layouts whose name appears in `layouts` will be accessible when switching layouts through the commands `NextLayout`, `PreviousLayout` and `SetLayout`. Each layout appearing in the `layouts` list must have a corresponding definition in `layout_definitions`.
 
 Example:
 
 ```rust
-layouts: ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"],
-```
-
-Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.
-
-Example:
-
-```rust
-workspaces: [
-    ( id: 0, y: 480, x: 0, height: 1600, width: 3840,
-      layouts = ["CenterMain", "CenterMainBalanced", "EvenHorizontal"]),
-    ( id: 1, y: 0, x: 3840, height: 2560, width: 1440,
-      layouts = ["MainAndHorizontalStack", "EvenVertical"]),
+layouts: [
+	"Monocle",
+	"MainAndDeck",
+	"MainAndVertStack",
 ],
+layout_definitions: [
+	(name: "Monocle", flip: None, rotate: North, reserve: None, columns: (flip: None, rotate: North, main: None, stack: (flip: None, rotate: North, split: None), second_stack: None)),
+	(name: "MainAndDeck", flip: None, rotate: North, reserve: None, columns: (flip: None, rotate: North, main: (count: 1, size: 0.5, flip: None, rotate: North, split: None), stack: (flip: None, rotate: North, split: None), second_stack: None)),
+	(name: "MainAndVertStack", flip: None, rotate: North, reserve: None, columns: (flip: None, rotate: North, main: (count: 1, size: 0.5, flip: None, rotate: North, split: Vertical), stack: (flip: None, rotate: North, split: Horizontal), second_stack: None)),
+]
 ```
-
-**NOTE**
-When defining layouts per workspace, you will need to define workspace IDs explicitely.
 
 [More detailed configuration information can be found in the Wiki.][config-wiki]
 
@@ -605,8 +583,8 @@ The default layouts are [all of the kinds](leftwm-core/src/layouts/mod.rs#L21) d
 | Issue                              | Description                                                                                                              |                        Solution                        |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------: |
 | LeftWM not listed by login manager | You likely need to add the xsessions file to the right folder.                                                           | See [installation](#installation-with-package-manager) |
-| No config.toml file exists         | LeftWM does not always ship with a `config.toml`. You will need to execute LeftWM at least once for one to be generated. |           Try the following: `leftwm-worker`           |
-| Config.toml is not being parsed    | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR.                                    |           Try the following: `leftwm-check`            |
+| No `config.ron` file exists        | LeftWM does not always ship with a `config.ron`. You will need to execute LeftWM at least once for one to be generated.  |           Try the following: `leftwm-worker`           |
+| `config.ron` is not being parsed   | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR.                                    |           Try the following: `leftwm-check`            |
 | Keybinding doesn't work            | It's likely you need to specify a value or have a typo.                                                                  |                        See Wiki                        |
 
 ## Support
