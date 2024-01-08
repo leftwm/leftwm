@@ -46,14 +46,14 @@ impl DisplayServer for X11rbDisplayServer {
         windows: &[leftwm_core::Window],
     ) {
         if let Err(e) = self.xw.load_config(config, focused, windows) {
-            tracing::error!(error = ?e, "Error when loading config.");
+            tracing::error!("Error when loading config: {}", e);
         }
     }
 
     fn update_windows(&self, windows: Vec<&Window>) {
         for window in &windows {
             if let Err(e) = self.xw.update_window(window) {
-                tracing::error!(error = ?e, "Error when updating window {:?}", window);
+                tracing::error!("Error when updating window {:?}: {}", window, e);
             }
         }
     }
@@ -61,7 +61,7 @@ impl DisplayServer for X11rbDisplayServer {
     fn update_workspaces(&self, focused: Option<&Workspace>) {
         if let Some(focused) = focused {
             if let Err(e) = self.xw.set_current_desktop(focused.tag) {
-                tracing::error!(error = ?e, "Error when setting current desktop to {:?}", focused);
+                tracing::error!("Error when setting current desktop to {:?}: {}", focused, e);
             }
         }
     }

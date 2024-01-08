@@ -4,7 +4,7 @@ use std::{
     backtrace::Backtrace,
     ffi::{IntoStringError, NulError},
     fmt::Display,
-    string::FromUtf8Error,
+    string::FromUtf8Error, num::ParseIntError,
 };
 
 use x11rb::rust_connection::{ConnectionError, ReplyError, ReplyOrIdError};
@@ -116,6 +116,11 @@ from_err!(
     IntoStringError,
     ErrorKind::StringConversion,
     "Unable to convert value into String"
+);
+from_err!(
+    ParseIntError,
+    ErrorKind::StringConversion,
+    "Unable to parse int with given base"
 );
 
 // X11 Errors

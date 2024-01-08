@@ -165,7 +165,7 @@ impl XWrap {
         xproto::change_window_attributes(
             &self.conn,
             self.root,
-            &ChangeWindowAttributesAux::new().backing_pixel(color),
+            &ChangeWindowAttributesAux::new().background_pixel(color),
         )?;
         Ok(())
     }

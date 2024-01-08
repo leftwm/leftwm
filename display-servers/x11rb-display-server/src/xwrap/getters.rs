@@ -1,4 +1,7 @@
-use std::{ffi::CStr, backtrace::Backtrace};
+use std::{
+    backtrace::Backtrace,
+    ffi::{CStr, CString},
+};
 
 use leftwm_core::models::{
     BBox, DockArea, Screen, WindowHandle, WindowState, WindowType, XyhwChange,
@@ -6,14 +9,11 @@ use leftwm_core::models::{
 use x11rb::{
     connection::Connection,
     properties::{WmClass, WmHints, WmSizeHints},
-    protocol::{
-        randr, xinerama,
-        xproto::{self, ConnectionExt},
-    },
+    protocol::{randr, xinerama, xproto},
 };
 
 use crate::{
-    error::{Result, BackendError, ErrorKind},
+    error::{BackendError, ErrorKind, Result},
     xatom::WMStateWindowState,
 };
 
@@ -41,11 +41,10 @@ impl XWrap {
     /// Returns a `XColor` for a color.
     pub fn get_color(&self, color: String) -> Result<u32> {
         let screen = &self.conn.setup().roots[self.display];
-        let (red, green, blue) = parse_color_string(color);
-        let rep = self
-            .conn
-            .alloc_color(screen.default_colormap, red, green, blue)?
-            .reply()?;
+        let (red, green, blue) = parse_color_string(color)?;
+
+        let rep =
+            xproto::alloc_color(&self.conn, screen.default_colormap, red, green, blue)?.reply()?;
         Ok(rep.pixel)
     }
 
@@ -641,11 +640,13 @@ impl XWrap {
     // }
 }
 
-/// Parses a color string written in the hex format #RRGGBB
-fn parse_color_string(color: String) -> (u16, u16, u16) {
-    (
-        u16::from_str_radix(&color[1..3], 16).unwrap(),
-        u16::from_str_radix(&color[3..5], 16).unwrap(),
-        u16::from_str_radix(&color[3..5], 16).unwrap(),
-    )
+/// Parses a color string written in the hex format #RRGGBB to a tuple of u16.
+/// Since colors in hex format are represented using 8 bits, we need to adjust them to represent
+/// the right proportion of color on a 16 bits value by multiplying by 256
+fn parse_color_string(color: String) -> Result<(u16, u16, u16)> {
+    Ok((
+        u16::from_str_radix(&color[1..3], 16)? * 256,
+        u16::from_str_radix(&color[3..5], 16)? * 256,
+        u16::from_str_radix(&color[5..7], 16)? * 256,
+    ))
 }
