@@ -605,7 +605,9 @@ fn tile_to_floating(state: &mut State) -> Option<bool> {
     window.set_floating_offsets(Some(floating));
     window.start_loc = Some(floating);
     window.set_floating(true);
-    state.sort_windows();
+
+    let handle = window.handle;
+    state.move_to_top(&handle);
 
     Some(true)
 }
