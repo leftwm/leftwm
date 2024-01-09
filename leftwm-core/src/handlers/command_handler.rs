@@ -588,11 +588,7 @@ fn tile_to_floating(state: &mut State) -> Option<bool> {
     let width = state.default_width;
     let height = state.default_height;
     let window = state.focus_manager.window_mut(&mut state.windows)?;
-    if window.must_float() {
-        return None;
-    }
-    // Not ideal as is_floating and must_float are connected so have to check
-    // them separately
+
     if window.floating() {
         return None;
     }
