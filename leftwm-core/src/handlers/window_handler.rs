@@ -347,8 +347,8 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
         || ws.center_halfed(),
         |mut requested| {
             requested.center_relative(outer, window.border);
-            if !ws.xyhw.contains_xyhw(&requested) {
-                requested.center_relative(ws.xyhw, window.border);
+            if !ws.xyhw_avoided.contains_xyhw(&requested) {
+                requested.center_relative(ws.xyhw_avoided, window.border);
             }
             requested
         },
@@ -440,10 +440,12 @@ fn setup_window(
         WindowType::Normal => {
             window.apply_margin_multiplier(ws.margin_multiplier);
             if window.floating() {
-                set_relative_floating(window, ws, ws.xyhw);
+                set_relative_floating(window, ws, ws.xyhw_avoided);
             }
         }
-        WindowType::Dialog | WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
+        WindowType::Dialog | WindowType::Splash => {
+            set_relative_floating(window, ws, ws.xyhw_avoided);
+        }
         _ => {}
     }
 }
