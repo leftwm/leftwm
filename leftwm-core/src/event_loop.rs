@@ -168,7 +168,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             Ok(child) => {
                 self.children.insert(child);
             }
-            Err(err) => tracing::warn!("Global up script faild: {}", err),
+            Err(err) => tracing::warn!("Global up script failed: {}", err),
         }
         match Nanny::boot_current_theme() {
             Ok(child) => {
