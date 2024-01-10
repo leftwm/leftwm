@@ -52,6 +52,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
     command: &Command,
 ) -> Option<bool> {
     let state = &mut manager.state;
+    let config = &manager.config;
     match command {
         Command::ToggleScratchPad(name) => scratchpad_handler::toggle_scratchpad(manager, name),
         Command::AttachScratchPad { window, scratchpad } => {
@@ -95,9 +96,12 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::SetLayout(layout) => set_layout(layout.as_str(), state),
 
         Command::FloatingToTile => floating_to_tile(state),
-        Command::TileToFloating => tile_to_floating(state),
-        Command::ToggleFloating => toggle_floating(state),
-
+        Command::TileToFloating => {
+            tile_to_floating(state, config.default_width(), config.default_height())
+        }
+        Command::ToggleFloating => {
+            toggle_floating(state, config.default_width(), config.default_height())
+        }
         Command::FocusNextTag { behavior } => match *behavior {
             FocusDeltaBehavior::Default => focus_tag_change(state, 1),
             FocusDeltaBehavior::IgnoreEmpty => focus_next_used_tag(state),
@@ -584,9 +588,7 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn tile_to_floating(state: &mut State) -> Option<bool> {
-    let width = state.default_width;
-    let height = state.default_height;
+fn tile_to_floating(state: &mut State, width: i32, height: i32) -> Option<bool> {
     let window = state.focus_manager.window_mut(&mut state.windows)?;
 
     if window.floating() {
@@ -612,12 +614,12 @@ fn tile_to_floating(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn toggle_floating(state: &mut State) -> Option<bool> {
+fn toggle_floating(state: &mut State, width: i32, height: i32) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     if window.floating() {
         floating_to_tile(state)
     } else {
-        tile_to_floating(state)
+        tile_to_floating(state, width, height)
     }
 }
 
