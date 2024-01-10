@@ -26,8 +26,6 @@ pub struct State {
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
     pub mousekey: Vec<String>,
-    pub default_width: i32,
-    pub default_height: i32,
     pub disable_tile_drag: bool,
     pub reposition_cursor_on_resize: bool,
     pub insert_behavior: InsertBehavior,
@@ -55,8 +53,6 @@ impl State {
             actions: Default::default(),
             tags,
             mousekey: config.mousekey(),
-            default_width: config.default_width(),
-            default_height: config.default_height(),
             disable_tile_drag: config.disable_tile_drag(),
             reposition_cursor_on_resize: config.reposition_cursor_on_resize(),
             insert_behavior: config.insert_behavior(),
