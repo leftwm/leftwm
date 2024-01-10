@@ -16,7 +16,7 @@ pub struct Workspace {
     #[serde(skip)]
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
-    xyhw_avoided: Xyhw,
+    pub xyhw_avoided: Xyhw,
     /// ID of workspace. Starts with 1.
     pub id: WorkspaceId,
 }
