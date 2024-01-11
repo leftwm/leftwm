@@ -178,6 +178,8 @@ impl State {
         for ws in &mut self.workspaces {
             ws.load_config(config);
         }
+        self.default_height = config.default_height();
+        self.default_width = config.default_width();
     }
 
     /// Apply saved state to a running manager.
