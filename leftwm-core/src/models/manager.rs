@@ -57,7 +57,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .front()
             .and_then(|o| *o);
         self.display_server
-            .load_config(&self.config, focused, &self.state.windows);
+            .reload_config(&self.config, focused, &self.state.windows);
         self.state.load_theme_config(&self.config);
         true
     }

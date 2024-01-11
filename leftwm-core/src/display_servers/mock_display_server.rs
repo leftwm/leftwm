@@ -30,7 +30,7 @@ impl DisplayServer for MockDisplayServer {
         unimplemented!()
     }
 
-    fn load_config(
+    fn reload_config(
         &mut self,
         _config: &impl Config,
         _focused: Option<crate::models::WindowHandle>,

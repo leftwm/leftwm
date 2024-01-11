@@ -19,7 +19,7 @@ pub trait DisplayServer {
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent>;
 
-    fn load_config(
+    fn reload_config(
         &mut self,
         config: &impl Config,
         focused: Option<WindowHandle>,

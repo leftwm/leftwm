@@ -52,7 +52,7 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn load_config(
+    fn reload_config(
         &mut self,
         config: &impl Config,
         focused: Option<WindowHandle>,
