@@ -21,11 +21,10 @@ pub trait DisplayServer {
 
     fn load_config(
         &mut self,
-        _config: &impl Config,
-        _focused: Option<&Option<WindowHandle>>,
-        _windows: &[Window],
-    ) {
-    }
+        config: &impl Config,
+        focused: Option<WindowHandle>,
+        windows: &[Window],
+    );
 
     fn update_windows(&self, _windows: Vec<&Window>) {}
 

@@ -260,28 +260,24 @@ impl XWrap {
         xw
     }
 
-    pub fn load_config(
-        &mut self,
-        config: &impl Config,
-        focused: Option<&Option<WindowHandle>>,
-        windows: &[Window],
-    ) {
+    pub fn load_config(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
         self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
-        self.load_colors(config, focused, Some(windows));
         self.tag_labels = config.create_list_of_tag_labels();
+        self.colors = Colors {
+            normal: self.get_color(config.default_border_color()),
+            floating: self.get_color(config.floating_border_color()),
+            active: self.get_color(config.focused_border_color()),
+            background: self.get_color(config.background_color()),
+        };
     }
 
     /// Initialize the xwrapper.
     // `XChangeWindowAttributes`: https://tronche.com/gui/x/xlib/window/XChangeWindowAttributes.html
     // `XDeleteProperty`: https://tronche.com/gui/x/xlib/window-information/XDeleteProperty.html
     // TODO: split into smaller functions
-    pub fn init(&mut self, config: &impl Config) {
-        self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
-
+    pub fn init(&mut self) {
         let root = self.root;
-        self.load_colors(config, None, None);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
@@ -313,7 +309,6 @@ impl XWrap {
         }
 
         // EWMH compliance for desktops.
-        self.tag_labels = config.create_list_of_tag_labels();
         self.init_desktops_hints();
 
         self.sync();
@@ -418,34 +413,18 @@ impl XWrap {
         }
     }
 
-    /// Load the colors of our theme.
-    pub fn load_colors(
-        &mut self,
-        config: &impl Config,
-        focused: Option<&Option<WindowHandle>>,
-        windows: Option<&[Window]>,
-    ) {
-        self.colors = Colors {
-            normal: self.get_color(config.default_border_color()),
-            floating: self.get_color(config.floating_border_color()),
-            active: self.get_color(config.focused_border_color()),
-            background: self.get_color(config.background_color()),
-        };
-        // Update all the windows with the new colors.
-        if let Some(windows) = windows {
-            for window in windows {
-                if let WindowHandle::XlibHandle(handle) = window.handle {
-                    let is_focused =
-                        matches!(focused, Some(&Some(focused)) if focused == window.handle);
-                    let color: c_ulong = if is_focused {
-                        self.colors.active
-                    } else if window.floating() {
-                        self.colors.floating
-                    } else {
-                        self.colors.normal
-                    };
-                    self.set_window_border_color(handle, color);
-                }
+    /// Update all the windows with the new colors.
+    pub fn update_colors(&mut self, focused: Option<WindowHandle>, windows: &[Window]) {
+        for window in windows {
+            if let WindowHandle::XlibHandle(handle) = window.handle {
+                let color: c_ulong = if focused == Some(window.handle) {
+                    self.colors.active
+                } else if window.floating() {
+                    self.colors.floating
+                } else {
+                    self.colors.normal
+                };
+                self.set_window_border_color(handle, color);
             }
         }
         self.set_background_color(self.colors.background);

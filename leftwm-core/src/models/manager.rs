@@ -49,11 +49,16 @@ impl<C, SERVER> Manager<C, SERVER> {
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     /// Reload the configuration of the running [`Manager`].
-    pub fn reload_config(&mut self) -> bool {
-        let focused = self.state.focus_manager.window_history.front();
+    pub fn load_theme_config(&mut self) -> bool {
+        let focused = self
+            .state
+            .focus_manager
+            .window_history
+            .front()
+            .and_then(|o| *o);
         self.display_server
             .load_config(&self.config, focused, &self.state.windows);
-        self.state.load_config(&self.config);
+        self.state.load_theme_config(&self.config);
         true
     }
 }

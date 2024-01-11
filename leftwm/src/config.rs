@@ -460,12 +460,12 @@ impl leftwm_core::Config for Config {
                         tracing::warn!("Path submitted does not exist.");
                         write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist");
                     }
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 "UnloadTheme" => {
                     manager.config.theme_setting = ThemeSetting::default();
                     write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
@@ -483,7 +483,7 @@ impl leftwm_core::Config for Config {
                 "UnloadTheme" => {
                     manager.config.theme_setting = ThemeSetting::default();
                     write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);

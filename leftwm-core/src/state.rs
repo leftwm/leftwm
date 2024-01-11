@@ -170,8 +170,7 @@ impl State {
             });
     }
 
-    pub(crate) fn load_config(&mut self, config: &impl Config) {
-        self.mousekey = config.mousekey();
+    pub(crate) fn load_theme_config(&mut self, config: &impl Config) {
         for win in &mut self.windows {
             config.load_window(win);
         }
