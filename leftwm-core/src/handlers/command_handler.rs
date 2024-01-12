@@ -478,6 +478,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
     None
 }
 
+// TODO: closing windows breaks focus, see gh-1204
 fn close_window(state: &mut State) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     if window.is_managed() {

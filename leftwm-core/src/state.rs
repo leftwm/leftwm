@@ -20,11 +20,12 @@ pub struct State {
     pub focus_manager: FocusManager,
     pub layout_manager: LayoutManager,
     pub mode: Mode,
-    pub layout_definitions: Vec<Layout>,
-    pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     pub actions: VecDeque<DisplayAction>,
-    pub tags: Tags, // List of all known tags.
+    pub tags: Tags, // List of all known tags + hidden scratchpad tag (NSP)
+    // entries below are loaded from config and are never changed
+    pub scratchpads: Vec<ScratchPad>,
+    pub layout_definitions: Vec<Layout>,
     pub mousekey: Vec<String>,
     pub disable_tile_drag: bool,
     pub reposition_cursor_on_resize: bool,
@@ -43,8 +44,6 @@ impl State {
         Self {
             focus_manager: FocusManager::new(config),
             layout_manager: LayoutManager::new(config),
-            scratchpads: config.create_list_of_scratchpads(),
-            layout_definitions: config.layout_definitions(),
             screens: Default::default(),
             windows: Default::default(),
             workspaces: Default::default(),
@@ -52,6 +51,8 @@ impl State {
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
+            scratchpads: config.create_list_of_scratchpads(),
+            layout_definitions: config.layout_definitions(),
             mousekey: config.mousekey(),
             disable_tile_drag: config.disable_tile_drag(),
             reposition_cursor_on_resize: config.reposition_cursor_on_resize(),
@@ -60,7 +61,7 @@ impl State {
         }
     }
 
-    // Sorts the windows and puts them in order of importance.
+    /// Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
         let mut sorter = WindowSorter::new(self.windows.iter().collect());
 
@@ -103,10 +104,13 @@ impl State {
         let windows = sorter.finish();
         let handles = windows.iter().map(|w| w.handle).collect();
 
+        // SetWindowOrder is passed to the display server
         let act = DisplayAction::SetWindowOrder(handles);
         self.actions.push_back(act);
     }
 
+    /// Removes border if there is a single visible window.
+    /// Only will run if `single_window_border` is set to `false` in the configuration file.
     pub fn handle_single_border(&mut self, border_width: i32) {
         if self.single_window_border {
             return;
@@ -125,6 +129,8 @@ impl State {
                 .find(|ws| ws.has_tag(&tag.id))
                 .map(|w| w.id);
             let layout = self.layout_manager.layout(wsid.unwrap_or(1), tag.id);
+
+            // TODO: hardcoded layout name.
             if layout.is_monocle() {
                 windows_on_tag.iter_mut().for_each(|w| w.border = 0);
                 continue;
@@ -143,6 +149,8 @@ impl State {
         }
     }
 
+    /// Moves `handle` in front of all other windows of the same order of importance.
+    /// See `sort_windows()` for the order of importance.
     pub fn move_to_top(&mut self, handle: &WindowHandle) -> Option<()> {
         let index = self.windows.iter().position(|w| &w.handle == handle)?;
         let window = self.windows.remove(index);
@@ -288,6 +296,9 @@ impl State {
     }
 }
 
+/// Helper struct for sorting windows.
+/// Sorts windows in `unsorted` via their order of importance
+/// and pushes sorted list onto `stack`.
 struct WindowSorter<'a> {
     stack: Vec<&'a Window>,
     unsorted: Vec<&'a Window>,
