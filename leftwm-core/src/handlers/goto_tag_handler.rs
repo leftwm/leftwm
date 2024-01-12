@@ -1,6 +1,9 @@
 use crate::{models::TagId, state::State};
 
 impl State {
+    /// `goto_tag_handler` is called in response to various `Command`s.
+    ///
+    /// Returns `Some(true)` if changes need to be rendered.
     pub fn goto_tag_handler(&mut self, tag_id: TagId) -> Option<bool> {
         if tag_id > self.tags.len_normal() || tag_id < 1 {
             return Some(false);
