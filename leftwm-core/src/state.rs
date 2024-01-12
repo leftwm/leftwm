@@ -25,9 +25,6 @@ pub struct State {
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     pub actions: VecDeque<DisplayAction>,
     pub tags: Tags, // List of all known tags.
-    pub mousekey: Vec<String>,
-    pub disable_tile_drag: bool,
-    pub reposition_cursor_on_resize: bool,
     pub insert_behavior: InsertBehavior,
     pub single_window_border: bool,
 }
@@ -52,9 +49,6 @@ impl State {
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
-            mousekey: config.mousekey(),
-            disable_tile_drag: config.disable_tile_drag(),
-            reposition_cursor_on_resize: config.reposition_cursor_on_resize(),
             insert_behavior: config.insert_behavior(),
             single_window_border: config.single_window_border(),
         }
@@ -167,7 +161,6 @@ impl State {
     }
 
     pub(crate) fn load_config(&mut self, config: &impl Config) {
-        self.mousekey = config.mousekey();
         for win in &mut self.windows {
             config.load_window(win);
         }
