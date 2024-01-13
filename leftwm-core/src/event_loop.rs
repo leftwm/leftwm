@@ -55,9 +55,9 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 // When a mouse button is pressed or enter/motion notifies are blocked and only appear
                 // once the button is released. This is to double check that we know which window
                 // is currently focused.
-                () = timeout(100), if event_buffer.is_empty()
-                    && self.state.focus_manager.sloppy_mouse_follows_focus
-                    && self.state.focus_manager.behaviour.is_sloppy() => {
+                () = timeout(100), if (self.state.focus_manager.sloppy_mouse_follows_focus &&
+                       self.state.focus_manager.behaviour.is_sloppy() &&
+                       event_buffer.is_empty()) => {
                         self.refresh_focus(&mut event_buffer);
                         continue;
                     }
