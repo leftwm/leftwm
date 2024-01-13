@@ -47,8 +47,13 @@ impl LayoutManager {
 
         let mut available_layouts_per_ws: HashMap<usize, Vec<Layout>> = HashMap::new();
 
-        for (i, ws) in config.workspaces().unwrap_or_default().iter().enumerate() {
-            if let Some(ws_layout_names) = &ws.layouts {
+        for (i, ws) in config
+            .workspaces()
+            .unwrap_or_default()
+            .into_iter()
+            .enumerate()
+        {
+            if let Some(ws_layout_names) = ws.options.unwrap_or_default().layouts {
                 let wsid = i + 1;
                 for ws_layout_name in ws_layout_names {
                     if let Some(layout) = config
@@ -227,18 +232,22 @@ mod tests {
             layout_definitions: Layouts::default().layouts,
             workspaces: Some(vec![
                 crate::config::Workspace {
-                    layouts: Some(vec![
-                        layouts::CENTER_MAIN.to_string(),
-                        layouts::CENTER_MAIN_BALANCED.to_string(),
-                        layouts::MAIN_AND_DECK.to_string(),
-                    ]),
+                    options: Some(crate::config::WorkspaceOptions {
+                        layouts: Some(vec![
+                            layouts::CENTER_MAIN.to_string(),
+                            layouts::CENTER_MAIN_BALANCED.to_string(),
+                            layouts::MAIN_AND_DECK.to_string(),
+                        ]),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 },
+                crate::config::Workspace::default(),
                 crate::config::Workspace {
-                    ..Default::default()
-                },
-                crate::config::Workspace {
-                    layouts: Some(vec![]),
+                    options: Some(crate::config::WorkspaceOptions {
+                        layouts: Some(vec![]),
+                        ..Default::default()
+                    }),
                     ..Default::default()
                 },
             ]),

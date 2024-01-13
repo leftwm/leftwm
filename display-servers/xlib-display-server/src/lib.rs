@@ -149,23 +149,26 @@ impl DisplayServer for XlibDisplayServer {
 impl XlibDisplayServer {
     /// Return a vec of events for setting up state of WM.
     fn initial_events(&self, config: &impl Config) -> Vec<DisplayEvent> {
+        tracing::debug!("config workspaces: {:#?}", config.workspaces());
         let mut events = vec![];
-        if let Some(workspaces) = config.workspaces() {
+        if let Some(mut workspaces) = config.workspaces() {
             let screens = self.xw.get_screens();
-            for (i, wsc) in workspaces.iter().enumerate() {
-                let mut screen = Screen::from(wsc);
+            for (i, wsc) in workspaces.iter_mut().enumerate() {
+                let wsc_output = wsc.output.clone().unwrap_or_default();
+                let mut screen = Screen::from(&wsc_output);
                 screen.root = self.root.into();
                 // If there is a screen corresponding to the given output, create the workspace
-                match screens.iter().find(|i| i.output == wsc.output) {
+                match screens.iter().find(|i| i.output == wsc_output.output) {
                     Some(output_match) => {
-                        if wsc.relative.unwrap_or(false) {
+                        if wsc_output.relative.unwrap_or(false) {
                             screen.bbox.add(output_match.bbox);
                         }
                         screen.id = Some(i + 1);
                     }
                     None => continue,
                 }
-                let e = DisplayEvent::ScreenCreate(screen);
+                tracing::debug!("workspace options: {:?}", wsc.options);
+                let e = DisplayEvent::ScreenCreate(screen, wsc.options.clone());
                 events.push(e);
             }
 
@@ -184,12 +187,18 @@ impl XlibDisplayServer {
             if auto_derive_workspaces {
                 screens
                     .iter()
-                    .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
+                    .filter(|screen| {
+                        !workspaces.iter().any(|wsc| {
+                            wsc.output
+                                .as_ref()
+                                .is_some_and(|wsc| wsc.output == screen.output)
+                        })
+                    })
                     .for_each(|screen| {
                         let mut s = screen.clone();
                         s.id = Some(next_id);
                         next_id += 1;
-                        events.push(DisplayEvent::ScreenCreate(s));
+                        events.push(DisplayEvent::ScreenCreate(s, None));
                     });
             }
         }

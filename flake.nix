@@ -38,6 +38,7 @@
               xorg.libX11
               xorg.libXrandr
               xorg.libXinerama
+              xorg.libXrandr
             ];
 
             inherit GIT_HASH;

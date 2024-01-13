@@ -4,12 +4,25 @@ use crate::models::Size;
 
 #[derive(Serialize, Default, Deserialize, Debug, Clone, PartialEq)]
 pub struct Workspace {
+    #[serde(flatten)]
+    pub output: Option<WorkspaceOutput>,
+    #[serde(flatten)]
+    pub options: Option<WorkspaceOptions>,
+}
+
+#[derive(Serialize, Default, Deserialize, Debug, Clone, PartialEq)]
+pub struct WorkspaceOptions {
+    pub max_window_width: Option<Size>,
+    pub layouts: Option<Vec<String>>,
+    pub pinned_tags: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Default, Deserialize, Debug, Clone, PartialEq)]
+pub struct WorkspaceOutput {
+    pub output: String,
+    pub relative: Option<bool>,
     pub x: i32,
     pub y: i32,
     pub height: i32,
     pub width: i32,
-    pub output: String,
-    pub relative: Option<bool>,
-    pub max_window_width: Option<Size>,
-    pub layouts: Option<Vec<String>>,
 }

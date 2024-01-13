@@ -9,7 +9,7 @@ use crate::models::{Manager, Window, WindowType};
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
 use leftwm_layouts::Layout;
-pub use workspace_config::Workspace;
+pub use workspace_config::{Workspace, WorkspaceOptions, WorkspaceOutput};
 
 pub trait Config {
     fn create_list_of_tag_labels(&self) -> Vec<String>;
@@ -86,6 +86,7 @@ pub trait Config {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use super::workspace_config::Workspace;
     use super::*;
     use crate::models::Screen;
     use crate::models::Window;
@@ -231,7 +232,7 @@ pub(crate) mod tests {
     #[test]
     fn ensure_command_handler_trait_boundary() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         assert!(TestConfig::command_handler("GoToTag2", &mut manager));
         assert_eq!(manager.state.focus_manager.tag_history, &[2, 1]);
     }
@@ -239,7 +240,7 @@ pub(crate) mod tests {
     #[test]
     fn check_wm_class_is_associated_with_predefined_tag() {
         let mut manager = Manager::new_test(vec!["1".to_string(), "2".to_string()]);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
         subject.res_class = Some("ShouldGoToTag2".to_string());
         manager.window_created_handler(subject, 0, 0);

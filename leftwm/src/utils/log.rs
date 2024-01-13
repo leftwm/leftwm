@@ -14,7 +14,7 @@ mod sys;
 ///
 /// # Panics
 ///
-/// - If this fails, we will cast the error upwards for consumption by end user.
+/// - Will panic if can't get any subscriber; If this fails, we will cast the error upwards for consumption by end user.
 pub fn setup_logging() {
     let subscribers = get_subscribers();
 

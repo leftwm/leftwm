@@ -533,7 +533,7 @@ mod tests {
     #[test]
     fn show_scratchpad_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
         let first_tag = manager.state.tags.get(1).unwrap().id;
 
@@ -568,7 +568,7 @@ mod tests {
     #[test]
     fn hide_scratchpad_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
         let first_tag = manager.state.tags.get(1).unwrap().id;
 
@@ -603,7 +603,7 @@ mod tests {
     #[test]
     fn toggle_scratchpad_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
         let mock_window = 1_u32;
@@ -668,7 +668,7 @@ mod tests {
     /// After releasing, the scratchpad should not be active anymore (no more windows)
     fn release_scratchpad_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
 
         // Setup
         let mock_window1 = 10_u32;
@@ -712,7 +712,7 @@ mod tests {
     /// After releasing 1 window, the rest should still be in the scratchpad
     fn release_scratchpad_multiple_windows_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
         // Setup
@@ -776,7 +776,7 @@ mod tests {
     #[test]
     fn attach_scratchpad_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
         // Setup
@@ -946,7 +946,7 @@ mod tests {
         }
 
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
         // Setup
@@ -1057,7 +1057,7 @@ mod tests {
     #[test]
     fn change_focus_with_open_scratchpad_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
 
         // Setup
         let mock_window1 = 1_u32;
@@ -1167,7 +1167,7 @@ mod tests {
     #[test]
     fn focus_top_from_scratchpad_test() {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
 
         // Setup
         let mock_window1 = 1_u32;
@@ -1241,7 +1241,7 @@ mod tests {
     #[test]
     fn toggle_scratchpad_also_toggles_single_window_borders() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-        manager.screen_create_handler(Default::default());
+        manager.screen_create_handler(Default::default(), None);
         let second_tag = manager.state.tags.get(2).unwrap().id;
 
         let scratchpad_pid = 1_u32;

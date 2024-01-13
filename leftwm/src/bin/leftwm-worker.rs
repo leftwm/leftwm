@@ -28,6 +28,8 @@ fn main() {
 
     match exit_status {
         Ok(_) => tracing::info!("Completed"),
-        Err(err) => tracing::info!("Completed with error: {:?}", err),
+        Err(err) => {
+            tracing::info!("Completed with error: {:#?}", err);
+        }
     }
 }

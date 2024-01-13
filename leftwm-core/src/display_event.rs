@@ -1,4 +1,5 @@
 use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask};
+use crate::config::WorkspaceOptions;
 use crate::models::WindowChange;
 use crate::Command;
 
@@ -16,7 +17,7 @@ pub enum DisplayEvent {
     MoveFocusTo(i32, i32),         // Focus the nearest window to this point.
     MoveWindow(WindowHandle, i32, i32),
     ResizeWindow(WindowHandle, i32, i32),
-    ScreenCreate(Screen),
+    ScreenCreate(Screen, Option<WorkspaceOptions>),
     SendCommand(Command),
     ConfigureXlibWindow(WindowHandle),
     ChangeToNormalMode,

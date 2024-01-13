@@ -488,7 +488,7 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.state.insert_behavior = InsertBehavior::Bottom;
 
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -512,7 +512,7 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.state.insert_behavior = InsertBehavior::Top;
 
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -535,7 +535,7 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.state.insert_behavior = InsertBehavior::AfterCurrent;
 
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -567,7 +567,7 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.state.insert_behavior = InsertBehavior::BeforeCurrent;
 
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
             -1,
@@ -598,7 +598,7 @@ mod tests {
     #[test]
     fn single_window_has_no_border() {
         let mut manager = Manager::new_test_with_border(vec![], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
@@ -612,7 +612,7 @@ mod tests {
     #[test]
     fn multiple_windows_have_borders() {
         let mut manager = Manager::new_test_with_border(vec![], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
@@ -632,7 +632,7 @@ mod tests {
     #[test]
     fn remaining_single_window_has_no_border() {
         let mut manager = Manager::new_test_with_border(vec![], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         manager.window_created_handler(
             Window::new(WindowHandle::MockHandle(1), None, None),
@@ -653,7 +653,7 @@ mod tests {
     #[test]
     fn single_windows_on_different_tags_have_no_border() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&1);
@@ -670,7 +670,7 @@ mod tests {
     #[test]
     fn single_window_has_no_border_and_windows_on_another_tag_have_borders() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&1);
@@ -692,7 +692,7 @@ mod tests {
     #[test]
     fn remaining_single_window_on_another_tag_has_no_border() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
 
         let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
         first_window.tag(&1);
@@ -715,7 +715,7 @@ mod tests {
     #[test]
     fn monocle_layout_only_has_single_windows() {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string()], 1);
-        manager.screen_create_handler(Screen::default());
+        manager.screen_create_handler(Screen::default(), None);
         manager.state.layout_manager.set_layout(1, 1, MONOCLE);
         // manager.state.tags.get_mut(1).unwrap().set_layout(String::from("Monocle"));
         manager.window_created_handler(
