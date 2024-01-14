@@ -35,7 +35,8 @@ impl DisplayServer for XlibDisplayServer {
     fn new(config: &impl Config) -> Self {
         let mut wrap = XWrap::new();
 
-        wrap.init(config); // setup events masks
+        wrap.load_config(config);
+        wrap.init(); // setup events masks
 
         let root = wrap.get_default_root();
         let instance = Self {
@@ -51,13 +52,14 @@ impl DisplayServer for XlibDisplayServer {
         }
     }
 
-    fn load_config(
+    fn reload_config(
         &mut self,
         config: &impl Config,
-        focused: Option<&Option<WindowHandle>>,
+        focused: Option<WindowHandle>,
         windows: &[Window],
     ) {
-        self.xw.load_config(config, focused, windows);
+        self.xw.load_config(config);
+        self.xw.update_colors(focused, windows);
     }
 
     fn update_windows(&self, windows: Vec<&Window>) {

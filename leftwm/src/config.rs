@@ -8,7 +8,7 @@ use self::keybind::Modifier;
 
 #[cfg(feature = "lefthk")]
 use super::BaseCommand;
-use super::ThemeSetting;
+use super::ThemeConfig;
 #[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
 use anyhow::Result;
@@ -207,7 +207,7 @@ pub struct Config {
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
     //       at least when `TOML` is used as config language
     #[serde(skip)]
-    pub theme_setting: ThemeSetting,
+    pub theme_setting: ThemeConfig,
 }
 
 #[must_use]
@@ -460,12 +460,12 @@ impl leftwm_core::Config for Config {
                         tracing::warn!("Path submitted does not exist.");
                         write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist");
                     }
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 "UnloadTheme" => {
-                    manager.config.theme_setting = ThemeSetting::default();
+                    manager.config.theme_setting = ThemeConfig::default();
                     write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
@@ -481,9 +481,9 @@ impl leftwm_core::Config for Config {
                     false
                 }
                 "UnloadTheme" => {
-                    manager.config.theme_setting = ThemeSetting::default();
+                    manager.config.theme_setting = ThemeConfig::default();
                     write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);

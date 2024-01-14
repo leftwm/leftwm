@@ -2,7 +2,7 @@ use leftwm_core::models::{ScratchPad, Size};
 
 #[cfg(feature = "lefthk")]
 use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
-use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeSetting};
+use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeConfig};
 
 impl Default for Config {
     // We allow this because this function would be difficult to reduce. If someone would like to
@@ -233,7 +233,7 @@ impl Default for Config {
             mousekey: Some("Mod4".into()), // win key
             #[cfg(feature = "lefthk")]
             keybind: commands,
-            theme_setting: ThemeSetting::default(),
+            theme_setting: ThemeConfig::default(),
             max_window_width: None,
             state_path: None,
             sloppy_mouse_follows_focus: true,

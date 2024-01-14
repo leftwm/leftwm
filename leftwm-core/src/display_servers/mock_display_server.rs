@@ -29,4 +29,13 @@ impl DisplayServer for MockDisplayServer {
     fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
         unimplemented!()
     }
+
+    fn reload_config(
+        &mut self,
+        _config: &impl Config,
+        _focused: Option<crate::models::WindowHandle>,
+        _windows: &[crate::Window],
+    ) {
+        unimplemented!()
+    }
 }
