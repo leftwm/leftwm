@@ -8,6 +8,10 @@ use crate::utils::modmask_lookup::ModMask;
 use x11_dl::xlib;
 
 impl State {
+    /// `mouse_combo_handler` is called when the display server sends
+    /// `DisplayEvent::MouseCombo(modmask, button, handle, x, y)`
+    ///
+    /// Returns `true` if changes need to be rendered.
     pub fn mouse_combo_handler(
         &mut self,
         modmask: ModMask,
@@ -44,6 +48,7 @@ impl State {
         true
     }
 
+    // private helper function
     fn build_action(
         &mut self,
         mod_mask: ModMask,

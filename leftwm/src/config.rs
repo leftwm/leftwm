@@ -219,15 +219,15 @@ pub fn load() -> Config {
 
 /// # Panics
 ///
-/// Function can only panic if toml cannot be serialized. This should not occur as it is defined
+/// Function can only panic if config.ron file cannot be serialized. This should not occur as it is defined
 /// globally.
 ///
 /// # Errors
 ///
 /// Function will throw an error if `BaseDirectories` doesn't exist, if user doesn't have
-/// permissions to place config.toml, if config.toml cannot be read (access writes, malformed file,
+/// permissions to place config.ron, if config.ron cannot be read (access writes, malformed file,
 /// etc.).
-/// Function can also error from inability to save config.toml (if it is the first time running
+/// Function can also error from inability to save config.ron (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
     tracing::debug!("Loading config file");

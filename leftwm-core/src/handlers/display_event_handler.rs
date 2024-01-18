@@ -5,7 +5,7 @@ use crate::models::{WindowHandle, WindowState};
 use crate::State;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
-    /// Process a collection of events, and apply them changes to a manager.
+    /// Process a collection of events, and apply changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn display_event_handler(&mut self, event: DisplayEvent) -> bool {
         let state = &mut self.state;
@@ -108,6 +108,8 @@ fn from_movement(state: &mut State, handle: WindowHandle, x: i32, y: i32) -> boo
     false
 }
 
+// private helper function wrapping `window_move_handler`
+// TODO: maybe move to window_move_handler.rs
 fn from_move_window<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     handle: WindowHandle,
@@ -121,6 +123,9 @@ fn from_move_window<C: Config, SERVER: DisplayServer>(
     }
     manager.window_move_handler(&handle, x, y)
 }
+
+// private helper function wrapping `window_resize_handler`
+// TODO: maybe move to window_resize_handler.rs
 fn from_resize_window<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
     handle: WindowHandle,
@@ -135,6 +140,8 @@ fn from_resize_window<C: Config, SERVER: DisplayServer>(
     manager.window_resize_handler(&handle, x, y)
 }
 
+// called when manager receives `DisplayAction::ConfigureXlibWindow(handle)`
+// then sends back a copy of the event if the state already knows about it.
 fn from_configure_xlib_window(state: &mut State, handle: WindowHandle) -> bool {
     if let Some(window) = state.windows.iter().find(|w| w.handle == handle) {
         let act = DisplayAction::ConfigureXlibWindow(window.clone());
@@ -142,6 +149,7 @@ fn from_configure_xlib_window(state: &mut State, handle: WindowHandle) -> bool {
     }
     false
 }
+
 // Save off the info about position of the window when we start to move/resize.
 fn prepare_window(state: &mut State, handle: WindowHandle) {
     if let Some(w) = state.windows.iter_mut().find(|w| w.handle == handle) {
