@@ -15,7 +15,7 @@ impl XWrap {
             self.grab_buttons(handle, xproto::ButtonIndex::M1, xproto::ModMask::ANY)?;
             self.grab_buttons(handle, xproto::ButtonIndex::M3, xproto::ModMask::ANY)?;
         }
-        let mouse_key_mask = xproto::ModMask::from(self.mouse_key_mask as u16);
+        let mouse_key_mask = xproto::ModMask::from(self.mouse_key_mask.bits() as u16);
         self.grab_buttons(handle, xproto::ButtonIndex::M1, mouse_key_mask)?;
         self.grab_buttons(
             handle,

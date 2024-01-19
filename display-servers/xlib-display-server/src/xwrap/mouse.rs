@@ -13,10 +13,18 @@ impl XWrap {
             self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
             self.grab_buttons(handle, xlib::Button3, xlib::AnyModifier);
         }
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask);
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask | xlib::ShiftMask);
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask);
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask | xlib::ShiftMask);
+        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask.bits() as u32);
+        self.grab_buttons(
+            handle,
+            xlib::Button1,
+            self.mouse_key_mask.bits() as u32 | xlib::ShiftMask,
+        );
+        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask.bits() as u32);
+        self.grab_buttons(
+            handle,
+            xlib::Button3,
+            self.mouse_key_mask.bits() as u32 | xlib::ShiftMask,
+        );
     }
 
     /// Grabs the button with the modifier for a window.

@@ -11,13 +11,13 @@ use crate::command::FocusDeltaBehavior;
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::{self, MAIN_AND_DECK, MONOCLE};
-use crate::models::{TagId, WindowState};
+use crate::models::{Handle, TagId, WindowState};
 use crate::state::State;
 use crate::utils::helpers;
 use crate::utils::helpers::relative_find;
 use crate::{config::Config, models::FocusBehaviour};
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /* When adding a command
      * please update src/utils/command_pipe and leftwm/src/command if:
      * - a command is introduced or renamed
@@ -27,7 +27,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
      * - a new command is introduced that requires a value
      *  */
     /// Processes a command and invokes the associated function.
-    pub fn command_handler(&mut self, command: &Command) -> bool {
+    pub fn command_handler(&mut self, command: &Command<H>) -> bool {
         process_internal(self, command).unwrap_or(false)
     }
 }
@@ -40,16 +40,16 @@ macro_rules! move_focus_common_vars {
         let layout = Some($state.layout_manager.layout(ws_id, tag_id).name.to_owned());
 
         let for_active_workspace =
-            |x: &Window| -> bool { x.tag == Some(tag_id) && x.is_managed() };
+            |x: &Window<H>| -> bool { x.tag == Some(tag_id) && x.is_managed() };
 
         let to_reorder = helpers::vec_extract(&mut $state.windows, for_active_workspace);
         $func($state, handle, &layout, to_reorder, $($arg),*)
     }};
 }
 
-fn process_internal<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    command: &Command,
+fn process_internal<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    manager: &mut Manager<H, C, SERVER>,
+    command: &Command<H>,
 ) -> Option<bool> {
     let state = &mut manager.state;
     match command {
@@ -157,7 +157,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
     }
 }
 
-fn focus_next_empty_tag(state: &mut State) -> Option<bool> {
+fn focus_next_empty_tag<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let used_tags: Vec<usize> = state.windows.iter().filter_map(|w| w.tag).collect();
     let unused_tags: Vec<usize> = state
         .tags
@@ -179,7 +179,7 @@ fn focus_next_empty_tag(state: &mut State) -> Option<bool> {
     state.goto_tag_handler(*next_unused_tag)
 }
 
-fn focus_previous_empty_tag(state: &mut State) -> Option<bool> {
+fn focus_previous_empty_tag<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let used_tags: Vec<usize> = state.windows.iter().filter_map(|w| w.tag).collect();
     let unused_tags: Vec<usize> = state
         .tags
@@ -201,7 +201,7 @@ fn focus_previous_empty_tag(state: &mut State) -> Option<bool> {
     state.goto_tag_handler(*previous_unused_tag)
 }
 
-fn focus_next_used_tag(state: &mut State) -> Option<bool> {
+fn focus_next_used_tag<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let mut used_tags: Vec<usize> = state.windows.iter().filter_map(|w| w.tag).collect();
     used_tags.sort_unstable();
     let next_used_tag = match used_tags
@@ -217,7 +217,7 @@ fn focus_next_used_tag(state: &mut State) -> Option<bool> {
     state.goto_tag_handler(*next_used_tag)
 }
 
-fn focus_previous_used_tag(state: &mut State) -> Option<bool> {
+fn focus_previous_used_tag<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let mut used_tags: Vec<usize> = state.windows.iter().filter_map(|w| w.tag).collect();
     used_tags.sort_unstable();
     used_tags.reverse();
@@ -234,7 +234,7 @@ fn focus_previous_used_tag(state: &mut State) -> Option<bool> {
     state.goto_tag_handler(*previous_used_tag)
 }
 
-fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
+fn toggle_state<H: Handle>(state: &mut State<H>, window_state: WindowState) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     let handle = window.handle;
     let toggle_to = !window.states.contains(&window_state);
@@ -247,10 +247,10 @@ fn toggle_state(state: &mut State, window_state: WindowState) -> Option<bool> {
     }
 }
 
-fn move_to_tag<C: Config, SERVER: DisplayServer>(
-    window: Option<WindowHandle>,
+fn move_to_tag<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    window: Option<WindowHandle<H>>,
     tag_id: TagId,
-    manager: &mut Manager<C, SERVER>,
+    manager: &mut Manager<H, C, SERVER>,
 ) -> Option<bool> {
     let tag = manager.state.tags.get(tag_id)?.clone();
 
@@ -303,8 +303,8 @@ fn move_to_tag<C: Config, SERVER: DisplayServer>(
 /// Move currently focused window to tag relative to current tag
 ///
 /// Conditionally allow focus to follow the window to the target tag
-fn move_to_tag_relative<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
+fn move_to_tag_relative<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    manager: &mut Manager<H, C, SERVER>,
     follow: bool,
     delta: i32,
 ) -> Option<bool> {
@@ -325,8 +325,8 @@ fn move_to_tag_relative<C: Config, SERVER: DisplayServer>(
     Some(true)
 }
 
-fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
+fn move_window_to_workspace_change<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    manager: &mut Manager<H, C, SERVER>,
     delta: i32,
 ) -> Option<bool> {
     let current = manager
@@ -340,7 +340,11 @@ fn move_window_to_workspace_change<C: Config, SERVER: DisplayServer>(
     move_to_tag(None, tag_id, manager)
 }
 
-fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Option<bool> {
+fn goto_tag<H: Handle>(
+    state: &mut State<H>,
+    input_tag: TagId,
+    current_tag_swap: bool,
+) -> Option<bool> {
     let current_tag = state.focus_manager.tag(0).unwrap_or_default();
     let previous_tag = state.focus_manager.tag(1).unwrap_or_default();
     let destination_tag = if current_tag_swap && current_tag == input_tag {
@@ -351,12 +355,12 @@ fn goto_tag(state: &mut State, input_tag: TagId, current_tag_swap: bool) -> Opti
     state.goto_tag_handler(destination_tag)
 }
 
-fn return_to_last_tag(state: &mut State) -> Option<bool> {
+fn return_to_last_tag<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let previous_tag = state.focus_manager.tag(1).unwrap_or_default();
     state.goto_tag_handler(previous_tag)
 }
 
-fn focus_window(state: &mut State, param: &str) -> Option<bool> {
+fn focus_window<H: Handle>(state: &mut State<H>, param: &str) -> Option<bool> {
     match param.parse::<usize>() {
         Ok(index) if index > 0 => {
             // 1-based index seems more user-friendly to me in this context
@@ -375,8 +379,8 @@ fn focus_window(state: &mut State, param: &str) -> Option<bool> {
     }
 }
 
-fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> {
-    let is_target = |w: &Window| -> bool {
+fn focus_window_by_class<H: Handle>(state: &mut State<H>, window_class: &str) -> Option<bool> {
+    let is_target = |w: &Window<H>| -> bool {
         w.res_name
             .as_ref()
             .zip(w.res_class.as_ref())
@@ -417,7 +421,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
                 w.has_tag(&tag_id) && w.is_managed() && !w.floating()
             });
 
-            let cycle = |wins: &mut Vec<Window>, s: &mut State| {
+            let cycle = |wins: &mut Vec<Window<H>>, s: &mut State<H>| {
                 let window_index = wins.iter().position(|w| w.handle == handle).unwrap_or(0);
                 _ = helpers::cycle_vec(wins, -(window_index as i32));
                 s.windows.append(wins);
@@ -446,7 +450,7 @@ fn focus_window_by_class(state: &mut State, window_class: &str) -> Option<bool> 
 
 /// Focus the adjacent tags, depending on the delta.
 /// A delta of 1 means "next tag", a delta of -1 means "previous tag".
-fn focus_tag_change(state: &mut State, delta: i8) -> Option<bool> {
+fn focus_tag_change<H: Handle>(state: &mut State<H>, delta: i8) -> Option<bool> {
     let current_tag = state.focus_manager.tag(0)?;
     let tags = state.tags.normal();
     let relative_tag_id = relative_find(tags, |tag| tag.id == current_tag, i32::from(delta), true)
@@ -454,7 +458,7 @@ fn focus_tag_change(state: &mut State, delta: i8) -> Option<bool> {
     state.goto_tag_handler(relative_tag_id)
 }
 
-fn swap_tags(state: &mut State) -> Option<bool> {
+fn swap_tags<H: Handle>(state: &mut State<H>) -> Option<bool> {
     if state.workspaces.len() >= 2 && state.focus_manager.workspace_history.len() >= 2 {
         let hist_a = *state.focus_manager.workspace_history.front()?;
         let hist_b = *state.focus_manager.workspace_history.get(1)?;
@@ -474,7 +478,7 @@ fn swap_tags(state: &mut State) -> Option<bool> {
     None
 }
 
-fn close_window(state: &mut State) -> Option<bool> {
+fn close_window<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     if window.is_managed() {
         let act = DisplayAction::KillWindow(window.handle);
@@ -483,7 +487,7 @@ fn close_window(state: &mut State) -> Option<bool> {
     None
 }
 
-fn move_to_last_workspace(state: &mut State) -> Option<bool> {
+fn move_to_last_workspace<H: Handle>(state: &mut State<H>) -> Option<bool> {
     if state.workspaces.len() >= 2 && state.focus_manager.workspace_history.len() >= 2 {
         let index = *state.focus_manager.workspace_history.get(1)?;
         let wp_tags = state.workspaces.get(index)?.tag;
@@ -494,7 +498,7 @@ fn move_to_last_workspace(state: &mut State) -> Option<bool> {
     None
 }
 
-fn next_layout(state: &mut State) -> Option<bool> {
+fn next_layout<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     state
         .layout_manager
@@ -502,7 +506,7 @@ fn next_layout(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn previous_layout(state: &mut State) -> Option<bool> {
+fn previous_layout<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     state
         .layout_manager
@@ -510,7 +514,7 @@ fn previous_layout(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
+fn set_layout<H: Handle>(layout: &str, state: &mut State<H>) -> Option<bool> {
     let tag_id = state.focus_manager.tag(0)?;
     // When switching to Monocle or MainAndDeck layout while in Driven
     // or ClickTo focus mode, we check if the focus is given to a visible window.
@@ -565,7 +569,7 @@ fn set_layout(layout: &str, state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn floating_to_tile(state: &mut State) -> Option<bool> {
+fn floating_to_tile<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let workspace = state.focus_manager.workspace(&state.workspaces)?;
     let window = state.focus_manager.window_mut(&mut state.windows)?;
     if window.must_float() {
@@ -584,7 +588,7 @@ fn floating_to_tile(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn tile_to_floating(state: &mut State) -> Option<bool> {
+fn tile_to_floating<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let width = state.default_width;
     let height = state.default_height;
     let window = state.focus_manager.window_mut(&mut state.windows)?;
@@ -614,7 +618,7 @@ fn tile_to_floating(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn toggle_floating(state: &mut State) -> Option<bool> {
+fn toggle_floating<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     if window.floating() {
         floating_to_tile(state)
@@ -623,19 +627,19 @@ fn toggle_floating(state: &mut State) -> Option<bool> {
     }
 }
 
-fn move_window_change(
-    state: &mut State,
-    mut handle: WindowHandle,
+fn move_window_change<H: Handle>(
+    state: &mut State<H>,
+    mut handle: WindowHandle<H>,
     layout: &Option<String>,
-    mut to_reorder: Vec<Window>,
+    mut to_reorder: Vec<Window<H>>,
     val: i32,
 ) -> Option<bool> {
-    let is_handle = |x: &Window| -> bool { x.handle == handle };
+    let is_handle = |x: &Window<H>| -> bool { x.handle == handle };
     if layout == &Some(MONOCLE.to_string()) {
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if layout == &Some(MAIN_AND_DECK.to_string()) {
-        if let Some(index) = to_reorder.iter().position(|x: &Window| !x.floating()) {
+        if let Some(index) = to_reorder.iter().position(|x: &Window<H>| !x.floating()) {
             let mut window_group = to_reorder.split_off(index + 1);
             if !to_reorder.iter().any(|w| w.handle == handle) {
                 handle = helpers::relative_find(&window_group, is_handle, -val, true)?.handle;
@@ -652,16 +656,16 @@ fn move_window_change(
 }
 
 //val and layout aren't used which is a bit awkward
-fn move_window_top(
-    state: &mut State,
-    handle: WindowHandle,
+fn move_window_top<H: Handle>(
+    state: &mut State<H>,
+    handle: WindowHandle<H>,
     _layout: &Option<String>,
-    mut to_reorder: Vec<Window>,
+    mut to_reorder: Vec<Window<H>>,
     swap: bool,
 ) -> Option<bool> {
     // Moves the selected window at index 0 of the window list.
     // If the selected window is already at index 0, it is sent to index 1.
-    let is_handle = |x: &Window| -> bool { x.handle == handle };
+    let is_handle = |x: &Window<H>| -> bool { x.handle == handle };
     let list = &mut to_reorder;
     let len = list.len();
     let index = list.iter().position(is_handle)?;
@@ -685,16 +689,16 @@ fn move_window_top(
     Some(true)
 }
 
-fn swap_window_top(
-    state: &mut State,
-    handle: WindowHandle,
+fn swap_window_top<H: Handle>(
+    state: &mut State<H>,
+    handle: WindowHandle<H>,
     _layout: &Option<String>,
-    mut to_reorder: Vec<Window>,
+    mut to_reorder: Vec<Window<H>>,
     swap: bool,
 ) -> Option<bool> {
     // Swaps the selected window to index 0 of the window list.
     // If the selected window is already at index 0, it is sent to index 1.
-    let is_handle = |x: &Window| -> bool { x.handle == handle };
+    let is_handle = |x: &Window<H>| -> bool { x.handle == handle };
     let list = &mut to_reorder;
     let len = list.len();
     let index = list.iter().position(is_handle)?;
@@ -717,14 +721,14 @@ fn swap_window_top(
     Some(true)
 }
 
-fn focus_window_change(
-    state: &mut State,
-    mut handle: WindowHandle,
+fn focus_window_change<H: Handle>(
+    state: &mut State<H>,
+    mut handle: WindowHandle<H>,
     layout: &Option<String>,
-    mut to_reorder: Vec<Window>,
+    mut to_reorder: Vec<Window<H>>,
     val: i32,
 ) -> Option<bool> {
-    let is_handle = |x: &Window| -> bool { x.handle == handle };
+    let is_handle = |x: &Window<H>| -> bool { x.handle == handle };
     if layout == &Some(layouts::MONOCLE.to_string()) {
         // For Monocle we want to also move windows up/down
         // Not the best solution but results
@@ -734,7 +738,7 @@ fn focus_window_change(
     } else if layout == &Some(layouts::MAIN_AND_DECK.to_string()) {
         let len = to_reorder.len() as i32;
         if len > 0 {
-            let index = match to_reorder.iter().position(|x: &Window| !x.floating()) {
+            let index = match to_reorder.iter().position(|x: &Window<H>| !x.floating()) {
                 Some(i) => {
                     if i as i32 == len - 1 {
                         i
@@ -755,7 +759,7 @@ fn focus_window_change(
     Some(layout == &Some(layouts::MONOCLE.to_string()))
 }
 
-fn focus_window_top(state: &mut State, swap: bool) -> Option<bool> {
+fn focus_window_top<H: Handle>(state: &mut State<H>, swap: bool) -> Option<bool> {
     let tag = state.focus_manager.tag(0)?;
     let cur = state.focus_manager.window(&state.windows).map(|w| w.handle);
     let prev = state.focus_manager.tags_last_window.get(&tag).copied();
@@ -775,8 +779,8 @@ fn focus_window_top(state: &mut State, swap: bool) -> Option<bool> {
     None
 }
 
-fn close_all_other_windows(state: &mut State) -> Option<bool> {
-    let current_window: Option<WindowHandle> =
+fn close_all_other_windows<H: Handle>(state: &mut State<H>) -> Option<bool> {
+    let current_window: Option<WindowHandle<H>> =
         state.focus_manager.window(&state.windows).map(|w| w.handle);
     let current_workspace = state.focus_manager.workspace(&state.workspaces);
 
@@ -792,7 +796,7 @@ fn close_all_other_windows(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
+fn focus_workspace_change<H: Handle>(state: &mut State<H>, val: i32) -> Option<bool> {
     let current = state.focus_manager.workspace(&state.workspaces)?;
     let workspace = helpers::relative_find(&state.workspaces, |w| w == current, val, true)?.clone();
 
@@ -811,7 +815,7 @@ fn focus_workspace_change(state: &mut State, val: i32) -> Option<bool> {
     None
 }
 
-fn rotate_tag(state: &mut State) -> Option<bool> {
+fn rotate_tag<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     let workspace_id = workspace.id;
     let tag_id = state.focus_manager.tag(0)?;
@@ -820,7 +824,7 @@ fn rotate_tag(state: &mut State) -> Option<bool> {
     Some(true)
 }
 
-fn change_main_size(state: &mut State, delta: i32, factor: i8) -> Option<bool> {
+fn change_main_size<H: Handle>(state: &mut State<H>, delta: i32, factor: i8) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     let workspace_id = workspace.id;
     let tag_id = state.focus_manager.tag(0)?;
@@ -829,7 +833,7 @@ fn change_main_size(state: &mut State, delta: i32, factor: i8) -> Option<bool> {
     Some(true)
 }
 
-fn change_main_count(state: &mut State, factor: i8) -> Option<bool> {
+fn change_main_count<H: Handle>(state: &mut State<H>, factor: i8) -> Option<bool> {
     let workspace = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     let workspace_id = workspace.id;
     let tag_id = state.focus_manager.tag(0)?;
@@ -842,13 +846,13 @@ fn change_main_count(state: &mut State, factor: i8) -> Option<bool> {
     Some(true)
 }
 
-fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bool> {
+fn set_margin_multiplier<H: Handle>(state: &mut State<H>, margin_multiplier: f32) -> Option<bool> {
     let ws = state.focus_manager.workspace_mut(&mut state.workspaces)?;
     ws.set_margin_multiplier(margin_multiplier);
     let tag = ws.tag;
     if state.windows.iter().any(|w| w.r#type == WindowType::Normal) {
         let for_active_workspace =
-            |x: &Window| -> bool { tag == x.tag && x.r#type == WindowType::Normal };
+            |x: &Window<H>| -> bool { tag == x.tag && x.r#type == WindowType::Normal };
         let mut to_apply_margin_multiplier =
             helpers::vec_extract(&mut state.windows, for_active_workspace);
         for w in &mut to_apply_margin_multiplier {
@@ -861,7 +865,11 @@ fn set_margin_multiplier(state: &mut State, margin_multiplier: f32) -> Option<bo
     Some(true)
 }
 
-fn send_workspace_to_tag(state: &mut State, ws_index: usize, tag_index: usize) -> bool {
+fn send_workspace_to_tag<H: Handle>(
+    state: &mut State<H>,
+    ws_index: usize,
+    tag_index: usize,
+) -> bool {
     // todo: address inconsistency of using the index instead of the id here
     if ws_index < state.workspaces.len() && tag_index < state.tags.len_normal() {
         let workspace = &state.workspaces[ws_index].clone();
@@ -875,12 +883,13 @@ fn send_workspace_to_tag(state: &mut State, ws_index: usize, tag_index: usize) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::Tags;
+    use crate::models::{MockHandle, Tags};
 
     fn mock_update(
         manager: &mut Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         >,
     ) {
         while let Some(act) = manager.state.actions.pop_front() {
@@ -912,7 +921,7 @@ mod tests {
 
         for i in 1..=3 {
             manager.window_created_handler(
-                Window::new(WindowHandle::MockHandle(i), None, None),
+                Window::new(WindowHandle::<MockHandle>(i), None, None),
                 -1,
                 -1,
             );
@@ -941,7 +950,7 @@ mod tests {
 
         for i in 1..=3 {
             manager.window_created_handler(
-                Window::new(WindowHandle::MockHandle(i), None, None),
+                Window::new(WindowHandle::<MockHandle>(i), None, None),
                 -1,
                 -1,
             );
@@ -970,16 +979,16 @@ mod tests {
 
         for i in 1..=4 {
             manager.window_created_handler(
-                Window::new(WindowHandle::MockHandle(i), None, None),
+                Window::new(WindowHandle::<MockHandle>(i), None, None),
                 -1,
                 -1,
             );
         }
 
-        manager.state.focus_window(&WindowHandle::MockHandle(2));
+        manager.state.focus_window(&WindowHandle::<MockHandle>(2));
         manager.command_handler(&Command::ToggleMaximized);
 
-        manager.state.focus_window(&WindowHandle::MockHandle(3));
+        manager.state.focus_window(&WindowHandle::<MockHandle>(3));
         manager.command_handler(&Command::ToggleFullScreen);
 
         mock_update(&mut manager);
@@ -987,10 +996,10 @@ mod tests {
 
         // Fullscreen(3) > maximized(2) > normal(1) + normal(4)
         let expected_order = vec![
-            WindowHandle::MockHandle(3),
-            WindowHandle::MockHandle(2),
-            WindowHandle::MockHandle(1),
-            WindowHandle::MockHandle(4),
+            WindowHandle::<MockHandle>(3),
+            WindowHandle::<MockHandle>(2),
+            WindowHandle::<MockHandle>(1),
+            WindowHandle::<MockHandle>(4),
         ];
 
         match manager.state.actions.front().unwrap() {
@@ -1179,17 +1188,17 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(3), None, None),
+            Window::new(WindowHandle::<MockHandle>(3), None, None),
             -1,
             -1,
         );
@@ -1233,17 +1242,17 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(3), None, None),
+            Window::new(WindowHandle::<MockHandle>(3), None, None),
             -1,
             -1,
         );
@@ -1274,7 +1283,7 @@ mod tests {
         ]);
         manager.screen_create_handler(Screen::default());
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
@@ -1302,12 +1311,12 @@ mod tests {
         let mut manager = Manager::new_test(vec!["AO".to_string(), "EU".to_string()]);
         manager.screen_create_handler(Screen::default());
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
@@ -1333,12 +1342,12 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
@@ -1361,11 +1370,11 @@ mod tests {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
@@ -1390,7 +1399,7 @@ mod tests {
 
         manager.state.focus_tag(&1);
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
@@ -1433,15 +1442,15 @@ mod tests {
 
         manager.state.focus_tag(&1);
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&1);
         manager.window_created_handler(second_window, -1, -1);
 
-        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        let mut third_window = Window::new(WindowHandle::<MockHandle>(3), None, None);
         third_window.tag(&2);
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
@@ -1485,7 +1494,7 @@ mod tests {
         > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&2);
         manager.window_created_handler(first_window, -1, -1);
 
@@ -1530,15 +1539,15 @@ mod tests {
 
         manager.state.focus_tag(&1);
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&1);
         manager.window_created_handler(second_window, -1, -1);
 
-        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        let mut third_window = Window::new(WindowHandle::<MockHandle>(3), None, None);
         third_window.tag(&2);
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
@@ -1583,11 +1592,11 @@ mod tests {
 
         manager.state.focus_tag(&1);
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
@@ -1606,7 +1615,7 @@ mod tests {
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Used".to_string()]);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&2);
         manager.window_created_handler(first_window, -1, -1);
 
@@ -1634,15 +1643,15 @@ mod tests {
 
         manager.state.focus_tag(&1);
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
-        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        let mut third_window = Window::new(WindowHandle::<MockHandle>(3), None, None);
         third_window.tag(&4);
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
@@ -1686,11 +1695,11 @@ mod tests {
         > = Manager::new_test(vec!["A".to_string(), "B".to_string(), "C".to_string()]);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
@@ -1711,7 +1720,7 @@ mod tests {
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Used".to_string()]);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&2);
         manager.window_created_handler(first_window, -1, -1);
 
@@ -1738,15 +1747,15 @@ mod tests {
         ]);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
-        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        let mut third_window = Window::new(WindowHandle::<MockHandle>(3), None, None);
         third_window.tag(&4);
         let third_window_handle = third_window.handle;
         manager.window_created_handler(third_window, -1, -1);
@@ -1786,16 +1795,17 @@ mod tests {
     #[test]
     fn goto_previous_used_tag_wraparound() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["A".to_string(), "B".to_string(), "C".to_string()]);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&3);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 

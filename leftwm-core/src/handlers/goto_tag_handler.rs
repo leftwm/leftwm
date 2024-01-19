@@ -1,6 +1,6 @@
-use crate::{models::TagId, state::State};
+use crate::{models::{TagId, Handle}, state::State};
 
-impl State {
+impl<H: Handle> State<H> {
     pub fn goto_tag_handler(&mut self, tag_id: TagId) -> Option<bool> {
         if tag_id > self.tags.len_normal() || tag_id < 1 {
             return Some(false);

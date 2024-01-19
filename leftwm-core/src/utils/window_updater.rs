@@ -1,8 +1,8 @@
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
-use crate::models::Manager;
+use crate::models::{Manager, Handle};
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /*
      * step over all the windows for each workspace and updates all the things
      * based on the new state of the WM

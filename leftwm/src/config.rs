@@ -15,7 +15,7 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::LayoutMode,
-    models::{FocusBehaviour, Gutter, Margins, Size, Window, WindowState, WindowType},
+    models::{FocusBehaviour, Gutter, Margins, Size, Window, WindowState, WindowType, Handle},
     state::State,
     DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
@@ -97,7 +97,7 @@ impl WindowHook {
     ///
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
-    fn score_window(&self, window: &Window) -> u8 {
+    fn score_window<H: Handle>(&self, window: &Window<H>) -> u8 {
         // returns true if any of the items in the provided `Vec<&Option<String>>` is Some and matches the `&Regex`
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
             strs.iter().any(|str| {
@@ -123,7 +123,7 @@ impl WindowHook {
         class_score + 2 * title_score
     }
 
-    fn apply(&self, state: &mut State, window: &mut Window) {
+    fn apply<H: Handle>(&self, state: &mut State<H>, window: &mut Window<H>) {
         if let Some(tag) = self.spawn_on_tag {
             window.tag = Some(tag);
         }
@@ -445,9 +445,9 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
-    fn command_handler<SERVER: DisplayServer>(
+    fn command_handler<H: Handle, SERVER: DisplayServer<H>>(
         command: &str,
-        manager: &mut Manager<Self, SERVER>,
+        manager: &mut Manager<H, Self, SERVER>,
     ) -> bool {
         let mut return_pipe = get_return_pipe();
         if let Some((command, value)) = command.split_once(' ') {
@@ -587,7 +587,7 @@ impl leftwm_core::Config for Config {
         self.disable_tile_drag
     }
 
-    fn save_state(&self, state: &State) {
+    fn save_state<H: Handle>(&self, state: &State<H>) {
         let path = self.state_file();
         let state_file = match File::create(path) {
             Ok(file) => file,
@@ -601,7 +601,7 @@ impl leftwm_core::Config for Config {
         }
     }
 
-    fn load_state(&self, state: &mut State) {
+    fn load_state<H: Handle>(&self, state: &mut State<H>) {
         let path = self.state_file().to_owned();
         match File::open(&path) {
             Ok(file) => {
@@ -620,7 +620,7 @@ impl leftwm_core::Config for Config {
     }
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
-    fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
+    fn setup_predefined_window<H: Handle>(&self, state: &mut State<H>, window: &mut Window<H>) -> bool {
         if let Some(window_rules) = &self.window_rules {
             let best_match = window_rules
                 .iter()

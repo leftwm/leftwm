@@ -7,10 +7,12 @@ use crate::state::State;
 use crate::utils::child_process::Children;
 use std::sync::{atomic::AtomicBool, Arc};
 
+use super::Handle;
+
 /// Maintains current program state.
 #[derive(Debug)]
-pub struct Manager<C, SERVER> {
-    pub state: State,
+pub struct Manager<H: Handle, C, SERVER> {
+    pub state: State<H>,
     pub config: C,
 
     pub(crate) children: Children,
@@ -19,10 +21,10 @@ pub struct Manager<C, SERVER> {
     pub display_server: SERVER,
 }
 
-impl<C, SERVER> Manager<C, SERVER>
+impl<H: Handle, C, SERVER> Manager<H, C, SERVER>
 where
     C: Config,
-    SERVER: DisplayServer,
+    SERVER: DisplayServer<H>,
 {
     pub fn new(config: C) -> Self {
         Self {
@@ -36,7 +38,7 @@ where
     }
 }
 
-impl<C, SERVER> Manager<C, SERVER> {
+impl<H: Handle, C, SERVER> Manager<H, C, SERVER> {
     pub fn register_child_hook(&self) {
         crate::child_process::register_child_hook(self.reap_requested.clone());
     }
@@ -47,7 +49,7 @@ impl<C, SERVER> Manager<C, SERVER> {
     }
 }
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /// Reload the configuration of the running [`Manager`].
     pub fn reload_config(&mut self) -> bool {
         let focused = self.state.focus_manager.window_history.front();
@@ -59,7 +61,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 }
 
 #[cfg(test)]
-impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDisplayServer> {
+impl
+    Manager<
+        crate::models::window::MockHandle,
+        crate::config::tests::TestConfig,
+        crate::display_servers::MockDisplayServer<crate::models::window::MockHandle>,
+    >
+{
     pub fn new_test(tags: Vec<String>) -> Self {
         use crate::config::tests::TestConfig;
         let defs = Layouts::default().layouts;

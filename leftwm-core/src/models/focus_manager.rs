@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
 use super::MaybeWindowHandle;
+use super::window::Handle;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FocusBehaviour {
@@ -34,19 +35,21 @@ impl FocusBehaviour {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FocusManager {
+pub struct FocusManager<H: Handle> {
     pub behaviour: FocusBehaviour,
     pub focus_new_windows: bool,
     pub workspace_history: VecDeque<usize>,
-    pub window_history: VecDeque<MaybeWindowHandle>,
+    #[serde(bound = "")]
+    pub window_history: VecDeque<MaybeWindowHandle<H>>,
     pub tag_history: VecDeque<TagId>,
-    pub tags_last_window: HashMap<TagId, WindowHandle>,
+    #[serde(bound = "")]
+    pub tags_last_window: HashMap<TagId, WindowHandle<H>>,
     pub sloppy_mouse_follows_focus: bool,
     pub create_follows_cursor: bool,
     pub last_mouse_position: Option<(i32, i32)>,
 }
 
-impl FocusManager {
+impl<H: Handle> FocusManager<H> {
     pub fn new(config: &impl Config) -> Self {
         Self {
             behaviour: config.focus_behaviour(),
@@ -91,7 +94,7 @@ impl FocusManager {
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn window<'a, 'b>(&self, windows: &'a [Window]) -> Option<&'b Window>
+    pub fn window<'a, 'b>(&self, windows: &'a [Window<H>]) -> Option<&'b Window<H>>
     where
         'a: 'b,
     {
@@ -103,7 +106,7 @@ impl FocusManager {
     }
 
     /// Return the currently focused window.
-    pub fn window_mut<'a, 'b>(&self, windows: &'a mut [Window]) -> Option<&'b mut Window>
+    pub fn window_mut<'a, 'b>(&self, windows: &'a mut [Window<H>]) -> Option<&'b mut Window<H>>
     where
         'a: 'b,
     {

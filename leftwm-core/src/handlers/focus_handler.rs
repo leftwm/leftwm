@@ -1,13 +1,13 @@
 #![allow(clippy::wildcard_imports)]
 
 use super::*;
-use crate::models::TagId;
+use crate::models::{TagId, Handle};
 use crate::state::State;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
-impl State {
+impl<H: Handle> State<H> {
     /// Focuses a window based upon the `FocusBehaviour`
-    pub fn handle_window_focus(&mut self, handle: &WindowHandle) {
+    pub fn handle_window_focus(&mut self, handle: &WindowHandle<H>) {
         match self.focus_manager.behaviour {
             FocusBehaviour::Sloppy if self.focus_manager.sloppy_mouse_follows_focus => {
                 let act = DisplayAction::MoveMouseOver(*handle, false);
@@ -18,7 +18,7 @@ impl State {
     }
 
     /// Focuses the given window.
-    pub fn focus_window(&mut self, handle: &WindowHandle) {
+    pub fn focus_window(&mut self, handle: &WindowHandle<H>) {
         let Some(window) = self.focus_window_work(handle) else {
             return;
         };
@@ -120,7 +120,7 @@ impl State {
 
     /// Focuses the window containing a given point.
     pub fn focus_window_with_point(&mut self, x: i32, y: i32) {
-        let handle_found: Option<WindowHandle> = self
+        let handle_found: Option<WindowHandle<H>> = self
             .windows
             .iter()
             .filter(|x| x.can_focus())
@@ -134,7 +134,7 @@ impl State {
     }
 
     /// Validates that the given window is focused.
-    pub fn validate_focus_at(&mut self, handle: &WindowHandle) {
+    pub fn validate_focus_at(&mut self, handle: &WindowHandle<H>) {
         // If the window is already focused do nothing.
         if let Some(current) = self.focus_manager.window(&self.windows) {
             if &current.handle == handle {
@@ -157,7 +157,7 @@ impl State {
         let Some(ws) = self.workspaces.iter().find(|ws| ws.contains_point(x, y)) else {
             return;
         };
-        let mut dists: Vec<(i32, &Window)> = self
+        let mut dists: Vec<(i32, &Window<H>)> = self
             .windows
             .iter()
             .filter(|x| ws.is_managed(x) && x.can_focus())
@@ -186,7 +186,7 @@ impl State {
         true
     }
 
-    fn focus_window_work(&mut self, handle: &WindowHandle) -> Option<Window> {
+    fn focus_window_work(&mut self, handle: &WindowHandle<H>) -> Option<Window<H>> {
         if self.screens.iter().any(|s| &s.root == handle) {
             let act = DisplayAction::Unfocus(None, false);
             self.actions.push_back(act);
@@ -194,7 +194,7 @@ impl State {
             return None;
         }
         // Find the handle in our managed windows.
-        let found: &Window = self.windows.iter().find(|w| &w.handle == handle)?;
+        let found: &Window<H> = self.windows.iter().find(|w| &w.handle == handle)?;
         // Docks don't want to get focus. If they do weird things happen. They don't get events...
         if !found.is_managed() {
             return None;
@@ -261,7 +261,7 @@ impl State {
 }
 
 // Square root not needed as we are only interested in the comparison.
-fn distance(window: &Window, x: i32, y: i32) -> i32 {
+fn distance<H: Handle>(window: &Window<H>, x: i32, y: i32) -> i32 {
     // (x_2-x_1)²+(y_2-y_1)²
     let (wx, wy) = window.calculated_xyhw().center();
     let xs = (wx - x) * (wx - x);
@@ -272,7 +272,7 @@ fn distance(window: &Window, x: i32, y: i32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Manager;
+    use crate::{Manager, models::MockHandle};
 
     #[test]
     fn focusing_a_workspace_should_make_it_active() {
@@ -298,12 +298,12 @@ mod tests {
             .state
             .focus_workspace(&manager.state.workspaces[0].clone());
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
@@ -349,12 +349,12 @@ mod tests {
         let mut manager = Manager::new_test(vec![]);
         manager.screen_create_handler(Screen::default());
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
@@ -373,7 +373,7 @@ mod tests {
     fn focusing_the_same_window_shouldnt_add_to_the_history() {
         let mut manager = Manager::new_test(vec![]);
         manager.screen_create_handler(Screen::default());
-        let window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         manager.window_created_handler(window.clone(), -1, -1);
         manager.state.focus_window(&window.handle);
         let start_length = manager.state.focus_manager.workspace_history.len();
@@ -439,7 +439,7 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
-        let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         window.tag(&2);
         manager.state.windows.push(window.clone());
         manager.state.focus_window(&window.handle);
@@ -453,7 +453,7 @@ mod tests {
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
         manager.screen_create_handler(Screen::default());
-        let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         window.tag(&2);
         manager.state.windows.push(window.clone());
         manager.state.focus_window(&window.handle);
@@ -470,7 +470,7 @@ mod tests {
     fn focusing_an_empty_tag_should_unfocus_any_focused_window() {
         let mut manager = Manager::new_test(vec![]);
         manager.screen_create_handler(Screen::default());
-        let mut window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         window.tag(&1);
         manager.state.windows.push(window.clone());
         manager.state.focus_window(&window.handle);

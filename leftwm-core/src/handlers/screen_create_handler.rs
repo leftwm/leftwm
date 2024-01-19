@@ -1,12 +1,13 @@
 use super::{Manager, Screen, Workspace};
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
+use crate::models::Handle;
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /// Process a collection of events, and apply the changes to a manager.
     ///
     /// Returns `true` if changes need to be rendered.
-    pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
+    pub fn screen_create_handler(&mut self, screen: Screen<H>) -> bool {
         tracing::trace!("Screen create: {:?}", screen);
 
         let tag_index = self.state.workspaces.len();

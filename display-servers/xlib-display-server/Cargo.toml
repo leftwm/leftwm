@@ -14,3 +14,4 @@ futures = "0.3.21"
 tracing = "0.1.36"
 tokio = { version = "1.2.0", features = [ "sync", "time" ] }
 mio = { version = "0.8.0", features = ["os-ext"] }
+serde = { version = "1.0.104", features = ["derive"] }

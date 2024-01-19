@@ -1,3 +1,4 @@
+use crate::models::Handle;
 use crate::{child_process::Nanny, config::Config};
 use crate::{
     Command, CommandPipe, DisplayEvent, DisplayServer, Manager, Mode, StateSocket, Window,
@@ -23,7 +24,7 @@ enum EventResponse {
     DisplayRefreshNeeded,
 }
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /// Starts the event loop of leftwm
     ///
     /// # Errors
@@ -39,10 +40,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     async fn event_loop(
         &mut self,
         mut state_socket: StateSocket,
-        mut command_pipe: CommandPipe,
+        mut command_pipe: CommandPipe<H>,
     ) -> Result<(), Error> {
         let after_first_loop: Once = Once::new();
-        let mut event_buffer: Vec<DisplayEvent> = vec![];
+        let mut event_buffer: Vec<DisplayEvent<H>> = vec![];
         while self.should_keep_running(&mut state_socket).await {
             self.update_manager_state(&mut state_socket).await;
             self.display_server.flush();
@@ -61,7 +62,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                         self.refresh_focus(&mut event_buffer);
                         continue;
                     }
-                Some(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => self.execute_command(&cmd),
+                Some::<Command<H>>(cmd) = command_pipe.read_command(), if event_buffer.is_empty() => self.execute_command(&cmd),
                 else => self.execute_display_events(&mut event_buffer),
             };
 
@@ -101,10 +102,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
     }
 
-    fn execute_display_events(&mut self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
+    fn execute_display_events(&mut self, event_buffer: &mut Vec<DisplayEvent<H>>) -> EventResponse {
         let mut display_needs_refresh = false;
 
-        event_buffer.drain(..).for_each(|event: DisplayEvent| {
+        event_buffer.drain(..).for_each(|event: DisplayEvent<H>| {
             display_needs_refresh = self.display_event_handler(event) || display_needs_refresh;
         });
 
@@ -126,13 +127,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
                 }
             }
             _ => {
-                let windows: Vec<&Window> = self.state.windows.iter().collect();
+                let windows: Vec<&Window<H>> = self.state.windows.iter().collect();
                 self.display_server.update_windows(windows);
             }
         }
     }
 
-    fn execute_command(&mut self, command: &Command) -> EventResponse {
+    fn execute_command(&mut self, command: &Command<H>) -> EventResponse {
         if self.command_handler(command) {
             EventResponse::DisplayRefreshNeeded
         } else {
@@ -140,12 +141,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
     }
 
-    fn add_events(&mut self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
+    fn add_events(&mut self, event_buffer: &mut Vec<DisplayEvent<H>>) -> EventResponse {
         event_buffer.append(&mut self.display_server.get_next_events());
         EventResponse::None
     }
 
-    fn refresh_focus(&self, event_buffer: &mut Vec<DisplayEvent>) -> EventResponse {
+    fn refresh_focus(&self, event_buffer: &mut Vec<DisplayEvent<H>>) -> EventResponse {
         if let Some(verify_event) = self.display_server.generate_verify_focus_event() {
             event_buffer.push(verify_event);
         }
@@ -153,7 +154,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 
     // Perform any actions requested by the handler.
-    fn execute_actions(&mut self, event_buffer: &mut Vec<DisplayEvent>) {
+    fn execute_actions(&mut self, event_buffer: &mut Vec<DisplayEvent<H>>) {
         while !self.state.actions.is_empty() {
             if let Some(act) = self.state.actions.pop_front() {
                 if let Some(event) = self.display_server.execute_action(act) {
@@ -194,8 +195,8 @@ async fn get_state_socket() -> Result<StateSocket, Error> {
     Ok(state_socket)
 }
 
-async fn get_command_pipe() -> Result<CommandPipe, Error> {
-    let file_name = CommandPipe::pipe_name();
+async fn get_command_pipe<H: Handle>() -> Result<CommandPipe<H>, Error> {
+    let file_name = crate::pipe_name();
 
     let pipe_file =
         place_runtime_file(&file_name).map_err(|_| Error::CreateFile(file_name.clone()))?;

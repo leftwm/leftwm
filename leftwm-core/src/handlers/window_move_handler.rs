@@ -1,12 +1,12 @@
 use super::{Manager, Window, WindowHandle, Workspace};
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
-use crate::models::Xyhw;
+use crate::models::{Xyhw, Handle};
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     pub fn window_move_handler(
         &mut self,
-        handle: &WindowHandle,
+        handle: &WindowHandle<H>,
         offset_x: i32,
         offset_y: i32,
     ) -> bool {
@@ -24,7 +24,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 }
 
-fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
+fn process_window<H: Handle>(window: &mut Window<H>, offset_x: i32, offset_y: i32) {
     let mut offset = window.get_floating_offsets().unwrap_or_default();
     let start = window.start_loc.unwrap_or_default();
     offset.set_x(start.x() + offset_x);
@@ -33,7 +33,7 @@ fn process_window(window: &mut Window, offset_x: i32, offset_y: i32) {
 }
 
 // Update the window for the workspace it is currently on.
-fn snap_to_workspace(window: &mut Window, workspaces: &[Workspace]) -> bool {
+fn snap_to_workspace<H: Handle>(window: &mut Window<H>, workspaces: &[Workspace]) -> bool {
     // Check that the workspace contains the window.
     let loc = window.calculated_xyhw();
     let (x, y) = loc.center();
@@ -46,7 +46,7 @@ fn snap_to_workspace(window: &mut Window, workspaces: &[Workspace]) -> bool {
 
 // To be snapable, the window must be inside the workspace AND the a side must be close to
 // the workspaces edge.
-fn should_snap(window: &mut Window, workspace: &Workspace, loc: Xyhw) -> bool {
+fn should_snap<H: Handle>(window: &mut Window<H>, workspace: &Workspace, loc: Xyhw) -> bool {
     if window.must_float() {
         return false;
     }

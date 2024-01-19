@@ -1,18 +1,18 @@
 use crate::display_action::DisplayAction;
+use crate::models::Handle;
 use crate::models::Mode;
 use crate::models::WindowHandle;
 use crate::state::State;
 use crate::utils;
 use crate::utils::modmask_lookup::Button;
 use crate::utils::modmask_lookup::ModMask;
-use x11_dl::xlib;
 
-impl State {
+impl<H: Handle> State<H> {
     pub fn mouse_combo_handler(
         &mut self,
         modmask: ModMask,
         button: Button,
-        handle: WindowHandle,
+        handle: WindowHandle<H>,
         x: i32,
         y: i32,
     ) -> bool {
@@ -34,7 +34,7 @@ impl State {
                 }
             }
         } else if self.focus_manager.behaviour.is_clickto() {
-            if let xlib::Button1 | xlib::Button3 = button {
+            if button.contains(Button::Button1) || button.contains(Button::Button3) {
                 if self.screens.iter().any(|s| s.root == handle) {
                     self.focus_workspace_with_point(x, y);
                     return false;
@@ -48,12 +48,12 @@ impl State {
         &mut self,
         mod_mask: ModMask,
         button: Button,
-        window: WindowHandle,
+        window: WindowHandle<H>,
         modifier: ModMask,
-    ) -> Option<DisplayAction> {
-        let is_mouse_key = mod_mask == modifier || mod_mask == (modifier | xlib::ShiftMask);
+    ) -> Option<DisplayAction<H>> {
+        let is_mouse_key = mod_mask == modifier || mod_mask == (modifier | ModMask::Shift);
         match button {
-            xlib::Button1 if is_mouse_key => {
+            Button::Button1 if is_mouse_key => {
                 _ = self
                     .windows
                     .iter()
@@ -61,7 +61,7 @@ impl State {
                 self.mode = Mode::ReadyToMove(window);
                 Some(DisplayAction::ReadyToMoveWindow(window))
             }
-            xlib::Button3 if is_mouse_key => {
+            Button::Button3 if is_mouse_key => {
                 _ = self
                     .windows
                     .iter()
@@ -69,7 +69,7 @@ impl State {
                 self.mode = Mode::ReadyToResize(window);
                 Some(DisplayAction::ReadyToResizeWindow(window))
             }
-            xlib::Button1 | xlib::Button3 if self.focus_manager.behaviour.is_clickto() => {
+            Button::Button1 | Button::Button3 if self.focus_manager.behaviour.is_clickto() => {
                 self.focus_window(&window);
                 Some(DisplayAction::ReplayClick(window, button))
             }

@@ -6,7 +6,7 @@ use x11rb::{
     protocol::xproto::{self, ChangeWindowAttributesAux, PropMode},
 };
 
-use crate::{error::Result, xatom};
+use crate::{error::Result, xatom, X11rbWindowHandle};
 
 use super::XWrap;
 
@@ -129,11 +129,11 @@ impl XWrap {
     /// Sets a windows state.
     pub fn set_state(
         &self,
-        handle: WindowHandle,
+        handle: WindowHandle<X11rbWindowHandle>,
         toggle_to: bool,
         atom: xproto::Atom,
     ) -> Result<()> {
-        if let WindowHandle::X11rbHandle(h) = handle {
+        if let WindowHandle(X11rbWindowHandle(h)) = handle {
             let mut states = self.get_window_states_atoms(h)?;
             if toggle_to {
                 if states.contains(&atom) {

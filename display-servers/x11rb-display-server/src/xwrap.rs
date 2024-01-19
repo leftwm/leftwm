@@ -19,7 +19,7 @@ use x11rb::{
     x11_utils::Serialize,
 };
 
-use crate::{error::ErrorKind, xatom::AtomCollection};
+use crate::{error::ErrorKind, xatom::AtomCollection, X11rbWindowHandle};
 
 use crate::error::Result;
 
@@ -70,7 +70,7 @@ pub(crate) struct XWrap {
     pub managed_windows: Vec<xproto::Window>,
     pub focused_window: xproto::Window,
     pub tag_labels: Vec<String>,
-    pub mode: Mode,
+    pub mode: Mode<X11rbWindowHandle>,
     pub focus_behaviour: FocusBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
@@ -191,7 +191,7 @@ impl XWrap {
             tag_labels: vec![],
             mode: Mode::Normal,
             focus_behaviour: FocusBehaviour::Sloppy,
-            mouse_key_mask: 0,
+            mouse_key_mask: ModMask::Zero,
             mode_origin: (0, 0),
 
             _task_guard,
@@ -216,8 +216,8 @@ impl XWrap {
     pub fn load_config(
         &mut self,
         config: &impl Config,
-        focused: Option<&Option<WindowHandle>>,
-        windows: &[Window],
+        focused: Option<&Option<WindowHandle<X11rbWindowHandle>>>,
+        windows: &[Window<X11rbWindowHandle>],
     ) -> Result<()> {
         self.focus_behaviour = config.focus_behaviour();
         self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
@@ -230,8 +230,8 @@ impl XWrap {
     pub fn load_colors(
         &mut self,
         config: &impl Config,
-        focused: Option<&Option<WindowHandle>>,
-        windows: Option<&[Window]>,
+        focused: Option<&Option<WindowHandle<X11rbWindowHandle>>>,
+        windows: Option<&[Window<X11rbWindowHandle>]>,
     ) -> Result<()> {
         self.colors = Colors {
             normal: self.get_color(config.default_border_color())?,
@@ -242,7 +242,7 @@ impl XWrap {
         // Update all the windows with the new colors.
         if let Some(windows) = windows {
             for window in windows {
-                if let WindowHandle::X11rbHandle(handle) = window.handle {
+                if let WindowHandle(X11rbWindowHandle(handle)) = window.handle {
                     let is_focused =
                         matches!(focused, Some(&Some(focused)) if focused == window.handle);
                     let color: u32 = if is_focused {
@@ -414,7 +414,7 @@ impl XWrap {
     }
 
     /// Sets the mode within our xwrapper.
-    pub fn set_mode(&mut self, mode: Mode) -> Result<()> {
+    pub fn set_mode(&mut self, mode: Mode<X11rbWindowHandle>) -> Result<()> {
         let rt = match mode {
             // Prevent resizing and moving of root.
             Mode::MovingWindow(h)

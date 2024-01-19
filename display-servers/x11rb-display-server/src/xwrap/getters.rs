@@ -15,6 +15,7 @@ use x11rb::{
 use crate::{
     error::{BackendError, ErrorKind, Result},
     xatom::WMStateWindowState,
+    X11rbWindowHandle,
 };
 
 use super::{XWrap, MAX_PROPERTY_VALUE_LEN};
@@ -72,12 +73,12 @@ impl XWrap {
     /// # Errors
     ///
     /// Will error if root window cannot be found.
-    pub fn get_cursor_window(&self) -> Result<WindowHandle> {
+    pub fn get_cursor_window(&self) -> Result<WindowHandle<X11rbWindowHandle>> {
         let roots = self.get_roots();
         for w in roots {
             let reply = xproto::query_pointer(&self.conn, w)?.reply();
             if let Ok(reply) = reply {
-                return Ok(WindowHandle::X11rbHandle(reply.child));
+                return Ok(WindowHandle(X11rbWindowHandle(reply.child)));
             }
         }
         Err(BackendError {
@@ -90,8 +91,8 @@ impl XWrap {
 
     /// Returns the handle of the default root.
     #[must_use]
-    pub const fn get_default_root_handle(&self) -> WindowHandle {
-        WindowHandle::X11rbHandle(self.root)
+    pub const fn get_default_root_handle(&self) -> WindowHandle<X11rbWindowHandle> {
+        WindowHandle(X11rbWindowHandle(self.root))
     }
 
     /// Returns the default root.
@@ -177,7 +178,7 @@ impl XWrap {
     /// Also panics if window attrs cannot be obtained.
     /// TODO: Check if this is working, because it's most likely not
     #[must_use]
-    pub fn get_screens(&self) -> Result<Vec<Screen>> {
+    pub fn get_screens(&self) -> Result<Vec<Screen<X11rbWindowHandle>>> {
         if let Ok(screen_resources) = randr::get_screen_resources(&self.conn, self.root)?.reply() {
             return Ok(screen_resources
                 .outputs
@@ -600,7 +601,7 @@ impl XWrap {
 
         Ok(res.value32().map(|v| {
             let values: Vec<i32> = v.map(|elem| elem as i32).collect();
-            DockArea::from(&values[..])
+            IntoDockArea(&values[..]).into()
         }))
     }
 
@@ -622,7 +623,7 @@ impl XWrap {
 
         Ok(res.value32().map(|v| {
             let values: Vec<i32> = v.map(|elem| elem as i32).collect();
-            DockArea::from(&values[..])
+            IntoDockArea(&values[..]).into()
         }))
     }
 
@@ -649,4 +650,25 @@ fn parse_color_string(color: String) -> Result<(u16, u16, u16)> {
         u16::from_str_radix(&color[3..5], 16)? * 256,
         u16::from_str_radix(&color[5..7], 16)? * 256,
     ))
+}
+
+struct IntoDockArea<'a>(&'a [i32]);
+
+impl Into<DockArea> for IntoDockArea<'_> {
+    fn into(self) -> DockArea {
+        DockArea {
+            left: self.0[0],
+            right: self.0[1],
+            top: self.0[2],
+            bottom: self.0[3],
+            left_start_y: self.0[4],
+            left_end_y: self.0[5],
+            right_start_y: self.0[6],
+            right_end_y: self.0[7],
+            top_start_x: self.0[8],
+            top_end_x: self.0[9],
+            bottom_start_x: self.0[10],
+            bottom_end_x: self.0[11],
+        }
+    }
 }

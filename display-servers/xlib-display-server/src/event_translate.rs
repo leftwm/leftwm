@@ -1,14 +1,19 @@
+use crate::XlibWindowHandle;
+
 use super::{
     event_translate_client_message, event_translate_property_notify, xwrap::WITHDRAWN_STATE,
     DisplayEvent, XWrap,
 };
-use leftwm_core::models::{Mode, WindowChange, WindowType, XyhwChange};
+use leftwm_core::{
+    models::{Mode, WindowChange, WindowHandle, WindowType, XyhwChange},
+    utils::modmask_lookup::{self, Button, ModMask},
+};
 use std::os::raw::c_ulong;
 use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 
-impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
+impl<'a> From<XEvent<'a>> for Option<DisplayEvent<XlibWindowHandle>> {
     fn from(x_event: XEvent) -> Self {
         let raw_event = x_event.1;
         let normal_mode = x_event.0.mode == Mode::Normal;
@@ -42,18 +47,18 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
     }
 }
 
-fn from_map_request(x_event: XEvent) -> Option<DisplayEvent> {
+fn from_map_request(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let xw = x_event.0;
     let event = xlib::XMapRequestEvent::from(x_event.1);
     xw.setup_window(event.window)
 }
 
-fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
+fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let xw = x_event.0;
     let event = xlib::XUnmapEvent::from(x_event.1);
     if xw.managed_windows.contains(&event.window) {
         if event.send_event == xlib::False {
-            let h = event.window.into();
+            let h = WindowHandle(XlibWindowHandle(event.window));
             xw.teardown_managed_window(&h, false);
             return Some(DisplayEvent::WindowDestroy(h));
         }
@@ -63,18 +68,18 @@ fn from_unmap_event(x_event: XEvent) -> Option<DisplayEvent> {
     None
 }
 
-fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
+fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let xw = x_event.0;
     let event = xlib::XDestroyWindowEvent::from(x_event.1);
     if xw.managed_windows.contains(&event.window) {
-        let h = event.window.into();
+        let h = WindowHandle(XlibWindowHandle(event.window));
         xw.teardown_managed_window(&h, true);
         return Some(DisplayEvent::WindowDestroy(h));
     }
     None
 }
 
-fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
+fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let xw = x_event.0;
     let event = xlib::XFocusChangeEvent::from(x_event.1);
     // Check that if a window is taking focus, that it should be.
@@ -88,17 +93,17 @@ fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
     None
 }
 
-fn from_client_message(x_event: &XEvent) -> Option<DisplayEvent> {
+fn from_client_message(x_event: &XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let event = xlib::XClientMessageEvent::from(x_event.1);
     event_translate_client_message::from_event(x_event.0, event)
 }
 
-fn from_property_notify(x_event: &XEvent) -> Option<DisplayEvent> {
+fn from_property_notify(x_event: &XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let event = xlib::XPropertyEvent::from(x_event.1);
     event_translate_property_notify::from_event(x_event.0, event)
 }
 
-fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent> {
+fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let xw = x_event.0;
     let event = xlib::XConfigureRequestEvent::from(x_event.1);
     // If the window is not mapped, configure it.
@@ -131,7 +136,7 @@ fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent> {
     }
     let window_type = xw.get_window_type(event.window);
     let trans = xw.get_transient_for(event.window);
-    let handle = event.window.into();
+    let handle = WindowHandle(XlibWindowHandle(event.window));
     if window_type == WindowType::Normal && trans.is_none() {
         return Some(DisplayEvent::ConfigureXlibWindow(handle));
     }
@@ -156,7 +161,7 @@ fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent> {
     Some(DisplayEvent::WindowChange(change))
 }
 
-fn from_enter_notify(x_event: &XEvent) -> Option<DisplayEvent> {
+fn from_enter_notify(x_event: &XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let event = xlib::XCrossingEvent::from(x_event.1);
     if event.mode != xlib::NotifyNormal
         || event.detail == xlib::NotifyInferior
@@ -165,11 +170,11 @@ fn from_enter_notify(x_event: &XEvent) -> Option<DisplayEvent> {
         return None;
     }
 
-    let h = event.window.into();
+    let h = WindowHandle(XlibWindowHandle(event.window));
     Some(DisplayEvent::WindowTakeFocus(h))
 }
 
-fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
+fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let xw = x_event.0;
     let event = xlib::XMotionEvent::from(x_event.1);
 
@@ -178,7 +183,7 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
         && event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate as c_ulong)
     {
         xw.motion_event_limiter = event.time;
-        let event_h = event.window.into();
+        let event_h = WindowHandle(XlibWindowHandle(event.window));
         let offset_x = event.x_root - xw.mode_origin.0;
         let offset_y = event.y_root - xw.mode_origin.1;
         let display_event = match xw.mode {
@@ -203,15 +208,21 @@ fn from_motion_notify(x_event: XEvent) -> Option<DisplayEvent> {
     None
 }
 
-fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent {
+fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent<XlibWindowHandle> {
     let event = xlib::XButtonPressedEvent::from(raw_event);
-    let h = event.window.into();
+    let h = WindowHandle(XlibWindowHandle(event.window));
     let mut mod_mask = event.state;
     mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
-    DisplayEvent::MouseCombo(mod_mask, event.button, h, event.x, event.y)
+    DisplayEvent::MouseCombo(
+        ModMask::from_bits_retain(mod_mask as u16),
+        Button::from_bits_retain(event.button as u8),
+        h,
+        event.x,
+        event.y,
+    )
 }
 
-fn from_button_release(x_event: XEvent) -> DisplayEvent {
+fn from_button_release(x_event: XEvent) -> DisplayEvent<XlibWindowHandle> {
     let xw = x_event.0;
     xw.set_mode(Mode::Normal);
     DisplayEvent::ChangeToNormalMode

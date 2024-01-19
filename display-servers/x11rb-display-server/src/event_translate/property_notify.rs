@@ -4,13 +4,13 @@ use leftwm_core::{
 };
 use x11rb::{properties::WmHints, protocol::xproto};
 
-use crate::error::Result;
 use crate::xwrap::XWrap;
+use crate::{error::Result, X11rbWindowHandle};
 
 pub(crate) fn from_event(
     event: xproto::PropertyNotifyEvent,
     xw: &XWrap,
-) -> Result<Option<DisplayEvent>> {
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if event.window == xw.get_default_root()
         || event.state == xproto::Property::DELETE
         || !xw.managed_windows.contains(&event.window)
@@ -23,14 +23,14 @@ pub(crate) fn from_event(
 
     match xproto::AtomEnum::from(event.atom as u8) {
         xproto::AtomEnum::WM_TRANSIENT_FOR => {
-            let handle = WindowHandle::X11rbHandle(event.window);
+            let handle = WindowHandle(X11rbWindowHandle(event.window));
             let mut change = WindowChange::new(handle);
 
             let window_type = xw.get_window_type(event.window)?;
             if window_type != WindowType::Normal {
                 let trans = xw.get_transient_for(event.window)?;
                 change.transient = match trans {
-                    Some(trans) => Some(Some(WindowHandle::X11rbHandle(trans))),
+                    Some(trans) => Some(Some(WindowHandle(X11rbWindowHandle(trans)))),
                     None => Some(None),
                 }
             }
@@ -39,7 +39,7 @@ pub(crate) fn from_event(
         }
 
         xproto::AtomEnum::WM_NORMAL_HINTS => {
-            let handle = WindowHandle::X11rbHandle(event.window);
+            let handle = WindowHandle(X11rbWindowHandle(event.window));
             let mut change = WindowChange::new(handle);
 
             let Some(hint) = xw.get_hint_sizing_as_xyhw(event.window)? else {
@@ -77,7 +77,7 @@ pub(crate) fn from_event(
             }
 
             if event.atom == xw.atoms.NetWMState {
-                let handle = WindowHandle::X11rbHandle(event.window);
+                let handle = WindowHandle(X11rbWindowHandle(event.window));
                 let mut change = WindowChange::new(handle);
                 let states = xw.get_window_states(event.window)?;
                 change.states = Some(states);
@@ -89,8 +89,11 @@ pub(crate) fn from_event(
     }
 }
 
-fn build_change_hints(event: xproto::PropertyNotifyEvent, hints: WmHints) -> WindowChange {
-    let handle = WindowHandle::X11rbHandle(event.window);
+fn build_change_hints(
+    event: xproto::PropertyNotifyEvent,
+    hints: WmHints,
+) -> WindowChange<X11rbWindowHandle> {
+    let handle = WindowHandle(X11rbWindowHandle(event.window));
     let mut change = WindowChange::new(handle);
 
     change.never_focus = hints.input.map(|i| !i);
@@ -99,9 +102,12 @@ fn build_change_hints(event: xproto::PropertyNotifyEvent, hints: WmHints) -> Win
     change
 }
 
-fn update_title(xw: &XWrap, window: xproto::Window) -> Result<Option<DisplayEvent>> {
+fn update_title(
+    xw: &XWrap,
+    window: xproto::Window,
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     let title = xw.get_window_name(window)?;
-    let handle = WindowHandle::X11rbHandle(window);
+    let handle = WindowHandle(X11rbWindowHandle(window));
     let mut change = WindowChange::new(handle);
     change.name = Some(Some(title));
     Ok(Some(DisplayEvent::WindowChange(change)))
@@ -110,8 +116,8 @@ fn update_title(xw: &XWrap, window: xproto::Window) -> Result<Option<DisplayEven
 fn build_change_for_size_strut_partial(
     xw: &XWrap,
     window: xproto::Window,
-) -> Result<Option<WindowChange>> {
-    let handle = WindowHandle::X11rbHandle(window);
+) -> Result<Option<WindowChange<X11rbWindowHandle>>> {
+    let handle = WindowHandle(X11rbWindowHandle(window));
     let mut change = WindowChange::new(handle);
     let r#type = xw.get_window_type(window)?;
 

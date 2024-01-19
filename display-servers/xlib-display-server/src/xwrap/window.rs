@@ -3,7 +3,7 @@ use super::{
     on_error_from_xlib, on_error_from_xlib_dummy, Window, WindowHandle, ICONIC_STATE, NORMAL_STATE,
     ROOT_EVENT_MASK, WITHDRAWN_STATE,
 };
-use crate::XWrap;
+use crate::{XWrap, XlibWindowHandle};
 use leftwm_core::models::{WindowChange, WindowType, Xyhw, XyhwChange};
 use leftwm_core::DisplayEvent;
 use std::os::raw::{c_long, c_ulong};
@@ -12,7 +12,7 @@ use x11_dl::xlib;
 impl XWrap {
     /// Sets up a window before we manage it.
     #[must_use]
-    pub fn setup_window(&self, window: xlib::Window) -> Option<DisplayEvent> {
+    pub fn setup_window(&self, window: xlib::Window) -> Option<DisplayEvent<XlibWindowHandle>> {
         // Check that the window isn't requesting to be unmanaged
         let attrs = match self.get_window_attrs(window) {
             Ok(attr) if attr.override_redirect == 0 && !self.managed_windows.contains(&window) => {
@@ -20,7 +20,7 @@ impl XWrap {
             }
             _ => return None,
         };
-        let handle = window.into();
+        let handle = WindowHandle(XlibWindowHandle(window));
         // Gather info about the window from xlib.
         let name = self.get_window_name(window);
         let legacy_name = self.get_window_legacy_name(window);
@@ -44,7 +44,7 @@ impl XWrap {
         w.r#type = r#type.clone();
         w.states = states;
         if let Some(trans) = trans {
-            w.transient = Some(trans.into());
+            w.transient = Some(WindowHandle(XlibWindowHandle(trans)));
         }
         // Initialise the windows floating with the pre-mapped settings.
         let xyhw = XyhwChange {
@@ -99,11 +99,11 @@ impl XWrap {
     // `XMapWindow`: https://tronche.com/gui/x/xlib/window/XMapWindow.html
     pub fn setup_managed_window(
         &mut self,
-        h: WindowHandle,
+        h: WindowHandle<XlibWindowHandle>,
         floating: bool,
         follow_mouse: bool,
-    ) -> Option<DisplayEvent> {
-        let handle = h.xlib_handle()?;
+    ) -> Option<DisplayEvent<XlibWindowHandle>> {
+        let WindowHandle(XlibWindowHandle(handle)) = h;
         self.subscribe_to_window_events(handle);
         self.managed_windows.push(handle);
         // Make sure the window is mapped.
@@ -163,8 +163,8 @@ impl XWrap {
     /// Teardown a managed window when it is destroyed.
     // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
-    pub fn teardown_managed_window(&mut self, h: &WindowHandle, destroyed: bool) {
-        if let WindowHandle::XlibHandle(handle) = h {
+    pub fn teardown_managed_window(&mut self, h: &WindowHandle<XlibWindowHandle>, destroyed: bool) {
+        if let WindowHandle(XlibWindowHandle(handle)) = h {
             self.managed_windows.retain(|x| *x != *handle);
             if !destroyed {
                 unsafe {
@@ -182,8 +182,8 @@ impl XWrap {
     }
 
     /// Updates a window.
-    pub fn update_window(&self, window: &Window) {
-        if let WindowHandle::XlibHandle(handle) = window.handle {
+    pub fn update_window(&self, window: &Window<XlibWindowHandle>) {
+        if let WindowHandle(XlibWindowHandle(handle)) = window.handle {
             if window.visible() {
                 let changes = xlib::XWindowChanges {
                     x: window.x(),
@@ -241,11 +241,15 @@ impl XWrap {
     }
 
     /// Makes a window take focus.
-    pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) {
-        if let WindowHandle::XlibHandle(handle) = window.handle {
+    pub fn window_take_focus(
+        &mut self,
+        window: &Window<XlibWindowHandle>,
+        previous: Option<&Window<XlibWindowHandle>>,
+    ) {
+        if let WindowHandle(XlibWindowHandle(handle)) = window.handle {
             // Update previous window.
             if let Some(previous) = previous {
-                if let WindowHandle::XlibHandle(previous_handle) = previous.handle {
+                if let WindowHandle(XlibWindowHandle(previous_handle)) = previous.handle {
                     let color = if previous.floating() {
                         self.colors.floating
                     } else {
@@ -295,8 +299,8 @@ impl XWrap {
 
     /// Unfocuses all windows.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn unfocus(&self, handle: Option<WindowHandle>, floating: bool) {
-        if let Some(WindowHandle::XlibHandle(handle)) = handle {
+    pub fn unfocus(&self, handle: Option<WindowHandle<XlibWindowHandle>>, floating: bool) {
+        if let Some(WindowHandle(XlibWindowHandle(handle))) = handle {
             let color = if floating {
                 self.colors.floating
             } else {
@@ -323,8 +327,8 @@ impl XWrap {
     }
 
     /// Send a `XConfigureEvent` for a window to X.
-    pub fn configure_window(&self, window: &Window) {
-        if let WindowHandle::XlibHandle(handle) = window.handle {
+    pub fn configure_window(&self, window: &Window<XlibWindowHandle>) {
+        if let WindowHandle(XlibWindowHandle(handle)) = window.handle {
             let mut configure_event: xlib::XConfigureEvent = unsafe { std::mem::zeroed() };
             configure_event.type_ = xlib::ConfigureNotify;
             configure_event.display = self.display;
@@ -361,10 +365,10 @@ impl XWrap {
 
     /// Restacks the windows to the order of the vec.
     // `XRestackWindows`: https://tronche.com/gui/x/xlib/window/XRestackWindows.html
-    pub fn restack(&self, handles: Vec<WindowHandle>) {
+    pub fn restack(&self, handles: Vec<WindowHandle<XlibWindowHandle>>) {
         let mut windows = vec![];
         for handle in handles {
-            if let WindowHandle::XlibHandle(window) = handle {
+            if let WindowHandle(XlibWindowHandle(window)) = handle {
                 windows.push(window);
             }
         }
@@ -383,8 +387,8 @@ impl XWrap {
 
     /// Raise a window.
     // `XRaiseWindow`: https://tronche.com/gui/x/xlib/window/XRaiseWindow.html
-    pub fn move_to_top(&self, handle: &WindowHandle) {
-        if let WindowHandle::XlibHandle(window) = handle {
+    pub fn move_to_top(&self, handle: &WindowHandle<XlibWindowHandle>) {
+        if let WindowHandle(XlibWindowHandle(window)) = handle {
             unsafe {
                 (self.xlib.XRaiseWindow)(self.display, *window);
             }
@@ -396,8 +400,8 @@ impl XWrap {
     // `XSetCloseDownMode`: https://tronche.com/gui/x/xlib/display/XSetCloseDownMode.html
     // `XKillClient`: https://tronche.com/gui/x/xlib/window-and-session-manager/XKillClient.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
-    pub fn kill_window(&self, h: &WindowHandle) {
-        if let WindowHandle::XlibHandle(handle) = h {
+    pub fn kill_window(&self, h: &WindowHandle<XlibWindowHandle>) {
+        if let WindowHandle(XlibWindowHandle(handle)) = h {
             // Nicely ask the window to close.
             if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
                 // Force kill the window.

@@ -1,9 +1,14 @@
+use crate::XlibWindowHandle;
+
 use super::{DisplayEvent, XWrap};
-use leftwm_core::models::{WindowChange, WindowType, Xyhw};
+use leftwm_core::models::{WindowChange, WindowHandle, WindowType, Xyhw};
 
 use x11_dl::xlib;
 
-pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEvent> {
+pub fn from_event(
+    xw: &XWrap,
+    event: xlib::XPropertyEvent,
+) -> Option<DisplayEvent<XlibWindowHandle>> {
     if event.window == xw.get_default_root()
         || event.state == xlib::PropertyDelete
         || !xw.managed_windows.contains(&event.window)
@@ -17,12 +22,14 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
     match event.atom {
         xlib::XA_WM_TRANSIENT_FOR => {
             let window_type = xw.get_window_type(event.window);
-            let handle = event.window.into();
+            let handle = WindowHandle(XlibWindowHandle(event.window));
             let mut change = WindowChange::new(handle);
             if window_type != WindowType::Normal {
                 let trans = xw.get_transient_for(event.window);
                 match trans {
-                    Some(trans) => change.transient = Some(Some(trans.into())),
+                    Some(trans) => {
+                        change.transient = Some(Some(WindowHandle(XlibWindowHandle(trans))))
+                    }
                     None => change.transient = Some(None),
                 }
             }
@@ -51,7 +58,7 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
             }
 
             if event.atom == xw.atoms.NetWMState {
-                let handle = event.window.into();
+                let handle = WindowHandle(XlibWindowHandle(event.window));
                 let mut change = WindowChange::new(handle);
                 let states = xw.get_window_states(event.window);
                 change.states = Some(states);
@@ -63,8 +70,11 @@ pub fn from_event(xw: &XWrap, event: xlib::XPropertyEvent) -> Option<DisplayEven
     }
 }
 
-fn build_change_hints(event: xlib::XPropertyEvent, hints: xlib::XWMHints) -> WindowChange {
-    let handle = event.window.into();
+fn build_change_hints(
+    event: xlib::XPropertyEvent,
+    hints: xlib::XWMHints,
+) -> WindowChange<XlibWindowHandle> {
+    let handle = WindowHandle(XlibWindowHandle(event.window));
     let mut change = WindowChange::new(handle);
 
     change.never_focus = Some(hints.flags & xlib::InputHint != 0 && hints.input == 0);
@@ -73,8 +83,11 @@ fn build_change_hints(event: xlib::XPropertyEvent, hints: xlib::XWMHints) -> Win
     change
 }
 
-fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
-    let handle = window.into();
+fn build_change_for_size_strut_partial(
+    xw: &XWrap,
+    window: xlib::Window,
+) -> Option<WindowChange<XlibWindowHandle>> {
+    let handle = WindowHandle(XlibWindowHandle(window));
     let mut change = WindowChange::new(handle);
     let r#type = xw.get_window_type(window);
 
@@ -101,8 +114,11 @@ fn build_change_for_size_strut_partial(xw: &XWrap, window: xlib::Window) -> Opti
     None
 }
 
-fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<WindowChange> {
-    let handle = window.into();
+fn build_change_for_size_hints(
+    xw: &XWrap,
+    window: xlib::Window,
+) -> Option<WindowChange<XlibWindowHandle>> {
+    let handle = WindowHandle(XlibWindowHandle(window));
     let mut change = WindowChange::new(handle);
     let hint = xw.get_hint_sizing_as_xyhw(window)?;
     if hint.x.is_none() && hint.y.is_none() && hint.w.is_none() && hint.h.is_none() {
@@ -115,9 +131,9 @@ fn build_change_for_size_hints(xw: &XWrap, window: xlib::Window) -> Option<Windo
     Some(change)
 }
 
-fn update_title(xw: &XWrap, window: xlib::Window) -> DisplayEvent {
+fn update_title(xw: &XWrap, window: xlib::Window) -> DisplayEvent<XlibWindowHandle> {
     let title = xw.get_window_name(window);
-    let handle = window.into();
+    let handle = WindowHandle(XlibWindowHandle(window));
     let mut change = WindowChange::new(handle);
     change.name = Some(title);
     DisplayEvent::WindowChange(change)

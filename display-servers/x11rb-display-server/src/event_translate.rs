@@ -2,18 +2,19 @@ use std::backtrace::BacktraceStatus;
 
 use leftwm_core::{
     models::{WindowChange, WindowHandle, WindowType, XyhwChange},
+    utils::modmask_lookup::{Button, ModMask},
     DisplayEvent, Mode,
 };
 use x11rb::protocol::{xproto, Event};
 
-use crate::error::Result;
 use crate::xwrap::XWrap;
+use crate::{error::Result, X11rbWindowHandle};
 
 mod client_message;
 mod property_notify;
 
 /// Translate events from x11rb to leftwm's DisplayEvent
-pub(crate) fn translate(event: Event, xw: &mut XWrap) -> Option<DisplayEvent> {
+pub(crate) fn translate(event: Event, xw: &mut XWrap) -> Option<DisplayEvent<X11rbWindowHandle>> {
     let is_normal = xw.mode == Mode::Normal;
     let is_sloppy = xw.focus_behaviour.is_sloppy();
 
@@ -54,11 +55,11 @@ pub(crate) fn translate(event: Event, xw: &mut XWrap) -> Option<DisplayEvent> {
 fn from_unmap_event(
     event: xproto::UnmapNotifyEvent,
     xw: &mut XWrap,
-) -> Result<Option<DisplayEvent>> {
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if xw.managed_windows.contains(&event.window) {
         // can't check if this event originates from a SendEvent request
         // no idea how this is supposed to be handled
-        let h = WindowHandle::X11rbHandle(event.window);
+        let h = WindowHandle(X11rbWindowHandle(event.window));
         xw.teardown_managed_window(&h, false)?;
         return Ok(Some(DisplayEvent::WindowDestroy(h)));
 
@@ -71,16 +72,19 @@ fn from_unmap_event(
 fn from_destroy_notify(
     event: xproto::DestroyNotifyEvent,
     xw: &mut XWrap,
-) -> Result<Option<DisplayEvent>> {
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if xw.managed_windows.contains(&event.window) {
-        let h = WindowHandle::X11rbHandle(event.window);
+        let h = WindowHandle(X11rbWindowHandle(event.window));
         xw.teardown_managed_window(&h, true)?;
         return Ok(Some(DisplayEvent::WindowDestroy(h)));
     }
     Ok(None)
 }
 
-fn from_focus_in(event: xproto::FocusInEvent, xw: &mut XWrap) -> Result<Option<DisplayEvent>> {
+fn from_focus_in(
+    event: xproto::FocusInEvent,
+    xw: &mut XWrap,
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     // Check that if a window is taking focus, that it should be.
     if xw.focused_window != event.event {
         let never_focus = match xw.get_wmhints(xw.focused_window)? {
@@ -95,7 +99,7 @@ fn from_focus_in(event: xproto::FocusInEvent, xw: &mut XWrap) -> Result<Option<D
 fn from_configure_request(
     event: xproto::ConfigureRequestEvent,
     xw: &mut XWrap,
-) -> Result<Option<DisplayEvent>> {
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     // If the window is not mapped, configure it.
     if !xw.managed_windows.contains(&event.window) {
         let window_changes = xproto::ConfigureWindowAux {
@@ -120,7 +124,7 @@ fn from_configure_request(
     }
     let window_type = xw.get_window_type(event.window)?;
     let trans = xw.get_transient_for(event.window)?;
-    let handle = WindowHandle::X11rbHandle(event.window);
+    let handle = WindowHandle(X11rbWindowHandle(event.window));
     if window_type == WindowType::Normal && trans.is_none() {
         return Ok(Some(DisplayEvent::ConfigureXlibWindow(handle)));
     }
@@ -148,7 +152,7 @@ fn from_configure_request(
 fn from_enter_notify(
     event: xproto::EnterNotifyEvent,
     xw: &mut XWrap,
-) -> Result<Option<DisplayEvent>> {
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if event.mode != xproto::NotifyMode::NORMAL
         || event.detail == xproto::NotifyDetail::INFERIOR
         || event.event == xw.get_default_root()
@@ -156,18 +160,18 @@ fn from_enter_notify(
         return Ok(None);
     }
 
-    let h = WindowHandle::X11rbHandle(event.event);
+    let h = WindowHandle(X11rbWindowHandle(event.event));
     Ok(Some(DisplayEvent::WindowTakeFocus(h)))
 }
 
 fn from_motion_notify(
     event: xproto::MotionNotifyEvent,
     xw: &mut XWrap,
-) -> Result<Option<DisplayEvent>> {
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     // Limit motion events to current refresh rate.
     if xw.refresh_rate > 0 && event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate) {
         xw.motion_event_limiter = event.time;
-        let event_h = WindowHandle::X11rbHandle(event.event);
+        let event_h = WindowHandle(X11rbWindowHandle(event.event));
         let offset_x = event.root_x as i32 - xw.mode_origin.0;
         let offset_y = event.root_y as i32 - xw.mode_origin.1;
         let display_event = match xw.mode {
@@ -195,13 +199,13 @@ fn from_motion_notify(
 fn from_button_press(
     event: xproto::ButtonPressEvent,
     _xw: &mut XWrap,
-) -> Result<Option<DisplayEvent>> {
-    let h = WindowHandle::X11rbHandle(event.event);
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
+    let h = WindowHandle(X11rbWindowHandle(event.event));
     let mod_mask = event.state;
     mod_mask.remove(xproto::KeyButMask::MOD2 | xproto::KeyButMask::LOCK);
     Ok(Some(DisplayEvent::MouseCombo(
-        mod_mask.into(),
-        event.detail.into(),
+        ModMask::from_bits_retain(mod_mask.bits()),
+        Button::from_bits_retain(event.detail),
         h,
         event.root_x as i32,
         event.root_y as i32,
@@ -211,7 +215,7 @@ fn from_button_press(
 fn from_button_release(
     _event: xproto::ButtonReleaseEvent,
     xw: &mut XWrap,
-) -> Result<Option<DisplayEvent>> {
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     xw.set_mode(Mode::Normal)?;
     Ok(Some(DisplayEvent::ChangeToNormalMode))
 }

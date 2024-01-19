@@ -1,5 +1,8 @@
 //! Window Information
 #![allow(clippy::module_name_repetitions)]
+
+use std::fmt::Debug;
+
 use super::WindowState;
 use super::WindowType;
 use crate::models::Margins;
@@ -7,43 +10,44 @@ use crate::models::TagId;
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
 use crate::Workspace;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use x11_dl::xlib;
-use x11rb::protocol::xproto;
+/// A trait which backend specific window handles need to implement
+pub trait Handle:
+    Serialize + DeserializeOwned + Debug + Clone + Copy + PartialEq + Eq + Default + Send + 'static
+{
+}
 
-type MockHandle = i32;
-
+/// A Backend-agnostic handle to a window used to identify it
+///
+/// # Serde
+///
+/// Using generics here with serde derive macros causes some wierd behaviour with the compiler, so
+/// as suggested by [this `serde` issue][serde-issue], just adding `#[serde(bound = "")]`
+/// everywhere the generic is declared fixes the bug.
+/// Hopefully this get fixed at some point so we can make this more pleasant to read...
+///
+/// [serde-issue]: https://github.com/serde-rs/serde/issues/1296
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WindowHandle {
-    MockHandle(MockHandle),
-    XlibHandle(xlib::Window),
-    X11rbHandle(xproto::Window),
-}
+pub struct WindowHandle<H>(#[serde(bound = "")] pub H)
+where
+    H: Handle;
 
-impl std::convert::From<xlib::Window> for WindowHandle {
-    fn from(window: xlib::Window) -> Self {
-        WindowHandle::XlibHandle(window)
-    }
-}
-
-impl WindowHandle {
-    pub fn xlib_handle(self) -> Option<xlib::Window> {
-        match self {
-            WindowHandle::XlibHandle(h) => Some(h),
-            _ => None
-        }
-    }
-}
+/// Handle for testing purposes
+pub type MockHandle = i32;
+impl Handle for MockHandle {}
 
 /// Store Window information.
 // We allow this as we're not managing state directly. This could be refactored in the future.
 // TODO: Refactor floating
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Window {
-    pub handle: WindowHandle,
-    pub transient: Option<WindowHandle>,
+pub struct Window<H: Handle> {
+    #[serde(bound = "")]
+    pub handle: WindowHandle<H>,
+    #[serde(bound = "")]
+    pub transient: Option<WindowHandle<H>>,
     visible: bool,
     pub can_resize: bool,
     is_floating: bool,
@@ -71,9 +75,9 @@ pub struct Window {
     pub res_class: Option<String>,
 }
 
-impl Window {
+impl<H: Handle> Window<H> {
     #[must_use]
-    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Self {
+    pub fn new(h: WindowHandle<H>, name: Option<String>, pid: Option<u32>) -> Self {
         Self {
             handle: h,
             transient: None,
@@ -377,14 +381,14 @@ mod tests {
 
     #[test]
     fn should_be_able_to_tag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut subject = Window::new(WindowHandle::<MockHandle>(1), None, None);
         subject.tag(&1);
         assert!(subject.has_tag(&1), "was unable to tag the window");
     }
 
     #[test]
     fn should_be_able_to_untag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut subject = Window::new(WindowHandle::<MockHandle>(1), None, None);
         subject.tag(&1);
         subject.untag();
         assert!(!subject.has_tag(&1), "was unable to untag the window");

@@ -4,16 +4,16 @@ use crate::config::{Config, InsertBehavior};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
 use crate::layouts::{self, MAIN_AND_VERT_STACK};
-use crate::models::{WindowHandle, WindowState, Xyhw};
+use crate::models::{Handle, WindowHandle, WindowState, Xyhw};
 use crate::state::State;
 use crate::utils::helpers;
 use std::env;
 use std::str::FromStr;
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
-    pub fn window_created_handler(&mut self, mut window: Window, x: i32, y: i32) -> bool {
+    pub fn window_created_handler(&mut self, mut window: Window<H>, x: i32, y: i32) -> bool {
         // Don't add the window if the manager already knows about it.
         if self.state.windows.iter().any(|w| w.handle == window.handle) {
             return false;
@@ -68,7 +68,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
     /// Process a collection of events, and apply them changes to a manager.
     /// Returns true if changes need to be rendered.
-    pub fn window_destroyed_handler(&mut self, handle: &WindowHandle) -> bool {
+    pub fn window_destroyed_handler(&mut self, handle: &WindowHandle<H>) -> bool {
         // Get the previous focused window else find the next or previous window on the workspace.
         let new_handle = if let Some(Some(last_focused_window)) =
             self.state.focus_manager.window_history.get(1)
@@ -119,7 +119,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         visible
     }
 
-    pub fn window_changed_handler(&mut self, change: WindowChange) -> bool {
+    pub fn window_changed_handler(&mut self, change: WindowChange<H>) -> bool {
         let mut changed = false;
         let mut fullscreen_changed = false;
         let mut above_changed = false;
@@ -180,12 +180,15 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
     /// Find the next or previous window on the currently focused workspace.
     /// May return `None` if no other window is present.
-    pub fn get_next_or_previous_handle(&mut self, handle: &WindowHandle) -> Option<WindowHandle> {
+    pub fn get_next_or_previous_handle(
+        &mut self,
+        handle: &WindowHandle<H>,
+    ) -> Option<WindowHandle<H>> {
         let focused_workspace = self.state.focus_manager.workspace(&self.state.workspaces)?;
-        let on_focused_workspace = |x: &Window| -> bool { focused_workspace.is_managed(x) };
+        let on_focused_workspace = |x: &Window<H>| -> bool { focused_workspace.is_managed(x) };
         let mut windows_on_workspace =
             helpers::vec_extract(&mut self.state.windows, on_focused_workspace);
-        let is_handle = |x: &Window| -> bool { &x.handle == handle };
+        let is_handle = |x: &Window<H>| -> bool { &x.handle == handle };
         let new_handle = helpers::relative_find(&windows_on_workspace, is_handle, 1, false)
             .or_else(|| helpers::relative_find(&windows_on_workspace, is_handle, -1, false))
             .map(|w| w.handle);
@@ -196,7 +199,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
 // Helper functions.
 
-fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {
+fn find_terminal<H: Handle>(state: &State<H>, pid: Option<u32>) -> Option<&Window<H>> {
     // Get $SHELL, e.g. /bin/zsh
     let shell_path = env::var("SHELL").ok()?;
     // Remove /bin/
@@ -227,7 +230,10 @@ fn find_terminal(state: &State, pid: Option<u32>) -> Option<&Window> {
     None
 }
 
-fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) -> Option<&Window> {
+fn find_transient_parent<H: Handle>(
+    windows: &[Window<H>],
+    transient: Option<WindowHandle<H>>,
+) -> Option<&Window<H>> {
     let mut transient = transient?;
     loop {
         transient = if let Some(found) = windows
@@ -242,10 +248,10 @@ fn find_transient_parent(windows: &[Window], transient: Option<WindowHandle>) ->
     }
 }
 
-fn insert_window(state: &mut State, window: &mut Window, layout: &str) {
+fn insert_window<H: Handle>(state: &mut State<H>, window: &mut Window<H>, layout: &str) {
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
-        let for_active_workspace = |x: &Window| -> bool { window.tag == x.tag && x.is_managed() };
+        let for_active_workspace = |x: &Window<H>| -> bool { window.tag == x.tag && x.is_managed() };
         // Only minimize when the new window is type normal.
         if let Some(fsw) = state
             .windows
@@ -331,7 +337,7 @@ fn insert_window(state: &mut State, window: &mut Window, layout: &str) {
     }
 }
 
-fn is_scratchpad(state: &State, window: &Window) -> bool {
+fn is_scratchpad<H: Handle>(state: &State<H>, window: &Window<H>) -> bool {
     state
         .active_scratchpads
         .iter()
@@ -340,7 +346,7 @@ fn is_scratchpad(state: &State, window: &Window) -> bool {
 
 /// Tries to position a window according to the requested sizes.
 /// When no size was requested, defaults to `ws.center_halfed()`
-fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
+fn set_relative_floating<H: Handle>(window: &mut Window<H>, ws: &Workspace, outer: Xyhw) {
     window.set_floating(true);
     window.normal = ws.xyhw;
     let xyhw = window.requested.map_or_else(
@@ -356,9 +362,9 @@ fn set_relative_floating(window: &mut Window, ws: &Workspace, outer: Xyhw) {
     window.set_floating_exact(xyhw);
 }
 
-fn setup_window(
-    state: &mut State,
-    window: &mut Window,
+fn setup_window<H: Handle>(
+    state: &mut State<H>,
+    window: &mut Window<H>,
     xy: (i32, i32),
     layout: &mut String,
     is_first: &mut bool,
@@ -392,7 +398,7 @@ fn setup_window(
     };
 
     // Setup basic variables.
-    let for_active_workspace = |x: &Window| -> bool { ws.tag == x.tag && x.is_managed() };
+    let for_active_workspace = |x: &Window<H>| -> bool { ws.tag == x.tag && x.is_managed() };
     *is_first = !state.windows.iter().any(for_active_workspace);
     // May have been set by a predefined tag.
     if window.tag.is_none() {
@@ -448,7 +454,7 @@ fn setup_window(
     }
 }
 
-fn update_workspace_avoid_list(state: &mut State) {
+fn update_workspace_avoid_list<H: Handle>(state: &mut State<H>) {
     let mut avoid = vec![];
     state
         .windows
@@ -477,7 +483,7 @@ fn update_workspace_avoid_list(state: &mut State) {
 mod tests {
     use super::*;
     use crate::layouts::MONOCLE;
-    use crate::models::Screen;
+    use crate::models::{MockHandle, Screen};
     use crate::Manager;
 
     #[test]
@@ -487,19 +493,19 @@ mod tests {
 
         manager.screen_create_handler(Screen::default());
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
 
-        let expected = vec![WindowHandle::MockHandle(1), WindowHandle::MockHandle(2)];
+        let expected = vec![WindowHandle::<MockHandle>(1), WindowHandle::<MockHandle>(2)];
 
-        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+        let actual: Vec<WindowHandle<MockHandle>> = manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
     }
@@ -511,18 +517,18 @@ mod tests {
 
         manager.screen_create_handler(Screen::default());
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
 
-        let expected = vec![WindowHandle::MockHandle(2), WindowHandle::MockHandle(1)];
-        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+        let expected = vec![WindowHandle::<MockHandle>(2), WindowHandle::<MockHandle>(1)];
+        let actual: Vec<WindowHandle<MockHandle>> = manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
     }
@@ -534,27 +540,27 @@ mod tests {
 
         manager.screen_create_handler(Screen::default());
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(3), None, None),
+            Window::new(WindowHandle::<MockHandle>(3), None, None),
             -1,
             -1,
         );
 
         let expected = vec![
-            WindowHandle::MockHandle(1),
-            WindowHandle::MockHandle(3),
-            WindowHandle::MockHandle(2),
+            WindowHandle::<MockHandle>(1),
+            WindowHandle::<MockHandle>(3),
+            WindowHandle::<MockHandle>(2),
         ];
-        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+        let actual: Vec<WindowHandle<MockHandle>> = manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
     }
@@ -566,28 +572,28 @@ mod tests {
 
         manager.screen_create_handler(Screen::default());
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
 
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(3), None, None),
+            Window::new(WindowHandle::<MockHandle>(3), None, None),
             -1,
             -1,
         );
 
         let expected = vec![
-            WindowHandle::MockHandle(2),
-            WindowHandle::MockHandle(3),
-            WindowHandle::MockHandle(1),
+            WindowHandle::<MockHandle>(2),
+            WindowHandle::<MockHandle>(3),
+            WindowHandle::<MockHandle>(1),
         ];
-        let actual: Vec<WindowHandle> = manager.state.windows.iter().map(|w| w.handle).collect();
+        let actual: Vec<WindowHandle<MockHandle>> = manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
     }
@@ -598,7 +604,7 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
@@ -612,12 +618,12 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
@@ -632,12 +638,12 @@ mod tests {
         manager.screen_create_handler(Screen::default());
 
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );
@@ -652,11 +658,11 @@ mod tests {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
@@ -669,15 +675,15 @@ mod tests {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
-        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        let mut third_window = Window::new(WindowHandle::<MockHandle>(3), None, None);
         third_window.tag(&2);
         manager.window_created_handler(third_window, -1, -1);
 
@@ -691,15 +697,15 @@ mod tests {
         let mut manager = Manager::new_test_with_border(vec!["1".to_string(), "2".to_string()], 1);
         manager.screen_create_handler(Screen::default());
 
-        let mut first_window = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut first_window = Window::new(WindowHandle::<MockHandle>(1), None, None);
         first_window.tag(&1);
         manager.window_created_handler(first_window, -1, -1);
 
-        let mut second_window = Window::new(WindowHandle::MockHandle(2), None, None);
+        let mut second_window = Window::new(WindowHandle::<MockHandle>(2), None, None);
         second_window.tag(&2);
         manager.window_created_handler(second_window, -1, -1);
 
-        let mut third_window = Window::new(WindowHandle::MockHandle(3), None, None);
+        let mut third_window = Window::new(WindowHandle::<MockHandle>(3), None, None);
         third_window.tag(&2);
         manager.window_created_handler(third_window, -1, -1);
 
@@ -716,12 +722,12 @@ mod tests {
         manager.state.layout_manager.set_layout(1, 1, MONOCLE);
         // manager.state.tags.get_mut(1).unwrap().set_layout(String::from("Monocle"));
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(1), None, None),
+            Window::new(WindowHandle::<MockHandle>(1), None, None),
             -1,
             -1,
         );
         manager.window_created_handler(
-            Window::new(WindowHandle::MockHandle(2), None, None),
+            Window::new(WindowHandle::<MockHandle>(2), None, None),
             -1,
             -1,
         );

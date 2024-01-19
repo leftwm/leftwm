@@ -16,3 +16,4 @@ mio = { version = "0.8.0", features = ["os-ext"] }
 # x11rb = { version = "0.12.0", features = ["cursor", "randr", "xinerama"] }
 # x11rb = { git = "https://github.com/Syudagye/x11rb", features = ["cursor", "randr", "xinerama"] }
 x11rb = { git = "https://github.com/psychon/x11rb", features = ["cursor", "randr", "xinerama"] }
+serde = { version = "1.0.104", features = ["derive"] }

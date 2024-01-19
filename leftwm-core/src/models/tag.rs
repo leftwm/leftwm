@@ -1,4 +1,4 @@
-use super::{TagId, Xyhw};
+use super::{TagId, Xyhw, Handle};
 use crate::{layouts::LayoutManager, Window, Workspace};
 use serde::{Deserialize, Serialize};
 
@@ -219,9 +219,9 @@ impl Tag {
         }
     }
 
-    pub fn update_windows(
+    pub fn update_windows<H: Handle>(
         &self,
-        windows: &mut [Window],
+        windows: &mut [Window<H>],
         workspace: &Workspace,
         layout_manager: &mut LayoutManager,
     ) {
@@ -260,12 +260,12 @@ impl Tag {
         } else {
             // Don't bother updating the other windows when a window is fullscreen.
             // Mark all windows for this workspace as visible.
-            let mut all_mine: Vec<&mut Window> =
+            let mut all_mine: Vec<&mut Window<H>> =
                 windows.iter_mut().filter(|w| w.has_tag(&self.id)).collect();
             all_mine.iter_mut().for_each(|w| w.set_visible(true));
 
             // Update the location / visibility of all non-floating windows.
-            let mut managed_nonfloat: Vec<&mut Window> = windows
+            let mut managed_nonfloat: Vec<&mut Window<H>> = windows
                 .iter_mut()
                 .filter(|w| w.has_tag(&self.id) && w.is_managed() && !w.floating())
                 .collect();

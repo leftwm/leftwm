@@ -6,20 +6,23 @@ use leftwm_core::{
 };
 use x11rb::{protocol::xproto, x11_utils::Serialize};
 
-use crate::error::Result;
 use crate::xatom::WMStateWindowState;
+use crate::{error::Result, X11rbWindowHandle};
 
 use super::{root_event_mask, XWrap};
 
 impl XWrap {
     /// Sets up a window before we manage it.
-    pub fn setup_window(&self, window: xproto::Window) -> Result<Option<DisplayEvent>> {
+    pub fn setup_window(
+        &self,
+        window: xproto::Window,
+    ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
         // Check that the window isn't requesting to be unmanaged
         let attrs = self.get_window_attrs(window)?;
         if attrs.override_redirect || self.managed_windows.contains(&window) {
             return Ok(None);
         }
-        let handle = WindowHandle::X11rbHandle(window);
+        let handle = WindowHandle(X11rbWindowHandle(window));
         // Gather info about the window from xlib.
         let name = self.get_window_name(window)?;
         let legacy_name = self.get_window_legacy_name(window)?;
@@ -45,7 +48,7 @@ impl XWrap {
         w.legacy_name = Some(legacy_name);
         w.r#type = r#type.clone();
         w.states = states;
-        w.transient = trans.map(|h| WindowHandle::X11rbHandle(h));
+        w.transient = trans.map(|h| WindowHandle(X11rbWindowHandle(window)));
         // // Initialise the windows floating with the pre-mapped settings.
         // let xyhw = XyhwChange {
         //     x: Some(attrs.x),
@@ -102,11 +105,11 @@ impl XWrap {
     // `XMapWindow`: https://tronche.com/gui/x/xlib/window/XMapWindow.html
     pub fn setup_managed_window(
         &mut self,
-        h: WindowHandle,
+        h: WindowHandle<X11rbWindowHandle>,
         floating: bool,
         follow_mouse: bool,
-    ) -> Result<Option<DisplayEvent>> {
-        let WindowHandle::X11rbHandle(handle) = h else {
+    ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
+        let WindowHandle(X11rbWindowHandle(handle)) = h else {
             return Ok(None);
         };
         self.subscribe_to_window_events(handle)?;
@@ -179,8 +182,12 @@ impl XWrap {
     /// Teardown a managed window when it is destroyed.
     // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
-    pub fn teardown_managed_window(&mut self, h: &WindowHandle, destroyed: bool) -> Result<()> {
-        if let WindowHandle::X11rbHandle(handle) = h {
+    pub fn teardown_managed_window(
+        &mut self,
+        h: &WindowHandle<X11rbWindowHandle>,
+        destroyed: bool,
+    ) -> Result<()> {
+        if let WindowHandle(X11rbWindowHandle(handle)) = h {
             self.managed_windows.retain(|x| *x != *handle);
             if !destroyed {
                 xproto::grab_server(&self.conn)?;
@@ -195,8 +202,8 @@ impl XWrap {
     }
 
     /// Updates a window.
-    pub fn update_window(&self, window: &Window) -> Result<()> {
-        if let WindowHandle::X11rbHandle(handle) = window.handle {
+    pub fn update_window(&self, window: &Window<X11rbWindowHandle>) -> Result<()> {
+        if let WindowHandle(X11rbWindowHandle(handle)) = window.handle {
             if window.visible() {
                 let changes = xproto::ConfigureWindowAux {
                     x: Some(window.x()),
@@ -235,7 +242,8 @@ impl XWrap {
             // Make sure the window is mapped.
             xproto::map_window(&self.conn, window)?;
             // Regrab the mouse clicks but ignore `dock` windows as some don't handle click events put on them
-            if self.focus_behaviour.is_clickto() && self.get_window_type(window)? != WindowType::Dock
+            if self.focus_behaviour.is_clickto()
+                && self.get_window_type(window)? != WindowType::Dock
             {
                 self.grab_mouse_clicks(window, false)?;
             }
@@ -253,11 +261,15 @@ impl XWrap {
     }
 
     /// Makes a window take focus.
-    pub fn window_take_focus(&mut self, window: &Window, previous: Option<&Window>) -> Result<()> {
-        if let WindowHandle::X11rbHandle(handle) = window.handle {
+    pub fn window_take_focus(
+        &mut self,
+        window: &Window<X11rbWindowHandle>,
+        previous: Option<&Window<X11rbWindowHandle>>,
+    ) -> Result<()> {
+        if let WindowHandle(X11rbWindowHandle(handle)) = window.handle {
             // Update previous window.
             if let Some(previous) = previous {
-                if let WindowHandle::X11rbHandle(previous_handle) = previous.handle {
+                if let WindowHandle(X11rbWindowHandle(previous_handle)) = previous.handle {
                     let color = if previous.floating() {
                         self.colors.floating
                     } else {
@@ -304,8 +316,12 @@ impl XWrap {
 
     /// Unfocuses all windows.
     // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
-    pub fn unfocus(&self, handle: Option<WindowHandle>, floating: bool) -> Result<()> {
-        if let Some(WindowHandle::X11rbHandle(handle)) = handle {
+    pub fn unfocus(
+        &self,
+        handle: Option<WindowHandle<X11rbWindowHandle>>,
+        floating: bool,
+    ) -> Result<()> {
+        if let Some(WindowHandle(X11rbWindowHandle(handle))) = handle {
             let color = if floating {
                 self.colors.floating
             } else {
@@ -330,8 +346,8 @@ impl XWrap {
     }
 
     /// Send a `XConfigureEvent` for a window to X.
-    pub fn configure_window(&self, window: &Window) -> Result<()> {
-        if let WindowHandle::X11rbHandle(handle) = window.handle {
+    pub fn configure_window(&self, window: &Window<X11rbWindowHandle>) -> Result<()> {
+        if let WindowHandle(X11rbWindowHandle(handle)) = window.handle {
             let configure_event = xproto::ConfigureNotifyEvent {
                 event: handle,
                 window: handle,
@@ -368,10 +384,10 @@ impl XWrap {
 
     /// Restacks the windows to the order of the vec.
     // `XRestackWindows`: https://tronche.com/gui/x/xlib/window/XRestackWindows.html
-    pub fn restack(&self, handles: Vec<WindowHandle>) -> Result<()> {
+    pub fn restack(&self, handles: Vec<WindowHandle<X11rbWindowHandle>>) -> Result<()> {
         let mut conf = xproto::ConfigureWindowAux::default();
         for i in 1..handles.len() {
-            let Some(WindowHandle::X11rbHandle(window)) = handles.get(i) else {
+            let Some(WindowHandle(X11rbWindowHandle(window))) = handles.get(i) else {
                 continue;
             };
 
@@ -380,7 +396,7 @@ impl XWrap {
                 .get(i - 1)
                 .copied()
                 .map(|h| {
-                    if let WindowHandle::X11rbHandle(w) = h {
+                    if let WindowHandle(X11rbWindowHandle(w)) = h {
                         Some(w)
                     } else {
                         None
@@ -413,8 +429,8 @@ impl XWrap {
 
     /// Raise a window.
     // `XRaiseWindow`: https://tronche.com/gui/x/xlib/window/XRaiseWindow.html
-    pub fn move_to_top(&self, handle: &WindowHandle) -> Result<()> {
-        if let WindowHandle::X11rbHandle(window) = handle {
+    pub fn move_to_top(&self, handle: &WindowHandle<X11rbWindowHandle>) -> Result<()> {
+        if let WindowHandle(X11rbWindowHandle(window)) = handle {
             let attrs = xproto::ConfigureWindowAux {
                 stack_mode: Some(xproto::StackMode::ABOVE),
                 ..Default::default()
@@ -429,8 +445,8 @@ impl XWrap {
     // `XSetCloseDownMode`: https://tronche.com/gui/x/xlib/display/XSetCloseDownMode.html
     // `XKillClient`: https://tronche.com/gui/x/xlib/window-and-session-manager/XKillClient.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
-    pub fn kill_window(&self, h: &WindowHandle) -> Result<()> {
-        if let WindowHandle::X11rbHandle(handle) = h {
+    pub fn kill_window(&self, h: &WindowHandle<X11rbWindowHandle>) -> Result<()> {
+        if let WindowHandle(X11rbWindowHandle(handle)) = h {
             // Nicely ask the window to close.
             if !self.send_xevent_atom(*handle, self.atoms.WMDelete)? {
                 // Force kill the window.

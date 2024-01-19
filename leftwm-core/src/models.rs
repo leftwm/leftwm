@@ -32,6 +32,8 @@ pub use screen::{BBox, Screen};
 pub use size::Size;
 pub use window::Window;
 pub use window::WindowHandle;
+pub use window::Handle;
+pub(crate) use window::MockHandle;
 pub use window_change::WindowChange;
 pub use window_state::WindowState;
 pub use window_type::WindowType;
@@ -45,4 +47,4 @@ pub use tag::Tags;
 
 pub type TagId = usize;
 pub type WorkspaceId = usize;
-type MaybeWindowHandle = Option<WindowHandle>;
+type MaybeWindowHandle<H> = Option<WindowHandle<H>>;

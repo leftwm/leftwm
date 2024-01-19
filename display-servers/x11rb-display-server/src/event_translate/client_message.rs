@@ -4,14 +4,14 @@ use leftwm_core::{
 };
 use x11rb::protocol::xproto;
 
-use crate::xwrap::XWrap;
+use crate::{xwrap::XWrap, X11rbWindowHandle};
 
 use crate::error::Result;
 
 pub(crate) fn from_event(
     event: xproto::ClientMessageEvent,
     xw: &XWrap,
-) -> Result<Option<DisplayEvent>> {
+) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if !xw.managed_windows.contains(&event.window) && event.window != xw.get_default_root() {
         return Ok(None);
     }
@@ -45,7 +45,7 @@ pub(crate) fn from_event(
             Ok(index) => {
                 let event = DisplayEvent::SendCommand(Command::SendWindowToTag {
                     tag: index + 1,
-                    window: Some(WindowHandle::X11rbHandle(event.window)),
+                    window: Some(WindowHandle(X11rbWindowHandle(event.window))),
                 });
                 return Ok(Some(event));
             }
@@ -93,7 +93,7 @@ pub(crate) fn from_event(
         }
 
         // update the window states
-        let mut change = WindowChange::new(WindowHandle::X11rbHandle(event.window));
+        let mut change = WindowChange::new(WindowHandle(X11rbWindowHandle(event.window)));
         let states = xw.get_window_states(event.window)?;
         change.states = Some(states);
         return Ok(Some(DisplayEvent::WindowChange(change)));

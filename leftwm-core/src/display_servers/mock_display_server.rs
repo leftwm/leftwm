@@ -1,20 +1,21 @@
 use super::Config;
 use super::DisplayEvent;
 use super::DisplayServer;
+use crate::models::Handle;
 use crate::models::Screen;
 
 #[derive(Clone)]
-pub struct MockDisplayServer {
-    pub screens: Vec<Screen>,
+pub struct MockDisplayServer<H: Handle> {
+    pub screens: Vec<Screen<H>>,
 }
 
-impl DisplayServer for MockDisplayServer {
+impl<H: Handle> DisplayServer<H> for MockDisplayServer<H> {
     fn new(_: &impl Config) -> Self {
         Self { screens: vec![] }
     }
 
     // testing a couple mock event
-    fn get_next_events(&mut self) -> Vec<DisplayEvent> {
+    fn get_next_events(&mut self) -> Vec<DisplayEvent<H>> {
         vec![]
     }
 
@@ -26,7 +27,7 @@ impl DisplayServer for MockDisplayServer {
         unimplemented!()
     }
 
-    fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
+    fn generate_verify_focus_event(&self) -> Option<DisplayEvent<H>> {
         unimplemented!()
     }
 }
