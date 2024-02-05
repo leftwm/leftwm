@@ -317,6 +317,7 @@ workspaces: [
 ]
 \f[R]
 .fi
+
 .SS Tags
 .PP
 Tags are the names of the virtual desktops where windows live.
@@ -326,6 +327,27 @@ popular icon libraries such as font-awesome.
 .PP
 Default:
 \f[C]tags: [\[dq]1\[dq], \[dq]2\[dq], \[dq]3\[dq], \[dq]4\[dq], \[dq]5\[dq], \[dq]6\[dq], \[dq]7\[dq], \[dq]8\[dq], \[dq]9\[dq]]\f[R]
+
+.SS Scratchpads
+.PP 
+A scratchpad is a set of windows which you can call to any tag and hide it when not needed. These windows can be any set of application which can be run from a terminal. To call a scratchpad you will require a keybind for ToggleScratchPad. When you want to manipulate the currently focused scratchpad, other commands like ReleaseScratchPad, AttachScratchPad and NextScratchPadWindow/PrevScratchPadWindow are available.
+.PP 
+Example:
+.IP
+.nf
+\f[C]
+scratchpad: [
+    ( name: "Alacritty", // This is the name which is referenced when calling (case-sensitive)
+      value: "alacritty", // The command to load the application if it isn't started (first application to start)
+      args: ["-e", "python"], // Any arguments to pass to the command
+      // x, y, width, height are in pixels when an integer is inputted or a percentage when a float is inputted.
+      // These values are relative to the size of the workspace, and will be restricted depending on the workspace size.
+      x: 860, y: 390, height: 300, width: 200 
+    ),
+]
+\f[R]
+.fi
+
 
 
 .SH WIKI

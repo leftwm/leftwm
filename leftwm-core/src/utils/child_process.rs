@@ -8,7 +8,7 @@ use std::fs;
 use std::iter::{Extend, FromIterator};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::{Arc, atomic::AtomicBool};
+use std::sync::{atomic::AtomicBool, Arc};
 
 use xdg::BaseDirectories;
 
@@ -173,7 +173,11 @@ pub fn exec_shell(command: &str, children: &mut Children) -> Option<ChildID> {
 
 /// Sends command to shell for execution including arguments.
 /// Assumes STDIN/STDERR/STDOUT unwanted.
-pub fn exec_shell_with_args(command: &str, args: Vec<String>, children: &mut Children) -> Option<ChildID> {
+pub fn exec_shell_with_args(
+    command: &str,
+    args: Vec<String>,
+    children: &mut Children,
+) -> Option<ChildID> {
     let child = Command::new(command)
         .args(args)
         .stdin(Stdio::null())
