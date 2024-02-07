@@ -1,11 +1,9 @@
 //! Xlib calls related to a mouse.
-use std::backtrace::Backtrace;
-
 use x11rb::{protocol::xproto, x11_utils::Serialize};
 
 use super::{button_event_mask, mouse_event_mask, XWrap};
 
-use crate::error::{BackendError, ErrorKind, Result};
+use crate::error::Result;
 
 impl XWrap {
     /// Grabs the mouse clicks of a window.

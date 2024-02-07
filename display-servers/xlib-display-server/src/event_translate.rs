@@ -6,7 +6,7 @@ use super::{
 };
 use leftwm_core::{
     models::{Mode, WindowChange, WindowHandle, WindowType, XyhwChange},
-    utils::modmask_lookup::{self, Button, ModMask},
+    utils::modmask_lookup::{Button, ModMask},
 };
 use std::os::raw::c_ulong;
 use x11_dl::xlib;

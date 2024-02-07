@@ -242,18 +242,17 @@ impl XWrap {
         // Update all the windows with the new colors.
         if let Some(windows) = windows {
             for window in windows {
-                if let WindowHandle(X11rbWindowHandle(handle)) = window.handle {
-                    let is_focused =
-                        matches!(focused, Some(&Some(focused)) if focused == window.handle);
-                    let color: u32 = if is_focused {
-                        self.colors.active
-                    } else if window.floating() {
-                        self.colors.floating
-                    } else {
-                        self.colors.normal
-                    };
-                    self.set_window_border_color(handle, color)?;
-                }
+                let WindowHandle(X11rbWindowHandle(handle)) = window.handle;
+                let is_focused =
+                    matches!(focused, Some(&Some(focused)) if focused == window.handle);
+                let color: u32 = if is_focused {
+                    self.colors.active
+                } else if window.floating() {
+                    self.colors.floating
+                } else {
+                    self.colors.normal
+                };
+                self.set_window_border_color(handle, color)?;
             }
         }
         self.set_background_color(self.colors.background)?;
@@ -470,11 +469,6 @@ impl XWrap {
         Ok(rt)
     }
 
-    /// Wait until readable.
-    // pub async fn wait_readable(&mut self) {
-    //     self.task_notify.notified().await;
-    // }
-
     /// Flush and sync the xserver.
     pub fn sync(&self) -> Result<()> {
         self.conn.sync()?;
@@ -487,11 +481,4 @@ impl XWrap {
         self.conn.flush()?;
         Ok(())
     }
-
-    // /// Returns how many events are waiting.
-    // // `XPending`: https://tronche.com/gui/x/xlib/event-handling/XPending.html
-    // #[must_use]
-    // pub fn queue_len(&self) -> i32 {
-    //     unsafe { (self.xlib.XPending)(self.display) }
-    // }
 }

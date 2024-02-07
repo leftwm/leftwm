@@ -279,9 +279,10 @@ fn from_move_mouse_over(
     force: bool,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     match (handle, xw.get_cursor_window()?) {
-        (WindowHandle(X11rbWindowHandle(window)), WindowHandle(X11rbWindowHandle(cursor_window)))
-            if force || cursor_window != window =>
-        {
+        (
+            WindowHandle(X11rbWindowHandle(window)),
+            WindowHandle(X11rbWindowHandle(cursor_window)),
+        ) if force || cursor_window != window => {
             _ = xw.move_cursor_to_window(window)?;
         }
         _ => {}
@@ -319,9 +320,8 @@ fn from_replay_click(
     handle: WindowHandle<X11rbWindowHandle>,
     button: xproto::Button,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
-    if let WindowHandle(X11rbWindowHandle(handle)) = handle {
-        xw.replay_click(handle, button)?;
-    }
+    let WindowHandle(X11rbWindowHandle(handle)) = handle;
+    xw.replay_click(handle, button)?;
     Ok(None)
 }
 
@@ -408,11 +408,10 @@ fn from_set_window_tag(
     handle: WindowHandle<X11rbWindowHandle>,
     tag: Option<TagId>,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
-    if let WindowHandle(X11rbWindowHandle(window)) = handle {
-        match tag {
-            Some(tag) => xw.set_window_desktop(window, &tag)?,
-            None => (),
-        }
+    let WindowHandle(X11rbWindowHandle(window)) = handle;
+    match tag {
+        Some(tag) => xw.set_window_desktop(window, &tag)?,
+        None => (),
     }
     Ok(None)
 }

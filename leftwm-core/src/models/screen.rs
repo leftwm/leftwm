@@ -1,4 +1,4 @@
-use super::{window::Handle, DockArea, Size, WindowHandle, WorkspaceId, MockHandle};
+use super::{window::Handle, DockArea, Size, WindowHandle, WorkspaceId};
 use crate::config::Workspace;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
@@ -85,77 +85,6 @@ impl<H: Handle> From<&Workspace> for Screen<H> {
         }
     }
 }
-
-// impl<H> From<x11_dl::xrandr::XRRCrtcInfo> for Screen<H> {
-//     fn from(root: x11_dl::xrandr::XRRCrtcInfo) -> Self {
-//         Self {
-//             bbox: BBox {
-//                 x: root.x,
-//                 y: root.y,
-//                 width: root.width as i32,
-//                 height: root.height as i32,
-//             },
-//             ..Default::default()
-//         }
-//     }
-// }
-//
-// impl<H> From<x11rb::protocol::randr::GetCrtcInfoReply> for Screen<H> {
-//     fn from(root: x11rb::protocol::randr::GetCrtcInfoReply) -> Self {
-//         Self {
-//             bbox: BBox {
-//                 x: root.x as i32,
-//                 y: root.y as i32,
-//                 width: root.width as i32,
-//                 height: root.height as i32,
-//             },
-//             ..Default::default()
-//         }
-//     }
-// }
-//
-// impl<H> From<&xlib::XWindowAttributes> for Screen<H> {
-//     fn from(root: &xlib::XWindowAttributes) -> Self {
-//         Self {
-//             root: root.root.into(),
-//             bbox: BBox {
-//                 height: root.height,
-//                 width: root.width,
-//                 x: root.x,
-//                 y: root.y,
-//             },
-//             ..Default::default()
-//         }
-//     }
-// }
-//
-// impl<H> From<&x11_dl::xinerama::XineramaScreenInfo> for Screen<H> {
-//     fn from(root: &x11_dl::xinerama::XineramaScreenInfo) -> Self {
-//         Self {
-//             bbox: BBox {
-//                 height: root.height.into(),
-//                 width: root.width.into(),
-//                 x: root.x_org.into(),
-//                 y: root.y_org.into(),
-//             },
-//             ..Default::default()
-//         }
-//     }
-// }
-//
-// impl<H> From<&x11rb::protocol::xinerama::ScreenInfo> for Screen<H> {
-//     fn from(root: &x11rb::protocol::xinerama::ScreenInfo) -> Self {
-//         Self {
-//             bbox: BBox {
-//                 height: root.height.into(),
-//                 width: root.width.into(),
-//                 x: root.x_org.into(),
-//                 y: root.y_org.into(),
-//             },
-//             ..Default::default()
-//         }
-//     }
-// }
 
 impl<H: Handle> Default for Screen<H> {
     fn default() -> Self {

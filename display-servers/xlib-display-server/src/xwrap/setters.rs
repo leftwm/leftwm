@@ -135,21 +135,20 @@ impl XWrap {
         toggle_to: bool,
         atom: xlib::Atom,
     ) {
-        if let WindowHandle(XlibWindowHandle(h)) = handle {
-            let mut states = self.get_window_states_atoms(h);
-            if toggle_to {
-                if states.contains(&atom) {
-                    return;
-                }
-                states.push(atom);
-            } else {
-                let Some(index) = states.iter().position(|s| s == &atom) else {
-                    return;
-                };
-                states.remove(index);
+        let WindowHandle(XlibWindowHandle(h)) = handle;
+        let mut states = self.get_window_states_atoms(h);
+        if toggle_to {
+            if states.contains(&atom) {
+                return;
             }
-            self.set_window_states_atoms(h, &states);
+            states.push(atom);
+        } else {
+            let Some(index) = states.iter().position(|s| s == &atom) else {
+                return;
+            };
+            states.remove(index);
         }
+        self.set_window_states_atoms(h, &states);
     }
 
     /// Sets a windows border color.

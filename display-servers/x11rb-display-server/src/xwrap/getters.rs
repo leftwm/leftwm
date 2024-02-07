@@ -1,7 +1,4 @@
-use std::{
-    backtrace::Backtrace,
-    ffi::{CStr, CString},
-};
+use std::{backtrace::Backtrace, ffi::CStr};
 
 use leftwm_core::models::{
     BBox, DockArea, Screen, WindowHandle, WindowState, WindowType, XyhwChange,

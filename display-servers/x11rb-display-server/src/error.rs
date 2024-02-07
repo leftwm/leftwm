@@ -62,7 +62,6 @@ impl Display for BackendError {
 /// The possible errors
 #[derive(Debug)]
 pub(crate) enum ErrorKind {
-    NoSizingHints,
     RootWindowNotFound,
     StringConversion,
 
@@ -74,7 +73,6 @@ pub(crate) enum ErrorKind {
 impl Display for ErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let msg = match self {
-            ErrorKind::NoSizingHints => "NoSizingHints",
             ErrorKind::RootWindowNotFound => "RootWindowNotFound",
             ErrorKind::StringConversion => "StringConversion",
             ErrorKind::XConnection => "XConnection",

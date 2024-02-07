@@ -1,10 +1,7 @@
 use std::ffi::CString;
 
 use leftwm_core::models::{TagId, WindowHandle};
-use x11rb::{
-    properties::WmHints,
-    protocol::xproto::{self, ChangeWindowAttributesAux, PropMode},
-};
+use x11rb::protocol::xproto::{self, ChangeWindowAttributesAux, PropMode};
 
 use crate::{error::Result, xatom, X11rbWindowHandle};
 
@@ -133,21 +130,20 @@ impl XWrap {
         toggle_to: bool,
         atom: xproto::Atom,
     ) -> Result<()> {
-        if let WindowHandle(X11rbWindowHandle(h)) = handle {
-            let mut states = self.get_window_states_atoms(h)?;
-            if toggle_to {
-                if states.contains(&atom) {
-                    return Ok(());
-                }
-                states.push(atom);
-            } else {
-                let Some(index) = states.iter().position(|s| s == &atom) else {
-                    return Ok(());
-                };
-                states.remove(index);
+        let WindowHandle(X11rbWindowHandle(h)) = handle;
+        let mut states = self.get_window_states_atoms(h)?;
+        if toggle_to {
+            if states.contains(&atom) {
+                return Ok(());
             }
-            self.set_window_states_atoms(h, &states)?;
+            states.push(atom);
+        } else {
+            let Some(index) = states.iter().position(|s| s == &atom) else {
+                return Ok(());
+            };
+            states.remove(index);
         }
+        self.set_window_states_atoms(h, &states)?;
         Ok(())
     }
 
@@ -218,12 +214,6 @@ impl XWrap {
             wmh.urgent = is_urgent;
             wmh.set(&self.conn, window)?;
         }
-        Ok(())
-    }
-
-    /// Sets the `XWMHints` of a window.
-    pub fn set_wmhints(&self, window: xproto::Window, wmh: &WmHints) -> Result<()> {
-        wmh.set(&self.conn, window)?;
         Ok(())
     }
 

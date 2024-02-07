@@ -48,7 +48,7 @@ impl XWrap {
         w.legacy_name = Some(legacy_name);
         w.r#type = r#type.clone();
         w.states = states;
-        w.transient = trans.map(|h| WindowHandle(X11rbWindowHandle(window)));
+        w.transient = trans.map(|h| WindowHandle(X11rbWindowHandle(h)));
         // // Initialise the windows floating with the pre-mapped settings.
         // let xyhw = XyhwChange {
         //     x: Some(attrs.x),
@@ -109,9 +109,7 @@ impl XWrap {
         floating: bool,
         follow_mouse: bool,
     ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
-        let WindowHandle(X11rbWindowHandle(handle)) = h else {
-            return Ok(None);
-        };
+        let WindowHandle(X11rbWindowHandle(handle)) = h;
         self.subscribe_to_window_events(handle)?;
         self.managed_windows.push(handle);
 
@@ -187,42 +185,40 @@ impl XWrap {
         h: &WindowHandle<X11rbWindowHandle>,
         destroyed: bool,
     ) -> Result<()> {
-        if let WindowHandle(X11rbWindowHandle(handle)) = h {
-            self.managed_windows.retain(|x| *x != *handle);
-            if !destroyed {
-                xproto::grab_server(&self.conn)?;
-                self.ungrab_buttons(*handle)?;
-                self.set_wm_state(*handle, WMStateWindowState::Withdrawn)?;
-                self.sync()?;
-                xproto::ungrab_server(&self.conn)?;
-            }
-            self.set_client_list()?;
+        let WindowHandle(X11rbWindowHandle(handle)) = h;
+        self.managed_windows.retain(|x| *x != *handle);
+        if !destroyed {
+            xproto::grab_server(&self.conn)?;
+            self.ungrab_buttons(*handle)?;
+            self.set_wm_state(*handle, WMStateWindowState::Withdrawn)?;
+            self.sync()?;
+            xproto::ungrab_server(&self.conn)?;
         }
+        self.set_client_list()?;
         Ok(())
     }
 
     /// Updates a window.
     pub fn update_window(&self, window: &Window<X11rbWindowHandle>) -> Result<()> {
-        if let WindowHandle(X11rbWindowHandle(handle)) = window.handle {
-            if window.visible() {
-                let changes = xproto::ConfigureWindowAux {
-                    x: Some(window.x()),
-                    y: Some(window.y()),
-                    width: Some(window.width() as u32),
-                    height: Some(window.height() as u32),
-                    border_width: Some(window.border() as u32),
-                    ..Default::default()
-                };
-                self.set_window_config(handle, &changes)?;
-                self.configure_window(window)?;
-            }
-            let (state, _) = self.get_wm_state(handle)?;
-            // Only change when needed. This prevents task bar icons flashing (especially with steam).
-            if window.visible() && state != WMStateWindowState::Normal {
-                self.toggle_window_visibility(handle, true)?;
-            } else if !window.visible() && state != WMStateWindowState::Iconic {
-                self.toggle_window_visibility(handle, false)?;
-            }
+        let WindowHandle(X11rbWindowHandle(handle)) = window.handle;
+        if window.visible() {
+            let changes = xproto::ConfigureWindowAux {
+                x: Some(window.x()),
+                y: Some(window.y()),
+                width: Some(window.width() as u32),
+                height: Some(window.height() as u32),
+                border_width: Some(window.border() as u32),
+                ..Default::default()
+            };
+            self.set_window_config(handle, &changes)?;
+            self.configure_window(window)?;
+        }
+        let (state, _) = self.get_wm_state(handle)?;
+        // Only change when needed. This prevents task bar icons flashing (especially with steam).
+        if window.visible() && state != WMStateWindowState::Normal {
+            self.toggle_window_visibility(handle, true)?;
+        } else if !window.visible() && state != WMStateWindowState::Iconic {
+            self.toggle_window_visibility(handle, false)?;
         }
         Ok(())
     }
@@ -266,29 +262,27 @@ impl XWrap {
         window: &Window<X11rbWindowHandle>,
         previous: Option<&Window<X11rbWindowHandle>>,
     ) -> Result<()> {
-        if let WindowHandle(X11rbWindowHandle(handle)) = window.handle {
-            // Update previous window.
-            if let Some(previous) = previous {
-                if let WindowHandle(X11rbWindowHandle(previous_handle)) = previous.handle {
-                    let color = if previous.floating() {
-                        self.colors.floating
-                    } else {
-                        self.colors.normal
-                    };
-                    self.set_window_border_color(previous_handle, color)?;
-                    // Open up button1 clicking on the previously focused window.
-                    if self.focus_behaviour.is_clickto() {
-                        self.grab_mouse_clicks(previous_handle, false)?;
-                    }
-                }
+        let WindowHandle(X11rbWindowHandle(handle)) = window.handle;
+        // Update previous window.
+        if let Some(previous) = previous {
+            let WindowHandle(X11rbWindowHandle(previous_handle)) = previous.handle;
+            let color = if previous.floating() {
+                self.colors.floating
+            } else {
+                self.colors.normal
+            };
+            self.set_window_border_color(previous_handle, color)?;
+            // Open up button1 clicking on the previously focused window.
+            if self.focus_behaviour.is_clickto() {
+                self.grab_mouse_clicks(previous_handle, false)?;
             }
-            self.focused_window = handle;
-            self.grab_mouse_clicks(handle, true)?;
-            self.set_window_urgency(handle, false)?;
-            self.set_window_border_color(handle, self.colors.active)?;
-            self.focus(handle, window.never_focus)?;
-            self.sync()?;
         }
+        self.focused_window = handle;
+        self.grab_mouse_clicks(handle, true)?;
+        self.set_window_urgency(handle, false)?;
+        self.set_window_border_color(handle, self.colors.active)?;
+        self.focus(handle, window.never_focus)?;
+        self.sync()?;
         Ok(())
     }
 
@@ -347,38 +341,25 @@ impl XWrap {
 
     /// Send a `XConfigureEvent` for a window to X.
     pub fn configure_window(&self, window: &Window<X11rbWindowHandle>) -> Result<()> {
-        if let WindowHandle(X11rbWindowHandle(handle)) = window.handle {
-            let configure_event = xproto::ConfigureNotifyEvent {
-                event: handle,
-                window: handle,
-                x: window.x() as i16,
-                y: window.y() as i16,
-                width: window.width() as u16,
-                height: window.height() as u16,
-                border_width: window.border() as u16,
-                above_sibling: x11rb::NONE,
-                override_redirect: false,
-                ..Default::default()
-            };
-            self.send_xevent(
-                handle,
-                false,
-                xproto::EventMask::STRUCTURE_NOTIFY,
-                &configure_event.serialize(),
-            )?;
-        }
-        Ok(())
-    }
-
-    /// Change a windows attributes.
-    // `XChangeWindowAttributes`: https://tronche.com/gui/x/xlib/window/XChangeWindowAttributes.html
-    // TODO: Is this method really useful ?
-    pub fn change_window_attributes(
-        &self,
-        window: xproto::Window,
-        attrs: &xproto::ChangeWindowAttributesAux,
-    ) -> Result<()> {
-        xproto::change_window_attributes(&self.conn, window, attrs)?;
+        let WindowHandle(X11rbWindowHandle(handle)) = window.handle;
+        let configure_event = xproto::ConfigureNotifyEvent {
+            event: handle,
+            window: handle,
+            x: window.x() as i16,
+            y: window.y() as i16,
+            width: window.width() as u16,
+            height: window.height() as u16,
+            border_width: window.border() as u16,
+            above_sibling: x11rb::NONE,
+            override_redirect: false,
+            ..Default::default()
+        };
+        self.send_xevent(
+            handle,
+            false,
+            xproto::EventMask::STRUCTURE_NOTIFY,
+            &configure_event.serialize(),
+        )?;
         Ok(())
     }
 
@@ -396,11 +377,8 @@ impl XWrap {
                 .get(i - 1)
                 .copied()
                 .map(|h| {
-                    if let WindowHandle(X11rbWindowHandle(w)) = h {
-                        Some(w)
-                    } else {
-                        None
-                    }
+                    let WindowHandle(X11rbWindowHandle(w)) = h;
+                    Some(w)
                 })
                 .flatten();
             xproto::configure_window(&self.conn, *window, &conf)?;
@@ -430,13 +408,12 @@ impl XWrap {
     /// Raise a window.
     // `XRaiseWindow`: https://tronche.com/gui/x/xlib/window/XRaiseWindow.html
     pub fn move_to_top(&self, handle: &WindowHandle<X11rbWindowHandle>) -> Result<()> {
-        if let WindowHandle(X11rbWindowHandle(window)) = handle {
-            let attrs = xproto::ConfigureWindowAux {
-                stack_mode: Some(xproto::StackMode::ABOVE),
-                ..Default::default()
-            };
-            xproto::configure_window(&self.conn, *window, &attrs)?;
-        }
+        let WindowHandle(X11rbWindowHandle(window)) = handle;
+        let attrs = xproto::ConfigureWindowAux {
+            stack_mode: Some(xproto::StackMode::ABOVE),
+            ..Default::default()
+        };
+        xproto::configure_window(&self.conn, *window, &attrs)?;
         Ok(())
     }
 
@@ -446,15 +423,14 @@ impl XWrap {
     // `XKillClient`: https://tronche.com/gui/x/xlib/window-and-session-manager/XKillClient.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn kill_window(&self, h: &WindowHandle<X11rbWindowHandle>) -> Result<()> {
-        if let WindowHandle(X11rbWindowHandle(handle)) = h {
-            // Nicely ask the window to close.
-            if !self.send_xevent_atom(*handle, self.atoms.WMDelete)? {
-                // Force kill the window.
-                xproto::grab_server(&self.conn)?;
-                xproto::set_close_down_mode(&self.conn, xproto::CloseDown::DESTROY_ALL)?;
-                xproto::kill_client(&self.conn, *handle)?;
-                xproto::ungrab_server(&self.conn)?;
-            }
+        let WindowHandle(X11rbWindowHandle(handle)) = h;
+        // Nicely ask the window to close.
+        if !self.send_xevent_atom(*handle, self.atoms.WMDelete)? {
+            // Force kill the window.
+            xproto::grab_server(&self.conn)?;
+            xproto::set_close_down_mode(&self.conn, xproto::CloseDown::DESTROY_ALL)?;
+            xproto::kill_client(&self.conn, *handle)?;
+            xproto::ungrab_server(&self.conn)?;
         }
         Ok(())
     }

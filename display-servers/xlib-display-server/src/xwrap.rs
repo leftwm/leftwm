@@ -436,18 +436,17 @@ impl XWrap {
         // Update all the windows with the new colors.
         if let Some(windows) = windows {
             for window in windows {
-                if let WindowHandle(XlibWindowHandle(handle)) = window.handle {
-                    let is_focused =
-                        matches!(focused, Some(&Some(focused)) if focused == window.handle);
-                    let color: c_ulong = if is_focused {
-                        self.colors.active
-                    } else if window.floating() {
-                        self.colors.floating
-                    } else {
-                        self.colors.normal
-                    };
-                    self.set_window_border_color(handle, color);
-                }
+                let WindowHandle(XlibWindowHandle(handle)) = window.handle;
+                let is_focused =
+                    matches!(focused, Some(&Some(focused)) if focused == window.handle);
+                let color: c_ulong = if is_focused {
+                    self.colors.active
+                } else if window.floating() {
+                    self.colors.floating
+                } else {
+                    self.colors.normal
+                };
+                self.set_window_border_color(handle, color);
             }
         }
         self.set_background_color(self.colors.background);

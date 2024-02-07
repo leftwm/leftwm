@@ -11,7 +11,7 @@ mod xatom;
 mod xcursor;
 mod xwrap;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 pub use xwrap::XWrap;
 
 use self::xwrap::ICONIC_STATE;
@@ -297,9 +297,8 @@ fn from_replay_click(
     handle: WindowHandle<XlibWindowHandle>,
     button: c_uint,
 ) -> Option<DisplayEvent<XlibWindowHandle>> {
-    if let WindowHandle(XlibWindowHandle(handle)) = handle {
-        xw.replay_click(handle, button);
-    }
+    let WindowHandle(XlibWindowHandle(handle)) = handle;
+    xw.replay_click(handle, button);
     None
 }
 

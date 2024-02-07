@@ -164,50 +164,48 @@ impl XWrap {
     // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn teardown_managed_window(&mut self, h: &WindowHandle<XlibWindowHandle>, destroyed: bool) {
-        if let WindowHandle(XlibWindowHandle(handle)) = h {
-            self.managed_windows.retain(|x| *x != *handle);
-            if !destroyed {
-                unsafe {
-                    (self.xlib.XGrabServer)(self.display);
-                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib_dummy));
-                    self.ungrab_buttons(*handle);
-                    self.set_wm_states(*handle, &[WITHDRAWN_STATE]);
-                    self.sync();
-                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
-                    (self.xlib.XUngrabServer)(self.display);
-                }
+        let WindowHandle(XlibWindowHandle(handle)) = h;
+        self.managed_windows.retain(|x| *x != *handle);
+        if !destroyed {
+            unsafe {
+                (self.xlib.XGrabServer)(self.display);
+                (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib_dummy));
+                self.ungrab_buttons(*handle);
+                self.set_wm_states(*handle, &[WITHDRAWN_STATE]);
+                self.sync();
+                (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
+                (self.xlib.XUngrabServer)(self.display);
             }
-            self.set_client_list();
         }
+        self.set_client_list();
     }
 
     /// Updates a window.
     pub fn update_window(&self, window: &Window<XlibWindowHandle>) {
-        if let WindowHandle(XlibWindowHandle(handle)) = window.handle {
-            if window.visible() {
-                let changes = xlib::XWindowChanges {
-                    x: window.x(),
-                    y: window.y(),
-                    width: window.width(),
-                    height: window.height(),
-                    border_width: window.border(),
-                    sibling: 0,    // Not unlocked.
-                    stack_mode: 0, // Not unlocked.
-                };
-                let unlock =
-                    xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
-                self.set_window_config(handle, changes, u32::from(unlock));
-                self.configure_window(window);
-            }
-            let Some(state) = self.get_wm_state(handle) else {
-                return;
+        let WindowHandle(XlibWindowHandle(handle)) = window.handle;
+        if window.visible() {
+            let changes = xlib::XWindowChanges {
+                x: window.x(),
+                y: window.y(),
+                width: window.width(),
+                height: window.height(),
+                border_width: window.border(),
+                sibling: 0,    // Not unlocked.
+                stack_mode: 0, // Not unlocked.
             };
-            // Only change when needed. This prevents task bar icons flashing (especially with steam).
-            if window.visible() && state != NORMAL_STATE {
-                self.toggle_window_visibility(handle, true);
-            } else if !window.visible() && state != ICONIC_STATE {
-                self.toggle_window_visibility(handle, false);
-            }
+            let unlock =
+                xlib::CWX | xlib::CWY | xlib::CWWidth | xlib::CWHeight | xlib::CWBorderWidth;
+            self.set_window_config(handle, changes, u32::from(unlock));
+            self.configure_window(window);
+        }
+        let Some(state) = self.get_wm_state(handle) else {
+            return;
+        };
+        // Only change when needed. This prevents task bar icons flashing (especially with steam).
+        if window.visible() && state != NORMAL_STATE {
+            self.toggle_window_visibility(handle, true);
+        } else if !window.visible() && state != ICONIC_STATE {
+            self.toggle_window_visibility(handle, false);
         }
     }
 
@@ -246,29 +244,27 @@ impl XWrap {
         window: &Window<XlibWindowHandle>,
         previous: Option<&Window<XlibWindowHandle>>,
     ) {
-        if let WindowHandle(XlibWindowHandle(handle)) = window.handle {
-            // Update previous window.
-            if let Some(previous) = previous {
-                if let WindowHandle(XlibWindowHandle(previous_handle)) = previous.handle {
-                    let color = if previous.floating() {
-                        self.colors.floating
-                    } else {
-                        self.colors.normal
-                    };
-                    self.set_window_border_color(previous_handle, color);
-                    // Open up button1 clicking on the previously focused window.
-                    if self.focus_behaviour.is_clickto() {
-                        self.grab_mouse_clicks(previous_handle, false);
-                    }
-                }
+        let WindowHandle(XlibWindowHandle(handle)) = window.handle;
+        // Update previous window.
+        if let Some(previous) = previous {
+            let WindowHandle(XlibWindowHandle(previous_handle)) = previous.handle;
+            let color = if previous.floating() {
+                self.colors.floating
+            } else {
+                self.colors.normal
+            };
+            self.set_window_border_color(previous_handle, color);
+            // Open up button1 clicking on the previously focused window.
+            if self.focus_behaviour.is_clickto() {
+                self.grab_mouse_clicks(previous_handle, false);
             }
-            self.focused_window = handle;
-            self.grab_mouse_clicks(handle, true);
-            self.set_window_urgency(handle, false);
-            self.set_window_border_color(handle, self.colors.active);
-            self.focus(handle, window.never_focus);
-            self.sync();
         }
+        self.focused_window = handle;
+        self.grab_mouse_clicks(handle, true);
+        self.set_window_urgency(handle, false);
+        self.set_window_border_color(handle, self.colors.active);
+        self.focus(handle, window.never_focus);
+        self.sync();
     }
 
     /// Focuses a window.
@@ -328,26 +324,25 @@ impl XWrap {
 
     /// Send a `XConfigureEvent` for a window to X.
     pub fn configure_window(&self, window: &Window<XlibWindowHandle>) {
-        if let WindowHandle(XlibWindowHandle(handle)) = window.handle {
-            let mut configure_event: xlib::XConfigureEvent = unsafe { std::mem::zeroed() };
-            configure_event.type_ = xlib::ConfigureNotify;
-            configure_event.display = self.display;
-            configure_event.event = handle;
-            configure_event.window = handle;
-            configure_event.x = window.x();
-            configure_event.y = window.y();
-            configure_event.width = window.width();
-            configure_event.height = window.height();
-            configure_event.border_width = window.border;
-            configure_event.above = 0;
-            configure_event.override_redirect = 0;
-            self.send_xevent(
-                handle,
-                0,
-                xlib::StructureNotifyMask,
-                &mut configure_event.into(),
-            );
-        }
+        let WindowHandle(XlibWindowHandle(handle)) = window.handle;
+        let mut configure_event: xlib::XConfigureEvent = unsafe { std::mem::zeroed() };
+        configure_event.type_ = xlib::ConfigureNotify;
+        configure_event.display = self.display;
+        configure_event.event = handle;
+        configure_event.window = handle;
+        configure_event.x = window.x();
+        configure_event.y = window.y();
+        configure_event.width = window.width();
+        configure_event.height = window.height();
+        configure_event.border_width = window.border;
+        configure_event.above = 0;
+        configure_event.override_redirect = 0;
+        self.send_xevent(
+            handle,
+            0,
+            xlib::StructureNotifyMask,
+            &mut configure_event.into(),
+        );
     }
 
     /// Change a windows attributes.
@@ -368,9 +363,8 @@ impl XWrap {
     pub fn restack(&self, handles: Vec<WindowHandle<XlibWindowHandle>>) {
         let mut windows = vec![];
         for handle in handles {
-            if let WindowHandle(XlibWindowHandle(window)) = handle {
-                windows.push(window);
-            }
+            let WindowHandle(XlibWindowHandle(window)) = handle;
+            windows.push(window);
         }
         let size = windows.len();
         let ptr = windows.as_mut_ptr();
@@ -388,10 +382,9 @@ impl XWrap {
     /// Raise a window.
     // `XRaiseWindow`: https://tronche.com/gui/x/xlib/window/XRaiseWindow.html
     pub fn move_to_top(&self, handle: &WindowHandle<XlibWindowHandle>) {
-        if let WindowHandle(XlibWindowHandle(window)) = handle {
-            unsafe {
-                (self.xlib.XRaiseWindow)(self.display, *window);
-            }
+        let WindowHandle(XlibWindowHandle(window)) = handle;
+        unsafe {
+            (self.xlib.XRaiseWindow)(self.display, *window);
         }
     }
 
@@ -401,19 +394,18 @@ impl XWrap {
     // `XKillClient`: https://tronche.com/gui/x/xlib/window-and-session-manager/XKillClient.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn kill_window(&self, h: &WindowHandle<XlibWindowHandle>) {
-        if let WindowHandle(XlibWindowHandle(handle)) = h {
-            // Nicely ask the window to close.
-            if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
-                // Force kill the window.
-                unsafe {
-                    (self.xlib.XGrabServer)(self.display);
-                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib_dummy));
-                    (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
-                    (self.xlib.XKillClient)(self.display, *handle);
-                    self.sync();
-                    (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
-                    (self.xlib.XUngrabServer)(self.display);
-                }
+        let WindowHandle(XlibWindowHandle(handle)) = h;
+        // Nicely ask the window to close.
+        if !self.send_xevent_atom(*handle, self.atoms.WMDelete) {
+            // Force kill the window.
+            unsafe {
+                (self.xlib.XGrabServer)(self.display);
+                (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib_dummy));
+                (self.xlib.XSetCloseDownMode)(self.display, xlib::DestroyAll);
+                (self.xlib.XKillClient)(self.display, *handle);
+                self.sync();
+                (self.xlib.XSetErrorHandler)(Some(on_error_from_xlib));
+                (self.xlib.XUngrabServer)(self.display);
             }
         }
     }

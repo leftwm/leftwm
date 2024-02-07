@@ -216,7 +216,6 @@ impl XWrap {
     /// Also panics if window attrs cannot be obtained.
     #[must_use]
     pub fn get_screens(&self) -> Vec<Screen<XlibWindowHandle>> {
-        use x11_dl::xinerama::XineramaScreenInfo;
         use x11_dl::xinerama::Xlib;
         use x11_dl::xrandr::Xrandr;
         let xlib = Xlib::open().expect("Couldn't not connect to Xorg Server");
