@@ -86,7 +86,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             .filter(|ws| ws.output == screen.output)
             .collect::<Vec<_>>();
         if affected.is_empty() {
-            self.screen_create_handler(screen)
+            self.screen_create_handler(screen);
         } else {
             for wsc in affected {
                 // Apply config changes (if existing)
@@ -111,12 +111,13 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
                 wsc.update_bbox(bbox);
             }
-            // Call up scripts (reload theme)
-            // TODO add reload hook
-            self.call_up_scripts();
-
-            false
         }
+
+        // Call up scripts (reload theme)
+        // TODO add reload hook
+        self.call_up_scripts();
+
+        false
     }
 
     pub fn screen_delete_handler(&mut self, output: &str) -> bool {
