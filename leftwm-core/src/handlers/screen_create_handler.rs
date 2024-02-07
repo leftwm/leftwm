@@ -111,6 +111,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
 
                 wsc.update_bbox(bbox);
             }
+            // Call up scripts (reload theme)
+            // TODO add reload hook
+            self.call_up_scripts();
+
             false
         }
     }

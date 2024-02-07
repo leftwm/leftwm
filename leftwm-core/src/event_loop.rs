@@ -163,7 +163,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         }
     }
 
-    fn call_up_scripts(&mut self) {
+    pub fn call_up_scripts(&mut self) {
         match Nanny::run_global_up_script() {
             Ok(child) => {
                 self.children.insert(child);
