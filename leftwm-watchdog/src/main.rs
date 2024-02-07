@@ -73,20 +73,11 @@ fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -
 }
 
 pub fn get_backend_arg() -> Arg {
-    let mut arg = Arg::new("backend")
+    let arg = Arg::new("backend")
         .long("backend")
         .short('b')
-        .help("Specify the backend to use (`leftwm help backend` for details).");
-
-    #[cfg(feature = "xlib")]
-    {
-        arg = arg.default_value("xlib");
-    }
-    #[cfg(not(feature = "xlib"))]
-    {
-        arg = arg.default_value("x11rb");
-    }
-
+        .help("Specify the backend to use (`leftwm help backend` for details).")
+        .default_value(DEFAULT_BACKEND);
     arg
 }
 
@@ -144,10 +135,10 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
             println!("Available backends:");
 
             #[cfg(feature = "xlib")]
-            println!("xlib\t\truns LeftMW under X11 using the libX11 C library");
+            println!("  xlib\t\truns LeftMW under X11 using the libX11 C library");
 
             #[cfg(feature = "x11rb")]
-            println!("x11rb\t\truns LeftMW under X11 using x11rb, which do not depends on external system library");
+            println!("  x11rb\t\truns LeftMW under X11 using x11rb, which do not depends on external system library");
         } else {
             println!("No such subcommand. Try 'leftwm --help' to find valid subcommands.");
         }
