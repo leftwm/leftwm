@@ -77,7 +77,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 
     pub fn screen_update_handler(&mut self, screen: Screen) -> bool {
-        tracing::warn!("Screen update handler on {}", screen.output);
+        tracing::debug!("Screen update handler on {}", screen.output);
         // Also recieves new screens, needs to ckeck that -> update or create.
         let affected = self
             .state
@@ -88,6 +88,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
         if affected.is_empty() {
             self.screen_create_handler(screen);
         } else {
+            tracing::info!("Screen update for {}", screen.output);
             for wsc in affected {
                 // Apply config changes (if existing)
                 let bbox = if let Some(config_ws) = self
@@ -121,6 +122,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 
     pub fn screen_delete_handler(&mut self, output: &str) -> bool {
+        tracing::info!("Screen delete handler on {}", output);
         self.state.workspaces.retain(|wsc| wsc.output != output);
 
         tracing::warn!("Screen delete handler on {}", output);
