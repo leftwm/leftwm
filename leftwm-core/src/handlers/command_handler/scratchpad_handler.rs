@@ -208,15 +208,9 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
     name: &ScratchPadName,
 ) -> Option<bool> {
     let current_tag = &manager.state.focus_manager.tag(0)?;
-    let scratchpad = manager
-        .state
-        .scratchpads
-        .iter()
-        .find(|s| name == &s.name)?
-        .clone();
 
     // Check if there is a valid scratchpad, if so handle it and return immediately
-    if let Some(id) = manager.state.active_scratchpads.get_mut(&scratchpad.name) {
+    if let Some(id) = manager.state.active_scratchpads.get_mut(name) {
         if let Some(first_in_scratchpad) =
             next_valid_scratchpad_pid(id, &manager.state.windows, Direction::Forward)
         {
@@ -247,14 +241,21 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         }
     }
 
+    let scratchpad = manager
+        .state
+        .scratchpads
+        .iter()
+        .find(|s| name == &s.name)?
+        .clone();
+
     tracing::debug!(
         "No active scratchpad found for name {:?}. Creating a new one",
-        scratchpad.name
+        name
     );
-    let name = scratchpad.name.clone();
+
     let pid: ChildID = exec_shell(&scratchpad.value, &mut manager.children)?;
 
-    match manager.state.active_scratchpads.get_mut(&name) {
+    match manager.state.active_scratchpads.get_mut(name) {
         Some(windows) => {
             windows.push_front(pid);
         }
@@ -262,7 +263,7 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             manager
                 .state
                 .active_scratchpads
-                .insert(name, VecDeque::from([pid]));
+                .insert(scratchpad.name, VecDeque::from([pid]));
         }
     }
 
@@ -281,7 +282,7 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .state
             .focus_manager
             .window_history
-            .get(0)?
+            .front()?
             .as_ref()
             .copied();
 
@@ -361,7 +362,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
     manager: &mut Manager<C, SERVER>,
 ) -> Option<bool> {
     let destination_tag =
-        tag.or_else(|| manager.state.focus_manager.tag_history.get(0).copied())?;
+        tag.or_else(|| manager.state.focus_manager.tag_history.front().copied())?;
 
     // If `None`, replace with current window
     let window = if window == ReleaseScratchPadOption::None {
@@ -370,7 +371,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .state
                 .focus_manager
                 .window_history
-                .get(0)?
+                .front()?
                 .as_ref()
                 .copied()?,
         )
@@ -701,7 +702,7 @@ mod tests {
             .get(&scratchpad_name)
             .is_none());
         assert_eq!(
-            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag
         );
     }
@@ -767,7 +768,7 @@ mod tests {
         assert_eq!(scratchpad.pop_front(), None);
 
         assert_eq!(
-            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag
         );
     }
@@ -851,7 +852,7 @@ mod tests {
         let mock_window3 = 3_u32;
         let mock_window4 = 4_u32;
 
-        let mut managed_windows = vec![mock_window1, mock_window2, mock_window3, mock_window4]
+        let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
             .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
             .collect::<Vec<Window>>();
@@ -885,7 +886,7 @@ mod tests {
         let mock_window3 = 3_u32;
         let mock_window4 = 4_u32;
 
-        let mut managed_windows = vec![mock_window1, mock_window2, mock_window3, mock_window4]
+        let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
             .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
             .collect::<Vec<Window>>();

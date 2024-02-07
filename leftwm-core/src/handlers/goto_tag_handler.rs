@@ -1,6 +1,10 @@
 use crate::{models::TagId, state::State};
 
 impl State {
+    /// `goto_tag_handler` is called in response to various `Command`s.
+    /// it updates the focus manager and focuses `tag_id`
+    ///
+    /// Returns `Some(true)` if changes need to be rendered.
     pub fn goto_tag_handler(&mut self, tag_id: TagId) -> Option<bool> {
         if tag_id > self.tags.len_normal() || tag_id < 1 {
             return Some(false);
@@ -9,6 +13,8 @@ impl State {
         let new_tag = Some(tag_id);
         // No focus safety check.
         let old_tag = self.focus_manager.workspace(&self.workspaces)?.tag?;
+
+        // save currently focused window in the tags_last_window field of the focus manager
         if let Some(handle) = self.focus_manager.window(&self.windows).map(|w| w.handle) {
             let old_handle = self
                 .focus_manager
@@ -17,6 +23,7 @@ impl State {
                 .or_insert(handle);
             *old_handle = handle;
         }
+
         if let Some(ws) = self.workspaces.iter_mut().find(|ws| ws.tag == new_tag) {
             ws.tag = Some(old_tag);
         }
@@ -24,8 +31,7 @@ impl State {
         self.focus_manager.workspace_mut(&mut self.workspaces)?.tag = new_tag;
         self.focus_tag(&tag_id);
         self.update_static();
-        self.layout_manager
-            .update_layouts(&mut self.workspaces, self.tags.all_mut());
+
         Some(true)
     }
 }

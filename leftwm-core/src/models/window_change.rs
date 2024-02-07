@@ -91,7 +91,7 @@ impl WindowChange {
         }
         if let Some(states) = self.states {
             changed = true;
-            window.set_states(states);
+            window.states = states;
         }
         changed
     }

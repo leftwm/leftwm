@@ -1,10 +1,9 @@
 pub use crate::handlers::command_handler::ReleaseScratchPadOption;
-use crate::{
-    layouts::Layout,
-    models::{ScratchPadName, TagId, WindowHandle},
-};
+use crate::models::{ScratchPadName, TagId, WindowHandle};
 use serde::{Deserialize, Serialize};
 
+/// Command represents a command received from the command pipe.
+/// It will be handled in the main event loop.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum Command {
     CloseWindow,
@@ -27,7 +26,9 @@ pub enum Command {
     },
     ToggleScratchPad(ScratchPadName),
     ToggleFullScreen,
+    ToggleMaximized,
     ToggleSticky,
+    ToggleAbove,
     GoToTag {
         tag: TagId,
         swap: bool,
@@ -73,17 +74,21 @@ pub enum Command {
     MoveWindowToPreviousWorkspace,
     NextLayout,
     PreviousLayout,
-    SetLayout(Layout),
+    SetLayout(String),
     RotateTag,
-    IncreaseMainWidth(i8),
-    DecreaseMainWidth(i8),
+    IncreaseMainWidth(i32), // deprecated: use IncreaseMainSize instead
+    DecreaseMainWidth(i32), // deprecated: use DecreaseMainSize instead
+    IncreaseMainSize(i32),
+    DecreaseMainSize(i32),
+    IncreaseMainCount(),
+    DecreaseMainCount(),
     SetMarginMultiplier(f32),
     SendWorkspaceToTag(usize, usize),
     CloseAllOtherWindows,
     Other(String),
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub enum FocusDeltaBehavior {
     Default,
     IgnoreUsed,

@@ -5,11 +5,16 @@ use tracing_subscriber::{layer::SubscriberExt, EnvFilter};
 mod journald;
 
 #[cfg(feature = "file-log")]
-mod file;
+pub mod file;
 
 #[cfg(feature = "sys-log")]
 mod sys;
 
+/// Set up logging by connecting to subscribers
+///
+/// # Panics
+///
+/// - If this fails, we will cast the error upwards for consumption by end user.
 pub fn setup_logging() {
     let subscribers = get_subscribers();
 

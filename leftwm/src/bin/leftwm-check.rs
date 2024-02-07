@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use clap::{arg, command};
-use leftwm::{Config, ThemeSetting};
+use leftwm::{Config, ThemeConfig};
 use ron::{
     extensions::Extensions,
     ser::{to_string_pretty, PrettyConfig},
@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
     );
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
-        git_version::git_version!(fallback = "unknown")
+        option_env!("GIT_HASH").unwrap_or(git_version::git_version!(fallback = "unknown"))
     );
     if matches.get_flag("migrate") {
         println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
@@ -52,14 +52,14 @@ async fn main() -> Result<()> {
     }
 
     match check_enabled_features(verbose) {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(err) => {
             println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
         }
     }
 
     match check_binaries(verbose) {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(err) => {
             println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");
         }
@@ -126,7 +126,8 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         dbg!(&contents);
     }
     if config_filename.as_path().extension() == Some(std::ffi::OsStr::new("ron")) {
-        let ron = Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
+        let ron = Options::default()
+            .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
         let config: Config = ron.from_str(&contents)?;
         Ok(config)
     } else {
@@ -138,10 +139,10 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
 fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> {
     let ron_pretty_conf = PrettyConfig::new()
         .depth_limit(2)
-        .extensions(Extensions::IMPLICIT_SOME);
+        .extensions(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
     let ron = to_string_pretty(&config, ron_pretty_conf)?;
     let comment_header = String::from(
-        r#"//  _        ___                                      ___ _
+        r"//  _        ___                                      ___ _
 // | |      / __)_                                   / __|_)
 // | | ____| |__| |_ _ _ _ ____      ____ ___  ____ | |__ _  ____    ____ ___  ____
 // | |/ _  )  __)  _) | | |    \    / ___) _ \|  _ \|  __) |/ _  |  / ___) _ \|  _ \
@@ -150,7 +151,7 @@ fn write_to_file(ron_file: &Path, config: &Config) -> Result<(), anyhow::Error> 
 // A WindowManager for Adventurers                         (____/
 // For info about configuration please visit https://github.com/leftwm/leftwm/wiki
 
-"#,
+",
     );
     let ron_with_header = comment_header + &ron;
     let mut file = File::create(ron_file)?;
@@ -241,7 +242,7 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
         match filepath {
             f if f.ends_with("up") => match check_permissions(f, verbose) {
                 Ok(fp) => match check_up_file(fp) {
-                    Ok(_) => continue,
+                    Ok(()) => continue,
                     Err(e) => returns.push(e.to_string()),
                 },
                 Err(e) => returns.push(e.to_string()),
@@ -337,7 +338,7 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             println!("Found: {}", filepath.display());
         }
 
-        match toml::from_str::<ThemeSetting>(&contents) {
+        match toml::from_str::<ThemeConfig>(&contents) {
             Ok(_) => {
                 if verbose {
                     println!("The theme file looks OK.");
@@ -365,7 +366,9 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             println!("Found: {}", filepath.display());
         }
 
-        match ron::from_str::<ThemeSetting>(&contents) {
+        let ron = Options::default()
+            .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
+        match ron.from_str::<ThemeConfig>(&contents) {
             Ok(_) => {
                 if verbose {
                     println!("The theme file looks OK.");
@@ -445,7 +448,7 @@ fn check_binaries(verbose: bool) -> Result<()> {
     let mut failures: bool = false;
     for binary in binaries {
         match check_binary(binary, verbose) {
-            Ok(_) => {}
+            Ok(()) => {}
             Err(err) => {
                 failures = true;
                 println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {err} \x1b[0m");

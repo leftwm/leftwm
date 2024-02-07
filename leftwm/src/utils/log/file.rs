@@ -25,7 +25,7 @@ where
     subscriber.with(layer)
 }
 
-fn get_log_path() -> Box<Path> {
+pub fn get_log_path() -> Box<Path> {
     let cache_dir = BaseDirectories::with_prefix(LOG_PREFIX).unwrap();
     cache_dir
         .place_state_file(LOG_FILE_NAME)
@@ -48,7 +48,7 @@ fn get_log_dir<P: AsRef<Path> + Clone>(path: P) -> Box<Path> {
     log_dir.into_boxed_path()
 }
 
-fn get_log_file<P: AsRef<Path>>(path: P) -> Box<Path> {
+pub fn get_log_file<P: AsRef<Path>>(path: P) -> Box<Path> {
     let file_name = path.as_ref().file_name().unwrap().to_owned();
 
     let file_name = PathBuf::from(file_name);

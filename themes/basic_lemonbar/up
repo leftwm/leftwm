@@ -1,39 +1,76 @@
 #!/usr/bin/env bash
+
+# Dependencies:
+# - lemonbar
+# - feh
+# - uname
+# - sed
+# - pkill
+
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
-
-#down the last running theme
-if [ -f "/tmp/leftwm-theme-down" ]; then
+# Down the last running theme
+if [[ -f '/tmp/leftwm-theme-down' ]]; then
     /tmp/leftwm-theme-down
-    rm /tmp/leftwm-theme-down
+    rm '/tmp/leftwm-theme-down'
 fi
-ln -s $SCRIPTPATH/down /tmp/leftwm-theme-down
+ln -s "$SCRIPTPATH/down" '/tmp/leftwm-theme-down'
 
-
-#boot compton or picom if it exists
-if [ -x "$(command -v compton)" ]; then
-  compton &> /dev/null &
-elif [ -x "$(command -v picom)" ]; then
-  picom &> /dev/null &
-fi
-
-#set the theme.ron config
+# Set the theme.ron config
 leftwm-command "LoadTheme $SCRIPTPATH/theme.ron"
 
+# Set background
+feh --bg-max "$SCRIPTPATH/background.png"
 
-#set background
-if [ -x "$(command -v feh)" ]; then
-  feh --bg-scale $SCRIPTPATH/background.jpg
-fi
+# Lemonbar(s) ------------------------------------------------------------------
 
+# Here will be created a lemonbar instance for each workspace (virtual screen)
+# Main instance shows extra status information, the rest only gets leftwm-state
 
-#boot lemonbar and pipe the status of left into it
-sizes=( $(leftwm-state -q -n -t $SCRIPTPATH/sizes.liquid | sed -r '/^\s*$/d') )
+background_color='#1E1E28'
+workspace_idx_modules=0 # select which workspace to display modules on
 
-index=0
-for size in "${sizes[@]}"
-do
-   leftwm-state -w $index -t $SCRIPTPATH/template.liquid | lemonbar -g $size -F#FFFFFFFF -B#AA222222&
-   let index=index+1
+main_bar() {
+  # $1 = window geometry (widthxheight+x+y)
+
+  # Named pipe setup
+  pipe="/tmp/lemonbar-fifo"
+  [[ -p "$pipe" ]] || mkfifo "$pipe"
+
+  # Send status text into named pipe
+  leftwm-state -w "$workspace_idx_modules" \
+   -t "$SCRIPTPATH/template.liquid" > "$pipe" &
+  "$SCRIPTPATH/clock-module" > "$pipe" &
+  printf 'K%s\n' "$(uname -sr)" > "$pipe" &
+
+  # Process named pipe and give the status text to lemonbar
+  # Sorted based on their first letter
+  while read -r; do
+      case "$REPLY" in
+          K*) local kernel="${REPLY#?}" ;;
+          C*) local clock="${REPLY#?}" ;;
+          *) local wm="$REPLY" ;;
+      esac
+
+      printf '%s\n' "$wm%{r}$kernel %{F#6e6c7e}|%{F-} $clock "
+  done < "$pipe" | lemonbar -p -g "$1" -B "$background_color" | sh
+}
+
+# Note: if you only use one workspace the remaining code can be pared down,
+#       can be replaced with: main_bar "$your_size" &
+
+# Workspace size(s)
+sizes=( $(leftwm-state -qn -t "$SCRIPTPATH/sizes.liquid" | sed -r '/^\s*$/d') )
+
+idx=0
+for size in "${sizes[@]}"; do
+  if [[ "$idx" -eq "$workspace_idx_modules" ]]; then
+    main_bar "$size" &
+  else
+    # Instance(s) without modules
+    leftwm-state -w "$idx" -t "$SCRIPTPATH/template.liquid" | lemonbar -p \
+     -g "$size" -B "$background_color" | sh &
+  fi
+
+  (( idx++ ))
 done
-

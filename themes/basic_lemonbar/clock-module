@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+while true; do
+  printf "C%(%a %d %b %Y %H:%M:%S)T\n"
+  sleep 1
+done

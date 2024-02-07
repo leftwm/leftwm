@@ -1,77 +1,128 @@
 {
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    fenix = {
-      url = "github:nix-community/fenix";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    naersk = {
-      url = "github:nix-community/naersk";
+    crane = {
+      url = "github:ipetkov/crane";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, fenix, flake-utils, naersk, nixpkgs }:
-    (flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-        deps = with pkgs; [
-          xorg.libX11
-          xorg.libXinerama
-        ];
+  outputs = inputs@{ self, flake-parts, rust-overlay, crane, nixpkgs, ... }:
+    let
+      GIT_HASH = self.shortRev or self.dirtyShortRev;
+    in
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
 
-        devToolchain = fenix.packages.${system}.stable;
-
-        leftwm = ((naersk.lib.${system}.override {
-          inherit (fenix.packages.${system}.minimal) cargo rustc;
-        }).buildPackage {
-          name = "leftwm";
-          src = ./.;
-          buildInputs = deps;
-          postFixup = ''
-            for p in $out/bin/left*; do
-              patchelf --set-rpath "${pkgs.lib.makeLibraryPath deps}" $p
-            done
-          '';
-
-          GIT_HASH = self.shortRev or "dirty";
-        });
-      in
-      rec {
-        # `nix build`
-        packages = {
-          inherit leftwm;
-          default = leftwm;
-        };
-
-        # `nix run`
-        apps = {
-          leftwm = flake-utils.lib.mkApp {
-            drv = packages.leftwm;
+      perSystem = { pkgs, system, ... }:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ (import rust-overlay) ];
           };
-          default = apps.leftwm;
+
+          commonArgs = {
+            src = craneLib.cleanCargoSource (craneLib.path ./.);
+
+            buildInputs = with pkgs; [
+              mold
+              clang
+              xorg.libX11
+              xorg.libXrandr
+              xorg.libXinerama
+            ];
+
+            inherit GIT_HASH;
+          } // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
+
+          craneLib = (crane.mkLib pkgs).overrideToolchain pkgs.rust-bin.stable.latest.minimal;
+
+          cargoArtifacts = craneLib.buildDepsOnly (commonArgs // {
+            panme = "leftwm-deps";
+          });
+
+          leftwm = craneLib.buildPackage (commonArgs // {
+            inherit cargoArtifacts;
+
+            postFixup = ''
+              for p in $out/bin/left*; do
+                patchelf --set-rpath "${pkgs.lib.makeLibraryPath commonArgs.buildInputs}" $p
+              done
+            '';
+
+            NIX_CFLAGS_LINK = "-fuse-ld=mold";
+          });
+        in
+        {
+
+          # `nix build`
+          packages = {
+            inherit leftwm;
+            default = leftwm;
+          };
+
+          # `nix develop`
+          devShells.default = pkgs.mkShell
+            {
+              NIX_CFLAGS_LINK = "-fuse-ld=mold";
+
+              buildInputs = with pkgs;[
+                mold
+                clang
+                pkg-config
+                systemd
+              ] ++ commonArgs.buildInputs;
+              nativeBuildInputs = with pkgs; [
+                gnumake
+                (rust-bin.stable.latest.default.override {
+                  extensions = [
+                    "cargo"
+                    "clippy"
+                    "rust-src"
+                    "rust-analyzer"
+                    "rustc"
+                    "rustfmt"
+                  ];
+                })
+                virt-viewer
+              ];
+
+              shellHook = ''
+                source ./.nixos-vm/vm.sh
+              '';
+
+              inherit GIT_HASH;
+            };
         };
 
-        # `nix develop`
-        devShells.default = pkgs.mkShell
+      flake = {
+        formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
+        overlays.default = final: prev: {
+          leftwm = self.packages.${final.system}.leftwm;
+        };
+
+        # nixos development vm
+        nixosConfigurations.leftwm = nixpkgs.lib.nixosSystem
           {
-            buildInputs = deps ++ [ pkgs.pkg-config pkgs.systemd ];
-            nativeBuildInputs = with pkgs; [
-              gnumake
-              (devToolchain.withComponents [
-                "cargo"
-                "clippy"
-                "rust-src"
-                "rustc"
-                "rustfmt"
-              ])
-              fenix.packages.${system}.rust-analyzer
+            system = "x86_64-linux";
+            modules = [
+              {
+                nixpkgs.overlays = [
+                  self.overlays.default
+                ];
+              }
+              "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
+              ./.nixos-vm/configuration.nix
             ];
           };
-      })) // {
-      overlay = final: prev: {
-        leftwm = self.packages.${final.system}.leftwm;
       };
     };
 }

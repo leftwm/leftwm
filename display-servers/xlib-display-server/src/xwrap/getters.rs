@@ -34,6 +34,7 @@ impl XWrap {
     // `XDefaultScreen`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultScreen
     // `XDefaultColormap`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultColormap
     // `XAllocNamedColor`: https://tronche.com/gui/x/xlib/color/XAllocNamedColor.html
+    #[must_use]
     pub fn get_color(&self, color: String) -> c_ulong {
         unsafe {
             let screen = (self.xlib.XDefaultScreen)(self.display);
@@ -182,6 +183,7 @@ impl XWrap {
 
     /// Returns the next `Xevent` that matches the mask of the xserver.
     // `XMaskEvent`: https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XMaskEvent.html
+    #[must_use]
     pub fn get_mask_event(&self) -> xlib::XEvent {
         unsafe {
             let mut event: xlib::XEvent = std::mem::zeroed();
@@ -365,8 +367,16 @@ impl XWrap {
             if status == 0 {
                 return None;
             }
-            let Ok(res_name) = CString::from_raw(class_return.res_name.cast::<c_char>()).into_string() else  {return None};
-            let Ok(res_class) =CString::from_raw(class_return.res_class.cast::<c_char>()).into_string() else { return None};
+            let Ok(res_name) =
+                CString::from_raw(class_return.res_name.cast::<c_char>()).into_string()
+            else {
+                return None;
+            };
+            let Ok(res_class) =
+                CString::from_raw(class_return.res_class.cast::<c_char>()).into_string()
+            else {
+                return None;
+            };
             Some((res_name, res_class))
         }
     }
@@ -446,13 +456,25 @@ impl XWrap {
     /// Returns the states of a window.
     #[must_use]
     pub fn get_window_states(&self, window: xlib::Window) -> Vec<WindowState> {
-        self.get_window_states_atoms(window)
+        let window_states_atoms = self.get_window_states_atoms(window);
+
+        // if window is maximized both horizontally and vertically
+        // `WindowState::Maximized` is used
+        // instead of `WindowState::MaximizedVert` and `WindowState::MaximizedHorz`
+        let maximized = window_states_atoms.contains(&self.atoms.NetWMStateMaximizedVert)
+            && window_states_atoms.contains(&self.atoms.NetWMStateMaximizedHorz);
+
+        let mut window_states: Vec<WindowState> = window_states_atoms
             .iter()
             .map(|a| match a {
                 x if x == &self.atoms.NetWMStateModal => WindowState::Modal,
                 x if x == &self.atoms.NetWMStateSticky => WindowState::Sticky,
-                x if x == &self.atoms.NetWMStateMaximizedVert => WindowState::MaximizedVert,
-                x if x == &self.atoms.NetWMStateMaximizedHorz => WindowState::MaximizedHorz,
+                x if x == &self.atoms.NetWMStateMaximizedVert && !maximized => {
+                    WindowState::MaximizedVert
+                }
+                x if x == &self.atoms.NetWMStateMaximizedHorz && !maximized => {
+                    WindowState::MaximizedHorz
+                }
                 x if x == &self.atoms.NetWMStateShaded => WindowState::Shaded,
                 x if x == &self.atoms.NetWMStateSkipTaskbar => WindowState::SkipTaskbar,
                 x if x == &self.atoms.NetWMStateSkipPager => WindowState::SkipPager,
@@ -462,7 +484,13 @@ impl XWrap {
                 x if x == &self.atoms.NetWMStateBelow => WindowState::Below,
                 _ => WindowState::Modal,
             })
-            .collect()
+            .collect();
+
+        if maximized {
+            window_states.push(WindowState::Maximized);
+        }
+
+        window_states
     }
 
     /// Returns the atom states of a window.
@@ -504,12 +532,12 @@ impl XWrap {
     pub fn get_window_strut_array(&self, window: xlib::Window) -> Option<DockArea> {
         // More modern structure.
         if let Some(d) = self.get_window_strut_array_strut_partial(window) {
-            tracing::debug!("STRUT:[{:?}] {:?}", window, d);
+            tracing::trace!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
         // Older structure.
         if let Some(d) = self.get_window_strut_array_strut(window) {
-            tracing::debug!("STRUT:[{:?}] {:?}", window, d);
+            tracing::trace!("STRUT:[{:?}] {:?}", window, d);
             return Some(d);
         }
         None
@@ -553,6 +581,7 @@ impl XWrap {
     }
 
     /// Returns the `WM_STATE` of a window.
+    #[must_use]
     pub fn get_wm_state(&self, window: xlib::Window) -> Option<c_long> {
         let (prop_return, nitems_return) = self
             .get_property(window, self.atoms.WMState, self.atoms.WMState)
@@ -560,6 +589,7 @@ impl XWrap {
         if nitems_return == 0 {
             return None;
         }
+        #[allow(clippy::cast_ptr_alignment)]
         Some(unsafe { *prop_return.cast::<c_long>() })
     }
 

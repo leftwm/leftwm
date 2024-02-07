@@ -63,7 +63,7 @@ impl XWrap {
     // `XGrabPointer`: https://tronche.com/gui/x/xlib/input/XGrabPointer.html
     pub fn grab_pointer(&self, cursor: c_ulong) {
         unsafe {
-            //grab the mouse
+            // grab the mouse
             (self.xlib.XGrabPointer)(
                 self.display,
                 self.root,
@@ -82,7 +82,7 @@ impl XWrap {
     // `XUngrabPointer`: https://tronche.com/gui/x/xlib/input/XUngrabPointer.html
     pub fn ungrab_pointer(&self) {
         unsafe {
-            //release the mouse grab
+            // release the mouse grab
             (self.xlib.XUngrabPointer)(self.display, xlib::CurrentTime);
         }
     }

@@ -4,7 +4,8 @@ use crate::display_servers::DisplayServer;
 use crate::models::BBox;
 
 impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
-    /// Process a collection of events, and apply the changes to a manager.
+    /// `screen_create_handler` is called when the display server sends a
+    /// `DisplayEvent::ScreenCreate(screen)` event. This happens at initialization.
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
@@ -51,10 +52,10 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             min_id_current.max(min_id_config) + 1
         });
         screen.id = Some(screen_id);
-        screen.max_window_width = screen.max_window_width.or(self.state.max_window_width);
+        // TODO Currently unused
+        //screen.max_window_width = screen.max_window_width.or(self.config.max_window_width);
 
-        let mut new_workspace =
-            Workspace::new(screen, self.state.layout_manager.new_layout(screen_id));
+        let mut new_workspace = Workspace::new(screen);
 
         if self.state.workspaces.len() >= tag_len {
             tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. Unlabled tags will be automatically created.");
@@ -65,21 +66,14 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             tag_index + 1
         } else {
             // Add a new tag for the workspace.
-            self.state
-                .tags
-                .add_new_unlabeled(self.state.layout_manager.new_layout(screen_id))
+            self.state.tags.add_new(screen_id.to_string().as_str())
         };
-        if let Some(tag) = self.state.tags.get_mut(next_id) {
-            tag.layout = new_workspace.layout;
-        }
 
-        new_workspace.load_config(&self.config);
-
-        self.state.focus_workspace(&new_workspace);
+        self.state.focus_workspace(&new_workspace); // focus_workspace is called.
         self.state.focus_tag(&next_id);
         new_workspace.show_tag(&next_id);
         self.state.workspaces.push(new_workspace.clone());
-        self.state.focus_workspace(&new_workspace);
+        self.state.focus_workspace(&new_workspace); // focus_workspace is called again.
     }
 
     pub fn screen_update_handler(&mut self, screen: Screen) -> bool {
