@@ -77,7 +77,7 @@ pub fn get_backend_arg() -> Arg {
     Arg::new("backend")
         .long("backend")
         .short('b')
-        .help("Specify the backend to use (`leftwm help backend` for details).")
+        .help("Specify the backend to use (Check the manual for details, 'leftwm help backend' for available backends).")
         .default_value(DEFAULT_BACKEND)
 }
 
