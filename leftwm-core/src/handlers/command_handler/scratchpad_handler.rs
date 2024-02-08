@@ -856,7 +856,7 @@ mod tests {
         let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
             .map(|pid| Window::new(WindowHandle::<MockHandle>(*pid as i32), None, Some(*pid)))
-            .collect::<Vec<Window>>();
+            .collect::<Vec<Window<MockHandle>>>();
         let mut scratchpad =
             VecDeque::from([mock_window1, mock_window2, mock_window3, mock_window4]);
 
@@ -890,7 +890,7 @@ mod tests {
         let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
             .map(|pid| Window::new(WindowHandle::<MockHandle>(*pid as i32), None, Some(*pid)))
-            .collect::<Vec<Window>>();
+            .collect::<Vec<Window<MockHandle>>>();
         let mut scratchpad =
             VecDeque::from([mock_window1, mock_window2, mock_window3, mock_window4]);
 

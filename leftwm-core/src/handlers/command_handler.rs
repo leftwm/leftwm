@@ -1391,8 +1391,9 @@ mod tests {
 
     fn goto_next_empty_tag_while_in_used_tag() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
         manager.screen_create_handler(Screen::default());
 
@@ -1412,8 +1413,9 @@ mod tests {
     #[test]
     fn goto_next_empty_tag_while_in_empty_tag() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Empty".to_string()]);
         manager.screen_create_handler(Screen::default());
 
@@ -1429,8 +1431,9 @@ mod tests {
     #[test]
     fn goto_next_empty_tag_multiple_tags() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec![
             "A".to_string(),
             "B".to_string(),
@@ -1488,8 +1491,9 @@ mod tests {
 
     fn goto_previous_empty_tag_while_in_used_tag() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
         manager.screen_create_handler(Screen::default());
 
@@ -1509,8 +1513,9 @@ mod tests {
     #[test]
     fn goto_previous_empty_tag_while_in_empty_tag() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Empty".to_string()]);
         manager.screen_create_handler(Screen::default());
 
@@ -1526,8 +1531,9 @@ mod tests {
     #[test]
     fn goto_previous_empty_tag_multiple_tags() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec![
             "A".to_string(),
             "B".to_string(),
@@ -1584,8 +1590,9 @@ mod tests {
 
     fn goto_next_used_tag_while_in_used_tag() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["Used".to_string(), "Empty".to_string()]);
         manager.screen_create_handler(Screen::default());
 
@@ -1609,8 +1616,9 @@ mod tests {
     #[test]
     fn goto_next_used_tag_while_in_empty_tag() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Used".to_string()]);
         manager.screen_create_handler(Screen::default());
 
@@ -1630,8 +1638,9 @@ mod tests {
     #[test]
     fn goto_next_used_tag_multiple_tags() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec![
             "A".to_string(),
             "B".to_string(),
@@ -1689,8 +1698,9 @@ mod tests {
 
     fn goto_previous_used_tag_while_in_used_tag() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["A".to_string(), "B".to_string(), "C".to_string()]);
         manager.screen_create_handler(Screen::default());
 
@@ -1714,8 +1724,9 @@ mod tests {
     #[test]
     fn goto_previous_used_tag_while_in_empty_tag() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec!["Emtpy_One".to_string(), "Used".to_string()]);
         manager.screen_create_handler(Screen::default());
 
@@ -1735,8 +1746,9 @@ mod tests {
     #[test]
     fn goto_previous_used_tag_multiple_tags() {
         let mut manager: Manager<
+            MockHandle,
             crate::config::tests::TestConfig,
-            crate::display_servers::MockDisplayServer,
+            crate::display_servers::MockDisplayServer<MockHandle>,
         > = Manager::new_test(vec![
             "A".to_string(),
             "B".to_string(),

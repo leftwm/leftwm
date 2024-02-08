@@ -470,6 +470,7 @@ impl<H: Handle> fmt::Display for InvalidFocusDeltaBehaviorError<H> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::models::MockHandle;
     use crate::utils::helpers::test::temp_path;
     use tokio::io::AsyncWriteExt;
     use tokio::time;
@@ -477,7 +478,7 @@ mod test {
     #[tokio::test]
     async fn read_good_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone()).await.unwrap();
 
         // Write some meaningful command to the pipe and close it.
         {
@@ -499,7 +500,7 @@ mod test {
     #[tokio::test]
     async fn read_bad_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone()).await.unwrap();
 
         // Write some custom command and close it.
         {
@@ -525,7 +526,7 @@ mod test {
 
         // Write to pipe.
         {
-            let _command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+            let _command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone()).await.unwrap();
             let mut pipe = fs::OpenOptions::new()
                 .write(true)
                 .open(&pipe_file)
@@ -546,33 +547,33 @@ mod test {
 
     #[test]
     fn build_toggle_scratchpad_without_parameter() {
-        assert!(build_toggle_scratchpad("").is_err());
+        assert!(build_toggle_scratchpad::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_send_window_to_tag_without_parameter() {
-        assert!(build_send_window_to_tag("").is_err());
+        assert!(build_toggle_scratchpad::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_send_workspace_to_tag_without_parameter() {
-        assert!(build_send_workspace_to_tag("").is_err());
+        assert!(build_send_workspace_to_tag::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_set_layout_without_parameter() {
-        assert!(build_set_layout("").is_err());
+        assert!(build_set_layout::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_set_margin_multiplier_without_parameter() {
-        assert!(build_set_margin_multiplier("").is_err());
+        assert!(build_set_margin_multiplier::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_move_window_top_without_parameter() {
         assert_eq!(
-            build_move_window_top("").unwrap(),
+            build_move_window_top::<MockHandle>("").unwrap(),
             Command::MoveWindowTop { swap: true }
         );
     }
@@ -580,7 +581,7 @@ mod test {
     #[test]
     fn build_focus_window_top_without_parameter() {
         assert_eq!(
-            build_focus_window_top("").unwrap(),
+            build_focus_window_top::<MockHandle>("").unwrap(),
             Command::FocusWindowTop { swap: false }
         );
     }
@@ -588,7 +589,7 @@ mod test {
     #[test]
     fn build_move_window_to_next_tag_without_parameter() {
         assert_eq!(
-            build_move_window_to_next_tag("").unwrap(),
+            build_move_window_to_next_tag::<MockHandle>("").unwrap(),
             Command::MoveWindowToNextTag { follow: true }
         );
     }
@@ -596,7 +597,7 @@ mod test {
     #[test]
     fn build_move_window_to_previous_tag_without_parameter() {
         assert_eq!(
-            build_move_window_to_previous_tag("").unwrap(),
+            build_move_window_to_previous_tag::<MockHandle>("").unwrap(),
             Command::MoveWindowToPreviousTag { follow: true }
         );
     }
@@ -604,7 +605,7 @@ mod test {
     #[test]
     fn build_focus_next_tag_without_parameter() {
         assert_eq!(
-            build_focus_next_tag("").unwrap(),
+            build_focus_next_tag::<MockHandle>("").unwrap(),
             Command::FocusNextTag {
                 behavior: command::FocusDeltaBehavior::Default
             }
@@ -614,7 +615,7 @@ mod test {
     #[test]
     fn build_focus_previous_tag_without_parameter() {
         assert_eq!(
-            build_focus_previous_tag("").unwrap(),
+            build_focus_previous_tag::<MockHandle>("").unwrap(),
             Command::FocusPreviousTag {
                 behavior: command::FocusDeltaBehavior::Default
             }
@@ -624,10 +625,10 @@ mod test {
     #[test]
     fn build_focus_next_tag_with_invalid() {
         assert_eq!(
-            build_focus_next_tag("gurke").unwrap_err().to_string(),
+            build_focus_next_tag::<MockHandle>("gurke").unwrap_err().to_string(),
             (InvalidFocusDeltaBehaviorError {
                 attempted_value: String::from("gurke"),
-                command: Command::FocusNextTag {
+                command: Command::<MockHandle>::FocusNextTag {
                     behavior: command::FocusDeltaBehavior::Default,
                 }
             })
@@ -638,10 +639,10 @@ mod test {
     #[test]
     fn build_focus_previous_tag_with_invalid() {
         assert_eq!(
-            build_focus_previous_tag("gurke").unwrap_err().to_string(),
+            build_focus_previous_tag::<MockHandle>("gurke").unwrap_err().to_string(),
             (InvalidFocusDeltaBehaviorError {
                 attempted_value: String::from("gurke"),
-                command: Command::FocusPreviousTag {
+                command: Command::<MockHandle>::FocusPreviousTag {
                     behavior: command::FocusDeltaBehavior::Default,
                 }
             })
