@@ -5,7 +5,7 @@ use crate::models::{WindowHandle, WindowState, Handle};
 use crate::State;
 
 impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
-    /// Process a collection of events, and apply them changes to a manager.
+    /// Process a collection of events, and apply changes to a manager.
     /// Returns true if changes need to be rendered.
     pub fn display_event_handler(&mut self, event: DisplayEvent<H>) -> bool {
         let state = &mut self.state;
@@ -108,6 +108,8 @@ fn from_movement<H: Handle>(state: &mut State<H>, handle: WindowHandle<H>, x: i3
     false
 }
 
+// private helper function wrapping `window_move_handler`
+// TODO: maybe move to window_move_handler.rs
 fn from_move_window<H: Handle, C: Config, SERVER: DisplayServer<H>>(
     manager: &mut Manager<H, C, SERVER>,
     handle: WindowHandle<H>,
@@ -121,6 +123,9 @@ fn from_move_window<H: Handle, C: Config, SERVER: DisplayServer<H>>(
     }
     manager.window_move_handler(&handle, x, y)
 }
+
+// private helper function wrapping `window_resize_handler`
+// TODO: maybe move to window_resize_handler.rs
 fn from_resize_window<H: Handle, C: Config, SERVER: DisplayServer<H>>(
     manager: &mut Manager<H, C, SERVER>,
     handle: WindowHandle<H>,
@@ -135,6 +140,8 @@ fn from_resize_window<H: Handle, C: Config, SERVER: DisplayServer<H>>(
     manager.window_resize_handler(&handle, x, y)
 }
 
+// called when manager receives `DisplayAction::ConfigureXlibWindow(handle)`
+// then sends back a copy of the event if the state already knows about it.
 fn from_configure_xlib_window<H: Handle>(state: &mut State<H>, handle: WindowHandle<H>) -> bool {
     if let Some(window) = state.windows.iter().find(|w| w.handle == handle) {
         let act = DisplayAction::ConfigureXlibWindow(window.clone());
@@ -142,6 +149,7 @@ fn from_configure_xlib_window<H: Handle>(state: &mut State<H>, handle: WindowHan
     }
     false
 }
+
 // Save off the info about position of the window when we start to move/resize.
 fn prepare_window<H: Handle>(state: &mut State<H>, handle: WindowHandle<H>) {
     if let Some(w) = state.windows.iter_mut().find(|w| w.handle == handle) {

@@ -11,7 +11,9 @@ use std::env;
 use std::str::FromStr;
 
 impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
-    /// Process a collection of events, and apply them changes to a manager.
+    /// `window_created_handler` is called when the display server sends
+    /// the event `DisplayEvent::WindowCreate(w, x, y)`.
+    ///
     /// Returns true if changes need to be rendered.
     pub fn window_created_handler(&mut self, mut window: Window<H>, x: i32, y: i32) -> bool {
         // Don't add the window if the manager already knows about it.
@@ -22,6 +24,8 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
         // Setup any predefined hooks.
         self.config
             .setup_predefined_window(&mut self.state, &mut window);
+
+        // TODO: this seems very janky.
         let mut is_first = false;
         let mut on_same_tag = true;
         // Random value
@@ -41,6 +45,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
             && self.state.focus_manager.behaviour.is_sloppy()
             && self.state.focus_manager.sloppy_mouse_follows_focus
             && on_same_tag;
+
         // Let the DS know we are managing this window.
         let act = DisplayAction::AddedWindow(window.handle, window.floating(), follow_mouse);
         self.state.actions.push_back(act);
@@ -53,12 +58,18 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
 
         // Tell the WM to reevaluate the stacking order, so the new window is put in the correct layer
         self.state.sort_windows();
+
+        // if `single_window_border` is `false`, remove borders if there is a single visible window
         self.state.handle_single_border(self.config.border_width());
 
+        // `is_first` and `on_same_tag` are set by `setup_window`
+        // TODO: remove focus_new_windows variable from focus_manager,
+        // TODO: use self.config.focus_new_windows() instead
         if (self.state.focus_manager.focus_new_windows || is_first) && on_same_tag {
             self.state.focus_window(&window.handle);
         }
 
+        // run the `on_new_window_cmd` set in `config.ron`
         if let Some(cmd) = &self.config.on_new_window_cmd() {
             exec_shell(cmd, &mut self.children);
         }
@@ -66,7 +77,9 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
         true
     }
 
-    /// Process a collection of events, and apply them changes to a manager.
+    /// `window_destroyed_handler` is called when the display server sends
+    /// the `DisplayEvent::WindowDestroy(handle)` event.
+    ///
     /// Returns true if changes need to be rendered.
     pub fn window_destroyed_handler(&mut self, handle: &WindowHandle<H>) -> bool {
         // Get the previous focused window else find the next or previous window on the workspace.
@@ -119,6 +132,10 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
         visible
     }
 
+    /// `window_changed_handler` is called when the display server sends
+    /// the `DisplayEvent::WindowChange(change)` event.
+    ///
+    /// Returns true if changes need to be rendered.
     pub fn window_changed_handler(&mut self, change: WindowChange<H>) -> bool {
         let mut changed = false;
         let mut fullscreen_changed = false;
@@ -180,6 +197,8 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
 
     /// Find the next or previous window on the currently focused workspace.
     /// May return `None` if no other window is present.
+    ///
+    /// Returns true if changes need to be rendered.
     pub fn get_next_or_previous_handle(
         &mut self,
         handle: &WindowHandle<H>,
@@ -197,7 +216,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     }
 }
 
-// Helper functions.
+// Private helper functions.
 
 fn find_terminal<H: Handle>(state: &State<H>, pid: Option<u32>) -> Option<&Window<H>> {
     // Get $SHELL, e.g. /bin/zsh
@@ -276,6 +295,8 @@ fn insert_window<H: Handle>(state: &mut State<H>, window: &mut Window<H>, layout
                 state.actions.push_back(act);
             }
         }
+
+        // TODO: remove hard coded layout names.
         let monocle = layouts::MONOCLE;
         let main_and_deck = layouts::MAIN_AND_DECK;
         if layout == monocle || layout == main_and_deck {
@@ -303,10 +324,11 @@ fn insert_window<H: Handle>(state: &mut State<H>, window: &mut Window<H>, layout
         }
     }
 
-    // If a window is a dialog, splash, or scractchpad we want it to be at the top.
+    // If a window is a dialog, splash, utility, floating or scractchpad we want it to be at the top.
     if window.r#type == WindowType::Dialog
         || window.r#type == WindowType::Splash
         || window.r#type == WindowType::Utility
+        || window.floating()
         || is_scratchpad(state, window)
     {
         state.windows.insert(0, window.clone());
@@ -344,8 +366,8 @@ fn is_scratchpad<H: Handle>(state: &State<H>, window: &Window<H>) -> bool {
         .any(|(_, id)| id.iter().any(|id| window.pid == Some(*id)))
 }
 
-/// Tries to position a window according to the requested sizes.
-/// When no size was requested, defaults to `ws.center_halfed()`
+// Tries to position a window according to the requested sizes.
+// When no size was requested, defaults to `ws.center_halfed()`
 fn set_relative_floating<H: Handle>(window: &mut Window<H>, ws: &Workspace, outer: Xyhw) {
     window.set_floating(true);
     window.normal = ws.xyhw;
@@ -353,8 +375,8 @@ fn set_relative_floating<H: Handle>(window: &mut Window<H>, ws: &Workspace, oute
         || ws.center_halfed(),
         |mut requested| {
             requested.center_relative(outer, window.border);
-            if !ws.xyhw.contains_xyhw(&requested) {
-                requested.center_relative(ws.xyhw, window.border);
+            if !ws.xyhw_avoided.contains_xyhw(&requested) {
+                requested.center_relative(ws.xyhw_avoided, window.border);
             }
             requested
         },
@@ -446,10 +468,12 @@ fn setup_window<H: Handle>(
         WindowType::Normal => {
             window.apply_margin_multiplier(ws.margin_multiplier);
             if window.floating() {
-                set_relative_floating(window, ws, ws.xyhw);
+                set_relative_floating(window, ws, ws.xyhw_avoided);
             }
         }
-        WindowType::Dialog | WindowType::Splash => set_relative_floating(window, ws, ws.xyhw),
+        WindowType::Dialog | WindowType::Splash => {
+            set_relative_floating(window, ws, ws.xyhw_avoided);
+        }
         _ => {}
     }
 }

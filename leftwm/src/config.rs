@@ -8,7 +8,7 @@ use self::keybind::Modifier;
 
 #[cfg(feature = "lefthk")]
 use super::BaseCommand;
-use super::ThemeSetting;
+use super::ThemeConfig;
 #[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
 use anyhow::Result;
@@ -207,7 +207,7 @@ pub struct Config {
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
     //       at least when `TOML` is used as config language
     #[serde(skip)]
-    pub theme_setting: ThemeSetting,
+    pub theme_setting: ThemeConfig,
 }
 
 #[must_use]
@@ -219,15 +219,15 @@ pub fn load() -> Config {
 
 /// # Panics
 ///
-/// Function can only panic if toml cannot be serialized. This should not occur as it is defined
+/// Function can only panic if config.ron file cannot be serialized. This should not occur as it is defined
 /// globally.
 ///
 /// # Errors
 ///
 /// Function will throw an error if `BaseDirectories` doesn't exist, if user doesn't have
-/// permissions to place config.toml, if config.toml cannot be read (access writes, malformed file,
+/// permissions to place config.ron, if config.ron cannot be read (access writes, malformed file,
 /// etc.).
-/// Function can also error from inability to save config.toml (if it is the first time running
+/// Function can also error from inability to save config.ron (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
     tracing::debug!("Loading config file");
@@ -460,12 +460,12 @@ impl leftwm_core::Config for Config {
                         tracing::warn!("Path submitted does not exist.");
                         write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist");
                     }
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 "UnloadTheme" => {
-                    manager.config.theme_setting = ThemeSetting::default();
+                    manager.config.theme_setting = ThemeConfig::default();
                     write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
@@ -481,9 +481,9 @@ impl leftwm_core::Config for Config {
                     false
                 }
                 "UnloadTheme" => {
-                    manager.config.theme_setting = ThemeSetting::default();
+                    manager.config.theme_setting = ThemeConfig::default();
                     write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);

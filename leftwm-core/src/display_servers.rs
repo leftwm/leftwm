@@ -20,13 +20,12 @@ pub trait DisplayServer<H: Handle> {
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent<H>>;
 
-    fn load_config(
+    fn reload_config(
         &mut self,
-        _config: &impl Config,
-        _focused: Option<&Option<WindowHandle<H>>>,
-        _windows: &[Window<H>],
-    ) {
-    }
+        config: &impl Config,
+        focused: Option<WindowHandle<H>>,
+        windows: &[Window<H>],
+    );
 
     fn update_windows(&self, _windows: Vec<&Window<H>>) {}
 

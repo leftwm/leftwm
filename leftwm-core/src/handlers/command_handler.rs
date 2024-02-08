@@ -478,6 +478,7 @@ fn swap_tags<H: Handle>(state: &mut State<H>) -> Option<bool> {
     None
 }
 
+// TODO: closing windows breaks focus, see gh-1204
 fn close_window<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let window = state.focus_manager.window(&state.windows)?;
     if window.is_managed() {
@@ -592,11 +593,7 @@ fn tile_to_floating<H: Handle>(state: &mut State<H>) -> Option<bool> {
     let width = state.default_width;
     let height = state.default_height;
     let window = state.focus_manager.window_mut(&mut state.windows)?;
-    if window.must_float() {
-        return None;
-    }
-    // Not ideal as is_floating and must_float are connected so have to check
-    // them separately
+
     if window.floating() {
         return None;
     }
@@ -613,7 +610,9 @@ fn tile_to_floating<H: Handle>(state: &mut State<H>) -> Option<bool> {
     window.set_floating_offsets(Some(floating));
     window.start_loc = Some(floating);
     window.set_floating(true);
-    state.sort_windows();
+
+    let handle = window.handle;
+    state.move_to_top(&handle);
 
     Some(true)
 }

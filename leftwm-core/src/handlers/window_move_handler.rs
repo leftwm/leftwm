@@ -4,6 +4,10 @@ use crate::display_servers::DisplayServer;
 use crate::models::{Xyhw, Handle};
 
 impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
+    /// `window_move_handler` is called when the display server
+    /// sends the `DisplayEvent::MoveWindow(handle, offset_x, offset_y)` event.
+    ///
+    /// Returns true if changes need to be rendered.
     pub fn window_move_handler(
         &mut self,
         handle: &WindowHandle<H>,
@@ -24,6 +28,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     }
 }
 
+// private helper function
 fn process_window<H: Handle>(window: &mut Window<H>, offset_x: i32, offset_y: i32) {
     let mut offset = window.get_floating_offsets().unwrap_or_default();
     let start = window.start_loc.unwrap_or_default();

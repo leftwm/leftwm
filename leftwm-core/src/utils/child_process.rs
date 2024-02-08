@@ -166,9 +166,7 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 /// Sends command to shell for execution
 /// Assumes STDIN/STDERR/STDOUT unwanted.
 pub fn exec_shell(command: &str, children: &mut Children) -> Option<ChildID> {
-    let child = Command::new("sh")
-        .arg("-c")
-        .arg(command)
+    let child = Command::new(command)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())

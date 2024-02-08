@@ -213,58 +213,43 @@ impl XWrap {
         xw
     }
 
-    pub fn load_config(
-        &mut self,
-        config: &impl Config,
-        focused: Option<&Option<WindowHandle<X11rbWindowHandle>>>,
-        windows: &[Window<X11rbWindowHandle>],
-    ) -> Result<()> {
+    pub fn load_config(&mut self, config: &impl Config) -> Result<()> {
         self.focus_behaviour = config.focus_behaviour();
         self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
-        self.load_colors(config, focused, Some(windows))?;
         self.tag_labels = config.create_list_of_tag_labels();
-        Ok(())
-    }
-
-    /// Load the colors of our theme.
-    pub fn load_colors(
-        &mut self,
-        config: &impl Config,
-        focused: Option<&Option<WindowHandle<X11rbWindowHandle>>>,
-        windows: Option<&[Window<X11rbWindowHandle>]>,
-    ) -> Result<()> {
         self.colors = Colors {
             normal: self.get_color(config.default_border_color())?,
             floating: self.get_color(config.floating_border_color())?,
             active: self.get_color(config.focused_border_color())?,
             background: self.get_color(config.background_color())?,
         };
+        Ok(())
+    }
+
+    /// Load the colors of our theme.
+    pub fn update_colors(
+        &mut self,
+        focused: Option<WindowHandle<X11rbWindowHandle>>,
+        windows: &[Window<X11rbWindowHandle>],
+    ) -> Result<()> {
         // Update all the windows with the new colors.
-        if let Some(windows) = windows {
-            for window in windows {
-                let WindowHandle(X11rbWindowHandle(handle)) = window.handle;
-                let is_focused =
-                    matches!(focused, Some(&Some(focused)) if focused == window.handle);
-                let color: u32 = if is_focused {
-                    self.colors.active
-                } else if window.floating() {
-                    self.colors.floating
-                } else {
-                    self.colors.normal
-                };
-                self.set_window_border_color(handle, color)?;
-            }
+        for window in windows {
+            let WindowHandle(X11rbWindowHandle(handle)) = window.handle;
+            let color: u32 = if focused == Some(window.handle) {
+                self.colors.active
+            } else if window.floating() {
+                self.colors.floating
+            } else {
+                self.colors.normal
+            };
+            self.set_window_border_color(handle, color)?;
         }
         self.set_background_color(self.colors.background)?;
         Ok(())
     }
 
-    pub fn init(&mut self, config: &impl Config) -> Result<()> {
-        self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
-
+    pub fn init(&mut self) -> Result<()> {
         let root = self.root;
-        self.load_colors(config, None, None)?;
 
         let cursor = self.cursors.load_cursor(&self.conn, "normal")?;
         xproto::change_window_attributes(
@@ -286,7 +271,6 @@ impl XWrap {
         xproto::delete_property(&self.conn, root, self.atoms.NetClientList)?;
 
         // EWMH compliance for desktops.
-        self.tag_labels = config.create_list_of_tag_labels();
         self.init_desktops_hints()?;
 
         self.sync()?;

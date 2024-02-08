@@ -31,7 +31,8 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
     fn new(config: &impl Config) -> Self {
         let mut xwrap = XWrap::new();
 
-        xwrap.init(config).expect("XWrap initialisation failed.");
+        xwrap.load_config(config).expect("Unable to load config.");
+        xwrap.init().expect("XWrap initialisation failed.");
 
         let root = xwrap.get_default_root();
         let mut instance = Self {
@@ -44,14 +45,17 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
         instance
     }
 
-    fn load_config(
-        &mut self,
-        config: &impl Config,
-        focused: Option<&Option<WindowHandle<X11rbWindowHandle>>>,
-        windows: &[leftwm_core::Window<X11rbWindowHandle>],
-    ) {
-        if let Err(e) = self.xw.load_config(config, focused, windows) {
+    fn reload_config(
+            &mut self,
+            config: &impl Config,
+            focused: Option<WindowHandle<X11rbWindowHandle>>,
+            windows: &[Window<X11rbWindowHandle>],
+        ) {
+        if let Err(e) = self.xw.load_config(config) {
             tracing::error!("Error when loading config: {}", e);
+        }
+        if let Err(e) = self.xw.update_colors(focused, windows) {
+            tracing::error!("Error when updating border colors: {}", e);
         }
     }
 

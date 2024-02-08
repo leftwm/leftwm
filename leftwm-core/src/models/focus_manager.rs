@@ -34,33 +34,35 @@ impl FocusBehaviour {
     }
 }
 
+/// `FocusManager` stores the history of which workspaces, tags, and windows had focus.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FocusManager<H: Handle> {
-    pub behaviour: FocusBehaviour,
-    pub focus_new_windows: bool,
     pub workspace_history: VecDeque<usize>,
     #[serde(bound = "")]
     pub window_history: VecDeque<MaybeWindowHandle<H>>,
     pub tag_history: VecDeque<TagId>,
     #[serde(bound = "")]
     pub tags_last_window: HashMap<TagId, WindowHandle<H>>,
+    pub last_mouse_position: Option<(i32, i32)>,
+    // entries below are configuration variables and are never changed
+    pub behaviour: FocusBehaviour,
+    pub focus_new_windows: bool,
     pub sloppy_mouse_follows_focus: bool,
     pub create_follows_cursor: bool,
-    pub last_mouse_position: Option<(i32, i32)>,
 }
 
 impl<H: Handle> FocusManager<H> {
     pub fn new(config: &impl Config) -> Self {
         Self {
-            behaviour: config.focus_behaviour(),
-            focus_new_windows: config.focus_new_windows(),
             workspace_history: Default::default(),
             window_history: Default::default(),
             tag_history: Default::default(),
             tags_last_window: Default::default(),
+            last_mouse_position: None,
+            behaviour: config.focus_behaviour(),
+            focus_new_windows: config.focus_new_windows(),
             sloppy_mouse_follows_focus: config.sloppy_mouse_follows_focus(),
             create_follows_cursor: config.create_follows_cursor(),
-            last_mouse_position: None,
         }
     }
 
@@ -117,6 +119,7 @@ impl<H: Handle> FocusManager<H> {
         None
     }
 
+    // seems like duplicate code
     pub fn create_follows_cursor(&self) -> bool {
         self.create_follows_cursor
     }

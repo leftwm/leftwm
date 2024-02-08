@@ -4,7 +4,8 @@ use crate::display_servers::DisplayServer;
 use crate::models::Handle;
 
 impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
-    /// Process a collection of events, and apply the changes to a manager.
+    /// `screen_create_handler` is called when the display server sends a
+    /// `DisplayEvent::ScreenCreate(screen)` event. This happens at initialization.
     ///
     /// Returns `true` if changes need to be rendered.
     pub fn screen_create_handler(&mut self, screen: Screen<H>) -> bool {
@@ -34,12 +35,12 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
             self.state.tags.add_new_unlabeled()
         };
 
-        self.state.focus_workspace(&new_workspace);
+        self.state.focus_workspace(&new_workspace); // focus_workspace is called.
         self.state.focus_tag(&next_id);
         new_workspace.show_tag(&next_id);
         self.state.workspaces.push(new_workspace.clone());
         self.state.screens.push(screen);
-        self.state.focus_workspace(&new_workspace);
+        self.state.focus_workspace(&new_workspace); // focus_workspace is called again.
         false
     }
 }

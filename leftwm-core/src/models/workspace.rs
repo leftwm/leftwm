@@ -9,6 +9,7 @@ use super::{WorkspaceId, Handle};
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
+    // tag represents the currently visible tag
     pub tag: Option<TagId>, // TODO: Make this a list.
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -16,7 +17,7 @@ pub struct Workspace {
     #[serde(skip)]
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
-    xyhw_avoided: Xyhw,
+    pub xyhw_avoided: Xyhw,
     /// ID of workspace. Starts with 1.
     pub id: WorkspaceId,
 }

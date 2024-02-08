@@ -209,15 +209,9 @@ pub fn toggle_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
     name: &ScratchPadName,
 ) -> Option<bool> {
     let current_tag = &manager.state.focus_manager.tag(0)?;
-    let scratchpad = manager
-        .state
-        .scratchpads
-        .iter()
-        .find(|s| name == &s.name)?
-        .clone();
 
     // Check if there is a valid scratchpad, if so handle it and return immediately
-    if let Some(id) = manager.state.active_scratchpads.get_mut(&scratchpad.name) {
+    if let Some(id) = manager.state.active_scratchpads.get_mut(name) {
         if let Some(first_in_scratchpad) =
             next_valid_scratchpad_pid(id, &manager.state.windows, Direction::Forward)
         {
@@ -248,14 +242,21 @@ pub fn toggle_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
         }
     }
 
+    let scratchpad = manager
+        .state
+        .scratchpads
+        .iter()
+        .find(|s| name == &s.name)?
+        .clone();
+
     tracing::debug!(
         "No active scratchpad found for name {:?}. Creating a new one",
-        scratchpad.name
+        name
     );
-    let name = scratchpad.name.clone();
+
     let pid: ChildID = exec_shell(&scratchpad.value, &mut manager.children)?;
 
-    match manager.state.active_scratchpads.get_mut(&name) {
+    match manager.state.active_scratchpads.get_mut(name) {
         Some(windows) => {
             windows.push_front(pid);
         }
@@ -263,7 +264,7 @@ pub fn toggle_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
             manager
                 .state
                 .active_scratchpads
-                .insert(name, VecDeque::from([pid]));
+                .insert(scratchpad.name, VecDeque::from([pid]));
         }
     }
 

@@ -2,6 +2,8 @@ pub use crate::handlers::command_handler::ReleaseScratchPadOption;
 use crate::models::{Handle, ScratchPadName, TagId, WindowHandle};
 use serde::{Deserialize, Serialize};
 
+/// Command represents a command received from the command pipe.
+/// It will be handled in the main event loop.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum Command<H: Handle> {
     CloseWindow,

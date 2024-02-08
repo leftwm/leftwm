@@ -24,12 +24,13 @@ pub struct State<H: Handle> {
     pub layout_manager: LayoutManager,
     #[serde(bound = "")]
     pub mode: Mode<H>,
-    pub layout_definitions: Vec<Layout>,
-    pub scratchpads: Vec<ScratchPad>,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     #[serde(bound = "")]
     pub actions: VecDeque<DisplayAction<H>>,
     pub tags: Tags, // List of all known tags.
+    // entries below are loaded from config and are never changed
+    pub scratchpads: Vec<ScratchPad>,
+    pub layout_definitions: Vec<Layout>,
     pub mousekey: Vec<String>,
     pub default_width: i32,
     pub default_height: i32,
@@ -50,8 +51,6 @@ impl<H: Handle> State<H> {
         Self {
             focus_manager: FocusManager::new(config),
             layout_manager: LayoutManager::new(config),
-            scratchpads: config.create_list_of_scratchpads(),
-            layout_definitions: config.layout_definitions(),
             screens: Default::default(),
             windows: Default::default(),
             workspaces: Default::default(),
@@ -59,6 +58,8 @@ impl<H: Handle> State<H> {
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
+            scratchpads: config.create_list_of_scratchpads(),
+            layout_definitions: config.layout_definitions(),
             mousekey: config.mousekey(),
             default_width: config.default_width(),
             default_height: config.default_height(),
@@ -69,7 +70,7 @@ impl<H: Handle> State<H> {
         }
     }
 
-    // Sorts the windows and puts them in order of importance.
+    /// Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
         let mut sorter = WindowSorter::new(self.windows.iter().collect());
 
@@ -112,10 +113,13 @@ impl<H: Handle> State<H> {
         let windows = sorter.finish();
         let handles = windows.iter().map(|w| w.handle).collect();
 
+        // SetWindowOrder is passed to the display server
         let act = DisplayAction::SetWindowOrder(handles);
         self.actions.push_back(act);
     }
 
+    /// Removes border if there is a single visible window.
+    /// Only will run if `single_window_border` is set to `false` in the configuration file.
     pub fn handle_single_border(&mut self, border_width: i32) {
         if self.single_window_border {
             return;
@@ -134,6 +138,8 @@ impl<H: Handle> State<H> {
                 .find(|ws| ws.has_tag(&tag.id))
                 .map(|w| w.id);
             let layout = self.layout_manager.layout(wsid.unwrap_or(1), tag.id);
+
+            // TODO: hardcoded layout name.
             if layout.is_monocle() {
                 windows_on_tag.iter_mut().for_each(|w| w.border = 0);
                 continue;
@@ -152,6 +158,8 @@ impl<H: Handle> State<H> {
         }
     }
 
+    /// Moves `handle` in front of all other windows of the same order of importance.
+    /// See `sort_windows()` for the order of importance.
     pub fn move_to_top(&mut self, handle: &WindowHandle<H>) -> Option<()> {
         let index = self.windows.iter().position(|w| &w.handle == handle)?;
         let window = self.windows.remove(index);
@@ -175,14 +183,15 @@ impl<H: Handle> State<H> {
             });
     }
 
-    pub(crate) fn load_config(&mut self, config: &impl Config) {
-        self.mousekey = config.mousekey();
+    pub(crate) fn load_theme_config(&mut self, config: &impl Config) {
         for win in &mut self.windows {
             config.load_window(win);
         }
         for ws in &mut self.workspaces {
             ws.load_config(config);
         }
+        self.default_height = config.default_height();
+        self.default_width = config.default_width();
     }
 
     /// Apply saved state to a running manager.
@@ -297,6 +306,9 @@ impl<H: Handle> State<H> {
     }
 }
 
+/// Helper struct for sorting windows.
+/// Sorts windows in `unsorted` via their order of importance
+/// and pushes sorted list onto `stack`.
 struct WindowSorter<'a, H: Handle> {
     stack: Vec<&'a Window<H>>,
     unsorted: Vec<&'a Window<H>>,

@@ -6,7 +6,7 @@ use std::fs;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub struct ThemeSetting {
+pub struct ThemeConfig {
     pub border_width: Option<i32>,
     pub margin: Option<CustomMargins>,
     pub workspace_margin: Option<CustomMargins>,
@@ -22,7 +22,7 @@ pub struct ThemeSetting {
     pub on_new_window_cmd: Option<String>,
 }
 
-impl ThemeSetting {
+impl ThemeConfig {
     pub fn load(&mut self, path: impl AsRef<Path>) {
         let path = path.as_ref();
         match load_theme_file(path) {
@@ -34,7 +34,7 @@ impl ThemeSetting {
     }
 }
 
-impl Default for ThemeSetting {
+impl Default for ThemeConfig {
     fn default() -> Self {
         Self {
             border_width: Some(1),
@@ -53,15 +53,15 @@ impl Default for ThemeSetting {
     }
 }
 
-fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeSetting> {
+fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeConfig> {
     let contents = fs::read_to_string(&path)?;
     if path.as_ref().extension() == Some(std::ffi::OsStr::new("ron")) {
         let ron = Options::default()
             .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
-        let from_file: ThemeSetting = ron.from_str(&contents)?;
+        let from_file: ThemeConfig = ron.from_str(&contents)?;
         Ok(from_file)
     } else {
-        let from_file: ThemeSetting = toml::from_str(&contents)?;
+        let from_file: ThemeConfig = toml::from_str(&contents)?;
         Ok(from_file)
     }
 }
@@ -121,11 +121,11 @@ on_new_window = 'echo Hello World'
 side = "Top"
 value = 0
 "#;
-        let config: ThemeSetting = toml::from_str(config).unwrap();
+        let config: ThemeConfig = toml::from_str(config).unwrap();
 
         assert_eq!(
             config,
-            ThemeSetting {
+            ThemeConfig {
                 border_width: Some(0),
                 margin: Some(CustomMargins::Int(5)),
                 workspace_margin: Some(CustomMargins::Int(5)),
@@ -168,11 +168,11 @@ value = 0
         )]
     )
 )"##;
-        let config: ThemeSetting = ron::from_str(config).unwrap();
+        let config: ThemeConfig = ron::from_str(config).unwrap();
 
         assert_eq!(
             config,
-            ThemeSetting {
+            ThemeConfig {
                 border_width: Some(0),
                 margin: Some(CustomMargins::Int(5)),
                 workspace_margin: Some(CustomMargins::Int(5)),
