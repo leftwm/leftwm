@@ -13,8 +13,8 @@ use crate::{error::Result, X11rbWindowHandle};
 mod client_message;
 mod property_notify;
 
-/// Translate events from x11rb to leftwm's DisplayEvent
-pub(crate) fn translate(event: Event, xw: &mut XWrap) -> Option<DisplayEvent<X11rbWindowHandle>> {
+/// Translate events from x11rb to leftwm's `DisplayEvent`
+pub(crate) fn translate(event: &Event, xw: &mut XWrap) -> Option<DisplayEvent<X11rbWindowHandle>> {
     let is_normal = xw.mode == Mode::Normal;
     let is_sloppy = xw.focus_behaviour.is_sloppy();
 
@@ -26,9 +26,9 @@ pub(crate) fn translate(event: Event, xw: &mut XWrap) -> Option<DisplayEvent<X11
         Event::ClientMessage(e) if is_normal => client_message::from_event(e, xw),
         Event::PropertyNotify(e) if is_normal => property_notify::from_event(e, xw),
         Event::ConfigureRequest(e) if is_normal => from_configure_request(e, xw),
-        Event::EnterNotify(e) if is_normal && is_sloppy => from_enter_notify(e, xw),
+        Event::EnterNotify(e) if is_normal && is_sloppy => Ok(from_enter_notify(e, xw)),
         Event::MotionNotify(e) => from_motion_notify(e, xw),
-        Event::ButtonPress(e) => from_button_press(e, xw),
+        Event::ButtonPress(e) => Ok(Some(from_button_press(e, xw))),
         Event::ButtonRelease(e) if !is_normal => from_button_release(e, xw),
         _ => return None,
     };
@@ -53,14 +53,14 @@ pub(crate) fn translate(event: Event, xw: &mut XWrap) -> Option<DisplayEvent<X11
 }
 
 fn from_unmap_event(
-    event: xproto::UnmapNotifyEvent,
+    event: &xproto::UnmapNotifyEvent,
     xw: &mut XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if xw.managed_windows.contains(&event.window) {
         // can't check if this event originates from a SendEvent request
         // no idea how this is supposed to be handled
         let h = WindowHandle(X11rbWindowHandle(event.window));
-        xw.teardown_managed_window(&h, false)?;
+        xw.teardown_managed_window(h, false)?;
         return Ok(Some(DisplayEvent::WindowDestroy(h)));
 
         // Set WM_STATE to withdrawn state.
@@ -70,19 +70,19 @@ fn from_unmap_event(
 }
 
 fn from_destroy_notify(
-    event: xproto::DestroyNotifyEvent,
+    event: &xproto::DestroyNotifyEvent,
     xw: &mut XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if xw.managed_windows.contains(&event.window) {
         let h = WindowHandle(X11rbWindowHandle(event.window));
-        xw.teardown_managed_window(&h, true)?;
+        xw.teardown_managed_window(h, true)?;
         return Ok(Some(DisplayEvent::WindowDestroy(h)));
     }
     Ok(None)
 }
 
 fn from_focus_in(
-    event: xproto::FocusInEvent,
+    event: &xproto::FocusInEvent,
     xw: &mut XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     // Check that if a window is taking focus, that it should be.
@@ -97,7 +97,7 @@ fn from_focus_in(
 }
 
 fn from_configure_request(
-    event: xproto::ConfigureRequestEvent,
+    event: &xproto::ConfigureRequestEvent,
     xw: &mut XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     // If the window is not mapped, configure it.
@@ -110,15 +110,14 @@ fn from_configure_request(
             border_width: Some(event.border_width.into()),
             sibling: Some(event.sibling),
             stack_mode: Some(event.stack_mode),
-            ..Default::default()
         };
         xw.set_window_config(event.window, &window_changes)?;
         xw.move_resize_window(
             event.window,
             event.x.into(),
             event.y.into(),
-            event.width as u32,
-            event.height as u32,
+            event.width.into(),
+            event.height.into(),
         )?;
         return Ok(None);
     }
@@ -150,30 +149,30 @@ fn from_configure_request(
 }
 
 fn from_enter_notify(
-    event: xproto::EnterNotifyEvent,
+    event: &xproto::EnterNotifyEvent,
     xw: &mut XWrap,
-) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
+) -> Option<DisplayEvent<X11rbWindowHandle>> {
     if event.mode != xproto::NotifyMode::NORMAL
         || event.detail == xproto::NotifyDetail::INFERIOR
         || event.event == xw.get_default_root()
     {
-        return Ok(None);
+        return None;
     }
 
     let h = WindowHandle(X11rbWindowHandle(event.event));
-    Ok(Some(DisplayEvent::WindowTakeFocus(h)))
+    Some(DisplayEvent::WindowTakeFocus(h))
 }
 
 fn from_motion_notify(
-    event: xproto::MotionNotifyEvent,
+    event: &xproto::MotionNotifyEvent,
     xw: &mut XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     // Limit motion events to current refresh rate.
     if xw.refresh_rate > 0 && event.time - xw.motion_event_limiter > (1000 / xw.refresh_rate) {
         xw.motion_event_limiter = event.time;
         let event_h = WindowHandle(X11rbWindowHandle(event.event));
-        let offset_x = event.root_x as i32 - xw.mode_origin.0;
-        let offset_y = event.root_y as i32 - xw.mode_origin.1;
+        let offset_x = i32::from(event.root_x) - xw.mode_origin.0;
+        let offset_y = i32::from(event.root_y) - xw.mode_origin.1;
         let display_event = match xw.mode {
             Mode::ReadyToMove(h) => {
                 xw.set_mode(Mode::MovingWindow(h))?;
@@ -186,7 +185,7 @@ fn from_motion_notify(
             }
             Mode::ResizingWindow(h) => DisplayEvent::ResizeWindow(h, offset_x, offset_y),
             Mode::Normal if xw.focus_behaviour.is_sloppy() => {
-                DisplayEvent::Movement(event_h, event.root_x as i32, event.root_y as i32)
+                DisplayEvent::Movement(event_h, i32::from(event.root_x), i32::from(event.root_y))
             }
             Mode::Normal => return Ok(None),
         };
@@ -197,23 +196,23 @@ fn from_motion_notify(
 }
 
 fn from_button_press(
-    event: xproto::ButtonPressEvent,
+    event: &xproto::ButtonPressEvent,
     _xw: &mut XWrap,
-) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
+) -> DisplayEvent<X11rbWindowHandle> {
     let h = WindowHandle(X11rbWindowHandle(event.event));
     let mod_mask = event.state;
     mod_mask.remove(xproto::KeyButMask::MOD2 | xproto::KeyButMask::LOCK);
-    Ok(Some(DisplayEvent::MouseCombo(
+    DisplayEvent::MouseCombo(
         ModMask::from_bits_retain(mod_mask.bits()),
         Button::from_bits_retain(event.detail),
         h,
-        event.root_x as i32,
-        event.root_y as i32,
-    )))
+        i32::from(event.root_x),
+        i32::from(event.root_y),
+    )
 }
 
 fn from_button_release(
-    _event: xproto::ButtonReleaseEvent,
+    _event: &xproto::ButtonReleaseEvent,
     xw: &mut XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     xw.set_mode(Mode::Normal)?;

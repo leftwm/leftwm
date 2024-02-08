@@ -40,11 +40,8 @@ impl XWrap {
         let mut w = Window::new(handle, Some(name), Some(pid));
         w.res_name = class
             .as_ref()
-            .map(|c| String::from_utf8(c.instance().to_vec()).ok())
-            .flatten();
-        w.res_class = class
-            .map(|c| String::from_utf8(c.class().to_vec()).ok())
-            .flatten();
+            .and_then(|c| String::from_utf8(c.instance().to_vec()).ok());
+        w.res_class = class.and_then(|c| String::from_utf8(c.class().to_vec()).ok());
         w.legacy_name = Some(legacy_name);
         w.r#type = r#type.clone();
         w.states = states;
@@ -182,15 +179,15 @@ impl XWrap {
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn teardown_managed_window(
         &mut self,
-        h: &WindowHandle<X11rbWindowHandle>,
+        h: WindowHandle<X11rbWindowHandle>,
         destroyed: bool,
     ) -> Result<()> {
         let WindowHandle(X11rbWindowHandle(handle)) = h;
-        self.managed_windows.retain(|x| *x != *handle);
+        self.managed_windows.retain(|x| *x != handle);
         if !destroyed {
             xproto::grab_server(&self.conn)?;
-            self.ungrab_buttons(*handle)?;
-            self.set_wm_state(*handle, WMStateWindowState::Withdrawn)?;
+            self.ungrab_buttons(handle)?;
+            self.set_wm_state(handle, WMStateWindowState::Withdrawn)?;
             self.sync()?;
             xproto::ungrab_server(&self.conn)?;
         }
@@ -205,9 +202,9 @@ impl XWrap {
             let changes = xproto::ConfigureWindowAux {
                 x: Some(window.x()),
                 y: Some(window.y()),
-                width: Some(window.width() as u32),
-                height: Some(window.height() as u32),
-                border_width: Some(window.border() as u32),
+                width: Some(u32::try_from(window.width())?),
+                height: Some(u32::try_from(window.height())?),
+                border_width: Some(u32::try_from(window.border())?),
                 ..Default::default()
             };
             self.set_window_config(handle, &changes)?;
@@ -345,11 +342,11 @@ impl XWrap {
         let configure_event = xproto::ConfigureNotifyEvent {
             event: handle,
             window: handle,
-            x: window.x() as i16,
-            y: window.y() as i16,
-            width: window.width() as u16,
-            height: window.height() as u16,
-            border_width: window.border() as u16,
+            x: i16::try_from(window.x())?,
+            y: i16::try_from(window.y())?,
+            width: u16::try_from(window.width())?,
+            height: u16::try_from(window.height())?,
+            border_width: u16::try_from(window.border())?,
             above_sibling: x11rb::NONE,
             override_redirect: false,
             ..Default::default()
@@ -365,7 +362,7 @@ impl XWrap {
 
     /// Restacks the windows to the order of the vec.
     // `XRestackWindows`: https://tronche.com/gui/x/xlib/window/XRestackWindows.html
-    pub fn restack(&self, handles: Vec<WindowHandle<X11rbWindowHandle>>) -> Result<()> {
+    pub fn restack(&self, handles: &[WindowHandle<X11rbWindowHandle>]) -> Result<()> {
         let mut conf = xproto::ConfigureWindowAux::default();
         for i in 1..handles.len() {
             let Some(WindowHandle(X11rbWindowHandle(window))) = handles.get(i) else {
@@ -373,14 +370,10 @@ impl XWrap {
             };
 
             conf.stack_mode = Some(xproto::StackMode::BELOW);
-            conf.sibling = handles
-                .get(i - 1)
-                .copied()
-                .map(|h| {
-                    let WindowHandle(X11rbWindowHandle(w)) = h;
-                    Some(w)
-                })
-                .flatten();
+            conf.sibling = handles.get(i - 1).copied().map(|h| {
+                let WindowHandle(X11rbWindowHandle(w)) = h;
+                w
+            });
             xproto::configure_window(&self.conn, *window, &conf)?;
         }
         Ok(())
@@ -407,13 +400,13 @@ impl XWrap {
 
     /// Raise a window.
     // `XRaiseWindow`: https://tronche.com/gui/x/xlib/window/XRaiseWindow.html
-    pub fn move_to_top(&self, handle: &WindowHandle<X11rbWindowHandle>) -> Result<()> {
+    pub fn move_to_top(&self, handle: WindowHandle<X11rbWindowHandle>) -> Result<()> {
         let WindowHandle(X11rbWindowHandle(window)) = handle;
         let attrs = xproto::ConfigureWindowAux {
             stack_mode: Some(xproto::StackMode::ABOVE),
             ..Default::default()
         };
-        xproto::configure_window(&self.conn, *window, &attrs)?;
+        xproto::configure_window(&self.conn, window, &attrs)?;
         Ok(())
     }
 
@@ -422,14 +415,14 @@ impl XWrap {
     // `XSetCloseDownMode`: https://tronche.com/gui/x/xlib/display/XSetCloseDownMode.html
     // `XKillClient`: https://tronche.com/gui/x/xlib/window-and-session-manager/XKillClient.html
     // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
-    pub fn kill_window(&self, h: &WindowHandle<X11rbWindowHandle>) -> Result<()> {
+    pub fn kill_window(&self, h: WindowHandle<X11rbWindowHandle>) -> Result<()> {
         let WindowHandle(X11rbWindowHandle(handle)) = h;
         // Nicely ask the window to close.
-        if !self.send_xevent_atom(*handle, self.atoms.WMDelete)? {
+        if !self.send_xevent_atom(handle, self.atoms.WMDelete)? {
             // Force kill the window.
             xproto::grab_server(&self.conn)?;
             xproto::set_close_down_mode(&self.conn, xproto::CloseDown::DESTROY_ALL)?;
-            xproto::kill_client(&self.conn, *handle)?;
+            xproto::kill_client(&self.conn, handle)?;
             xproto::ungrab_server(&self.conn)?;
         }
         Ok(())

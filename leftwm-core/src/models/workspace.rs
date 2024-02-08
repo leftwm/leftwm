@@ -4,7 +4,7 @@ use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use super::{WorkspaceId, Handle};
+use super::{Handle, WorkspaceId};
 
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
@@ -202,7 +202,7 @@ impl Workspace {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{BBox, WindowHandle, MockHandle};
+    use crate::models::{BBox, MockHandle, WindowHandle};
 
     #[test]
     fn empty_ws_should_not_contain_window() {

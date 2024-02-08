@@ -1,7 +1,7 @@
 use super::{Config, DisplayEvent, Manager, Mode};
 use crate::display_action::DisplayAction;
 use crate::display_servers::DisplayServer;
-use crate::models::{WindowHandle, WindowState, Handle};
+use crate::models::{Handle, WindowHandle, WindowState};
 use crate::State;
 
 impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
@@ -17,7 +17,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
             DisplayEvent::SendCommand(command) => self.command_handler(&command),
             DisplayEvent::MouseCombo(mod_mask, button, handle, x, y) => self
                 .state
-                .mouse_combo_handler(mod_mask, button, handle, x, y),
+                .mouse_combo_handler(&mod_mask, button, handle, x, y),
 
             DisplayEvent::WindowTakeFocus(handle) => from_window_take_focus(state, handle),
             DisplayEvent::HandleWindowFocus(handle) => from_handle_window_focus(state, handle),

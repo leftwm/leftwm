@@ -1,4 +1,7 @@
-use crate::{models::{TagId, Handle}, state::State};
+use crate::{
+    models::{Handle, TagId},
+    state::State,
+};
 
 impl<H: Handle> State<H> {
     /// `goto_tag_handler` is called in response to various `Command`s.

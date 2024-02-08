@@ -13,7 +13,7 @@ impl XWrap {
             self.grab_buttons(handle, xproto::ButtonIndex::M1, xproto::ModMask::ANY)?;
             self.grab_buttons(handle, xproto::ButtonIndex::M3, xproto::ModMask::ANY)?;
         }
-        let mouse_key_mask = xproto::ModMask::from(self.mouse_key_mask.bits() as u16);
+        let mouse_key_mask = xproto::ModMask::from(self.mouse_key_mask.bits());
         self.grab_buttons(handle, xproto::ButtonIndex::M1, mouse_key_mask)?;
         self.grab_buttons(
             handle,
@@ -101,8 +101,8 @@ impl XWrap {
     pub fn move_cursor_to_window(&self, window: xproto::Window) -> Result<()> {
         let geo = xproto::get_geometry(&self.conn, window)?.reply()?;
         let point = (
-            geo.x as i32 + (geo.width as i32 / 2),
-            geo.y as i32 + (geo.height as i32 / 2),
+            i32::from(geo.x) + (i32::from(geo.width) / 2),
+            i32::from(geo.y) + (i32::from(geo.height) / 2),
         );
         self.move_cursor_to_point(point)
     }
@@ -120,12 +120,13 @@ impl XWrap {
                 &self.conn,
                 x11rb::NONE,
                 self.root,
-                x11rb::NONE as i16,
-                x11rb::NONE as i16,
-                x11rb::NONE as u16,
-                x11rb::NONE as u16,
-                point.0 as i16,
-                point.1 as i16,
+                // x11rb::NONE is 0, so we can do this here
+                0,
+                0,
+                0,
+                0,
+                i16::try_from(point.0)?,
+                i16::try_from(point.1)?,
             )?;
         }
         Ok(())

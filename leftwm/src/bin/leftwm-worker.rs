@@ -1,7 +1,7 @@
 use leftwm_core::Manager;
+use std::{env, panic, process::exit};
 use x11rb_display_server::X11rbWindowHandle;
 use xlib_display_server::XlibWindowHandle;
-use std::{env, panic, process::exit};
 
 #[cfg(feature = "x11rb")]
 use x11rb_display_server::X11rbDisplayServer;
@@ -43,7 +43,8 @@ fn main() {
         match args.get(1) {
             #[cfg(feature = "xlib")]
             Some(name) if name == "xlib" => {
-                let manager = Manager::<XlibWindowHandle, leftwm::Config, XlibDisplayServer>::new(config);
+                let manager =
+                    Manager::<XlibWindowHandle, leftwm::Config, XlibDisplayServer>::new(config);
 
                 manager.register_child_hook();
                 //TODO: Error handling
@@ -52,7 +53,8 @@ fn main() {
 
             #[cfg(feature = "x11rb")]
             Some(name) if name == "x11rb" => {
-                let manager = Manager::<X11rbWindowHandle, leftwm::Config, X11rbDisplayServer>::new(config);
+                let manager =
+                    Manager::<X11rbWindowHandle, leftwm::Config, X11rbDisplayServer>::new(config);
 
                 manager.register_child_hook();
                 //TODO: Error handling
@@ -67,7 +69,7 @@ fn main() {
     });
 
     match exit_status {
-        Ok(Ok(_)) => tracing::info!("Completed"),
+        Ok(Ok(())) => tracing::info!("Completed"),
         Ok(Err(err)) => tracing::info!("Completed with event loop error: {}", err),
         Err(err) => tracing::info!("Completed with error: {:?}", err),
     }

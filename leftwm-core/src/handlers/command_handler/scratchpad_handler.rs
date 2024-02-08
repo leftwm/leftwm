@@ -527,7 +527,10 @@ pub fn cycle_scratchpad_window<H: Handle, C: Config, SERVER: DisplayServer<H>>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::ScratchPad, models::{ScratchPadName, MockHandle}};
+    use crate::{
+        config::ScratchPad,
+        models::{MockHandle, ScratchPadName},
+    };
 
     use super::*;
 
@@ -692,7 +695,9 @@ mod tests {
 
         // Release Scratchpad
         manager.command_handler(&Command::ReleaseScratchPad {
-            window: ReleaseScratchPadOption::Handle(WindowHandle::<MockHandle>(mock_window1 as i32)),
+            window: ReleaseScratchPadOption::Handle(WindowHandle::<MockHandle>(
+                mock_window1 as i32,
+            )),
             tag: Some(expected_tag),
         });
 
@@ -727,7 +732,11 @@ mod tests {
         );
         for window in [mock_window1, mock_window2, mock_window3] {
             manager.window_created_handler(
-                Window::new(WindowHandle::<MockHandle>(window as i32), None, Some(window)),
+                Window::new(
+                    WindowHandle::<MockHandle>(window as i32),
+                    None,
+                    Some(window),
+                ),
                 -1,
                 -1,
             );
@@ -737,7 +746,9 @@ mod tests {
 
         // Release Scratchpad
         manager.command_handler(&Command::ReleaseScratchPad {
-            window: ReleaseScratchPadOption::Handle(WindowHandle::<MockHandle>(mock_window1 as i32)),
+            window: ReleaseScratchPadOption::Handle(WindowHandle::<MockHandle>(
+                mock_window1 as i32,
+            )),
             tag: Some(expected_tag),
         });
 

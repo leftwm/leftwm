@@ -72,13 +72,13 @@ fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -
     };
 }
 
+#[must_use]
 pub fn get_backend_arg() -> Arg {
-    let arg = Arg::new("backend")
+    Arg::new("backend")
         .long("backend")
         .short('b')
         .help("Specify the backend to use (`leftwm help backend` for details).")
-        .default_value(DEFAULT_BACKEND);
-    arg
+        .default_value(DEFAULT_BACKEND)
 }
 
 /// Prints the help page of leftwm (the output of `leftwm --help`)

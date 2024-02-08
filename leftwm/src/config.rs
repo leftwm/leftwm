@@ -15,7 +15,7 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::LayoutMode,
-    models::{FocusBehaviour, Gutter, Margins, Size, Window, WindowState, WindowType, Handle},
+    models::{FocusBehaviour, Gutter, Handle, Margins, Size, Window, WindowState, WindowType},
     state::State,
     DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
@@ -620,7 +620,11 @@ impl leftwm_core::Config for Config {
     }
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
-    fn setup_predefined_window<H: Handle>(&self, state: &mut State<H>, window: &mut Window<H>) -> bool {
+    fn setup_predefined_window<H: Handle>(
+        &self,
+        state: &mut State<H>,
+        window: &mut Window<H>,
+    ) -> bool {
         if let Some(window_rules) = &self.window_rules {
             let best_match = window_rules
                 .iter()

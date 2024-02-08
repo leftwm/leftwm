@@ -28,7 +28,7 @@ pub fn from_event(
                 let trans = xw.get_transient_for(event.window);
                 match trans {
                     Some(trans) => {
-                        change.transient = Some(Some(WindowHandle(XlibWindowHandle(trans))))
+                        change.transient = Some(Some(WindowHandle(XlibWindowHandle(trans))));
                     }
                     None => change.transient = Some(None),
                 }

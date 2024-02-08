@@ -75,7 +75,8 @@ pub(crate) struct XWrap {
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
 
-    _task_guard: oneshot::Receiver<()>,
+    #[allow(unused)]
+    task_guard: oneshot::Receiver<()>,
     pub task_notify: Arc<Notify>,
     pub motion_event_limiter: u32,
     pub refresh_rate: u32,
@@ -88,7 +89,7 @@ impl XWrap {
 
         let fd = conn.stream().as_raw_fd();
 
-        let (guard, _task_guard) = oneshot::channel::<()>();
+        let (guard, task_guard) = oneshot::channel::<()>();
         let notify = Arc::new(Notify::new());
         let task_notify = notify.clone();
 
@@ -130,15 +131,16 @@ impl XWrap {
 
         let (bytes, fd) = req.serialize();
         let slice = &[IoSlice::new(&bytes[0])];
-        let res = conn
+        let reply: xproto::GetPropertyReply = conn
             .send_request_with_reply(slice, fd)
-            .expect("Unable to request resource database status");
-        let reply: xproto::GetPropertyReply = res.reply().unwrap();
+            .expect("Unable to request resource database status")
+            .reply()
+            .expect("Parsing reply failed.");
         let db = Database::new_from_default(&reply, "localhost".into());
         let cursors = CursorHandle::new(&conn, display, &db)
             .expect("Unable to get cursors")
             .reply()
-            .unwrap();
+            .expect("Parsing reply failed.");
 
         let colors = Colors {
             normal: 0,
@@ -147,35 +149,7 @@ impl XWrap {
             background: 0,
         };
 
-        fn get_refresh_rate(conn: &RustConnection, root: xproto::Window) -> Result<u32> {
-            let screen_resources = randr::get_screen_resources(conn, root)?.reply()?;
-            // RandrConnectionExtention::randr_get_screen_resources(&conn, root)?.reply()?;
-            let active_modes: Vec<u32> = screen_resources
-                .crtcs
-                .iter()
-                .map(|crtc| randr::get_crtc_info(conn, *crtc, screen_resources.config_timestamp))
-                .collect::<std::result::Result<Vec<_>, _>>()?
-                .into_iter()
-                .map(|res| res.reply())
-                .collect::<std::result::Result<Vec<_>, _>>()?
-                .into_iter()
-                .map(|crtc_info| crtc_info.mode)
-                .collect();
-
-            Ok(screen_resources
-                .modes
-                .iter()
-                .filter(|mode_info| active_modes.contains(&mode_info.id))
-                .map(|mode_info| {
-                    mode_info.dot_clock / (mode_info.htotal as u32 * mode_info.vtotal as u32)
-                })
-                .max()
-                .unwrap_or(60))
-        }
-        let refresh_rate = match get_refresh_rate(&conn, root.root) {
-            Ok(r) => r,
-            Err(_) => 60,
-        };
+        let refresh_rate = get_refresh_rate(&conn, root.root).unwrap_or(60);
         tracing::debug!("Refresh Rate: {}", refresh_rate);
 
         let xw = Self {
@@ -194,7 +168,7 @@ impl XWrap {
             mouse_key_mask: ModMask::Zero,
             mode_origin: (0, 0),
 
-            _task_guard,
+            task_guard,
             task_notify,
             motion_event_limiter: 0,
             refresh_rate,
@@ -218,10 +192,10 @@ impl XWrap {
         self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
         self.tag_labels = config.create_list_of_tag_labels();
         self.colors = Colors {
-            normal: self.get_color(config.default_border_color())?,
-            floating: self.get_color(config.floating_border_color())?,
-            active: self.get_color(config.focused_border_color())?,
-            background: self.get_color(config.background_color())?,
+            normal: self.get_color(&config.default_border_color())?,
+            floating: self.get_color(&config.floating_border_color())?,
+            active: self.get_color(&config.focused_border_color())?,
+            background: self.get_color(&config.background_color())?,
         };
         Ok(())
     }
@@ -288,7 +262,10 @@ impl XWrap {
         let tag_length = tag_labels.len();
 
         // Set the number of desktop.
-        self.set_desktop_prop(&[tag_length as u32], self.atoms.NetNumberOfDesktops)?;
+        self.set_desktop_prop(
+            &[u32::try_from(tag_length)?],
+            self.atoms.NetNumberOfDesktops,
+        )?;
 
         // Set a current desktop.
         self.set_desktop_prop(&[0_u32, x11rb::CURRENT_TIME], self.atoms.NetCurrentDesktop)?;
@@ -301,7 +278,7 @@ impl XWrap {
         // `Xutf8TextListToTextProperty`: https://linux.die.net/man/3/xutf8textlisttotextproperty
         let concat_str = tag_labels
             .iter()
-            .fold(String::default(), |acc, x| format!("{}{}\0", acc, x));
+            .fold(String::default(), |acc, x| format!("{acc}{x}\0"));
         let bytes = concat_str.as_bytes();
 
         xproto::change_property(
@@ -313,7 +290,7 @@ impl XWrap {
             8,
             // Removing the last null byte because `CString::from_vec_unchecked` adds a trailing
             // null byte
-            bytes.len() as u32 - 1,
+            u32::try_from(bytes.len())? - 1,
             &bytes[..bytes.len() - 1],
         )?;
 
@@ -368,9 +345,7 @@ impl XWrap {
         event: &[u8],
     ) -> Result<()> {
         let mut data = [0u8; 32];
-        for i in 0..event.len() {
-            data[i] = event[i];
-        }
+        data[..event.len()].copy_from_slice(event);
         xproto::send_event(&self.conn, propagate, window, mask, data)?;
         self.sync()?;
         Ok(())
@@ -392,13 +367,12 @@ impl XWrap {
 
         Ok(reply
             .value32()
-            .map(|v| v.collect::<Vec<xproto::Atom>>().contains(&atom))
-            .unwrap_or(false))
+            .is_some_and(|v| v.collect::<Vec<xproto::Atom>>().contains(&atom)))
     }
 
     /// Sets the mode within our xwrapper.
     pub fn set_mode(&mut self, mode: Mode<X11rbWindowHandle>) -> Result<()> {
-        let rt = match mode {
+        match mode {
             // Prevent resizing and moving of root.
             Mode::MovingWindow(h)
             | Mode::ResizingWindow(h)
@@ -409,13 +383,10 @@ impl XWrap {
                 self.mode = mode;
                 match self.get_cursor_point() {
                     Ok(loc) => self.mode_origin = loc,
-                    Err(e) => {
-                        if let ErrorKind::RootWindowNotFound = e.kind {
-                            ()
-                        } else {
-                            return Err(e);
-                        }
+                    Err(e) if e.kind == ErrorKind::RootWindowNotFound => {
+                        return Err(e);
                     }
+                    _ => (),
                 }
                 let cursor = match mode {
                     Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => {
@@ -450,7 +421,7 @@ impl XWrap {
             }
             _ => {}
         };
-        Ok(rt)
+        Ok(())
     }
 
     /// Flush and sync the xserver.
@@ -465,4 +436,30 @@ impl XWrap {
         self.conn.flush()?;
         Ok(())
     }
+}
+
+fn get_refresh_rate(conn: &RustConnection, root: xproto::Window) -> Result<u32> {
+    let screen_resources = randr::get_screen_resources(conn, root)?.reply()?;
+    // RandrConnectionExtention::randr_get_screen_resources(&conn, root)?.reply()?;
+    let active_modes: Vec<u32> = screen_resources
+        .crtcs
+        .iter()
+        .map(|crtc| randr::get_crtc_info(conn, *crtc, screen_resources.config_timestamp))
+        .collect::<std::result::Result<Vec<_>, _>>()?
+        .into_iter()
+        .map(x11rb::cookie::Cookie::reply)
+        .collect::<std::result::Result<Vec<_>, _>>()?
+        .into_iter()
+        .map(|crtc_info| crtc_info.mode)
+        .collect();
+
+    Ok(screen_resources
+        .modes
+        .iter()
+        .filter(|mode_info| active_modes.contains(&mode_info.id))
+        .map(|mode_info| {
+            mode_info.dot_clock / (u32::from(mode_info.htotal) * u32::from(mode_info.vtotal))
+        })
+        .max()
+        .unwrap_or(60))
 }

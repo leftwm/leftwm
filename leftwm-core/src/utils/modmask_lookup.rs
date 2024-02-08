@@ -103,7 +103,7 @@ impl<'de> Deserialize<'de> for ModMask {
             where
                 E: serde::de::Error,
             {
-                Ok(ModMask::from_bits_retain(v as u16))
+                Ok(ModMask::from_bits_retain(u16::from(v)))
             }
 
             fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>

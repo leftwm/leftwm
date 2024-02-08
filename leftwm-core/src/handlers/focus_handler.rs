@@ -1,7 +1,7 @@
 #![allow(clippy::wildcard_imports)]
 
 use super::*;
-use crate::models::{TagId, Handle};
+use crate::models::{Handle, TagId};
 use crate::state::State;
 use crate::{display_action::DisplayAction, models::FocusBehaviour};
 
@@ -272,7 +272,7 @@ fn distance<H: Handle>(window: &Window<H>, x: i32, y: i32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Manager, models::MockHandle};
+    use crate::{models::MockHandle, Manager};
 
     #[test]
     fn focusing_a_workspace_should_make_it_active() {

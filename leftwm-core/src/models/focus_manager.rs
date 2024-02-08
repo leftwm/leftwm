@@ -4,8 +4,8 @@ use crate::{models::TagId, models::WindowHandle, Window, Workspace};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
-use super::MaybeWindowHandle;
 use super::window::Handle;
+use super::MaybeWindowHandle;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FocusBehaviour {

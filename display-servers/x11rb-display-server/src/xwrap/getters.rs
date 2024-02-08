@@ -37,13 +37,13 @@ impl XWrap {
     }
 
     /// Returns a `XColor` for a color.
-    pub fn get_color(&self, color: String) -> Result<u32> {
+    pub fn get_color(&self, color: &str) -> Result<u32> {
         let screen = &self.conn.setup().roots[self.display];
         let (red, green, blue) = parse_color_string(color)?;
 
-        let rep =
+        let reply =
             xproto::alloc_color(&self.conn, screen.default_colormap, red, green, blue)?.reply()?;
-        Ok(rep.pixel)
+        Ok(reply.pixel)
     }
 
     /// Returns the current position of the cursor.
@@ -99,7 +99,6 @@ impl XWrap {
     }
 
     /// Returns the `WM_SIZE_HINTS`/`WM_NORMAL_HINTS` of a window as a `XyhwChange`.
-    #[must_use]
     pub fn get_hint_sizing_as_xyhw(&self, window: xproto::Window) -> Result<Option<XyhwChange>> {
         let hints = self.get_hint_sizing(window)?;
         if let Some(size) = hints {
@@ -149,21 +148,7 @@ impl XWrap {
         Ok(None)
     }
 
-    /// Returns the next `Xevent` that matches the mask of the xserver.
-    // pub fn get_mask_event(&self) -> xlib::XEvent {
-    //     unsafe {
-    //         let mut event: xlib::XEvent = std::mem::zeroed();
-    //         (self.xlib.XMaskEvent)(
-    //             self.display,
-    //             MOUSEMASK | xlib::SubstructureRedirectMask | xlib::ExposureMask,
-    //             &mut event,
-    //         );
-    //         event
-    //     }
-    // }
-
     /// Returns the next `Xevent` of the xserver.
-    #[must_use]
     pub fn poll_next_event(&self) -> Result<Option<x11rb::protocol::Event>> {
         Ok(self.conn.poll_for_event()?)
     }
@@ -174,7 +159,6 @@ impl XWrap {
     /// Panics if xorg cannot be contacted (xlib missing, not started, etc.)
     /// Also panics if window attrs cannot be obtained.
     /// TODO: Check if this is working, because it's most likely not
-    #[must_use]
     pub fn get_screens(&self) -> Result<Vec<Screen<X11rbWindowHandle>>> {
         if let Ok(screen_resources) = randr::get_screen_resources(&self.conn, self.root)?.reply() {
             return Ok(screen_resources
@@ -207,10 +191,11 @@ impl XWrap {
                     // let mut s = Screen::from(crtc_info);
                     let mut s = Screen {
                         bbox: BBox {
-                            x: crtc_info.x as i32,
-                            y: crtc_info.y as i32,
-                            width: crtc_info.width as i32,
-                            height: crtc_info.height as i32,
+                            //TODO: Handle errors
+                            x: i32::from(crtc_info.x),
+                            y: i32::from(crtc_info.y),
+                            width: i32::from(crtc_info.width),
+                            height: i32::from(crtc_info.height),
                         },
                         ..Default::default()
                     };
@@ -231,7 +216,7 @@ impl XWrap {
                 .map(|w| self.get_hint_sizing_as_xyhw(w))
                 .collect::<Result<Vec<Option<XyhwChange>>>>()?
                 .into_iter()
-                .filter_map(std::convert::identity)
+                .flatten()
                 .map(|xyhw| Screen {
                     bbox: BBox {
                         x: xyhw.x.unwrap_or_default(),
@@ -268,7 +253,6 @@ impl XWrap {
     }
 
     /// Returns the dimensions of the screens.
-    #[must_use]
     pub fn get_screens_area_dimensions(&self) -> Result<(i32, i32)> {
         let mut height = 0;
         let mut width = 0;
@@ -280,7 +264,6 @@ impl XWrap {
     }
 
     /// Returns the transient parent of a window.
-    #[must_use]
     pub fn get_transient_for(&self, window: xproto::Window) -> Result<Option<xproto::Window>> {
         match xproto::get_property(
             &self.conn,
@@ -300,7 +283,6 @@ impl XWrap {
     }
 
     /// Returns the atom actions of a window.
-    #[must_use]
     pub fn get_window_actions_atoms(&self, window: xproto::Window) -> Result<Vec<xproto::Atom>> {
         let reply = xproto::get_property(
             &self.conn,
@@ -313,7 +295,7 @@ impl XWrap {
         )?
         .reply()?;
 
-        Ok(reply.value32().map(|v| v.collect()).unwrap_or(Vec::new()))
+        Ok(reply.value32().map_or(Vec::new(), Iterator::collect))
     }
 
     /// Returns the attributes of a window.
@@ -330,7 +312,6 @@ impl XWrap {
 
     /// Returns a windows class `WM_CLASS`
     // `XGetClassHint`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetClassHint.html
-    #[must_use]
     pub fn get_window_class(&self, window: xproto::Window) -> Result<Option<WmClass>> {
         Ok(WmClass::get(&self.conn, window)?.reply()?)
     }
@@ -352,7 +333,6 @@ impl XWrap {
     }
 
     /// Returns a windows name.
-    #[must_use]
     pub fn get_window_name(&self, window: xproto::Window) -> Result<String> {
         if let Ok(text) = self.get_text_prop(window, self.atoms.NetWMName) {
             return Ok(text);
@@ -362,27 +342,24 @@ impl XWrap {
     }
 
     /// Returns a `WM_NAME` (not `_NET`windows name).
-    #[must_use]
     pub fn get_window_legacy_name(&self, window: xproto::Window) -> Result<String> {
         self.get_text_prop(window, xproto::AtomEnum::WM_NAME.into())
     }
 
     /// Returns a windows `_NET_WM_PID`.
-    #[must_use]
     pub fn get_window_pid(&self, window: xproto::Window) -> Result<u32> {
         let prop = self.get_property(
             window,
             self.atoms.NetWMPid,
             xproto::AtomEnum::CARDINAL.into(),
         )?;
-        if prop.len() == 0 {
+        if prop.is_empty() {
             return Ok(x11rb::NONE);
         }
         Ok(prop[0])
     }
 
     /// Returns the states of a window.
-    #[must_use]
     pub fn get_window_states(&self, window: xproto::Window) -> Result<Vec<WindowState>> {
         Ok(self
             .get_window_states_atoms(window)?
@@ -406,7 +383,6 @@ impl XWrap {
 
     /// Returns the atom states of a window.
     // `XGetWindowProperty`: https://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
-    #[must_use]
     pub fn get_window_states_atoms(&self, window: xproto::Window) -> Result<Vec<xproto::Atom>> {
         let reply = xproto::get_property(
             &self.conn,
@@ -419,11 +395,10 @@ impl XWrap {
         )?
         .reply()?;
 
-        Ok(reply.value32().map(|v| v.collect()).unwrap_or(Vec::new()))
+        Ok(reply.value32().map_or(Vec::new(), Iterator::collect))
     }
 
     /// Returns structure of a window as a `DockArea`.
-    #[must_use]
     pub fn get_window_strut_array(&self, window: xproto::Window) -> Result<Option<DockArea>> {
         // More modern structure.
         if let Some(d) = self.get_window_strut_array_strut_partial(window)? {
@@ -439,7 +414,6 @@ impl XWrap {
     }
 
     /// Returns the type of a window.
-    #[must_use]
     pub fn get_window_type(&self, window: xproto::Window) -> Result<WindowType> {
         let reply = xproto::get_property(
             &self.conn,
@@ -470,7 +444,6 @@ impl XWrap {
 
     /// Returns the `WM_HINTS` of a window.
     // `XGetWMHints`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMHints.html
-    #[must_use]
     pub fn get_wmhints(&self, window: xproto::Window) -> Result<Option<WmHints>> {
         Ok(WmHints::get(&self.conn, window)?.reply()?)
     }
@@ -494,14 +467,13 @@ impl XWrap {
         )?
         .reply()?;
 
-        let Some(values) = rep.value32().map(|it| it.collect::<Vec<u32>>()) else {
+        let Some(values) = rep.value32().map(Iterator::collect::<Vec<u32>>) else {
             return Ok((WMStateWindowState::Normal, None));
         };
         Ok((
             values
-                .get(0)
-                .map(|v| v.try_into().ok())
-                .flatten()
+                .first()
+                .and_then(|v| v.try_into().ok())
                 .unwrap_or(WMStateWindowState::Normal),
             values.get(1).copied(),
         ))
@@ -520,7 +492,6 @@ impl XWrap {
     // Internal functions.
 
     /// Returns the `WM_SIZE_HINTS`/`WM_NORMAL_HINTS` of a window.
-    #[must_use]
     pub fn get_hint_sizing(&self, window: xproto::Window) -> Result<Option<WmSizeHints>> {
         Ok(WmSizeHints::get(&self.conn, window, self.atoms.WMNormalHints)?.reply()?)
     }
@@ -578,7 +549,7 @@ impl XWrap {
     /// # Errors
     ///
     /// Will error if unknown window status is returned.
-    fn get_windows_for_root<'w>(&self, root: xproto::Window) -> Result<Vec<xproto::Window>> {
+    fn get_windows_for_root(&self, root: xproto::Window) -> Result<Vec<xproto::Window>> {
         let oui = xproto::query_tree(&self.conn, root)?.reply()?;
         Ok(oui.children)
     }
@@ -596,10 +567,16 @@ impl XWrap {
         )?
         .reply()?;
 
-        Ok(res.value32().map(|v| {
-            let values: Vec<i32> = v.map(|elem| elem as i32).collect();
-            IntoDockArea(&values[..]).into()
-        }))
+        let values = res.value32();
+        if let Some(v) = values {
+            let values = v
+                .map(i32::try_from)
+                .map(|e| e.map_err(BackendError::from))
+                .collect::<Result<Vec<i32>>>()?;
+            Ok(Some(IntoDockArea(&values).into()))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Returns the `_NET_WM_STRUT_PARTIAL` as a `DockArea`.
@@ -618,10 +595,16 @@ impl XWrap {
         )?
         .reply()?;
 
-        Ok(res.value32().map(|v| {
-            let values: Vec<i32> = v.map(|elem| elem as i32).collect();
-            IntoDockArea(&values[..]).into()
-        }))
+        let values = res.value32();
+        if let Some(v) = values {
+            let values = v
+                .map(i32::try_from)
+                .map(|e| e.map_err(BackendError::from))
+                .collect::<Result<Vec<i32>>>()?;
+            Ok(Some(IntoDockArea(&values).into()))
+        } else {
+            Ok(None)
+        }
     }
 
     // /// Returns all the xscreens of the display.
@@ -641,7 +624,7 @@ impl XWrap {
 /// Parses a color string written in the hex format #RRGGBB to a tuple of u16.
 /// Since colors in hex format are represented using 8 bits, we need to adjust them to represent
 /// the right proportion of color on a 16 bits value by multiplying by 256
-fn parse_color_string(color: String) -> Result<(u16, u16, u16)> {
+fn parse_color_string(color: &str) -> Result<(u16, u16, u16)> {
     Ok((
         u16::from_str_radix(&color[1..3], 16)? * 256,
         u16::from_str_radix(&color[3..5], 16)? * 256,
@@ -651,21 +634,21 @@ fn parse_color_string(color: String) -> Result<(u16, u16, u16)> {
 
 struct IntoDockArea<'a>(&'a [i32]);
 
-impl Into<DockArea> for IntoDockArea<'_> {
-    fn into(self) -> DockArea {
+impl From<IntoDockArea<'_>> for DockArea {
+    fn from(val: IntoDockArea<'_>) -> Self {
         DockArea {
-            left: self.0[0],
-            right: self.0[1],
-            top: self.0[2],
-            bottom: self.0[3],
-            left_start_y: self.0[4],
-            left_end_y: self.0[5],
-            right_start_y: self.0[6],
-            right_end_y: self.0[7],
-            top_start_x: self.0[8],
-            top_end_x: self.0[9],
-            bottom_start_x: self.0[10],
-            bottom_end_x: self.0[11],
+            left: val.0[0],
+            right: val.0[1],
+            top: val.0[2],
+            bottom: val.0[3],
+            left_start_y: val.0[4],
+            left_end_y: val.0[5],
+            right_start_y: val.0[6],
+            right_end_y: val.0[7],
+            top_start_x: val.0[8],
+            top_end_x: val.0[9],
+            bottom_start_x: val.0[10],
+            bottom_end_x: val.0[11],
         }
     }
 }

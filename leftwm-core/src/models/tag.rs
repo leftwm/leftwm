@@ -1,4 +1,4 @@
-use super::{TagId, Xyhw, Handle};
+use super::{Handle, TagId, Xyhw};
 use crate::{layouts::LayoutManager, Window, Workspace};
 use serde::{Deserialize, Serialize};
 

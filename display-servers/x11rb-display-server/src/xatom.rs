@@ -204,9 +204,9 @@ impl TryFrom<&u32> for WMStateWindowState {
     }
 }
 
-impl Into<u32> for WMStateWindowState {
-    fn into(self) -> u32 {
-        match self {
+impl From<WMStateWindowState> for u32 {
+    fn from(value: WMStateWindowState) -> Self {
+        match value {
             WMStateWindowState::Withdrawn => 0,
             WMStateWindowState::Normal => 1,
             WMStateWindowState::Iconic => 2,

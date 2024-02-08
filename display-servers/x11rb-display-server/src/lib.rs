@@ -46,11 +46,11 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
     }
 
     fn reload_config(
-            &mut self,
-            config: &impl Config,
-            focused: Option<WindowHandle<X11rbWindowHandle>>,
-            windows: &[Window<X11rbWindowHandle>],
-        ) {
+        &mut self,
+        config: &impl Config,
+        focused: Option<WindowHandle<X11rbWindowHandle>>,
+        windows: &[Window<X11rbWindowHandle>],
+    ) {
         if let Err(e) = self.xw.load_config(config) {
             tracing::error!("Error when loading config: {}", e);
         }
@@ -81,7 +81,7 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
         loop {
             match self.xw.poll_next_event() {
                 Ok(Some(ev)) => {
-                    if let Some(ev) = event_translate::translate(ev, &mut self.xw) {
+                    if let Some(ev) = event_translate::translate(&ev, &mut self.xw) {
                         events.push(ev);
                     }
                 }
@@ -273,7 +273,7 @@ fn from_kill_window(
     xw: &mut XWrap,
     handle: WindowHandle<X11rbWindowHandle>,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
-    xw.kill_window(&handle)?;
+    xw.kill_window(handle)?;
     Ok(None)
 }
 
@@ -287,7 +287,7 @@ fn from_move_mouse_over(
             WindowHandle(X11rbWindowHandle(window)),
             WindowHandle(X11rbWindowHandle(cursor_window)),
         ) if force || cursor_window != window => {
-            _ = xw.move_cursor_to_window(window)?;
+            xw.move_cursor_to_window(window)?;
         }
         _ => {}
     }
@@ -306,7 +306,7 @@ fn from_destroyed_window(
     xw: &mut XWrap,
     handle: WindowHandle<X11rbWindowHandle>,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
-    xw.teardown_managed_window(&handle, true)?;
+    xw.teardown_managed_window(handle, true)?;
     Ok(None)
 }
 
@@ -371,7 +371,7 @@ fn from_set_window_order(
         .filter(|h| !windows.iter().any(|&w| w == *h))
         .collect();
     let all: Vec<WindowHandle<X11rbWindowHandle>> = [unmanaged, windows].concat();
-    xw.restack(all)?;
+    xw.restack(&all)?;
     Ok(None)
 }
 
@@ -379,7 +379,7 @@ fn from_move_to_top(
     xw: &mut XWrap,
     handle: WindowHandle<X11rbWindowHandle>,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
-    xw.move_to_top(&handle)?;
+    xw.move_to_top(handle)?;
     Ok(None)
 }
 
@@ -413,9 +413,8 @@ fn from_set_window_tag(
     tag: Option<TagId>,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     let WindowHandle(X11rbWindowHandle(window)) = handle;
-    match tag {
-        Some(tag) => xw.set_window_desktop(window, &tag)?,
-        None => (),
+    if let Some(tag) = tag {
+        xw.set_window_desktop(window, tag)?;
     }
     Ok(None)
 }

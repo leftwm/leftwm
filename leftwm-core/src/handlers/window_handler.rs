@@ -270,7 +270,8 @@ fn find_transient_parent<H: Handle>(
 fn insert_window<H: Handle>(state: &mut State<H>, window: &mut Window<H>, layout: &str) {
     let mut was_fullscreen = false;
     if window.r#type == WindowType::Normal {
-        let for_active_workspace = |x: &Window<H>| -> bool { window.tag == x.tag && x.is_managed() };
+        let for_active_workspace =
+            |x: &Window<H>| -> bool { window.tag == x.tag && x.is_managed() };
         // Only minimize when the new window is type normal.
         if let Some(fsw) = state
             .windows
@@ -529,7 +530,8 @@ mod tests {
 
         let expected = vec![WindowHandle::<MockHandle>(1), WindowHandle::<MockHandle>(2)];
 
-        let actual: Vec<WindowHandle<MockHandle>> = manager.state.windows.iter().map(|w| w.handle).collect();
+        let actual: Vec<WindowHandle<MockHandle>> =
+            manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
     }
@@ -552,7 +554,8 @@ mod tests {
         );
 
         let expected = vec![WindowHandle::<MockHandle>(2), WindowHandle::<MockHandle>(1)];
-        let actual: Vec<WindowHandle<MockHandle>> = manager.state.windows.iter().map(|w| w.handle).collect();
+        let actual: Vec<WindowHandle<MockHandle>> =
+            manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
     }
@@ -584,7 +587,8 @@ mod tests {
             WindowHandle::<MockHandle>(3),
             WindowHandle::<MockHandle>(2),
         ];
-        let actual: Vec<WindowHandle<MockHandle>> = manager.state.windows.iter().map(|w| w.handle).collect();
+        let actual: Vec<WindowHandle<MockHandle>> =
+            manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
     }
@@ -617,7 +621,8 @@ mod tests {
             WindowHandle::<MockHandle>(3),
             WindowHandle::<MockHandle>(1),
         ];
-        let actual: Vec<WindowHandle<MockHandle>> = manager.state.windows.iter().map(|w| w.handle).collect();
+        let actual: Vec<WindowHandle<MockHandle>> =
+            manager.state.windows.iter().map(|w| w.handle).collect();
 
         assert_eq!(actual, expected);
     }

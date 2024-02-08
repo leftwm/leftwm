@@ -1,5 +1,5 @@
 use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask};
-use crate::models::{WindowChange, Handle};
+use crate::models::{Handle, WindowChange};
 use crate::Command;
 
 #[allow(clippy::large_enum_variant)]
@@ -13,7 +13,7 @@ pub enum DisplayEvent<H: Handle> {
     WindowTakeFocus(WindowHandle<H>),
     HandleWindowFocus(WindowHandle<H>),
     VerifyFocusedAt(WindowHandle<H>), // Request focus validation for this window.
-    MoveFocusTo(i32, i32),         // Focus the nearest window to this point.
+    MoveFocusTo(i32, i32),            // Focus the nearest window to this point.
     MoveWindow(WindowHandle<H>, i32, i32),
     ResizeWindow(WindowHandle<H>, i32, i32),
     ScreenCreate(Screen<H>),

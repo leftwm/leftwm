@@ -4,7 +4,8 @@ use std::{
     backtrace::Backtrace,
     ffi::{IntoStringError, NulError},
     fmt::Display,
-    string::FromUtf8Error, num::ParseIntError,
+    num::{ParseIntError, TryFromIntError},
+    string::FromUtf8Error,
 };
 
 use x11rb::rust_connection::{ConnectionError, ReplyError, ReplyOrIdError};
@@ -18,8 +19,8 @@ pub(crate) type Result<T> = std::result::Result<T, BackendError>;
 /// It is not possible to use `thiserror` for helping here because it currently relies on a nightly
 /// feature (`error_generic_member_access`) for supporting backtrace.
 ///
-/// - `thiserror` PR: https://github.com/dtolnay/thiserror/pull/246
-/// - features tracking issue: https://github.com/rust-lang/rust/issues/99301
+/// - `thiserror` PR: <https://github.com/dtolnay/thiserror/pull/246>
+/// - features tracking issue: <https://github.com/rust-lang/rust/issues/99301>
 #[derive(Debug)]
 pub(crate) struct BackendError {
     pub src: Option<Box<dyn std::error::Error + 'static>>,
@@ -60,10 +61,11 @@ impl Display for BackendError {
 }
 
 /// The possible errors
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ErrorKind {
     RootWindowNotFound,
     StringConversion,
+    IntConversion,
 
     // Errors from x11rb
     XConnection,
@@ -75,6 +77,7 @@ impl Display for ErrorKind {
         let msg = match self {
             ErrorKind::RootWindowNotFound => "RootWindowNotFound",
             ErrorKind::StringConversion => "StringConversion",
+            ErrorKind::IntConversion => "IntConversion",
             ErrorKind::XConnection => "XConnection",
             ErrorKind::XReply => "XReply",
         };
@@ -99,7 +102,7 @@ macro_rules! from_err {
     };
 }
 
-// String conversion
+// Conversion
 from_err!(
     NulError,
     ErrorKind::StringConversion,
@@ -119,6 +122,11 @@ from_err!(
     ParseIntError,
     ErrorKind::StringConversion,
     "Unable to parse int with given base"
+);
+from_err!(
+    TryFromIntError,
+    ErrorKind::IntConversion,
+    "Unable to parse int from a value"
 );
 
 // X11 Errors

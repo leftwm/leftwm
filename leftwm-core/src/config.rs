@@ -5,7 +5,7 @@ use crate::display_servers::DisplayServer;
 use crate::layouts::LayoutMode;
 pub use crate::models::ScratchPad;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
-use crate::models::{Manager, Window, WindowType, Handle};
+use crate::models::{Handle, Manager, Window, WindowType};
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
 use leftwm_layouts::Layout;
@@ -34,7 +34,10 @@ pub trait Config {
 
     fn focus_new_windows(&self) -> bool;
 
-    fn command_handler<H: Handle, SERVER>(command: &str, manager: &mut Manager<H, Self, SERVER>) -> bool
+    fn command_handler<H: Handle, SERVER>(
+        command: &str,
+        manager: &mut Manager<H, Self, SERVER>,
+    ) -> bool
     where
         SERVER: DisplayServer<H>,
         Self: Sized;
@@ -70,7 +73,11 @@ pub trait Config {
     fn load_state<H: Handle>(&self, state: &mut State<H>);
 
     /// Handle window placement based on `WM_CLASS`
-    fn setup_predefined_window<H: Handle>(&self, state: &mut State<H>, window: &mut Window<H>) -> bool;
+    fn setup_predefined_window<H: Handle>(
+        &self,
+        state: &mut State<H>,
+        window: &mut Window<H>,
+    ) -> bool;
 
     fn load_window<H: Handle>(&self, window: &mut Window<H>) {
         if window.r#type == WindowType::Normal {
@@ -141,7 +148,10 @@ pub(crate) mod tests {
         fn focus_new_windows(&self) -> bool {
             false
         }
-        fn command_handler<H: Handle, SERVER>(command: &str, manager: &mut Manager<H, Self, SERVER>) -> bool
+        fn command_handler<H: Handle, SERVER>(
+            command: &str,
+            manager: &mut Manager<H, Self, SERVER>,
+        ) -> bool
         where
             SERVER: DisplayServer<H>,
         {
@@ -204,7 +214,11 @@ pub(crate) mod tests {
         fn load_state<H: Handle>(&self, _state: &mut State<H>) {
             unimplemented!()
         }
-        fn setup_predefined_window<H: Handle>(&self, _: &mut State<H>, window: &mut Window<H>) -> bool {
+        fn setup_predefined_window<H: Handle>(
+            &self,
+            _: &mut State<H>,
+            window: &mut Window<H>,
+        ) -> bool {
             if window.res_class == Some("ShouldGoToTag2".to_string()) {
                 window.tag = Some(2);
                 true

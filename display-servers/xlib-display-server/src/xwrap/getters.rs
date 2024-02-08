@@ -771,14 +771,14 @@ impl XWrap {
 
 struct XRRCrtcInfoIntoScreen(XRRCrtcInfo);
 
-impl Into<Screen<XlibWindowHandle>> for XRRCrtcInfoIntoScreen {
-    fn into(self) -> Screen<XlibWindowHandle> {
+impl From<XRRCrtcInfoIntoScreen> for Screen<XlibWindowHandle> {
+    fn from(val: XRRCrtcInfoIntoScreen) -> Self {
         Screen {
             bbox: BBox {
-                x: self.0.x,
-                y: self.0.y,
-                width: self.0.width as i32,
-                height: self.0.height as i32,
+                x: val.0.x,
+                y: val.0.y,
+                width: val.0.width as i32,
+                height: val.0.height as i32,
             },
             ..Default::default()
         }
@@ -787,14 +787,14 @@ impl Into<Screen<XlibWindowHandle>> for XRRCrtcInfoIntoScreen {
 
 struct XineramaScreenInfoIntoScreen<'a>(&'a XineramaScreenInfo);
 
-impl Into<Screen<XlibWindowHandle>> for XineramaScreenInfoIntoScreen<'_> {
-    fn into(self) -> Screen<XlibWindowHandle> {
+impl From<XineramaScreenInfoIntoScreen<'_>> for Screen<XlibWindowHandle> {
+    fn from(val: XineramaScreenInfoIntoScreen<'_>) -> Self {
         Screen {
             bbox: BBox {
-                height: self.0.height.into(),
-                width: self.0.width.into(),
-                x: self.0.x_org.into(),
-                y: self.0.y_org.into(),
+                height: val.0.height.into(),
+                width: val.0.width.into(),
+                x: val.0.x_org.into(),
+                y: val.0.y_org.into(),
             },
             ..Default::default()
         }
@@ -803,15 +803,15 @@ impl Into<Screen<XlibWindowHandle>> for XineramaScreenInfoIntoScreen<'_> {
 
 struct XWindowAttributesIntoScreen<'a>(&'a XWindowAttributes);
 
-impl Into<Screen<XlibWindowHandle>> for XWindowAttributesIntoScreen<'_> {
-    fn into(self) -> Screen<XlibWindowHandle> {
+impl From<XWindowAttributesIntoScreen<'_>> for Screen<XlibWindowHandle> {
+    fn from(val: XWindowAttributesIntoScreen<'_>) -> Self {
         Screen {
-            root: WindowHandle(XlibWindowHandle(self.0.root)),
+            root: WindowHandle(XlibWindowHandle(val.0.root)),
             bbox: BBox {
-                height: self.0.height,
-                width: self.0.width,
-                x: self.0.x,
-                y: self.0.y,
+                height: val.0.height,
+                width: val.0.width,
+                x: val.0.x,
+                y: val.0.y,
             },
             ..Default::default()
         }
@@ -820,21 +820,21 @@ impl Into<Screen<XlibWindowHandle>> for XWindowAttributesIntoScreen<'_> {
 
 struct SliceIntoDockArea<'a>(&'a [i64]);
 
-impl Into<DockArea> for SliceIntoDockArea<'_> {
-    fn into(self) -> DockArea {
+impl From<SliceIntoDockArea<'_>> for DockArea {
+    fn from(val: SliceIntoDockArea<'_>) -> Self {
         DockArea {
-            left: self.0[0] as i32,
-            right: self.0[1] as i32,
-            top: self.0[2] as i32,
-            bottom: self.0[3] as i32,
-            left_start_y: self.0[4] as i32,
-            left_end_y: self.0[5] as i32,
-            right_start_y: self.0[6] as i32,
-            right_end_y: self.0[7] as i32,
-            top_start_x: self.0[8] as i32,
-            top_end_x: self.0[9] as i32,
-            bottom_start_x: self.0[10] as i32,
-            bottom_end_x: self.0[11] as i32,
+            left: val.0[0] as i32,
+            right: val.0[1] as i32,
+            top: val.0[2] as i32,
+            bottom: val.0[3] as i32,
+            left_start_y: val.0[4] as i32,
+            left_end_y: val.0[5] as i32,
+            right_start_y: val.0[6] as i32,
+            right_end_y: val.0[7] as i32,
+            top_start_x: val.0[8] as i32,
+            top_end_x: val.0[9] as i32,
+            bottom_start_x: val.0[10] as i32,
+            bottom_end_x: val.0[11] as i32,
         }
     }
 }

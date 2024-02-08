@@ -18,11 +18,7 @@ impl XWrap {
         r#type: xproto::Atom,
         data: &[u32],
     ) -> Result<()> {
-        let modified_data: Vec<u8> = data
-            .into_iter()
-            .map(|data| data.to_ne_bytes())
-            .flatten()
-            .collect();
+        let modified_data: Vec<u8> = data.iter().flat_map(|data| data.to_ne_bytes()).collect();
         xproto::change_property(
             &self.conn,
             xproto::PropMode::APPEND,
@@ -30,7 +26,7 @@ impl XWrap {
             property,
             r#type,
             32,
-            data.len() as u32,
+            u32::try_from(data.len())?,
             modified_data.as_slice(),
         )?;
         Ok(())
@@ -44,11 +40,7 @@ impl XWrap {
         r#type: xproto::Atom,
         data: &[u32],
     ) -> Result<()> {
-        let modified_data: Vec<u8> = data
-            .into_iter()
-            .map(|data| data.to_ne_bytes())
-            .flatten()
-            .collect();
+        let modified_data: Vec<u8> = data.iter().flat_map(|data| data.to_ne_bytes()).collect();
         xproto::change_property(
             &self.conn,
             PropMode::REPLACE,
@@ -56,7 +48,7 @@ impl XWrap {
             property,
             r#type,
             32,
-            data.len() as u32,
+            u32::try_from(data.len())?,
             modified_data.as_slice(),
         )?;
         Ok(())
@@ -79,7 +71,7 @@ impl XWrap {
     /// Sets the current desktop.
     pub fn set_current_desktop(&self, current_tag: Option<TagId>) -> Result<()> {
         let indexes: Vec<u32> = match current_tag {
-            Some(tag) => vec![tag as u32 - 1],
+            Some(tag) => vec![u32::try_from(tag)? - 1],
             None => vec![0],
         };
         self.set_desktop_prop(&indexes, self.atoms.NetCurrentDesktop)?;
@@ -117,7 +109,7 @@ impl XWrap {
             atom,
             encoding,
             8,
-            data.len() as u32,
+            u32::try_from(data.len())?,
             data,
         )?;
         Ok(())
@@ -179,8 +171,8 @@ impl XWrap {
     }
 
     /// Sets what desktop a window is on.
-    pub fn set_window_desktop(&self, window: xproto::Window, current_tag: &TagId) -> Result<()> {
-        let mut indexes: Vec<u32> = vec![*current_tag as u32 - 1];
+    pub fn set_window_desktop(&self, window: xproto::Window, current_tag: TagId) -> Result<()> {
+        let mut indexes: Vec<u32> = vec![u32::try_from(current_tag)? - 1];
         if indexes.is_empty() {
             indexes.push(0);
         }

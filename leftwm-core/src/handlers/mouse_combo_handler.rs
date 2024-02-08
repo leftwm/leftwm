@@ -14,7 +14,7 @@ impl<H: Handle> State<H> {
     /// Returns `true` if changes need to be rendered.
     pub fn mouse_combo_handler(
         &mut self,
-        modmask: ModMask,
+        modmask: &ModMask,
         button: Button,
         handle: WindowHandle<H>,
         x: i32,
@@ -37,13 +37,12 @@ impl<H: Handle> State<H> {
                     return false;
                 }
             }
-        } else if self.focus_manager.behaviour.is_clickto() {
-            if button.contains(Button::Button1) || button.contains(Button::Button3) {
-                if self.screens.iter().any(|s| s.root == handle) {
-                    self.focus_workspace_with_point(x, y);
-                    return false;
-                }
-            }
+        } else if self.focus_manager.behaviour.is_clickto()
+            && (button.contains(Button::Button1) || button.contains(Button::Button3))
+            && self.screens.iter().any(|s| s.root == handle)
+        {
+            self.focus_workspace_with_point(x, y);
+            return false;
         }
         true
     }
@@ -51,12 +50,12 @@ impl<H: Handle> State<H> {
     // private helper function
     fn build_action(
         &mut self,
-        mod_mask: ModMask,
+        mod_mask: &ModMask,
         button: Button,
         window: WindowHandle<H>,
         modifier: ModMask,
     ) -> Option<DisplayAction<H>> {
-        let is_mouse_key = mod_mask == modifier || mod_mask == (modifier | ModMask::Shift);
+        let is_mouse_key = *mod_mask == modifier || *mod_mask == (modifier | ModMask::Shift);
         match button {
             Button::Button1 if is_mouse_key => {
                 _ = self

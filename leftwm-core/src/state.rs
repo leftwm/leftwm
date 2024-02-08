@@ -4,8 +4,8 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowState,
-    WindowType, Workspace, Handle,
+    FocusManager, Handle, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowState,
+    WindowType, Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::Layout;

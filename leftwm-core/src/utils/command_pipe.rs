@@ -478,7 +478,9 @@ mod test {
     #[tokio::test]
     async fn read_good_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone())
+            .await
+            .unwrap();
 
         // Write some meaningful command to the pipe and close it.
         {
@@ -500,7 +502,9 @@ mod test {
     #[tokio::test]
     async fn read_bad_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone())
+            .await
+            .unwrap();
 
         // Write some custom command and close it.
         {
@@ -526,7 +530,9 @@ mod test {
 
         // Write to pipe.
         {
-            let _command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone()).await.unwrap();
+            let _command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone())
+                .await
+                .unwrap();
             let mut pipe = fs::OpenOptions::new()
                 .write(true)
                 .open(&pipe_file)
@@ -625,7 +631,9 @@ mod test {
     #[test]
     fn build_focus_next_tag_with_invalid() {
         assert_eq!(
-            build_focus_next_tag::<MockHandle>("gurke").unwrap_err().to_string(),
+            build_focus_next_tag::<MockHandle>("gurke")
+                .unwrap_err()
+                .to_string(),
             (InvalidFocusDeltaBehaviorError {
                 attempted_value: String::from("gurke"),
                 command: Command::<MockHandle>::FocusNextTag {
@@ -639,7 +647,9 @@ mod test {
     #[test]
     fn build_focus_previous_tag_with_invalid() {
         assert_eq!(
-            build_focus_previous_tag::<MockHandle>("gurke").unwrap_err().to_string(),
+            build_focus_previous_tag::<MockHandle>("gurke")
+                .unwrap_err()
+                .to_string(),
             (InvalidFocusDeltaBehaviorError {
                 attempted_value: String::from("gurke"),
                 command: Command::<MockHandle>::FocusPreviousTag {

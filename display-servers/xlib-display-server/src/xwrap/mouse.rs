@@ -13,17 +13,17 @@ impl XWrap {
             self.grab_buttons(handle, xlib::Button1, xlib::AnyModifier);
             self.grab_buttons(handle, xlib::Button3, xlib::AnyModifier);
         }
-        self.grab_buttons(handle, xlib::Button1, self.mouse_key_mask.bits() as u32);
+        self.grab_buttons(handle, xlib::Button1, u32::from(self.mouse_key_mask.bits()));
         self.grab_buttons(
             handle,
             xlib::Button1,
-            self.mouse_key_mask.bits() as u32 | xlib::ShiftMask,
+            u32::from(self.mouse_key_mask.bits()) | xlib::ShiftMask,
         );
-        self.grab_buttons(handle, xlib::Button3, self.mouse_key_mask.bits() as u32);
+        self.grab_buttons(handle, xlib::Button3, u32::from(self.mouse_key_mask.bits()));
         self.grab_buttons(
             handle,
             xlib::Button3,
-            self.mouse_key_mask.bits() as u32 | xlib::ShiftMask,
+            u32::from(self.mouse_key_mask.bits()) | xlib::ShiftMask,
         );
     }
 

@@ -1,7 +1,7 @@
 use super::{Manager, Window, WindowHandle, Workspace};
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
-use crate::models::{Xyhw, Handle};
+use crate::models::{Handle, Xyhw};
 
 impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /// `window_move_handler` is called when the display server

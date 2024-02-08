@@ -9,7 +9,7 @@ use crate::{xwrap::XWrap, X11rbWindowHandle};
 use crate::error::Result;
 
 pub(crate) fn from_event(
-    event: xproto::ClientMessageEvent,
+    event: &xproto::ClientMessageEvent,
     xw: &XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if !xw.managed_windows.contains(&event.window) && event.window != xw.get_default_root() {

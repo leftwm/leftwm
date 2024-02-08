@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
-use crate::models::{Manager, Handle};
+use crate::models::{Handle, Manager};
 
 impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /*

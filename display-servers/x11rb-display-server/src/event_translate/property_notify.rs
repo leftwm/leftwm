@@ -8,7 +8,7 @@ use crate::xwrap::XWrap;
 use crate::{error::Result, X11rbWindowHandle};
 
 pub(crate) fn from_event(
-    event: xproto::PropertyNotifyEvent,
+    event: &xproto::PropertyNotifyEvent,
     xw: &XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     if event.window == xw.get_default_root()
@@ -21,7 +21,7 @@ pub(crate) fn from_event(
     let event_name = xw.get_xatom_name(event.atom)?;
     tracing::trace!("PropertyNotify: {} : {:?}", event_name, &event);
 
-    match xproto::AtomEnum::from(event.atom as u8) {
+    match xproto::AtomEnum::from(u8::try_from(event.atom)?) {
         xproto::AtomEnum::WM_TRANSIENT_FOR => {
             let handle = WindowHandle(X11rbWindowHandle(event.window));
             let mut change = WindowChange::new(handle);
@@ -90,7 +90,7 @@ pub(crate) fn from_event(
 }
 
 fn build_change_hints(
-    event: xproto::PropertyNotifyEvent,
+    event: &xproto::PropertyNotifyEvent,
     hints: WmHints,
 ) -> WindowChange<X11rbWindowHandle> {
     let handle = WindowHandle(X11rbWindowHandle(event.window));
