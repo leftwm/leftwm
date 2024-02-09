@@ -11,6 +11,10 @@ readme = "README.md"
 repository = "https://github.com/leftwm/leftwm"
 description = "A window manager for Adventurers"
 
+[[bin]]
+name = "lefthk-worker"
+required-features = ["lefthk"]
+
 [dependencies]
 anyhow = "1.0.48"
 clap = { version = "4.0.0", features = ["cargo"] }

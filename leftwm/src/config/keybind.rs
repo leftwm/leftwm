@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "lefthk")]
 use super::BaseCommand;
 #[cfg(feature = "lefthk")]
@@ -6,8 +8,6 @@ use crate::Config;
 use anyhow::{ensure, Context, Result};
 #[cfg(feature = "lefthk")]
 use lefthk_core::config::Command;
-#[cfg(feature = "lefthk")]
-use serde::{Deserialize, Serialize};
 #[cfg(feature = "lefthk")]
 use std::fmt::Write;
 #[cfg(feature = "lefthk")]
