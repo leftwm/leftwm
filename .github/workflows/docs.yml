@@ -1,0 +1,25 @@
+name: Generate Crate Docs
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    name: Generate Crate Docs
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: apt update
+        run: sudo apt update
+
+      - name: apt install libsystemd-dev
+        run: sudo apt install -y --no-install-recommends libsystemd-dev
+
+      - name: Generate Crate Docs
+        uses: actions-rs/cargo@v1
+        with:
+            command: doc
+            args: --all-features
