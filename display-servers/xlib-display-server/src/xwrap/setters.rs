@@ -152,7 +152,7 @@ impl XWrap {
     pub fn set_window_border_color(&self, window: xlib::Window, mut color: c_ulong) {
         unsafe {
             // Force border opacity to 0xff. (color is <aarrggbb> in hex format)
-            color |= 0xff000000;
+            color |= 0xff00_0000;
             (self.xlib.XSetWindowBorder)(self.display, window, color);
         }
     }
@@ -160,7 +160,7 @@ impl XWrap {
     pub fn set_background_color(&self, mut color: c_ulong) {
         unsafe {
             // Force border opacity to 0xff. (color is <aarrggbb> in hex format)
-            color |= 0xff000000;
+            color |= 0xff00_0000;
             (self.xlib.XSetWindowBackground)(self.display, self.root, color);
             (self.xlib.XClearWindow)(self.display, self.root);
             (self.xlib.XFlush)(self.display);
