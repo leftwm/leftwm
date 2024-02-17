@@ -95,7 +95,7 @@ fn file_log(follow: bool, level: u8) {
     };
     const TIME_REGEX: &str =
         "[0-9]{4}-[01][1-9]-[1-3][0-9]T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z.{10}";
-    match {
+    let res = {
         let file_path = leftwm::utils::log::file::get_log_path();
         // ugly shadowing to make the borrow checker happy
         let file_path = file_path.to_string_lossy();
@@ -106,7 +106,7 @@ fn file_log(follow: bool, level: u8) {
                 format!("{cmd} {file_path} | grep -E \"{TIME_REGEX}{filter}\"").as_str(),
             ])
             .spawn()
-    } {
+    }; match res {
         Ok(child) => {
             let status = child.wait().expect("Failed to wait for child.");
             exit(status.code().unwrap_or(0));
