@@ -106,7 +106,8 @@ fn file_log(follow: bool, level: u8) {
                 format!("{cmd} {file_path} | grep -E \"{TIME_REGEX}{filter}\"").as_str(),
             ])
             .spawn()
-    }; match res {
+    };
+    match res {
         Ok(child) => {
             let status = child.wait().expect("Failed to wait for child.");
             exit(status.code().unwrap_or(0));
