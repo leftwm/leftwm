@@ -20,6 +20,10 @@ jobs:
     name: Run build
     uses: ./.github/workflows/run-build.yml
 
+  docs:
+    name: Generate Crate Docs
+    uses: ./.github/workflows/docs.yml
+
   msrv:
     name: Check MSRV
     strategy:
