@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "lefthk")]
 use super::BaseCommand;
 #[cfg(feature = "lefthk")]
@@ -11,11 +13,8 @@ use std::fmt::Write;
 #[cfg(feature = "lefthk")]
 use std::str::FromStr;
 
-// Modifier (built even without lefthk) needs this
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "lefthk")]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg(feature = "lefthk")]
 pub struct Keybind {
     pub command: BaseCommand,
     #[serde(default)]
