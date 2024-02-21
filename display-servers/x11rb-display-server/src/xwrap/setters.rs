@@ -140,7 +140,9 @@ impl XWrap {
     }
 
     /// Sets a windows border color.
-    pub fn set_window_border_color(&self, window: xproto::Window, color: u32) -> Result<()> {
+    pub fn set_window_border_color(&self, window: xproto::Window, mut color: u32) -> Result<()> {
+        // Force border opacity to 0xff. (color is <aarrggbb> in hex format)
+        color |= 0xff000000;
         xproto::change_window_attributes(
             &self.conn,
             window,
@@ -149,7 +151,9 @@ impl XWrap {
         Ok(())
     }
 
-    pub fn set_background_color(&self, color: u32) -> Result<()> {
+    pub fn set_background_color(&self, mut color: u32) -> Result<()> {
+        // Force border opacity to 0xff. (color is <aarrggbb> in hex format)
+        color |= 0xff000000;
         xproto::change_window_attributes(
             &self.conn,
             self.root,
