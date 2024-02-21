@@ -21,8 +21,8 @@ pub(crate) fn from_event(
     let event_name = xw.get_xatom_name(event.atom)?;
     tracing::trace!("PropertyNotify: {} : {:?}", event_name, &event);
 
-    match xproto::AtomEnum::from(u8::try_from(event.atom)?) {
-        xproto::AtomEnum::WM_TRANSIENT_FOR => {
+    match event.atom {
+        x if x == <xproto::AtomEnum as Into<u32>>::into(xproto::AtomEnum::WM_TRANSIENT_FOR) => {
             let handle = WindowHandle(X11rbWindowHandle(event.window));
             let mut change = WindowChange::new(handle);
 
@@ -38,7 +38,7 @@ pub(crate) fn from_event(
             Ok(Some(DisplayEvent::WindowChange(change)))
         }
 
-        xproto::AtomEnum::WM_NORMAL_HINTS => {
+        x if x == <xproto::AtomEnum as Into<u32>>::into(xproto::AtomEnum::WM_NORMAL_HINTS) => {
             let handle = WindowHandle(X11rbWindowHandle(event.window));
             let mut change = WindowChange::new(handle);
 
@@ -55,12 +55,14 @@ pub(crate) fn from_event(
             Ok(Some(DisplayEvent::WindowChange(change)))
         }
 
-        xproto::AtomEnum::WM_HINTS => Ok(xw
+        x if x == <xproto::AtomEnum as Into<u32>>::into(xproto::AtomEnum::WM_HINTS) => Ok(xw
             .get_wmhints(event.window)?
             .map(|hints| build_change_hints(event, hints))
             .map(DisplayEvent::WindowChange)),
 
-        xproto::AtomEnum::WM_NAME => update_title(xw, event.window),
+        x if x == <xproto::AtomEnum as Into<u32>>::into(xproto::AtomEnum::WM_NAME) => {
+            update_title(xw, event.window)
+        }
 
         _ => {
             if event.atom == xw.atoms.NetWMName {
