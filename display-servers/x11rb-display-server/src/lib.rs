@@ -350,7 +350,7 @@ fn from_set_state(
         WindowState::Below => xw.atoms.NetWMStateBelow,
         WindowState::Maximized => {
             xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedVert)?;
-            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedVert)?;
+            xw.set_state(handle, toggle_to, xw.atoms.NetWMStateMaximizedHorz)?;
             return Ok(None);
         }
     };
