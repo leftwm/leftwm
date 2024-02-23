@@ -61,7 +61,7 @@ impl XWrap {
             self.append_property_u32(
                 self.root,
                 self.atoms.NetClientList,
-                xproto::AtomEnum::ATOM.into(),
+                xproto::AtomEnum::WINDOW.into(),
                 &[*w],
             )?;
         }
