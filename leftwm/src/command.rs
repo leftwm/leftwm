@@ -50,6 +50,10 @@ pub enum BaseCommand {
     FocusWindowUp,
     FocusWindowDown,
     FocusWindowTop,
+    FocusWindowNorth,
+    FocusWindowSouth,
+    FocusWindowEast,
+    FocusWindowWest,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     /// Args: `tag_index` (int)

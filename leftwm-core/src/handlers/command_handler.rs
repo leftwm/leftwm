@@ -2,6 +2,7 @@
 
 mod scratchpad_handler;
 
+use leftwm_layouts::geometry::{Direction as GeometryDirection, Rect};
 // Make public to the rest of the crate without exposing other internal
 // details of the scratchpad handling code
 pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
@@ -112,6 +113,10 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusWindowUp => move_focus_common_vars!(focus_window_change(state, -1)),
         Command::FocusWindowDown => move_focus_common_vars!(focus_window_change(state, 1)),
         Command::FocusWindowTop { swap } => focus_window_top(state, *swap),
+        Command::FocusWindowNorth => focus_window_direction(state, GeometryDirection::North),
+        Command::FocusWindowSouth => focus_window_direction(state, GeometryDirection::South),
+        Command::FocusWindowEast => focus_window_direction(state, GeometryDirection::East),
+        Command::FocusWindowWest => focus_window_direction(state, GeometryDirection::West),
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
@@ -372,6 +377,39 @@ fn focus_window(state: &mut State, param: &str) -> Option<bool> {
         }
         Err(_) => focus_window_by_class(state, param),
         Ok(_) => None,
+    }
+}
+
+// TODO: add comment
+fn focus_window_direction(state: &mut State, dir: GeometryDirection) -> Option<bool> {
+    let workspace = Rect::from(state.focus_manager.workspace(&state.workspaces)?.xyhw);
+    let mut array: Vec<Rect> = vec![];
+    let cur_window = state.focus_manager.window(&state.windows)?;
+
+    let mut i = 0;
+    let mut cur = i;
+
+    for x in state.windows.iter().filter(|w| w.visible()) {
+        if cur_window.handle.eq(&x.handle) {
+            cur = i;
+        }
+        array.push(Rect::from(x.normal));
+        i += 1;
+    }
+
+    let next_window = GeometryDirection::find_neighbor(&array,
+        cur, dir, &workspace);
+
+    match next_window {
+        Some(next) => {
+            // update current focussed window
+            let handle = state.windows.iter().filter(|w| w.visible()).nth(next)?.handle;
+            state.handle_window_focus(&handle);
+            Some(true)
+        },
+        None => {
+            None
+        }
     }
 }
 

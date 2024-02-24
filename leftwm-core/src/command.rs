@@ -57,6 +57,10 @@ pub enum Command {
     FocusWindowTop {
         swap: bool,
     },
+    FocusWindowNorth,
+    FocusWindowSouth,
+    FocusWindowEast,
+    FocusWindowWest,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     SendWindowToTag {
