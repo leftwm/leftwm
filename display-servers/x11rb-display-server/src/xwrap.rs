@@ -30,6 +30,11 @@ mod window;
 
 const MAX_PROPERTY_VALUE_LEN: u32 = 4096;
 
+// Cursors
+const CURSOR_NORMAL: &str = "left-ptr";
+const CURSOR_RESIZE: &str = "se-resize";
+const CURSOR_MOVE: &str = "fleur";
+
 #[inline]
 pub fn root_event_mask() -> xproto::EventMask {
     xproto::EventMask::SUBSTRUCTURE_REDIRECT
@@ -225,7 +230,7 @@ impl XWrap {
     pub fn init(&mut self) -> Result<()> {
         let root = self.root;
 
-        let cursor = self.cursors.load_cursor(&self.conn, "normal")?;
+        let cursor = self.cursors.load_cursor(&self.conn, CURSOR_NORMAL)?;
         xproto::change_window_attributes(
             &self.conn,
             root,
@@ -390,12 +395,12 @@ impl XWrap {
                 }
                 let cursor = match mode {
                     Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, "resize")?
+                        self.cursors.load_cursor(&self.conn, CURSOR_RESIZE)?
                     }
                     Mode::ReadyToMove(_) | Mode::MovingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, "move")?
+                        self.cursors.load_cursor(&self.conn, CURSOR_MOVE)?
                     }
-                    Mode::Normal => self.cursors.load_cursor(&self.conn, "normal")?,
+                    Mode::Normal => self.cursors.load_cursor(&self.conn, CURSOR_NORMAL)?,
                 };
                 self.grab_pointer(cursor)?;
             }
@@ -406,12 +411,12 @@ impl XWrap {
                 self.mode = mode;
                 let cursor = match mode {
                     Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, "resize")?
+                        self.cursors.load_cursor(&self.conn, CURSOR_RESIZE)?
                     }
                     Mode::ReadyToMove(_) | Mode::MovingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, "move")?
+                        self.cursors.load_cursor(&self.conn, CURSOR_MOVE)?
                     }
-                    Mode::Normal => self.cursors.load_cursor(&self.conn, "normal")?,
+                    Mode::Normal => self.cursors.load_cursor(&self.conn, CURSOR_NORMAL)?,
                 };
                 self.grab_pointer(cursor)?;
             }
