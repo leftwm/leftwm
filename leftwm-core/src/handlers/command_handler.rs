@@ -382,8 +382,8 @@ fn focus_window(state: &mut State, param: &str) -> Option<bool> {
 
 // TODO: add comment
 fn focus_window_direction(state: &mut State, dir: GeometryDirection) -> Option<bool> {
-    let workspace = Rect::from(state.focus_manager.workspace(&state.workspaces)?.xyhw);
-    let mut array: Vec<Rect> = vec![];
+    let workspace = state.focus_manager.workspace(&state.workspaces)?.rect();
+    let mut rects: Vec<Rect> = vec![];
     let cur_window = state.focus_manager.window(&state.windows)?;
 
     let mut i = 0;
@@ -393,23 +393,29 @@ fn focus_window_direction(state: &mut State, dir: GeometryDirection) -> Option<b
         if cur_window.handle.eq(&x.handle) {
             cur = i;
         }
-        array.push(Rect::from(x.normal));
+        rects.push(Rect::new(
+                x.x() - workspace.x,
+                x.y() - workspace.y,
+                x.width() as u32,
+                x.height() as u32));
         i += 1;
     }
 
-    let next_window = GeometryDirection::find_neighbor(&array,
-        cur, dir, &workspace);
+    let next_window = GeometryDirection::find_neighbor(&rects, cur, dir, &workspace);
 
     match next_window {
         Some(next) => {
             // update current focussed window
-            let handle = state.windows.iter().filter(|w| w.visible()).nth(next)?.handle;
+            let handle = state
+                .windows
+                .iter()
+                .filter(|w| w.visible())
+                .nth(next)?
+                .handle;
             state.handle_window_focus(&handle);
             Some(true)
-        },
-        None => {
-            None
         }
+        None => None,
     }
 }
 
