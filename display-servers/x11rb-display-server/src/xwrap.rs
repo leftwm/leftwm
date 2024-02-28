@@ -311,7 +311,7 @@ impl XWrap {
         self.set_desktop_prop_u32(
             self.root,
             self.atoms.NetSupportingWmCheck,
-            xproto::AtomEnum::STRING.into(),
+            xproto::AtomEnum::WINDOW.into(),
         )?;
 
         // Set a viewport.
