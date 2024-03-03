@@ -17,7 +17,7 @@ const CURSOR_RESIZE: &str = "se-resize";
 const CURSOR_MOVE: &str = "fleur";
 
 impl XCursor {
-    pub fn new(conn: &RustConnection, display: usize, db: &Database) -> Result<Self> {
+    pub(crate) fn new(conn: &RustConnection, display: usize, db: &Database) -> Result<Self> {
         let handle = CursorHandle::new(conn, display, db)?.reply()?;
         Ok(Self {
             normal: handle.load_cursor(conn, CURSOR_NORMAL)?,

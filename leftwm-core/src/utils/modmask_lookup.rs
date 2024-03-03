@@ -56,15 +56,15 @@ impl From<u8> for Button {
     }
 }
 
-impl Into<u8> for Button {
-    fn into(self) -> u8 {
-        match self {
-            Self::None => 0,
-            Self::Main => 1,
-            Self::Middle => 2,
-            Self::Secondary => 3,
-            Self::ScrollUp => 4,
-            Self::ScrollDown => 5,
+impl From<Button> for u8 {
+    fn from(value: Button) -> Self {
+        match value {
+            Button::None => 0,
+            Button::Main => 1,
+            Button::Middle => 2,
+            Button::Secondary => 3,
+            Button::ScrollUp => 4,
+            Button::ScrollDown => 5,
         }
     }
 }

@@ -15,8 +15,8 @@ use error::Result;
 mod error;
 mod event_translate;
 mod xatom;
-mod xwrap;
 mod xcursors;
+mod xwrap;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct X11rbWindowHandle(xproto::Window);
