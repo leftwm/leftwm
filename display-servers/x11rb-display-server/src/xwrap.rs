@@ -8,7 +8,6 @@ use leftwm_core::{
 use tokio::sync::{oneshot, Notify};
 use x11rb::{
     connection::{Connection, RequestConnection},
-    cursor::Handle as CursorHandle,
     protocol::{
         randr,
         xproto::{self, ChangeWindowAttributesAux},
@@ -19,7 +18,7 @@ use x11rb::{
     x11_utils::Serialize,
 };
 
-use crate::{error::ErrorKind, xatom::AtomCollection, X11rbWindowHandle};
+use crate::{error::ErrorKind, xatom::AtomCollection, xcursors::XCursor, X11rbWindowHandle};
 
 use crate::error::Result;
 
@@ -29,11 +28,6 @@ mod setters;
 mod window;
 
 const MAX_PROPERTY_VALUE_LEN: u32 = 4096;
-
-// Cursors
-const CURSOR_NORMAL: &str = "left-ptr";
-const CURSOR_RESIZE: &str = "se-resize";
-const CURSOR_MOVE: &str = "fleur";
 
 #[inline]
 pub fn root_event_mask() -> xproto::EventMask {
@@ -68,7 +62,7 @@ pub(crate) struct XWrap {
     conn: RustConnection,
     display: usize,
     root: xproto::Window,
-    cursors: CursorHandle,
+    cursors: XCursor,
     pub atoms: AtomCollection,
 
     colors: Colors,
@@ -142,10 +136,7 @@ impl XWrap {
             .reply()
             .expect("Parsing reply failed.");
         let db = Database::new_from_default(&reply, "localhost".into());
-        let cursors = CursorHandle::new(&conn, display, &db)
-            .expect("Unable to get cursors")
-            .reply()
-            .expect("Parsing reply failed.");
+        let cursors = XCursor::new(&conn, display, &db).expect("Unable to load cursors");
 
         let colors = Colors {
             normal: 0,
@@ -230,12 +221,11 @@ impl XWrap {
     pub fn init(&mut self) -> Result<()> {
         let root = self.root;
 
-        let cursor = self.cursors.load_cursor(&self.conn, CURSOR_NORMAL)?;
         xproto::change_window_attributes(
             &self.conn,
             root,
             &ChangeWindowAttributesAux::new()
-                .cursor(cursor)
+                .cursor(self.cursors.normal)
                 .event_mask(root_event_mask()),
         )?;
 
@@ -394,13 +384,9 @@ impl XWrap {
                     _ => (),
                 }
                 let cursor = match mode {
-                    Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, CURSOR_RESIZE)?
-                    }
-                    Mode::ReadyToMove(_) | Mode::MovingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, CURSOR_MOVE)?
-                    }
-                    Mode::Normal => self.cursors.load_cursor(&self.conn, CURSOR_NORMAL)?,
+                    Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => self.cursors.resize,
+                    Mode::ReadyToMove(_) | Mode::MovingWindow(_) => self.cursors.move_,
+                    Mode::Normal => self.cursors.normal,
                 };
                 self.grab_pointer(cursor)?;
             }
@@ -410,13 +396,9 @@ impl XWrap {
                 self.ungrab_pointer()?;
                 self.mode = mode;
                 let cursor = match mode {
-                    Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, CURSOR_RESIZE)?
-                    }
-                    Mode::ReadyToMove(_) | Mode::MovingWindow(_) => {
-                        self.cursors.load_cursor(&self.conn, CURSOR_MOVE)?
-                    }
-                    Mode::Normal => self.cursors.load_cursor(&self.conn, CURSOR_NORMAL)?,
+                    Mode::ReadyToResize(_) | Mode::ResizingWindow(_) => self.cursors.resize,
+                    Mode::ReadyToMove(_) | Mode::MovingWindow(_) => self.cursors.move_,
+                    Mode::Normal => self.cursors.normal,
                 };
                 self.grab_pointer(cursor)?;
             }
