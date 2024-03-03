@@ -118,7 +118,7 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
             DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
             DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
-            DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b.bits()),
+            DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b.into()),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
             DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),

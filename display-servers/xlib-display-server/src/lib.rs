@@ -23,7 +23,6 @@ use leftwm_core::models::{
 };
 use leftwm_core::utils;
 use leftwm_core::{DisplayAction, DisplayEvent, DisplayServer};
-use std::os::raw::c_uint;
 use std::pin::Pin;
 
 use x11_dl::xlib;
@@ -116,7 +115,7 @@ impl DisplayServer<XlibWindowHandle> for XlibDisplayServer {
             DisplayAction::MoveMouseOverPoint(p) => from_move_mouse_over_point(xw, p),
             DisplayAction::DestroyedWindow(h) => from_destroyed_window(xw, h),
             DisplayAction::Unfocus(h, f) => from_unfocus(xw, h, f),
-            DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b.bits().into()),
+            DisplayAction::ReplayClick(h, b) => from_replay_click(xw, h, b.into()),
             DisplayAction::SetState(h, t, s) => from_set_state(xw, h, t, s),
             DisplayAction::SetWindowOrder(ws) => from_set_window_order(xw, ws),
             DisplayAction::MoveToTop(h) => from_move_to_top(xw, h),
@@ -297,10 +296,10 @@ fn from_unfocus(
 fn from_replay_click(
     xw: &mut XWrap,
     handle: WindowHandle<XlibWindowHandle>,
-    button: c_uint,
+    button: u8,
 ) -> Option<DisplayEvent<XlibWindowHandle>> {
     let WindowHandle(XlibWindowHandle(handle)) = handle;
-    xw.replay_click(handle, button);
+    xw.replay_click(handle, button.into());
     None
 }
 

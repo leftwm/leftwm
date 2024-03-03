@@ -204,7 +204,7 @@ fn from_button_press(
     mod_mask.remove(xproto::KeyButMask::MOD2 | xproto::KeyButMask::LOCK);
     DisplayEvent::MouseCombo(
         ModMask::from_bits_retain(mod_mask.bits()),
-        Button::from_bits_retain(event.detail),
+        Button::from(event.detail),
         h,
         i32::from(event.root_x),
         i32::from(event.root_y),

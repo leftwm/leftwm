@@ -215,7 +215,7 @@ fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent<XlibWindowHandle> 
     mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
     DisplayEvent::MouseCombo(
         ModMask::from_bits_retain(mod_mask as u16),
-        Button::from_bits_retain(event.button as u8),
+        Button::from(event.button as u8),
         h,
         event.x,
         event.y,

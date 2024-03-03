@@ -38,7 +38,7 @@ impl<H: Handle> State<H> {
                 }
             }
         } else if self.focus_manager.behaviour.is_clickto()
-            && (button.contains(Button::Button1) || button.contains(Button::Button3))
+            && (button == Button::Main || button == Button::Secondary)
             && self.screens.iter().any(|s| s.root == handle)
         {
             self.focus_workspace_with_point(x, y);
@@ -57,7 +57,7 @@ impl<H: Handle> State<H> {
     ) -> Option<DisplayAction<H>> {
         let is_mouse_key = *mod_mask == modifier || *mod_mask == (modifier | ModMask::Shift);
         match button {
-            Button::Button1 if is_mouse_key => {
+            Button::Main if is_mouse_key => {
                 _ = self
                     .windows
                     .iter()
@@ -65,7 +65,7 @@ impl<H: Handle> State<H> {
                 self.mode = Mode::ReadyToMove(window);
                 Some(DisplayAction::ReadyToMoveWindow(window))
             }
-            Button::Button3 if is_mouse_key => {
+            Button::Secondary if is_mouse_key => {
                 _ = self
                     .windows
                     .iter()
@@ -73,7 +73,7 @@ impl<H: Handle> State<H> {
                 self.mode = Mode::ReadyToResize(window);
                 Some(DisplayAction::ReadyToResizeWindow(window))
             }
-            Button::Button1 | Button::Button3 if self.focus_manager.behaviour.is_clickto() => {
+            Button::Main | Button::Secondary if self.focus_manager.behaviour.is_clickto() => {
                 self.focus_window(&window);
                 Some(DisplayAction::ReplayClick(window, button))
             }

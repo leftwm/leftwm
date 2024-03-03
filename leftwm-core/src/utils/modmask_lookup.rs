@@ -20,22 +20,52 @@ bitflags! {
         const Mod5 = 1 << 7;
     }
 }
-bitflags! {
-    /// Represents the state of the mouse buttons
-    #[derive(Clone, Debug, PartialEq, Eq)]
-    pub struct Button: u8 {
-        /// Used as the zero value
-        const Zero = 0;
-        /// Main button (left click for right-handed)
-        const Button1 = 1;
-        /// Middle button (pressing the scroll wheel)
-        const Button2 = 1 << 1;
-        /// Secondary button (right click for right-handed)
-        const Button3 = 1 << 2;
-        /// Scroll wheel up
-        const Button4 = 1 << 3;
-        /// Scroll wheel down
-        const Button5 = 1 << 4;
+
+/// Representation of mouse buttons
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum Button {
+    /// no buttons pressed
+    None,
+    /// Main button (left click for right-handed)
+    /// Button1
+    Main,
+    /// Middle button (pressing the scroll wheel)
+    /// Button2
+    Middle,
+    /// Secondary button (right click for right-handed)
+    /// Button3
+    Secondary,
+    /// Scroll wheel up
+    /// Button4
+    ScrollUp,
+    /// Scroll wheel down
+    /// Button5
+    ScrollDown,
+}
+
+impl From<u8> for Button {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Self::Main,
+            2 => Self::Middle,
+            3 => Self::Secondary,
+            4 => Self::ScrollUp,
+            5 => Self::ScrollDown,
+            _ => Self::None,
+        }
+    }
+}
+
+impl Into<u8> for Button {
+    fn into(self) -> u8 {
+        match self {
+            Self::None => 0,
+            Self::Main => 1,
+            Self::Middle => 2,
+            Self::Secondary => 3,
+            Self::ScrollUp => 4,
+            Self::ScrollDown => 5,
+        }
     }
 }
 
@@ -115,40 +145,5 @@ impl<'de> Deserialize<'de> for ModMask {
         }
 
         deserializer.deserialize_u16(ModmaskVisitor)
-    }
-}
-
-impl Serialize for Button {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_u8(self.bits())
-    }
-}
-
-impl<'de> Deserialize<'de> for Button {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        struct ButtonVisitor;
-
-        impl<'de> Visitor<'de> for ButtonVisitor {
-            type Value = Button;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a bitfield on 8 bits")
-            }
-
-            fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(Button::from_bits_retain(v))
-            }
-        }
-
-        deserializer.deserialize_u8(ButtonVisitor)
     }
 }
