@@ -155,20 +155,16 @@ impl XWrap {
     // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
     pub fn set_window_border_color(&self, window: xlib::Window, mut color: c_ulong) {
         unsafe {
-            // Force border opacity to 0xff.
-            let mut bytes = color.to_le_bytes();
-            bytes[3] = 0xff;
-            color = c_ulong::from_le_bytes(bytes);
+            // Force border opacity to 0xff. (color is <aarrggbb> in hex format)
+            color |= 0xff00_0000;
             (self.xlib.XSetWindowBorder)(self.display, window, color);
         }
     }
 
     pub fn set_background_color(&self, mut color: c_ulong) {
         unsafe {
-            // Force border opacity to 0xff.
-            let mut bytes = color.to_le_bytes();
-            bytes[3] = 0xff;
-            color = c_ulong::from_le_bytes(bytes);
+            // Force border opacity to 0xff. (color is <aarrggbb> in hex format)
+            color |= 0xff00_0000;
             (self.xlib.XSetWindowBackground)(self.display, self.root, color);
             (self.xlib.XClearWindow)(self.display, self.root);
             (self.xlib.XFlush)(self.display);

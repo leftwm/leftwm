@@ -1,5 +1,3 @@
-#![cfg(feature = "lefthk")]
-
 use lefthk_core::{config::Config, worker::Worker};
 use xdg::BaseDirectories;
 
