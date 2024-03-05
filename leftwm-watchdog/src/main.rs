@@ -3,7 +3,7 @@
 //! If no arguments are passed, starts `leftwm-worker`. If arguments are passed, starts
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
-use clap::{command, Arg};
+use clap::command;
 use std::env;
 use std::path::Path;
 use std::process::{exit, Child, Command, ExitStatus};
@@ -31,12 +31,6 @@ const AVAILABLE_SUBCOMMANDS: [[&str; 2]; 6] = [
     ["log", "Retrieves information logged by leftwm-worker"],
 ];
 
-#[cfg(feature = "xlib")]
-const DEFAULT_BACKEND: &str = "xlib";
-
-#[cfg(not(feature = "xlib"))]
-const DEFAULT_BACKEND: &str = "x11rb";
-
 fn main() {
     let args: LeftwmArgs = env::args().collect();
 
@@ -45,7 +39,7 @@ fn main() {
         parse_subcommands(&args);
     }
 
-    start_leftwm(DEFAULT_BACKEND);
+    start_leftwm();
 }
 
 /// Executes a subcommand.
@@ -72,15 +66,6 @@ fn execute_subcommand(subcommand: Subcommand, subcommand_args: SubcommandArgs) -
     };
 }
 
-#[must_use]
-pub fn get_backend_arg() -> Arg {
-    Arg::new("backend")
-        .long("backend")
-        .short('b')
-        .help("Specify the backend to use (Check the manual for details, 'leftwm help backend' for available backends).")
-        .default_value(DEFAULT_BACKEND)
-}
-
 /// Prints the help page of leftwm (the output of `leftwm --help`)
 fn print_help_page() {
     let subcommands = {
@@ -102,7 +87,6 @@ fn print_help_page() {
              it is installed.",
         )
         .subcommands(subcommands)
-        .arg(get_backend_arg())
         .help_template(utils::get_help_template())
         .print_help()
         .unwrap();
@@ -131,21 +115,11 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
             print_help_page();
         } else if is_subcommand(&subcommand_args[0]) {
             execute_subcommand(&subcommand_args[0], vec!["--help".to_string()]);
-        } else if &subcommand_args[0] == "backend" {
-            println!("Available backends:");
-
-            #[cfg(feature = "xlib")]
-            println!("  xlib\t\truns LeftMW under X11 using the libX11 C library");
-
-            #[cfg(feature = "x11rb")]
-            println!("  x11rb\t\truns LeftMW under X11 using x11rb, which do not depends on external system library");
         } else {
             println!("No such subcommand. Try 'leftwm --help' to find valid subcommands.");
         }
     } else if subcommand == "--version" || subcommand == "-v" {
         println!("leftwm {}", env!("CARGO_PKG_VERSION"));
-    } else if subcommand == "--backend" || subcommand == "-b" {
-        start_leftwm(&subcommand_args[0]);
     } else {
         print_help_page();
     }
@@ -180,7 +154,7 @@ fn get_current_exe() -> std::path::PathBuf {
 }
 
 /// The main-entry-point. The leftwm-session is prepared here
-fn start_leftwm(backend_name: &str) {
+fn start_leftwm() {
     let current_exe = get_current_exe();
 
     set_env_vars();
@@ -193,7 +167,7 @@ fn start_leftwm(backend_name: &str) {
     let mut error_occured = false;
     let mut session_exit_status: Option<ExitStatus> = None;
     while !error_occured {
-        let mut leftwm_session = start_leftwm_session(&current_exe, backend_name);
+        let mut leftwm_session = start_leftwm_session(&current_exe);
         #[cfg(feature = "lefthk")]
         let mut lefthk_session = start_lefthk_session(&current_exe);
 
@@ -243,11 +217,10 @@ fn session_is_running(leftwm_session: &mut Child) -> bool {
 }
 
 /// starts the leftwm session and returns the process/leftwm-session
-fn start_leftwm_session(current_exe: &Path, backend_name: &str) -> Child {
+fn start_leftwm_session(current_exe: &Path) -> Child {
     let worker_file = current_exe.with_file_name("leftwm-worker");
 
     Command::new(worker_file)
-        .arg(backend_name)
         .spawn()
         .expect("failed to start leftwm")
 }

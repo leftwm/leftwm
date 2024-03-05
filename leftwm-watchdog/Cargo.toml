@@ -23,12 +23,8 @@ xdg = "2.2.0"
 tempfile = "3.2.0"
 
 [features]
-default = ["lefthk", "xlib", "x11rb"]
+default = ["lefthk"]
 lefthk = []
-
-# backends
-xlib = []
-x11rb = []
 
 # Sleep on restart
 slow-dm-fix = []

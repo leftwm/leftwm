@@ -34,6 +34,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
         let command_pipe = get_command_pipe().await?;
 
         self.call_up_scripts();
+        tracing::info!("LeftWM-core booted!");
         self.event_loop(state_socket, command_pipe).await
     }
 

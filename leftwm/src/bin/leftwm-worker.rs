@@ -1,12 +1,15 @@
 use leftwm_core::Manager;
-use std::{env, panic, process::exit};
-use x11rb_display_server::X11rbWindowHandle;
-use xlib_display_server::XlibWindowHandle;
+use std::panic;
 
 #[cfg(feature = "x11rb")]
 use x11rb_display_server::X11rbDisplayServer;
+#[cfg(feature = "x11rb")]
+use x11rb_display_server::X11rbWindowHandle;
+
 #[cfg(feature = "xlib")]
 use xlib_display_server::XlibDisplayServer;
+#[cfg(feature = "xlib")]
+use xlib_display_server::XlibWindowHandle;
 
 fn main() {
     // INFO: This is used when attaching to leftwm-worker with lldb using `--waitfor` to ensure
@@ -16,15 +19,7 @@ fn main() {
     std::thread::sleep(std::time::Duration::from_secs(1));
 
     leftwm::utils::log::setup_logging();
-
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        tracing::error!("You need to specify a backend, as argument.");
-        tracing::error!("Backends must be one of the following: xlib, x11rb");
-        exit(1);
-    }
-
-    tracing::info!("leftwm-worker booted!");
+    tracing::info!("leftwm-worker booting...");
 
     let exit_status = panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
@@ -40,9 +35,10 @@ fn main() {
         #[cfg(not(feature = "lefthk"))]
         let config = leftwm::load();
 
-        match args.get(1) {
+        match config.backend {
             #[cfg(feature = "xlib")]
-            Some(name) if name == "xlib" => {
+            leftwm::Backend::XLib => {
+                tracing::info!("Loading XLib backend");
                 let manager =
                     Manager::<XlibWindowHandle, leftwm::Config, XlibDisplayServer>::new(config);
 
@@ -52,18 +48,14 @@ fn main() {
             }
 
             #[cfg(feature = "x11rb")]
-            Some(name) if name == "x11rb" => {
+            leftwm::Backend::X11rb => {
+                tracing::info!("Loading X11rb backend");
                 let manager =
                     Manager::<X11rbWindowHandle, leftwm::Config, X11rbDisplayServer>::new(config);
 
                 manager.register_child_hook();
                 //TODO: Error handling
                 rt.block_on(manager.start_event_loop())
-            }
-            _ => {
-                tracing::error!("Invalid backend.");
-                tracing::error!("Backends must be one of the following: xlib, x11rb");
-                exit(1)
             }
         }
     });

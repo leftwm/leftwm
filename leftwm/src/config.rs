@@ -174,11 +174,29 @@ impl WindowHook {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Backend {
+    #[cfg(feature = "xlib")]
+    XLib,
+    #[cfg(feature = "x11rb")]
+    X11rb,
+}
+
+impl Default for Backend {
+    fn default() -> Self {
+        #[cfg(feature = "xlib")]
+        return Backend::XLib;
+        #[cfg(not(feature = "xlib"))]
+        return Backend::X11rb;
+    }
+}
+
 /// General configuration
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {
+    pub backend: Backend,
     pub modkey: String,
     pub mousekey: Option<Modifier>,
     pub workspaces: Option<Vec<Workspace>>,

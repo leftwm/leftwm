@@ -1,5 +1,7 @@
 use leftwm_core::models::{ScratchPad, Size};
 
+use crate::Backend;
+
 #[cfg(feature = "lefthk")]
 use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
 use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeConfig};
@@ -213,6 +215,8 @@ impl Default for Config {
         let layouts = leftwm_layouts::layouts::Layouts::default();
 
         Self {
+            // Using Backend's feature fallback
+            backend: Backend::default(),
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: layouts.names(),
