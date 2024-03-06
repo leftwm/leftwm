@@ -106,7 +106,7 @@ List of LeftWM dependencies:
 
 - xorg (runtime, build): specifically libx11, xrandr, xorg-server, libxinerama
 - sh (runtime): any posix-compliant shell for starting up and down files
-- rust (build): >= 1.70.0
+- rust (build): >= 1.74.0
 - bash (optional): Most of the themes available use bash, though the scripts maybe converted to any posix-compliant shell
 
 List of common dependencies for themes:
@@ -430,8 +430,8 @@ A theme directory contains at least 2 files:
 These files need to be made executable. Many theme directories also contain:
 
 - `theme.ron`: which contains additional configuration options specific to the theme.
-- `polybar.ini`: a configuration file for the `polybar` application. *Need to have polybar installed!*
-- `picom.conf`: a configuration file for the `picom` compositor. *Need to have picom installed!*
+- `polybar.ini`: a configuration file for the `polybar` application. _You need to have polybar installed!_
+- `picom.conf`: a configuration file for the `picom` compositor. _You need to have picom installed!_
 
 See the [theme guide][theme-guide] for examples and further information. There is also a
 [community repository][community-repo] for sharing themes.
@@ -550,7 +550,6 @@ tags: ["Web", "Code", "Shell", "Music", "Connect"],
 
 ## Layouts
 
-
 Leftwm supports user definable layouts. The relevant entries in the configuration file are the `layouts` and `layout_definitions` lists.
 
 Only the layouts whose name appears in `layouts` will be accessible when switching layouts through the commands `NextLayout`, `PreviousLayout` and `SetLayout`. Each layout appearing in the `layouts` list must have a corresponding definition in `layout_definitions`.
@@ -580,12 +579,12 @@ The default layouts are [all of the kinds](leftwm-core/src/layouts/mod.rs#L21) d
 
 ## Troubleshooting
 
-| Issue                              | Description                                                                                                              |                        Solution                        |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------: |
-| LeftWM not listed by login manager | You likely need to add the xsessions file to the right folder.                                                           | See [installation](#installation-with-package-manager) |
-| No `config.ron` file exists        | LeftWM does not always ship with a `config.ron`. You will need to execute LeftWM at least once for one to be generated.  |           Try the following: `leftwm-worker`           |
-| `config.ron` is not being parsed   | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR.                                    |           Try the following: `leftwm-check`            |
-| Keybinding doesn't work            | It's likely you need to specify a value or have a typo.                                                                  |                        See Wiki                        |
+| Issue                              | Description                                                                                                             |                        Solution                        |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------: |
+| LeftWM not listed by login manager | You likely need to add the xsessions file to the right folder.                                                          | See [installation](#installation-with-package-manager) |
+| No `config.ron` file exists        | LeftWM does not always ship with a `config.ron`. You will need to execute LeftWM at least once for one to be generated. |           Try the following: `leftwm-worker`           |
+| `config.ron` is not being parsed   | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR.                                   |           Try the following: `leftwm-check`            |
+| Keybinding doesn't work            | It's likely you need to specify a value or have a typo.                                                                 |                        See Wiki                        |
 
 ## Support
 

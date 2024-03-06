@@ -156,19 +156,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "clap"
-version = "4.4.11"
+name = "cfg_aliases"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfaff671f6b22ca62406885ece523383b9b64022e341e53e009a62ebc47a45f2"
+checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
+
+[[package]]
+name = "clap"
+version = "4.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c918d541ef2913577a0f9566e9ce27cb35b6df072075769e0b26cb5a554520da"
 dependencies = [
  "clap_builder",
 ]
 
 [[package]]
 name = "clap_builder"
-version = "4.4.11"
+version = "4.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a216b506622bb1d316cd51328dce24e07bdff4a6128a47c7e7fad11878d5adbb"
+checksum = "9f3e7391dad68afb0c2ede1bf619f579a3dc9c2ec67f089baa397123a2f3d1eb"
 dependencies = [
  "anstream",
  "anstyle",
@@ -178,9 +184,9 @@ dependencies = [
 
 [[package]]
 name = "clap_lex"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
+checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
 
 [[package]]
 name = "colorchoice"
@@ -540,7 +546,7 @@ checksum = "b07050b037b9318d6e9e7e7ecb30faa46e716c6a13aa58105afacda1b3d6e950"
 dependencies = [
  "inventory",
  "mio",
- "nix",
+ "nix 0.27.1",
  "ron",
  "serde",
  "signal-hook",
@@ -595,7 +601,7 @@ dependencies = [
  "futures",
  "leftwm-layouts",
  "mio",
- "nix",
+ "nix 0.28.0",
  "serde",
  "serde_json",
  "signal-hook",
@@ -609,9 +615,9 @@ dependencies = [
 
 [[package]]
 name = "leftwm-layouts"
-version = "0.8.4"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ad24b8d3f59f0176ba4dc57a90955b16fd6e6c8a4fa384abf97f3861db6d073"
+checksum = "8232c01cbd6877854ef7cc7584e6b58f22efb9ec45177e364419f81e948d8240"
 dependencies = [
  "serde",
 ]
@@ -631,7 +637,7 @@ version = "0.5.1"
 dependencies = [
  "clap",
  "dirs-next",
- "nix",
+ "nix 0.28.0",
  "signal-hook",
  "tempfile",
  "thiserror",
@@ -768,6 +774,18 @@ checksum = "2eb04e9c688eff1c89d72b407f168cf79bb9e867a9d3323ed6c01519eb9cc053"
 dependencies = [
  "bitflags 2.4.2",
  "cfg-if",
+ "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4"
+dependencies = [
+ "bitflags 2.4.2",
+ "cfg-if",
+ "cfg_aliases",
  "libc",
 ]
 
@@ -1157,9 +1175,9 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "strsim"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+checksum = "5ee073c9e4cd00e28217186dbe12796d692868f432bf2e97ee73bed0c56dfa01"
 
 [[package]]
 name = "syn"
@@ -1174,9 +1192,9 @@ dependencies = [
 
 [[package]]
 name = "syslog-tracing"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f890b68f60eb7e87373b3b8f1f412d2a7d90460cd18294acbc0e90ba496193e"
+checksum = "340b1540dcdb6b066bc2966e7974f977ab1a38f21b2be189014ffb0cc2405768"
 dependencies = [
  "libc",
  "tracing-core",

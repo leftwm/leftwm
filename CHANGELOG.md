@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The currently supported MSRV is 1.74.0
+
 ### Fixed
 
 ## [0.5.0]
