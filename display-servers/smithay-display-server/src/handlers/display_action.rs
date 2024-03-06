@@ -12,6 +12,7 @@ use crate::{internal_action::InternalAction, state::SmithayState};
 
 impl SmithayState {
     pub fn handle_action(&mut self, action: InternalAction, display: &mut Display<Self>) {
+        info!("Received action: {:?}", action);
         match action {
             InternalAction::Flush => display.flush_clients().unwrap(),
             InternalAction::GenerateVerifyFocusEvent => {
@@ -122,7 +123,8 @@ impl SmithayState {
                 let WindowHandle::SmithayHandle(handle) = window.handle else {
                     panic!("LeftWM passed an invalid handle");
                 };
-                self.focus_window(handle, self.config.sloppy_mouse_follows_focus);
+                // NOTE: Should we never move the cursor??
+                self.focus_window(handle, false);
             }
             InternalAction::DisplayAction(DisplayAction::Unfocus(_, _)) => {
                 todo!()

@@ -234,10 +234,10 @@ impl SmithayState {
                 if window.get_handle() != self.focused_window {
                     if let Some(h) = window.get_handle() {
                         self.focus_window(h, false);
-                        // self.send_event(DisplayEvent::WindowTakeFocus(
-                        //     WindowHandle::SmithayHandle(h),
-                        // ))
-                        // .unwrap();
+                        self.send_event(DisplayEvent::WindowTakeFocus(
+                            leftwm_core::models::WindowHandle::SmithayHandle(h),
+                        ))
+                        .unwrap();
                     }
                 }
             }

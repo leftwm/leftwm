@@ -266,7 +266,7 @@ impl DisplayServer for SmithayHandle {
     }
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent> {
-        info!("LeftWM is collecting events");
+        // info!("LeftWM is collecting events");
         self.event_receiver.collect_events()
     }
 
