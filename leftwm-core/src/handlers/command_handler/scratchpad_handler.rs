@@ -8,7 +8,7 @@ use std::collections::VecDeque;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    child_process::{exec_shell, ChildID},
+    child_process::{exec_shell_with_args, ChildID},
     models::{ScratchPadName, TagId, WindowHandle},
     Command, Config, DisplayAction, DisplayServer, Manager, Window,
 };
@@ -253,7 +253,11 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         name
     );
 
-    let pid: ChildID = exec_shell(&scratchpad.value, &mut manager.children)?;
+    let pid: ChildID = exec_shell_with_args(
+        &scratchpad.value,
+        scratchpad.args.unwrap_or_else(|| Vec::new()),
+        &mut manager.children,
+    )?;
 
     match manager.state.active_scratchpads.get_mut(name) {
         Some(windows) => {
@@ -613,6 +617,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: String::new(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -787,6 +792,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: "scratchpad".to_string(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -970,6 +976,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: "scratchpad".to_string(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -1079,6 +1086,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: "scratchpad".to_string(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -1189,6 +1197,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: "scratchpad".to_string(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -1253,6 +1262,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: String::new(),
+            args: None,
             x: None,
             y: None,
             height: None,

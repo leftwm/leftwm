@@ -204,6 +204,7 @@ impl Default for Config {
         let scratchpad = ScratchPad {
             name: "Alacritty".into(),
             value: "alacritty".to_string(),
+            args: None,
             x: Some(Size::Pixel(860)),
             y: Some(Size::Pixel(390)),
             height: Some(Size::Pixel(300)),
