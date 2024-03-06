@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "lefthk")]
 use super::BaseCommand;
 #[cfg(feature = "lefthk")]
