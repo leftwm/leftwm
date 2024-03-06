@@ -430,8 +430,8 @@ A theme directory contains at least 2 files:
 These files need to be made executable. Many theme directories also contain:
 
 - `theme.ron`: which contains additional configuration options specific to the theme.
-- `polybar.ini`: a configuration file for the `polybar` application. _Need to have polybar installed!_
-- `picom.conf`: a configuration file for the `picom` compositor. _Need to have picom installed!_
+- `polybar.ini`: a configuration file for the `polybar` application. _You need to have polybar installed!_
+- `picom.conf`: a configuration file for the `picom` compositor. _You need to have picom installed!_
 
 See the [theme guide][theme-guide] for examples and further information. There is also a
 [community repository][community-repo] for sharing themes.
