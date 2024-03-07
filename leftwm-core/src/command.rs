@@ -1,5 +1,6 @@
 pub use crate::handlers::command_handler::ReleaseScratchPadOption;
 use crate::models::{ScratchPadName, TagId, WindowHandle};
+use leftwm_layouts::geometry::Direction as FocusDirection;
 use serde::{Deserialize, Serialize};
 
 /// Command represents a command received from the command pipe.
@@ -57,10 +58,7 @@ pub enum Command {
     FocusWindowTop {
         swap: bool,
     },
-    FocusWindowNorth,
-    FocusWindowSouth,
-    FocusWindowEast,
-    FocusWindowWest,
+    FocusWindowAt(FocusDirection),
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     SendWindowToTag {

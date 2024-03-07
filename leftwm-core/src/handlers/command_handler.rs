@@ -2,7 +2,7 @@
 
 mod scratchpad_handler;
 
-use leftwm_layouts::geometry::{Direction as GeometryDirection, Rect};
+use leftwm_layouts::geometry::{Direction as FocusDirection, Rect};
 // Make public to the rest of the crate without exposing other internal
 // details of the scratchpad handling code
 pub use scratchpad_handler::{Direction, ReleaseScratchPadOption};
@@ -113,10 +113,7 @@ fn process_internal<C: Config, SERVER: DisplayServer>(
         Command::FocusWindowUp => move_focus_common_vars!(focus_window_change(state, -1)),
         Command::FocusWindowDown => move_focus_common_vars!(focus_window_change(state, 1)),
         Command::FocusWindowTop { swap } => focus_window_top(state, *swap),
-        Command::FocusWindowNorth => focus_window_direction(state, GeometryDirection::North),
-        Command::FocusWindowSouth => focus_window_direction(state, GeometryDirection::South),
-        Command::FocusWindowEast => focus_window_direction(state, GeometryDirection::East),
-        Command::FocusWindowWest => focus_window_direction(state, GeometryDirection::West),
+        Command::FocusWindowAt(param) => focus_window_direction(state, param),
         Command::FocusWorkspaceNext => focus_workspace_change(state, 1),
         Command::FocusWorkspacePrevious => focus_workspace_change(state, -1),
 
@@ -381,7 +378,7 @@ fn focus_window(state: &mut State, param: &str) -> Option<bool> {
 }
 
 // TODO: add comment
-fn focus_window_direction(state: &mut State, dir: GeometryDirection) -> Option<bool> {
+fn focus_window_direction(state: &mut State, dir: &FocusDirection) -> Option<bool> {
     let workspace = state.focus_manager.workspace(&state.workspaces)?.rect();
     let mut rects: Vec<Rect> = vec![];
     let cur_window = state.focus_manager.window(&state.windows)?;
@@ -394,14 +391,15 @@ fn focus_window_direction(state: &mut State, dir: GeometryDirection) -> Option<b
             cur = i;
         }
         rects.push(Rect::new(
-                x.x() - workspace.x,
-                x.y() - workspace.y,
-                x.width() as u32,
-                x.height() as u32));
+            x.x() - workspace.x,
+            x.y() - workspace.y,
+            x.width() as u32,
+            x.height() as u32,
+        ));
         i += 1;
     }
 
-    let next_window = GeometryDirection::find_neighbor(&rects, cur, dir, &workspace);
+    let next_window = FocusDirection::find_neighbor(&rects, cur, *dir, &workspace);
 
     match next_window {
         Some(next) => {
