@@ -27,8 +27,7 @@ use x11_dl::xlib;
 
 pub struct XlibDisplayServer {
     xw: XWrap,
-    root: xlib::Window,
-    initial_events: Vec<DisplayEvent>,
+    event_queue: Vec<DisplayEvent>,
 }
 
 impl DisplayServer for XlibDisplayServer {
@@ -38,16 +37,13 @@ impl DisplayServer for XlibDisplayServer {
         wrap.load_config(config);
         wrap.init(); // setup events masks
 
-        let root = wrap.get_default_root();
         let instance = Self {
             xw: wrap,
-            root,
-            initial_events: Vec::new(),
+            event_queue: Vec::new(),
         };
-        let initial_events = instance.initial_events(config);
 
         Self {
-            initial_events,
+            event_queue: instance.initial_events(),
             ..instance
         }
     }
@@ -75,7 +71,7 @@ impl DisplayServer for XlibDisplayServer {
     }
 
     fn get_next_events(&mut self) -> Vec<DisplayEvent> {
-        let mut events = std::mem::take(&mut self.initial_events);
+        let mut events = std::mem::take(&mut self.event_queue);
 
         let events_in_queue = self.xw.queue_len();
         for _ in 0..events_in_queue {
@@ -150,51 +146,18 @@ impl DisplayServer for XlibDisplayServer {
 
 impl XlibDisplayServer {
     /// Return a vec of events for setting up state of WM.
-    fn initial_events(&self, config: &impl Config) -> Vec<DisplayEvent> {
+    fn initial_events(&self) -> Vec<DisplayEvent> {
         let mut events = vec![];
-        if let Some(workspaces) = config.workspaces() {
-            let screens = self.xw.get_screens();
-            for (i, wsc) in workspaces.iter().enumerate() {
-                let mut screen = Screen::from(wsc);
-                screen.root = self.root.into();
-                // If there is a screen corresponding to the given output, create the workspace
-                match screens.iter().find(|i| i.output == wsc.output) {
-                    Some(output_match) => {
-                        if wsc.relative.unwrap_or(false) {
-                            screen.bbox.add(output_match.bbox);
-                        }
-                        screen.id = Some(i + 1);
-                    }
-                    None => continue,
-                }
-                let e = DisplayEvent::ScreenCreate(screen);
-                events.push(e);
-            }
 
-            let auto_derive_workspaces: bool = if config.auto_derive_workspaces() {
-                true
-            } else if events.is_empty() {
-                tracing::warn!("No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\".");
-                true
-            } else {
-                false
-            };
-
-            let mut next_id = workspaces.len() + 1;
-
-            // If there is no hardcoded workspace layout, add every screen not mentioned in the config.
-            if auto_derive_workspaces {
-                screens
-                    .iter()
-                    .filter(|screen| !workspaces.iter().any(|wsc| wsc.output == screen.output))
-                    .for_each(|screen| {
-                        let mut s = screen.clone();
-                        s.id = Some(next_id);
-                        next_id += 1;
-                        events.push(DisplayEvent::ScreenCreate(s));
-                    });
-            }
-        }
+        // Try to create workspaces for every connected screen.
+        events.append(
+            &mut self
+                .xw
+                .get_screens()
+                .into_iter()
+                .map(DisplayEvent::ScreenCreate)
+                .collect(),
+        );
 
         // Tell manager about existing windows.
         events.append(&mut self.find_all_windows());

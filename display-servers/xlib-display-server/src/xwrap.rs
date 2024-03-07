@@ -20,7 +20,7 @@ use tokio::sync::{oneshot, Notify};
 use tokio::time::Duration;
 
 use x11_dl::xlib;
-use x11_dl::xrandr::Xrandr;
+use x11_dl::xrandr::{self, Xrandr};
 
 mod getters;
 mod mouse;
@@ -38,6 +38,7 @@ pub const ROOT_EVENT_MASK: c_long = xlib::SubstructureRedirectMask
     | xlib::ButtonPressMask
     | xlib::PointerMotionMask
     | xlib::StructureNotifyMask;
+const XRANDR_EVENT_MASK: c_int = xrandr::RRCrtcChangeNotifyMask | xrandr::RROutputChangeNotifyMask;
 
 const BUTTONMASK: c_long = xlib::ButtonPressMask | xlib::ButtonReleaseMask | xlib::ButtonMotionMask;
 const MOUSEMASK: c_long = BUTTONMASK | xlib::PointerMotionMask;
@@ -102,11 +103,12 @@ pub enum XlibError {
 /// Contains Xserver information and origins.
 pub struct XWrap {
     xlib: xlib::Xlib,
-    display: *mut xlib::Display,
-    root: xlib::Window,
+    pub display: *mut xlib::Display,
+    pub root: xlib::Window,
     pub atoms: XAtom,
     cursors: XCursor,
     colors: Colors,
+    pub xrandr_event_base: Option<i32>,
     pub managed_windows: Vec<xlib::Window>,
     pub focused_window: xlib::Window,
     pub tag_labels: Vec<String>,
@@ -228,6 +230,7 @@ impl XWrap {
             atoms,
             cursors,
             colors,
+            xrandr_event_base: None,
             managed_windows: vec![],
             focused_window: root,
             tag_labels: vec![],
@@ -292,7 +295,24 @@ impl XWrap {
             );
         }
 
+        // Subscribe to xlib and xrandr events
         self.subscribe_to_event(root, ROOT_EVENT_MASK);
+        if let Ok(xrandr) = Xrandr::open() {
+            unsafe {
+                (xrandr.XRRSelectInput)(self.display, root, XRANDR_EVENT_MASK);
+
+                // Set xrandr event base (used in event translation)
+                self.xrandr_event_base = Some(0);
+                (xrandr.XRRQueryExtension)(
+                    self.display,
+                    self.xrandr_event_base.as_mut().unwrap_or_else(|| {
+                        unreachable!("`xrandr_event_base` is hardcoded above to be `Some(0)`")
+                    }),
+                    &mut 0,
+                );
+            }
+            tracing::trace!("Xrandr extension available. Xrandr events requested.");
+        }
 
         // EWMH compliance.
         unsafe {

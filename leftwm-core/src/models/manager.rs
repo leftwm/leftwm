@@ -90,4 +90,21 @@ impl Manager<crate::config::tests::TestConfig, crate::display_servers::MockDispl
             ..TestConfig::default()
         })
     }
+
+    pub fn new_test_with_outputs(outputs: Vec<String>) -> Self {
+        use crate::config::tests::TestConfig;
+        use crate::config::Workspace;
+        Self::new(TestConfig {
+            workspaces: Some(
+                outputs
+                    .into_iter()
+                    .map(|output| Workspace {
+                        output,
+                        ..Default::default()
+                    })
+                    .collect(),
+            ),
+            ..TestConfig::default()
+        })
+    }
 }

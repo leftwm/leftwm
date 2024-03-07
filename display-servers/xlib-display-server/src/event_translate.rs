@@ -4,7 +4,7 @@ use super::{
 };
 use leftwm_core::models::{Mode, WindowChange, WindowType, XyhwChange};
 use std::os::raw::c_ulong;
-use x11_dl::xlib;
+use x11_dl::{xlib, xrandr};
 
 pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 
@@ -37,7 +37,26 @@ impl<'a> From<XEvent<'a>> for Option<DisplayEvent> {
             xlib::ButtonPress => Some(from_button_press(raw_event)),
             // Mouse button released.
             xlib::ButtonRelease if !normal_mode => Some(from_button_release(x_event)),
-            _other => None,
+            other => {
+                // Also match Xrandr events
+                if let Some(base) = x_event.0.xrandr_event_base {
+                    match other - base {
+                        xrandr::RRNotify => {
+                            // Xrandr XRRNotifyEvent has multiple subtypes, match them too.
+                            match xrandr::XRRNotifyEvent::from(raw_event).subtype {
+                                xrandr::RRNotify_CrtcChange => from_xrandr_crtc_change(&x_event),
+                                xrandr::RRNotify_OutputChange => {
+                                    from_xrandr_output_change(&x_event)
+                                }
+                                _other => None,
+                            }
+                        }
+                        _other => None,
+                    }
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -215,4 +234,77 @@ fn from_button_release(x_event: XEvent) -> DisplayEvent {
     let xw = x_event.0;
     xw.set_mode(Mode::Normal);
     DisplayEvent::ChangeToNormalMode
+}
+
+/// # Panics
+/// If it cannot open xrandr.
+/// This should normally only be called if `x_event.0.xrandr_event_base` is `Some`,
+/// indicating a succesful connection to xrandr was made previously.
+fn from_xrandr_crtc_change(x_event: &XEvent) -> Option<DisplayEvent> {
+    use leftwm_core::models::Screen;
+    use std::slice;
+
+    let xrandr =
+        xrandr::Xrandr::open().expect("Function ony called if `xrandr_event_base` is some");
+    let event = xrandr::XRRCrtcChangeNotifyEvent::from(x_event.1);
+
+    // Do not process a crtc that is not displayed (upcoming delete by OutputChange)
+    if event.mode == 0 {
+        None
+    } else {
+        unsafe {
+            let screen_resources =
+                (xrandr.XRRGetScreenResources)(x_event.0.display, x_event.0.root);
+            let crtc_info =
+                (xrandr.XRRGetCrtcInfo)(x_event.0.display, screen_resources, event.crtc);
+            let outputs =
+                slice::from_raw_parts((*crtc_info).outputs, (*crtc_info).noutput as usize);
+
+            if outputs.len() > 1 {
+                tracing::error!(
+                    r#"Leftwm does not support more than one output per crtc (if that is even possible to have). 
+                LeftWM will only apply changes to the first output. 
+                If you are seing this error, please create an issue on our GitHub page and it will be resolved."#
+                );
+            }
+
+            outputs.first().map(|output| {
+                let output_info =
+                    (xrandr.XRRGetOutputInfo)(x_event.0.display, screen_resources, *output);
+                let mut s = Screen::from(*crtc_info);
+                s.root = x_event.0.get_default_root_handle();
+                s.output = std::ffi::CStr::from_ptr((*output_info).name)
+                    .to_string_lossy()
+                    .into_owned();
+                DisplayEvent::ScreenUpdate(s)
+            })
+        }
+    }
+}
+
+/// # Panics
+/// If it cannot open xrandr.
+/// This should normally only be called if `x_event.0.xrandr_event_base` is `Some`,
+/// indicating a succesful connection to xrandr was made previously.
+fn from_xrandr_output_change(x_event: &XEvent) -> Option<DisplayEvent> {
+    let event = xrandr::XRROutputChangeNotifyEvent::from(x_event.1);
+    let xrandr =
+        xrandr::Xrandr::open().expect("Function ony called if `xrandr_event_base` is some");
+
+    // If the crtc is null, the output is/was just disconnected
+    if event.crtc == 0 {
+        unsafe {
+            let screen_resources =
+                (xrandr.XRRGetScreenResources)(x_event.0.display, x_event.0.root);
+
+            let output_info =
+                (xrandr.XRRGetOutputInfo)(x_event.0.display, screen_resources, event.output);
+            let output = std::ffi::CStr::from_ptr((*output_info).name)
+                .to_string_lossy()
+                .into_owned();
+            Some(DisplayEvent::ScreenDelete(output))
+        }
+    } else {
+        None
+    }
 }

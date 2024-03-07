@@ -143,18 +143,9 @@ impl From<&State> for ManagerState {
                 .and_then(|tagid| state.layout_manager.layout_maybe(ws.id, tagid))
                 .map_or_else(|| String::from("N/A"), |layout| layout.name.clone());
 
-            let output = state
-                .screens
-                .iter()
-                .find(|s| s.id == Some(ws.id))
-                .map_or_else(
-                    || String::from("Not found (unreachable)"),
-                    |s| s.output.clone(),
-                );
-
             viewports.push(Viewport {
                 id: ws.id,
-                output,
+                output: ws.output.clone(),
                 tag: tag_label,
                 x: ws.xyhw.x(),
                 y: ws.xyhw.y(),

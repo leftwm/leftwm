@@ -4,7 +4,7 @@ use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use super::WorkspaceId;
+use super::{Screen, WindowHandle, WorkspaceId};
 
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
@@ -20,6 +20,8 @@ pub struct Workspace {
     pub xyhw_avoided: Xyhw,
     /// ID of workspace. Starts with 1.
     pub id: WorkspaceId,
+    pub output: String,
+    pub root: WindowHandle,
 }
 
 impl fmt::Debug for Workspace {
@@ -43,7 +45,37 @@ impl PartialEq for Workspace {
 
 impl Workspace {
     #[must_use]
-    pub fn new(bbox: BBox, id: usize) -> Self {
+    pub fn new(screen: Screen) -> Self {
+        Self {
+            tag: None,
+            margin: Margins::new(10),
+            margin_multiplier: 1.0,
+            gutters: vec![],
+            avoid: vec![],
+            xyhw: XyhwBuilder {
+                h: screen.bbox.height,
+                w: screen.bbox.width,
+                x: screen.bbox.x,
+                y: screen.bbox.y,
+                ..XyhwBuilder::default()
+            }
+            .into(),
+            xyhw_avoided: XyhwBuilder {
+                h: screen.bbox.height,
+                w: screen.bbox.width,
+                x: screen.bbox.x,
+                y: screen.bbox.y,
+                ..XyhwBuilder::default()
+            }
+            .into(),
+            id: screen.id.unwrap_or(0),
+            output: screen.output,
+            root: screen.root,
+        }
+    }
+
+    #[cfg(test)]
+    pub fn test(bbox: BBox, id: WorkspaceId) -> Self {
         Self {
             tag: None,
             margin: Margins::new(10),
@@ -67,7 +99,22 @@ impl Workspace {
             }
             .into(),
             id,
+            output: String::new(),
+            root: WindowHandle::MockHandle(0),
         }
+    }
+
+    pub fn update_bbox(&mut self, bbox: BBox) {
+        let xyhw = XyhwBuilder {
+            h: bbox.height,
+            w: bbox.width,
+            x: bbox.x,
+            y: bbox.y,
+            ..XyhwBuilder::default()
+        }
+        .into();
+        self.xyhw = xyhw;
+        self.xyhw_avoided = xyhw;
     }
 
     pub fn load_config(&mut self, config: &impl Config) {
@@ -206,7 +253,7 @@ mod tests {
 
     #[test]
     fn empty_ws_should_not_contain_window() {
-        let subject = Workspace::new(
+        let subject = Workspace::test(
             BBox {
                 width: 600,
                 height: 800,
@@ -225,7 +272,7 @@ mod tests {
     #[test]
     fn tagging_a_workspace_to_with_the_same_tag_as_a_window_should_couse_it_to_display() {
         const TAG_ID: TagId = 1;
-        let mut subject = Workspace::new(
+        let mut subject = Workspace::test(
             BBox {
                 width: 600,
                 height: 800,
