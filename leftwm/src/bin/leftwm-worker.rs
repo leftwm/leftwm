@@ -1,5 +1,7 @@
+use leftwm::utils;
 use leftwm_core::Manager;
 use std::panic;
+use tracing_subscriber::EnvFilter;
 
 #[cfg(feature = "x11rb")]
 use x11rb_display_server::X11rbDisplayServer;
@@ -18,22 +20,34 @@ fn main() {
     #[cfg(debug_assertions)]
     std::thread::sleep(std::time::Duration::from_secs(1));
 
-    leftwm::utils::log::setup_logging();
+    // Set temporary debug logger until config is parsed
+    let log_guard = tracing::subscriber::set_default(utils::log::get_subscribers(
+        EnvFilter::builder().parse("debug").unwrap(),
+    ));
     tracing::info!("leftwm-worker booting...");
+
+    #[cfg(feature = "lefthk")]
+    let mut config = leftwm::load();
+    // Clear the keybinds so leftwm is not storing them.
+    // TODO: Make this more elegant.
+    #[cfg(feature = "lefthk")]
+    config.clear_keybinds();
+
+    #[cfg(not(feature = "lefthk"))]
+    let config = leftwm::load();
+
+    let (subscribers, log_parse_err) = utils::log::parse_log_level(&config.log_level);
+    tracing::subscriber::set_global_default(subscribers)
+        .expect("Couldn't setup global subscriber (logger)");
+    // Drop init log config as the config files have been read and applied to the global default.
+    drop(log_guard);
+    if let Some(err) = log_parse_err {
+        tracing::warn!("Error parsing log_level config: {err}");
+    }
 
     let exit_status = panic::catch_unwind(|| {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
-
-        #[cfg(feature = "lefthk")]
-        let mut config = leftwm::load();
-        // Clear the keybinds so leftwm is not storing them.
-        // TODO: Make this more elegant.
-        #[cfg(feature = "lefthk")]
-        config.clear_keybinds();
-
-        #[cfg(not(feature = "lefthk"))]
-        let config = leftwm::load();
 
         match config.backend {
             #[cfg(feature = "xlib")]

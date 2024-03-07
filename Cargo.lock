@@ -621,6 +621,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "x11-dl",
  "xdg",
 ]
 

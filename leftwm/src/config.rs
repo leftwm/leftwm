@@ -197,6 +197,7 @@ impl Default for Backend {
 #[serde(default)]
 pub struct Config {
     pub backend: Backend,
+    pub log_level: String,
     pub modkey: String,
     pub mousekey: Option<Modifier>,
     pub workspaces: Option<Vec<Workspace>>,

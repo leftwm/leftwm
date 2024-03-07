@@ -215,6 +215,7 @@ impl Default for Config {
         let layouts = leftwm_layouts::layouts::Layouts::default();
 
         Self {
+            log_level: String::from("debug"),
             // Using Backend's feature fallback
             backend: Backend::default(),
             workspaces: Some(vec![]),

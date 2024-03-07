@@ -248,7 +248,7 @@ impl XWrap {
             _: *mut xlib::Display,
             _: *mut xlib::XErrorEvent,
         ) -> c_int {
-            eprintln!("ERROR: another window manager is already running");
+            tracing::error!("ERROR: another window manager is already running");
             ::std::process::exit(-1);
         }
         unsafe {
