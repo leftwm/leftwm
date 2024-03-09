@@ -105,7 +105,7 @@ impl DisplayServer for SmithayHandle {
                         InputEvent::Keyboard { event, .. } => {
                             let serial = SERIAL_COUNTER.next_serial();
                             let time = Event::time_msec(&event);
-                            if let Some(vt) = data.state.seat.get_keyboard().unwrap().input(
+                            if let Some(Some(vt)) = data.state.seat.get_keyboard().unwrap().input(
                                 &mut data.state,
                                 event.key_code(),
                                 event.state(),
@@ -126,12 +126,14 @@ impl DisplayServer for SmithayHandle {
                                             && handle.modified_sym() == xkb::KEY_Return
                                         {
                                             Command::new("kitty").spawn().unwrap();
+                                            FilterResult::Intercept(None)
                                         } else if modifiers.logo
                                             && modifiers.shift
                                             && handle.modified_sym() == xkb::KEY_Q
                                         {
                                             info!("Exiting");
                                             state.running.store(false, Ordering::SeqCst);
+                                            FilterResult::Intercept(None)
                                         } else if (xkb::KEY_XF86Switch_VT_1
                                             ..=xkb::KEY_XF86Switch_VT_12)
                                             .contains(&handle.modified_sym())
@@ -141,7 +143,9 @@ impl DisplayServer for SmithayHandle {
                                                 - xkb::KEY_XF86Switch_VT_1
                                                 + 1)
                                                 as i32;
-                                            return FilterResult::Intercept(vt);
+                                            FilterResult::Intercept(Some(vt))
+                                        } else {
+                                            FilterResult::Forward
                                         }
                                     } else if event.state() == KeyState::Released {
                                         let mut leds = Led::empty();
@@ -152,8 +156,10 @@ impl DisplayServer for SmithayHandle {
                                             leds.insert(Led::NUMLOCK);
                                         }
                                         event.device().led_update(leds);
+                                        FilterResult::Forward
+                                    } else {
+                                        FilterResult::Forward
                                     }
-                                    FilterResult::Forward
                                 },
                             ) {
                                 data.state.udev_data.session.change_vt(vt).unwrap();
