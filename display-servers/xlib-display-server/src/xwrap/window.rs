@@ -263,6 +263,7 @@ impl XWrap {
             self.set_window_urgency(handle, false);
             self.set_window_border_color(handle, self.colors.active);
             self.focus(handle, window.never_focus);
+            self.move_to_top(&window.handle);
             self.sync();
         }
     }
