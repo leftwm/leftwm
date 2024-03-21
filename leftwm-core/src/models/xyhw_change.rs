@@ -2,6 +2,8 @@ use crate::models::Window;
 use crate::models::Xyhw;
 use serde::{Deserialize, Serialize};
 
+use super::Handle;
+
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Copy)]
 pub struct XyhwChange {
     pub x: Option<i32>,
@@ -83,7 +85,7 @@ impl XyhwChange {
         changed
     }
 
-    pub fn update_window_floating(&self, window: &mut Window) -> bool {
+    pub fn update_window_floating<H: Handle>(&self, window: &mut Window<H>) -> bool {
         let mut changed = false;
         if window.floating() {
             let mut current = window.calculated_xyhw();
@@ -97,7 +99,7 @@ impl XyhwChange {
     ///
     /// Souldn't panic; `window.strut` is modified to be a `Some` by
     /// the time of `unwrap()`
-    pub fn update_window_strut(&self, window: &mut Window) -> bool {
+    pub fn update_window_strut<H: Handle>(&self, window: &mut Window<H>) -> bool {
         let mut changed = if window.strut.is_none() {
             window.strut = Some(Xyhw::default());
             true

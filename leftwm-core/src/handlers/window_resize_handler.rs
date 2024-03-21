@@ -1,11 +1,12 @@
 use super::{Manager, Window, WindowHandle};
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
+use crate::models::Handle;
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     pub fn window_resize_handler(
         &mut self,
-        handle: &WindowHandle,
+        handle: &WindowHandle<H>,
         offset_w: i32,
         offset_h: i32,
     ) -> bool {
@@ -17,7 +18,7 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
     }
 }
 
-fn process_window(window: &mut Window, offset_w: i32, offset_h: i32) {
+fn process_window<H: Handle>(window: &mut Window<H>, offset_w: i32, offset_h: i32) {
     window.set_floating(true);
     let mut offset = window.get_floating_offsets().unwrap_or_default();
     let start = window.start_loc.unwrap_or_default();

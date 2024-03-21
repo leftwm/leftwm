@@ -1,6 +1,9 @@
-use crate::{models::TagId, state::State};
+use crate::{
+    models::{Handle, TagId},
+    state::State,
+};
 
-impl State {
+impl<H: Handle> State<H> {
     /// `goto_tag_handler` is called in response to various `Command`s.
     /// it updates the focus manager and focuses `tag_id`
     ///

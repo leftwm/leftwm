@@ -6,6 +6,8 @@
 #![allow(clippy::items_after_statements)]
 // We allow this because _y_ and _x_ are intentionally similar. Changing it makes the code noisy.
 #![allow(clippy::similar_names)]
+use crate::XlibWindowHandle;
+
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
@@ -110,7 +112,7 @@ pub struct XWrap {
     pub managed_windows: Vec<xlib::Window>,
     pub focused_window: xlib::Window,
     pub tag_labels: Vec<String>,
-    pub mode: Mode,
+    pub mode: Mode<XlibWindowHandle>,
     pub focus_behaviour: FocusBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
@@ -233,7 +235,7 @@ impl XWrap {
             tag_labels: vec![],
             mode: Mode::Normal,
             focus_behaviour: FocusBehaviour::Sloppy,
-            mouse_key_mask: 0,
+            mouse_key_mask: ModMask::Zero,
             mode_origin: (0, 0),
             _task_guard,
             task_notify,
@@ -246,7 +248,7 @@ impl XWrap {
             _: *mut xlib::Display,
             _: *mut xlib::XErrorEvent,
         ) -> c_int {
-            eprintln!("ERROR: another window manager is already running");
+            tracing::error!("ERROR: another window manager is already running");
             ::std::process::exit(-1);
         }
         unsafe {
@@ -414,24 +416,27 @@ impl XWrap {
     }
 
     /// Update all the windows with the new colors.
-    pub fn update_colors(&mut self, focused: Option<WindowHandle>, windows: &[Window]) {
+    pub fn update_colors(
+        &mut self,
+        focused: Option<WindowHandle<XlibWindowHandle>>,
+        windows: &[Window<XlibWindowHandle>],
+    ) {
         for window in windows {
-            if let WindowHandle::XlibHandle(handle) = window.handle {
-                let color: c_ulong = if focused == Some(window.handle) {
-                    self.colors.active
-                } else if window.floating() {
-                    self.colors.floating
-                } else {
-                    self.colors.normal
-                };
-                self.set_window_border_color(handle, color);
-            }
+            let WindowHandle(XlibWindowHandle(handle)) = window.handle;
+            let color: c_ulong = if focused == Some(window.handle) {
+                self.colors.active
+            } else if window.floating() {
+                self.colors.floating
+            } else {
+                self.colors.normal
+            };
+            self.set_window_border_color(handle, color);
         }
         self.set_background_color(self.colors.background);
     }
 
     /// Sets the mode within our xwrapper.
-    pub fn set_mode(&mut self, mode: Mode) {
+    pub fn set_mode(&mut self, mode: Mode<XlibWindowHandle>) {
         match mode {
             // Prevent resizing and moving of root.
             Mode::MovingWindow(h)

@@ -17,6 +17,12 @@ The list of available subcommands available for leftwm is listed below:
 Prints help information for this subcommand. This flag can also be used with other subcommands to display their own help message.
 .IP "-v, --version"
 Prints the version information.
+.IP "-b, --backend"
+Specify the backend to use when starting LeftWM.
+Available backends depends on which feature flag was enables at compile time.
+You can check which backends are available on your LeftWM installation by using 'leftwm help backend'
+.IP
+Currently implemented backends: "xlib" (default), "x11rb"
 .IP "check"
 This command will run several actions to ensure leftwm is configured properly, this will report the current leftwm version and git commit, it will also check if configuration is loaded correctly, check for syntax errors in your
 .I config.toml

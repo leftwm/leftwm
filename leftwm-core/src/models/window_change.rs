@@ -1,3 +1,4 @@
+use super::Handle;
 use super::MaybeWindowHandle;
 use super::Window;
 use super::WindowHandle;
@@ -9,9 +10,9 @@ use crate::models::{Margins, XyhwChange};
 type MaybeName = Option<String>;
 
 #[derive(Debug, Clone)]
-pub struct WindowChange {
-    pub handle: WindowHandle,
-    pub transient: Option<MaybeWindowHandle>,
+pub struct WindowChange<H: Handle> {
+    pub handle: WindowHandle<H>,
+    pub transient: Option<MaybeWindowHandle<H>>,
     pub never_focus: Option<bool>,
     pub urgent: Option<bool>,
     pub name: Option<MaybeName>,
@@ -22,9 +23,9 @@ pub struct WindowChange {
     pub states: Option<Vec<WindowState>>,
 }
 
-impl WindowChange {
+impl<H: Handle> WindowChange<H> {
     #[must_use]
-    pub const fn new(h: WindowHandle) -> Self {
+    pub const fn new(h: WindowHandle<H>) -> Self {
         Self {
             handle: h,
             transient: None,
@@ -39,7 +40,7 @@ impl WindowChange {
         }
     }
 
-    pub fn update(self, window: &mut Window, container: Option<Xyhw>) -> bool {
+    pub fn update(self, window: &mut Window<H>, container: Option<Xyhw>) -> bool {
         let mut changed = false;
         if let Some(trans) = &self.transient {
             let changed_trans = window.transient.is_none() || &window.transient != trans;
