@@ -154,11 +154,7 @@ impl XWrap {
     }
 
     /// Returns all the screens of the display.
-    /// # Panics
-    ///
-    /// Panics if xorg cannot be contacted (xlib missing, not started, etc.)
-    /// Also panics if window attrs cannot be obtained.
-    /// TODO: Check if this is working, because it's most likely not
+    // TODO: Check if this is working, because it's most likely not
     pub fn get_screens(&self) -> Result<Vec<Screen<X11rbWindowHandle>>> {
         if let Ok(screen_resources) = randr::get_screen_resources(&self.conn, self.root)?.reply() {
             return Ok(screen_resources
@@ -187,11 +183,8 @@ impl XWrap {
                 })
                 .filter_map(|(res, name)| Some((res.reply().ok()?, name)))
                 .map(|(crtc_info, name)| {
-                    // This do not work apparently...
-                    // let mut s = Screen::from(crtc_info);
                     let mut s = Screen {
                         bbox: BBox {
-                            //TODO: Handle errors
                             x: i32::from(crtc_info.x),
                             y: i32::from(crtc_info.y),
                             width: i32::from(crtc_info.width),
@@ -210,7 +203,6 @@ impl XWrap {
 
         if is_active.state == 0 {
             // NON-XINERAMA
-            // Idk if this works
             return Ok(self
                 .get_roots()
                 .map(|w| self.get_hint_sizing_as_xyhw(w))
@@ -235,8 +227,6 @@ impl XWrap {
             .screen_info
             .iter()
             .map(|screen_info| {
-                // This do not work apparently...
-                // let mut s = Screen::from(screen_info);
                 let mut s = Screen {
                     bbox: BBox {
                         height: screen_info.height.into(),
@@ -299,10 +289,6 @@ impl XWrap {
     }
 
     /// Returns the attributes of a window.
-    /// # Errors
-    ///
-    /// Will error if window status is 0 (no attributes).
-    // `XGetWindowAttributes`: https://tronche.com/gui/x/xlib/window-information/XGetWindowAttributes.html
     pub fn get_window_attrs(
         &self,
         window: xproto::Window,
@@ -311,16 +297,11 @@ impl XWrap {
     }
 
     /// Returns a windows class `WM_CLASS`
-    // `XGetClassHint`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetClassHint.html
     pub fn get_window_class(&self, window: xproto::Window) -> Result<Option<WmClass>> {
         Ok(WmClass::get(&self.conn, window)?.reply()?)
     }
 
     /// Returns the geometry of a window as a `XyhwChange` struct.
-    /// # Errors
-    ///
-    /// Errors if Xlib returns a status of 0.
-    // `XGetGeometry`: https://tronche.com/gui/x/xlib/window-information/XGetGeometry.html
     pub fn get_window_geometry(&self, window: xproto::Window) -> Result<XyhwChange> {
         let geo = xproto::get_geometry(&self.conn, window)?.reply()?;
         Ok(XyhwChange {
@@ -399,7 +380,6 @@ impl XWrap {
     }
 
     /// Returns the atom states of a window.
-    // `XGetWindowProperty`: https://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
     pub fn get_window_states_atoms(&self, window: xproto::Window) -> Result<Vec<xproto::Atom>> {
         let reply = xproto::get_property(
             &self.conn,
@@ -460,7 +440,6 @@ impl XWrap {
     }
 
     /// Returns the `WM_HINTS` of a window.
-    // `XGetWMHints`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMHints.html
     pub fn get_wmhints(&self, window: xproto::Window) -> Result<Option<WmHints>> {
         Ok(WmHints::get(&self.conn, window)?.reply()?)
     }
@@ -497,10 +476,6 @@ impl XWrap {
     }
 
     /// Returns the name of a `XAtom`.
-    /// # Errors
-    ///
-    /// Errors if `XAtom` is not valid.
-    // `XGetAtomName`: https://tronche.com/gui/x/xlib/window-information/XGetAtomName.html
     pub fn get_xatom_name(&self, atom: xproto::Atom) -> Result<String> {
         let name = xproto::get_atom_name(&self.conn, atom)?.reply()?.name;
         Ok(String::from_utf8(name)?)
@@ -514,10 +489,6 @@ impl XWrap {
     }
 
     /// Returns a cardinal property of a window.
-    /// # Errors
-    ///
-    /// Errors if window status = 0.
-    // `XGetWindowProperty`: https://tronche.com/gui/x/xlib/window-information/XGetWindowProperty.html
     fn get_property(
         &self,
         window: xproto::Window,
@@ -540,19 +511,13 @@ impl XWrap {
     }
 
     /// Returns a text property for a window.
-    /// # Errors
-    ///
-    /// Errors if window status = 0.
-    // `XGetTextProperty`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetTextProperty.html
-    // `XTextPropertyToStringList`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XTextPropertyToStringList.html
-    // `XmbTextPropertyToTextList`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XmbTextPropertyToTextList.html
     fn get_text_prop(&self, window: xproto::Window, atom: xproto::Atom) -> Result<String> {
-        // Not sure for the type atom here...
         let prop = xproto::get_property(
             &self.conn,
             false,
             window,
             atom,
+            // Not sure for the type atom here...
             xproto::AtomEnum::ANY,
             0,
             MAX_PROPERTY_VALUE_LEN,
@@ -563,9 +528,6 @@ impl XWrap {
     }
 
     /// Returns the child windows of a root.
-    /// # Errors
-    ///
-    /// Will error if unknown window status is returned.
     fn get_windows_for_root(&self, root: xproto::Window) -> Result<Vec<xproto::Window>> {
         let oui = xproto::query_tree(&self.conn, root)?.reply()?;
         Ok(oui.children)
@@ -623,19 +585,6 @@ impl XWrap {
             Ok(None)
         }
     }
-
-    // /// Returns all the xscreens of the display.
-    // // `XScreenCount`: https://tronche.com/gui/x/xlib/display/display-macros.html#ScreenCount
-    // // `XScreenOfDisplay`: https://tronche.com/gui/x/xlib/display/display-macros.html#ScreensOfDisplay
-    // fn get_xscreens(&self) -> impl Iterator<Item = xlib::Screen> + '_ {
-    //     let screens = xinerama::query_screens(&self.conn).unwrap().reply().unwrap().screen_info;
-    //     let screen_count = unsafe { (self.xlib.XScreenCount)(self.display) };
-    //
-    //     let screen_ids = 0..screen_count;
-    //
-    //     screen_ids
-    //         .map(|screen_id| unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_id) })
-    // }
 }
 
 /// Parses a color string written in the hex format #RRGGBB to a tuple of u16.

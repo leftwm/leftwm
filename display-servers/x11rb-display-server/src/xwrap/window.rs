@@ -46,20 +46,12 @@ impl XWrap {
         w.r#type = r#type.clone();
         w.states = states;
         w.transient = trans.map(|h| WindowHandle(X11rbWindowHandle(h)));
-        // // Initialise the windows floating with the pre-mapped settings.
-        // let xyhw = XyhwChange {
-        //     x: Some(attrs.x),
-        //     y: Some(attrs.y),
-        //     w: Some(attrs.width),
-        //     h: Some(attrs.height),
-        //     ..XyhwChange::default()
-        // };
-        // xyhw.update_window_floating(&mut w);
+
+        // Initialise the windows floating with the pre-mapped settings.
         sizing_hint
             .unwrap_or_default()
             .update_window_floating(&mut w);
         let mut requested = Xyhw::default();
-        // xyhw.update(&mut requested);
         sizing_hint.unwrap_or_default().update(&mut requested);
 
         if let Some(hint) = sizing_hint {
@@ -99,7 +91,6 @@ impl XWrap {
     }
 
     /// Sets up a window that we want to manage.
-    // `XMapWindow`: https://tronche.com/gui/x/xlib/window/XMapWindow.html
     pub fn setup_managed_window(
         &mut self,
         h: WindowHandle<X11rbWindowHandle>,
@@ -175,8 +166,6 @@ impl XWrap {
     }
 
     /// Teardown a managed window when it is destroyed.
-    // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
-    // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn teardown_managed_window(
         &mut self,
         h: WindowHandle<X11rbWindowHandle>,
@@ -284,7 +273,6 @@ impl XWrap {
     }
 
     /// Focuses a window.
-    // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn focus(&mut self, window: xproto::Window, never_focus: bool) -> Result<()> {
         if !never_focus {
             xproto::set_input_focus(
@@ -306,7 +294,6 @@ impl XWrap {
     }
 
     /// Unfocuses all windows.
-    // `XSetInputFocus`: https://tronche.com/gui/x/xlib/input/XSetInputFocus.html
     pub fn unfocus(
         &self,
         handle: Option<WindowHandle<X11rbWindowHandle>>,
@@ -361,7 +348,6 @@ impl XWrap {
     }
 
     /// Restacks the windows to the order of the vec.
-    // `XRestackWindows`: https://tronche.com/gui/x/xlib/window/XRestackWindows.html
     pub fn restack(&self, handles: &[WindowHandle<X11rbWindowHandle>]) -> Result<()> {
         let mut conf = xproto::ConfigureWindowAux::default();
         for i in 1..handles.len() {
@@ -399,7 +385,6 @@ impl XWrap {
     }
 
     /// Raise a window.
-    // `XRaiseWindow`: https://tronche.com/gui/x/xlib/window/XRaiseWindow.html
     pub fn move_to_top(&self, handle: WindowHandle<X11rbWindowHandle>) -> Result<()> {
         let WindowHandle(X11rbWindowHandle(window)) = handle;
         let attrs = xproto::ConfigureWindowAux {
@@ -411,10 +396,6 @@ impl XWrap {
     }
 
     /// Kills a window.
-    // `XGrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XGrabServer.html
-    // `XSetCloseDownMode`: https://tronche.com/gui/x/xlib/display/XSetCloseDownMode.html
-    // `XKillClient`: https://tronche.com/gui/x/xlib/window-and-session-manager/XKillClient.html
-    // `XUngrabServer`: https://tronche.com/gui/x/xlib/window-and-session-manager/XUngrabServer.html
     pub fn kill_window(&self, h: WindowHandle<X11rbWindowHandle>) -> Result<()> {
         let WindowHandle(X11rbWindowHandle(handle)) = h;
         // Nicely ask the window to close.
@@ -439,7 +420,6 @@ impl XWrap {
     }
 
     /// Subscribe to an event of a window.
-    // `XSelectInput`: https://tronche.com/gui/x/xlib/event-handling/XSelectInput.html
     pub fn subscribe_to_event(
         &self,
         window: xproto::Window,

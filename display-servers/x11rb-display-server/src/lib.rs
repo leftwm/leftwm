@@ -1,6 +1,4 @@
 //! x11rb backend for leftwm
-//! TODO: Error Handling
-//! TODO: Refactoring
 
 use leftwm_core::{
     models::{Handle, Screen, TagId, WindowHandle, WindowState},
@@ -82,6 +80,7 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
         loop {
             match self.xw.poll_next_event() {
                 Ok(Some(ev)) => {
+                    tracing::trace!("New event received: {:?}", ev);
                     if let Some(ev) = event_translate::translate(&ev, &mut self.xw) {
                         events.push(ev);
                     }

@@ -50,6 +50,7 @@ pub fn mouse_event_mask() -> xproto::EventMask {
     button_event_mask() | xproto::EventMask::POINTER_MOTION
 }
 
+/// IDs of colors used across `LeftWM`
 pub struct Colors {
     normal: u32,
     floating: u32,
@@ -247,11 +248,6 @@ impl XWrap {
     }
 
     /// EWMH support used for bars such as polybar.
-    ///  # Panics
-    ///
-    ///  Panics if a new Cstring cannot be formed
-    // `Xutf8TextListToTextProperty`: https://linux.die.net/man/3/xutf8textlisttotextproperty
-    // `XSetTextProperty`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XSetTextProperty.html
     pub fn init_desktops_hints(&self) -> Result<()> {
         let tag_labels = &self.tag_labels;
         let tag_length = tag_labels.len();
@@ -310,7 +306,6 @@ impl XWrap {
     }
 
     /// Send a xevent atom for a window to X.
-    // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
     fn send_xevent_atom(&self, window: xproto::Window, atom: xproto::Atom) -> Result<bool> {
         if self.can_send_xevent_atom(window, atom)? {
             let mut msg: xproto::ClientMessageEvent = unsafe { std::mem::zeroed() };
@@ -331,7 +326,6 @@ impl XWrap {
     }
 
     /// Send a xevent for a window to X.
-    // `XSendEvent`: https://tronche.com/gui/x/xlib/event-handling/XSendEvent.html
     pub fn send_xevent(
         &self,
         window: xproto::Window,
@@ -347,7 +341,6 @@ impl XWrap {
     }
 
     /// Returns whether a window can recieve a xevent atom.
-    // `XGetWMProtocols`: https://tronche.com/gui/x/xlib/ICC/client-to-window-manager/XGetWMProtocols.html
     fn can_send_xevent_atom(&self, window: xproto::Window, atom: xproto::Atom) -> Result<bool> {
         let reply = xproto::get_property(
             &self.conn,
@@ -418,7 +411,6 @@ impl XWrap {
     }
 
     /// Flush the xserver.
-    // `XFlush`: https://tronche.com/gui/x/xlib/event-handling/XFlush.html
     pub fn flush(&self) -> Result<()> {
         self.conn.flush()?;
         Ok(())
@@ -427,7 +419,6 @@ impl XWrap {
 
 fn get_refresh_rate(conn: &RustConnection, root: xproto::Window) -> Result<u32> {
     let screen_resources = randr::get_screen_resources(conn, root)?.reply()?;
-    // RandrConnectionExtention::randr_get_screen_resources(&conn, root)?.reply()?;
     let active_modes: Vec<u32> = screen_resources
         .crtcs
         .iter()

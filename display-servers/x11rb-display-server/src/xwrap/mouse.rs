@@ -30,7 +30,6 @@ impl XWrap {
     }
 
     /// Grabs the button with the modifier for a window.
-    // `XGrabButton`: https://tronche.com/gui/x/xlib/input/XGrabButton.html
     pub fn grab_buttons(
         &self,
         window: xproto::Window,
@@ -60,7 +59,6 @@ impl XWrap {
     }
 
     /// Cleans all currently grabbed buttons of a window.
-    // `XUngrabButton`: https://tronche.com/gui/x/xlib/input/XUngrabButton.html
     pub fn ungrab_buttons(&self, handle: xproto::Window) -> Result<()> {
         xproto::ungrab_button(
             &self.conn,
@@ -88,16 +86,12 @@ impl XWrap {
     }
 
     /// Ungrab the cursor.
-    // `XUngrabPointer`: https://tronche.com/gui/x/xlib/input/XUngrabPointer.html
     pub fn ungrab_pointer(&self) -> Result<()> {
         xproto::ungrab_pointer(&self.conn, x11rb::CURRENT_TIME)?;
         Ok(())
     }
 
     /// Move the cursor to a window.
-    /// # Errors
-    ///
-    /// Will error if unable to obtain window attributes. See `get_window_attrs`.
     pub fn move_cursor_to_window(&self, window: xproto::Window) -> Result<()> {
         let geo = xproto::get_geometry(&self.conn, window)?.reply()?;
         let point = (
@@ -108,19 +102,12 @@ impl XWrap {
     }
 
     /// Move the cursor to a point.
-    /// # Errors
-    ///
-    /// Error indicates `XlibError`.
-    // `XWarpPointer`: https://tronche.com/gui/x/xlib/input/XWarpPointer.html
-    // TODO: Verify that Error is unreachable or specify conditions that may result
-    // in an error.
     pub fn move_cursor_to_point(&self, point: (i32, i32)) -> Result<()> {
         if point.0 >= 0 && point.1 >= 0 {
             xproto::warp_pointer(
                 &self.conn,
                 x11rb::NONE,
                 self.root,
-                // x11rb::NONE is 0, so we can do this here
                 0,
                 0,
                 0,
@@ -133,7 +120,6 @@ impl XWrap {
     }
 
     /// Replay a click on a window.
-    // `XQueryPointer`: https://tronche.com/gui/x/xlib/window-information/XQueryPointer.html
     pub fn replay_click(
         &self,
         focused_window: xproto::Window,
