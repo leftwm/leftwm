@@ -10,7 +10,7 @@ use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
 use leftwm_core::config::Config;
-use leftwm_core::models::{FocusBehaviour, Mode};
+use leftwm_core::models::{FocusBehaviour, FocusOnActivationBehaviour, Mode};
 use leftwm_core::utils::modmask_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
@@ -112,6 +112,7 @@ pub struct XWrap {
     pub tag_labels: Vec<String>,
     pub mode: Mode,
     pub focus_behaviour: FocusBehaviour,
+    pub focus_on_activation: FocusOnActivationBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
@@ -233,6 +234,7 @@ impl XWrap {
             tag_labels: vec![],
             mode: Mode::Normal,
             focus_behaviour: FocusBehaviour::Sloppy,
+            focus_on_activation: FocusOnActivationBehaviour::MarkUrgent,
             mouse_key_mask: 0,
             mode_origin: (0, 0),
             _task_guard,
@@ -262,6 +264,7 @@ impl XWrap {
 
     pub fn load_config(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
+        self.focus_on_activation = config.focus_on_activation();
         self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
         self.tag_labels = config.create_list_of_tag_labels();
         self.colors = Colors {

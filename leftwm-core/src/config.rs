@@ -5,7 +5,7 @@ use crate::display_servers::DisplayServer;
 use crate::layouts::LayoutMode;
 pub use crate::models::ScratchPad;
 pub use crate::models::{FocusBehaviour, Gutter, Margins, Size};
-use crate::models::{Manager, Window, WindowType};
+use crate::models::{FocusOnActivationBehaviour, Manager, Window, WindowType};
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
 use leftwm_layouts::Layout;
@@ -17,6 +17,8 @@ pub trait Config {
     fn workspaces(&self) -> Option<Vec<Workspace>>;
 
     fn focus_behaviour(&self) -> FocusBehaviour;
+
+    fn focus_on_activation(&self) -> FocusOnActivationBehaviour;
 
     fn mousekey(&self) -> Vec<String>;
 
@@ -112,6 +114,9 @@ pub(crate) mod tests {
         }
         fn focus_behaviour(&self) -> FocusBehaviour {
             FocusBehaviour::ClickTo
+        }
+        fn focus_on_activation(&self) -> FocusOnActivationBehaviour {
+            FocusOnActivationBehaviour::MarkUrgent
         }
         fn mousekey(&self) -> Vec<String> {
             vec!["Mod4".to_owned()]

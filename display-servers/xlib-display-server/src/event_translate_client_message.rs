@@ -54,7 +54,21 @@ pub fn from_event(xw: &XWrap, event: xlib::XClientMessageEvent) -> Option<Displa
     }
     if event.message_type == xw.atoms.NetActiveWindow {
         xw.set_window_urgency(event.window, true);
-        return None;
+        match xw.focus_on_activation {
+            leftwm_core::models::FocusOnActivationBehaviour::DoNothing => {
+                return None;
+            }
+            leftwm_core::models::FocusOnActivationBehaviour::MarkUrgent => {
+                let handle = event.window.into();
+                let mut change = WindowChange::new(handle);
+                change.urgent = Some(true);
+                return Some(DisplayEvent::WindowChange(change));
+            }
+            leftwm_core::models::FocusOnActivationBehaviour::SwitchTo => {
+                let handle = event.window.into();
+                return Some(DisplayEvent::WindowTakeFocus(handle));
+            }
+        }
     }
 
     // if the client is trying to toggle fullscreen without changing the window state, change it too

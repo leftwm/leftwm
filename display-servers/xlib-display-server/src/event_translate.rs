@@ -74,6 +74,7 @@ fn from_destroy_notify(x_event: XEvent) -> Option<DisplayEvent> {
     None
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
     let xw = x_event.0;
     let event = xlib::XFocusChangeEvent::from(x_event.1);
@@ -85,7 +86,12 @@ fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent> {
         };
         xw.focus(xw.focused_window, never_focus);
     }
-    None
+
+    // Clear window urgency
+    let handle = event.window.into();
+    let mut change = WindowChange::new(handle);
+    change.urgent = Some(false);
+    Some(DisplayEvent::WindowChange(change))
 }
 
 fn from_client_message(x_event: &XEvent) -> Option<DisplayEvent> {

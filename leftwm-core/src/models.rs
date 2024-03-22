@@ -22,6 +22,7 @@ pub mod dto;
 pub use dock_area::DockArea;
 pub use focus_manager::FocusBehaviour;
 pub use focus_manager::FocusManager;
+pub use focus_manager::FocusOnActivationBehaviour;
 pub use gutter::Gutter;
 pub use gutter::Side;
 pub use manager::Manager;

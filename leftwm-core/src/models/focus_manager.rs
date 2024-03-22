@@ -6,17 +6,12 @@ use std::collections::{HashMap, VecDeque};
 
 use super::MaybeWindowHandle;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FocusBehaviour {
+    #[default]
     Sloppy,
     ClickTo,
     Driven,
-}
-
-impl Default for FocusBehaviour {
-    fn default() -> Self {
-        Self::Sloppy
-    }
 }
 
 impl FocusBehaviour {
@@ -31,6 +26,18 @@ impl FocusBehaviour {
     pub fn is_driven(self) -> bool {
         self == FocusBehaviour::Driven
     }
+}
+
+/// Controls behaviour for window activation. Default is to mark the window as urgent.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FocusOnActivationBehaviour {
+    /// Do nothing.
+    DoNothing,
+    /// Mark the window as urgent.
+    #[default]
+    MarkUrgent,
+    /// Switch to the window.
+    SwitchTo,
 }
 
 /// `FocusManager` stores the history of which workspaces, tags, and windows had focus.
