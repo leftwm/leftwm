@@ -50,6 +50,8 @@ pub enum BaseCommand {
     FocusWindowUp,
     FocusWindowDown,
     FocusWindowTop,
+    /// Args: `direction` (string, optional)
+    FocusWindowAt,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     /// Args: `tag_index` (int)
