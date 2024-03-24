@@ -2,6 +2,7 @@
 use crate::models::TagId;
 use crate::utils::return_pipe::ReturnPipe;
 use crate::{command, Command, ReleaseScratchPadOption};
+use leftwm_layouts::geometry::Direction as FocusDirection;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -143,6 +144,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
         "FocusWindowTop" => build_focus_window_top(rest),
         "FocusWindowUp" => Ok(Command::FocusWindowUp),
+        "FocusWindowAt" => build_focus_window_dir(rest),
         "FocusNextTag" => build_focus_next_tag(rest),
         "FocusPreviousTag" => build_focus_previous_tag(rest),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
@@ -306,6 +308,18 @@ fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Erro
         }
     };
     Ok(Command::FocusWindowTop { swap })
+}
+
+fn build_focus_window_dir(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let dir = if raw.is_empty() {
+        FocusDirection::North
+    } else {
+        match FocusDirection::from_str(raw) {
+            Ok(d) => d,
+            Err(_) => Err("Argument dir was missing or invalid")?,
+        }
+    };
+    Ok(Command::FocusWindowAt(dir))
 }
 
 fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
@@ -563,6 +577,14 @@ mod test {
         assert_eq!(
             build_focus_window_top("").unwrap(),
             Command::FocusWindowTop { swap: false }
+        );
+    }
+
+    #[test]
+    fn build_focus_window_dir_without_parameter() {
+        assert_eq!(
+            build_focus_window_dir("").unwrap(),
+            Command::FocusWindowAt(FocusDirection::North)
         );
     }
 
