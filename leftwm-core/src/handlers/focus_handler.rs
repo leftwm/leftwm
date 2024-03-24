@@ -35,7 +35,7 @@ impl State {
 
         // Make sure the focused window's tag is focused.
         if let Some(tag) = window.tag {
-            _ = self.focus_tag_work(tag);
+            _ = self.focus_tag_work(tag, true);
         }
     }
 
@@ -45,7 +45,7 @@ impl State {
         if self.focus_workspace_work(workspace.id) {
             // Make sure this workspaces tag is focused.
             workspace.tag.iter().for_each(|t| {
-                self.focus_tag_work(*t);
+                self.focus_tag_work(*t, false);
 
                 if let Some(handle) = self.focus_manager.tags_last_window.get(t).copied() {
                     self.focus_window_work(&handle);
@@ -59,7 +59,7 @@ impl State {
     /// Focuses the given tag.
     // NOTE: Should only be called externally from this file.
     pub fn focus_tag(&mut self, tag: &TagId) {
-        if !self.focus_tag_work(*tag) {
+        if !self.focus_tag_work(*tag, false) {
             return;
         }
         // Check each workspace, if its displaying this tag it should be focused too.
@@ -170,7 +170,7 @@ impl State {
         }
     }
 
-    fn focus_tag_work(&mut self, tag: TagId) -> bool {
+    fn focus_tag_work(&mut self, tag: TagId, update_workspace: bool) -> bool {
         if let Some(current_tag) = self.focus_manager.tag(0) {
             if current_tag == tag {
                 return false;
@@ -180,6 +180,13 @@ impl State {
         self.focus_manager.tag_history.truncate(10);
         // Add this focus to the history.
         self.focus_manager.tag_history.push_front(tag);
+
+        if update_workspace {
+            if let Some(ws) = self.focus_manager.workspace_mut(&mut self.workspaces) {
+                ws.tag = Some(tag);
+                self.update_static();
+            }
+        }
 
         let act = DisplayAction::SetCurrentTags(Some(tag));
         self.actions.push_back(act);

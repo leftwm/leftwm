@@ -59,7 +59,8 @@ impl WindowChange {
         if let Some(urgent) = self.urgent {
             let changed_urgent = window.urgent != urgent;
             changed = changed || changed_urgent;
-            window.urgent = urgent;
+            // If the window is already visible, there is no need to mark it as urgent
+            window.urgent = urgent && !window.visible();
         }
         if let Some(mut floating_change) = self.floating {
             // Reposition if dialog or modal.
