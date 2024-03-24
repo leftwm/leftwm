@@ -316,7 +316,7 @@ fn build_focus_window_dir(raw: &str) -> Result<Command, Box<dyn std::error::Erro
     } else {
         match FocusDirection::from_str(raw) {
             Ok(d) => d,
-            Err(_) => Err("Argument dir was missing or invalid")?,
+            Err(()) => Err("Argument dir was missing or invalid")?,
         }
     };
     Ok(Command::FocusWindowAt(dir))
