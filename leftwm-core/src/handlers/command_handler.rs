@@ -385,11 +385,11 @@ fn focus_window_direction(state: &mut State, dir: FocusDirection) -> Option<bool
         return None;
     };
 
-    let mut cur = 0;
+    let mut cur = None;
 
     for (i, x) in state.windows.iter().filter(|w| w.visible()).enumerate() {
         if cur_window.handle.eq(&x.handle) {
-            cur = i;
+            cur = Some(i);
         }
         rects.push(Rect::new(
             x.x() - workspace.x,
@@ -399,7 +399,7 @@ fn focus_window_direction(state: &mut State, dir: FocusDirection) -> Option<bool
         ));
     }
 
-    let next_window = FocusDirection::find_neighbor(&rects, cur, dir, &workspace);
+    let next_window = FocusDirection::find_neighbor(&rects, cur?, dir, &workspace);
 
     match next_window {
         Some(next) => {
