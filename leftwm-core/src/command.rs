@@ -1,21 +1,23 @@
 pub use crate::handlers::command_handler::ReleaseScratchPadOption;
-use crate::models::{ScratchPadName, TagId, WindowHandle};
+use crate::models::{Handle, ScratchPadName, TagId, WindowHandle};
 use serde::{Deserialize, Serialize};
 
 /// Command represents a command received from the command pipe.
 /// It will be handled in the main event loop.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub enum Command {
+pub enum Command<H: Handle> {
     CloseWindow,
     SwapScreens,
     SoftReload,
     HardReload,
     AttachScratchPad {
-        window: Option<WindowHandle>,
+        #[serde(bound = "")]
+        window: Option<WindowHandle<H>>,
         scratchpad: ScratchPadName,
     },
     ReleaseScratchPad {
-        window: ReleaseScratchPadOption,
+        #[serde(bound = "")]
+        window: ReleaseScratchPadOption<H>,
         tag: Option<TagId>,
     },
     PrevScratchPadWindow {
@@ -60,7 +62,8 @@ pub enum Command {
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
     SendWindowToTag {
-        window: Option<WindowHandle>,
+        #[serde(bound = "")]
+        window: Option<WindowHandle<H>>,
         tag: TagId,
     },
     MoveWindowToNextTag {

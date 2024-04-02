@@ -4,6 +4,7 @@ use crate::{models::TagId, models::WindowHandle, Window, Workspace};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
+use super::window::Handle;
 use super::MaybeWindowHandle;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,11 +36,13 @@ impl FocusBehaviour {
 
 /// `FocusManager` stores the history of which workspaces, tags, and windows had focus.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FocusManager {
+pub struct FocusManager<H: Handle> {
     pub workspace_history: VecDeque<usize>,
-    pub window_history: VecDeque<MaybeWindowHandle>,
+    #[serde(bound = "")]
+    pub window_history: VecDeque<MaybeWindowHandle<H>>,
     pub tag_history: VecDeque<TagId>,
-    pub tags_last_window: HashMap<TagId, WindowHandle>,
+    #[serde(bound = "")]
+    pub tags_last_window: HashMap<TagId, WindowHandle<H>>,
     pub last_mouse_position: Option<(i32, i32)>,
     // entries below are configuration variables and are never changed
     pub behaviour: FocusBehaviour,
@@ -48,7 +51,7 @@ pub struct FocusManager {
     pub create_follows_cursor: bool,
 }
 
-impl FocusManager {
+impl<H: Handle> FocusManager<H> {
     pub fn new(config: &impl Config) -> Self {
         Self {
             workspace_history: Default::default(),
@@ -93,7 +96,7 @@ impl FocusManager {
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn window<'a, 'b>(&self, windows: &'a [Window]) -> Option<&'b Window>
+    pub fn window<'a, 'b>(&self, windows: &'a [Window<H>]) -> Option<&'b Window<H>>
     where
         'a: 'b,
     {
@@ -105,7 +108,7 @@ impl FocusManager {
     }
 
     /// Return the currently focused window.
-    pub fn window_mut<'a, 'b>(&self, windows: &'a mut [Window]) -> Option<&'b mut Window>
+    pub fn window_mut<'a, 'b>(&self, windows: &'a mut [Window<H>]) -> Option<&'b mut Window<H>>
     where
         'a: 'b,
     {
