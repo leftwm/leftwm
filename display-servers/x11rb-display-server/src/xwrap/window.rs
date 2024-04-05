@@ -77,7 +77,7 @@ impl XWrap {
         w.requested = Some(requested);
         w.can_resize = can_resize;
         if let Some(hint) = wm_hint {
-            w.never_focus = hint.input.unwrap_or(false);
+            w.never_focus = !hint.input.unwrap_or(true);
             w.urgent = hint.urgent;
         }
         // Is this needed? Made it so it doens't overwrite prior sizing.
