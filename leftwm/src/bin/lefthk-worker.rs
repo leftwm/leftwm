@@ -1,8 +1,13 @@
 use lefthk_core::{config::Config, worker::Worker};
+use leftwm::utils;
+use tracing_subscriber::EnvFilter;
 use xdg::BaseDirectories;
 
 fn main() {
-    leftwm::utils::log::setup_logging();
+    tracing::subscriber::set_global_default(utils::log::get_subscribers(
+        EnvFilter::from_default_env(),
+    ))
+    .expect("Couldn't setup global subscriber (logger)");
 
     tracing::info!("lefthk-worker booted!");
 

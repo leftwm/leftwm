@@ -1,5 +1,5 @@
 //! Creates a pipe to listen for external commands.
-use crate::models::TagId;
+use crate::models::{Handle, TagId};
 use crate::utils::return_pipe::ReturnPipe;
 use crate::{command, Command, ReleaseScratchPadOption};
 use leftwm_layouts::geometry::Direction as FocusDirection;
@@ -16,12 +16,12 @@ use xdg::BaseDirectories;
 
 /// Holds pipe file location and a receiver.
 #[derive(Debug)]
-pub struct CommandPipe {
+pub struct CommandPipe<H: Handle> {
     pipe_file: PathBuf,
-    rx: mpsc::UnboundedReceiver<Command>,
+    rx: mpsc::UnboundedReceiver<Command<H>>,
 }
 
-impl Drop for CommandPipe {
+impl<H: Handle> Drop for CommandPipe<H> {
     fn drop(&mut self) {
         use std::os::unix::fs::OpenOptionsExt;
         self.rx.close();
@@ -41,7 +41,7 @@ impl Drop for CommandPipe {
     }
 }
 
-impl CommandPipe {
+impl<H: Handle> CommandPipe<H> {
     /// Create and listen to the named pipe.
     /// # Errors
     ///
@@ -65,21 +65,24 @@ impl CommandPipe {
         Ok(Self { pipe_file, rx })
     }
 
-    pub fn pipe_name() -> PathBuf {
-        let display = env::var("DISPLAY")
-            .ok()
-            .and_then(|d| d.rsplit_once(':').map(|(_, r)| r.to_owned()))
-            .unwrap_or_else(|| "0".to_string());
-
-        PathBuf::from(format!("command-{display}.pipe"))
-    }
-
-    pub async fn read_command(&mut self) -> Option<Command> {
+    pub async fn read_command(&mut self) -> Option<Command<H>> {
         self.rx.recv().await
     }
 }
 
-async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -> Option<()> {
+pub fn pipe_name() -> PathBuf {
+    let display = env::var("DISPLAY")
+        .ok()
+        .and_then(|d| d.rsplit_once(':').map(|(_, r)| r.to_owned()))
+        .unwrap_or_else(|| "0".to_string());
+
+    PathBuf::from(format!("command-{display}.pipe"))
+}
+
+async fn read_from_pipe<H: Handle>(
+    pipe_file: &Path,
+    tx: &mpsc::UnboundedSender<Command<H>>,
+) -> Option<()> {
     let file = fs::File::open(pipe_file).await.ok()?;
     let mut lines = BufReader::new(file).lines();
 
@@ -126,7 +129,7 @@ async fn read_from_pipe(pipe_file: &Path, tx: &mpsc::UnboundedSender<Command>) -
     Some(())
 }
 
-fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn parse_command<H: Handle>(s: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let (head, rest) = s.split_once(' ').unwrap_or((s, ""));
     match head {
         // Move Window
@@ -190,7 +193,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
     }
 }
 
-fn build_attach_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_attach_scratchpad<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let name = if raw.is_empty() {
         return Err("missing argument scratchpad's name".into());
     } else {
@@ -202,7 +205,7 @@ fn build_attach_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
     })
 }
 
-fn build_release_scratchpad(raw: &str) -> Command {
+fn build_release_scratchpad<H: Handle>(raw: &str) -> Command<H> {
     if raw.is_empty() {
         Command::ReleaseScratchPad {
             window: ReleaseScratchPadOption::None,
@@ -221,7 +224,7 @@ fn build_release_scratchpad(raw: &str) -> Command {
     }
 }
 
-fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_toggle_scratchpad<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let name = if raw.is_empty() {
         return Err("missing argument scratchpad's name".into());
     } else {
@@ -230,7 +233,7 @@ fn build_toggle_scratchpad(raw: &str) -> Result<Command, Box<dyn std::error::Err
     Ok(Command::ToggleScratchPad(name.into()))
 }
 
-fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_go_to_tag<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let headless = without_head(raw, "GoToTag ");
     let mut parts = headless.split(' ');
     let tag: TagId = parts
@@ -245,7 +248,9 @@ fn build_go_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     Ok(Command::GoToTag { tag, swap })
 }
 
-fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_send_window_to_tag<H: Handle>(
+    raw: &str,
+) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let tag_id = if raw.is_empty() {
         return Err("missing argument tag_id".into());
     } else {
@@ -260,7 +265,9 @@ fn build_send_window_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Er
     })
 }
 
-fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_send_workspace_to_tag<H: Handle>(
+    raw: &str,
+) -> Result<Command<H>, Box<dyn std::error::Error>> {
     if raw.is_empty() {
         return Err("missing argument workspace index".into());
     }
@@ -280,7 +287,7 @@ fn build_send_workspace_to_tag(raw: &str) -> Result<Command, Box<dyn std::error:
     Ok(Command::SendWorkspaceToTag(ws_index, tag_index))
 }
 
-fn build_set_layout(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_set_layout<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let layout_name = if raw.is_empty() {
         return Err("missing layout name".into());
     } else {
@@ -289,7 +296,9 @@ fn build_set_layout(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
     Ok(Command::SetLayout(String::from(layout_name)))
 }
 
-fn build_set_margin_multiplier(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_set_margin_multiplier<H: Handle>(
+    raw: &str,
+) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let margin_multiplier = if raw.is_empty() {
         return Err("missing argument multiplier".into());
     } else {
@@ -298,7 +307,7 @@ fn build_set_margin_multiplier(raw: &str) -> Result<Command, Box<dyn std::error:
     Ok(Command::SetMarginMultiplier(margin_multiplier))
 }
 
-fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_focus_window_top<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let swap = if raw.is_empty() {
         false
     } else {
@@ -310,7 +319,7 @@ fn build_focus_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Erro
     Ok(Command::FocusWindowTop { swap })
 }
 
-fn build_focus_window_dir(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_focus_window_dir<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let dir = if raw.is_empty() {
         FocusDirection::North
     } else {
@@ -322,7 +331,7 @@ fn build_focus_window_dir(raw: &str) -> Result<Command, Box<dyn std::error::Erro
     Ok(Command::FocusWindowAt(dir))
 }
 
-fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_move_window_top<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let swap = if raw.is_empty() {
         true
     } else {
@@ -334,7 +343,7 @@ fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     Ok(Command::MoveWindowTop { swap })
 }
 
-fn build_swap_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_swap_window_top<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let swap = if raw.is_empty() {
         true
     } else {
@@ -346,7 +355,9 @@ fn build_swap_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error
     Ok(Command::SwapWindowTop { swap })
 }
 
-fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_move_window_to_next_tag<H: Handle>(
+    raw: &str,
+) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let follow = if raw.is_empty() {
         true
     } else {
@@ -358,7 +369,9 @@ fn build_move_window_to_next_tag(raw: &str) -> Result<Command, Box<dyn std::erro
     Ok(Command::MoveWindowToNextTag { follow })
 }
 
-fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_move_window_to_previous_tag<H: Handle>(
+    raw: &str,
+) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let follow = if raw.is_empty() {
         true
     } else {
@@ -370,7 +383,9 @@ fn build_move_window_to_previous_tag(raw: &str) -> Result<Command, Box<dyn std::
     Ok(Command::MoveWindowToPreviousTag { follow })
 }
 
-fn build_increase_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_increase_main_size<H: Handle>(
+    raw: &str,
+) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let mut parts = raw.split(' ');
     let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
         Ok(num) => num,
@@ -379,7 +394,9 @@ fn build_increase_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Er
     Ok(Command::IncreaseMainSize(change))
 }
 
-fn build_decrease_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_decrease_main_size<H: Handle>(
+    raw: &str,
+) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let mut parts = raw.split(' ');
     let change: i32 = match parts.next().ok_or("missing argument change")?.parse() {
         Ok(num) => num,
@@ -388,7 +405,7 @@ fn build_decrease_main_size(raw: &str) -> Result<Command, Box<dyn std::error::Er
     Ok(Command::DecreaseMainSize(change))
 }
 
-fn build_focus_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_focus_next_tag<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     match raw {
         "ignore_empty" | "goto_used" => Ok(Command::FocusNextTag {
             behavior: command::FocusDeltaBehavior::IgnoreEmpty,
@@ -401,14 +418,16 @@ fn build_focus_next_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>
         }),
         _ => Err(Box::new(InvalidFocusDeltaBehaviorError {
             attempted_value: raw.to_owned(),
-            command: Command::FocusNextTag {
+            command: Command::<H>::FocusNextTag {
                 behavior: command::FocusDeltaBehavior::Default,
             },
         })),
     }
 }
 
-fn build_focus_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_focus_previous_tag<H: Handle>(
+    raw: &str,
+) -> Result<Command<H>, Box<dyn std::error::Error>> {
     match raw {
         "ignore_empty" | "goto_used" => Ok(Command::FocusPreviousTag {
             behavior: command::FocusDeltaBehavior::IgnoreEmpty,
@@ -422,7 +441,7 @@ fn build_focus_previous_tag(raw: &str) -> Result<Command, Box<dyn std::error::Er
         }),
         _ => Err(Box::new(InvalidFocusDeltaBehaviorError {
             attempted_value: raw.to_owned(),
-            command: Command::FocusPreviousTag {
+            command: Command::<H>::FocusPreviousTag {
                 behavior: command::FocusDeltaBehavior::Default,
             },
         })),
@@ -437,14 +456,14 @@ fn without_head<'a>(s: &'a str, head: &'a str) -> &'a str {
 }
 
 #[derive(Debug)]
-struct InvalidFocusDeltaBehaviorError {
+struct InvalidFocusDeltaBehaviorError<H: Handle> {
     attempted_value: String,
-    command: Command,
+    command: Command<H>,
 }
 
-impl Error for InvalidFocusDeltaBehaviorError {}
+impl<H: Handle> Error for InvalidFocusDeltaBehaviorError<H> {}
 
-impl fmt::Display for InvalidFocusDeltaBehaviorError {
+impl<H: Handle> fmt::Display for InvalidFocusDeltaBehaviorError<H> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.command {
             Command::FocusNextTag { .. } => write!(
@@ -465,6 +484,7 @@ impl fmt::Display for InvalidFocusDeltaBehaviorError {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::models::MockHandle;
     use crate::utils::helpers::test::temp_path;
     use tokio::io::AsyncWriteExt;
     use tokio::time;
@@ -472,7 +492,9 @@ mod test {
     #[tokio::test]
     async fn read_good_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone())
+            .await
+            .unwrap();
 
         // Write some meaningful command to the pipe and close it.
         {
@@ -494,7 +516,9 @@ mod test {
     #[tokio::test]
     async fn read_bad_command() {
         let pipe_file = temp_path().await.unwrap();
-        let mut command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+        let mut command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone())
+            .await
+            .unwrap();
 
         // Write some custom command and close it.
         {
@@ -520,7 +544,9 @@ mod test {
 
         // Write to pipe.
         {
-            let _command_pipe = CommandPipe::new(pipe_file.clone()).await.unwrap();
+            let _command_pipe = CommandPipe::<MockHandle>::new(pipe_file.clone())
+                .await
+                .unwrap();
             let mut pipe = fs::OpenOptions::new()
                 .write(true)
                 .open(&pipe_file)
@@ -541,33 +567,33 @@ mod test {
 
     #[test]
     fn build_toggle_scratchpad_without_parameter() {
-        assert!(build_toggle_scratchpad("").is_err());
+        assert!(build_toggle_scratchpad::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_send_window_to_tag_without_parameter() {
-        assert!(build_send_window_to_tag("").is_err());
+        assert!(build_toggle_scratchpad::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_send_workspace_to_tag_without_parameter() {
-        assert!(build_send_workspace_to_tag("").is_err());
+        assert!(build_send_workspace_to_tag::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_set_layout_without_parameter() {
-        assert!(build_set_layout("").is_err());
+        assert!(build_set_layout::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_set_margin_multiplier_without_parameter() {
-        assert!(build_set_margin_multiplier("").is_err());
+        assert!(build_set_margin_multiplier::<MockHandle>("").is_err());
     }
 
     #[test]
     fn build_move_window_top_without_parameter() {
         assert_eq!(
-            build_move_window_top("").unwrap(),
+            build_move_window_top::<MockHandle>("").unwrap(),
             Command::MoveWindowTop { swap: true }
         );
     }
@@ -575,7 +601,7 @@ mod test {
     #[test]
     fn build_focus_window_top_without_parameter() {
         assert_eq!(
-            build_focus_window_top("").unwrap(),
+            build_focus_window_top::<MockHandle>("").unwrap(),
             Command::FocusWindowTop { swap: false }
         );
     }
@@ -583,7 +609,7 @@ mod test {
     #[test]
     fn build_focus_window_dir_without_parameter() {
         assert_eq!(
-            build_focus_window_dir("").unwrap(),
+            build_focus_window_dir::<MockHandle>("").unwrap(),
             Command::FocusWindowAt(FocusDirection::North)
         );
     }
@@ -591,7 +617,7 @@ mod test {
     #[test]
     fn build_move_window_to_next_tag_without_parameter() {
         assert_eq!(
-            build_move_window_to_next_tag("").unwrap(),
+            build_move_window_to_next_tag::<MockHandle>("").unwrap(),
             Command::MoveWindowToNextTag { follow: true }
         );
     }
@@ -599,7 +625,7 @@ mod test {
     #[test]
     fn build_move_window_to_previous_tag_without_parameter() {
         assert_eq!(
-            build_move_window_to_previous_tag("").unwrap(),
+            build_move_window_to_previous_tag::<MockHandle>("").unwrap(),
             Command::MoveWindowToPreviousTag { follow: true }
         );
     }
@@ -607,7 +633,7 @@ mod test {
     #[test]
     fn build_focus_next_tag_without_parameter() {
         assert_eq!(
-            build_focus_next_tag("").unwrap(),
+            build_focus_next_tag::<MockHandle>("").unwrap(),
             Command::FocusNextTag {
                 behavior: command::FocusDeltaBehavior::Default
             }
@@ -617,7 +643,7 @@ mod test {
     #[test]
     fn build_focus_previous_tag_without_parameter() {
         assert_eq!(
-            build_focus_previous_tag("").unwrap(),
+            build_focus_previous_tag::<MockHandle>("").unwrap(),
             Command::FocusPreviousTag {
                 behavior: command::FocusDeltaBehavior::Default
             }
@@ -627,10 +653,12 @@ mod test {
     #[test]
     fn build_focus_next_tag_with_invalid() {
         assert_eq!(
-            build_focus_next_tag("gurke").unwrap_err().to_string(),
+            build_focus_next_tag::<MockHandle>("gurke")
+                .unwrap_err()
+                .to_string(),
             (InvalidFocusDeltaBehaviorError {
                 attempted_value: String::from("gurke"),
-                command: Command::FocusNextTag {
+                command: Command::<MockHandle>::FocusNextTag {
                     behavior: command::FocusDeltaBehavior::Default,
                 }
             })
@@ -641,10 +669,12 @@ mod test {
     #[test]
     fn build_focus_previous_tag_with_invalid() {
         assert_eq!(
-            build_focus_previous_tag("gurke").unwrap_err().to_string(),
+            build_focus_previous_tag::<MockHandle>("gurke")
+                .unwrap_err()
+                .to_string(),
             (InvalidFocusDeltaBehaviorError {
                 attempted_value: String::from("gurke"),
-                command: Command::FocusPreviousTag {
+                command: Command::<MockHandle>::FocusPreviousTag {
                     behavior: command::FocusDeltaBehavior::Default,
                 }
             })
