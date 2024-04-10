@@ -253,6 +253,7 @@ pub fn toggle_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
         "No active scratchpad found for name {:?}. Creating a new one",
         name
     );
+    tracing::debug!("Args for scratchpad: {:?}", &scratchpad.args);
 
     let pid: ChildID = exec_shell_with_args(
         &scratchpad.value,
