@@ -18,15 +18,15 @@ pub enum BaseCommand {
     SwapTags,
     SoftReload,
     HardReload,
-    /// Args: <ScratchpadName>
+    /// Args: `ScratchpadName`
     AttachScratchPad,
-    /// Args: <tag_index> or <ScratchpadName>
+    /// Args: `tag_index` or `ScratchpadName`
     ReleaseScratchPad,
-    /// Args: <ScratchpadName>
+    /// Args: `ScratchpadName`
     NextScratchPadWindow,
-    /// Args: <ScratchpadName>
+    /// Args: `ScratchpadName`
     PrevScratchPadWindow,
-    /// Args: <ScratchpadName>
+    /// Args: `ScratchpadName`
     ToggleScratchPad,
     ToggleFullScreen,
     ToggleMaximized,
@@ -41,18 +41,20 @@ pub enum BaseCommand {
     MoveWindowDown,
     MoveWindowTop,
     SwapWindowTop,
-    /// Args: <behavior> (string, optional)
+    /// Args: `behavior` (string, optional)
     FocusNextTag,
-    /// Args: <behavior> (string, optional)
+    /// Args: `behavior` (string, optional)
     FocusPreviousTag,
-    /// Args: <WindowClass> or <visible-window-index> (int)
+    /// Args: `WindowClass` or `visible-window-index` (int)
     FocusWindow,
     FocusWindowUp,
     FocusWindowDown,
     FocusWindowTop,
+    /// Args: `direction` (string, optional)
+    FocusWindowAt,
     FocusWorkspaceNext,
     FocusWorkspacePrevious,
-    /// Args: <tag_index> (int)
+    /// Args: `tag_index` (int)
     /// Note: Please use `SendWindowToTag` instead.
     MoveToTag,
     MoveWindowToNextTag,
@@ -62,7 +64,7 @@ pub enum BaseCommand {
     MoveWindowToPreviousWorkspace,
     NextLayout,
     PreviousLayout,
-    /// Args: <LayoutName>
+    /// Args: `LayoutName`
     SetLayout,
     RotateTag,
     /// Note: This is deprecated and will be dropped in a future release.
@@ -73,10 +75,10 @@ pub enum BaseCommand {
     DecreaseMainSize,
     IncreaseMainCount,
     DecreaseMainCount,
-    /// Args: <multiplier-value> (float)
+    /// Args: `multiplier-value` (float)
     SetMarginMultiplier,
     UnloadTheme,
-    /// Args: <Path_to/theme.ron>
+    /// Args: `Path_to/theme.ron`
     /// Note: `theme.toml` will be deprecated but stays for backwards compatibility for a while
     LoadTheme,
 }

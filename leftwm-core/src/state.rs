@@ -4,7 +4,7 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowState,
+    FocusManager, Handle, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowState,
     WindowType, Workspace,
 };
 use crate::DisplayAction;
@@ -13,16 +13,21 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct State {
-    pub screens: Vec<Screen>,
-    pub windows: Vec<Window>,
+pub struct State<H: Handle> {
+    #[serde(bound = "")]
+    pub screens: Vec<Screen<H>>,
+    #[serde(bound = "")]
+    pub windows: Vec<Window<H>>,
     pub workspaces: Vec<Workspace>,
-    pub focus_manager: FocusManager,
+    #[serde(bound = "")]
+    pub focus_manager: FocusManager<H>,
     pub layout_manager: LayoutManager,
-    pub mode: Mode,
+    #[serde(bound = "")]
+    pub mode: Mode<H>,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
-    pub actions: VecDeque<DisplayAction>,
-    pub tags: Tags, // List of all known tags + hidden scratchpad tag (NSP)
+    #[serde(bound = "")]
+    pub actions: VecDeque<DisplayAction<H>>,
+    pub tags: Tags, // List of all known tags.
     // entries below are loaded from config and are never changed
     pub scratchpads: Vec<ScratchPad>,
     pub layout_definitions: Vec<Layout>,
@@ -35,7 +40,7 @@ pub struct State {
     pub single_window_border: bool,
 }
 
-impl State {
+impl<H: Handle> State<H> {
     pub(crate) fn new(config: &impl Config) -> Self {
         let mut tags = Tags::new();
         config.create_list_of_tag_labels().iter().for_each(|label| {
@@ -121,7 +126,7 @@ impl State {
         }
 
         for tag in self.tags.normal() {
-            let mut windows_on_tag: Vec<&mut Window> = self
+            let mut windows_on_tag: Vec<&mut Window<H>> = self
                 .windows
                 .iter_mut()
                 .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
@@ -155,7 +160,7 @@ impl State {
 
     /// Moves `handle` in front of all other windows of the same order of importance.
     /// See `sort_windows()` for the order of importance.
-    pub fn move_to_top(&mut self, handle: &WindowHandle) -> Option<()> {
+    pub fn move_to_top(&mut self, handle: &WindowHandle<H>) -> Option<()> {
         let index = self.windows.iter().position(|w| &w.handle == handle)?;
         let window = self.windows.remove(index);
         self.windows.insert(0, window);
@@ -304,20 +309,20 @@ impl State {
 /// Helper struct for sorting windows.
 /// Sorts windows in `unsorted` via their order of importance
 /// and pushes sorted list onto `stack`.
-struct WindowSorter<'a> {
-    stack: Vec<&'a Window>,
-    unsorted: Vec<&'a Window>,
+struct WindowSorter<'a, H: Handle> {
+    stack: Vec<&'a Window<H>>,
+    unsorted: Vec<&'a Window<H>>,
 }
 
-impl<'a> WindowSorter<'a> {
-    pub fn new(windows: Vec<&'a Window>) -> Self {
+impl<'a, H: Handle> WindowSorter<'a, H> {
+    pub fn new(windows: Vec<&'a Window<H>>) -> Self {
         Self {
             stack: Vec::with_capacity(windows.len()),
             unsorted: windows,
         }
     }
 
-    pub fn sort<F: Fn(&Window) -> bool>(&mut self, filter: F) {
+    pub fn sort<F: Fn(&Window<H>) -> bool>(&mut self, filter: F) {
         self.unsorted.retain(|window| {
             if filter(window) {
                 self.stack.push(window);
@@ -328,7 +333,7 @@ impl<'a> WindowSorter<'a> {
         });
     }
 
-    pub fn finish(mut self) -> Vec<&'a Window> {
+    pub fn finish(mut self) -> Vec<&'a Window<H>> {
         self.stack.append(&mut self.unsorted);
         self.stack
     }
