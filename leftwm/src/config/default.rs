@@ -1,5 +1,7 @@
 use leftwm_core::models::{FocusOnActivationBehaviour, ScratchPad, Size};
 
+use crate::Backend;
+
 #[cfg(feature = "lefthk")]
 use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
 use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeConfig};
@@ -204,6 +206,7 @@ impl Default for Config {
         let scratchpad = ScratchPad {
             name: "Alacritty".into(),
             value: "alacritty".to_string(),
+            args: None,
             x: Some(Size::Pixel(860)),
             y: Some(Size::Pixel(390)),
             height: Some(Size::Pixel(300)),
@@ -213,6 +216,9 @@ impl Default for Config {
         let layouts = leftwm_layouts::layouts::Layouts::default();
 
         Self {
+            log_level: String::from("debug"),
+            // Using Backend's feature fallback
+            backend: Backend::default(),
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: layouts.names(),

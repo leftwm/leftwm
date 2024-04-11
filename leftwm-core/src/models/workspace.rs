@@ -4,7 +4,7 @@ use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use super::WorkspaceId;
+use super::{Handle, WorkspaceId};
 
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
@@ -109,7 +109,7 @@ impl Workspace {
 
     /// Returns true if the workspace is displays a given window.
     #[must_use]
-    pub fn is_displaying(&self, window: &Window) -> bool {
+    pub fn is_displaying<H: Handle>(&self, window: &Window<H>) -> bool {
         if let Some(tag) = &window.tag {
             return self.has_tag(tag);
         }
@@ -118,7 +118,7 @@ impl Workspace {
 
     /// Returns true if the workspace is to update the locations info of this window.
     #[must_use]
-    pub fn is_managed(&self, window: &Window) -> bool {
+    pub fn is_managed<H: Handle>(&self, window: &Window<H>) -> bool {
         self.is_displaying(window) && window.is_managed()
     }
 
@@ -202,7 +202,7 @@ impl Workspace {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{BBox, WindowHandle};
+    use crate::models::{BBox, MockHandle, WindowHandle};
 
     #[test]
     fn empty_ws_should_not_contain_window() {
@@ -215,7 +215,7 @@ mod tests {
             },
             0,
         );
-        let w = Window::new(WindowHandle::MockHandle(1), None, None);
+        let w = Window::new(WindowHandle::<MockHandle>(1), None, None);
         assert!(
             !subject.is_displaying(&w),
             "workspace incorrectly owns window"
@@ -236,7 +236,7 @@ mod tests {
         );
         let tag = crate::models::Tag::new(TAG_ID, "test");
         subject.show_tag(&tag.id);
-        let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut w = Window::new(WindowHandle::<MockHandle>(1), None, None);
         w.tag(&TAG_ID);
         assert!(subject.is_displaying(&w), "workspace should include window");
     }

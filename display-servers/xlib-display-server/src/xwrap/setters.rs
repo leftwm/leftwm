@@ -1,6 +1,6 @@
 //! `XWrap` setters.
 use super::WindowHandle;
-use crate::XWrap;
+use crate::{XWrap, XlibWindowHandle};
 use leftwm_core::models::TagId;
 use std::ffi::CString;
 use std::os::raw::{c_long, c_ulong};
@@ -129,22 +129,26 @@ impl XWrap {
     }
 
     /// Sets a windows state.
-    pub fn set_state(&self, handle: WindowHandle, toggle_to: bool, atom: xlib::Atom) {
-        if let WindowHandle::XlibHandle(h) = handle {
-            let mut states = self.get_window_states_atoms(h);
-            if toggle_to {
-                if states.contains(&atom) {
-                    return;
-                }
-                states.push(atom);
-            } else {
-                let Some(index) = states.iter().position(|s| s == &atom) else {
-                    return;
-                };
-                states.remove(index);
+    pub fn set_state(
+        &self,
+        handle: WindowHandle<XlibWindowHandle>,
+        toggle_to: bool,
+        atom: xlib::Atom,
+    ) {
+        let WindowHandle(XlibWindowHandle(h)) = handle;
+        let mut states = self.get_window_states_atoms(h);
+        if toggle_to {
+            if states.contains(&atom) {
+                return;
             }
-            self.set_window_states_atoms(h, &states);
+            states.push(atom);
+        } else {
+            let Some(index) = states.iter().position(|s| s == &atom) else {
+                return;
+            };
+            states.remove(index);
         }
+        self.set_window_states_atoms(h, &states);
     }
 
     /// Sets a windows border color.

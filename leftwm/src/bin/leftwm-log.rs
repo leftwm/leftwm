@@ -86,6 +86,8 @@ fn syslog(follow: bool) {
 
 #[cfg(feature = "file-log")]
 fn file_log(follow: bool, level: u8) {
+    const TIME_REGEX: &str =
+        "[0-9]{4}-[01][1-9]-[1-3][0-9]T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z.{10}";
     let cmd = if follow { "tail -f" } else { "cat" };
     let filter = match level {
         0 => "ERROR|WARN",
@@ -93,8 +95,6 @@ fn file_log(follow: bool, level: u8) {
         2 => "ERROR|WARN|INFO|DEBUG",
         _ => "ERROR|WARN|INFO|DEBUG|TRACE",
     };
-    const TIME_REGEX: &str =
-        "[0-9]{4}-[01][1-9]-[1-3][0-9]T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z.{10}";
     let res = {
         let file_path = leftwm::utils::log::file::get_log_path();
         // ugly shadowing to make the borrow checker happy
