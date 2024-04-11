@@ -93,7 +93,7 @@ fn from_focus_in(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     }
 
     // Clear window urgency
-    let handle = event.window.into();
+    let handle = WindowHandle(XlibWindowHandle(event.window));
     let mut change = WindowChange::new(handle);
     change.urgent = Some(false);
     Some(DisplayEvent::WindowChange(change))

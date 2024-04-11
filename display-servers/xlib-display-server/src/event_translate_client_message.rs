@@ -65,13 +65,13 @@ pub fn from_event(
                 return None;
             }
             leftwm_core::models::FocusOnActivationBehaviour::MarkUrgent => {
-                let handle = event.window.into();
+                let handle = WindowHandle(XlibWindowHandle(event.window));
                 let mut change = WindowChange::new(handle);
                 change.urgent = Some(true);
                 return Some(DisplayEvent::WindowChange(change));
             }
             leftwm_core::models::FocusOnActivationBehaviour::SwitchTo => {
-                let handle = event.window.into();
+                let handle = WindowHandle(XlibWindowHandle(event.window));
                 return Some(DisplayEvent::WindowTakeFocus(handle));
             }
         }
