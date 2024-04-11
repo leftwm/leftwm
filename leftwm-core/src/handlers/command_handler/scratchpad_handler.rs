@@ -257,7 +257,7 @@ pub fn toggle_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
 
     let pid: ChildID = exec_shell_with_args(
         &scratchpad.value,
-        scratchpad.args.unwrap_or_else(|| Vec::new()),
+        scratchpad.args.unwrap_or_else(Vec::new),
         &mut manager.children,
     )?;
 

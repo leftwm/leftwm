@@ -385,9 +385,7 @@ fn focus_window<H: Handle>(state: &mut State<H>, param: &str) -> Option<bool> {
 fn focus_window_direction<H: Handle>(state: &mut State<H>, dir: FocusDirection) -> Option<bool> {
     let workspace = state.focus_manager.workspace(&state.workspaces)?.rect();
     let mut rects: Vec<Rect> = vec![];
-    let Some(cur_window) = state.focus_manager.window(&state.windows) else {
-        return None;
-    };
+    let cur_window = state.focus_manager.window(&state.windows)?;
 
     let mut cur = None;
 
