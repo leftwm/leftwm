@@ -139,6 +139,7 @@ fn parse_command(s: &str) -> Result<Command, Box<dyn std::error::Error>> {
         "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
         "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),
         "MoveWindowToPreviousWorkspace" => Ok(Command::MoveWindowToPreviousWorkspace),
+        "MoveWindowAt" => build_move_window_dir(rest),
         "SendWindowToTag" => build_send_window_to_tag(rest),
         // Focus Navigation
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
@@ -320,6 +321,18 @@ fn build_focus_window_dir(raw: &str) -> Result<Command, Box<dyn std::error::Erro
         }
     };
     Ok(Command::FocusWindowAt(dir))
+}
+
+fn build_move_window_dir(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+    let dir = if raw.is_empty() {
+        FocusDirection::North
+    } else {
+        match FocusDirection::from_str(raw) {
+            Ok(d) => d,
+            Err(()) => Err("Argument dir was missing or invalid")?,
+        }
+    };
+    Ok(Command::MoveWindowAt(dir))
 }
 
 fn build_move_window_top(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
@@ -585,6 +598,14 @@ mod test {
         assert_eq!(
             build_focus_window_dir("").unwrap(),
             Command::FocusWindowAt(FocusDirection::North)
+        );
+    }
+
+    #[test]
+    fn build_move_window_dir_without_parameter() {
+        assert_eq!(
+            build_move_window_dir("").unwrap(),
+            Command::MoveWindowAt(FocusDirection::North)
         );
     }
 

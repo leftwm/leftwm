@@ -43,6 +43,7 @@ pub enum Command {
     MoveWindowTop {
         swap: bool,
     },
+    MoveWindowAt(FocusDirection),
     SwapWindowTop {
         swap: bool,
     },
