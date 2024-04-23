@@ -1,6 +1,5 @@
 //! Starts programs in autostart, runs global 'up' script, and boots theme. Provides function to
 //! boot other desktop files also.
-use crate::errors::Result;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
@@ -10,7 +9,10 @@ use std::iter::{Extend, FromIterator};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{atomic::AtomicBool, Arc};
+
 use xdg::BaseDirectories;
+
+use crate::errors::Result;
 
 pub type ChildID = u32;
 
@@ -166,7 +168,18 @@ pub fn register_child_hook(flag: Arc<AtomicBool>) {
 /// Sends command to shell for execution
 /// Assumes STDIN/STDERR/STDOUT unwanted.
 pub fn exec_shell(command: &str, children: &mut Children) -> Option<ChildID> {
+    exec_shell_with_args(command, Vec::new(), children)
+}
+
+/// Sends command to shell for execution including arguments.
+/// Assumes STDIN/STDERR/STDOUT unwanted.
+pub fn exec_shell_with_args(
+    command: &str,
+    args: Vec<String>,
+    children: &mut Children,
+) -> Option<ChildID> {
     let child = Command::new(command)
+        .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())

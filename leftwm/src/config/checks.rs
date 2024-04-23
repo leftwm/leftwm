@@ -3,6 +3,7 @@ use super::Config;
 use lefthk_core::xkeysym_lookup;
 #[cfg(feature = "lefthk")]
 use std::collections::HashSet;
+use tracing_subscriber::EnvFilter;
 
 impl Config {
     pub fn check_mousekey(&self, verbose: bool) {
@@ -20,6 +21,17 @@ impl Config {
             if verbose {
                 println!("Mousekey is okay.");
             }
+        }
+    }
+
+    pub fn check_log_level(&self, verbose: bool) {
+        if verbose {
+            println!("Trying to parse log_level.");
+        }
+        match EnvFilter::builder().parse(&self.log_level) {
+            Ok(_) if verbose => println!("Log level is ok."),
+            Ok(_) => {}
+            Err(err) => println!("Log level is invalid: {err}"),
         }
     }
 

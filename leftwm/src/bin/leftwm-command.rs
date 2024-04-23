@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use clap::{arg, command};
 use leftwm::BaseCommand;
-use leftwm_core::CommandPipe;
 use leftwm_core::ReturnPipe;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
@@ -13,7 +12,7 @@ use xdg::BaseDirectories;
 async fn main() -> Result<()> {
     let matches = get_command().get_matches();
 
-    let file_name = CommandPipe::pipe_name();
+    let file_name = leftwm_core::pipe_name();
     let file_path = BaseDirectories::with_prefix("leftwm")?
         .find_runtime_file(&file_name)
         .with_context(|| format!("ERROR: Couldn't find {}", file_name.display()))?;
