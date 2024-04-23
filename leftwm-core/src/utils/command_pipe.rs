@@ -332,7 +332,7 @@ fn build_focus_window_dir<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn st
     Ok(Command::FocusWindowAt(dir))
 }
 
-fn build_move_window_dir(raw: &str) -> Result<Command, Box<dyn std::error::Error>> {
+fn build_move_window_dir<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
     let dir = if raw.is_empty() {
         FocusDirection::North
     } else {
@@ -630,7 +630,7 @@ mod test {
     #[test]
     fn build_move_window_dir_without_parameter() {
         assert_eq!(
-            build_move_window_dir("").unwrap(),
+            build_move_window_dir::<MockHandle>("").unwrap(),
             Command::MoveWindowAt(FocusDirection::North)
         );
     }
