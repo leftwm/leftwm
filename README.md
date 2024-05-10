@@ -343,15 +343,19 @@ Use `cargo` with the added flags `--no-default-features --features=` and then co
 | journald-log | logging to `journald`, depends on `systemd`                                                                                                                                                    | ✔      |
 | sys-log      | use standard system logging                                                                                                                                                                    | ✘       |
 | file-log     | log to `/tmp/leftwm/<log-file-by-datetime-of-launch>`                                                                                                                                          | ✘       |
+| xlib (\*)    | legacy backend linking to `libX11`                                                                                                                                                             | ✔       |
+| x11rb (\*)   | rust based backend using [`x11rb`](https://github.com/psychon/x11rb)                                                                                                                           | ✔       |
+
+⚠️ You need to select **at least one** backend feature (\*) for leftwm to build ⚠️
 
 Example:
 
 ```bash
-# With `lefthk` and logging to `sys-log`
-cargo build --profile optimized --no-default-features --features=lefthk,sys-log
+# With `lefthk` and logging to `sys-log` (`x11rb` backend)
+cargo build --profile optimized --no-default-features --features=x11rb,lefthk,sys-log
 
-# Without `lefthk` and logging to file
-cargo build --profile optimized --no-default-features --features=file-log
+# Without `lefthk` and logging to file (`xlib` backend)
+cargo build --profile optimized --no-default-features --features=xlib,file-log
 ```
 
 There are also multiple levels of optimization. These are specified by the cargo profiles, available are `dev`, `release` and `optimized`. The dev and release profiles are default profiles used by cargo, whereas the optimized profile is recomended for production builds.
