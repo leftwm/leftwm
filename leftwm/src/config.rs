@@ -15,7 +15,7 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::LayoutMode,
-    models::{FocusBehaviour, Gutter, Handle, Margins, Size, Window, WindowState, WindowType},
+    models::{FocusBehaviour, Gutter, Handle, Margins, Window, WindowState, WindowType},
     state::State,
     DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
@@ -202,7 +202,6 @@ pub struct Config {
     pub mousekey: Option<Modifier>,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
-    pub max_window_width: Option<Size>,
     pub layouts: Vec<String>,
     pub layout_definitions: Vec<Layout>,
     pub layout_mode: LayoutMode,
