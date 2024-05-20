@@ -240,7 +240,6 @@ impl Default for Config {
             #[cfg(feature = "lefthk")]
             keybind: commands,
             theme_setting: ThemeConfig::default(),
-            max_window_width: None,
             state_path: None,
             sloppy_mouse_follows_focus: true,
             create_follows_cursor: None,

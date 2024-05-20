@@ -202,7 +202,6 @@ pub struct Config {
     pub mousekey: Option<Modifier>,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
-    pub max_window_width: Option<Size>,
     pub layouts: Vec<String>,
     pub layout_definitions: Vec<Layout>,
     pub layout_mode: LayoutMode,
