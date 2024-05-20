@@ -1,4 +1,4 @@
-use super::{window::Handle, DockArea, Size, WindowHandle, WorkspaceId};
+use super::{window::Handle, DockArea, WindowHandle, WorkspaceId};
 use crate::config::Workspace;
 use serde::{Deserialize, Serialize};
 use std::convert::From;

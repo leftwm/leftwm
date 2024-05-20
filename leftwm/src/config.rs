@@ -15,7 +15,7 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, Workspace},
     layouts::LayoutMode,
-    models::{FocusBehaviour, Gutter, Handle, Margins, Size, Window, WindowState, WindowType},
+    models::{FocusBehaviour, Gutter, Handle, Margins, Window, WindowState, WindowType},
     state::State,
     DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
