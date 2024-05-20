@@ -62,6 +62,8 @@ pub enum BaseCommand {
     MoveToLastWorkspace,
     MoveWindowToNextWorkspace,
     MoveWindowToPreviousWorkspace,
+    /// Args: `direction` (string, optional)
+    MoveWindowAt,
     NextLayout,
     PreviousLayout,
     /// Args: `LayoutName`
