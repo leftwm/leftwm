@@ -326,7 +326,7 @@ fn build_focus_window_dir<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn st
     } else {
         match FocusDirection::from_str(raw) {
             Ok(d) => d,
-            Err(()) => Err("Argument dir was missing or invalid")?,
+            Err(()) => Err("Argument direction was missing or invalid")?,
         }
     };
     Ok(Command::FocusWindowAt(dir))
@@ -338,7 +338,7 @@ fn build_move_window_dir<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std
     } else {
         match FocusDirection::from_str(raw) {
             Ok(d) => d,
-            Err(()) => Err("Argument dir was missing or invalid")?,
+            Err(()) => Err("Argument direction was missing or invalid")?,
         }
     };
     Ok(Command::MoveWindowAt(dir))
