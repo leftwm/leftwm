@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use clap::{arg, command};
-use leftwm::{Config, ThemeSetting};
+use leftwm::{Config, ThemeConfig};
 use ron::{
     extensions::Extensions,
     ser::{to_string_pretty, PrettyConfig},
@@ -73,6 +73,7 @@ async fn main() -> Result<()> {
                 dbg!(&config);
             }
             config.check_mousekey(verbose);
+            config.check_log_level(verbose);
             #[cfg(not(feature = "lefthk"))]
             println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
             #[cfg(feature = "lefthk")]
@@ -338,7 +339,7 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             println!("Found: {}", filepath.display());
         }
 
-        match toml::from_str::<ThemeSetting>(&contents) {
+        match toml::from_str::<ThemeConfig>(&contents) {
             Ok(_) => {
                 if verbose {
                     println!("The theme file looks OK.");
@@ -368,7 +369,7 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
 
         let ron = Options::default()
             .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
-        match ron.from_str::<ThemeSetting>(&contents) {
+        match ron.from_str::<ThemeConfig>(&contents) {
             Ok(_) => {
                 if verbose {
                     println!("The theme file looks OK.");

@@ -4,11 +4,12 @@ use leftwm_layouts::geometry::Rect;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use super::WorkspaceId;
+use super::{Handle, WorkspaceId};
 
 /// Information for workspaces (screen divisions).
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Workspace {
+    // tag represents the currently visible tag
     pub tag: Option<TagId>, // TODO: Make this a list.
     pub margin: Margins,
     pub margin_multiplier: f32,
@@ -16,7 +17,7 @@ pub struct Workspace {
     #[serde(skip)]
     pub avoid: Vec<Xyhw>,
     pub xyhw: Xyhw,
-    xyhw_avoided: Xyhw,
+    pub xyhw_avoided: Xyhw,
     /// ID of workspace. Starts with 1.
     pub id: WorkspaceId,
 }
@@ -108,7 +109,7 @@ impl Workspace {
 
     /// Returns true if the workspace is displays a given window.
     #[must_use]
-    pub fn is_displaying(&self, window: &Window) -> bool {
+    pub fn is_displaying<H: Handle>(&self, window: &Window<H>) -> bool {
         if let Some(tag) = &window.tag {
             return self.has_tag(tag);
         }
@@ -117,12 +118,11 @@ impl Workspace {
 
     /// Returns true if the workspace is to update the locations info of this window.
     #[must_use]
-    pub fn is_managed(&self, window: &Window) -> bool {
+    pub fn is_managed<H: Handle>(&self, window: &Window<H>) -> bool {
         self.is_displaying(window) && window.is_managed()
     }
 
-    /// Returns the original x position of the workspace,
-    /// disregarding the optional `max_window_width` configuration
+    /// Returns the original x position of the workspace
     #[must_use]
     pub fn x(&self) -> i32 {
         let left = self.margin.left as f32;
@@ -146,8 +146,7 @@ impl Workspace {
         self.xyhw_avoided.h() - (self.margin_multiplier * (top + bottom)) as i32 - gutter
     }
 
-    /// Returns the original width for the workspace,
-    /// disregarding the optional `max_window_width` configuration
+    /// Returns the original width for the workspace
     #[must_use]
     pub fn width(&self) -> i32 {
         let left = self.margin.left as f32;
@@ -201,7 +200,7 @@ impl Workspace {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{BBox, WindowHandle};
+    use crate::models::{BBox, MockHandle, WindowHandle};
 
     #[test]
     fn empty_ws_should_not_contain_window() {
@@ -214,7 +213,7 @@ mod tests {
             },
             0,
         );
-        let w = Window::new(WindowHandle::MockHandle(1), None, None);
+        let w = Window::new(WindowHandle::<MockHandle>(1), None, None);
         assert!(
             !subject.is_displaying(&w),
             "workspace incorrectly owns window"
@@ -235,7 +234,7 @@ mod tests {
         );
         let tag = crate::models::Tag::new(TAG_ID, "test");
         subject.show_tag(&tag.id);
-        let mut w = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut w = Window::new(WindowHandle::<MockHandle>(1), None, None);
         w.tag(&TAG_ID);
         assert!(subject.is_displaying(&w), "workspace should include window");
     }
