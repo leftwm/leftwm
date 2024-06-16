@@ -153,6 +153,7 @@ fn parse_command<H: Handle>(s: &str) -> Result<Command<H>, Box<dyn std::error::E
         "FocusPreviousTag" => build_focus_previous_tag(rest),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
+        "FocusWindow" => build_focus_window(rest),
         // Layout
         "DecreaseMainWidth" | "DecreaseMainSize" => build_decrease_main_size(rest), // 'DecreaseMainWidth' deprecated
         "IncreaseMainWidth" | "IncreaseMainSize" => build_increase_main_size(rest), // 'IncreaseMainWidth' deprecated
@@ -459,6 +460,14 @@ fn build_focus_previous_tag<H: Handle>(
             },
         })),
     }
+}
+
+fn build_focus_window<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
+    if raw.is_empty() {
+        Err("argument window class was missing")?;
+    }
+
+    Ok(Command::FocusWindow(String::from(raw)))
 }
 
 fn without_head<'a>(s: &'a str, head: &'a str) -> &'a str {
