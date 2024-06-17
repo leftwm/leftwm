@@ -1,4 +1,3 @@
-use crate::models::TagId;
 use crate::state::State;
 use serde::{Deserialize, Serialize};
 
@@ -131,32 +130,24 @@ impl<H: Handle> From<&State<H>> for ManagerState {
             .map(|t| t.label.clone())
             .collect();
 
-        let working_tags_id: Vec<TagId> = state
-            .tags
-            .all()
-            .iter()
-            .filter(|tag| {
-                state
-                    .windows
-                    .iter()
-                    .any(|w| w.has_tag(&tag.id) && w.is_managed())
-            })
-            .map(|t| t.id)
-            .collect();
-
         let mut working_tags = Vec::new();
         for (i, ws) in state.workspaces.iter().enumerate() {
+            let mut ws_tag_id = 0;
             let tag_label = ws
                 .tag
-                .map(|tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
+                .map(|tag_id| {
+                    ws_tag_id = tag_id;
+                    state.tags.get(tag_id).map(|tag| tag.label.clone())
+                })
                 .unwrap()
                 .unwrap();
 
-            for tag_id in &working_tags_id {
-                if ws.has_tag(tag_id) {
-                    working_tags.push((tag_label.clone(), i));
-                    break;
-                }
+            let is_tag_working = state
+                .windows
+                .iter()
+                .any(|w| w.has_tag(&ws_tag_id) && w.is_managed());
+            if is_tag_working {
+                working_tags.push((tag_label.clone(), i));
             }
 
             let layout_name: String = ws
