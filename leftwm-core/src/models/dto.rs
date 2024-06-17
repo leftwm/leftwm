@@ -21,7 +21,7 @@ pub struct ManagerState {
     pub desktop_names: Vec<String>,
     pub viewports: Vec<Viewport>,
     pub active_desktop: Vec<String>,
-    pub working_tags: Vec<String>,
+    pub working_tags: Vec<(String, usize)>,
     pub urgent_tags: Vec<String>,
 }
 
@@ -84,7 +84,7 @@ fn viewport_into_display_workspace(
     all_tags: &[String],
     focused: &[String],
     visible: &[String],
-    working_tags: &[String],
+    working_tags: &[(String, usize)],
     urgent_tags: &[String],
     viewport: &Viewport,
     ws_index: usize,
@@ -99,7 +99,10 @@ fn viewport_into_display_workspace(
             visible: visible.contains(t),
             focused: focused.contains(t),
             urgent: urgent_tags.contains(t),
-            busy: working_tags.contains(t),
+            busy: working_tags.iter().any(|tag_and_workspace| {
+                let (tag_label, workspace_index) = tag_and_workspace;
+                *tag_label == *t && *workspace_index == ws_index
+            }),
         })
         .collect();
     DisplayWorkspace {
@@ -119,13 +122,6 @@ impl<H: Handle> From<&State<H>> for ManagerState {
     fn from(state: &State<H>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         // tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
-        let working_tags = state
-            .tags
-            .all()
-            .iter()
-            .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id)))
-            .map(|t| t.label.clone())
-            .collect();
         let urgent_tags = state
             .tags
             .all()
@@ -133,12 +129,26 @@ impl<H: Handle> From<&State<H>> for ManagerState {
             .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id) && w.urgent))
             .map(|t| t.label.clone())
             .collect();
-        for ws in &state.workspaces {
+
+        let mut working_tags = Vec::new();
+        for (i, ws) in state.workspaces.iter().enumerate() {
+            let mut ws_tag_id = 0;
             let tag_label = ws
                 .tag
-                .map(|tag_id| state.tags.get(tag_id).map(|tag| tag.label.clone()))
+                .map(|tag_id| {
+                    ws_tag_id = tag_id;
+                    state.tags.get(tag_id).map(|tag| tag.label.clone())
+                })
                 .unwrap()
                 .unwrap();
+
+            let is_tag_working = state
+                .windows
+                .iter()
+                .any(|w| w.has_tag(&ws_tag_id) && w.is_managed());
+            if is_tag_working {
+                working_tags.push((tag_label.clone(), i));
+            }
 
             let layout_name: String = ws
                 .tag
