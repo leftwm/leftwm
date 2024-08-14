@@ -209,12 +209,12 @@ impl XWrap {
         }
     }
 
-    /// "hides" a window my moving it out of view.
+    /// "hides" a window by moving it out of view.
     /// see https://github.com/leftwm/leftwm/issues/1100
     pub fn toggle_window_visibility(&self, window: xlib::Window, visible: bool) {
         if visible {
             // NOTE: The window does not need to be moved here, if it's beeing made visible it's
-            // going to be naturally tiled of placed floating where it should
+            // going to be naturally tiled or placed floating where it should
 
             // Set WM_STATE to normal state.
             self.set_wm_states(window, &[NORMAL_STATE]);
