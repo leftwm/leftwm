@@ -232,6 +232,13 @@ impl XWrap {
                 return;
             };
             let screen_dimentions = self.get_screens_area_dimensions();
+            let x = window_geometry.w.unwrap_or(screen_dimentions.0) * -2;
+            let y = window_geometry.h.unwrap_or(screen_dimentions.1) * -2;
+
+            let mut window_changes: xlib::XWindowChanges = unsafe { std::mem::zeroed() };
+            window_changes.x = x;
+            window_changes.y = y;
+            self.set_window_config(window, window_changes, u32::from(xlib::CWX | xlib::CWY));
             self.move_resize_window(
                 window,
                 window_geometry.w.unwrap_or(screen_dimentions.0) * -2,
