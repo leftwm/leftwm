@@ -200,8 +200,9 @@ fn from_button_press(
     _xw: &mut XWrap,
 ) -> DisplayEvent<X11rbWindowHandle> {
     let h = WindowHandle(X11rbWindowHandle(event.event));
-    let mod_mask = event.state;
-    mod_mask.remove(xproto::KeyButMask::MOD2 | xproto::KeyButMask::LOCK);
+    let mod_mask = event
+        .state
+        .remove(xproto::KeyButMask::MOD2 | xproto::KeyButMask::LOCK);
     DisplayEvent::MouseCombo(
         ModMask::from_bits_retain(mod_mask.bits()),
         Button::from(event.detail),
