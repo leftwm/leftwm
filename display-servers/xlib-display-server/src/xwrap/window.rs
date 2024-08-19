@@ -210,8 +210,11 @@ impl XWrap {
         }
     }
 
-    /// "hides" a window by moving it out of view.
-    /// see https://github.com/leftwm/leftwm/issues/1100
+    /// Show or hide a window, depending on its current visibility.
+    /// Depending on the configured window_hiding_strategy, this will toggle window visibility by moving
+    /// the window out of / in to view, or map / unmap it in the display server.
+    ///
+    /// see `<https://github.com/leftwm/leftwm/issues/1100>` and `<https://github.com/leftwm/leftwm/pull/1274>` for details
     pub fn toggle_window_visibility(&self, window: xlib::Window, visible: bool) {
         let maybe_change_mask = |mask| {
             if let WindowHidingStrategy::Unmap = self.window_hiding_strategy {

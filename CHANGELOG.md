@@ -16,8 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The currently supported MSRV is 1.74.0
+- Added `window_hiding_strategy` config option (via #1274 by @Syudagye)
 
 ### Fixed
+
+- Hidden window are not able to be captured (fixes #1100 via #1274 by @Syudagye)
+- Numlock prevents moving and resizing for floating windows (via #1276 by @Syudagye)
 
 ## [0.5.0]
 
