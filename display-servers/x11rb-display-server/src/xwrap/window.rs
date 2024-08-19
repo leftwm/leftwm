@@ -1,6 +1,7 @@
 //! Xlib calls related to a window.
 
 use leftwm_core::{
+    config::WindowHidingStrategy,
     models::{WindowChange, WindowHandle, WindowType, Xyhw},
     DisplayEvent, Window,
 };
@@ -9,7 +10,7 @@ use x11rb::{protocol::xproto, x11_utils::Serialize};
 use crate::xatom::WMStateWindowState;
 use crate::{error::Result, X11rbWindowHandle};
 
-use super::XWrap;
+use super::{root_event_mask, XWrap};
 
 impl XWrap {
     /// Sets up a window before we manage it.
@@ -212,9 +213,25 @@ impl XWrap {
     /// "hides" a window by moving it out of view.
     /// see https://github.com/leftwm/leftwm/issues/1100
     pub fn toggle_window_visibility(&self, window: xproto::Window, visible: bool) -> Result<()> {
+        let maybe_change_mask = |mask| -> Result<()> {
+            if let WindowHidingStrategy::Unmap = self.window_hiding_strategy {
+                let attrs = xproto::ChangeWindowAttributesAux {
+                    event_mask: Some(mask),
+                    ..Default::default()
+                };
+                xproto::change_window_attributes(&self.conn, self.root, &attrs)?;
+            }
+            Ok(())
+        };
+        // We don't want to receive this potential map or unmap event.
+        maybe_change_mask(root_event_mask().remove(xproto::EventMask::SUBSTRUCTURE_NOTIFY))?;
+
         if visible {
-            // NOTE: The window does not need to be moved here, if it's beeing made visible it's
-            // going to be naturally tiled or placed floating where it should
+            // NOTE: The window does not need to be moved here in case of non-unmap strategy,
+            // if it's beeing made visible it's going to be naturally tiled or placed floating where it should.
+            if self.window_hiding_strategy == WindowHidingStrategy::Unmap {
+                xproto::map_window(&self.conn, window)?;
+            }
 
             // Set WM_STATE to normal state.
             self.set_wm_state(window, WMStateWindowState::Normal)?;
@@ -227,19 +244,33 @@ impl XWrap {
         } else {
             // Ungrab the mouse clicks.
             self.ungrab_buttons(window)?;
-            // Move the window out of view, so it can still be captured if necessary
-            let window_geometry = self.get_window_geometry(window)?;
-            let screen_dimentions = self.get_screens_area_dimensions()?;
-            let attrs = xproto::ConfigureWindowAux {
-                x: Some(window_geometry.w.unwrap_or(screen_dimentions.0) * -2),
-                y: Some(window_geometry.h.unwrap_or(screen_dimentions.1) * -2),
-                ..Default::default()
-            };
-            xproto::configure_window(&self.conn, window, &attrs)?;
+
+            match self.window_hiding_strategy {
+                WindowHidingStrategy::Unmap => {
+                    xproto::unmap_window(&self.conn, window)?;
+                }
+                WindowHidingStrategy::MoveMinimize | WindowHidingStrategy::MoveOnly => {
+                    // Move the window out of view, so it can still be captured if necessary
+                    let window_geometry = self.get_window_geometry(window)?;
+                    let screen_dimentions = self.get_screens_area_dimensions()?;
+                    let attrs = xproto::ConfigureWindowAux {
+                        x: Some(window_geometry.w.unwrap_or(screen_dimentions.0) * -2),
+                        y: Some(window_geometry.h.unwrap_or(screen_dimentions.1) * -2),
+                        ..Default::default()
+                    };
+                    xproto::configure_window(&self.conn, window, &attrs)?;
+                }
+            }
+
             // Set WM_STATE to iconic state.
-            self.set_wm_state(window, WMStateWindowState::Iconic)?;
+            if self.window_hiding_strategy == WindowHidingStrategy::Unmap
+                || self.window_hiding_strategy == WindowHidingStrategy::MoveMinimize
+            {
+                self.set_wm_state(window, WMStateWindowState::Iconic)?;
+            }
         }
-        Ok(())
+
+        maybe_change_mask(root_event_mask())
     }
 
     /// Makes a window take focus.
