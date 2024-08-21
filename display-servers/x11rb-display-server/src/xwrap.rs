@@ -1,6 +1,7 @@
 use std::{io::IoSlice, os::fd::AsRawFd, sync::Arc, time::Duration};
 
 use leftwm_core::{
+    config::WindowHidingStrategy,
     models::{FocusBehaviour, WindowHandle},
     utils::{self, modmask_lookup::ModMask},
     Config, Mode, Window,
@@ -74,6 +75,7 @@ pub(crate) struct XWrap {
     pub focus_behaviour: FocusBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
+    pub window_hiding_strategy: WindowHidingStrategy,
 
     #[allow(unused)]
     task_guard: oneshot::Receiver<()>,
@@ -164,6 +166,7 @@ impl XWrap {
             focus_behaviour: FocusBehaviour::Sloppy,
             mouse_key_mask: ModMask::Zero,
             mode_origin: (0, 0),
+            window_hiding_strategy: Default::default(),
 
             task_guard,
             task_notify,
@@ -194,6 +197,7 @@ impl XWrap {
             active: self.get_color(&config.focused_border_color())?,
             background: self.get_color(&config.background_color())?,
         };
+        self.window_hiding_strategy = config.window_hiding_strategy();
         Ok(())
     }
 

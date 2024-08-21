@@ -13,7 +13,7 @@ use super::ThemeConfig;
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
-    config::{InsertBehavior, ScratchPad, Workspace},
+    config::{InsertBehavior, ScratchPad, WindowHidingStrategy, Workspace},
     layouts::LayoutMode,
     models::{FocusBehaviour, Gutter, Handle, Margins, Window, WindowState, WindowType},
     state::State,
@@ -219,6 +219,7 @@ pub struct Config {
     pub create_follows_cursor: Option<bool>,
     pub auto_derive_workspaces: bool,
     pub disable_cursor_reposition_on_resize: bool,
+    pub window_hiding_strategy: WindowHidingStrategy,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -691,6 +692,10 @@ impl leftwm_core::Config for Config {
         // If not, set it to true in Sloppy mode only.
         self.create_follows_cursor
             .unwrap_or(self.focus_behaviour == FocusBehaviour::Sloppy)
+    }
+
+    fn window_hiding_strategy(&self) -> WindowHidingStrategy {
+        self.window_hiding_strategy
     }
 }
 

@@ -4,6 +4,7 @@ use super::{
     ROOT_EVENT_MASK, WITHDRAWN_STATE,
 };
 use crate::{XWrap, XlibWindowHandle};
+use leftwm_core::config::WindowHidingStrategy;
 use leftwm_core::models::{WindowChange, WindowType, Xyhw, XyhwChange};
 use leftwm_core::DisplayEvent;
 use std::os::raw::{c_long, c_ulong};
@@ -209,18 +210,31 @@ impl XWrap {
         }
     }
 
-    /// Maps and unmaps a window depending on it is visible.
+    /// Show or hide a window, depending on its current visibility.
+    /// Depending on the configured window_hiding_strategy, this will toggle window visibility by moving
+    /// the window out of / in to view, or map / unmap it in the display server.
+    ///
+    /// see `<https://github.com/leftwm/leftwm/issues/1100>` and `<https://github.com/leftwm/leftwm/pull/1274>` for details
     pub fn toggle_window_visibility(&self, window: xlib::Window, visible: bool) {
-        // We don't want to receive this map or unmap event.
-        let mask_off = ROOT_EVENT_MASK & !(xlib::SubstructureNotifyMask);
-        let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
-        attrs.event_mask = mask_off;
-        self.change_window_attributes(self.root, xlib::CWEventMask, attrs);
+        let maybe_change_mask = |mask| {
+            if let WindowHidingStrategy::Unmap = self.window_hiding_strategy {
+                let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
+                attrs.event_mask = mask;
+                self.change_window_attributes(self.root, xlib::CWEventMask, attrs);
+            }
+        };
+        // We don't want to receive this potential map or unmap event.
+        maybe_change_mask(ROOT_EVENT_MASK & !(xlib::SubstructureNotifyMask));
+
         if visible {
+            // NOTE: The window does not need to be moved here in case of non-unmap strategy,
+            // if it's beeing made visible it's going to be naturally tiled or placed floating where it should.
+            if self.window_hiding_strategy == WindowHidingStrategy::Unmap {
+                unsafe { (self.xlib.XMapWindow)(self.display, window) };
+            }
+
             // Set WM_STATE to normal state.
             self.set_wm_states(window, &[NORMAL_STATE]);
-            // Make sure the window is mapped.
-            unsafe { (self.xlib.XMapWindow)(self.display, window) };
             // Regrab the mouse clicks but ignore `dock` windows as some don't handle click events put on them
             if self.focus_behaviour.is_clickto() && self.get_window_type(window) != WindowType::Dock
             {
@@ -229,13 +243,48 @@ impl XWrap {
         } else {
             // Ungrab the mouse clicks.
             self.ungrab_buttons(window);
-            // Make sure the window is unmapped.
-            unsafe { (self.xlib.XUnmapWindow)(self.display, window) };
+
+            match self.window_hiding_strategy {
+                WindowHidingStrategy::Unmap => {
+                    unsafe { (self.xlib.XUnmapWindow)(self.display, window) };
+                }
+                WindowHidingStrategy::MoveMinimize | WindowHidingStrategy::MoveOnly => {
+                    // Move the window out of view, so it can still be captured if necessary
+                    let Ok(window_geometry) = self.get_window_geometry(window) else {
+                        tracing::error!("Error querying window geometry for window {}", window);
+                        return;
+                    };
+                    let screen_dimentions = self.get_screens_area_dimensions();
+                    let x = window_geometry.w.unwrap_or(screen_dimentions.0) * -2;
+                    let y = window_geometry.h.unwrap_or(screen_dimentions.1) * -2;
+
+                    let mut window_changes: xlib::XWindowChanges = unsafe { std::mem::zeroed() };
+                    window_changes.x = x;
+                    window_changes.y = y;
+                    self.set_window_config(
+                        window,
+                        window_changes,
+                        u32::from(xlib::CWX | xlib::CWY),
+                    );
+                    self.move_resize_window(
+                        window,
+                        window_geometry.w.unwrap_or(screen_dimentions.0) * -2,
+                        window_geometry.h.unwrap_or(screen_dimentions.1) * -2,
+                        0,
+                        0,
+                    );
+                }
+            }
+
             // Set WM_STATE to iconic state.
-            self.set_wm_states(window, &[ICONIC_STATE]);
+            if self.window_hiding_strategy == WindowHidingStrategy::Unmap
+                || self.window_hiding_strategy == WindowHidingStrategy::MoveMinimize
+            {
+                self.set_wm_states(window, &[ICONIC_STATE]);
+            }
         }
-        attrs.event_mask = ROOT_EVENT_MASK;
-        self.change_window_attributes(self.root, xlib::CWEventMask, attrs);
+
+        maybe_change_mask(ROOT_EVENT_MASK)
     }
 
     /// Makes a window take focus.
