@@ -254,9 +254,18 @@ impl XWrap {
                         tracing::error!("Error querying window geometry for window {}", window);
                         return;
                     };
-                    let screen_dimentions = self.get_screens_area_dimensions();
-                    let x = window_geometry.w.unwrap_or(screen_dimentions.0) * -2;
-                    let y = window_geometry.h.unwrap_or(screen_dimentions.1) * -2;
+                    let (x, y) = if window_geometry.w.is_some() && window_geometry.h.is_some() {
+                        (
+                            window_geometry.w.unwrap() * -2,
+                            window_geometry.h.unwrap() * -2,
+                        )
+                    } else {
+                        let screen_dimensions = self.get_screens_area_dimensions();
+                        (
+                            window_geometry.w.unwrap_or(screen_dimensions.0) * -2,
+                            window_geometry.h.unwrap_or(screen_dimensions.1) * -2,
+                        )
+                    };
 
                     let mut window_changes: xlib::XWindowChanges = unsafe { std::mem::zeroed() };
                     window_changes.x = x;
@@ -266,13 +275,7 @@ impl XWrap {
                         window_changes,
                         u32::from(xlib::CWX | xlib::CWY),
                     );
-                    self.move_resize_window(
-                        window,
-                        window_geometry.w.unwrap_or(screen_dimentions.0) * -2,
-                        window_geometry.h.unwrap_or(screen_dimentions.1) * -2,
-                        0,
-                        0,
-                    );
+                    self.move_resize_window(window, x, y, 0, 0);
                 }
             }
 

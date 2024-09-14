@@ -255,10 +255,18 @@ impl XWrap {
                 WindowHidingStrategy::MoveMinimize | WindowHidingStrategy::MoveOnly => {
                     // Move the window out of view, so it can still be captured if necessary
                     let window_geometry = self.get_window_geometry(window)?;
-                    let screen_dimentions = self.get_screens_area_dimensions()?;
+                    let (x, y) = if window_geometry.w.is_some() && window_geometry.h.is_some() {
+                        (window_geometry.w.unwrap(), window_geometry.h.unwrap())
+                    } else {
+                        let screen_dimensions = self.get_screens_area_dimensions()?;
+                        (
+                            window_geometry.w.unwrap_or(screen_dimensions.0),
+                            window_geometry.h.unwrap_or(screen_dimensions.1),
+                        )
+                    };
                     let attrs = xproto::ConfigureWindowAux {
-                        x: Some(window_geometry.w.unwrap_or(screen_dimentions.0) * -2),
-                        y: Some(window_geometry.h.unwrap_or(screen_dimentions.1) * -2),
+                        x: Some(x * -2),
+                        y: Some(y * -2),
                         ..Default::default()
                     };
                     xproto::configure_window(&self.conn, window, &attrs)?;
