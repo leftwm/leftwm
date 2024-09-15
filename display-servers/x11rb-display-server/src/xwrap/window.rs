@@ -203,9 +203,9 @@ impl XWrap {
         let (state, _) = self.get_wm_state(handle)?;
         // Only change when needed. This prevents task bar icons flashing (especially with steam).
         if window.visible() && state != WMStateWindowState::Normal {
-            self.toggle_window_visibility(handle, true)?;
+            self.toggle_window_visibility(handle, true, window.hiding_strategy)?;
         } else if !window.visible() && state != WMStateWindowState::Iconic {
-            self.toggle_window_visibility(handle, false)?;
+            self.toggle_window_visibility(handle, false, window.hiding_strategy)?;
         }
         Ok(())
     }
@@ -215,9 +215,15 @@ impl XWrap {
     /// the window out of / in to view, or map / unmap it in the display server.
     ///
     /// see `<https://github.com/leftwm/leftwm/issues/1100>` and `<https://github.com/leftwm/leftwm/pull/1274>` for details
-    pub fn toggle_window_visibility(&self, window: xproto::Window, visible: bool) -> Result<()> {
+    pub fn toggle_window_visibility(
+        &self,
+        window: xproto::Window,
+        visible: bool,
+        preferred_stategy: Option<WindowHidingStrategy>,
+    ) -> Result<()> {
+        let hiding_strategy = preferred_stategy.unwrap_or(self.window_hiding_strategy);
         let maybe_change_mask = |mask| -> Result<()> {
-            if let WindowHidingStrategy::Unmap = self.window_hiding_strategy {
+            if let WindowHidingStrategy::Unmap = hiding_strategy {
                 let attrs = xproto::ChangeWindowAttributesAux {
                     event_mask: Some(mask),
                     ..Default::default()
@@ -232,7 +238,7 @@ impl XWrap {
         if visible {
             // NOTE: The window does not need to be moved here in case of non-unmap strategy,
             // if it's beeing made visible it's going to be naturally tiled or placed floating where it should.
-            if self.window_hiding_strategy == WindowHidingStrategy::Unmap {
+            if hiding_strategy == WindowHidingStrategy::Unmap {
                 xproto::map_window(&self.conn, window)?;
             }
 
@@ -248,7 +254,7 @@ impl XWrap {
             // Ungrab the mouse clicks.
             self.ungrab_buttons(window)?;
 
-            match self.window_hiding_strategy {
+            match hiding_strategy {
                 WindowHidingStrategy::Unmap => {
                     xproto::unmap_window(&self.conn, window)?;
                 }
@@ -274,8 +280,8 @@ impl XWrap {
             }
 
             // Set WM_STATE to iconic state.
-            if self.window_hiding_strategy == WindowHidingStrategy::Unmap
-                || self.window_hiding_strategy == WindowHidingStrategy::MoveMinimize
+            if hiding_strategy == WindowHidingStrategy::Unmap
+                || hiding_strategy == WindowHidingStrategy::MoveMinimize
             {
                 self.set_wm_state(window, WMStateWindowState::Iconic)?;
             }

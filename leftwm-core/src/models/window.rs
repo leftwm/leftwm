@@ -5,6 +5,7 @@ use std::fmt::Debug;
 
 use super::WindowState;
 use super::WindowType;
+use crate::config::WindowHidingStrategy;
 use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
@@ -73,6 +74,7 @@ pub struct Window<H: Handle> {
     // Two strings that are within a XClassHint, kept separate for simpler comparing.
     pub res_name: Option<String>,
     pub res_class: Option<String>,
+    pub hiding_strategy: Option<WindowHidingStrategy>,
 }
 
 impl<H: Handle> Window<H> {
@@ -105,6 +107,7 @@ impl<H: Handle> Window<H> {
             strut: None,
             res_name: None,
             res_class: None,
+            hiding_strategy: None,
         }
     }
 
