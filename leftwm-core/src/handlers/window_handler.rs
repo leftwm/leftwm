@@ -83,8 +83,13 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     /// Returns true if changes need to be rendered.
     pub fn window_destroyed_handler(&mut self, handle: &WindowHandle<H>) -> bool {
         // Get the previous focused window else find the next or previous window on the workspace.
-        let new_handle = if let Some(Some(last_focused_window)) =
-            self.state.focus_manager.window_history.get(1)
+        let new_handle = if let Some(Some(last_focused_window)) = self
+            .state
+            .focus_manager
+            .window_history
+            .iter()
+            // Take the first window that is not the destroyed window.
+            .find(|w| w != &&Some(*handle))
         {
             Some(*last_focused_window)
         } else {
@@ -127,6 +132,12 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
                 self.state.focus_manager.window_history.push_front(None);
             }
         }
+
+        // Remove destroyed window from history.
+        self.state
+            .focus_manager
+            .window_history
+            .retain(|w| w != &Some(*handle));
 
         // Only update windows if this window is visible.
         visible
