@@ -89,8 +89,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
             .window_history
             .iter()
             // Take the first window that is not the destroyed window.
-            .filter(|w| w != &&Some(*handle))
-            .next()
+            .find(|w| w != &&Some(*handle))
         {
             Some(*last_focused_window)
         } else {
