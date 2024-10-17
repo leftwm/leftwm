@@ -45,6 +45,7 @@ pub enum Command<H: Handle> {
     MoveWindowTop {
         swap: bool,
     },
+    MoveWindowAt(FocusDirection),
     SwapWindowTop {
         swap: bool,
     },

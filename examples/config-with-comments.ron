@@ -24,7 +24,6 @@
         "8",
         "9",
     ],
-    max_window_width: None,
     layouts: [
         "EvenHorizontal",
         "EvenVertical",

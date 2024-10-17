@@ -142,6 +142,7 @@ fn parse_command<H: Handle>(s: &str) -> Result<Command<H>, Box<dyn std::error::E
         "MoveWindowToLastWorkspace" => Ok(Command::MoveWindowToLastWorkspace),
         "MoveWindowToNextWorkspace" => Ok(Command::MoveWindowToNextWorkspace),
         "MoveWindowToPreviousWorkspace" => Ok(Command::MoveWindowToPreviousWorkspace),
+        "MoveWindowAt" => build_move_window_dir(rest),
         "SendWindowToTag" => build_send_window_to_tag(rest),
         // Focus Navigation
         "FocusWindowDown" => Ok(Command::FocusWindowDown),
@@ -152,6 +153,7 @@ fn parse_command<H: Handle>(s: &str) -> Result<Command<H>, Box<dyn std::error::E
         "FocusPreviousTag" => build_focus_previous_tag(rest),
         "FocusWorkspaceNext" => Ok(Command::FocusWorkspaceNext),
         "FocusWorkspacePrevious" => Ok(Command::FocusWorkspacePrevious),
+        "FocusWindow" => build_focus_window(rest),
         // Layout
         "DecreaseMainWidth" | "DecreaseMainSize" => build_decrease_main_size(rest), // 'DecreaseMainWidth' deprecated
         "IncreaseMainWidth" | "IncreaseMainSize" => build_increase_main_size(rest), // 'IncreaseMainWidth' deprecated
@@ -325,10 +327,22 @@ fn build_focus_window_dir<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn st
     } else {
         match FocusDirection::from_str(raw) {
             Ok(d) => d,
-            Err(()) => Err("Argument dir was missing or invalid")?,
+            Err(()) => Err("Argument direction was missing or invalid")?,
         }
     };
     Ok(Command::FocusWindowAt(dir))
+}
+
+fn build_move_window_dir<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
+    let dir = if raw.is_empty() {
+        FocusDirection::North
+    } else {
+        match FocusDirection::from_str(raw) {
+            Ok(d) => d,
+            Err(()) => Err("Argument direction was missing or invalid")?,
+        }
+    };
+    Ok(Command::MoveWindowAt(dir))
 }
 
 fn build_move_window_top<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
@@ -446,6 +460,14 @@ fn build_focus_previous_tag<H: Handle>(
             },
         })),
     }
+}
+
+fn build_focus_window<H: Handle>(raw: &str) -> Result<Command<H>, Box<dyn std::error::Error>> {
+    if raw.is_empty() {
+        Err("argument window class was missing")?;
+    }
+
+    Ok(Command::FocusWindow(String::from(raw)))
 }
 
 fn without_head<'a>(s: &'a str, head: &'a str) -> &'a str {
@@ -611,6 +633,14 @@ mod test {
         assert_eq!(
             build_focus_window_dir::<MockHandle>("").unwrap(),
             Command::FocusWindowAt(FocusDirection::North)
+        );
+    }
+
+    #[test]
+    fn build_move_window_dir_without_parameter() {
+        assert_eq!(
+            build_move_window_dir::<MockHandle>("").unwrap(),
+            Command::MoveWindowAt(FocusDirection::North)
         );
     }
 

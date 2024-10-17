@@ -11,8 +11,8 @@ use crate::XlibWindowHandle;
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
-use leftwm_core::config::Config;
 use leftwm_core::models::{FocusBehaviour, FocusOnActivationBehaviour, Mode};
+use leftwm_core::config::{Config, WindowHidingStrategy};
 use leftwm_core::utils::modmask_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
@@ -121,6 +121,7 @@ pub struct XWrap {
     pub task_notify: Arc<Notify>,
     pub motion_event_limiter: c_ulong,
     pub refresh_rate: c_short,
+    pub window_hiding_strategy: WindowHidingStrategy,
 }
 
 impl Default for XWrap {
@@ -243,6 +244,7 @@ impl XWrap {
             task_notify,
             motion_event_limiter: 0,
             refresh_rate,
+            window_hiding_strategy: Default::default(),
         };
 
         // Check that another WM is not running.
@@ -275,6 +277,7 @@ impl XWrap {
             active: self.get_color(config.focused_border_color()),
             background: self.get_color(config.background_color()),
         };
+        self.window_hiding_strategy = config.window_hiding_strategy();
     }
 
     /// Initialize the xwrapper.

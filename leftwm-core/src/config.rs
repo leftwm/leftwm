@@ -1,4 +1,5 @@
 mod insert_behavior;
+mod window_hiding_strategy;
 mod workspace_config;
 
 use crate::display_servers::DisplayServer;
@@ -9,6 +10,7 @@ use crate::models::{FocusOnActivationBehaviour, Handle, Manager, Window, WindowT
 use crate::state::State;
 pub use insert_behavior::InsertBehavior;
 use leftwm_layouts::Layout;
+pub use window_hiding_strategy::WindowHidingStrategy;
 pub use workspace_config::Workspace;
 
 pub trait Config {
@@ -63,6 +65,7 @@ pub trait Config {
     fn sloppy_mouse_follows_focus(&self) -> bool;
     fn create_follows_cursor(&self) -> bool;
     fn reposition_cursor_on_resize(&self) -> bool;
+    fn window_hiding_strategy(&self) -> WindowHidingStrategy;
 
     /// Attempt to write current state to a file.
     ///
@@ -245,6 +248,10 @@ pub(crate) mod tests {
 
         fn create_follows_cursor(&self) -> bool {
             false
+        }
+
+        fn window_hiding_strategy(&self) -> WindowHidingStrategy {
+            Default::default()
         }
     }
 

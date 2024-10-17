@@ -83,6 +83,9 @@ fn process_internal<H: Handle, C: Config, SERVER: DisplayServer<H>>(
         Command::MoveWindowUp => move_focus_common_vars!(move_window_change(state, -1)),
         Command::MoveWindowDown => move_focus_common_vars!(move_window_change(state, 1)),
         Command::MoveWindowTop { swap } => move_focus_common_vars!(move_window_top(state, *swap)),
+        Command::MoveWindowAt(param) => {
+            move_focus_common_vars!(move_window_direction(state, *param))
+        }
         Command::SwapWindowTop { swap } => move_focus_common_vars!(swap_window_top(state, *swap)),
 
         Command::GoToTag { tag, swap } => goto_tag(state, *tag, *swap),
@@ -725,6 +728,40 @@ fn move_window_top<H: Handle>(
     if index > 0 {
         state.handle_window_focus(&handle);
     }
+    Some(true)
+}
+
+fn move_window_direction<H: Handle>(
+    state: &mut State<H>,
+    mut handle: WindowHandle<H>,
+    _layout: &Option<String>,
+    mut to_reorder: Vec<Window<H>>,
+    dir: FocusDirection,
+) -> Option<bool> {
+    let workspace = state.focus_manager.workspace(&state.workspaces)?.rect();
+    let mut rects: Vec<Rect> = vec![];
+    let mut cur = None;
+
+    for (i, x) in to_reorder.iter().filter(|w| w.visible()).enumerate() {
+        if handle.eq(&x.handle) {
+            cur = Some(i);
+        }
+        rects.push(Rect::new(
+            x.x() - workspace.x,
+            x.y() - workspace.y,
+            x.width() as u32,
+            x.height() as u32,
+        ));
+    }
+
+    let list = &mut to_reorder;
+    if let Some(next) = FocusDirection::find_neighbor(&rects, cur?, dir, &workspace) {
+        list.swap(cur?, next);
+        handle = list.get(next)?.handle;
+    }
+
+    state.windows.append(&mut to_reorder);
+    state.handle_window_focus(&handle);
     Some(true)
 }
 

@@ -13,7 +13,7 @@ use super::ThemeConfig;
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
-    config::{InsertBehavior, ScratchPad, Workspace},
+    config::{InsertBehavior, ScratchPad, WindowHidingStrategy, Workspace},
     layouts::LayoutMode,
     models::{
         FocusBehaviour, FocusOnActivationBehaviour, Gutter, Handle, Margins, Size, Window,
@@ -93,6 +93,7 @@ pub struct WindowHook {
     pub spawn_fullscreen: Option<bool>,
     /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
     pub spawn_as_type: Option<WindowType>,
+    pub hiding_strategy: Option<WindowHidingStrategy>,
 }
 
 impl WindowHook {
@@ -174,6 +175,7 @@ impl WindowHook {
         if let Some(w_type) = self.spawn_as_type.clone() {
             window.r#type = w_type;
         }
+        window.hiding_strategy = self.hiding_strategy;
     }
 }
 
@@ -205,7 +207,6 @@ pub struct Config {
     pub mousekey: Option<Modifier>,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
-    pub max_window_width: Option<Size>,
     pub layouts: Vec<String>,
     pub layout_definitions: Vec<Layout>,
     pub layout_mode: LayoutMode,
@@ -224,6 +225,7 @@ pub struct Config {
     pub auto_derive_workspaces: bool,
     pub disable_cursor_reposition_on_resize: bool,
     pub focus_on_activation: FocusOnActivationBehaviour,
+    pub window_hiding_strategy: WindowHidingStrategy,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
@@ -663,7 +665,7 @@ impl leftwm_core::Config for Config {
             if let Some((hook, _)) = best_match {
                 hook.apply(state, window);
                 tracing::trace!(
-                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
+                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}, hiding_stategy={:?}",
                     window.name,
                     window.legacy_name,
                     window.res_name,
@@ -674,6 +676,7 @@ impl leftwm_core::Config for Config {
                     hook.spawn_floating,
                     hook.spawn_sticky,
                     hook.spawn_fullscreen,
+                    hook.hiding_strategy,
                 );
                 return true;
             }
@@ -700,6 +703,10 @@ impl leftwm_core::Config for Config {
         // If not, set it to true in Sloppy mode only.
         self.create_follows_cursor
             .unwrap_or(self.focus_behaviour == FocusBehaviour::Sloppy)
+    }
+
+    fn window_hiding_strategy(&self) -> WindowHidingStrategy {
+        self.window_hiding_strategy
     }
 }
 

@@ -1,6 +1,7 @@
 //! Xlib calls related to a window.
 
 use leftwm_core::{
+    config::WindowHidingStrategy,
     models::{WindowChange, WindowHandle, WindowType, Xyhw},
     DisplayEvent, Window,
 };
@@ -202,27 +203,47 @@ impl XWrap {
         let (state, _) = self.get_wm_state(handle)?;
         // Only change when needed. This prevents task bar icons flashing (especially with steam).
         if window.visible() && state != WMStateWindowState::Normal {
-            self.toggle_window_visibility(handle, true)?;
+            self.toggle_window_visibility(handle, true, window.hiding_strategy)?;
         } else if !window.visible() && state != WMStateWindowState::Iconic {
-            self.toggle_window_visibility(handle, false)?;
+            self.toggle_window_visibility(handle, false, window.hiding_strategy)?;
         }
         Ok(())
     }
 
-    /// Maps and unmaps a window depending on it is visible.
-    pub fn toggle_window_visibility(&self, window: xproto::Window, visible: bool) -> Result<()> {
-        // We don't want to receive this map or unmap event.
-        let mask_off = root_event_mask().remove(xproto::EventMask::SUBSTRUCTURE_NOTIFY);
-        let mut attrs = xproto::ChangeWindowAttributesAux {
-            event_mask: Some(mask_off),
-            ..Default::default()
+    /// Show or hide a window, depending on its current visibility.
+    /// Depending on the configured window_hiding_strategy, this will toggle window visibility by moving
+    /// the window out of / in to view, or map / unmap it in the display server.
+    ///
+    /// see `<https://github.com/leftwm/leftwm/issues/1100>` and `<https://github.com/leftwm/leftwm/pull/1274>` for details
+    pub fn toggle_window_visibility(
+        &self,
+        window: xproto::Window,
+        visible: bool,
+        preferred_stategy: Option<WindowHidingStrategy>,
+    ) -> Result<()> {
+        let hiding_strategy = preferred_stategy.unwrap_or(self.window_hiding_strategy);
+        let maybe_change_mask = |mask| -> Result<()> {
+            if let WindowHidingStrategy::Unmap = hiding_strategy {
+                let attrs = xproto::ChangeWindowAttributesAux {
+                    event_mask: Some(mask),
+                    ..Default::default()
+                };
+                xproto::change_window_attributes(&self.conn, self.root, &attrs)?;
+            }
+            Ok(())
         };
-        xproto::change_window_attributes(&self.conn, self.root, &attrs)?;
+        // We don't want to receive this potential map or unmap event.
+        maybe_change_mask(root_event_mask().remove(xproto::EventMask::SUBSTRUCTURE_NOTIFY))?;
+
         if visible {
+            // NOTE: The window does not need to be moved here in case of non-unmap strategy,
+            // if it's beeing made visible it's going to be naturally tiled or placed floating where it should.
+            if hiding_strategy == WindowHidingStrategy::Unmap {
+                xproto::map_window(&self.conn, window)?;
+            }
+
             // Set WM_STATE to normal state.
             self.set_wm_state(window, WMStateWindowState::Normal)?;
-            // Make sure the window is mapped.
-            xproto::map_window(&self.conn, window)?;
             // Regrab the mouse clicks but ignore `dock` windows as some don't handle click events put on them
             if self.focus_behaviour.is_clickto()
                 && self.get_window_type(window)? != WindowType::Dock
@@ -232,14 +253,41 @@ impl XWrap {
         } else {
             // Ungrab the mouse clicks.
             self.ungrab_buttons(window)?;
-            // Make sure the window is unmapped.
-            xproto::unmap_window(&self.conn, window)?;
+
+            match hiding_strategy {
+                WindowHidingStrategy::Unmap => {
+                    xproto::unmap_window(&self.conn, window)?;
+                }
+                WindowHidingStrategy::MoveMinimize | WindowHidingStrategy::MoveOnly => {
+                    // Move the window out of view, so it can still be captured if necessary
+                    let window_geometry = self.get_window_geometry(window)?;
+                    let (x, y) = if window_geometry.w.is_some() && window_geometry.h.is_some() {
+                        (window_geometry.w.unwrap(), window_geometry.h.unwrap())
+                    } else {
+                        let screen_dimensions = self.get_screens_area_dimensions()?;
+                        (
+                            window_geometry.w.unwrap_or(screen_dimensions.0),
+                            window_geometry.h.unwrap_or(screen_dimensions.1),
+                        )
+                    };
+                    let attrs = xproto::ConfigureWindowAux {
+                        x: Some(x * -2),
+                        y: Some(y * -2),
+                        ..Default::default()
+                    };
+                    xproto::configure_window(&self.conn, window, &attrs)?;
+                }
+            }
+
             // Set WM_STATE to iconic state.
-            self.set_wm_state(window, WMStateWindowState::Iconic)?;
+            if hiding_strategy == WindowHidingStrategy::Unmap
+                || hiding_strategy == WindowHidingStrategy::MoveMinimize
+            {
+                self.set_wm_state(window, WMStateWindowState::Iconic)?;
+            }
         }
-        attrs.event_mask = Some(root_event_mask());
-        xproto::change_window_attributes(&self.conn, self.root, &attrs)?;
-        Ok(())
+
+        maybe_change_mask(root_event_mask())
     }
 
     /// Makes a window take focus.

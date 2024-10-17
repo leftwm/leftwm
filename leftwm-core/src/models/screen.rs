@@ -1,4 +1,4 @@
-use super::{window::Handle, DockArea, Size, WindowHandle, WorkspaceId};
+use super::{window::Handle, DockArea, WindowHandle, WorkspaceId};
 use crate::config::Workspace;
 use serde::{Deserialize, Serialize};
 use std::convert::From;
@@ -10,7 +10,6 @@ pub struct Screen<H: Handle> {
     pub output: String,
     pub id: Option<WorkspaceId>,
     pub bbox: BBox,
-    pub max_window_width: Option<Size>,
 }
 
 /// Screen Bounding Box
@@ -29,7 +28,6 @@ impl<H: Handle> Screen<H> {
             root: WindowHandle::<H>(H::default()),
             output,
             bbox,
-            max_window_width: None,
             id: None,
         }
     }
@@ -80,7 +78,6 @@ impl<H: Handle> From<&Workspace> for Screen<H> {
                 y: wsc.y,
             },
             output: wsc.output.clone(),
-            max_window_width: wsc.max_window_width,
             ..Default::default()
         }
     }
@@ -98,7 +95,6 @@ impl<H: Handle> Default for Screen<H> {
                 x: 0,
                 y: 0,
             },
-            max_window_width: None,
         }
     }
 }
