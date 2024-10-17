@@ -123,7 +123,12 @@ impl<H: Handle> From<&State<H>> for ManagerState {
             .tags
             .all()
             .iter()
-            .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id)))
+            .filter(|tag| {
+                state
+                    .windows
+                    .iter()
+                    .any(|w| w.has_tag(&tag.id) && w.is_managed())
+            })
             .map(|t| t.label.clone())
             .collect();
         let urgent_tags = state
