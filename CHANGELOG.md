@@ -5,23 +5,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.2]
+
+## CVEs
+
+- chore: CVE-2024-27308 dependency update (mio) by @mautamu in https://github.com/leftwm/leftwm/pull/1236
 
 ### Breaking Change
 
+- chore: update MSRV to 1.74, update dependencies by @mautamu in https://github.com/leftwm/leftwm/pull/1237
+- Update time and time-macros by @JacoMalan1 in https://github.com/leftwm/leftwm/pull/1273
+
 ### Deprecated
 
+- Move clippy allowance to xlib-display-server, deprecate `make test-full` by @Eskaan in https://github.com/leftwm/leftwm/pull/1198
+
 ### Removed
+
+- remove hardcoded default layouts by @barkyq in https://github.com/leftwm/leftwm/pull/1207
+- chore: remove obsolete `max_window_width` variable by @jasonmokk in https://github.com/leftwm/leftwm/pull/1260
 
 ### Added
 
 - The currently supported MSRV is 1.74.0
 - Added `window_hiding_strategy` config option (via #1274 by @Syudagye)
+- Simplify BaseCommand documentation macro by @Eskaan in https://github.com/leftwm/leftwm/pull/1187
+- lefthk-worker: change multiple feature checks to one module condition by @Eskaan in https://github.com/leftwm/leftwm/pull/1194
+- Separate leftwm bin by @Eskaan in https://github.com/leftwm/leftwm/pull/1192
+- Add leftwm-log to Makefile targets by @Eskaan in https://github.com/leftwm/leftwm/pull/1199
+- default_height and default_width by @barkyq in https://github.com/leftwm/leftwm/pull/1218
+- Simplify setting the fourth byte of a pixel to 0xff by @Eskaan in https://github.com/leftwm/leftwm/pull/1229
+- Add x11rb backend + Improve backends modularity by @Syudagye in https://github.com/leftwm/leftwm/pull/1221
+- Add directional focus between windows by @marianomarciello in https://github.com/leftwm/leftwm/pull/1240
+- Add 'args' Scratchpad config entry by @mautamu in https://github.com/leftwm/leftwm/pull/1225
+- Add directional movement between windows by @marianomarciello in https://github.com/leftwm/leftwm/pull/1252
+- Add missing match arm for FocusWindow command by @underscoreevelyn in https://github.com/leftwm/leftwm/pull/1270
+- Lazily call randr on windows hiding by @Lieunoir in https://github.com/leftwm/leftwm/pull/1282
 
 ### Fixed
 
 - Hidden window are not able to be captured (fixes #1100 via #1274 by @Syudagye)
 - Numlock prevents moving and resizing for floating windows (via #1276 by @Syudagye)
+- Some formatting chores by @Eskaan in https://github.com/leftwm/leftwm/pull/1186
+- Fix freeze when process tries to aquire stderr by @Eskaan in https://github.com/leftwm/leftwm/pull/1197
+- Rework "fixed dialog windows ignoring application-defined sizes (#1166)" by @Eskaan in https://github.com/leftwm/leftwm/pull/1200
+- Fix the 32 bit builds by changing a type cast by @Eskaan in https://github.com/leftwm/leftwm/pull/1202
+- update layouts in man page by @barkyq in https://github.com/leftwm/leftwm/pull/1209
+- Fix newly spawned floating windows ignoring ws margins by @Eskaan in https://github.com/leftwm/leftwm/pull/1214
+- Spawn new floating windows above old ones by @Eskaan in https://github.com/leftwm/leftwm/pull/1215
+- change exec_shell to directly executed given command by @barkyq in https://github.com/leftwm/leftwm/pull/1216
+- Fix build without lefthk by @pastalian in https://github.com/leftwm/leftwm/pull/1228
+- `cargo doc` error fixes, CI workflow, and `CONTRIBUTING.md` update. by @nejucomo in https://github.com/leftwm/leftwm/pull/1232
+- x11rb: Fixed numlock preventing from moving and resizing floating windows by @Syudagye in https://github.com/leftwm/leftwm/pull/1276
+- Fix hiding window behaviour by @Syudagye in https://github.com/leftwm/leftwm/pull/1274
+
+## [0.5.1]
+
+### Fixed
+
+- This is just a quick fixup of the leftwm crate, as in yesterdays release a tiny version number hickup snuck its way in
 
 ## [0.5.0]
 
