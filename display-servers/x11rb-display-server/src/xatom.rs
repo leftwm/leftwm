@@ -6,7 +6,7 @@ atom_manager! {
 
     /// A handle to a response from the X11 server.
     AtomCollectionCookie {
-        WMProtocols: b"WM_PROTOCOLS",
+        WMProtocols: b"WM_PROTOCOLS" as &[u8],
         WMDelete: b"WM_DELETE_WINDOW",
         WMState: b"WM_STATE",
         WMClass: b"WM_CLASS",

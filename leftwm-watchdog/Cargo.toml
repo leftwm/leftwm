@@ -1,6 +1,6 @@
 [package]
 name = "leftwm-watchdog"
-version = "0.5.1"
+version = "0.5.2"
 rust-version = "1.74.0"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["window manager"]
@@ -14,7 +14,7 @@ description = "A window manager for Adventurers"
 [dependencies]
 clap = { version = "4.0.0", features = ["cargo"] }
 dirs-next = "2.0.0"
-nix = { version = "0.28.0", features = ["fs", "signal"] }
+nix = { version = "0.29.0", features = ["fs", "signal"] }
 signal-hook = "0.3.4"
 thiserror = "1.0.30"
 xdg = "2.2.0"
