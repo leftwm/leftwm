@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - x11rb: Fixed numlock preventing from moving and resizing floating windows by @Syudagye in https://github.com/leftwm/leftwm/pull/1276
 - Fix hiding window behaviour by @Syudagye in https://github.com/leftwm/leftwm/pull/1274
 - Add distinction between visible and busy workspace by @fcolona in https://github.com/leftwm/leftwm/pull/1269
+- Fix removing destroyed window from history by @johnlepikhin in https://github.com/leftwm/leftwm/pull/1285
 
 ## [0.5.1]
 
