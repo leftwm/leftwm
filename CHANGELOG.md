@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add directional movement between windows by @marianomarciello in https://github.com/leftwm/leftwm/pull/1252
 - Add missing match arm for FocusWindow command by @underscoreevelyn in https://github.com/leftwm/leftwm/pull/1270
 - Lazily call randr on windows hiding by @Lieunoir in https://github.com/leftwm/leftwm/pull/1282
+- Implement window rule for hiding_strategy by @Syudagye in https://github.com/leftwm/leftwm/pull/1284
 
 ### Fixed
 
