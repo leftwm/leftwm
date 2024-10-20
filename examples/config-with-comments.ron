@@ -65,6 +65,7 @@
     disable_window_snap: true,
     focus_behaviour: Sloppy,
     focus_new_windows: true,
+    focus_on_activation: MarkUrgent,
     create_follows_cursor: true,
     single_window_border: true,
     sloppy_mouse_follows_focus: true,
