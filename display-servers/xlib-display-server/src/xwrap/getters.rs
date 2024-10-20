@@ -818,7 +818,11 @@ impl From<XWindowAttributesIntoScreen<'_>> for Screen<XlibWindowHandle> {
     }
 }
 
+#[cfg(target_pointer_width = "64")]
 struct SliceIntoDockArea<'a>(&'a [i64]);
+
+#[cfg(target_pointer_width = "32")]
+struct SliceIntoDockArea<'a>(&'a [i32]);
 
 impl From<SliceIntoDockArea<'_>> for DockArea {
     fn from(val: SliceIntoDockArea<'_>) -> Self {

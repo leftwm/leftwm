@@ -1,6 +1,6 @@
 [package]
 name = "leftwm-watchdog"
-version = "0.5.2"
+version = "0.5.3"
 rust-version = "1.74.0"
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["gui"]
