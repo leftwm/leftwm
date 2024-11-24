@@ -1,12 +1,24 @@
+{% comment %}
+LEFTWM template.liquid FILE
+Use this file to set workspaces/tags' interaction
+{% endcomment %}
 {% for tag in workspace.tags %}
+{% comment %} Current selected workspace {% endcomment %}
 {% if tag.mine %}
-<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FF0000>  {{tag.name}}  </fc></action>
+<action=<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FF0000> {{tag.name}}  </fc></action>
+{% comment %} Full workspace {% endcomment %}
 {% elsif tag.visible  %}
-<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FF9999>  {{tag.name}}  </fc></action>
+<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FF9999> {{tag.name}}  </fc></action>
+{% comment %} Busy workspace {% endcomment %}
 {% elsif tag.busy  %}
-<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`>  {{tag.name}}* </action>
+<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FF9999> {{tag.name}}  </fc></action>
+{% comment %} Empty workspaces {% endcomment %}
+{% comment %} Comment the following two lines to hide empty workspaces {% endcomment %}
 {% else %}
-<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FFFFFF>  {{tag.name}}  </fc></action>
+<action=`$SCRIPTPATH/change_to_tag {{workspace.index}} {{tag.index}}`><fc=#FAFAFA> {{tag.name}}  </fc></action>
 {% endif %}
 {% endfor %}
-<fc=#555555>     {{ window_title }}</fc>
+{% comment %} Leftwm layout {% endcomment %}
+<fc=#d1d1bc>|  ~   {{ workspace.layout }}</fc>
+{% comment %} Window title {% endcomment %}
+<fc=#8e8e8e>    {{ window_title }}</fc>
