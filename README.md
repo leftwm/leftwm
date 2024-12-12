@@ -579,7 +579,7 @@ layout_definitions: [
 
 ## LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant
 
-The default layouts are [all of the kinds](leftwm-core/src/layouts/mod.rs#L21) described by the Layout enum.
+The default layouts are [all of the kinds defined here](https://github.com/leftwm/leftwm-layouts/blob/main/leftwm-layouts/src/layouts/defaults.rs).
 
 ## Troubleshooting
 
