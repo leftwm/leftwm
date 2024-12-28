@@ -296,7 +296,7 @@ mod tests {
                 // same as above, but workspace explicitly given no layouts
                 crate::config::Workspace {
                     layouts: Some(vec![]),
-                    default_layout: Some(layouts::EVEN_HORIZONTAL.to_string()),
+                    default_layout: Some(layouts::LEFT_MAIN.to_string()),
                     ..Default::default()
                 },
                 // case where default is available globally, but not locally
