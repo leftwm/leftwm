@@ -1,4 +1,4 @@
-use leftwm_core::models::{ScratchPad, Size};
+use leftwm_core::models::{FocusOnActivationBehaviour, ScratchPad, Size};
 
 use crate::Backend;
 
@@ -232,6 +232,7 @@ impl Default for Config {
             disable_tile_drag: false,
             disable_window_snap: true,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
+            focus_on_activation: FocusOnActivationBehaviour::default(),
             focus_new_windows: true, // default behaviour: focuses windows on creation
             single_window_border: true,
             insert_behavior: leftwm_core::config::InsertBehavior::Bottom,

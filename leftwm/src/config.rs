@@ -15,7 +15,10 @@ use anyhow::Result;
 use leftwm_core::{
     config::{InsertBehavior, ScratchPad, WindowHidingStrategy, Workspace},
     layouts::LayoutMode,
-    models::{FocusBehaviour, Gutter, Handle, Margins, Window, WindowState, WindowType},
+    models::{
+        FocusBehaviour, FocusOnActivationBehaviour, Gutter, Handle, Margins, Size, Window,
+        WindowState, WindowType,
+    },
     state::State,
     DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
@@ -221,6 +224,7 @@ pub struct Config {
     pub create_follows_cursor: Option<bool>,
     pub auto_derive_workspaces: bool,
     pub disable_cursor_reposition_on_resize: bool,
+    pub focus_on_activation: FocusOnActivationBehaviour,
     pub window_hiding_strategy: WindowHidingStrategy,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
@@ -421,6 +425,10 @@ impl leftwm_core::Config for Config {
 
     fn focus_behaviour(&self) -> FocusBehaviour {
         self.focus_behaviour
+    }
+
+    fn focus_on_activation(&self) -> FocusOnActivationBehaviour {
+        self.focus_on_activation
     }
 
     fn mousekey(&self) -> Vec<String> {
