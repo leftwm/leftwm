@@ -708,11 +708,10 @@ mod tests {
         });
 
         // Assert
-        assert!(manager
+        assert!(!manager
             .state
             .active_scratchpads
-            .get(&scratchpad_name)
-            .is_none());
+            .contains_key(&scratchpad_name));
         assert_eq!(
             *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag

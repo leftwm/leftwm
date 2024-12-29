@@ -13,7 +13,7 @@ use x11_dl::xlib;
 
 pub struct XEvent<'a>(pub &'a mut XWrap, pub xlib::XEvent);
 
-impl<'a> From<XEvent<'a>> for Option<DisplayEvent<XlibWindowHandle>> {
+impl From<XEvent<'_>> for Option<DisplayEvent<XlibWindowHandle>> {
     fn from(x_event: XEvent) -> Self {
         let raw_event = x_event.1;
         let normal_mode = x_event.0.mode == Mode::Normal;

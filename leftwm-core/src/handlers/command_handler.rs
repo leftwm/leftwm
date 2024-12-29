@@ -44,7 +44,7 @@ macro_rules! move_focus_common_vars {
             |x: &Window<H>| -> bool { x.tag == Some(tag_id) && x.is_managed() };
 
         let to_reorder = helpers::vec_extract(&mut $state.windows, for_active_workspace);
-        $func($state, handle, &layout, to_reorder, $($arg),*)
+        $func($state, handle, layout.as_ref(), to_reorder, $($arg),*)
     }};
 }
 
@@ -672,15 +672,15 @@ fn toggle_floating<H: Handle>(state: &mut State<H>) -> Option<bool> {
 fn move_window_change<H: Handle>(
     state: &mut State<H>,
     mut handle: WindowHandle<H>,
-    layout: &Option<String>,
+    layout: Option<&String>,
     mut to_reorder: Vec<Window<H>>,
     val: i32,
 ) -> Option<bool> {
     let is_handle = |x: &Window<H>| -> bool { x.handle == handle };
-    if layout == &Some(MONOCLE.to_string()) {
+    if layout == Some(MONOCLE.to_string()).as_ref() {
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
-    } else if layout == &Some(MAIN_AND_DECK.to_string()) {
+    } else if layout == Some(MAIN_AND_DECK.to_string()).as_ref() {
         if let Some(index) = to_reorder.iter().position(|x: &Window<H>| !x.floating()) {
             let mut window_group = to_reorder.split_off(index + 1);
             if !to_reorder.iter().any(|w| w.handle == handle) {
@@ -701,7 +701,7 @@ fn move_window_change<H: Handle>(
 fn move_window_top<H: Handle>(
     state: &mut State<H>,
     handle: WindowHandle<H>,
-    _layout: &Option<String>,
+    _layout: Option<&String>,
     mut to_reorder: Vec<Window<H>>,
     swap: bool,
 ) -> Option<bool> {
@@ -734,7 +734,7 @@ fn move_window_top<H: Handle>(
 fn move_window_direction<H: Handle>(
     state: &mut State<H>,
     mut handle: WindowHandle<H>,
-    _layout: &Option<String>,
+    _layout: Option<&String>,
     mut to_reorder: Vec<Window<H>>,
     dir: FocusDirection,
 ) -> Option<bool> {
@@ -768,7 +768,7 @@ fn move_window_direction<H: Handle>(
 fn swap_window_top<H: Handle>(
     state: &mut State<H>,
     handle: WindowHandle<H>,
-    _layout: &Option<String>,
+    _layout: Option<&String>,
     mut to_reorder: Vec<Window<H>>,
     swap: bool,
 ) -> Option<bool> {
@@ -800,18 +800,18 @@ fn swap_window_top<H: Handle>(
 fn focus_window_change<H: Handle>(
     state: &mut State<H>,
     mut handle: WindowHandle<H>,
-    layout: &Option<String>,
+    layout: Option<&String>,
     mut to_reorder: Vec<Window<H>>,
     val: i32,
 ) -> Option<bool> {
     let is_handle = |x: &Window<H>| -> bool { x.handle == handle };
-    if layout == &Some(layouts::MONOCLE.to_string()) {
+    if layout == Some(layouts::MONOCLE.to_string()).as_ref() {
         // For Monocle we want to also move windows up/down
         // Not the best solution but results
         // in desired behaviour
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
-    } else if layout == &Some(layouts::MAIN_AND_DECK.to_string()) {
+    } else if layout == Some(layouts::MAIN_AND_DECK.to_string()).as_ref() {
         let len = to_reorder.len() as i32;
         if len > 0 {
             let index = match to_reorder.iter().position(|x: &Window<H>| !x.floating()) {
@@ -832,7 +832,7 @@ fn focus_window_change<H: Handle>(
     }
     state.windows.append(&mut to_reorder);
     state.handle_window_focus(&handle);
-    Some(layout == &Some(layouts::MONOCLE.to_string()))
+    Some(layout == Some(layouts::MONOCLE.to_string()).as_ref())
 }
 
 fn focus_window_top<H: Handle>(state: &mut State<H>, swap: bool) -> Option<bool> {

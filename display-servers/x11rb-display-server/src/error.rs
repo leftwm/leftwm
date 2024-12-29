@@ -48,12 +48,9 @@ impl Display for BackendError {
         f.debug_list().entry(&kind).finish()?;
         f.write_str(" ")?;
         f.write_str(self.msg)?;
-        match &self.src {
-            Some(e) => {
-                f.write_str(": ")?;
-                e.fmt(f)?;
-            }
-            None => (),
+        if let Some(e) = &self.src {
+            f.write_str(": ")?;
+            e.fmt(f)?;
         };
         f.write_str("\nBacktrace:\n")?;
         self.backtrace.fmt(f)

@@ -406,6 +406,7 @@ where
 ///         - Disable the feature (remove from --features at compile time)
 ///         - Install any dependency/dependencies which are missing
 ///         - Ensure all binaries are installed to a location in your PATH
+#[allow(unused_variables)]
 fn check_enabled_features(verbose: bool) -> Result<()> {
     if env!("LEFTWM_FEATURES").is_empty() {
         println!("\x1b[0;94m::\x1b[0m Built with no enabled features.");

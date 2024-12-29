@@ -30,7 +30,7 @@ pub const fn get_help_template() -> &'static str {
 /// There are some principles about autostart file:
 /// 1. An application `.desktop` file must have the format as defined in the [Desktop Entry Specification](http://standards.freedesktop.org/desktop-entry-spec/)
 /// 2. If two files have the same filename in `$XDG_CONFIG_DIRS/autostart` and `$XDG_CONFIG_HOME/autostart`,
-/// e.g. `foo.desktop`, `$XDG_CONFIG_DIRS/autostart/foo.desktop` will be ignored.
+///     e.g. `foo.desktop`, `$XDG_CONFIG_DIRS/autostart/foo.desktop` will be ignored.
 ///
 /// `Autostart Entry` will be ignored when:
 /// 1. the `.desktop` file has the `Hidden` key set to true.
