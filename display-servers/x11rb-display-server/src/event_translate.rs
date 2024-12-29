@@ -1,3 +1,4 @@
+#[cfg(debug_assertions)]
 use std::backtrace::BacktraceStatus;
 
 use leftwm_core::{

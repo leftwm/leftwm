@@ -122,7 +122,7 @@ impl<'de> Deserialize<'de> for ModMask {
     {
         struct ModmaskVisitor;
 
-        impl<'de> Visitor<'de> for ModmaskVisitor {
+        impl Visitor<'_> for ModmaskVisitor {
             type Value = ModMask;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

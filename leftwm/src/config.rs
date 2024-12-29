@@ -16,8 +16,8 @@ use leftwm_core::{
     config::{InsertBehavior, ScratchPad, WindowHidingStrategy, Workspace},
     layouts::LayoutMode,
     models::{
-        FocusBehaviour, FocusOnActivationBehaviour, Gutter, Handle, Margins, Size, Window,
-        WindowState, WindowType,
+        FocusBehaviour, FocusOnActivationBehaviour, Gutter, Handle, Margins, Window, WindowState,
+        WindowType,
     },
     state::State,
     DisplayAction, DisplayServer, Manager, ReturnPipe,

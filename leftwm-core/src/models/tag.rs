@@ -146,10 +146,9 @@ impl Tags {
         if let Some(normal) = self.normal.get_mut(id - 1) {
             return Some(normal);
         }
-        return self
-            .hidden
+        self.hidden
             .iter_mut()
-            .find(|hidden_tag| hidden_tag.id == id);
+            .find(|hidden_tag| hidden_tag.id == id)
     }
 
     /// Get a hidden tag by its label
@@ -191,7 +190,7 @@ pub struct Tag {
     /// but labels of hidden tags must be unique.
     ///
     /// ## Hint
-    /// Unlike in earlier versions of LeftWM,
+    /// Unlike in earlier versions of `LeftWM`,
     /// the label of a Tag is not something that
     /// actually identifies a Tag. Tags are always
     /// identified and referenced by their ID (ie. `[1, 2, 3, ...]`).

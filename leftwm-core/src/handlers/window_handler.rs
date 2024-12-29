@@ -440,11 +440,7 @@ fn setup_window<H: Handle>(
             find_terminal(state, window.pid).map_or_else(|| ws.tag, |terminal| terminal.tag);
     }
     *on_same_tag = ws.tag == window.tag;
-    *layout = state
-        .layout_manager
-        .layout(ws.id, window.tag.unwrap())
-        .name
-        .clone();
+    layout.clone_from(&state.layout_manager.layout(ws.id, window.tag.unwrap()).name);
 
     // Setup a scratchpad window.
     if let Some((scratchpad_name, _)) = state

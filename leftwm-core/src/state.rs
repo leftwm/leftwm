@@ -238,7 +238,7 @@ impl<H: Handle> State<H> {
                     new_tag.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
                 new_window.strut = old_window.strut;
-                new_window.states = old_window.states.clone();
+                new_window.states.clone_from(&old_window.states);
                 ordered.push(new_window.clone());
                 self.windows.remove(index);
 
@@ -283,7 +283,9 @@ impl<H: Handle> State<H> {
         }
 
         // Restore focus.
-        self.focus_manager.tags_last_window = old_state.focus_manager.tags_last_window.clone();
+        self.focus_manager
+            .tags_last_window
+            .clone_from(&old_state.focus_manager.tags_last_window);
         self.focus_manager
             .tags_last_window
             .retain(|&id, _| all_tags.get(id).is_some());

@@ -59,7 +59,6 @@ fn get_log_dir<P: AsRef<Path> + Clone>(path: P) -> Box<Path> {
 /// # Panics
 /// - If HOME is not set
 /// - If path permissions are not at least 0700
-
 pub fn get_log<P: AsRef<Path>>(path: P) -> Box<Path> {
     let file_name = path.as_ref().file_name().unwrap().to_owned();
 
