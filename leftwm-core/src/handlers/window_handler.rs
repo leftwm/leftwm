@@ -120,6 +120,9 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
             {
                 let act = DisplayAction::FocusWindowUnderCursor;
                 self.state.actions.push_back(act);
+                // Make sure we actually update the focus, as the currently
+                // focused window will be removed from history.
+                self.state.focus_manager.window_history.push_front(None);
             } else if let Some(parent) =
                 find_transient_parent(&self.state.windows, transient).map(|p| p.handle)
             {
