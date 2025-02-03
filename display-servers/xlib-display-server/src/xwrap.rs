@@ -244,7 +244,7 @@ impl XWrap {
             task_notify,
             motion_event_limiter: 0,
             refresh_rate,
-            window_hiding_strategy: Default::default(),
+            window_hiding_strategy: WindowHidingStrategy::default(),
         };
 
         // Check that another WM is not running.

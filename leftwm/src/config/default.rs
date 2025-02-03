@@ -1,4 +1,7 @@
-use leftwm_core::models::{FocusOnActivationBehaviour, ScratchPad, Size};
+use leftwm_core::{
+    config::WindowHidingStrategy,
+    models::{FocusOnActivationBehaviour, ScratchPad, Size},
+};
 
 use crate::Backend;
 
@@ -236,7 +239,7 @@ impl Default for Config {
             focus_new_windows: true, // default behaviour: focuses windows on creation
             single_window_border: true,
             insert_behavior: leftwm_core::config::InsertBehavior::Bottom,
-            window_hiding_strategy: Default::default(),
+            window_hiding_strategy: WindowHidingStrategy::default(),
             modkey: "Mod4".to_owned(),     // win key
             mousekey: Some("Mod4".into()), // win key
             #[cfg(feature = "lefthk")]

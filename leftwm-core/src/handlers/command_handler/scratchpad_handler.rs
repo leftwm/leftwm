@@ -70,7 +70,7 @@ fn hide_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
                 .windows
                 .iter()
                 .find(|window| Some(window.handle) == **handle)
-                .map_or(false, Window::visible)
+                .is_some_and(Window::visible)
         })
         .copied();
 

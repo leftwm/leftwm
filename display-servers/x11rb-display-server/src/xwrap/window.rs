@@ -211,7 +211,7 @@ impl XWrap {
     }
 
     /// Show or hide a window, depending on its current visibility.
-    /// Depending on the configured window_hiding_strategy, this will toggle window visibility by moving
+    /// Depending on the configured `window_hiding_strategy`, this will toggle window visibility by moving
     /// the window out of / in to view, or map / unmap it in the display server.
     ///
     /// see `<https://github.com/leftwm/leftwm/issues/1100>` and `<https://github.com/leftwm/leftwm/pull/1274>` for details

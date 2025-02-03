@@ -427,7 +427,7 @@ fn focus_window_by_class<H: Handle>(state: &mut State<H>, window_class: &str) ->
         w.res_name
             .as_ref()
             .zip(w.res_class.as_ref())
-            .map_or(false, |(res_name, res_class)| {
+            .is_some_and(|(res_name, res_class)| {
                 window_class == res_name || window_class == res_class
             })
     };

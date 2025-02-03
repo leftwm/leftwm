@@ -166,7 +166,7 @@ impl XWrap {
             focus_behaviour: FocusBehaviour::Sloppy,
             mouse_key_mask: ModMask::Zero,
             mode_origin: (0, 0),
-            window_hiding_strategy: Default::default(),
+            window_hiding_strategy: WindowHidingStrategy::default(),
 
             task_guard,
             task_notify,

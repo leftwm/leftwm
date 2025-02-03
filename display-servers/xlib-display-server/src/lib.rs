@@ -128,7 +128,7 @@ impl DisplayServer<XlibWindowHandle> for XlibDisplayServer {
             DisplayAction::WindowTakeFocus {
                 window,
                 previous_window,
-            } => from_window_take_focus(xw, &window, &previous_window),
+            } => from_window_take_focus(xw, &window, previous_window.as_ref()),
 
             DisplayAction::FocusWindowUnderCursor => from_focus_window_under_cursor(xw),
             DisplayAction::NormalMode => from_normal_mode(xw),
@@ -404,9 +404,9 @@ fn from_configure_xlib_window(
 fn from_window_take_focus(
     xw: &mut XWrap,
     window: &Window<XlibWindowHandle>,
-    previous_window: &Option<Window<XlibWindowHandle>>,
+    previous_window: Option<&Window<XlibWindowHandle>>,
 ) -> Option<DisplayEvent<XlibWindowHandle>> {
-    xw.window_take_focus(window, previous_window.as_ref());
+    xw.window_take_focus(window, previous_window);
     None
 }
 
