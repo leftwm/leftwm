@@ -211,7 +211,7 @@ impl XWrap {
     }
 
     /// Show or hide a window, depending on its current visibility.
-    /// Depending on the configured window_hiding_strategy, this will toggle window visibility by moving
+    /// Depending on the configured `window_hiding_strategy`, this will toggle window visibility by moving
     /// the window out of / in to view, or map / unmap it in the display server.
     ///
     /// see `<https://github.com/leftwm/leftwm/issues/1100>` and `<https://github.com/leftwm/leftwm/pull/1274>` for details
@@ -260,18 +260,17 @@ impl XWrap {
                         tracing::error!("Error querying window geometry for window {}", window);
                         return;
                     };
-                    let (x, y) = if window_geometry.w.is_some() && window_geometry.h.is_some() {
-                        (
-                            window_geometry.w.unwrap() * -2,
-                            window_geometry.h.unwrap() * -2,
-                        )
-                    } else {
-                        let screen_dimensions = self.get_screens_area_dimensions();
-                        (
-                            window_geometry.w.unwrap_or(screen_dimensions.0) * -2,
-                            window_geometry.h.unwrap_or(screen_dimensions.1) * -2,
-                        )
-                    };
+
+                    let (x, y) = (
+                        window_geometry
+                            .w
+                            .unwrap_or_else(|| self.get_screens_area_dimensions().0)
+                            * -2,
+                        window_geometry
+                            .h
+                            .unwrap_or_else(|| self.get_screens_area_dimensions().1)
+                            * -2,
+                    );
 
                     let mut window_changes: xlib::XWindowChanges = unsafe { std::mem::zeroed() };
                     window_changes.x = x;
@@ -293,7 +292,7 @@ impl XWrap {
             }
         }
 
-        maybe_change_mask(ROOT_EVENT_MASK)
+        maybe_change_mask(ROOT_EVENT_MASK);
     }
 
     /// Makes a window take focus.
