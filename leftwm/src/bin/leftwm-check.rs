@@ -222,7 +222,7 @@ fn check_theme(verbose: bool) -> bool {
     let xdg_base_dir = xdg_base_dir.unwrap();
     let path_current_theme = xdg_base_dir.find_config_file("current");
 
-    match check_current_theme_set(&path_current_theme, verbose) {
+    match check_current_theme_set(path_current_theme.as_ref(), verbose) {
         Ok(_) => check_theme_contents(xdg_base_dir.list_config_files("current"), verbose),
         Err(e) => {
             err_formatter(e.to_string());
@@ -281,7 +281,7 @@ fn missing_expected_file(filepaths: &[PathBuf]) -> impl Iterator<Item = &&str> {
         .filter(move |f| !filepaths.iter().any(|fp| fp.ends_with(f)))
 }
 
-fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<&PathBuf> {
+fn check_current_theme_set(filepath: Option<&PathBuf>, verbose: bool) -> Result<&PathBuf> {
     match &filepath {
         Some(p) => {
             if verbose {

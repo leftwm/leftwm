@@ -105,7 +105,7 @@ impl WindowHook {
         // returns true if any of the items in the provided `Vec<&Option<String>>` is Some and matches the `&Regex`
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
             strs.iter().any(|str| {
-                str.as_ref().map_or(false, |s| {
+                str.as_ref().is_some_and(|s| {
                     // we match the class/title to the window rule by checking if replacing the text
                     // with the regex makes the string empty. if the original string is already
                     // empty, this will match it to every regex, so we need to check for that.
@@ -382,11 +382,11 @@ impl lefthk_core::config::Config for Config {
             .map(|mut keybind| {
                 if let Some(ref mut modifier) = keybind.modifier {
                     match modifier {
-                        Modifier::Single(m) if m == "modkey" => *m = self.modkey.clone(),
+                        Modifier::Single(m) if m == "modkey" => m.clone_from(&self.modkey),
                         Modifier::List(ms) => {
                             for m in ms {
                                 if m == "modkey" {
-                                    *m = self.modkey.clone();
+                                    m.clone_from(&self.modkey);
                                 }
                             }
                         }
@@ -732,6 +732,7 @@ fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex
     })
 }
 
+#[allow(clippy::ref_option)]
 fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
     match wc {
         Some(ref re) => s.serialize_some(re.as_str()),
