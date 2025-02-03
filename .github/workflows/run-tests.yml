@@ -44,7 +44,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: clippy
-            args: --all-targets --all-features
+            args: -- -D warnings -W clippy::pedantic
 
   test:
     name: Run tests
