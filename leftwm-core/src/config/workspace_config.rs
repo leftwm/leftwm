@@ -9,6 +9,7 @@ pub struct Workspace {
     pub output: String,
     pub relative: Option<bool>,
     pub layouts: Option<Vec<String>>,
+    /// The default layout from the config; introduced in 0.5.4
     #[serde(default)]
     pub default_layout: Option<String>,
 }
