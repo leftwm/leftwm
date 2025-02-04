@@ -1,14 +1,14 @@
 [package]
 name = "x11rb-display-server"
 description = "x11 backend for leftwm using pure rust + xcb specification"
-version = "0.1.2"
+version = "0.1.4"
 license = "MIT"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-leftwm-core = { path = "../../leftwm-core", version = '0.5.2' }
+leftwm-core = { path = "../../leftwm-core", version = '0.5.4' }
 futures = "0.3.21"
 tracing = "0.1.36"
 tokio = { version = "1.2.0", features = [ "sync", "time" ] }

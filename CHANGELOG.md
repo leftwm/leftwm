@@ -5,11 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.5]
+
+## [0.5.4]
+
+### Breaking Change
+
+- chore: update MSRV to 1.83.0 for liquid (via #1307 by @mautamu)
+
+### Added
+
+- Window urgency update and switch-to on activation (via #1239 by @willfindlay)
+
+### Fixes
+
+- Sloppy focus after window close is corrected (via #1305 by @frankslaver)
+- Update template.liquid documentation (via #1297 by @thealio)
+- Deadlink in README repaired (via #1300 by @AnthonyMichaelTDM)
+- Flake compilation (via #1304 by @VuiMuich)
+- Various clippy fixes (via #1302 by @mautamu)
+
 ## [0.5.3]
 
 ### Fixed
 
-- Fixed compilation issue for xlib-display-server for 32-bit systems
+- Fixed compilation issue for xlib-display-server for 32-bit systems (via #1292 by @mautamu)
 
 ## [0.5.2]
 

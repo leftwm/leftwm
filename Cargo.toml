@@ -9,6 +9,10 @@ members = [
 ]
 resolver = "2"
 
+[workspace.package]
+edition = "2021"
+rust-version = "1.83.0" # MSRV MINIMUM SUPPORTED RUST VERSION
+
 [profile.optimized]
 inherits = "release"
 codegen-units = 1
