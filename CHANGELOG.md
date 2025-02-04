@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Change
 
-- chore: update MSRV to 1.83.0 for liquid (via #1307 by @mautamu)
+- chore: update MSRV to 1.83.0 for liquid (via #1308 by @mautamu)
 
 ### Added
 
