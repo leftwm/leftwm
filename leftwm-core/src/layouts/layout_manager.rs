@@ -296,7 +296,7 @@ mod tests {
                 // same as above, but workspace explicitly given no layouts
                 crate::config::Workspace {
                     layouts: Some(vec![]),
-                    default_layout: Some(layouts::LEFT_MAIN.to_string()),
+                    default_layout: Some(layouts::EVEN_VERTICAL.to_string()),
                     ..Default::default()
                 },
                 // case where default is available globally, but not locally
@@ -342,7 +342,7 @@ mod tests {
             &layout_manager.layout(5, 1).name
         );
         assert_eq!(layouts::FIBONACCI, &layout_manager.layout(6, 1).name);
-        assert_eq!(layouts::LEFT_MAIN, &layout_manager.layout(7, 1).name);
+        assert_eq!(layouts::EVEN_VERTICAL, &layout_manager.layout(7, 1).name);
         assert_eq!(layouts::CENTER_MAIN, &layout_manager.layout(8, 1).name);
     }
 }
