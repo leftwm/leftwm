@@ -1,7 +1,7 @@
 [package]
 name = "leftwm-macros"
 version = "0.5.4"
-rust-version = "1.74.0"
+rust-version = "1.83.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["development-tools::procedural-macro-helpers"]
 edition = "2021"
