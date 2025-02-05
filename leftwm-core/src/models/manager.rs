@@ -75,7 +75,7 @@ impl
 {
     pub fn new_with_screens(
         config: crate::config::tests::TestConfig,
-        screens: Vec<super::Screen<crate::models::window::MockHandle>>,
+        screens: &[super::Screen<crate::models::window::MockHandle>],
     ) -> Self {
         // needs to mimic what the display server would do when it starts,
         // specifically in respect to how workspaces are created for the screens
@@ -217,7 +217,7 @@ mod pr_1301_issue {
         let mut manager: Manager<MockHandle, TestConfig, MockDisplayServer<MockHandle>> =
             Manager::new_with_screens(
                 test_config(),
-                vec![
+                &[
                     Screen::new(
                         BBox {
                             x: 0,
@@ -255,7 +255,7 @@ mod pr_1301_issue {
         let mut manager: Manager<MockHandle, TestConfig, MockDisplayServer<MockHandle>> =
             Manager::new_with_screens(
                 test_config(),
-                vec![Screen::new(
+                &[Screen::new(
                     BBox {
                         x: 0,
                         y: 0,
@@ -284,7 +284,7 @@ mod pr_1301_issue {
         let mut manager: Manager<MockHandle, TestConfig, MockDisplayServer<MockHandle>> =
             Manager::new_with_screens(
                 test_config(),
-                vec![
+                &[
                     Screen::new(
                         BBox {
                             x: 0,
