@@ -17,6 +17,12 @@ The list of available subcommands available for leftwm is listed below:
 Prints help information for this subcommand. This flag can also be used with other subcommands to display their own help message.
 .IP "-v, --version"
 Prints the version information.
+.IP "-b, --backend"
+Specify the backend to use when starting LeftWM.
+Available backends depends on which feature flag was enables at compile time.
+You can check which backends are available on your LeftWM installation by using 'leftwm help backend'
+.IP
+Currently implemented backends: "xlib" (default), "x11rb"
 .IP "check"
 This command will run several actions to ensure leftwm is configured properly, this will report the current leftwm version and git commit, it will also check if configuration is loaded correctly, check for syntax errors in your
 .I config.toml
@@ -217,36 +223,70 @@ New windows will be created in the workspace:
 .IP "-"
 .B  Containing the cursor
 when unset (\f[C]None\f[R]), \f[C]Some(true)\f[R], or when the cursor is in \f[C]Sloppy\f[R] mode
-.IP "-" 
+.IP "-"
 .B Which is focused
 when set to \f[C]Some(false)\f[R]
 .PP
 Default: \f[C]create_follows_cursor = None\f[R]
 .SS Layouts
 .PP
-Leftwm supports variety of layouts, which define the way that windows are tiled in the workspace
+Leftwm supports a variety of user definable layouts. Layouts define the way that windows are tiled in the workspace.
 .PP
-Default layouts:
+The layouts considered by leftwm can be customized in the
+.B config.ron
+file by editing the
+.B layouts
+and the
+.B layout_definitions
+entries.
+.PP
+The layouts in the
+.B layouts
+list are those accessible when switching layouts. For an example with a single layout:
+.PP
 .IP
 .nf
 \f[C]
-layouts: [
-    MainAndDeck,
-    MainAndVertStack,
-    MainAndHorizontalStack,
-    GridHorizontal,
-    EvenHorizontal,
-    EvenVertical,
-    Fibonacci,
-    CenterMain,
-    CenterMainBalanced,
-    CenterMainFluid,
-    Monocle,
-    RightWiderLeftStack,
-    LeftWiderRightStack,
-]
+layouts = [ "MyMainAndVertStack" ]
 \f[R]
 .fi
+.PP
+Each list in the
+.B layouts
+list must have a corresponding definition in the
+.B layout_definitions
+entry. For example:
+.PP
+.IP
+.nf
+\f[C]
+layout_definitions = [(
+  name: "MyMainAndVertStack",
+  flip: None,
+  rotate: North,
+  reserve: ReserveAndCenter,
+  columns: (
+    flip: None,
+    rotate: North,
+    main: (count: 1, size: 0.8, flip: None, rotate: North, split: None),
+    stack: (flip: None, rotate: North, split: Horizontal),
+    second_stack: None,
+  ),
+)]
+\f[R]
+.fi
+.PP
+The size of the
+.B main
+area can be controlled with the
+.B IncreaseMainSize
+and
+.B DecreaseMainSize
+commands.
+
+.PP
+There are various possiblities for the other parameters, and the user is referred to the default configuration file to see a large selection of examples.
+
 
 .SS Workspaces
 .PP
@@ -278,11 +318,12 @@ Again the example for an ultra-wide screen, splitting workspaces by substracting
 .nf
 \f[C]
 workspaces: [
-    { output: "HDMI-1", y: 0, x: 0, height: 1440, width: -1720 },
-    { output: "HDMI-1", y: 0, x: 1720, height: 1440, width: -1720 },
+    ( output: "HDMI-1", y: 0, x: 0, height: 1440, width: -1720 ),
+    ( output: "HDMI-1", y: 0, x: 1720, height: 1440, width: -1720 ),
 ]
 \f[R]
 .fi
+
 .SS Tags
 .PP
 Tags are the names of the virtual desktops where windows live.
@@ -292,6 +333,27 @@ popular icon libraries such as font-awesome.
 .PP
 Default:
 \f[C]tags: [\[dq]1\[dq], \[dq]2\[dq], \[dq]3\[dq], \[dq]4\[dq], \[dq]5\[dq], \[dq]6\[dq], \[dq]7\[dq], \[dq]8\[dq], \[dq]9\[dq]]\f[R]
+
+.SS Scratchpads
+.PP 
+A scratchpad is a set of windows which you can call to any tag and hide it when not needed. These windows can be any set of application which can be run from a terminal. To call a scratchpad you will require a keybind for ToggleScratchPad. When you want to manipulate the currently focused scratchpad, other commands like ReleaseScratchPad, AttachScratchPad and NextScratchPadWindow/PrevScratchPadWindow are available.
+.PP 
+Example:
+.IP
+.nf
+\f[C]
+scratchpad: [
+    ( name: "Alacritty", // This is the name which is referenced when calling (case-sensitive)
+      value: "alacritty", // The command to load the application if it isn't started (first application to start)
+      args: ["-e", "python"], // Any arguments to pass to the command
+      // x, y, width, height are in pixels when an integer is inputted or a percentage when a float is inputted.
+      // These values are relative to the size of the workspace, and will be restricted depending on the workspace size.
+      x: 860, y: 390, height: 300, width: 200 
+    ),
+]
+\f[R]
+.fi
+
 
 
 .SH WIKI

@@ -9,8 +9,9 @@ Table of Contents:
 3. [Patches / Pull Requests](#patches--pull-requests)
     1. [Testing](#testing)
     2. [Performance](#performance)
-    3. [Documentation](#documentation)
+    3. [Code Documentation](#code-documentation)
     4. [Style](#style)
+    5. [User Documentation](#user-documentation)
 
 ## Feature Requests
 
@@ -38,7 +39,9 @@ cargo test --all-targets --all-features
 ```
 These tests are run by CI, but it is always easier to check before pushing.
 
-### Documentation
+### Code Documentation
+
+Code documentation is generated with `cargo doc --all-features`.
 
 The existing code can be used as a guidance here and the general rustfmt rules can be followed for formatting, which can be run with:
 ```

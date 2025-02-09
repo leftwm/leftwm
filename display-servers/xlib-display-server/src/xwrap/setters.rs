@@ -1,6 +1,6 @@
 //! `XWrap` setters.
 use super::WindowHandle;
-use crate::XWrap;
+use crate::{XWrap, XlibWindowHandle};
 use leftwm_core::models::TagId;
 use std::ffi::CString;
 use std::os::raw::{c_long, c_ulong};
@@ -93,8 +93,12 @@ impl XWrap {
     // }
 
     /// Sets a desktop property.
+    // We allow the lossless cast here so that 32 bit systems may work with
+    // leftwm. See https://github.com/leftwm/leftwm/discussions/1201 for
+    // more details.
+    #[allow(clippy::cast_lossless)]
     pub fn set_desktop_prop(&self, data: &[u32], atom: c_ulong) {
-        let x_data: Vec<c_long> = data.iter().map(|x| i64::from(*x)).collect();
+        let x_data: Vec<c_long> = data.iter().map(|x| *x as c_long).collect();
         self.replace_property_long(self.root, atom, xlib::XA_CARDINAL, &x_data);
     }
 
@@ -125,42 +129,42 @@ impl XWrap {
     }
 
     /// Sets a windows state.
-    pub fn set_state(&self, handle: WindowHandle, toggle_to: bool, atom: xlib::Atom) {
-        if let WindowHandle::XlibHandle(h) = handle {
-            let mut states = self.get_window_states_atoms(h);
-            if toggle_to {
-                if states.contains(&atom) {
-                    return;
-                }
-                states.push(atom);
-            } else {
-                let Some(index) = states.iter().position(|s| s == &atom) else {
-                    return;
-                };
-                states.remove(index);
+    pub fn set_state(
+        &self,
+        handle: WindowHandle<XlibWindowHandle>,
+        toggle_to: bool,
+        atom: xlib::Atom,
+    ) {
+        let WindowHandle(XlibWindowHandle(h)) = handle;
+        let mut states = self.get_window_states_atoms(h);
+        if toggle_to {
+            if states.contains(&atom) {
+                return;
             }
-            self.set_window_states_atoms(h, &states);
+            states.push(atom);
+        } else {
+            let Some(index) = states.iter().position(|s| s == &atom) else {
+                return;
+            };
+            states.remove(index);
         }
+        self.set_window_states_atoms(h, &states);
     }
 
     /// Sets a windows border color.
     // `XSetWindowBorder`: https://tronche.com/gui/x/xlib/window/XSetWindowBorder.html
     pub fn set_window_border_color(&self, window: xlib::Window, mut color: c_ulong) {
         unsafe {
-            // Force border opacity to 0xff.
-            let mut bytes = color.to_le_bytes();
-            bytes[3] = 0xff;
-            color = c_ulong::from_le_bytes(bytes);
+            // Force border opacity to 0xff. (color is <aarrggbb> in hex format)
+            color |= 0xff00_0000;
             (self.xlib.XSetWindowBorder)(self.display, window, color);
         }
     }
 
     pub fn set_background_color(&self, mut color: c_ulong) {
         unsafe {
-            // Force border opacity to 0xff.
-            let mut bytes = color.to_le_bytes();
-            bytes[3] = 0xff;
-            color = c_ulong::from_le_bytes(bytes);
+            // Force border opacity to 0xff. (color is <aarrggbb> in hex format)
+            color |= 0xff00_0000;
             (self.xlib.XSetWindowBackground)(self.display, self.root, color);
             (self.xlib.XClearWindow)(self.display, self.root);
             (self.xlib.XFlush)(self.display);

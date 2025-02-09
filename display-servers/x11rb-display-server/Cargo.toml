@@ -1,0 +1,18 @@
+[package]
+name = "x11rb-display-server"
+description = "x11 backend for leftwm using pure rust + xcb specification"
+version = "0.1.4"
+license = "MIT"
+edition = "2021"
+rust-version = "1.83.0" # MSRV MINIMUM SUPPORTED RUST VERSION
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+leftwm-core = { path = "../../leftwm-core", version = '0.5.4' }
+futures = "0.3.21"
+tracing = "0.1.36"
+tokio = { version = "1.2.0", features = [ "sync", "time" ] }
+mio = { version = "1.0.2", features = ["os-ext"] }
+x11rb = { version = "0.13.1", features = ["cursor", "randr", "xinerama"] }
+serde = { version = "1.0.104", features = ["derive"] }

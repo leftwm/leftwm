@@ -8,16 +8,17 @@ use std::collections::VecDeque;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    child_process::{exec_shell, ChildID},
-    models::{ScratchPadName, TagId, WindowHandle},
+    child_process::{exec_shell_with_args, ChildID},
+    models::{Handle, ScratchPadName, TagId, WindowHandle},
     Command, Config, DisplayAction, DisplayServer, Manager, Window,
 };
 
 /// Describes the options for the release scratchpad command
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-pub enum ReleaseScratchPadOption {
+pub enum ReleaseScratchPadOption<H: Handle> {
     /// Release a window from a scratchpad given a window handle
-    Handle(WindowHandle),
+    #[serde(bound = "")]
+    Handle(WindowHandle<H>),
     /// Release a window from a scratchpad given a scratchpad name, the most upper window in the
     /// scratchpad queue will be released
     ScratchpadName(ScratchPadName),
@@ -27,9 +28,9 @@ pub enum ReleaseScratchPadOption {
 
 /// Hide scratchpad window:
 /// Expects that the window handle is a valid handle to a visible scratchpad window
-fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    scratchpad_window: &WindowHandle,
+fn hide_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    manager: &mut Manager<H, C, SERVER>,
+    scratchpad_window: &WindowHandle<H>,
 ) -> Result<(), &'static str> {
     tracing::trace!("Hide scratchpad window {:?}", scratchpad_window);
     let nsp_tag = manager
@@ -69,7 +70,7 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
                 .windows
                 .iter()
                 .find(|window| Some(window.handle) == **handle)
-                .map_or(false, Window::visible)
+                .is_some_and(Window::visible)
         })
         .copied();
 
@@ -99,9 +100,9 @@ fn hide_scratchpad<C: Config, SERVER: DisplayServer>(
 
 /// Makes a scratchpad window visible:
 /// Expects that the window handle is a valid handle to an invisible scratchpad window
-fn show_scratchpad<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
-    scratchpad_window: &WindowHandle,
+fn show_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    manager: &mut Manager<H, C, SERVER>,
+    scratchpad_window: &WindowHandle<H>,
 ) -> Result<(), &'static str> {
     tracing::trace!("Show scratchpad window {:?}", scratchpad_window);
     let current_tag = &manager
@@ -147,9 +148,9 @@ fn show_scratchpad<C: Config, SERVER: DisplayServer>(
 /// With the introduction of `VecDeque` for scratchpads, it is possible that a window gets destroyed
 /// in the middle of the `VecDeque`. This is an abstraction to retrieve the next valid pid from a
 /// scratchpad. While walking the scratchpad windows, invalid pids will get removed.
-fn next_valid_scratchpad_pid(
+fn next_valid_scratchpad_pid<H: Handle>(
     scratchpad_windows: &mut VecDeque<u32>,
-    managed_windows: &[Window],
+    managed_windows: &[Window<H>],
     direction: Direction,
 ) -> Option<u32> {
     while let Some(window) = if direction == Direction::Forward {
@@ -177,8 +178,8 @@ fn next_valid_scratchpad_pid(
 
 /// Check if the scratchpad is visible on the current tag.
 /// Returns `false` immediately if the scratchpad name isn't defined in the config
-fn is_scratchpad_visible<C: Config, SERVER: DisplayServer>(
-    manager: &Manager<C, SERVER>,
+fn is_scratchpad_visible<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    manager: &Manager<H, C, SERVER>,
     scratchpad_name: &ScratchPadName,
 ) -> bool {
     // Like Try operator but returns false and only works on `Option`s
@@ -203,20 +204,14 @@ fn is_scratchpad_visible<C: Config, SERVER: DisplayServer>(
 }
 
 /// Handle the command to toggle the scratchpad
-pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
+pub fn toggle_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    manager: &mut Manager<H, C, SERVER>,
     name: &ScratchPadName,
 ) -> Option<bool> {
     let current_tag = &manager.state.focus_manager.tag(0)?;
-    let scratchpad = manager
-        .state
-        .scratchpads
-        .iter()
-        .find(|s| name == &s.name)?
-        .clone();
 
     // Check if there is a valid scratchpad, if so handle it and return immediately
-    if let Some(id) = manager.state.active_scratchpads.get_mut(&scratchpad.name) {
+    if let Some(id) = manager.state.active_scratchpads.get_mut(name) {
         if let Some(first_in_scratchpad) =
             next_valid_scratchpad_pid(id, &manager.state.windows, Direction::Forward)
         {
@@ -247,14 +242,26 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
         }
     }
 
+    let scratchpad = manager
+        .state
+        .scratchpads
+        .iter()
+        .find(|s| name == &s.name)?
+        .clone();
+
     tracing::debug!(
         "No active scratchpad found for name {:?}. Creating a new one",
-        scratchpad.name
+        name
     );
-    let name = scratchpad.name.clone();
-    let pid: ChildID = exec_shell(&scratchpad.value, &mut manager.children)?;
+    tracing::debug!("Args for scratchpad: {:?}", &scratchpad.args);
 
-    match manager.state.active_scratchpads.get_mut(&name) {
+    let pid: ChildID = exec_shell_with_args(
+        &scratchpad.value,
+        scratchpad.args.unwrap_or_else(Vec::new),
+        &mut manager.children,
+    )?;
+
+    match manager.state.active_scratchpads.get_mut(name) {
         Some(windows) => {
             windows.push_front(pid);
         }
@@ -262,7 +269,7 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
             manager
                 .state
                 .active_scratchpads
-                .insert(name, VecDeque::from([pid]));
+                .insert(scratchpad.name, VecDeque::from([pid]));
         }
     }
 
@@ -270,10 +277,10 @@ pub fn toggle_scratchpad<C: Config, SERVER: DisplayServer>(
 }
 
 /// Attaches the `WindowHandle` or the currently selected window to the selected `scratchpad`
-pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
-    window: Option<WindowHandle>,
+pub fn attach_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    window: Option<WindowHandle<H>>,
     scratchpad: &ScratchPadName,
-    manager: &mut Manager<C, SERVER>,
+    manager: &mut Manager<H, C, SERVER>,
 ) -> Option<bool> {
     // If `None`, replace with current window
     let window_handle = {
@@ -281,7 +288,7 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
             .state
             .focus_manager
             .window_history
-            .get(0)?
+            .front()?
             .as_ref()
             .copied();
 
@@ -355,13 +362,13 @@ pub fn attach_scratchpad<C: Config, SERVER: DisplayServer>(
 /// Release a scratchpad to become a normal window. When tag is None, use current active tag as the
 /// destination. Window can be a handle to select a specific window, the name of a scratchpad or
 /// none to select the current window.
-pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
-    window: ReleaseScratchPadOption,
+pub fn release_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    window: ReleaseScratchPadOption<H>,
     tag: Option<TagId>,
-    manager: &mut Manager<C, SERVER>,
+    manager: &mut Manager<H, C, SERVER>,
 ) -> Option<bool> {
     let destination_tag =
-        tag.or_else(|| manager.state.focus_manager.tag_history.get(0).copied())?;
+        tag.or_else(|| manager.state.focus_manager.tag_history.front().copied())?;
 
     // If `None`, replace with current window
     let window = if window == ReleaseScratchPadOption::None {
@@ -370,7 +377,7 @@ pub fn release_scratchpad<C: Config, SERVER: DisplayServer>(
                 .state
                 .focus_manager
                 .window_history
-                .get(0)?
+                .front()?
                 .as_ref()
                 .copied()?,
         )
@@ -470,8 +477,8 @@ pub enum Direction {
 
 /// Cycles the currently visible scratchpad window given the scratchpads name. Only visible
 /// scratchpads will be handled, otherwise ignored
-pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
-    manager: &mut Manager<C, SERVER>,
+pub fn cycle_scratchpad_window<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+    manager: &mut Manager<H, C, SERVER>,
     scratchpad_name: &ScratchPadName,
     direction: Direction,
 ) -> Option<bool> {
@@ -525,7 +532,10 @@ pub fn cycle_scratchpad_window<C: Config, SERVER: DisplayServer>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::ScratchPad, models::ScratchPadName};
+    use crate::{
+        config::ScratchPad,
+        models::{MockHandle, ScratchPadName},
+    };
 
     use super::*;
 
@@ -537,7 +547,7 @@ mod tests {
         let first_tag = manager.state.tags.get(1).unwrap().id;
 
         let mock_window = 1_u32;
-        let window_handle = WindowHandle::MockHandle(mock_window as i32);
+        let window_handle = WindowHandle::<MockHandle>(mock_window as i32);
         manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
         // Make sure the window is on the first tag
         manager.command_handler(&Command::SendWindowToTag {
@@ -572,7 +582,7 @@ mod tests {
         let first_tag = manager.state.tags.get(1).unwrap().id;
 
         let mock_window = 1_u32;
-        let window_handle = WindowHandle::MockHandle(mock_window as i32);
+        let window_handle = WindowHandle::<MockHandle>(mock_window as i32);
         manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
         // Make sure the window is on the first tag
         manager.command_handler(&Command::SendWindowToTag {
@@ -606,12 +616,13 @@ mod tests {
         let nsp_tag = manager.state.tags.get_hidden_by_label("NSP").unwrap().id;
 
         let mock_window = 1_u32;
-        let window_handle = WindowHandle::MockHandle(mock_window as i32);
+        let window_handle = WindowHandle::<MockHandle>(mock_window as i32);
         let scratchpad_name: ScratchPadName = "Alacritty".into();
         manager.window_created_handler(Window::new(window_handle, None, Some(mock_window)), -1, -1);
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: String::new(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -678,7 +689,7 @@ mod tests {
             .insert(scratchpad_name.clone(), VecDeque::from([mock_window1]));
         manager.window_created_handler(
             Window::new(
-                WindowHandle::MockHandle(mock_window1 as i32),
+                WindowHandle::<MockHandle>(mock_window1 as i32),
                 None,
                 Some(mock_window1),
             ),
@@ -690,18 +701,19 @@ mod tests {
 
         // Release Scratchpad
         manager.command_handler(&Command::ReleaseScratchPad {
-            window: ReleaseScratchPadOption::Handle(WindowHandle::MockHandle(mock_window1 as i32)),
+            window: ReleaseScratchPadOption::Handle(WindowHandle::<MockHandle>(
+                mock_window1 as i32,
+            )),
             tag: Some(expected_tag),
         });
 
         // Assert
-        assert!(manager
+        assert!(!manager
             .state
             .active_scratchpads
-            .get(&scratchpad_name)
-            .is_none());
+            .contains_key(&scratchpad_name));
         assert_eq!(
-            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag
         );
     }
@@ -725,7 +737,11 @@ mod tests {
         );
         for window in [mock_window1, mock_window2, mock_window3] {
             manager.window_created_handler(
-                Window::new(WindowHandle::MockHandle(window as i32), None, Some(window)),
+                Window::new(
+                    WindowHandle::<MockHandle>(window as i32),
+                    None,
+                    Some(window),
+                ),
                 -1,
                 -1,
             );
@@ -735,7 +751,9 @@ mod tests {
 
         // Release Scratchpad
         manager.command_handler(&Command::ReleaseScratchPad {
-            window: ReleaseScratchPadOption::Handle(WindowHandle::MockHandle(mock_window1 as i32)),
+            window: ReleaseScratchPadOption::Handle(WindowHandle::<MockHandle>(
+                mock_window1 as i32,
+            )),
             tag: Some(expected_tag),
         });
 
@@ -767,7 +785,7 @@ mod tests {
         assert_eq!(scratchpad.pop_front(), None);
 
         assert_eq!(
-            *manager.state.focus_manager.tag_history.get(0).unwrap(),
+            *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag
         );
     }
@@ -786,6 +804,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: "scratchpad".to_string(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -797,7 +816,7 @@ mod tests {
         );
         for mock_window in [mock_window1, mock_window2, mock_window3] {
             let mut window = Window::new(
-                WindowHandle::MockHandle(mock_window as i32),
+                WindowHandle::<MockHandle>(mock_window as i32),
                 None,
                 Some(mock_window),
             );
@@ -810,7 +829,7 @@ mod tests {
 
         // Attach Scratchpad
         manager.command_handler(&Command::AttachScratchPad {
-            window: Some(WindowHandle::MockHandle(mock_window1 as i32)),
+            window: Some(WindowHandle::<MockHandle>(mock_window1 as i32)),
             scratchpad: scratchpad_name.clone(),
         });
 
@@ -853,8 +872,8 @@ mod tests {
 
         let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
-            .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
-            .collect::<Vec<Window>>();
+            .map(|pid| Window::new(WindowHandle::<MockHandle>(*pid as i32), None, Some(*pid)))
+            .collect::<Vec<Window<MockHandle>>>();
         let mut scratchpad =
             VecDeque::from([mock_window1, mock_window2, mock_window3, mock_window4]);
 
@@ -887,8 +906,8 @@ mod tests {
 
         let mut managed_windows = [mock_window1, mock_window2, mock_window3, mock_window4]
             .iter()
-            .map(|pid| Window::new(WindowHandle::MockHandle(*pid as i32), None, Some(*pid)))
-            .collect::<Vec<Window>>();
+            .map(|pid| Window::new(WindowHandle::<MockHandle>(*pid as i32), None, Some(*pid)))
+            .collect::<Vec<Window<MockHandle>>>();
         let mut scratchpad =
             VecDeque::from([mock_window1, mock_window2, mock_window3, mock_window4]);
 
@@ -914,8 +933,8 @@ mod tests {
     #[test]
     #[allow(clippy::too_many_lines)]
     fn cycle_scratchpad_window_test() {
-        fn is_visible<C: Config, SERVER: DisplayServer>(
-            manager: &Manager<C, SERVER>,
+        fn is_visible<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+            manager: &Manager<H, C, SERVER>,
             pid: u32,
             nsp_tag: TagId,
         ) -> bool {
@@ -927,8 +946,8 @@ mod tests {
                 .map(|w| w.visible() && !w.has_tag(&nsp_tag))
                 .unwrap()
         }
-        fn is_only_first_visible<C: Config, SERVER: DisplayServer>(
-            manager: &Manager<C, SERVER>,
+        fn is_only_first_visible<H: Handle, C: Config, SERVER: DisplayServer<H>>(
+            manager: &Manager<H, C, SERVER>,
             mut pids: impl Iterator<Item = u32>,
             nsp_tag: TagId,
         ) -> bool {
@@ -956,7 +975,7 @@ mod tests {
 
         for mock_window in [mock_window1, mock_window2, mock_window3] {
             let mut window = Window::new(
-                WindowHandle::MockHandle(mock_window as i32),
+                WindowHandle::<MockHandle>(mock_window as i32),
                 None,
                 Some(mock_window),
             );
@@ -969,6 +988,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: "scratchpad".to_string(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -1066,7 +1086,7 @@ mod tests {
 
         for mock_window in [mock_window1, mock_window2, mock_window3] {
             let mut window = Window::new(
-                WindowHandle::MockHandle(mock_window as i32),
+                WindowHandle::<MockHandle>(mock_window as i32),
                 None,
                 Some(mock_window),
             );
@@ -1078,6 +1098,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: "scratchpad".to_string(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -1098,7 +1119,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(1),
+            WindowHandle::<MockHandle>(1),
             "Initially the first window (1) should be focused"
         );
 
@@ -1110,7 +1131,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(2),
+            WindowHandle::<MockHandle>(2),
             "After 1 down window (2) should be focused"
         );
 
@@ -1122,7 +1143,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(3),
+            WindowHandle::<MockHandle>(3),
             "After 2 down window (3) should be focused"
         );
 
@@ -1134,7 +1155,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(1),
+            WindowHandle::<MockHandle>(1),
             "After 3 down window (1) should be focused (cycle back)"
         );
 
@@ -1146,7 +1167,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(3),
+            WindowHandle::<MockHandle>(3),
             "After 3 down and 1 up window (3) should be focused (cycle back)"
         );
 
@@ -1158,7 +1179,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(2),
+            WindowHandle::<MockHandle>(2),
             "After 3 down and 2 up window (2) should be focused"
         );
     }
@@ -1176,7 +1197,7 @@ mod tests {
 
         for mock_window in [mock_window1, mock_window2, mock_window3] {
             let mut window = Window::new(
-                WindowHandle::MockHandle(mock_window as i32),
+                WindowHandle::<MockHandle>(mock_window as i32),
                 None,
                 Some(mock_window),
             );
@@ -1188,6 +1209,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: "scratchpad".to_string(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -1208,7 +1230,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(1),
+            WindowHandle::<MockHandle>(1),
             "Initially the first window (1) should be focused"
         );
 
@@ -1220,7 +1242,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(3),
+            WindowHandle::<MockHandle>(3),
             "After 1 up window (3) should be focused (scratchpad window)"
         );
 
@@ -1232,7 +1254,7 @@ mod tests {
                 .window(&manager.state.windows)
                 .unwrap()
                 .handle,
-            WindowHandle::MockHandle(1),
+            WindowHandle::<MockHandle>(1),
             "After focusing the scratchpad and then focusing the top, window (1) should be focused"
         );
     }
@@ -1244,7 +1266,7 @@ mod tests {
         let second_tag = manager.state.tags.get(2).unwrap().id;
 
         let scratchpad_pid = 1_u32;
-        let scratchpad_handle = WindowHandle::MockHandle(scratchpad_pid as i32);
+        let scratchpad_handle = WindowHandle::<MockHandle>(scratchpad_pid as i32);
         let scratchpad_name: ScratchPadName = "Alacritty".into();
         let mut scratchpad = Window::new(scratchpad_handle, None, Some(scratchpad_pid));
         scratchpad.tag = Some(second_tag);
@@ -1252,6 +1274,7 @@ mod tests {
         manager.state.scratchpads.push(ScratchPad {
             name: scratchpad_name.clone(),
             value: String::new(),
+            args: None,
             x: None,
             y: None,
             height: None,
@@ -1263,7 +1286,7 @@ mod tests {
             .insert(scratchpad_name.clone(), VecDeque::from([scratchpad_pid]));
 
         let window_pid = 2_u32;
-        let window_handle = WindowHandle::MockHandle(window_pid as i32);
+        let window_handle = WindowHandle::<MockHandle>(window_pid as i32);
         manager.window_created_handler(Window::new(window_handle, None, Some(window_pid)), -1, -1);
 
         manager.command_handler(&Command::ToggleScratchPad(scratchpad_name.clone()));

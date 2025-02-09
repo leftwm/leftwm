@@ -6,11 +6,13 @@
 #![allow(clippy::items_after_statements)]
 // We allow this because _y_ and _x_ are intentionally similar. Changing it makes the code noisy.
 #![allow(clippy::similar_names)]
+use crate::XlibWindowHandle;
+
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
 use super::{utils, Screen, Window, WindowHandle};
-use leftwm_core::config::Config;
-use leftwm_core::models::{FocusBehaviour, Mode};
+use leftwm_core::config::{Config, WindowHidingStrategy};
+use leftwm_core::models::{FocusBehaviour, FocusOnActivationBehaviour, Mode};
 use leftwm_core::utils::modmask_lookup::ModMask;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
@@ -110,14 +112,16 @@ pub struct XWrap {
     pub managed_windows: Vec<xlib::Window>,
     pub focused_window: xlib::Window,
     pub tag_labels: Vec<String>,
-    pub mode: Mode,
+    pub mode: Mode<XlibWindowHandle>,
     pub focus_behaviour: FocusBehaviour,
+    pub focus_on_activation: FocusOnActivationBehaviour,
     pub mouse_key_mask: ModMask,
     pub mode_origin: (i32, i32),
     _task_guard: oneshot::Receiver<()>,
     pub task_notify: Arc<Notify>,
     pub motion_event_limiter: c_ulong,
     pub refresh_rate: c_short,
+    pub window_hiding_strategy: WindowHidingStrategy,
 }
 
 impl Default for XWrap {
@@ -233,12 +237,14 @@ impl XWrap {
             tag_labels: vec![],
             mode: Mode::Normal,
             focus_behaviour: FocusBehaviour::Sloppy,
-            mouse_key_mask: 0,
+            focus_on_activation: FocusOnActivationBehaviour::MarkUrgent,
+            mouse_key_mask: ModMask::Zero,
             mode_origin: (0, 0),
             _task_guard,
             task_notify,
             motion_event_limiter: 0,
             refresh_rate,
+            window_hiding_strategy: WindowHidingStrategy::default(),
         };
 
         // Check that another WM is not running.
@@ -246,7 +252,7 @@ impl XWrap {
             _: *mut xlib::Display,
             _: *mut xlib::XErrorEvent,
         ) -> c_int {
-            eprintln!("ERROR: another window manager is already running");
+            tracing::error!("ERROR: another window manager is already running");
             ::std::process::exit(-1);
         }
         unsafe {
@@ -260,28 +266,26 @@ impl XWrap {
         xw
     }
 
-    pub fn load_config(
-        &mut self,
-        config: &impl Config,
-        focused: Option<&Option<WindowHandle>>,
-        windows: &[Window],
-    ) {
+    pub fn load_config(&mut self, config: &impl Config) {
         self.focus_behaviour = config.focus_behaviour();
+        self.focus_on_activation = config.focus_on_activation();
         self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
-        self.load_colors(config, focused, Some(windows));
         self.tag_labels = config.create_list_of_tag_labels();
+        self.colors = Colors {
+            normal: self.get_color(config.default_border_color()),
+            floating: self.get_color(config.floating_border_color()),
+            active: self.get_color(config.focused_border_color()),
+            background: self.get_color(config.background_color()),
+        };
+        self.window_hiding_strategy = config.window_hiding_strategy();
     }
 
     /// Initialize the xwrapper.
     // `XChangeWindowAttributes`: https://tronche.com/gui/x/xlib/window/XChangeWindowAttributes.html
     // `XDeleteProperty`: https://tronche.com/gui/x/xlib/window-information/XDeleteProperty.html
     // TODO: split into smaller functions
-    pub fn init(&mut self, config: &impl Config) {
-        self.focus_behaviour = config.focus_behaviour();
-        self.mouse_key_mask = utils::modmask_lookup::into_modmask(&config.mousekey());
-
+    pub fn init(&mut self) {
         let root = self.root;
-        self.load_colors(config, None, None);
 
         let mut attrs: xlib::XSetWindowAttributes = unsafe { std::mem::zeroed() };
         attrs.cursor = self.cursors.normal;
@@ -313,7 +317,6 @@ impl XWrap {
         }
 
         // EWMH compliance for desktops.
-        self.tag_labels = config.create_list_of_tag_labels();
         self.init_desktops_hints();
 
         self.sync();
@@ -418,41 +421,28 @@ impl XWrap {
         }
     }
 
-    /// Load the colors of our theme.
-    pub fn load_colors(
+    /// Update all the windows with the new colors.
+    pub fn update_colors(
         &mut self,
-        config: &impl Config,
-        focused: Option<&Option<WindowHandle>>,
-        windows: Option<&[Window]>,
+        focused: Option<WindowHandle<XlibWindowHandle>>,
+        windows: &[Window<XlibWindowHandle>],
     ) {
-        self.colors = Colors {
-            normal: self.get_color(config.default_border_color()),
-            floating: self.get_color(config.floating_border_color()),
-            active: self.get_color(config.focused_border_color()),
-            background: self.get_color(config.background_color()),
-        };
-        // Update all the windows with the new colors.
-        if let Some(windows) = windows {
-            for window in windows {
-                if let WindowHandle::XlibHandle(handle) = window.handle {
-                    let is_focused =
-                        matches!(focused, Some(&Some(focused)) if focused == window.handle);
-                    let color: c_ulong = if is_focused {
-                        self.colors.active
-                    } else if window.floating() {
-                        self.colors.floating
-                    } else {
-                        self.colors.normal
-                    };
-                    self.set_window_border_color(handle, color);
-                }
-            }
+        for window in windows {
+            let WindowHandle(XlibWindowHandle(handle)) = window.handle;
+            let color: c_ulong = if focused == Some(window.handle) {
+                self.colors.active
+            } else if window.floating() {
+                self.colors.floating
+            } else {
+                self.colors.normal
+            };
+            self.set_window_border_color(handle, color);
         }
         self.set_background_color(self.colors.background);
     }
 
     /// Sets the mode within our xwrapper.
-    pub fn set_mode(&mut self, mode: Mode) {
+    pub fn set_mode(&mut self, mode: Mode<XlibWindowHandle>) {
         match mode {
             // Prevent resizing and moving of root.
             Mode::MovingWindow(h)

@@ -6,18 +6,25 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-leftwm-core = { path = "../../leftwm-core", version = '0.4.1' }
+leftwm-core = { path = "../../leftwm-core", version = '0.5.4' }
 tracing = "0.1.36"
 xcursor = "0.3.4"
-tokio = { version = "1.2.0", features = [ "sync" ] }
+tokio = { version = "1.2.0", features = ["sync"] }
 nohash-hasher = "0.2.0"
 read_color = "1.0.0"
+serde = { version = "1.0.104", features = ["derive"] }
+
 
 [dependencies.smithay]
 git = "https://github.com/Smithay/smithay.git"
 # rev = "138921b"
 rev = "cfc3545"
-features = ["backend_egl", "wayland_frontend", "use_system_lib", "renderer_glow"]
+features = [
+    "backend_egl",
+    "wayland_frontend",
+    "use_system_lib",
+    "renderer_glow",
+]
 
 [dependencies.smithay-drm-extras]
 git = "https://github.com/Smithay/smithay.git"

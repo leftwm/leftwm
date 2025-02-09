@@ -8,7 +8,7 @@ use super::LayoutMode;
 /// The [`LayoutManager`] holds the actual set of [`Layout`].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LayoutManager {
-    /// LayoutMode to be used when applying layouts
+    /// `LayoutMode` to be used when applying layouts
     mode: LayoutMode,
 
     /// All the available layouts. Loaded from the config and
@@ -105,7 +105,7 @@ impl LayoutManager {
             );
             return;
         }
-        self.layouts = old.layouts.clone();
+        self.layouts.clone_from(&old.layouts);
     }
 
     /// Get back either the workspace ID or the tag ID, based on the current [`LayoutMode`]

@@ -1,4 +1,4 @@
-use super::{TagId, Xyhw};
+use super::{Handle, TagId, Xyhw};
 use crate::{layouts::LayoutManager, Window, Workspace};
 use serde::{Deserialize, Serialize};
 
@@ -146,10 +146,9 @@ impl Tags {
         if let Some(normal) = self.normal.get_mut(id - 1) {
             return Some(normal);
         }
-        return self
-            .hidden
+        self.hidden
             .iter_mut()
-            .find(|hidden_tag| hidden_tag.id == id);
+            .find(|hidden_tag| hidden_tag.id == id)
     }
 
     /// Get a hidden tag by its label
@@ -191,7 +190,7 @@ pub struct Tag {
     /// but labels of hidden tags must be unique.
     ///
     /// ## Hint
-    /// Unlike in earlier versions of LeftWM,
+    /// Unlike in earlier versions of `LeftWM`,
     /// the label of a Tag is not something that
     /// actually identifies a Tag. Tags are always
     /// identified and referenced by their ID (ie. `[1, 2, 3, ...]`).
@@ -219,9 +218,9 @@ impl Tag {
         }
     }
 
-    pub fn update_windows(
+    pub fn update_windows<H: Handle>(
         &self,
-        windows: &mut [Window],
+        windows: &mut [Window<H>],
         workspace: &Workspace,
         layout_manager: &mut LayoutManager,
     ) {
@@ -231,12 +230,14 @@ impl Tag {
         {
             window.set_visible(true);
             window.normal = workspace.xyhw;
+
             let handle = window.handle;
             windows
                 .iter_mut()
                 .filter(|w| {
                     w.has_tag(&self.id)
-                        && w.transient.unwrap_or_else(|| 0.into()) == handle
+                        && (w.transient == Some(handle)
+                            || w.states.contains(&super::WindowState::Above) && w.floating())
                         && w.is_managed()
                 })
                 .for_each(|w| {
@@ -246,43 +247,24 @@ impl Tag {
             .iter_mut()
             .find(|w| w.has_tag(&self.id) && w.is_maximized())
         {
-            // Update maximized window
             window.set_visible(true);
-            window.normal = Xyhw::from(workspace.rect());
-            let handle = window.handle;
-            windows
-                .iter_mut()
-                .filter(|w| {
-                    w.has_tag(&self.id)
-                        && w.transient.unwrap_or_else(|| 0.into()) == handle
-                        && w.is_managed()
-                })
-                .for_each(|w| {
-                    w.set_visible(true);
-                });
+            window.normal = workspace.rect().into();
 
-            // Update all windows except normal non-floating windoows and maximized window
             windows
                 .iter_mut()
-                .filter(|w| {
-                    w.has_tag(&self.id) && (!w.is_normal() || w.floating()) && !w.is_maximized()
-                })
+                .filter(|w| w.has_tag(&self.id) && w.floating())
                 .for_each(|w| {
                     w.set_visible(true);
-                    // Don't change docks and desktop xyhw
-                    if w.is_managed() {
-                        w.normal = workspace.xyhw;
-                    }
                 });
         } else {
             // Don't bother updating the other windows when a window is fullscreen.
             // Mark all windows for this workspace as visible.
-            let mut all_mine: Vec<&mut Window> =
+            let mut all_mine: Vec<&mut Window<H>> =
                 windows.iter_mut().filter(|w| w.has_tag(&self.id)).collect();
             all_mine.iter_mut().for_each(|w| w.set_visible(true));
 
             // Update the location / visibility of all non-floating windows.
-            let mut managed_nonfloat: Vec<&mut Window> = windows
+            let mut managed_nonfloat: Vec<&mut Window<H>> = windows
                 .iter_mut()
                 .filter(|w| w.has_tag(&self.id) && w.is_managed() && !w.floating())
                 .collect();

@@ -21,7 +21,7 @@ use smithay::{
 
 use crate::{
     delegate_xdg_output_handler, managed_window::ManagedWindow,
-    protocols::xdg_output_manager::XdgOutputHandler, state::SmithayState,
+    protocols::xdg_output_manager::XdgOutputHandler, state::SmithayState, SmithayWindowHandle,
 };
 use leftwm_core::{models::WindowHandle, DisplayEvent, Window as WMWindow};
 
@@ -45,7 +45,7 @@ impl XdgShellHandler for SmithayState {
             (data.title.clone(), data.app_id.clone())
         });
 
-        let mut wm_window = WMWindow::new(WindowHandle::SmithayHandle(id), name, None);
+        let mut wm_window = WMWindow::new(WindowHandle(SmithayWindowHandle(id)), name, None);
         wm_window.res_class = class;
         self.send_event(DisplayEvent::WindowCreate(
             wm_window,
@@ -76,8 +76,10 @@ impl XdgShellHandler for SmithayState {
         for (h, w) in self.window_registry.windows() {
             if *w.toplevel().unwrap() == surface {
                 handle = Some(*h);
-                self.send_event(DisplayEvent::WindowDestroy(WindowHandle::SmithayHandle(*h)))
-                    .unwrap();
+                self.send_event(DisplayEvent::WindowDestroy(WindowHandle(
+                    SmithayWindowHandle(*h),
+                )))
+                .unwrap();
                 break;
             }
         }

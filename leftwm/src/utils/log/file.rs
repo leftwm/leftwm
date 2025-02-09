@@ -16,7 +16,7 @@ where
     let log_path = get_log_path();
 
     let log_dir_path = get_log_dir(&log_path);
-    let log_file_name = get_log_file(&log_path);
+    let log_file_name = get_log(&log_path);
 
     create_dirs(&log_dir_path);
 
@@ -25,6 +25,12 @@ where
     subscriber.with(layer)
 }
 
+#[must_use]
+/// Gets the path to the log
+///
+/// # Panics
+/// - If HOME is not set
+/// - If path permissions are not at least 0700
 pub fn get_log_path() -> Box<Path> {
     let cache_dir = BaseDirectories::with_prefix(LOG_PREFIX).unwrap();
     cache_dir
@@ -35,7 +41,7 @@ pub fn get_log_path() -> Box<Path> {
 
 fn create_dirs<P: AsRef<Path> + Debug>(path: P) {
     std::fs::create_dir_all(&path)
-        .unwrap_or_else(|_| panic!("Couldn't create directory-path: {:?}", path));
+        .unwrap_or_else(|_| panic!("Couldn't create directory-path: {path:?}"));
 }
 
 fn get_log_writer<P: AsRef<Path>>(log_dir: P, log_file: P) -> RollingFileAppender {
@@ -48,7 +54,12 @@ fn get_log_dir<P: AsRef<Path> + Clone>(path: P) -> Box<Path> {
     log_dir.into_boxed_path()
 }
 
-pub fn get_log_file<P: AsRef<Path>>(path: P) -> Box<Path> {
+/// Gets the log file's filename
+///
+/// # Panics
+/// - If HOME is not set
+/// - If path permissions are not at least 0700
+pub fn get_log<P: AsRef<Path>>(path: P) -> Box<Path> {
     let file_name = path.as_ref().file_name().unwrap().to_owned();
 
     let file_name = PathBuf::from(file_name);

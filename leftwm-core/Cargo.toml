@@ -1,9 +1,9 @@
 [package]
 name = "leftwm-core"
-version = "0.4.2"
-rust-version = "1.70.0"
+version = "0.5.4"
+rust-version = "1.83.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 authors = ["Lex Childs <lexchilds@gmail.com>"]
-categories = ["window manager"]
+categories = ["data-structures", "gui"]
 edition = "2021"
 keywords = ["wm", "window", "manager"]
 license = "MIT"
@@ -15,12 +15,12 @@ description = "A window manager for Adventurers"
 dirs-next = "2.0.0"
 futures = "0.3.21"
 tracing = "0.1.37"
-mio = { version = "0.8.0", features = ["os-ext"] }
-nix = {version = "0.27.1", features = ["fs", "signal"]}
+mio = { version = "1.0.2", features = ["os-ext"] }
+nix = {version = "0.29.0", features = ["fs", "signal"]}
 serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
 signal-hook = "0.3.4"
-thiserror = "1.0.30"
+thiserror = "2.0.9"
 tokio = { version = "1.2.0", features = [
   "fs",
   "io-util",
@@ -30,9 +30,10 @@ tokio = { version = "1.2.0", features = [
   "sync",
   "time",
 ] }
-leftwm-layouts = "0.8.4"
+leftwm-layouts = "0.9.1"
 x11-dl = "2.18.4"
 xdg = "2.2.0"
+bitflags = "2.4.2"
 
 [dev-dependencies]
 tempfile = "3.2.0"

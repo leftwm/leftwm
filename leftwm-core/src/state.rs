@@ -4,8 +4,8 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Mode, ScratchPadName, Screen, TagId, Tags, Window, WindowHandle, WindowType,
-    Workspace,
+    FocusManager, Handle, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowState,
+    WindowType, Workspace,
 };
 use crate::DisplayAction;
 use leftwm_layouts::Layout;
@@ -13,19 +13,24 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct State {
-    pub screens: Vec<Screen>,
-    pub windows: Vec<Window>,
-    pub window_history: HashMap<TagId, Vec<WindowHandle>>,
+pub struct State<H: Handle> {
+    #[serde(bound = "")]
+    pub screens: Vec<Screen<H>>,
+    #[serde(bound = "")]
+    pub windows: Vec<Window<H>>,
     pub workspaces: Vec<Workspace>,
-    pub focus_manager: FocusManager,
+    #[serde(bound = "")]
+    pub focus_manager: FocusManager<H>,
     pub layout_manager: LayoutManager,
-    pub mode: Mode,
-    pub layout_definitions: Vec<Layout>,
-    pub scratchpads: Vec<ScratchPad>,
+    #[serde(bound = "")]
+    pub mode: Mode<H>,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
-    pub actions: VecDeque<DisplayAction>,
+    #[serde(bound = "")]
+    pub actions: VecDeque<DisplayAction<H>>,
     pub tags: Tags, // List of all known tags.
+    // entries below are loaded from config and are never changed
+    pub scratchpads: Vec<ScratchPad>,
+    pub layout_definitions: Vec<Layout>,
     pub mousekey: Vec<String>,
     pub default_width: i32,
     pub default_height: i32,
@@ -35,7 +40,7 @@ pub struct State {
     pub single_window_border: bool,
 }
 
-impl State {
+impl<H: Handle> State<H> {
     pub(crate) fn new(config: &impl Config) -> Self {
         let mut tags = Tags::new();
         config.create_list_of_tag_labels().iter().for_each(|label| {
@@ -44,11 +49,8 @@ impl State {
         tags.add_new_hidden("NSP");
 
         Self {
-            window_history: HashMap::new(),
             focus_manager: FocusManager::new(config),
             layout_manager: LayoutManager::new(config),
-            scratchpads: config.create_list_of_scratchpads(),
-            layout_definitions: config.layout_definitions(),
             screens: Default::default(),
             windows: Default::default(),
             workspaces: Default::default(),
@@ -56,6 +58,8 @@ impl State {
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
+            scratchpads: config.create_list_of_scratchpads(),
+            layout_definitions: config.layout_definitions(),
             mousekey: config.mousekey(),
             default_width: config.default_width(),
             default_height: config.default_height(),
@@ -66,77 +70,63 @@ impl State {
         }
     }
 
-    // Sorts the windows and puts them in order of importance.
+    /// Sorts the windows and puts them in order of importance.
     pub fn sort_windows(&mut self) {
-        // remove any surfaces, placement of them will be done by wayland
-        let (_, _, windows) =
-            partition_windows(self.windows.iter(), |w| w.r#type == WindowType::WlrSurface);
+        let mut sorter = WindowSorter::new(self.windows.iter().collect());
 
-        // The windows we are managing should be behind unmanaged windows. Unless they are
-        // fullscreen, or their children.
-        // Fullscreen windows.
-        let (level2, fullscreen_windows, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(windows.iter(), Window::is_fullscreen);
+        // Windows explicitly marked as on top
+        sorter.sort(|w| w.states.contains(&WindowState::Above) && w.floating());
 
-        // Fullscreen windows children.
-        let (level1, fullscreen_children, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| {
-                level2.contains(&w.transient.unwrap_or_else(|| 0.into()))
-            });
+        // Transient windows should be above a fullscreen/maximized parent
+        sorter.sort(|w| {
+            w.transient.is_some_and(|trans| {
+                self.windows
+                    .iter()
+                    .any(|w| w.handle == trans && (w.is_fullscreen() || w.is_maximized()))
+            })
+        });
 
-        // Left over managed windows.
+        // Fullscreen windows
+        sorter.sort(Window::is_fullscreen);
+
         // Dialogs and modals.
-        let (level3, dialogs, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| {
-                w.r#type == WindowType::Dialog
-                    || w.r#type == WindowType::Splash
-                    || w.r#type == WindowType::Utility
-                    || w.r#type == WindowType::Menu
-            });
+        sorter.sort(|w| {
+            w.r#type == WindowType::Dialog
+                || w.r#type == WindowType::Splash
+                || w.r#type == WindowType::Utility
+                || w.r#type == WindowType::Menu
+        });
 
         // Floating windows.
-        let (level4, floating, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| {
-                w.r#type == WindowType::Normal && w.floating()
-            });
+        sorter.sort(|w| w.r#type == WindowType::Normal && w.floating());
 
         // Maximized windows.
-        let (level5, maximized, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| {
-                w.r#type == WindowType::Normal && w.is_maximized()
-            });
+        sorter.sort(|w| w.r#type == WindowType::Normal && w.is_maximized());
 
         // Tiled windows.
-        let (level6, tiled, other): (Vec<WindowHandle>, Vec<Window>, Vec<Window>) =
-            partition_windows(other.iter(), |w| w.r#type == WindowType::Normal);
+        sorter.sort(|w| w.r#type == WindowType::Normal);
 
         // Last docks.
-        let level7: Vec<WindowHandle> = other.iter().map(|w| w.handle).collect();
+        sorter.sort(|w| w.r#type == WindowType::Dock);
 
-        self.windows = [
-            fullscreen_children,
-            fullscreen_windows,
-            dialogs,
-            floating,
-            maximized,
-            tiled,
-            other,
-        ]
-        .concat();
+        // Finish and put all unsorted at the end.
+        let windows = sorter.finish();
+        let handles = windows.iter().map(|w| w.handle).collect();
 
-        let fullscreen: Vec<WindowHandle> = [level1, level2].concat();
-        let handles: Vec<WindowHandle> = [level3, level4, level5, level6, level7].concat();
-        let act = DisplayAction::SetWindowOrder(fullscreen, handles);
+        // SetWindowOrder is passed to the display server
+        let act = DisplayAction::SetWindowOrder(handles);
         self.actions.push_back(act);
     }
 
+    /// Removes border if there is a single visible window.
+    /// Only will run if `single_window_border` is set to `false` in the configuration file.
     pub fn handle_single_border(&mut self, border_width: i32) {
         if self.single_window_border {
             return;
         }
 
         for tag in self.tags.normal() {
-            let mut windows_on_tag: Vec<&mut Window> = self
+            let mut windows_on_tag: Vec<&mut Window<H>> = self
                 .windows
                 .iter_mut()
                 .filter(|w| w.tag.unwrap_or(0) == tag.id && w.r#type == WindowType::Normal)
@@ -148,6 +138,8 @@ impl State {
                 .find(|ws| ws.has_tag(&tag.id))
                 .map(|w| w.id);
             let layout = self.layout_manager.layout(wsid.unwrap_or(1), tag.id);
+
+            // TODO: hardcoded layout name.
             if layout.is_monocle() {
                 windows_on_tag.iter_mut().for_each(|w| w.border = 0);
                 continue;
@@ -166,7 +158,9 @@ impl State {
         }
     }
 
-    pub fn move_to_top(&mut self, handle: &WindowHandle) -> Option<()> {
+    /// Moves `handle` in front of all other windows of the same order of importance.
+    /// See `sort_windows()` for the order of importance.
+    pub fn move_to_top(&mut self, handle: &WindowHandle<H>) -> Option<()> {
         let index = self.windows.iter().position(|w| &w.handle == handle)?;
         let window = self.windows.remove(index);
         self.windows.insert(0, window);
@@ -175,7 +169,6 @@ impl State {
     }
 
     pub fn update_static(&mut self) {
-        let workspaces = self.workspaces.clone();
         self.windows
             .iter_mut()
             .filter(|w| w.strut.is_some() || w.is_sticky())
@@ -184,20 +177,21 @@ impl State {
                     Some(strut) => strut.center(),
                     None => w.calculated_xyhw().center(),
                 };
-                if let Some(ws) = workspaces.iter().find(|ws| ws.contains_point(x, y)) {
+                if let Some(ws) = self.workspaces.iter().find(|ws| ws.contains_point(x, y)) {
                     w.tag = ws.tag;
                 }
             });
     }
 
-    pub(crate) fn load_config(&mut self, config: &impl Config) {
-        self.mousekey = config.mousekey();
+    pub(crate) fn load_theme_config(&mut self, config: &impl Config) {
         for win in &mut self.windows {
             config.load_window(win);
         }
         for ws in &mut self.workspaces {
             ws.load_config(config);
         }
+        self.default_height = config.default_height();
+        self.default_width = config.default_width();
     }
 
     /// Apply saved state to a running manager.
@@ -244,7 +238,7 @@ impl State {
                     new_tag.iter().for_each(|&tag_id| new_window.tag(&tag_id));
                 }
                 new_window.strut = old_window.strut;
-                new_window.set_states(old_window.states());
+                new_window.states.clone_from(&old_window.states);
                 ordered.push(new_window.clone());
                 self.windows.remove(index);
 
@@ -289,7 +283,9 @@ impl State {
         }
 
         // Restore focus.
-        self.focus_manager.tags_last_window = old_state.focus_manager.tags_last_window.clone();
+        self.focus_manager
+            .tags_last_window
+            .clone_from(&old_state.focus_manager.tags_last_window);
         self.focus_manager
             .tags_last_window
             .retain(|&id, _| all_tags.get(id).is_some());
@@ -312,31 +308,35 @@ impl State {
     }
 }
 
-fn partition_windows<'a, I, F>(windows: I, f: F) -> (Vec<WindowHandle>, Vec<Window>, Vec<Window>)
-where
-    I: Iterator<Item = &'a Window>,
-    F: FnMut(&Window) -> bool + 'a,
-{
-    #[inline]
-    fn extend<'a>(
-        mut f: impl FnMut(&Window) -> bool + 'a,
-        handles: &'a mut Vec<WindowHandle>,
-        left: &'a mut Vec<Window>,
-        right: &'a mut Vec<Window>,
-    ) -> impl FnMut((), &Window) + 'a {
-        move |(), x| {
-            if f(x) {
-                handles.push(x.handle);
-                left.push(x.clone());
-            } else {
-                right.push(x.clone());
-            }
+/// Helper struct for sorting windows.
+/// Sorts windows in `unsorted` via their order of importance
+/// and pushes sorted list onto `stack`.
+struct WindowSorter<'a, H: Handle> {
+    stack: Vec<&'a Window<H>>,
+    unsorted: Vec<&'a Window<H>>,
+}
+
+impl<'a, H: Handle> WindowSorter<'a, H> {
+    pub fn new(windows: Vec<&'a Window<H>>) -> Self {
+        Self {
+            stack: Vec::with_capacity(windows.len()),
+            unsorted: windows,
         }
     }
 
-    let mut handles: Vec<WindowHandle> = Default::default();
-    let mut left: Vec<Window> = Default::default();
-    let mut right: Vec<Window> = Default::default();
-    windows.fold((), extend(f, &mut handles, &mut left, &mut right));
-    (handles, left, right)
+    pub fn sort<F: Fn(&Window<H>) -> bool>(&mut self, filter: F) {
+        self.unsorted.retain(|window| {
+            if filter(window) {
+                self.stack.push(window);
+                false
+            } else {
+                true
+            }
+        });
+    }
+
+    pub fn finish(mut self) -> Vec<&'a Window<H>> {
+        self.stack.append(&mut self.unsorted);
+        self.stack
+    }
 }

@@ -5,12 +5,100 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.5]
+
+## [0.5.4]
+
+### Breaking Change
+
+- chore: update MSRV to 1.83.0 for liquid (via #1308 by @mautamu)
+
+### Added
+
+- Window urgency update and switch-to on activation (via #1239 by @willfindlay)
+
+### Fixes
+
+- Sloppy focus after window close is corrected (via #1305 by @frankslaver)
+- Update template.liquid documentation (via #1297 by @thealio)
+- Deadlink in README repaired (via #1300 by @AnthonyMichaelTDM)
+- Flake compilation (via #1304 by @VuiMuich)
+- Various clippy fixes (via #1302 by @mautamu)
+
+## [0.5.3]
+
+### Fixed
+
+- Fixed compilation issue for xlib-display-server for 32-bit systems (via #1292 by @mautamu)
+
+## [0.5.2]
+
+## CVEs
+
+- chore: CVE-2024-27308 dependency update (mio) (via #1236 by @mautamu)
+
+### Breaking Change
+
+- chore: update MSRV to 1.74, update dependencies (via #1237 by @mautamu)
+- Update time and time-macros (via #1273 by @JacoMalan1)
+
+### Deprecated
+
+- Move clippy allowance to xlib-display-server, deprecate `make test-full` (via #1198 by @Eskaan)
+
+### Removed
+
+- remove hardcoded default layouts (via #1207 by @barkyq)
+- chore: remove obsolete `max_window_width` variable (via #1260 by @jasonmokk)
+
+### Added
+
+- The currently supported MSRV is 1.74.0
+- Added `window_hiding_strategy` config option (via #1274 by @Syudagye)
+- Simplify BaseCommand documentation macro (via #1187 by @Eskaan)
+- lefthk-worker: change multiple feature checks to one module condition (via #1194 by @Eskaan)
+- Separate leftwm bin (via #1192 by @Eskaan)
+- Add leftwm-log to Makefile targets (via #1199 by @Eskaan)
+- default_height and default_width (via #1218 by @barkyq)
+- Simplify setting the fourth byte of a pixel to 0xff (via #1229 by @Eskaan)
+- Add x11rb backend + Improve backends modularity (via #1221 by @Syudagye)
+- Add directional focus between windows (via #1240 by @marianomarciello)
+- Add 'args' Scratchpad config entry (via #1225 by @mautamu)
+- Add directional movement between windows (via #1252 by @marianomarciello)
+- Add missing match arm for FocusWindow command (via #1270 by @underscoreevelyn)
+- Lazily call randr on windows hiding (via #1282 by @Lieunoir)
+- Implement window rule for hiding_strategy (via #1284 by @Syudagye)
+
+### Fixed
+
+- Hidden window are not able to be captured (fixes #1100 via #1274 by @Syudagye)
+- Numlock prevents moving and resizing for floating windows (via #1276 by @Syudagye)
+- Some formatting chores (via #1186 by @Eskaan)
+- Fix freeze when process tries to aquire stderr (via #1197 by @Eskaan)
+- Rework "fixed dialog windows ignoring application-defined sizes (#1166)" (via #1200 by @Eskaan)
+- Fix the 32 bit builds by changing a type cast (via #1202 by @Eskaan)
+- update layouts in man page (via #1209 by @barkyq)
+- Fix newly spawned floating windows ignoring ws margins (via #1214 by @Eskaan)
+- Spawn new floating windows above old ones (via #1215 by @Eskaan)
+- change exec_shell to directly executed given command (via #1216 by @barkyq)
+- Fix build without lefthk (via #1228 by @pastalian)
+- `cargo doc` error fixes, CI workflow, and `CONTRIBUTING.md` update. (via #1232 by @nejucomo)
+- Add distinction between visible and busy workspace (via #1269 by @fcolona)
+- Fix removing destroyed window from history (via #1285 by @johnlepikhin)
+
+## [0.5.1]
+
+### Fixed
+
+- This is just a quick fixup of the leftwm crate, as in yesterdays release a tiny version number hickup snuck its way in
+
+## [0.5.0]
 
 ### Breaking Change
 
 - The `layouts` and `workspace.layouts` in `config.ron` must be declared as Strings because they are no longer backed by an enum. (ie. use `layouts: ["CenterMain"]` instead of `layouts: [CenterMain]`)
 - The `max_window_width` config was removed without direct replacement. The "always fill entire screen" behavior can now be addressed by creating a custom layout with an appropriate `Reserve` property.
+- LeftWM now depends on `lefthk` ^0.2.0, which has been refactored (thanks to @blackdragon2447 in #1154)
 
 ### Deprecated
 
@@ -25,13 +113,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented the new [leftwm-layouts](https://github.com/leftwm/leftwm-layouts) library (via #1000 by @hertg)
 - Added `IncreaseMainSize` / `DecreaseMainSize` as a replacement for the deprecated `IncreaseMainWidth` / `DecreaseMainWidth` (closes #545 via #1000 by @hertg)
 - Added `ToggleMaximized` command (closes #973 via #1121 by @bksalman)
+- Added `ToggleAbove` command (closes #1094 via #1160 by @Eskaan)
 - Add support for multiple main windows on all layouts that have a main column, new commands are `IncreaseMainCount` and `DecreaseMainCount` (closes #516 via #1000 by @hertg)
 - use `unwrap_newtypes` extension in ron deserializer (via #1000 by @hertg)
+- Improved error and documentation for external commands using leftwm-command (thanks to @Silicasandwhich in #1098, resolves #1096)
+- General improvements to leftwm-log, including a nicer matching solution and feature-gates functions (thanks to @Eskaan in #1109)
+- `leftwm-command -l` has been parameterized using the `leftwm-macros` library (thanks to @Mautamu in #1115; closes #1095)
+- Added `disable_cursor_reposition_on_resize` option to config (thanks to @BKSalman in #1123)
+- Fullscreen ordering/resizing changes and other optimizations (from @Eskaan and @bksalman in #1136, #1164, #1158, #1159)
+- Commented example configuration (via #1133 by @VuiMuich)
 - The currently supported MSRV is 1.70.0
 
 ### Fixed
 
 - Changing main width now works on all layouts that have a main column (fixes #96 via #1000 by @hertg)
+- Fixed a bug where windows would sometimes spawn on the last tag (fixes #1065 via #1093 by @Silicasandwhich)
+- `basic_lemonbar` theme now works if the user has only one workspace, the clock is independent of leftwm-state, the tags are now clickable and have better naming (thanks to @simtd in #1101)
+- Ron option checking by `leftwm-check` has been corrected when `#![enable(implicit_some)]` is not present (thanks to @samuelabreu in #1110)
+- `output` field has been returned to `leftwm-state` (thanks to @Eskaan in #1116, resolves #1111)
+- Maximized windows no longer hide dock and desktop (thank to @BkSalman in #1126)
+- Readme typos and changelog rename in #1113 thank to @Chudson16 and #1091 thanks to @Eskaan; various code formatting changes (thanks to Eskaan in #1117, #1120)
+- Dialog windows now obey application-defined sizes (thanks to @Silicasandwhich in #1166; closes #1118)
+- Nixos flake rewritten to use flake-parts (#1122 by @vesdev)
+- Moved windows no longer switch to the first tag (closes #1054 via #1161 by @Eskaan)
+- Clippy fixes and updates which results in MSRV=1.70.0 (via #1137, #1130, #1151 by @VuiMuich, @cyril-marpaud, and @Mautamu)
 
 ## [0.4.2]
 

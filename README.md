@@ -1,32 +1,32 @@
 <div align="center">
   <h1><strong>LeftWM</strong></h1>
   <p>
-    <strong>A window manager for adventurers</strong>
+	<strong>A window manager for adventurers</strong>
   </p>
   <p>
-    <a href="https://github.com/leftwm/leftwm/actions?query=workflow%3ACI">
-        <img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
-    </a>
-    <a href="https://github.com/leftwm/leftwm/wiki">
-        <img src="https://img.shields.io/badge/wiki-0.4.2-green.svg" alt="wiki" />
-    </a>
-    <a href="https://docs.rs/leftwm/">
-        <img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" />
-    </a><br />
-    <a href="https://discord.gg/c9rB3wDnVs">
-        <img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
-    </a>
-    <a href="https://matrix.to/#/#leftwm-announcements:matrix.org">
-        <img src="https://img.shields.io/badge/matrix%20chat-Announcements-green.svg" alt="Matrix Chat: Announcements" />
-    </a>
-    </a>
-    <a href="https://matrix.to/#/#leftwm-general:matrix.org">
-            <img src="https://img.shields.io/badge/matrix%20chat-General-green.svg" alt="Matrix Chat: General" />
-    </a>
-    </a>
-    <a href="https://matrix.to/#/#leftwm-support:matrix.org">
-            <img src="https://img.shields.io/badge/matrix%20chat-Support-green.svg" alt="Matrix Chat: Support" />
-    </a>
+	<a href="https://github.com/leftwm/leftwm/actions?query=workflow%3ACI">
+		<img src="https://github.com/leftwm/leftwm/workflows/CI/badge.svg" alt="build status" />
+	</a>
+	<a href="https://github.com/leftwm/leftwm/wiki">
+		<img src="https://img.shields.io/badge/wiki-0.5.0-green.svg" alt="wiki" />
+	</a>
+	<a href="https://docs.rs/leftwm/">
+		<img src="https://docs.rs/leftwm/badge.svg" alt="Documentation" />
+	</a><br />
+	<a href="https://discord.gg/c9rB3wDnVs">
+		<img src="https://img.shields.io/discord/889371782388256818?color=%235865F2&label=Discord" alt="discord" />
+	</a>
+	<a href="https://matrix.to/#/#leftwm-announcements:matrix.org">
+		<img src="https://img.shields.io/badge/matrix%20chat-Announcements-green.svg" alt="Matrix Chat: Announcements" />
+	</a>
+	</a>
+	<a href="https://matrix.to/#/#leftwm-general:matrix.org">
+			<img src="https://img.shields.io/badge/matrix%20chat-General-green.svg" alt="Matrix Chat: General" />
+	</a>
+	</a>
+	<a href="https://matrix.to/#/#leftwm-support:matrix.org">
+			<img src="https://img.shields.io/badge/matrix%20chat-Support-green.svg" alt="Matrix Chat: Support" />
+	</a>
   </p>
 </div>
 
@@ -63,10 +63,10 @@ LeftWM is a tiling window manager written in [Rust] that aims to be stable and p
 [designed to do one thing and to do that one thing well][unix-philosophy]: _be a window manager_.
 LeftWM follows the following mantra:
 
-> LeftWM is not a compositor.  
-> LeftWM is not a lock screen.  
+> LeftWM is not a compositor.
+> LeftWM is not a lock screen.
 > LeftWM is not a bar. But, there are lots of good bars out there. With themes, picking one is as
-  simple as setting a symlink.
+> simple as setting a symlink.
 
 Because you probably want more than just a black screen, LeftWM is built around the concept of
 themes. With themes, you can choose between different bars, compositors, backgrounds, colors, docks,
@@ -84,13 +84,13 @@ With LeftWM, there are two types of configuration files:
 
 - **LeftWM Configuration files:** LeftWM configurations are specific to you and don’t change for
   different themes. These are settings like keybindings, workspace locations, and names of
-  desktops/tags. These settings can be found in `~/.config/leftwm/config.toml`.
+  desktops/tags. These settings can be found in `$XDG_CONFIG_HOME/leftwm/config.ron`.
 
 - **Theme Configuration files:** The appearance of your desktop is different. It’s fun to try new
   looks and feels. It’s fun to tweak and customize the appearance (AKA: [ricing]). It’s fun to share
   so others can experience your awesome desktop! LeftWM is built around this concept. By pulling all
   these settings out into themes, you can now easily tweak, switch, and share your experiences. This
-  configuration is spread between `theme.toml` and related files contained within a theme's folder.
+  configuration is spread between `theme.ron` and related files contained within a theme's folder.
 
 **Note:** some example config and themes can be found in the share dir, e.g. `/usr/share/leftwm` oh Arch based disros.
 
@@ -102,25 +102,25 @@ While LeftWM has very few dependencies, this isn't always the case for themes.
 Themes typically require the following to be installed. However, this is up to the
 author of the theme and could be different.
 
-List of LeftWM dependencies:  
+List of LeftWM dependencies:
 
-- xorg (runtime, build): specifically libx11, xrandr, xorg-server, libxinerama  
+- xorg (runtime, build): specifically libx11, xrandr, xorg-server, libxinerama
 - sh (runtime): any posix-compliant shell for starting up and down files
-- rust (build): >= 1.70.0
+- rust (build): >= 1.74.0
 - bash (optional): Most of the themes available use bash, though the scripts maybe converted to any posix-compliant shell
 
 List of common dependencies for themes:
 
-| Dependency<br>(git) | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS |
-|--------------------------|-----------|-------------------|-----------|--------------------------|
-| [feh][feh-git]           | feh       | feh               | feh       | [feh][feh-pkg]           |
-| [compton][compton-git]   | compton   | picom             | compton   | [compton][compton-pkg]   |
-| [picom][picom-git]       | manual ** | picom             | picom     | [picom][picom-pkg]       |
-| [polybar][polybar-git]   | manual ** | polybar           | polybar   | [polybar][polybar-pkg]   |
-| [xmobar][xmobar-git]     | xmobar    | xmobar            | xmobar    | [xmobar][xmobar-pkg]     |
-| [lemonbar][lemonbar-git] | lemonbar  | paru -S lemonbar* | manual ** | [lemonbar][lemonbar-pkg] |
-| [conky][conky-git]       | conky     | conky             | conky     | [conky][conky-pkg]       |
-| [dmenu][dmenu-git]       | dmenu     | dmenu             | dmenu     | [dmenu][dmenu-pkg]       |
+| Dependency<br>(git)      | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS                     |
+| ------------------------ | --------------------------------------- | ---------------------------- | ----------------------------------- | ------------------------ |
+| [feh][feh-git]           | feh                                     | feh                          | feh                                 | [feh][feh-pkg]           |
+| [compton][compton-git]   | compton                                 | picom                        | compton                             | [compton][compton-pkg]   |
+| [picom][picom-git]       | manual \*\*                             | picom                        | picom                               | [picom][picom-pkg]       |
+| [polybar][polybar-git]   | manual \*\*                             | polybar                      | polybar                             | [polybar][polybar-pkg]   |
+| [xmobar][xmobar-git]     | xmobar                                  | xmobar                       | xmobar                              | [xmobar][xmobar-pkg]     |
+| [lemonbar][lemonbar-git] | lemonbar                                | paru -S lemonbar\*           | manual \*\*                         | [lemonbar][lemonbar-pkg] |
+| [conky][conky-git]       | conky                                   | conky                        | conky                               | [conky][conky-pkg]       |
+| [dmenu][dmenu-git]       | dmenu                                   | dmenu                        | dmenu                               | [dmenu][dmenu-pkg]       |
 
 [feh-git]: https://github.com/derf/feh
 [feh-pkg]: https://pkgs.org/search/?q=feh&on=provides
@@ -139,7 +139,7 @@ List of common dependencies for themes:
 [dmenu-git]: https://git.suckless.org/dmenu
 [dmenu-pkg]: https://pkgs.org/download/dmenu
 
-> \* You can use whichever AUR wrapper you like. See [paru] and [yay].  
+> \* You can use whichever AUR wrapper you like. See [paru] and [yay].
 > \*\* See the git page (link in first column) for how to install these manually
 
 # Installation (with package manager)
@@ -149,7 +149,7 @@ List of common dependencies for themes:
 ## Gentoo ([GURU])
 
 ```sh
-sudo layman -a guru && sudo emerge --sync 
+sudo layman -a guru && sudo emerge --sync
 sudo emerge --ask --verbose x11-wm/leftwm
 ```
 
@@ -198,6 +198,7 @@ to be able to login to LeftWM from a display manager (GDM, SSDM, LightDM, etc.):
 ```sh
 sudo cp PATH_TO_LEFTWM/leftwm.desktop /usr/share/xsessions
 ```
+
 Also see [the build options](#optional-build-features) for more feature options, especially if you don't use `systemd` or want to use your own hotkey daemon like `sxhkd`.
 
 ## OpenBSD ([OpenBSD])
@@ -259,13 +260,13 @@ exec dbus-launch ~/.cargo/bin/leftwm >> ~/.cache/leftwm.log 2>&1
    sudo cp leftwm.desktop /usr/share/xsessions/
    ```
 
-You should now see LeftWM in your list of available window managers.  At this point, expect only a
-simple black screen on login.  For a more customized look, install a theme.
+You should now see LeftWM in your list of available window managers. At this point, expect only a
+simple black screen on login. For a more customized look, install a theme.
 
 ## Optional Development Installation
 
 If your goal is to continuously build leftwm and keep up to date with the latest releases, you may
-prefer to symlink the leftwm executables instead of copying them.  If you choose to install this
+prefer to symlink the leftwm executables instead of copying them. If you choose to install this
 way, make sure you do not move the build directory as it will break your installation.
 
 Note that if you want to build leftwm with another build profile, you will have to change the
@@ -286,6 +287,7 @@ Currently available are `dev`, `release` and `optimized`.
    # With systemd logging (view with 'journalctl -f -t leftwm-worker')
    cargo build --profile optimized
    ```
+
    For more options see [build options below](#optional-build-features).
 
 4. Create the symlinks
@@ -305,12 +307,12 @@ Currently available are `dev`, `release` and `optimized`.
    sudo cp leftwm.desktop /usr/share/xsessions/
    ```
 
-You should now see LeftWM in your list of available window managers.  At this point, expect only a
-simple black screen on login.  For a more customized look, install a theme.
+You should now see LeftWM in your list of available window managers. At this point, expect only a
+simple black screen on login. For a more customized look, install a theme.
 
 ### Rebuilding the development installation
 
-1. Now if you want to get the newest version of leftwm run this command from your build directory:  
+1. Now if you want to get the newest version of leftwm run this command from your build directory:
 
    ```bash
    git pull origin main
@@ -328,33 +330,38 @@ simple black screen on login.  For a more customized look, install a theme.
    ```bash
    Mod + Shift + R
    ```
-  
+
 ### Optional Build Features
 
 Since `LeftWM` is targeting to be more and more modular, there are a few features that can be selected at compile time:
 
 Use `cargo` with the added flags `--no-default-features --features=` and then commaseparated a selection from the following features:
 
-| feature | info | default |
-| - | - | - |
-| lefthk | built-in hotkey daemon, if you build with out make sure you bring your own (e.g. `sxhkd`) to manage any keybinds, be sure you install the `lefthk-worker` binary if you build with this option | ✔ |
-| journald-log | logging to `journald`, depends on `systemd` | ✔ |
-| sys-log | use standard system logging | ✘ |
-| file-log | log to `/tmp/leftwm/<log-file-by-datetime-of-launch>` | ✘ |
+| feature      | info                                                                                                                                                                                           | default |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| lefthk       | built-in hotkey daemon, if you build with out make sure you bring your own (e.g. `sxhkd`) to manage any keybinds, be sure you install the `lefthk-worker` binary if you build with this option | ✔      |
+| journald-log | logging to `journald`, depends on `systemd`                                                                                                                                                    | ✔      |
+| sys-log      | use standard system logging                                                                                                                                                                    | ✘       |
+| file-log     | log to `/tmp/leftwm/<log-file-by-datetime-of-launch>`                                                                                                                                          | ✘       |
+| xlib (\*)    | legacy backend linking to `libX11`                                                                                                                                                             | ✔       |
+| x11rb (\*)   | rust based backend using [`x11rb`](https://github.com/psychon/x11rb)                                                                                                                           | ✔       |
+
+⚠️ You need to select **at least one** backend feature (\*) for leftwm to build ⚠️
 
 Example:
+
 ```bash
-# With `lefthk` and logging to `sys-log`
-cargo build --profile optimized --no-default-features --features=lefthk,sys-log
+# With `lefthk` and logging to `sys-log` (`x11rb` backend)
+cargo build --profile optimized --no-default-features --features=x11rb,lefthk,sys-log
 
-# Without `lefthk` and logging to file
-cargo build --profile optimized --no-default-features --features=file-log
+# Without `lefthk` and logging to file (`xlib` backend)
+cargo build --profile optimized --no-default-features --features=xlib,file-log
 ```
-
 
 There are also multiple levels of optimization. These are specified by the cargo profiles, available are `dev`, `release` and `optimized`. The dev and release profiles are default profiles used by cargo, whereas the optimized profile is recomended for production builds.
 
 Example:
+
 ```bash
 # With the dev profile
 cargo build --profile dev
@@ -367,17 +374,17 @@ cargo build --profile release
 
 For conveniece we also have a Makefile with the following rules:
 
-| make ... | info |
-| - | - |
-| all | implies `build` and `test` |
-| test | runs same tests as CI on github |
-| test-full | same as `test` but additionally with pedantic clippy lints |
-| test-full-nix | same as `test-full` but additionally compiles the nix package, resulting in a full representation of ci checks | 
-| build | builds with cargo profile `optimized` by default; read build output on how to change the profile. |
-| clean | clean all buildfiles |
-| install | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/share/xsession` and cleans build files |
-| install-linked | installs by symlinking, copies `leftwm.desktop`, no clean |
-| uninstall | removes `leftwm-*` files from `/usr/bin` and `leftwm.desktop` file |
+| make ...       | info                                                                                                                         |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| all            | implies `build` and `test`                                                                                                   |
+| test           | runs same tests as CI on github                                                                                              |
+| test-full      | deprecated, do not use                                                                                                       |
+| test-full-nix  | same as `test-full` but additionally compiles the nix package, resulting in a full representation of ci checks               |
+| build          | builds with cargo profile `optimized` by default; read build output on how to change the profile.                            |
+| clean          | clean all buildfiles                                                                                                         |
+| install        | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/share/xsession` and cleans build files |
+| install-linked | installs by symlinking, copies `leftwm.desktop`, no clean                                                                    |
+| uninstall      | removes `leftwm-*` files from `/usr/bin` and `leftwm.desktop` file                                                           |
 
 Note that for `build`, `install` and `install-linked`, you can specify the build profile to use by adding the `profile=<profile-name>` argument. Currently available are `dev`, `release` and `release-optimized`.
 
@@ -390,13 +397,14 @@ Make sure this is at the end of your `.xinitrc` file:
 exec dbus-launch leftwm
 ```
 
-On some distros like Archlinux, the environment variables are being setup by sourcing `/etc/X11/xinit/xinitrc.d`, as described in [the Arch docs](https://wiki.archlinux.org/title/Xinit#xinitrc), please make sure you copy the default xinitrc like this: 
+On some distros like Archlinux, the environment variables are being setup by sourcing `/etc/X11/xinit/xinitrc.d`, as described in [the Arch docs](https://wiki.archlinux.org/title/Xinit#xinitrc), please make sure you copy the default xinitrc like this:
 
 ```bash
 cp /etc/X11/xinit/xinitrc ~/.xinitrc
 ```
 
 **Note:** In this case it is not necessary to start leftwm through `dbus-launch` and might even result in some cases in services like `gnome-keyring` to fail. In such an occasion just use:
+
 ```bash
 # .xinitrc
 exec leftwm
@@ -416,23 +424,24 @@ leftwm-theme apply NAME_OF_THEME_YOU_LIKE
 
 ## Without [LeftWM-Theme](https://github.com/leftwm/leftwm-theme)
 
-```bash
-mkdir -p ~/.config/leftwm/themes
-cd ~/.config/leftwm/themes
-ln -s PATH_TO_THE_THEME_YOU_LIKE current
-```
+To set up your own custom theme, you will need to create a directory containing the theme files and then symlink it to `$XDG_CONFIG_HOME/leftwm/themes/current`.
 
-LeftWM comes packaged with a couple of default themes. There is also a
+A theme directory contains at least 2 files:
+
+- `up`: a script which is loaded with the theme.
+- `down`: a script which is called when the theme is unloaded.
+
+These files need to be made executable. Many theme directories also contain:
+
+- `theme.ron`: which contains additional configuration options specific to the theme.
+- `polybar.ini`: a configuration file for the `polybar` application. _You need to have polybar installed!_
+- `picom.conf`: a configuration file for the `picom` compositor. _You need to have picom installed!_
+
+See the [theme guide][theme-guide] for examples and further information. There is also a
 [community repository][community-repo] for sharing themes.
 
-For more information about themes check out our [theme guide][theme-guide] or the [wiki].
-
 [community-repo]: https://github.com/leftwm/leftwm-community-themes
-[theme-guide]: https://github.com/leftwm/leftwm/tree/main/themes
-[wiki]: https://github.com/leftwm/leftwm/wiki/Themes
-
----
-**Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.
+[theme-guide]: /themes
 
 ---
 
@@ -441,44 +450,44 @@ For more information about themes check out our [theme guide][theme-guide] or th
 You can configure key bindings, default mod key and many other options:
 
 ## With [LeftWM-Config](https://github.com/leftwm/leftwm-config)
+
 ```bash
 leftwm-config -n # Generate new config
 leftwm-config    # Open configuration file in $EDITOR
 leftwm-config -t # Edit configuration via TUI (Beta)
 ```
 
-## Without via editing the file
+## Manually editing the configuration file
 
 ```bash
-~/.config/leftwm/config.ron
+$XDG_CONFIG_HOME/leftwm/config.ron
 ```
----
-**Note:** The configuration file is automatically generated when leftwm or leftwm-check is run for the first time.
 
 ---
-**Note:** leftwm uses RON now as its default config language. Please consider migrating your toml configs.
+
+**Note:** The configuration file is automatically generated when leftwm or leftwm-check is run for the first time.
 
 ---
 
 ## Default keys
 
-| Keybinding          | Description                                                            |
-|---------------------|------------------------------------------------------------------------|
-| Mod + (1-9)         | Switch to a desktop/tag                                                |
-| Mod + Shift + (1-9) | Move the focused window to desktop/tag                                 |
-| Mod + W             | Switch the desktops for each screen. Desktops [1][2] changes to [2][1] |
-| Mod + Shift + W     | Move window to the other desktop                                       |
-| Mod + (⬆️⬇️)          | Focus on the different windows in the current workspace                |
-| Mod + Shift + (⬆️⬇️)  | Move the different windows in the current workspace                    |
-| Mod + Enter         | Move selected window to the top of the stack in the current workspace  |
-| Mod + Ctrl + (⬆️⬇️)   | Switch between different layouts                                       |
-| Mod + Shift + (⬅➡)  | Switch between different workspaces                                    |
-| Mod + Shift + Enter | Open a terminal                                                        |
-| Mod + Ctrl + L      | Lock the screen                                                        |
-| Mod + Shift + X     | Exit LeftWM                                                            |
-| Mod + Shift + Q     | Close the current window                                               |
-| Mod + Shift + R     | Reload LeftWM and its config                                           |
-| Mod + p             | Use dmenu to start application                                         |
+| Keybinding           | Description                                                            |
+| -------------------- | ---------------------------------------------------------------------- |
+| Mod + (1-9)          | Switch to a desktop/tag                                                |
+| Mod + Shift + (1-9)  | Move the focused window to desktop/tag                                 |
+| Mod + W              | Switch the desktops for each screen. Desktops [1][2] changes to [2][1] |
+| Mod + Shift + W      | Move window to the other desktop                                       |
+| Mod + (⬆️⬇️)         | Focus on the different windows in the current workspace                |
+| Mod + Shift + (⬆️⬇️) | Move the different windows in the current workspace                    |
+| Mod + Enter          | Move selected window to the top of the stack in the current workspace  |
+| Mod + Ctrl + (⬆️⬇️)  | Switch between different layouts                                       |
+| Mod + Shift + (⬅➡) | Switch between different workspaces                                    |
+| Mod + Shift + Enter  | Open a terminal                                                        |
+| Mod + Ctrl + L       | Lock the screen                                                        |
+| Mod + Shift + X      | Exit LeftWM                                                            |
+| Mod + Shift + Q      | Close the current window                                               |
+| Mod + Shift + R      | Reload LeftWM and its config                                           |
+| Mod + p              | Use dmenu to start application                                         |
 
 **Note:** Although we encourage you to use [Alacritty](https://github.com/alacritty/alacritty),
 LeftWM will set your default terminal to the first terminal it finds in this list (in the order
@@ -506,7 +515,7 @@ presented):
 You can optionally switch between tiling or floating mode for any window.
 
 | Keybinding              | Description                             |
-|-------------------------|-----------------------------------------|
+| ----------------------- | --------------------------------------- |
 | Mod + MouseDrag         | Switch a tiled window to floating mode  |
 | Mod + RightMouseDrag    | Resize a window                         |
 | Drag window onto a tile | Switch a floating window to tiling mode |
@@ -514,33 +523,22 @@ You can optionally switch between tiling or floating mode for any window.
 
 ## Workspaces
 
-By default, workspaces have a one-to-one relationship with screens, but this is configurable. There
-are many reasons you might want to change this, but the main reason is for ultrawide monitors. You
-might want to have two or even three workspaces on a single screen.
+Workspaces are how you view tags (desktops). A workspace is an area on a screen or most likely the whole screen. in these areas you can view a given tag.
 
-Here is an example config changing the way workspaces are defined (~/.config/leftwm/config.toml)
+Default: `workspaces: []` (one workspace per screen)
 
-```rust
-workspaces: [
-    ( y: 0, x: 0, height: 1440, width: 1720 ),
-    ( y: 0, x: 1720, height: 1440, width: 1720 ),
-],
-```
+Workspaces are only applied if the specified output is the name of a connected screen. The output is also used as identifier of the workspace.
 
-You may optionally specify an ID for your defined workspaces. This is helpful if you want to assign different gutter settings to each workspace in your theme.
+You can get the output names by running xrandr in your terminal.
+
+Example (two workspaces on a single ultrawide):
 
 ```rust
 workspaces: [
-    ( y: 0, x: 0, height: 1440, width: 1720, id: 0 ),
-    ( y: 0, x: 1720, height: 1440, width: 1720, id: 1 ),
+	( output: "HDMI-1", y: 0, x: 0, height: 1440, width: 1720 ),
+	( output: "HDMI-1", y: 0, x: 1720, height: 1440, width: 1720 ),
 ],
 ```
-
----
-**NOTE**
-You do not have to define an ID for each workspace, but if you assign an ID to one workspace all subsequently defined workspaces without an ID will be assigned an ID incrementing from the largest ID currently assigned to any workspace. In the above example if the second workspace was not defined with ID = 0 it would be assigned ID = 2. Keep this in mind when creating or customizing themes.
-
----
 
 ## Tags / Desktops
 
@@ -548,7 +546,7 @@ The default tags are 1-9. They can be renamed in the config file by setting the
 list of tags.
 
 Here is an example config changing the list of available tags. NOTE: tag navigation (Mod + #)
-doesn't change based on the name of the tag.
+is based on the index of the tag in the list (starting with index 1).
 
 ```rust
 tags: ["Web", "Code", "Shell", "Music", "Connect"],
@@ -556,31 +554,24 @@ tags: ["Web", "Code", "Shell", "Music", "Connect"],
 
 ## Layouts
 
-By default, all layouts are enabled. There are a lot of layouts so you might want to consider only
-enabling the ones you use. To do this add a layout section to your config.toml file. This enables
-only the layouts you specify.
+Leftwm supports user definable layouts. The relevant entries in the configuration file are the `layouts` and `layout_definitions` lists.
+
+Only the layouts whose name appears in `layouts` will be accessible when switching layouts through the commands `NextLayout`, `PreviousLayout` and `SetLayout`. Each layout appearing in the `layouts` list must have a corresponding definition in `layout_definitions`.
 
 Example:
 
 ```rust
-layouts: ["MainAndHorizontalStack", "GridHorizontal", "Fibonacci", "EvenVertical", "EvenHorizontal", "CenterMain", "CenterMainFluid"],
-```
-
-Layouts may also be specified on individual workspaces, this is useful if you have monitors with different aspect ratios or orientation.
-
-Example:
-
-```rust
-workspaces: [
-    ( id: 0, y: 480, x: 0, height: 1600, width: 3840,
-      layouts = ["CenterMain", "CenterMainBalanced", "EvenHorizontal"]),
-    ( id: 1, y: 0, x: 3840, height: 2560, width: 1440,
-      layouts = ["MainAndHorizontalStack", "EvenVertical"]),
+layouts: [
+	"Monocle",
+	"MainAndDeck",
+	"MainAndVertStack",
 ],
+layout_definitions: [
+	(name: "Monocle", flip: None, rotate: North, reserve: None, columns: (flip: None, rotate: North, main: None, stack: (flip: None, rotate: North, split: None), second_stack: None)),
+	(name: "MainAndDeck", flip: None, rotate: North, reserve: None, columns: (flip: None, rotate: North, main: (count: 1, size: 0.5, flip: None, rotate: North, split: None), stack: (flip: None, rotate: North, split: None), second_stack: None)),
+	(name: "MainAndVertStack", flip: None, rotate: North, reserve: None, columns: (flip: None, rotate: North, main: (count: 1, size: 0.5, flip: None, rotate: North, split: Vertical), stack: (flip: None, rotate: North, split: Horizontal), second_stack: None)),
+]
 ```
-
-**NOTE**
-When defining layouts per workspace, you will need to define workspace IDs explicitely.
 
 [More detailed configuration information can be found in the Wiki.][config-wiki]
 
@@ -588,16 +579,16 @@ When defining layouts per workspace, you will need to define workspace IDs expli
 
 ## LeftWM is [EWMH](https://en.wikipedia.org/wiki/Extended_Window_Manager_Hints) compliant
 
-The default layouts are [all of the kinds](leftwm-core/src/layouts/mod.rs#L21) described by the Layout enum.
+The default layouts are [all of the kinds defined here](https://github.com/leftwm/leftwm-layouts/blob/main/leftwm-layouts/src/layouts/defaults.rs).
 
 ## Troubleshooting
 
-| Issue | Description | Solution |
-|-|-|:-:|
-| LeftWM not listed by login manager | You likely need to add the xsessions file to the right folder. | See [installation](#installation-with-package-manager) |
-| No config.toml file exists | LeftWM does not always ship with a `config.toml`. You will need to execute LeftWM at least once for one to be generated. | Try the following: ``` leftwm-worker ``` |
-| Config.toml is not being parsed | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR. | Try the following: ``` leftwm-check ``` |
-| Keybinding doesn't work | It's likely you need to specify a value or have a typo. | See Wiki |
+| Issue                              | Description                                                                                                             |                        Solution                        |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------: |
+| LeftWM not listed by login manager | You likely need to add the xsessions file to the right folder.                                                          | See [installation](#installation-with-package-manager) |
+| No `config.ron` file exists        | LeftWM does not always ship with a `config.ron`. You will need to execute LeftWM at least once for one to be generated. |           Try the following: `leftwm-worker`           |
+| `config.ron` is not being parsed   | LeftWM ships with a binary called leftwm-check. It might not be installed by the AUR.                                   |           Try the following: `leftwm-check`            |
+| Keybinding doesn't work            | It's likely you need to specify a value or have a typo.                                                                 |                        See Wiki                        |
 
 ## Support
 

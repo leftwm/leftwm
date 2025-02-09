@@ -1,7 +1,28 @@
 [workspace]
-default-members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server", "display-servers/smithay-display-server"]
-members = ["leftwm", "leftwm-core", "display-servers/xlib-display-server", "display-servers/smithay-display-server"]
-resolver = "1"
+members = [
+    "leftwm",
+    "leftwm-core",
+    "leftwm-macros",
+    "leftwm-watchdog",
+    "display-servers/xlib-display-server",
+    "display-servers/x11rb-display-server",
+    "display-servers/smithay-display-server"
+]
+default-members = [
+    "leftwm",
+    "leftwm-core",
+    "leftwm-macros",
+    "leftwm-watchdog",
+    "display-servers/xlib-display-server",
+    "display-servers/x11rb-display-server",
+    "display-servers/smithay-display-server"
+]
+
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.83.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 
 [profile.optimized]
 inherits = "release"

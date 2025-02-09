@@ -4,19 +4,15 @@ use crate::{models::TagId, models::WindowHandle, Window, Workspace};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
+use super::window::Handle;
 use super::MaybeWindowHandle;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FocusBehaviour {
+    #[default]
     Sloppy,
     ClickTo,
     Driven,
-}
-
-impl Default for FocusBehaviour {
-    fn default() -> Self {
-        Self::Sloppy
-    }
 }
 
 impl FocusBehaviour {
@@ -33,31 +29,47 @@ impl FocusBehaviour {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FocusManager {
-    pub behaviour: FocusBehaviour,
-    pub focus_new_windows: bool,
-    pub workspace_history: VecDeque<usize>,
-    pub window_history: VecDeque<MaybeWindowHandle>,
-    pub tag_history: VecDeque<TagId>,
-    pub tags_last_window: HashMap<TagId, WindowHandle>,
-    pub sloppy_mouse_follows_focus: bool,
-    pub create_follows_cursor: bool,
-    pub last_mouse_position: Option<(i32, i32)>,
+/// Controls behaviour for window activation. Default is to mark the window as urgent.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FocusOnActivationBehaviour {
+    /// Do nothing.
+    DoNothing,
+    /// Mark the window as urgent.
+    #[default]
+    MarkUrgent,
+    /// Switch to the window.
+    SwitchTo,
 }
 
-impl FocusManager {
+/// `FocusManager` stores the history of which workspaces, tags, and windows had focus.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FocusManager<H: Handle> {
+    pub workspace_history: VecDeque<usize>,
+    #[serde(bound = "")]
+    pub window_history: VecDeque<MaybeWindowHandle<H>>,
+    pub tag_history: VecDeque<TagId>,
+    #[serde(bound = "")]
+    pub tags_last_window: HashMap<TagId, WindowHandle<H>>,
+    pub last_mouse_position: Option<(i32, i32)>,
+    // entries below are configuration variables and are never changed
+    pub behaviour: FocusBehaviour,
+    pub focus_new_windows: bool,
+    pub sloppy_mouse_follows_focus: bool,
+    pub create_follows_cursor: bool,
+}
+
+impl<H: Handle> FocusManager<H> {
     pub fn new(config: &impl Config) -> Self {
         Self {
-            behaviour: config.focus_behaviour(),
-            focus_new_windows: config.focus_new_windows(),
             workspace_history: Default::default(),
             window_history: Default::default(),
             tag_history: Default::default(),
             tags_last_window: Default::default(),
+            last_mouse_position: None,
+            behaviour: config.focus_behaviour(),
+            focus_new_windows: config.focus_new_windows(),
             sloppy_mouse_follows_focus: config.sloppy_mouse_follows_focus(),
             create_follows_cursor: config.create_follows_cursor(),
-            last_mouse_position: None,
         }
     }
 
@@ -67,7 +79,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let index = *self.workspace_history.get(0)?;
+        let index = *self.workspace_history.front()?;
         workspaces.get(index)
     }
 
@@ -79,7 +91,7 @@ impl FocusManager {
     where
         'a: 'b,
     {
-        let index = *self.workspace_history.get(0)?;
+        let index = *self.workspace_history.front()?;
         workspaces.get_mut(index)
     }
 
@@ -91,11 +103,11 @@ impl FocusManager {
 
     /// Return the currently focused window.
     #[must_use]
-    pub fn window<'a, 'b>(&self, windows: &'a [Window]) -> Option<&'b Window>
+    pub fn window<'a, 'b>(&self, windows: &'a [Window<H>]) -> Option<&'b Window<H>>
     where
         'a: 'b,
     {
-        let handle = *self.window_history.get(0)?;
+        let handle = *self.window_history.front()?;
         if let Some(handle) = handle {
             return windows.iter().find(|w| w.handle == handle);
         }
@@ -103,17 +115,18 @@ impl FocusManager {
     }
 
     /// Return the currently focused window.
-    pub fn window_mut<'a, 'b>(&self, windows: &'a mut [Window]) -> Option<&'b mut Window>
+    pub fn window_mut<'a, 'b>(&self, windows: &'a mut [Window<H>]) -> Option<&'b mut Window<H>>
     where
         'a: 'b,
     {
-        let handle = *self.window_history.get(0)?;
+        let handle = *self.window_history.front()?;
         if let Some(handle) = handle {
             return windows.iter_mut().find(|w| w.handle == handle);
         }
         None
     }
 
+    // seems like duplicate code
     pub fn create_follows_cursor(&self) -> bool {
         self.create_follows_cursor
     }

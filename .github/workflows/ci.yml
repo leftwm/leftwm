@@ -20,11 +20,15 @@ jobs:
     name: Run build
     uses: ./.github/workflows/run-build.yml
 
+  docs:
+    name: Generate Crate Docs
+    uses: ./.github/workflows/docs.yml
+
   msrv:
     name: Check MSRV
     strategy:
       matrix:
-        toolchain: ["1.70.0"]
+        toolchain: ["1.83.0"]
         target: ["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]
     uses: ./.github/workflows/check-msrv.yml
     with:

@@ -50,6 +50,7 @@ use crate::{
     managed_window::ManagedWindow,
     state::{ClientState, SmithayState},
     window_registry::WindowRegisty,
+    SmithayWindowHandle,
 };
 use leftwm_core::{
     models::{WindowHandle, WindowType},
@@ -188,7 +189,7 @@ impl WlrLayerShellHandler for SmithayState {
         let window = ManagedWindow::from_surface(layer_surface);
         let id = self.window_registry.insert(window.clone());
 
-        let mut wm_window = WMWindow::new(WindowHandle::SmithayHandle(id), None, None);
+        let mut wm_window = WMWindow::new(WindowHandle(SmithayWindowHandle(id)), None, None);
         wm_window.r#type = WindowType::WlrSurface;
         self.send_event(DisplayEvent::WindowCreate(
             wm_window,

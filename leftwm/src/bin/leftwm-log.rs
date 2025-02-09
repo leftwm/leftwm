@@ -1,9 +1,13 @@
 use clap::{arg, command, ArgGroup, Id};
-use std::process::{exit, Command};
+use std::process::exit;
+#[cfg(any(feature = "sys-log", feature = "journald-log", feature = "file-log"))]
+use std::process::Command;
 
 fn main() {
     let matches = get_command().get_matches();
+    #[cfg(any(feature = "sys-log", feature = "journald-log", feature = "file-log"))]
     let follow = matches.get_flag("follow");
+    #[cfg(any(feature = "sys-log", feature = "journald-log", feature = "file-log"))]
     let level = matches.get_count("verbose");
 
     #[allow(unreachable_patterns)]
@@ -86,6 +90,8 @@ fn syslog(follow: bool) {
 
 #[cfg(feature = "file-log")]
 fn file_log(follow: bool, level: u8) {
+    const TIME_REGEX: &str =
+        "[0-9]{4}-[01][1-9]-[1-3][0-9]T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z.{10}";
     let cmd = if follow { "tail -f" } else { "cat" };
     let filter = match level {
         0 => "ERROR|WARN",
@@ -93,9 +99,7 @@ fn file_log(follow: bool, level: u8) {
         2 => "ERROR|WARN|INFO|DEBUG",
         _ => "ERROR|WARN|INFO|DEBUG|TRACE",
     };
-    const TIME_REGEX: &str =
-        "[0-9]{4}-[01][1-9]-[1-3][0-9]T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z.{10}";
-    match {
+    let res = {
         let file_path = leftwm::utils::log::file::get_log_path();
         // ugly shadowing to make the borrow checker happy
         let file_path = file_path.to_string_lossy();
@@ -106,7 +110,8 @@ fn file_log(follow: bool, level: u8) {
                 format!("{cmd} {file_path} | grep -E \"{TIME_REGEX}{filter}\"").as_str(),
             ])
             .spawn()
-    } {
+    };
+    match res {
         Ok(child) => {
             let status = child.wait().expect("Failed to wait for child.");
             exit(status.code().unwrap_or(0));

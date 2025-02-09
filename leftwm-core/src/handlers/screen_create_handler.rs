@@ -1,12 +1,14 @@
 use super::{Manager, Screen, Workspace};
 use crate::config::Config;
 use crate::display_servers::DisplayServer;
+use crate::models::Handle;
 
-impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
-    /// Process a collection of events, and apply the changes to a manager.
+impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
+    /// `screen_create_handler` is called when the display server sends a
+    /// `DisplayEvent::ScreenCreate(screen)` event. This happens at initialization.
     ///
     /// Returns `true` if changes need to be rendered.
-    pub fn screen_create_handler(&mut self, screen: Screen) -> bool {
+    pub fn screen_create_handler(&mut self, screen: Screen<H>) -> bool {
         tracing::trace!("Screen create: {:?}", screen);
 
         let tag_index = self.state.workspaces.len();
@@ -33,12 +35,12 @@ impl<C: Config, SERVER: DisplayServer> Manager<C, SERVER> {
             self.state.tags.add_new_unlabeled()
         };
 
-        self.state.focus_workspace(&new_workspace);
+        self.state.focus_workspace(&new_workspace); // focus_workspace is called.
         self.state.focus_tag(&next_id);
         new_workspace.show_tag(&next_id);
         self.state.workspaces.push(new_workspace.clone());
         self.state.screens.push(screen);
-        self.state.focus_workspace(&new_workspace);
+        self.state.focus_workspace(&new_workspace); // focus_workspace is called again.
         false
     }
 }

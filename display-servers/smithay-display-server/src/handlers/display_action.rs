@@ -8,7 +8,7 @@ use smithay::{
 };
 use tracing::{info, warn};
 
-use crate::{internal_action::InternalAction, state::SmithayState};
+use crate::{internal_action::InternalAction, state::SmithayState, SmithayWindowHandle};
 
 impl SmithayState {
     pub fn handle_action(&mut self, action: InternalAction, display: &mut Display<Self>) {
@@ -17,8 +17,8 @@ impl SmithayState {
             InternalAction::Flush => display.flush_clients().unwrap(),
             InternalAction::GenerateVerifyFocusEvent => {
                 if let Some(handle) = self.focused_window {
-                    self.send_event(DisplayEvent::VerifyFocusedAt(WindowHandle::SmithayHandle(
-                        handle,
+                    self.send_event(DisplayEvent::VerifyFocusedAt(WindowHandle(
+                        SmithayWindowHandle(handle),
                     )))
                     .unwrap();
                 }
@@ -27,9 +27,7 @@ impl SmithayState {
             InternalAction::UpdateWindows(windows) => {
                 info!("Received window update: {:#?}", windows);
                 for window in windows {
-                    let WindowHandle::SmithayHandle(handle) = window.handle else {
-                        panic!("LeftWM passed an invalid handle");
-                    };
+                    let WindowHandle(SmithayWindowHandle(handle)) = window.handle;
                     if window.r#type == WindowType::WlrSurface {
                         warn!("LeftWM is trying to manage a surface, discarding")
                     } else {
@@ -69,17 +67,13 @@ impl SmithayState {
                 }
             }
             InternalAction::DisplayAction(DisplayAction::KillWindow(handle)) => {
-                let WindowHandle::SmithayHandle(handle) = handle else {
-                    panic!("LeftWM passed an invalid handle");
-                };
+                let WindowHandle(SmithayWindowHandle(handle)) = handle;
                 let window = self.window_registry.get_mut(handle);
                 //NOTE: Nothing happens if the window doesnt exist;
                 window.map(|w| w.send_close());
             }
             InternalAction::DisplayAction(DisplayAction::AddedWindow(handle, floating, focus)) => {
-                let WindowHandle::SmithayHandle(handle) = handle else {
-                    panic!("LeftWM passed an invalid handle");
-                };
+                let WindowHandle(SmithayWindowHandle(handle)) = handle;
                 let window = self.window_registry.get_mut(handle).unwrap();
                 let mut window_data = window.data.write().unwrap();
                 window_data.floating = floating;
@@ -90,9 +84,7 @@ impl SmithayState {
                 }
             }
             InternalAction::DisplayAction(DisplayAction::MoveMouseOver(handle, force)) => {
-                let WindowHandle::SmithayHandle(handle) = handle else {
-                    panic!("LeftWM passed an invalid handle");
-                };
+                let WindowHandle(SmithayWindowHandle(handle)) = handle;
                 if Some(handle) != self.focused_window || force {
                     let window = self.window_registry.get(handle).unwrap();
                     let geometry = window.data.read().unwrap().geometry.unwrap();
@@ -107,7 +99,7 @@ impl SmithayState {
             InternalAction::DisplayAction(DisplayAction::SetState(_, _, _)) => {
                 todo!()
             }
-            InternalAction::DisplayAction(DisplayAction::SetWindowOrder(_, _)) => {
+            InternalAction::DisplayAction(DisplayAction::SetWindowOrder(_)) => {
                 //TODO: no `todo!()` here because crash
             }
             InternalAction::DisplayAction(DisplayAction::MoveToTop(_)) => {
@@ -120,9 +112,7 @@ impl SmithayState {
                 window,
                 previous_window: _,
             }) => {
-                let WindowHandle::SmithayHandle(handle) = window.handle else {
-                    panic!("LeftWM passed an invalid handle");
-                };
+                let WindowHandle(SmithayWindowHandle(handle)) = window.handle;
                 // NOTE: Should we never move the cursor??
                 self.focus_window(handle, false);
             }

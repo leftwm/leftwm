@@ -1,16 +1,18 @@
 [package]
 name = "xlib-display-server"
-version = "0.1.1"
+version = "0.1.5"
 description = "A display server library for LeftWM" 
 license = "MIT"
 edition = "2021"
+rust-version = "1.83.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-leftwm-core = { path = "../../leftwm-core", version = '0.4.2' }
+leftwm-core = { path = "../../leftwm-core", version = '0.5.3' }
 x11-dl = "2.18.4"
 futures = "0.3.21"
 tracing = "0.1.36"
+mio = { version = "1.0.2", features = ["os-ext"] }
 tokio = { version = "1.2.0", features = [ "sync", "time" ] }
-mio = { version = "0.8.0", features = ["os-ext"] }
+serde = { version = "1.0.104", features = ["derive"] }

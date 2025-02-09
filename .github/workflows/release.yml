@@ -1,0 +1,59 @@
+name: Upload release artifacts
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  crate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install rust
+        id: rust-install
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install openssl
+        run: |
+          sudo apt update
+          sudo apt install openssl pkg-config libssl-dev
+          cargo clean
+          OPENSSL_LIB_DIR="/usr/lib/x86_64-linux-gnu"
+          OPENSSL_INCLUDE_DIR="/usr/include/openssl"
+
+      - name: Publish macros crate
+        if: github.event_name == 'release'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo publish --allow-dirty -p leftwm-macros
+      - name: Publish core crate
+        if: github.event_name == 'release'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo publish --allow-dirty -p leftwm-core
+      - name: Publish xlib servers crate
+        if: github.event_name == 'release'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo publish --allow-dirty -p xlib-display-server
+      - name: Publish x11rb servers crate
+        if: github.event_name == 'release'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo publish --allow-dirty -p x11rb-display-server
+      - name: Publish binary crate
+        if: github.event_name == 'release'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cargo publish --allow-dirty -p leftwm

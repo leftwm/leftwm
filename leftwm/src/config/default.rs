@@ -1,8 +1,13 @@
-use leftwm_core::models::{ScratchPad, Size};
+use leftwm_core::{
+    config::WindowHidingStrategy,
+    models::{FocusOnActivationBehaviour, ScratchPad, Size},
+};
+
+use crate::Backend;
 
 #[cfg(feature = "lefthk")]
 use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
-use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeSetting};
+use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeConfig};
 
 impl Default for Config {
     // We allow this because this function would be difficult to reduce. If someone would like to
@@ -204,6 +209,7 @@ impl Default for Config {
         let scratchpad = ScratchPad {
             name: "Alacritty".into(),
             value: "alacritty".to_string(),
+            args: None,
             x: Some(Size::Pixel(860)),
             y: Some(Size::Pixel(390)),
             height: Some(Size::Pixel(300)),
@@ -213,6 +219,9 @@ impl Default for Config {
         let layouts = leftwm_layouts::layouts::Layouts::default();
 
         Self {
+            log_level: String::from("debug"),
+            // Using Backend's feature fallback
+            backend: Backend::default(),
             workspaces: Some(vec![]),
             tags: Some(tags),
             layouts: layouts.names(),
@@ -226,15 +235,16 @@ impl Default for Config {
             disable_tile_drag: false,
             disable_window_snap: true,
             focus_behaviour: FocusBehaviour::Sloppy, // default behaviour: mouse move auto-focuses window
+            focus_on_activation: FocusOnActivationBehaviour::default(),
             focus_new_windows: true, // default behaviour: focuses windows on creation
             single_window_border: true,
             insert_behavior: leftwm_core::config::InsertBehavior::Bottom,
+            window_hiding_strategy: WindowHidingStrategy::default(),
             modkey: "Mod4".to_owned(),     // win key
             mousekey: Some("Mod4".into()), // win key
             #[cfg(feature = "lefthk")]
             keybind: commands,
-            theme_setting: ThemeSetting::default(),
-            max_window_width: None,
+            theme_setting: ThemeConfig::default(),
             state_path: None,
             sloppy_mouse_follows_focus: true,
             create_follows_cursor: None,

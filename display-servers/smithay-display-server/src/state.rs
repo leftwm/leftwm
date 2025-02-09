@@ -33,6 +33,7 @@ use crate::{
     protocols::{screencopy::ScreencopyManagerState, xdg_output_manager::XdgOutputManagerState},
     udev::UdevData,
     window_registry::{WindowHandle, WindowRegisty},
+    SmithayWindowHandle,
 };
 
 pub struct SmithayState {
@@ -200,7 +201,10 @@ impl SmithayState {
         socket_name
     }
 
-    pub fn send_event(&self, event: DisplayEvent) -> Result<(), SendError<()>> {
+    pub fn send_event(
+        &self,
+        event: DisplayEvent<SmithayWindowHandle>,
+    ) -> Result<(), SendError<()>> {
         info!("Sending event: {:#?}", event);
         self.event_sender.send_event(event)
     }
@@ -235,7 +239,7 @@ impl SmithayState {
                     if let Some(h) = window.get_handle() {
                         self.focus_window(h, false);
                         self.send_event(DisplayEvent::WindowTakeFocus(
-                            leftwm_core::models::WindowHandle::SmithayHandle(h),
+                            leftwm_core::models::WindowHandle(SmithayWindowHandle(h)),
                         ))
                         .unwrap();
                     }

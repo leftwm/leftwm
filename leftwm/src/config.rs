@@ -8,18 +8,21 @@ use self::keybind::Modifier;
 
 #[cfg(feature = "lefthk")]
 use super::BaseCommand;
-use super::ThemeSetting;
+use super::ThemeConfig;
 #[cfg(feature = "lefthk")]
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
-    config::{InsertBehavior, ScratchPad, Workspace},
+    config::{InsertBehavior, ScratchPad, WindowHidingStrategy, Workspace},
     layouts::LayoutMode,
-    models::{FocusBehaviour, Gutter, Margins, Size, Window, WindowState, WindowType},
+    models::{
+        FocusBehaviour, FocusOnActivationBehaviour, Gutter, Handle, Margins, Window, WindowState,
+        WindowType,
+    },
     state::State,
     DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
-use leftwm_layouts::layouts::Layouts;
+
 use leftwm_layouts::Layout;
 use regex::Regex;
 use ron::{
@@ -90,6 +93,7 @@ pub struct WindowHook {
     pub spawn_fullscreen: Option<bool>,
     /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
     pub spawn_as_type: Option<WindowType>,
+    pub hiding_strategy: Option<WindowHidingStrategy>,
 }
 
 impl WindowHook {
@@ -97,11 +101,11 @@ impl WindowHook {
     ///
     /// Multiple [`WindowHook`]s might match a `WM_CLASS` but we want the most
     /// specific one to apply: matches by title are scored greater than by `WM_CLASS`.
-    fn score_window(&self, window: &Window) -> u8 {
+    fn score_window<H: Handle>(&self, window: &Window<H>) -> u8 {
         // returns true if any of the items in the provided `Vec<&Option<String>>` is Some and matches the `&Regex`
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
             strs.iter().any(|str| {
-                str.as_ref().map_or(false, |s| {
+                str.as_ref().is_some_and(|s| {
                     // we match the class/title to the window rule by checking if replacing the text
                     // with the regex makes the string empty. if the original string is already
                     // empty, this will match it to every regex, so we need to check for that.
@@ -123,7 +127,7 @@ impl WindowHook {
         class_score + 2 * title_score
     }
 
-    fn apply(&self, state: &mut State, window: &mut Window) {
+    fn apply<H: Handle>(&self, state: &mut State<H>, window: &mut Window<H>) {
         if let Some(tag) = self.spawn_on_tag {
             window.tag = Some(tag);
         }
@@ -171,6 +175,24 @@ impl WindowHook {
         if let Some(w_type) = self.spawn_as_type.clone() {
             window.r#type = w_type;
         }
+        window.hiding_strategy = self.hiding_strategy;
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Backend {
+    #[cfg(feature = "xlib")]
+    XLib,
+    #[cfg(feature = "x11rb")]
+    X11rb,
+}
+
+impl Default for Backend {
+    fn default() -> Self {
+        #[cfg(feature = "xlib")]
+        return Backend::XLib;
+        #[cfg(not(feature = "xlib"))]
+        return Backend::X11rb;
     }
 }
 
@@ -179,11 +201,12 @@ impl WindowHook {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(default)]
 pub struct Config {
+    pub backend: Backend,
+    pub log_level: String,
     pub modkey: String,
     pub mousekey: Option<Modifier>,
     pub workspaces: Option<Vec<Workspace>>,
     pub tags: Option<Vec<String>>,
-    pub max_window_width: Option<Size>,
     pub layouts: Vec<String>,
     pub layout_definitions: Vec<Layout>,
     pub layout_mode: LayoutMode,
@@ -201,13 +224,15 @@ pub struct Config {
     pub create_follows_cursor: Option<bool>,
     pub auto_derive_workspaces: bool,
     pub disable_cursor_reposition_on_resize: bool,
+    pub focus_on_activation: FocusOnActivationBehaviour,
+    pub window_hiding_strategy: WindowHidingStrategy,
     #[cfg(feature = "lefthk")]
     pub keybind: Vec<Keybind>,
     pub state_path: Option<PathBuf>,
     // NOTE: any newly added parameters must be inserted before `pub keybind: Vec<Keybind>,`
     //       at least when `TOML` is used as config language
     #[serde(skip)]
-    pub theme_setting: ThemeSetting,
+    pub theme_setting: ThemeConfig,
 }
 
 #[must_use]
@@ -219,15 +244,15 @@ pub fn load() -> Config {
 
 /// # Panics
 ///
-/// Function can only panic if toml cannot be serialized. This should not occur as it is defined
+/// Function can only panic if config.ron file cannot be serialized. This should not occur as it is defined
 /// globally.
 ///
 /// # Errors
 ///
 /// Function will throw an error if `BaseDirectories` doesn't exist, if user doesn't have
-/// permissions to place config.toml, if config.toml cannot be read (access writes, malformed file,
+/// permissions to place config.ron, if config.ron cannot be read (access writes, malformed file,
 /// etc.).
-/// Function can also error from inability to save config.toml (if it is the first time running
+/// Function can also error from inability to save config.ron (if it is the first time running
 /// `LeftWM`).
 fn load_from_file() -> Result<Config> {
     tracing::debug!("Loading config file");
@@ -357,11 +382,11 @@ impl lefthk_core::config::Config for Config {
             .map(|mut keybind| {
                 if let Some(ref mut modifier) = keybind.modifier {
                     match modifier {
-                        Modifier::Single(m) if m == "modkey" => *m = self.modkey.clone(),
+                        Modifier::Single(m) if m == "modkey" => m.clone_from(&self.modkey),
                         Modifier::List(ms) => {
                             for m in ms {
                                 if m == "modkey" {
-                                    *m = self.modkey.clone();
+                                    m.clone_from(&self.modkey);
                                 }
                             }
                         }
@@ -402,6 +427,10 @@ impl leftwm_core::Config for Config {
         self.focus_behaviour
     }
 
+    fn focus_on_activation(&self) -> FocusOnActivationBehaviour {
+        self.focus_on_activation
+    }
+
     fn mousekey(&self) -> Vec<String> {
         self.mousekey
             .as_ref()
@@ -422,7 +451,7 @@ impl leftwm_core::Config for Config {
     }
 
     fn layout_definitions(&self) -> Vec<Layout> {
-        let mut layouts = Layouts::default().layouts;
+        let mut layouts = vec![];
         for custom_layout in &self.layout_definitions {
             layouts.push(custom_layout.clone());
         }
@@ -445,9 +474,9 @@ impl leftwm_core::Config for Config {
         self.focus_new_windows
     }
 
-    fn command_handler<SERVER: DisplayServer>(
+    fn command_handler<H: Handle, SERVER: DisplayServer<H>>(
         command: &str,
-        manager: &mut Manager<Self, SERVER>,
+        manager: &mut Manager<H, Self, SERVER>,
     ) -> bool {
         let mut return_pipe = get_return_pipe();
         if let Some((command, value)) = command.split_once(' ') {
@@ -460,12 +489,12 @@ impl leftwm_core::Config for Config {
                         tracing::warn!("Path submitted does not exist.");
                         write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist");
                     }
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 "UnloadTheme" => {
-                    manager.config.theme_setting = ThemeSetting::default();
+                    manager.config.theme_setting = ThemeConfig::default();
                     write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
@@ -481,9 +510,9 @@ impl leftwm_core::Config for Config {
                     false
                 }
                 "UnloadTheme" => {
-                    manager.config.theme_setting = ThemeSetting::default();
+                    manager.config.theme_setting = ThemeConfig::default();
                     write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
-                    manager.reload_config()
+                    manager.load_theme_config()
                 }
                 _ => {
                     tracing::warn!("Command not recognized: {}", command);
@@ -587,7 +616,7 @@ impl leftwm_core::Config for Config {
         self.disable_tile_drag
     }
 
-    fn save_state(&self, state: &State) {
+    fn save_state<H: Handle>(&self, state: &State<H>) {
         let path = self.state_file();
         let state_file = match File::create(path) {
             Ok(file) => file,
@@ -601,7 +630,7 @@ impl leftwm_core::Config for Config {
         }
     }
 
-    fn load_state(&self, state: &mut State) {
+    fn load_state<H: Handle>(&self, state: &mut State<H>) {
         let path = self.state_file().to_owned();
         match File::open(&path) {
             Ok(file) => {
@@ -620,7 +649,11 @@ impl leftwm_core::Config for Config {
     }
 
     /// Pick the best matching [`WindowHook`], if any, and apply its config.
-    fn setup_predefined_window(&self, state: &mut State, window: &mut Window) -> bool {
+    fn setup_predefined_window<H: Handle>(
+        &self,
+        state: &mut State<H>,
+        window: &mut Window<H>,
+    ) -> bool {
         if let Some(window_rules) = &self.window_rules {
             let best_match = window_rules
                 .iter()
@@ -632,7 +665,7 @@ impl leftwm_core::Config for Config {
             if let Some((hook, _)) = best_match {
                 hook.apply(state, window);
                 tracing::trace!(
-                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}",
+                    "Window [[ TITLE={:?}, {:?}; WM_CLASS={:?}, {:?} ]] spawned in tag={:?} on workspace={:?} as type={:?} with floating={:?}, sticky={:?} and fullscreen={:?}, hiding_stategy={:?}",
                     window.name,
                     window.legacy_name,
                     window.res_name,
@@ -643,6 +676,7 @@ impl leftwm_core::Config for Config {
                     hook.spawn_floating,
                     hook.spawn_sticky,
                     hook.spawn_fullscreen,
+                    hook.hiding_strategy,
                 );
                 return true;
             }
@@ -670,6 +704,10 @@ impl leftwm_core::Config for Config {
         self.create_follows_cursor
             .unwrap_or(self.focus_behaviour == FocusBehaviour::Sloppy)
     }
+
+    fn window_hiding_strategy(&self) -> WindowHidingStrategy {
+        self.window_hiding_strategy
+    }
 }
 
 impl Config {
@@ -694,6 +732,7 @@ fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex
     })
 }
 
+#[allow(clippy::ref_option)]
 fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
     match wc {
         Some(ref re) => s.serialize_some(re.as_str()),

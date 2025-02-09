@@ -24,7 +24,6 @@
         "8",
         "9",
     ],
-    max_window_width: None,
     layouts: [
         "EvenHorizontal",
         "EvenVertical",
@@ -66,8 +65,11 @@
     disable_window_snap: true,
     focus_behaviour: Sloppy,
     focus_new_windows: true,
+    focus_on_activation: MarkUrgent,
+    create_follows_cursor: true,
     single_window_border: true,
     sloppy_mouse_follows_focus: true,
+    reposition_cursor_on_resize: true,
     auto_derive_workspaces: true,
     keybind: [
         (command: Execute, value: "dmenu_run", modifier: ["modkey"], key: "p"),

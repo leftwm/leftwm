@@ -1,3 +1,4 @@
+use crate::SmithayWindowHandle;
 use std::{
     cell::RefCell,
     sync::mpsc::{self, Receiver, SendError, Sender},
@@ -9,12 +10,15 @@ use tokio::sync::mpsc::{
 use leftwm_core::DisplayEvent;
 
 pub struct EventChannelSender {
-    event_sender: Sender<DisplayEvent>,
+    event_sender: Sender<DisplayEvent<SmithayWindowHandle>>,
     event_notify_sender: AsyncSender<()>,
 }
 
 impl EventChannelSender {
-    pub fn send_event(&self, event: DisplayEvent) -> Result<(), SendError<()>> {
+    pub fn send_event(
+        &self,
+        event: DisplayEvent<SmithayWindowHandle>,
+    ) -> Result<(), SendError<()>> {
         self.event_sender.send(event).map_err(|_| SendError(()))?;
         // If this returns a TrySendError::Full we ignore that since that means that the other side
         // is already notified but not yet collected.
@@ -27,7 +31,7 @@ impl EventChannelSender {
 }
 
 pub struct EventChannelReceiver {
-    event_receiver: Receiver<DisplayEvent>,
+    event_receiver: Receiver<DisplayEvent<SmithayWindowHandle>>,
     // We wanna get mut access to this for recieving without self being mut because
     // `DisplayServer::wait_readable` doesn't give us mutable access to self.
     event_notify_receiver: RefCell<AsyncReceiver<()>>,
@@ -42,7 +46,7 @@ impl EventChannelReceiver {
             .unwrap()
     }
 
-    pub fn collect_events(&mut self) -> Vec<DisplayEvent> {
+    pub fn collect_events(&mut self) -> Vec<DisplayEvent<SmithayWindowHandle>> {
         self.event_receiver.try_iter().collect()
     }
 }

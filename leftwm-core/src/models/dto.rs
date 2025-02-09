@@ -1,6 +1,8 @@
 use crate::state::State;
 use serde::{Deserialize, Serialize};
 
+use super::Handle;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Viewport {
     pub id: usize,
@@ -113,15 +115,20 @@ fn viewport_into_display_workspace(
     }
 }
 
-impl From<&State> for ManagerState {
-    fn from(state: &State) -> Self {
+impl<H: Handle> From<&State<H>> for ManagerState {
+    fn from(state: &State<H>) -> Self {
         let mut viewports: Vec<Viewport> = vec![];
         // tags_len = if tags_len == 0 { 0 } else { tags_len - 1 };
         let working_tags = state
             .tags
             .all()
             .iter()
-            .filter(|tag| state.windows.iter().any(|w| w.has_tag(&tag.id)))
+            .filter(|tag| {
+                state
+                    .windows
+                    .iter()
+                    .any(|w| w.has_tag(&tag.id) && w.is_managed())
+            })
             .map(|t| t.label.clone())
             .collect();
         let urgent_tags = state

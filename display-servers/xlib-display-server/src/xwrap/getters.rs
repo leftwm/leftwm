@@ -1,11 +1,13 @@
 //! `XWrap` getters.
 use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN, MOUSEMASK};
-use crate::XWrap;
-use leftwm_core::models::{DockArea, WindowState, WindowType, XyhwChange};
+use crate::{XWrap, XlibWindowHandle};
+use leftwm_core::models::{BBox, DockArea, WindowState, WindowType, XyhwChange};
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_long, c_uchar, c_uint, c_ulong};
 use std::slice;
-use x11_dl::xlib;
+use x11_dl::xinerama::XineramaScreenInfo;
+use x11_dl::xlib::{self, XWindowAttributes};
+use x11_dl::xrandr::XRRCrtcInfo;
 
 impl XWrap {
     // Public functions.
@@ -34,6 +36,7 @@ impl XWrap {
     // `XDefaultScreen`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultScreen
     // `XDefaultColormap`: https://tronche.com/gui/x/xlib/display/display-macros.html#DefaultColormap
     // `XAllocNamedColor`: https://tronche.com/gui/x/xlib/color/XAllocNamedColor.html
+    #[must_use]
     pub fn get_color(&self, color: String) -> c_ulong {
         unsafe {
             let screen = (self.xlib.XDefaultScreen)(self.display);
@@ -85,7 +88,7 @@ impl XWrap {
     ///
     /// Will error if root window cannot be found.
     // `XQueryPointer`: https://tronche.com/gui/x/xlib/window-information/XQueryPointer.html
-    pub fn get_cursor_window(&self) -> Result<WindowHandle, XlibError> {
+    pub fn get_cursor_window(&self) -> Result<WindowHandle<XlibWindowHandle>, XlibError> {
         let roots = self.get_roots();
         for w in roots {
             let mut root_return: xlib::Window = 0;
@@ -109,7 +112,7 @@ impl XWrap {
                 )
             };
             if success > 0 {
-                return Ok(child_return.into());
+                return Ok(WindowHandle(XlibWindowHandle(child_return)));
             }
         }
         Err(XlibError::RootWindowNotFound)
@@ -117,8 +120,8 @@ impl XWrap {
 
     /// Returns the handle of the default root.
     #[must_use]
-    pub const fn get_default_root_handle(&self) -> WindowHandle {
-        WindowHandle::XlibHandle(self.root)
+    pub const fn get_default_root_handle(&self) -> WindowHandle<XlibWindowHandle> {
+        WindowHandle(XlibWindowHandle(self.root))
     }
 
     /// Returns the default root.
@@ -182,6 +185,7 @@ impl XWrap {
 
     /// Returns the next `Xevent` that matches the mask of the xserver.
     // `XMaskEvent`: https://tronche.com/gui/x/xlib/event-handling/manipulating-event-queue/XMaskEvent.html
+    #[must_use]
     pub fn get_mask_event(&self) -> xlib::XEvent {
         unsafe {
             let mut event: xlib::XEvent = std::mem::zeroed();
@@ -211,8 +215,7 @@ impl XWrap {
     /// Panics if xorg cannot be contacted (xlib missing, not started, etc.)
     /// Also panics if window attrs cannot be obtained.
     #[must_use]
-    pub fn get_screens(&self) -> Vec<Screen> {
-        use x11_dl::xinerama::XineramaScreenInfo;
+    pub fn get_screens(&self) -> Vec<Screen<XlibWindowHandle>> {
         use x11_dl::xinerama::Xlib;
         use x11_dl::xrandr::Xrandr;
         let xlib = Xlib::open().expect("Couldn't not connect to Xorg Server");
@@ -239,7 +242,8 @@ impl XWrap {
                             screen_resources,
                             (*output_info).crtc,
                         );
-                        let mut s = Screen::from(*crtc_info);
+                        let mut s: Screen<XlibWindowHandle> =
+                            XRRCrtcInfoIntoScreen(*crtc_info).into();
                         s.root = self.get_default_root_handle();
                         s.output = CStr::from_ptr((*output_info).name)
                             .to_string_lossy()
@@ -262,7 +266,7 @@ impl XWrap {
             xinerama_infos
                 .iter()
                 .map(|i| {
-                    let mut s = Screen::from(i);
+                    let mut s: Screen<XlibWindowHandle> = XineramaScreenInfoIntoScreen(i).into();
                     s.root = root;
                     s
                 })
@@ -272,7 +276,10 @@ impl XWrap {
             let roots: Result<Vec<xlib::XWindowAttributes>, _> =
                 self.get_roots().map(|w| self.get_window_attrs(w)).collect();
             let roots = roots.expect("Error: No screen were detected");
-            roots.iter().map(Screen::from).collect()
+            roots
+                .iter()
+                .map(|attrs| XWindowAttributesIntoScreen(attrs).into())
+                .collect()
         }
     }
 
@@ -579,6 +586,7 @@ impl XWrap {
     }
 
     /// Returns the `WM_STATE` of a window.
+    #[must_use]
     pub fn get_wm_state(&self, window: xlib::Window) -> Option<c_long> {
         let (prop_return, nitems_return) = self
             .get_property(window, self.atoms.WMState, self.atoms.WMState)
@@ -726,7 +734,7 @@ impl XWrap {
             let array_ptr = prop_return.cast::<c_long>();
             let slice = slice::from_raw_parts(array_ptr, nitems_return as usize);
             if slice.len() == 12 {
-                return Some(DockArea::from(slice));
+                return Some(SliceIntoDockArea(slice).into());
             }
             None
         }
@@ -742,7 +750,7 @@ impl XWrap {
             let array_ptr = prop_return.cast::<c_long>();
             let slice = slice::from_raw_parts(array_ptr, nitems_return as usize);
             if slice.len() == 12 {
-                return Some(DockArea::from(slice));
+                return Some(SliceIntoDockArea(slice).into());
             }
             None
         }
@@ -758,5 +766,79 @@ impl XWrap {
 
         screen_ids
             .map(|screen_id| unsafe { *(self.xlib.XScreenOfDisplay)(self.display, screen_id) })
+    }
+}
+
+struct XRRCrtcInfoIntoScreen(XRRCrtcInfo);
+
+impl From<XRRCrtcInfoIntoScreen> for Screen<XlibWindowHandle> {
+    fn from(val: XRRCrtcInfoIntoScreen) -> Self {
+        Screen {
+            bbox: BBox {
+                x: val.0.x,
+                y: val.0.y,
+                width: val.0.width as i32,
+                height: val.0.height as i32,
+            },
+            ..Default::default()
+        }
+    }
+}
+
+struct XineramaScreenInfoIntoScreen<'a>(&'a XineramaScreenInfo);
+
+impl From<XineramaScreenInfoIntoScreen<'_>> for Screen<XlibWindowHandle> {
+    fn from(val: XineramaScreenInfoIntoScreen<'_>) -> Self {
+        Screen {
+            bbox: BBox {
+                height: val.0.height.into(),
+                width: val.0.width.into(),
+                x: val.0.x_org.into(),
+                y: val.0.y_org.into(),
+            },
+            ..Default::default()
+        }
+    }
+}
+
+struct XWindowAttributesIntoScreen<'a>(&'a XWindowAttributes);
+
+impl From<XWindowAttributesIntoScreen<'_>> for Screen<XlibWindowHandle> {
+    fn from(val: XWindowAttributesIntoScreen<'_>) -> Self {
+        Screen {
+            root: WindowHandle(XlibWindowHandle(val.0.root)),
+            bbox: BBox {
+                height: val.0.height,
+                width: val.0.width,
+                x: val.0.x,
+                y: val.0.y,
+            },
+            ..Default::default()
+        }
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
+struct SliceIntoDockArea<'a>(&'a [i64]);
+
+#[cfg(target_pointer_width = "32")]
+struct SliceIntoDockArea<'a>(&'a [i32]);
+
+impl From<SliceIntoDockArea<'_>> for DockArea {
+    fn from(val: SliceIntoDockArea<'_>) -> Self {
+        DockArea {
+            left: val.0[0] as i32,
+            right: val.0[1] as i32,
+            top: val.0[2] as i32,
+            bottom: val.0[3] as i32,
+            left_start_y: val.0[4] as i32,
+            left_end_y: val.0[5] as i32,
+            right_start_y: val.0[6] as i32,
+            right_end_y: val.0[7] as i32,
+            top_start_x: val.0[8] as i32,
+            top_end_x: val.0[9] as i32,
+            bottom_start_x: val.0[10] as i32,
+            bottom_end_x: val.0[11] as i32,
+        }
     }
 }

@@ -6,6 +6,7 @@ use super::{Xyhw, XyhwBuilder};
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ScratchPad {
     pub name: ScratchPadName,
+    pub args: Option<Vec<String>>,
     pub value: String,
     // relative x of scratchpad, 25 means 25% of workspace x
     pub x: Option<Size>,

@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 use clap::{arg, command};
-use leftwm::{Config, ThemeSetting};
+use leftwm::{Config, ThemeConfig};
 use ron::{
     extensions::Extensions,
     ser::{to_string_pretty, PrettyConfig},
@@ -73,6 +73,7 @@ async fn main() -> Result<()> {
                 dbg!(&config);
             }
             config.check_mousekey(verbose);
+            config.check_log_level(verbose);
             #[cfg(not(feature = "lefthk"))]
             println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
             #[cfg(feature = "lefthk")]
@@ -221,7 +222,7 @@ fn check_theme(verbose: bool) -> bool {
     let xdg_base_dir = xdg_base_dir.unwrap();
     let path_current_theme = xdg_base_dir.find_config_file("current");
 
-    match check_current_theme_set(&path_current_theme, verbose) {
+    match check_current_theme_set(path_current_theme.as_ref(), verbose) {
         Ok(_) => check_theme_contents(xdg_base_dir.list_config_files("current"), verbose),
         Err(e) => {
             err_formatter(e.to_string());
@@ -280,7 +281,7 @@ fn missing_expected_file(filepaths: &[PathBuf]) -> impl Iterator<Item = &&str> {
         .filter(move |f| !filepaths.iter().any(|fp| fp.ends_with(f)))
 }
 
-fn check_current_theme_set(filepath: &Option<PathBuf>, verbose: bool) -> Result<&PathBuf> {
+fn check_current_theme_set(filepath: Option<&PathBuf>, verbose: bool) -> Result<&PathBuf> {
     match &filepath {
         Some(p) => {
             if verbose {
@@ -338,7 +339,7 @@ fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
             println!("Found: {}", filepath.display());
         }
 
-        match toml::from_str::<ThemeSetting>(&contents) {
+        match toml::from_str::<ThemeConfig>(&contents) {
             Ok(_) => {
                 if verbose {
                     println!("The theme file looks OK.");
@@ -368,7 +369,7 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
 
         let ron = Options::default()
             .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES);
-        match ron.from_str::<ThemeSetting>(&contents) {
+        match ron.from_str::<ThemeConfig>(&contents) {
             Ok(_) => {
                 if verbose {
                     println!("The theme file looks OK.");
@@ -405,6 +406,7 @@ where
 ///         - Disable the feature (remove from --features at compile time)
 ///         - Install any dependency/dependencies which are missing
 ///         - Ensure all binaries are installed to a location in your PATH
+#[allow(unused_variables)]
 fn check_enabled_features(verbose: bool) -> Result<()> {
     if env!("LEFTWM_FEATURES").is_empty() {
         println!("\x1b[0;94m::\x1b[0m Built with no enabled features.");

@@ -1,57 +1,54 @@
 //! Window Information
 #![allow(clippy::module_name_repetitions)]
+
+use std::fmt::Debug;
+
 use super::WindowState;
 use super::WindowType;
+use crate::config::WindowHidingStrategy;
 use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
 use crate::Workspace;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use x11_dl::xlib;
+/// A trait which backend specific window handles need to implement
+pub trait Handle:
+    Serialize + DeserializeOwned + Debug + Clone + Copy + PartialEq + Eq + Default + Send + 'static
+{
+}
 
-type MockHandle = i32;
-
+/// A Backend-agnostic handle to a window used to identify it
+///
+/// # Serde
+///
+/// Using generics here with serde derive macros causes some wierd behaviour with the compiler, so
+/// as suggested by [this `serde` issue][serde-issue], just adding `#[serde(bound = "")]`
+/// everywhere the generic is declared fixes the bug.
+/// Hopefully this get fixed at some point so we can make this more pleasant to read...
+///
+/// [serde-issue]: https://github.com/serde-rs/serde/issues/1296
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WindowHandle {
-    MockHandle(MockHandle),
-    XlibHandle(xlib::Window),
-    SmithayHandle(usize),
-}
+pub struct WindowHandle<H>(#[serde(bound = "")] pub H)
+where
+    H: Handle;
 
-impl std::convert::From<xlib::Window> for WindowHandle {
-    fn from(window: xlib::Window) -> Self {
-        WindowHandle::XlibHandle(window)
-    }
-}
-
-impl WindowHandle {
-    pub fn xlib_handle(self) -> Option<xlib::Window> {
-        match self {
-            WindowHandle::MockHandle(_) => None,
-            WindowHandle::XlibHandle(h) => Some(h),
-            WindowHandle::SmithayHandle(_) => None,
-        }
-    }
-
-    pub fn smithay_handle(self) -> Option<usize> {
-        match self {
-            WindowHandle::MockHandle(_) => None,
-            WindowHandle::XlibHandle(_) => None,
-            WindowHandle::SmithayHandle(h) => Some(h),
-        }
-    }
-}
+/// Handle for testing purposes
+pub type MockHandle = i32;
+impl Handle for MockHandle {}
 
 /// Store Window information.
 // We allow this as we're not managing state directly. This could be refactored in the future.
 // TODO: Refactor floating
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Window {
-    pub handle: WindowHandle,
-    pub transient: Option<WindowHandle>,
+pub struct Window<H: Handle> {
+    #[serde(bound = "")]
+    pub handle: WindowHandle<H>,
+    #[serde(bound = "")]
+    pub transient: Option<WindowHandle<H>>,
     visible: bool,
     pub can_resize: bool,
     is_floating: bool,
@@ -68,7 +65,7 @@ pub struct Window {
     pub border: i32,
     pub margin: Margins,
     pub margin_multiplier: f32,
-    states: Vec<WindowState>,
+    pub states: Vec<WindowState>,
     pub requested: Option<Xyhw>,
     pub normal: Xyhw,
     pub start_loc: Option<Xyhw>,
@@ -77,11 +74,12 @@ pub struct Window {
     // Two strings that are within a XClassHint, kept separate for simpler comparing.
     pub res_name: Option<String>,
     pub res_class: Option<String>,
+    pub hiding_strategy: Option<WindowHidingStrategy>,
 }
 
-impl Window {
+impl<H: Handle> Window<H> {
     #[must_use]
-    pub fn new(h: WindowHandle, name: Option<String>, pid: Option<u32>) -> Self {
+    pub fn new(h: WindowHandle<H>, name: Option<String>, pid: Option<u32>) -> Self {
         Self {
             handle: h,
             transient: None,
@@ -109,6 +107,7 @@ impl Window {
             strut: None,
             res_name: None,
             res_class: None,
+            hiding_strategy: None,
         }
     }
 
@@ -204,24 +203,6 @@ impl Window {
 
     pub fn set_height(&mut self, height: i32) {
         self.normal.set_h(height);
-    }
-
-    pub fn set_states(&mut self, states: Vec<WindowState>) {
-        self.states = states;
-    }
-
-    pub fn drop_state(&mut self, state: &WindowState) {
-        self.states.retain(|s| s != state);
-    }
-
-    #[must_use]
-    pub fn has_state(&self, state: &WindowState) -> bool {
-        self.states.contains(state)
-    }
-
-    #[must_use]
-    pub fn states(&self) -> Vec<WindowState> {
-        self.states.clone()
     }
 
     pub fn apply_margin_multiplier(&mut self, value: f32) {
@@ -406,14 +387,14 @@ mod tests {
 
     #[test]
     fn should_be_able_to_tag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut subject = Window::new(WindowHandle::<MockHandle>(1), None, None);
         subject.tag(&1);
         assert!(subject.has_tag(&1), "was unable to tag the window");
     }
 
     #[test]
     fn should_be_able_to_untag_a_window() {
-        let mut subject = Window::new(WindowHandle::MockHandle(1), None, None);
+        let mut subject = Window::new(WindowHandle::<MockHandle>(1), None, None);
         subject.tag(&1);
         subject.untag();
         assert!(!subject.has_tag(&1), "was unable to untag the window");

@@ -1,5 +1,6 @@
 pub mod log;
 
+#[must_use]
 pub const fn get_help_template() -> &'static str {
     "\
 {name} {version}

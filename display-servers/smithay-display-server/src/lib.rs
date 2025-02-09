@@ -3,7 +3,11 @@ use std::{process::Command, sync::atomic::Ordering, time::Duration};
 use event_channel::EventChannelReceiver;
 use internal_action::InternalAction;
 use leftwm_config::{BorderConfig, LeftwmConfig};
-use leftwm_core::{DisplayAction, DisplayEvent, DisplayServer, Window};
+use leftwm_core::{
+    models::{Handle, Window, WindowHandle},
+    DisplayAction, DisplayEvent, DisplayServer,
+};
+use serde::{Deserialize, Serialize};
 use smithay::{
     backend::{
         input::{Event, InputEvent, KeyState, KeyboardKeyEvent},
@@ -40,12 +44,17 @@ mod state;
 mod udev;
 mod window_registry;
 
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct SmithayWindowHandle(usize);
+
+impl Handle for SmithayWindowHandle {}
+
 pub struct SmithayHandle {
     event_receiver: EventChannelReceiver,
     action_sender: CalloopSender<InternalAction>,
 }
 
-impl DisplayServer for SmithayHandle {
+impl DisplayServer<SmithayWindowHandle> for SmithayHandle {
     fn new(config: &impl leftwm_core::Config) -> Self {
         let (event_sender, event_receiver) = event_channel::event_channel();
         let (init_notify_sender, init_notify_receiver) = oneshot::channel::<()>();
@@ -271,7 +280,7 @@ impl DisplayServer for SmithayHandle {
         }
     }
 
-    fn get_next_events(&mut self) -> Vec<DisplayEvent> {
+    fn get_next_events(&mut self) -> Vec<DisplayEvent<SmithayWindowHandle>> {
         // info!("LeftWM is collecting events");
         self.event_receiver.collect_events()
     }
@@ -286,18 +295,18 @@ impl DisplayServer for SmithayHandle {
         self.action_sender.send(InternalAction::Flush).unwrap();
     }
 
-    fn generate_verify_focus_event(&self) -> Option<DisplayEvent> {
+    fn generate_verify_focus_event(&self) -> Option<DisplayEvent<SmithayWindowHandle>> {
         self.action_sender
             .send(InternalAction::GenerateVerifyFocusEvent)
             .unwrap();
         None
     }
 
-    fn load_config(
+    fn reload_config(
         &mut self,
         config: &impl leftwm_core::Config,
-        _focused: Option<&Option<leftwm_core::models::WindowHandle>>,
-        _windows: &[leftwm_core::Window],
+        _focused: Option<WindowHandle<SmithayWindowHandle>>,
+        _windows: &[leftwm_core::Window<SmithayWindowHandle>],
     ) {
         let config = LeftwmConfig {
             focus_behavior: config.focus_behaviour(),
@@ -318,7 +327,7 @@ impl DisplayServer for SmithayHandle {
             .unwrap();
     }
 
-    fn update_windows(&self, windows: Vec<&Window>) {
+    fn update_windows(&self, windows: Vec<&Window<SmithayWindowHandle>>) {
         let windows = windows.into_iter().map(|w| w.clone()).collect();
         self.action_sender
             .send(InternalAction::UpdateWindows(windows))
@@ -327,7 +336,10 @@ impl DisplayServer for SmithayHandle {
 
     fn update_workspaces(&self, _focused: Option<&leftwm_core::Workspace>) {}
 
-    fn execute_action(&mut self, act: DisplayAction) -> Option<DisplayEvent> {
+    fn execute_action(
+        &mut self,
+        act: DisplayAction<SmithayWindowHandle>,
+    ) -> Option<DisplayEvent<SmithayWindowHandle>> {
         self.action_sender
             .send(InternalAction::DisplayAction(act))
             .unwrap();
