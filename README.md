@@ -189,7 +189,7 @@ sudo xbps-install -S leftwm
 ## Cargo ([crates.io])
 
 ```sh
-cargo install leftwm
+cargo install leftwm leftwm-watchdog
 ```
 
 If you install LeftWM with crates.io, you will need to link to the [xsession desktop file](https://github.com/leftwm/leftwm/blob/758bbf837a8556cdc7e09ff2d394f528e7657333/leftwm.desktop) if you want
@@ -206,7 +206,8 @@ Also see [the build options](#optional-build-features) for more feature options,
 At the moment LeftWM is not packaged with OpenBSD package manager, but it could be installed via Cargo.
 
 ```sh
-cargo install leftwm --no-default-features --features lefthk
+cargo install leftwm --no-default-features --features lefthk &
+cargo install leftwm-watchdog
 ```
 
 `leftwm-config` not yet ported to OpenBSD, as it requires a nightly Rust compiler to build.
@@ -343,8 +344,8 @@ Use `cargo` with the added flags `--no-default-features --features=` and then co
 | journald-log | logging to `journald`, depends on `systemd`                                                                                                                                                    | ✔      |
 | sys-log      | use standard system logging                                                                                                                                                                    | ✘       |
 | file-log     | log to `/tmp/leftwm/<log-file-by-datetime-of-launch>`                                                                                                                                          | ✘       |
-| xlib (\*)    | legacy backend linking to `libX11`                                                                                                                                                             | ✔       |
-| x11rb (\*)   | rust based backend using [`x11rb`](https://github.com/psychon/x11rb)                                                                                                                           | ✔       |
+| xlib (\*)    | legacy backend linking to `libX11`                                                                                                                                                             | ✔      |
+| x11rb (\*)   | rust based backend using [`x11rb`](https://github.com/psychon/x11rb)                                                                                                                           | ✔      |
 
 ⚠️ You need to select **at least one** backend feature (\*) for leftwm to build ⚠️
 
