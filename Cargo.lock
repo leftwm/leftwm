@@ -1070,6 +1070,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "leftway-watchdog"
+version = "0.5.4"
+dependencies = [
+ "clap",
+ "dirs-next",
+ "nix 0.29.0",
+ "signal-hook",
+ "tempfile",
+ "thiserror 2.0.11",
+ "xdg",
+]
+
+[[package]]
 name = "leftwm"
 version = "0.5.4"
 dependencies = [

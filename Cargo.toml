@@ -4,18 +4,20 @@ members = [
     "leftwm-core",
     "leftwm-macros",
     "leftwm-watchdog",
+    "leftway-watchdog",
     "display-servers/xlib-display-server",
     "display-servers/x11rb-display-server",
-    "display-servers/smithay-display-server"
+    "display-servers/smithay-display-server",
 ]
 default-members = [
     "leftwm",
     "leftwm-core",
     "leftwm-macros",
     "leftwm-watchdog",
+    "leftway-watchdog",
     "display-servers/xlib-display-server",
     "display-servers/x11rb-display-server",
-    "display-servers/smithay-display-server"
+    "display-servers/smithay-display-server",
 ]
 
 resolver = "2"
