@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.5]
 
+### Fixes
+
+- Sloppy focus when switching tags with mouse over margins is now fixed (via #1311 by @frankslaver)
+- ClickTo focus when switching tags is now fixed (via #1312 by @frankslaver)
+
+
 ## [0.5.4]
 
 ### Breaking Change
