@@ -279,12 +279,16 @@ impl XWrap {
                 }
             }
 
-            // Set WM_STATE to iconic state.
-            if hiding_strategy == WindowHidingStrategy::Unmap
+            // make sure to always change the window state, so we don't forget
+            // to grab mouse button events when we show the window again.
+            let new_state = if hiding_strategy == WindowHidingStrategy::Unmap
                 || hiding_strategy == WindowHidingStrategy::MoveMinimize
             {
-                self.set_wm_state(window, WMStateWindowState::Iconic)?;
-            }
+                WMStateWindowState::Iconic
+            } else {
+                WMStateWindowState::Withdrawn
+            };
+            self.set_wm_state(window, new_state)?;
         }
 
         maybe_change_mask(root_event_mask())
