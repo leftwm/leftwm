@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixes
 
-- Sloppy focus when switching tags with mouse over margins is now fixed (via #1311 by @frankslaver)
-- ClickTo focus when switching tags is now fixed (via #1312 by @frankslaver)
+- Sloppy focus when switching tags with mouse over margins is now fixed (via #1311 by @fransklaver)
+- ClickTo focus when switching tags is now fixed (via #1312 by @fransklaver)
 
 
 ## [0.5.4]
@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixes
 
-- Sloppy focus after window close is corrected (via #1305 by @frankslaver)
+- Sloppy focus after window close is corrected (via #1305 by @fransklaver)
 - Update template.liquid documentation (via #1297 by @thealio)
 - Deadlink in README repaired (via #1300 by @AnthonyMichaelTDM)
 - Flake compilation (via #1304 by @VuiMuich)
