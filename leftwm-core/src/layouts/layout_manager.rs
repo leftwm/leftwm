@@ -65,6 +65,26 @@ impl LayoutManager {
                     }
                 }
             }
+            if let Some(default_layout) = &ws.default_layout {
+                let wsid = i + 1;
+                if let Some(layout) = config
+                    .layout_definitions()
+                    .iter()
+                    .find(|layout| layout.name == *default_layout)
+                {
+                    // add the default layout to the available layouts if it's not already there
+                    available_layouts_per_ws
+                        .entry(wsid)
+                        .and_modify(|layouts| {
+                            if !layouts.iter().any(|l| l.name == layout.name) {
+                                layouts.push(layout.clone());
+                            }
+                        })
+                        .or_insert_with(|| vec![layout.clone()]);
+                } else {
+                    tracing::warn!("There is no Layout with the name {:?}, but was configured as default on workspace {:?}", default_layout, wsid);
+                }
+            }
         }
 
         if available_layouts.is_empty() {
@@ -80,12 +100,22 @@ impl LayoutManager {
             available_layouts_per_ws
         );
 
-        Self {
+        let mut layout_manager = Self {
             mode: config.layout_mode(),
             available_layouts,
             available_layouts_per_ws,
             layouts: HashMap::new(),
+        };
+
+        // set the current layout to the default layout for workspaces that have one configured
+        for (i, ws) in config.workspaces().unwrap_or_default().iter().enumerate() {
+            if let Some(default_layout) = &ws.default_layout {
+                let wsid = i + 1;
+                layout_manager.set_layout(wsid, wsid, default_layout);
+            }
         }
+
+        layout_manager
     }
 
     pub fn restore(&mut self, old: &LayoutManager) {
@@ -241,6 +271,41 @@ mod tests {
                     layouts: Some(vec![]),
                     ..Default::default()
                 },
+                // case where default is available globally
+                crate::config::Workspace {
+                    default_layout: Some(layouts::MAIN_AND_HORIZONTAL_STACK.to_string()),
+                    ..Default::default()
+                },
+                // case where default is available to the workspace, but not globally
+                crate::config::Workspace {
+                    layouts: Some(vec![
+                        layouts::CENTER_MAIN.to_string(),
+                        layouts::CENTER_MAIN_BALANCED.to_string(),
+                        layouts::MAIN_AND_VERT_STACK.to_string(),
+                    ]),
+                    default_layout: Some(layouts::MAIN_AND_VERT_STACK.to_string()),
+                    ..Default::default()
+                },
+                // case where the default exists but is not previously available
+                crate::config::Workspace {
+                    default_layout: Some(layouts::FIBONACCI.to_string()),
+                    ..Default::default()
+                },
+                // same as above, but workspace explicitly given no layouts
+                crate::config::Workspace {
+                    layouts: Some(vec![]),
+                    default_layout: Some(layouts::EVEN_VERTICAL.to_string()),
+                    ..Default::default()
+                },
+                // case where default is available globally, but not locally
+                crate::config::Workspace {
+                    layouts: Some(vec![
+                        layouts::CENTER_MAIN_BALANCED.to_string(),
+                        layouts::MAIN_AND_DECK.to_string(),
+                    ]),
+                    default_layout: Some(layouts::CENTER_MAIN.to_string()),
+                    ..Default::default()
+                },
             ]),
             ..Default::default()
         };
@@ -261,5 +326,21 @@ mod tests {
         assert_eq!(MONOCLE, &layout_manager.layout(2, 1).name);
         layout_manager.set_layout(2, 1, EVEN_VERTICAL);
         assert_eq!(EVEN_VERTICAL, &layout_manager.layout(2, 1).name);
+    }
+
+    #[test]
+    fn default_layouts_should_be_set() {
+        let mut layout_manager = layout_manager();
+        assert_eq!(
+            layouts::MAIN_AND_HORIZONTAL_STACK,
+            &layout_manager.layout(4, 1).name
+        );
+        assert_eq!(
+            layouts::MAIN_AND_VERT_STACK,
+            &layout_manager.layout(5, 1).name
+        );
+        assert_eq!(layouts::FIBONACCI, &layout_manager.layout(6, 1).name);
+        assert_eq!(layouts::EVEN_VERTICAL, &layout_manager.layout(7, 1).name);
+        assert_eq!(layouts::CENTER_MAIN, &layout_manager.layout(8, 1).name);
     }
 }

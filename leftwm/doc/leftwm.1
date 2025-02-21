@@ -323,6 +323,30 @@ workspaces: [
 ]
 \f[R]
 .fi
+.PP
+Workspaces can also be given their own list of layouts, which will override the global layouts list for that workspace only.
+.PP
+Example:
+.IP
+.nf
+\f[C]
+workspaces: [
+    ( output: "HDMI-1", y: 0, x: 0, height: 1440, width: 1720, layouts: [ "CenterMain", "MainAndVertStack", "MainAndDeck" ] ),
+]
+\f[R]
+.fi
+.PP
+You can also set the default layout for a workspace by using the default_layout field, this set the layout the workspace will start with.
+.PP
+Example (setting the default layout of workspace 1 to MainAndVertStack):
+.IP
+.nf
+\f[C]
+workspaces: [
+    ( output: "HDMI-1", y: 0, x: 0, height: 1440, width: 1720, default_layout: "MainAndVertStack" ),
+]
+\f[R]
+.fi
 
 .SS Tags
 .PP
