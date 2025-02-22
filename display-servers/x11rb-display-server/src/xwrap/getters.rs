@@ -496,7 +496,7 @@ impl XWrap {
         r#type: xproto::Atom,
     ) -> Result<Vec<xproto::Atom>> {
         let res =
-            xproto::get_property(&self.conn, false, window, property, r#type, 0, 0)?.reply()?;
+            xproto::get_property(&self.conn, false, window, property, r#type, 0, 1)?.reply()?;
 
         let rt = match res.value32() {
             Some(props) => props.collect(),
