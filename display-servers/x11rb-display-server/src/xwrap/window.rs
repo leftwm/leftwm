@@ -26,7 +26,7 @@ impl XWrap {
         let handle = WindowHandle(X11rbWindowHandle(window));
         // Gather info about the window from xlib.
         let name = self.get_window_name(window)?;
-        let legacy_name = self.get_window_legacy_name(window)?;
+        let legacy_name = self.get_window_legacy_name(window).ok();
         let class = self.get_window_class(window)?;
         let pid = self.get_window_pid(window)?;
         let r#type = self.get_window_type(window)?;
@@ -43,7 +43,7 @@ impl XWrap {
             .as_ref()
             .and_then(|c| String::from_utf8(c.instance().to_vec()).ok());
         w.res_class = class.and_then(|c| String::from_utf8(c.class().to_vec()).ok());
-        w.legacy_name = Some(legacy_name);
+        w.legacy_name = legacy_name;
         w.r#type = r#type.clone();
         w.states = states;
         w.transient = trans.map(|h| WindowHandle(X11rbWindowHandle(h)));
