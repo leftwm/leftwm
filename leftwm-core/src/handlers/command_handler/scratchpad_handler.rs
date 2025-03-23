@@ -182,18 +182,13 @@ fn is_scratchpad_visible<H: Handle, C: Config, SERVER: DisplayServer<H>>(
     manager: &Manager<H, C, SERVER>,
     scratchpad_name: &ScratchPadName,
 ) -> bool {
-    // Like Try operator but returns false and only works on `Option`s
-    macro_rules! try_bool {
-        ($cond:expr) => {
-            if let Some(value) = $cond {
-                value
-            } else {
-                return false;
-            }
-        };
-    }
-    let current_tag = try_bool!(manager.state.focus_manager.tag(0));
-    let scratchpad = try_bool!(manager.state.active_scratchpads.get(scratchpad_name));
+    let Some(current_tag) = manager.state.focus_manager.tag(0) else {
+        return false;
+    };
+
+    let Some(scratchpad) = manager.state.active_scratchpads.get(scratchpad_name) else {
+        return false;
+    };
 
     // Filter out all the non existing windows (invalid pid) and map to window
     // Check if any of them is in the current tag
