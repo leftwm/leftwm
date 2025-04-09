@@ -25,13 +25,14 @@ jobs:
             toolchain: ${{ inputs.toolchain }}
             target: ${{ inputs.target }}
             override: true
+            components: clippy
 
       - name: Cargo Check
         uses: actions-rs/cargo@v1
         with:
             command: check
 
-      - name: Run clippy
+      - name: Run MSRV clippy
         uses: actions-rs/cargo@v1
         with:
             command: clippy
