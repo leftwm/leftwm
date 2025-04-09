@@ -498,7 +498,7 @@ pub fn cycle_scratchpad_window<H: Handle, C: Config, SERVER: DisplayServer<H>>(
     match direction {
         Direction::Forward => scratchpad.rotate_left(1),
         Direction::Backward => scratchpad.rotate_right(1),
-    };
+    }
     let new_window_pid = *scratchpad.front()?;
 
     // Hide the previous visible window

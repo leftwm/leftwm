@@ -243,24 +243,24 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
         match filepath {
             f if f.ends_with("up") => match check_permissions(f, verbose) {
                 Ok(fp) => match check_up_file(fp) {
-                    Ok(()) => continue,
+                    Ok(()) => {}
                     Err(e) => returns.push(e.to_string()),
                 },
                 Err(e) => returns.push(e.to_string()),
             },
             f if f.ends_with("down") => match check_permissions(f, verbose) {
-                Ok(_fp) => continue,
+                Ok(_fp) => {}
                 Err(e) => returns.push(e.to_string()),
             },
             f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
-                Ok(_fp) => continue,
+                Ok(_fp) => {}
                 Err(e) => returns.push(e.to_string()),
             },
             f if f.ends_with("theme.ron") => match check_theme_ron(f, verbose) {
-                Ok(_fp) => continue,
+                Ok(_fp) => {}
                 Err(e) => returns.push(e.to_string()),
             },
-            _ => continue,
+            _ => {}
         }
     }
 
@@ -402,10 +402,10 @@ where
 ///
 /// # Errors
 /// - An enabled feature is missing a dependency
-///     Resolutions may include:
-///         - Disable the feature (remove from --features at compile time)
-///         - Install any dependency/dependencies which are missing
-///         - Ensure all binaries are installed to a location in your PATH
+///   Resolutions may include:
+///   - Disable the feature (remove from --features at compile time)
+///   - Install any dependency/dependencies which are missing
+///   - Ensure all binaries are installed to a location in your PATH
 #[allow(unused_variables)]
 fn check_enabled_features(verbose: bool) -> Result<()> {
     if env!("LEFTWM_FEATURES").is_empty() {
@@ -468,15 +468,15 @@ fn check_binaries(verbose: bool) -> Result<()> {
 ///
 /// # Errors
 /// - Will return an error if the listed `binary` can not be found in PATH
-///     Resolutions may include:
-///         - Installing leftwm using `cargo install --path {path}` where {path} is a directory in
-///         PATH
-///         - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
-///         shell
+///   Resolutions may include:
+///   - Installing leftwm using `cargo install --path {path}` where {path} is a directory in
+///     PATH
+///   - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
+///     shell
 /// - Will return an error if the PATH environmental variable is not set
-///     Resolutions may include:
-///         - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
-///         shell
+///   Resolutions may include:
+///   - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
+///     shell
 fn check_binary(binary: &str, verbose: bool) -> Result<()> {
     if let Ok(path) = env::var("PATH") {
         for p in path.split(':') {

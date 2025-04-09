@@ -51,7 +51,7 @@ impl Display for BackendError {
         if let Some(e) = &self.src {
             f.write_str(": ")?;
             e.fmt(f)?;
-        };
+        }
         f.write_str("\nBacktrace:\n")?;
         self.backtrace.fmt(f)
     }

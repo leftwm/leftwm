@@ -175,7 +175,7 @@ impl<H: Handle> State<H> {
             if current_tag == tag {
                 return false;
             }
-        };
+        }
         // Clean old history.
         self.focus_manager.tag_history.truncate(10);
         // Add this focus to the history.

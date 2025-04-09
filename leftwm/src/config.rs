@@ -111,7 +111,7 @@ impl WindowHook {
                     // empty, this will match it to every regex, so we need to check for that.
                     // however, if the window rule is explicitly for empty strings, we still
                     // want empty strings to match to it.
-                    re.replace(s, "") == "" && (!s.is_empty() || re.as_str().is_empty())
+                    re.replace(s, "").is_empty() && (!s.is_empty() || re.as_str().is_empty())
                 })
             })
         };
