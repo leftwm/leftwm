@@ -211,7 +211,7 @@ impl<H: Handle> Window<H> {
                 "Negative margin multiplier detected. Will be applied as absolute: {:?}",
                 self.margin_multiplier()
             );
-        };
+        }
     }
 
     #[must_use]

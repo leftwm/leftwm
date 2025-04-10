@@ -236,7 +236,7 @@ fn find_terminal<H: Handle>(state: &State<H>, pid: Option<u32>) -> Option<&Windo
     // Get $SHELL, e.g. /bin/zsh
     let shell_path = env::var("SHELL").ok()?;
     // Remove /bin/
-    let shell = shell_path.split('/').last()?;
+    let shell = shell_path.split('/').next_back()?;
     // Try and find the shell that launched this app, if such a thing exists.
     let is_terminal = |pid: u32| -> Option<bool> {
         let parent = std::fs::read(format!("/proc/{pid}/comm")).ok()?;

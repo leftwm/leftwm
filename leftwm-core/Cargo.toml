@@ -21,7 +21,7 @@ serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
 signal-hook = "0.3.4"
 thiserror = "2.0.9"
-tokio = { version = "1.2.0", features = [
+tokio = { version = "1.43.1", features = [
   "fs",
   "io-util",
   "macros",

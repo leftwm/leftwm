@@ -97,7 +97,7 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
             if let DisplayEvent::WindowDestroy(WindowHandle(X11rbWindowHandle(w))) = event {
                 if let Err(e) = self.xw.force_unmapped(*w) {
                     tracing::error!(error = ?e, "Error when forcing unmapping of window {}", w);
-                };
+                }
             }
         }
 
@@ -368,7 +368,7 @@ fn from_set_window_order(
         .iter()
         .filter(|&w| *w != xw.get_default_root())
         .map(|&w| WindowHandle(X11rbWindowHandle(w)))
-        .filter(|h| !windows.iter().any(|&w| w == *h))
+        .filter(|h| !windows.contains(h))
         .collect();
     let all: Vec<WindowHandle<X11rbWindowHandle>> = [unmanaged, windows].concat();
     xw.restack(&all)?;

@@ -404,7 +404,7 @@ impl XWrap {
                 self.mode = mode;
             }
             _ => {}
-        };
+        }
         Ok(())
     }
 

@@ -70,7 +70,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
             match response {
                 EventResponse::None => (),
                 EventResponse::DisplayRefreshNeeded => self.refresh_display(),
-            };
+            }
 
             self.execute_actions(&mut event_buffer);
 
