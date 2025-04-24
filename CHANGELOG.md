@@ -6,12 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.5.5]
+### Breaking Change 
+- feat(watchdog): deprecate leftwm-watchdog bin; gate leftwm behind feature (via #1324 by @mautamu)
 
 ### Fixes
 
 - Sloppy focus when switching tags with mouse over margins is now fixed (via #1311 by @fransklaver)
 - ClickTo focus when switching tags is now fixed (via #1312 by @fransklaver)
-
 
 ## [0.5.4]
 

@@ -206,7 +206,7 @@ Also see [the build options](#optional-build-features) for more feature options,
 At the moment LeftWM is not packaged with OpenBSD package manager, but it could be installed via Cargo.
 
 ```sh
-cargo install leftwm --no-default-features --features lefthk
+cargo install leftwm --no-default-features --features lefthk,leftwm-watchdog
 ```
 
 `leftwm-config` not yet ported to OpenBSD, as it requires a nightly Rust compiler to build.
@@ -345,16 +345,17 @@ Use `cargo` with the added flags `--no-default-features --features=` and then co
 | file-log     | log to `/tmp/leftwm/<log-file-by-datetime-of-launch>`                                                                                                                                          | ✘       |
 | xlib (\*)    | legacy backend linking to `libX11`                                                                                                                                                             | ✔       |
 | x11rb (\*)   | rust based backend using [`x11rb`](https://github.com/psychon/x11rb)                                                                                                                           | ✔       |
+| leftwm (\*)  | whether to build the `leftwm` binary                                                                                                                                                           | ✔       | 
 
-⚠️ You need to select **at least one** backend feature (\*) for leftwm to build ⚠️
+⚠️ You need to select **at least one** backend feature (\*) for leftwm to build, and leftwm-watchdog in order to get the `leftwm` binary ⚠️
 
 Example:
 
 ```bash
-# With `lefthk` and logging to `sys-log` (`x11rb` backend)
-cargo build --profile optimized --no-default-features --features=x11rb,lefthk,sys-log
+# With `lefthk` and logging to `sys-log` (`x11rb` backend), with `leftwm` binary
+cargo build --profile optimized --no-default-features --features=x11rb,lefthk,sys-log,leftwm-watchdog
 
-# Without `lefthk` and logging to file (`xlib` backend)
+# Without `lefthk` and logging to file (`xlib` backend), without `leftwm` binary
 cargo build --profile optimized --no-default-features --features=xlib,file-log
 ```
 
