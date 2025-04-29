@@ -30,9 +30,9 @@ All patches have to be sent on Github as [pull requests](https://github.com/left
 
 Please note that the minimum supported version of Rust capable of compiling LeftWM is Rust 1.52.0.
 
-### compiling
-In order to reduce incremental compile time while developing `leftwm`, we recommend compiling without 
-the `leftwm-watchdog` feature; this can be accomplished using the following code:
+### Compiling
+In order to reduce incremental compile time while developing `leftwm`, we recommend incremental compiles 
+without the `leftwm-watchdog` feature; this can be accomplished using the following code:
 ```
 cargo build --no-default-features
 ```
