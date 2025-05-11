@@ -130,7 +130,7 @@ List of common dependencies for themes:
 [picom-pkg]: https://pkgs.org/download/picom
 [polybar-git]: https://github.com/polybar/polybar
 [polybar-pkg]: https://pkgs.org/download/polybar
-[xmobar-git]: https://github.com/jaor/xmobar
+[xmobar-git]: https://codeberg.org/xmobar/xmobar
 [xmobar-pkg]: https://pkgs.org/download/xmobar
 [lemonbar-git]: https://github.com/LemonBoy/bar
 [lemonbar-pkg]: https://pkgs.org/download/lemonbar
