@@ -111,12 +111,12 @@ List of LeftWM dependencies:
 
 List of common dependencies for themes:
 
-| Dependency<br>(git)      | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS                     |
+| Dependency<br>(git)      | Ubuntu 24.04<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 42<br> _sudo dnf install {}_ | PKGS                     |
 | ------------------------ | --------------------------------------- | ---------------------------- | ----------------------------------- | ------------------------ |
 | [feh][feh-git]           | feh                                     | feh                          | feh                                 | [feh][feh-pkg]           |
 | [compton][compton-git]   | compton                                 | picom                        | compton                             | [compton][compton-pkg]   |
-| [picom][picom-git]       | manual \*\*                             | picom                        | picom                               | [picom][picom-pkg]       |
-| [polybar][polybar-git]   | manual \*\*                             | polybar                      | polybar                             | [polybar][polybar-pkg]   |
+| [picom][picom-git]       | picom \*\*                             | picom                        | picom                               | [picom][picom-pkg]       |
+| [polybar][polybar-git]   | polybar \*\*                             | polybar                      | polybar                             | [polybar][polybar-pkg]   |
 | [xmobar][xmobar-git]     | xmobar                                  | xmobar                       | xmobar                              | [xmobar][xmobar-pkg]     |
 | [lemonbar][lemonbar-git] | lemonbar                                | paru -S lemonbar\*           | manual \*\*                         | [lemonbar][lemonbar-pkg] |
 | [conky][conky-git]       | conky                                   | conky                        | conky                               | [conky][conky-pkg]       |
