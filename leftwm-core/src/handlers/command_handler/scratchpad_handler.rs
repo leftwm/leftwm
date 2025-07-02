@@ -8,9 +8,9 @@ use std::collections::VecDeque;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    child_process::{exec_shell_with_args, ChildID},
-    models::{Handle, ScratchPadName, TagId, WindowHandle},
     Command, Config, DisplayAction, DisplayServer, Manager, Window,
+    child_process::{ChildID, exec_shell_with_args},
+    models::{Handle, ScratchPadName, TagId, WindowHandle},
 };
 
 /// Describes the options for the release scratchpad command
@@ -703,10 +703,12 @@ mod tests {
         });
 
         // Assert
-        assert!(!manager
-            .state
-            .active_scratchpads
-            .contains_key(&scratchpad_name));
+        assert!(
+            !manager
+                .state
+                .active_scratchpads
+                .contains_key(&scratchpad_name)
+        );
         assert_eq!(
             *manager.state.focus_manager.tag_history.front().unwrap(),
             expected_tag
@@ -759,23 +761,27 @@ mod tests {
             .get_mut(&scratchpad_name)
             .unwrap();
 
-        assert!(manager
-            .state
-            .windows
-            .iter()
-            .find(|w| w.pid == Some(mock_window1))
-            .map(|w| !w.has_tag(&nsp_tag))
-            .unwrap());
-        for mock_window_pid in [mock_window2, mock_window3] {
-            let window_pid = scratchpad.pop_front();
-            assert_eq!(window_pid, Some(mock_window_pid));
-            assert!(!manager
+        assert!(
+            manager
                 .state
                 .windows
                 .iter()
-                .find(|w| w.pid == window_pid)
-                .map(|w| w.has_tag(&nsp_tag))
-                .unwrap());
+                .find(|w| w.pid == Some(mock_window1))
+                .map(|w| !w.has_tag(&nsp_tag))
+                .unwrap()
+        );
+        for mock_window_pid in [mock_window2, mock_window3] {
+            let window_pid = scratchpad.pop_front();
+            assert_eq!(window_pid, Some(mock_window_pid));
+            assert!(
+                !manager
+                    .state
+                    .windows
+                    .iter()
+                    .find(|w| w.pid == window_pid)
+                    .map(|w| w.has_tag(&nsp_tag))
+                    .unwrap()
+            );
         }
         assert_eq!(scratchpad.pop_front(), None);
 
@@ -836,23 +842,27 @@ mod tests {
             .unwrap();
 
         assert_eq!(scratchpad.pop_front(), Some(mock_window1));
-        assert!(manager
-            .state
-            .windows
-            .iter()
-            .find(|w| w.pid == Some(mock_window1))
-            .map(|w| !w.has_tag(&nsp_tag))
-            .unwrap());
-        for mock_window_pid in [mock_window2, mock_window3] {
-            let window_pid = scratchpad.pop_front();
-            assert_eq!(window_pid, Some(mock_window_pid));
-            assert!(manager
+        assert!(
+            manager
                 .state
                 .windows
                 .iter()
-                .find(|w| w.pid == window_pid)
-                .map(|w| w.has_tag(&nsp_tag))
-                .unwrap());
+                .find(|w| w.pid == Some(mock_window1))
+                .map(|w| !w.has_tag(&nsp_tag))
+                .unwrap()
+        );
+        for mock_window_pid in [mock_window2, mock_window3] {
+            let window_pid = scratchpad.pop_front();
+            assert_eq!(window_pid, Some(mock_window_pid));
+            assert!(
+                manager
+                    .state
+                    .windows
+                    .iter()
+                    .find(|w| w.pid == window_pid)
+                    .map(|w| w.has_tag(&nsp_tag))
+                    .unwrap()
+            );
         }
         assert_eq!(scratchpad.pop_front(), None);
     }
@@ -1017,11 +1027,8 @@ mod tests {
             .get(&scratchpad_name)
             .unwrap()
             .iter();
-        assert!(is_only_first_visible(
-            &manager,
-            scratchpad_iterator.clone().copied(),
-            nsp_tag
-        ),
+        assert!(
+            is_only_first_visible(&manager, scratchpad_iterator.clone().copied(), nsp_tag),
             "On the second forward cycle, the first window is not visible or the other windows are visible"
         );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window3));
@@ -1036,11 +1043,8 @@ mod tests {
             .get(&scratchpad_name)
             .unwrap()
             .iter();
-        assert!(is_only_first_visible(
-            &manager,
-            scratchpad_iterator.clone().copied(),
-            nsp_tag
-        ),
+        assert!(
+            is_only_first_visible(&manager, scratchpad_iterator.clone().copied(), nsp_tag),
             "After 2 forward and 1 backward cycles, the first window is not visible or the other windows are visible"
         );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window2));
@@ -1055,11 +1059,8 @@ mod tests {
             .get(&scratchpad_name)
             .unwrap()
             .iter();
-        assert!(is_only_first_visible(
-            &manager,
-            scratchpad_iterator.clone().copied(),
-            nsp_tag
-        ),
+        assert!(
+            is_only_first_visible(&manager, scratchpad_iterator.clone().copied(), nsp_tag),
             "After 2 forward and 2 backward cycles, the first window is not visible or the other windows are visible"
         );
         assert_eq!(scratchpad_iterator.next(), Some(&mock_window1));

@@ -1,6 +1,6 @@
-use super::{models::Screen, models::Window, models::WindowHandle, Button, ModMask};
-use crate::models::{Handle, WindowChange};
+use super::{Button, ModMask, models::Screen, models::Window, models::WindowHandle};
 use crate::Command;
+use crate::models::{Handle, WindowChange};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]

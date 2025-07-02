@@ -1,10 +1,10 @@
 use leftwm_core::{
-    models::{WindowChange, WindowHandle},
     Command, DisplayEvent,
+    models::{WindowChange, WindowHandle},
 };
 use x11rb::protocol::xproto;
 
-use crate::{xwrap::XWrap, X11rbWindowHandle};
+use crate::{X11rbWindowHandle, xwrap::XWrap};
 
 use crate::error::Result;
 

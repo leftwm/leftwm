@@ -2,7 +2,7 @@ use crate::XlibWindowHandle;
 
 use super::{DisplayEvent, XWrap};
 use leftwm_core::models::WindowHandle;
-use leftwm_core::{models::WindowChange, Command};
+use leftwm_core::{Command, models::WindowChange};
 use std::convert::TryFrom;
 use std::os::raw::c_long;
 

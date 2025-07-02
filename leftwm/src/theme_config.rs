@@ -1,6 +1,6 @@
 use anyhow::Result;
 use leftwm_core::models::{Gutter, Margins};
-use ron::{extensions::Extensions, Options};
+use ron::{Options, extensions::Extensions};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;

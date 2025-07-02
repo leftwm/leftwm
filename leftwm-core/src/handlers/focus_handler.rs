@@ -279,7 +279,7 @@ fn distance<H: Handle>(window: &Window<H>, x: i32, y: i32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{models::MockHandle, Manager};
+    use crate::{Manager, models::MockHandle};
 
     #[test]
     fn focusing_a_workspace_should_make_it_active() {

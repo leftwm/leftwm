@@ -34,7 +34,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
 }
 
 macro_rules! move_focus_common_vars {
-    ($func:ident ($state:expr $(, $arg:expr )* $(,)? )) => {{
+    ($func:ident ($state:expr_2021 $(, $arg:expr_2021 )* $(,)? )) => {{
         let handle = $state.focus_manager.window(&$state.windows)?.handle;
         let tag_id = $state.focus_manager.tag(0)?;
         let ws_id = $state.focus_manager.workspace(&$state.workspaces)?.id;
@@ -1003,20 +1003,24 @@ mod tests {
             );
         }
 
-        assert!(!manager
-            .state
-            .windows
-            .iter()
-            .any(|w| w.states.contains(&WindowState::Fullscreen)));
+        assert!(
+            !manager
+                .state
+                .windows
+                .iter()
+                .any(|w| w.states.contains(&WindowState::Fullscreen))
+        );
 
         manager.command_handler(&Command::ToggleFullScreen);
 
         mock_update(&mut manager);
-        assert!(manager
-            .state
-            .windows
-            .iter()
-            .any(|w| w.states.contains(&WindowState::Fullscreen)));
+        assert!(
+            manager
+                .state
+                .windows
+                .iter()
+                .any(|w| w.states.contains(&WindowState::Fullscreen))
+        );
     }
 
     #[test]
@@ -1032,20 +1036,24 @@ mod tests {
             );
         }
 
-        assert!(!manager
-            .state
-            .windows
-            .iter()
-            .any(|w| w.states.contains(&WindowState::Maximized)));
+        assert!(
+            !manager
+                .state
+                .windows
+                .iter()
+                .any(|w| w.states.contains(&WindowState::Maximized))
+        );
 
         manager.command_handler(&Command::ToggleMaximized);
 
         mock_update(&mut manager);
-        assert!(manager
-            .state
-            .windows
-            .iter()
-            .any(|w| w.states.contains(&WindowState::Maximized)));
+        assert!(
+            manager
+                .state
+                .windows
+                .iter()
+                .any(|w| w.states.contains(&WindowState::Maximized))
+        );
     }
 
     #[test]

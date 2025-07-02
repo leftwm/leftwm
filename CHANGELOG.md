@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.5]
 ### Breaking Change 
 - feat(watchdog): deprecate leftwm-watchdog bin; gate leftwm behind feature (via #1324 by @mautamu)
+- feat(MSRV): update edition to 2024, MSRV to 1.85.0
 
 ### Fixes
 

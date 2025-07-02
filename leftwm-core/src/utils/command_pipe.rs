@@ -1,7 +1,7 @@
 //! Creates a pipe to listen for external commands.
 use crate::models::{Handle, TagId};
 use crate::utils::return_pipe::ReturnPipe;
-use crate::{command, Command, ReleaseScratchPadOption};
+use crate::{Command, ReleaseScratchPadOption, command};
 use leftwm_layouts::geometry::Direction as FocusDirection;
 use std::error::Error;
 use std::fs::OpenOptions;
@@ -93,16 +93,15 @@ async fn read_from_pipe<H: Handle>(
                     cmd
                 } else {
                     let file_name = ReturnPipe::pipe_name();
-                    if let Ok(file_path) = BaseDirectories::with_prefix("leftwm") {
-                        if let Some(file_path) = file_path.find_runtime_file(&file_name) {
-                            if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
-                                if let Err(e) = writeln!(file, "OK: command executed successfully")
-                                {
-                                    tracing::error!("Unable to write to return pipe: {e}");
-                                }
+                    let file_path = BaseDirectories::with_prefix("leftwm");
+                    if let Some(file_path) = file_path.find_runtime_file(&file_name) {
+                        if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
+                            if let Err(e) = writeln!(file, "OK: command executed successfully") {
+                                tracing::error!("Unable to write to return pipe: {e}");
                             }
                         }
                     }
+
                     cmd
                 }
             }
@@ -110,12 +109,11 @@ async fn read_from_pipe<H: Handle>(
                 tracing::error!("An error occurred while parsing the command: {}", err);
                 // return to stdout
                 let file_name = ReturnPipe::pipe_name();
-                if let Ok(file_path) = BaseDirectories::with_prefix("leftwm") {
-                    if let Some(file_path) = file_path.find_runtime_file(file_name) {
-                        if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
-                            if let Err(e) = writeln!(file, "ERROR: Error parsing command: {err}") {
-                                tracing::error!("Unable to write error to return pipe: {e}");
-                            }
+                let file_path = BaseDirectories::with_prefix("leftwm");
+                if let Some(file_path) = file_path.find_runtime_file(file_name) {
+                    if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
+                        if let Err(e) = writeln!(file, "ERROR: Error parsing command: {err}") {
+                            tracing::error!("Unable to write error to return pipe: {e}");
                         }
                     }
                 }

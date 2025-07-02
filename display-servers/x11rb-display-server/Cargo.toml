@@ -3,8 +3,8 @@ name = "x11rb-display-server"
 description = "x11 backend for leftwm using pure rust + xcb specification"
 version = "0.1.4"
 license = "MIT"
-edition = "2021"
-rust-version = "1.83.0" # MSRV MINIMUM SUPPORTED RUST VERSION
+edition = "2024"
+rust-version = "1.85.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

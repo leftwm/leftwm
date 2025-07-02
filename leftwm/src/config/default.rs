@@ -6,7 +6,7 @@ use leftwm_core::{
 use crate::Backend;
 
 #[cfg(feature = "lefthk")]
-use super::{default_terminal, exit_strategy, BaseCommand, Keybind};
+use super::{BaseCommand, Keybind, default_terminal, exit_strategy};
 use super::{Config, Default, FocusBehaviour, LayoutMode, ThemeConfig};
 
 impl Default for Config {

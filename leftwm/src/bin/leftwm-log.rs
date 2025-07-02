@@ -1,7 +1,7 @@
-use clap::{arg, command, ArgGroup, Id};
-use std::process::exit;
+use clap::{ArgGroup, Id, arg, command};
 #[cfg(any(feature = "sys-log", feature = "journald-log", feature = "file-log"))]
 use std::process::Command;
+use std::process::exit;
 
 fn main() {
     let matches = get_command().get_matches();

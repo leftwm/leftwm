@@ -85,7 +85,7 @@ impl Display for ErrorKind {
 
 /// Implement From<T> for given error
 macro_rules! from_err {
-    ($e:ty, $kind:expr, $msg:literal) => {
+    ($e:ty, $kind:expr_2021, $msg:literal) => {
         impl core::convert::From<$e> for BackendError {
             fn from(value: $e) -> Self {
                 Self {

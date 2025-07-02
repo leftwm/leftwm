@@ -1,5 +1,5 @@
-use tracing::{metadata::LevelFilter, Subscriber};
-use tracing_subscriber::{filter::ParseError, layer::SubscriberExt, EnvFilter};
+use tracing::{Subscriber, metadata::LevelFilter};
+use tracing_subscriber::{EnvFilter, filter::ParseError, layer::SubscriberExt};
 
 #[cfg(feature = "journald-log")]
 mod journald;
@@ -12,7 +12,7 @@ mod sys;
 
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
-pub fn parse_log_level(level_regex: &str) -> (impl Subscriber, Option<ParseError>) {
+pub fn parse_log_level(level_regex: &str) -> (impl Subscriber + use<>, Option<ParseError>) {
     let mut parse_err = None;
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::DEBUG.into())

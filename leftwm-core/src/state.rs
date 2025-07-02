@@ -1,5 +1,6 @@
 //! Save and restore manager state.
 
+use crate::DisplayAction;
 use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
@@ -7,7 +8,6 @@ use crate::models::{
     FocusManager, Handle, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowState,
     WindowType, Workspace,
 };
-use crate::DisplayAction;
 use leftwm_layouts::Layout;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};

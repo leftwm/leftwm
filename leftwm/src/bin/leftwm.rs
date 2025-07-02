@@ -6,10 +6,10 @@ use clap::command;
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
-use std::process::{exit, Child, Command, ExitStatus};
+use std::process::{Child, Command, ExitStatus, exit};
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
     Arc,
+    atomic::{AtomicBool, Ordering},
 };
 
 type Subcommand<'a> = &'a str;
@@ -126,10 +126,12 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
 
 /// Sets some relevant environment variables for leftwm
 fn set_env_vars() {
-    env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
+    // TODO: Audit that the environment access only happens in single-threaded code.
+    unsafe { env::set_var("XDG_CURRENT_DESKTOP", "LeftWM") };
 
     // Fix for Java apps so they repaint correctly
-    env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
+    // TODO: Audit that the environment access only happens in single-threaded code.
+    unsafe { env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1") };
 }
 
 fn get_current_exe() -> std::path::PathBuf {

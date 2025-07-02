@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use serde::{de::Visitor, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::Visitor};
 
 bitflags! {
     /// Represents the state of modifier keys
