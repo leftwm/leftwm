@@ -735,7 +735,7 @@ fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex
 #[allow(clippy::ref_option)]
 fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
     match wc {
-        Some(ref re) => s.serialize_some(re.as_str()),
+        Some(re) => s.serialize_some(re.as_str()),
         None => s.serialize_none(),
     }
 }

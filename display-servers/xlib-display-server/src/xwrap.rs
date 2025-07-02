@@ -53,11 +53,7 @@ const X_POLYSEGMENT: u8 = 66;
 const X_POLYFILLRECTANGLE: u8 = 70;
 const X_POLYTEXT8: u8 = 74;
 
-// This is allowed for now as const extern fns
-// are not yet stable (1.56.0, 16 Sept 2021)
-// see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
-#[allow(clippy::missing_const_for_fn)]
-pub extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
+const extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
     let err = unsafe { *er };
     let ec = err.error_code;
     let rc = err.request_code;

@@ -34,7 +34,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
 }
 
 macro_rules! move_focus_common_vars {
-    ($func:ident ($state:expr $(, $arg:expr )* $(,)? )) => {{
+    ($func:ident ($state:expr_2021 $(, $arg:expr_2021 )* $(,)? )) => {{
         let handle = $state.focus_manager.window(&$state.windows)?.handle;
         let tag_id = $state.focus_manager.tag(0)?;
         let ws_id = $state.focus_manager.workspace(&$state.workspaces)?.id;
