@@ -61,7 +61,11 @@ impl LayoutManager {
                             .and_modify(|layouts| layouts.push(layout.clone()))
                             .or_insert_with(|| vec![layout.clone()]);
                     } else {
-                        tracing::warn!("There is no Layout with the name {:?}, but was configured on workspace {:?}", ws_layout_name, wsid);
+                        tracing::warn!(
+                            "There is no Layout with the name {:?}, but was configured on workspace {:?}",
+                            ws_layout_name,
+                            wsid
+                        );
                     }
                 }
             }
@@ -82,7 +86,11 @@ impl LayoutManager {
                         })
                         .or_insert_with(|| vec![layout.clone()]);
                 } else {
-                    tracing::warn!("There is no Layout with the name {:?}, but was configured as default on workspace {:?}", default_layout, wsid);
+                    tracing::warn!(
+                        "There is no Layout with the name {:?}, but was configured as default on workspace {:?}",
+                        default_layout,
+                        wsid
+                    );
                 }
             }
         }

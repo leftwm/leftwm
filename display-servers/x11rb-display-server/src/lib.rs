@@ -1,8 +1,8 @@
 //! x11rb backend for leftwm
 
 use leftwm_core::{
-    models::{Handle, Screen, TagId, WindowHandle, WindowState},
     Config, DisplayAction, DisplayEvent, DisplayServer, Mode, Window, Workspace,
+    models::{Handle, Screen, TagId, WindowHandle, WindowState},
 };
 use serde::{Deserialize, Serialize};
 use x11rb::protocol::xproto;
@@ -204,7 +204,9 @@ impl X11rbDisplayServer {
             let auto_derive_workspaces: bool = if config.auto_derive_workspaces() {
                 true
             } else if events.is_empty() {
-                tracing::warn!("No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\".");
+                tracing::warn!(
+                    "No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\"."
+                );
                 true
             } else {
                 false

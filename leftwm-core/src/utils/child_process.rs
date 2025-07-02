@@ -9,7 +9,7 @@ use std::fs;
 use std::iter::{Extend, FromIterator};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::{Arc, atomic::AtomicBool};
 use tracing::error;
 use xdg::BaseDirectories;
 

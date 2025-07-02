@@ -6,10 +6,10 @@ use clap::command;
 use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
-use std::process::{exit, Child, Command, ExitStatus};
+use std::process::{Child, Command, ExitStatus, exit};
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
     Arc,
+    atomic::{AtomicBool, Ordering},
 };
 
 type Subcommand<'a> = &'a str;

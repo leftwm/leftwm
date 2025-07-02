@@ -5,12 +5,12 @@ use std::fmt::Debug;
 
 use super::WindowState;
 use super::WindowType;
+use crate::Workspace;
 use crate::config::WindowHidingStrategy;
 use crate::models::Margins;
 use crate::models::TagId;
 use crate::models::Xyhw;
 use crate::models::XyhwBuilder;
-use crate::Workspace;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
@@ -274,11 +274,7 @@ impl<H: Handle> Window<H> {
 
     #[must_use]
     pub fn border(&self) -> i32 {
-        if self.is_fullscreen() {
-            0
-        } else {
-            self.border
-        }
+        if self.is_fullscreen() { 0 } else { self.border }
     }
 
     #[must_use]

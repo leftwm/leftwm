@@ -10,7 +10,7 @@ use crate::XlibWindowHandle;
 
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
-use super::{utils, Screen, Window, WindowHandle};
+use super::{Screen, Window, WindowHandle, utils};
 use leftwm_core::config::{Config, WindowHidingStrategy};
 use leftwm_core::models::{FocusBehaviour, FocusOnActivationBehaviour, Mode};
 use leftwm_core::utils::modmask_lookup::ModMask;
@@ -18,7 +18,7 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
 use std::{ptr, slice};
-use tokio::sync::{oneshot, Notify};
+use tokio::sync::{Notify, oneshot};
 use tokio::time::Duration;
 
 use x11_dl::xlib;
@@ -160,20 +160,22 @@ impl XWrap {
             )
             .expect("Unable to boot Mio");
         let timeout = Duration::from_millis(100);
-        tokio::task::spawn_blocking(move || loop {
-            if guard.is_closed() {
-                return;
-            }
+        tokio::task::spawn_blocking(move || {
+            loop {
+                if guard.is_closed() {
+                    return;
+                }
 
-            if let Err(err) = poll.poll(&mut events, Some(timeout)) {
-                tracing::warn!("Xlib socket poll failed with {:?}", err);
-                continue;
-            }
+                if let Err(err) = poll.poll(&mut events, Some(timeout)) {
+                    tracing::warn!("Xlib socket poll failed with {:?}", err);
+                    continue;
+                }
 
-            events
-                .iter()
-                .filter(|event| SERVER == event.token())
-                .for_each(|_| notify.notify_one());
+                events
+                    .iter()
+                    .filter(|event| SERVER == event.token())
+                    .for_each(|_| notify.notify_one());
+            }
         });
 
         let atoms = XAtom::new(&xlib, display);

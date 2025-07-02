@@ -1,8 +1,8 @@
 use crate::XlibWindowHandle;
 
 use super::{
-    event_translate_client_message, event_translate_property_notify, xwrap::WITHDRAWN_STATE,
-    DisplayEvent, XWrap,
+    DisplayEvent, XWrap, event_translate_client_message, event_translate_property_notify,
+    xwrap::WITHDRAWN_STATE,
 };
 use leftwm_core::{
     models::{Mode, WindowChange, WindowHandle, WindowType, XyhwChange},

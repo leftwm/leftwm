@@ -1,16 +1,16 @@
 //! Xlib calls related to a window.
 
 use leftwm_core::{
+    DisplayEvent, Window,
     config::WindowHidingStrategy,
     models::{WindowChange, WindowHandle, WindowType, Xyhw},
-    DisplayEvent, Window,
 };
 use x11rb::{protocol::xproto, x11_utils::Serialize};
 
 use crate::xatom::WMStateWindowState;
-use crate::{error::Result, X11rbWindowHandle};
+use crate::{X11rbWindowHandle, error::Result};
 
-use super::{root_event_mask, XWrap};
+use super::{XWrap, root_event_mask};
 
 impl XWrap {
     /// Sets up a window before we manage it.

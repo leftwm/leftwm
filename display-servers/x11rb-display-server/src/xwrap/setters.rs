@@ -3,7 +3,7 @@ use std::ffi::CString;
 use leftwm_core::models::{TagId, WindowHandle};
 use x11rb::protocol::xproto::{self, ChangeWindowAttributesAux, PropMode};
 
-use crate::{error::Result, xatom, X11rbWindowHandle};
+use crate::{X11rbWindowHandle, error::Result, xatom};
 
 use super::XWrap;
 

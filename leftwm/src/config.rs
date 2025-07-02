@@ -13,6 +13,7 @@ use super::ThemeConfig;
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
+    DisplayAction, DisplayServer, Manager, ReturnPipe,
     config::{InsertBehavior, ScratchPad, WindowHidingStrategy, Workspace},
     layouts::LayoutMode,
     models::{
@@ -20,15 +21,14 @@ use leftwm_core::{
         WindowType,
     },
     state::State,
-    DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
 
 use leftwm_layouts::Layout;
 use regex::Regex;
 use ron::{
-    extensions::Extensions,
-    ser::{to_string_pretty, PrettyConfig},
     Options,
+    extensions::Extensions,
+    ser::{PrettyConfig, to_string_pretty},
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::env;
@@ -277,7 +277,9 @@ fn load_from_file() -> Result<Config> {
         );
         let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
-        tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+        tracing::info!(
+            "You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki."
+        );
         Ok(config)
     } else {
         tracing::debug!("Config file not found. Using default config file.");

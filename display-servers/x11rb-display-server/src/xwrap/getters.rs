@@ -10,12 +10,12 @@ use x11rb::{
 };
 
 use crate::{
+    X11rbWindowHandle,
     error::{BackendError, ErrorKind, Result},
     xatom::WMStateWindowState,
-    X11rbWindowHandle,
 };
 
-use super::{XWrap, MAX_PROPERTY_VALUE_LEN};
+use super::{MAX_PROPERTY_VALUE_LEN, XWrap};
 
 impl XWrap {
     // Public functions.

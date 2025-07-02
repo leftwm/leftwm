@@ -1,5 +1,5 @@
 use super::{Handle, TagId, Xyhw};
-use crate::{layouts::LayoutManager, Window, Workspace};
+use crate::{Window, Workspace, layouts::LayoutManager};
 use serde::{Deserialize, Serialize};
 
 /// Wrapper struct holding all the tags.

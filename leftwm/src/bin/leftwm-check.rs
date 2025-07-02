@@ -1,10 +1,10 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::{arg, command};
 use leftwm::{Config, ThemeConfig};
 use ron::{
-    extensions::Extensions,
-    ser::{to_string_pretty, PrettyConfig},
     Options,
+    extensions::Extensions,
+    ser::{PrettyConfig, to_string_pretty},
 };
 use std::env;
 use std::fs;
@@ -75,7 +75,9 @@ async fn main() -> Result<()> {
             config.check_mousekey(verbose);
             config.check_log_level(verbose);
             #[cfg(not(feature = "lefthk"))]
-            println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
+            println!(
+                "\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m"
+            );
             #[cfg(feature = "lefthk")]
             config.check_keybinds(verbose);
         }
@@ -291,7 +293,9 @@ fn check_current_theme_set(filepath: Option<&PathBuf>, verbose: bool) -> Result<
                         fs::read_link(p).unwrap()
                     );
                 } else {
-                    println!("\x1b[1;93mWARN: Found `current` theme folder: {p:?}. Use of a symlink is recommended, instead.\x1b[0m");
+                    println!(
+                        "\x1b[1;93mWARN: Found `current` theme folder: {p:?}. Use of a symlink is recommended, instead.\x1b[0m"
+                    );
                 }
             }
             Ok(p)
@@ -325,7 +329,9 @@ fn check_up_file(filepath: PathBuf) -> Result<()> {
     let contents = fs::read_to_string(filepath)?;
     // Deprecate commands.pipe after 97de790. See #652 for details.
     if contents.contains("leftwm/commands.pipe") {
-        bail!("`commands.pipe` is deprecated. See https://github.com/leftwm/leftwm/issues/652 for workaround.");
+        bail!(
+            "`commands.pipe` is deprecated. See https://github.com/leftwm/leftwm/issues/652 for workaround."
+        );
     }
     Ok(())
 }
@@ -491,5 +497,7 @@ fn check_binary(binary: &str, verbose: bool) -> Result<()> {
         bail!("Could not find binary {} in PATH", binary)
     }
 
-    bail!("Binaries not checked. This is an error with leftwm-check, we would appreciate a bug report: https://github.com/leftwm/leftwm/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml")
+    bail!(
+        "Binaries not checked. This is an error with leftwm-check, we would appreciate a bug report: https://github.com/leftwm/leftwm/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml"
+    )
 }

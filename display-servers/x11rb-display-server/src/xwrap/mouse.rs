@@ -1,7 +1,7 @@
 //! Xlib calls related to a mouse.
 use x11rb::{protocol::xproto, x11_utils::Serialize};
 
-use super::{button_event_mask, mouse_event_mask, XWrap};
+use super::{XWrap, button_event_mask, mouse_event_mask};
 
 use crate::error::Result;
 

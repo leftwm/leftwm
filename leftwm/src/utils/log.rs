@@ -1,5 +1,5 @@
-use tracing::{metadata::LevelFilter, Subscriber};
-use tracing_subscriber::{filter::ParseError, layer::SubscriberExt, EnvFilter};
+use tracing::{Subscriber, metadata::LevelFilter};
+use tracing_subscriber::{EnvFilter, filter::ParseError, layer::SubscriberExt};
 
 #[cfg(feature = "journald-log")]
 mod journald;

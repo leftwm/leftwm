@@ -1,11 +1,11 @@
 use leftwm_core::{
-    models::{WindowChange, WindowHandle, WindowType, Xyhw},
     DisplayEvent,
+    models::{WindowChange, WindowHandle, WindowType, Xyhw},
 };
 use x11rb::{properties::WmHints, protocol::xproto};
 
 use crate::xwrap::XWrap;
-use crate::{error::Result, X11rbWindowHandle};
+use crate::{X11rbWindowHandle, error::Result};
 
 pub(crate) fn from_event(
     event: &xproto::PropertyNotifyEvent,

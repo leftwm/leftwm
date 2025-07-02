@@ -1,7 +1,7 @@
 //! Creates a pipe to listen for external commands.
 use crate::models::{Handle, TagId};
 use crate::utils::return_pipe::ReturnPipe;
-use crate::{command, Command, ReleaseScratchPadOption};
+use crate::{Command, ReleaseScratchPadOption, command};
 use leftwm_layouts::geometry::Direction as FocusDirection;
 use std::error::Error;
 use std::fs::OpenOptions;

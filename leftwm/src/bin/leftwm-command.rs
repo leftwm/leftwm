@@ -110,6 +110,6 @@ where
 }
 
 async fn timeout(mills: u64) {
-    use tokio::time::{sleep, Duration};
+    use tokio::time::{Duration, sleep};
     sleep(Duration::from_millis(mills)).await;
 }

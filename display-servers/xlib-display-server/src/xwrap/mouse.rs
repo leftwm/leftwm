@@ -1,7 +1,7 @@
 //! Xlib calls related to a mouse.
-use super::{XlibError, MOUSEMASK};
-use crate::xwrap::BUTTONMASK;
+use super::{MOUSEMASK, XlibError};
 use crate::XWrap;
+use crate::xwrap::BUTTONMASK;
 use std::os::raw::{c_int, c_uint, c_ulong};
 use x11_dl::xlib;
 

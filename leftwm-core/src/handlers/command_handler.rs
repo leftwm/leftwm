@@ -1003,20 +1003,24 @@ mod tests {
             );
         }
 
-        assert!(!manager
-            .state
-            .windows
-            .iter()
-            .any(|w| w.states.contains(&WindowState::Fullscreen)));
+        assert!(
+            !manager
+                .state
+                .windows
+                .iter()
+                .any(|w| w.states.contains(&WindowState::Fullscreen))
+        );
 
         manager.command_handler(&Command::ToggleFullScreen);
 
         mock_update(&mut manager);
-        assert!(manager
-            .state
-            .windows
-            .iter()
-            .any(|w| w.states.contains(&WindowState::Fullscreen)));
+        assert!(
+            manager
+                .state
+                .windows
+                .iter()
+                .any(|w| w.states.contains(&WindowState::Fullscreen))
+        );
     }
 
     #[test]
@@ -1032,20 +1036,24 @@ mod tests {
             );
         }
 
-        assert!(!manager
-            .state
-            .windows
-            .iter()
-            .any(|w| w.states.contains(&WindowState::Maximized)));
+        assert!(
+            !manager
+                .state
+                .windows
+                .iter()
+                .any(|w| w.states.contains(&WindowState::Maximized))
+        );
 
         manager.command_handler(&Command::ToggleMaximized);
 
         mock_update(&mut manager);
-        assert!(manager
-            .state
-            .windows
-            .iter()
-            .any(|w| w.states.contains(&WindowState::Maximized)));
+        assert!(
+            manager
+                .state
+                .windows
+                .iter()
+                .any(|w| w.states.contains(&WindowState::Maximized))
+        );
     }
 
     #[test]

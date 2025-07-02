@@ -1,12 +1,12 @@
 use std::{io::IoSlice, os::fd::AsRawFd, sync::Arc, time::Duration};
 
 use leftwm_core::{
+    Config, Mode, Window,
     config::WindowHidingStrategy,
     models::{FocusBehaviour, WindowHandle},
     utils::{self, modmask_lookup::ModMask},
-    Config, Mode, Window,
 };
-use tokio::sync::{oneshot, Notify};
+use tokio::sync::{Notify, oneshot};
 use x11rb::{
     connection::{Connection, RequestConnection},
     protocol::{
@@ -19,7 +19,7 @@ use x11rb::{
     x11_utils::Serialize,
 };
 
-use crate::{error::ErrorKind, xatom::AtomCollection, xcursors::XCursor, X11rbWindowHandle};
+use crate::{X11rbWindowHandle, error::ErrorKind, xatom::AtomCollection, xcursors::XCursor};
 
 use crate::error::Result;
 
@@ -105,21 +105,23 @@ impl XWrap {
             )
             .expect("Unable to boot Mio");
         let timeout = Duration::from_millis(100);
-        tokio::task::spawn_blocking(move || loop {
-            if guard.is_closed() {
-                tracing::info!("x11rb socket closed");
-                return;
-            }
+        tokio::task::spawn_blocking(move || {
+            loop {
+                if guard.is_closed() {
+                    tracing::info!("x11rb socket closed");
+                    return;
+                }
 
-            if let Err(err) = poll.poll(&mut events, Some(timeout)) {
-                tracing::warn!("x11rb socket poll failed with {:?}", err);
-                continue;
-            }
+                if let Err(err) = poll.poll(&mut events, Some(timeout)) {
+                    tracing::warn!("x11rb socket poll failed with {:?}", err);
+                    continue;
+                }
 
-            events
-                .iter()
-                .filter(|event| SERVER == event.token())
-                .for_each(|_| notify.notify_one());
+                events
+                    .iter()
+                    .filter(|event| SERVER == event.token())
+                    .for_each(|_| notify.notify_one());
+            }
         });
 
         let atoms = AtomCollection::new(&conn)

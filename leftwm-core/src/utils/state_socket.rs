@@ -1,6 +1,6 @@
 use crate::errors::{LeftError, Result};
-use crate::models::dto::ManagerState;
 use crate::models::Handle;
+use crate::models::dto::ManagerState;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::fs;
@@ -88,12 +88,13 @@ impl StateSocket {
 
     async fn build_listener(&self) -> Result<tokio::task::JoinHandle<()>> {
         let state = self.state.clone();
-        let listener = match UnixListener::bind(&self.socket_file) { Ok(m) => {
-            m
-        } _ => {
-            fs::remove_file(&self.socket_file).await?;
-            UnixListener::bind(&self.socket_file)?
-        }};
+        let listener = match UnixListener::bind(&self.socket_file) {
+            Ok(m) => m,
+            _ => {
+                fs::remove_file(&self.socket_file).await?;
+                UnixListener::bind(&self.socket_file)?
+            }
+        };
 
         Ok(tokio::spawn(async move {
             loop {
@@ -114,8 +115,8 @@ impl StateSocket {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::utils::helpers::test::temp_path;
     use crate::Manager;
+    use crate::utils::helpers::test::temp_path;
     use tokio::io::{AsyncBufReadExt, BufReader};
 
     #[tokio::test]

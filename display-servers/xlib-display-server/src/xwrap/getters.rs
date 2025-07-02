@@ -1,5 +1,5 @@
 //! `XWrap` getters.
-use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN, MOUSEMASK};
+use super::{MAX_PROPERTY_VALUE_LEN, MOUSEMASK, Screen, WindowHandle, XlibError};
 use crate::{XWrap, XlibWindowHandle};
 use leftwm_core::models::{BBox, DockArea, WindowState, WindowType, XyhwChange};
 use std::ffi::{CStr, CString};
@@ -303,11 +303,7 @@ impl XWrap {
             let mut transient: xlib::Window = std::mem::zeroed();
             let status: c_int =
                 (self.xlib.XGetTransientForHint)(self.display, window, &mut transient);
-            if status > 0 {
-                Some(transient)
-            } else {
-                None
-            }
+            if status > 0 { Some(transient) } else { None }
         }
     }
 
