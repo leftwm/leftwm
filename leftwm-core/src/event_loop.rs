@@ -211,7 +211,7 @@ fn place_runtime_file<P>(path: P) -> std::io::Result<PathBuf>
 where
     P: AsRef<Path>,
 {
-    xdg::BaseDirectories::with_prefix("leftwm")?.place_runtime_file(path)
+    xdg::BaseDirectories::with_prefix("leftwm").place_runtime_file(path)
 }
 
 async fn timeout(mills: u64) {

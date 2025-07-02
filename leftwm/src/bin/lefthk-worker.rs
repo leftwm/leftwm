@@ -15,9 +15,7 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
         let config = leftwm::load();
-        let path = BaseDirectories::with_prefix("leftwm-lefthk")
-            .expect("ERROR: could not find base directory");
-
+        let path = BaseDirectories::with_prefix("leftwm-lefthk");
         rt.block_on(Worker::new(config.mapped_bindings(), path).event_loop());
     });
 

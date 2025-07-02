@@ -257,7 +257,7 @@ pub fn load() -> Config {
 fn load_from_file() -> Result<Config> {
     tracing::debug!("Loading config file");
 
-    let path = BaseDirectories::with_prefix("leftwm")?;
+    let path = BaseDirectories::with_prefix("leftwm");
 
     // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
     let config_file_ron = path.place_config_file("config.ron")?;
@@ -627,7 +627,7 @@ impl leftwm_core::Config for Config {
                 return;
             }
         };
-        if let Err(err) = ron::ser::to_writer(state_file, state) {
+        if let Err(err) = ron::Options::default().to_io_writer(state_file, state) {
             tracing::error!("Cannot save state: {}", err);
         }
     }
@@ -744,7 +744,7 @@ fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S:
 
 fn get_return_pipe() -> Result<File, Box<dyn std::error::Error>> {
     let file_name = ReturnPipe::pipe_name();
-    let file_path = BaseDirectories::with_prefix("leftwm")?;
+    let file_path = BaseDirectories::with_prefix("leftwm");
     let file_path = file_path
         .find_runtime_file(file_name)
         .ok_or("Unable to open return pipe")?;

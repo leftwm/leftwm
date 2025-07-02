@@ -88,12 +88,11 @@ impl StateSocket {
 
     async fn build_listener(&self) -> Result<tokio::task::JoinHandle<()>> {
         let state = self.state.clone();
-        let listener = match UnixListener::bind(&self.socket_file) {
-            Ok(m) => m,
-            _ => {
-                fs::remove_file(&self.socket_file).await?;
-                UnixListener::bind(&self.socket_file)?
-            }
+        let listener = if let Ok(m) = UnixListener::bind(&self.socket_file) {
+            m
+        } else {
+            fs::remove_file(&self.socket_file).await?;
+            UnixListener::bind(&self.socket_file)?
         };
 
         Ok(tokio::spawn(async move {

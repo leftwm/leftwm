@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
     let matches = get_command().get_matches();
 
     let file_name = leftwm_core::pipe_name();
-    let file_path = BaseDirectories::with_prefix("leftwm")?
+    let file_path = BaseDirectories::with_prefix("leftwm")
         .find_runtime_file(&file_name)
         .with_context(|| format!("ERROR: Couldn't find {}", file_name.display()))?;
     let mut file = OpenOptions::new()
@@ -106,7 +106,7 @@ fn place_runtime_file<P>(path: P) -> std::io::Result<PathBuf>
 where
     P: AsRef<Path>,
 {
-    xdg::BaseDirectories::with_prefix("leftwm")?.place_runtime_file(path)
+    xdg::BaseDirectories::with_prefix("leftwm").place_runtime_file(path)
 }
 
 async fn timeout(mills: u64) {

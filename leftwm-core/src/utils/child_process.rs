@@ -41,20 +41,16 @@ impl Nanny {
     /// 3. string identifying the desktop environments in `NotShowIn`
     ///
     /// The string identifying the desktop environments means `$XDG_CURRENT_DESKTOP`,
-    /// you can find some from [Registered `OnlyShowIn` Environments](https://specifications.freedesktop.org/menu-spec/latest/apb.html).  
+    /// you can find some from [Registered `OnlyShowIn` Environments](https://specifications.freedesktop.org/menu-spec/latest/apb.html).\
     /// `LeftWM` use **`LeftWM`** as identification (case-sensitive).
     #[must_use]
     pub fn autostart() -> Children {
         BaseDirectories::new()
-            .map(|xdg_dir| {
-                xdg_dir
-                    .list_config_files_once("autostart")
-                    .iter()
-                    .filter(|path| path.extension() == Some(std::ffi::OsStr::new("desktop")))
-                    .filter_map(|file| boot_desktop_file(file).ok())
-                    .collect::<Children>()
-            })
-            .unwrap_or_default()
+            .list_config_files_once("autostart")
+            .iter()
+            .filter(|path| path.extension() == Some(std::ffi::OsStr::new("desktop")))
+            .filter_map(|file| boot_desktop_file(file).ok())
+            .collect::<Children>()
     }
 
     /// Retrieve the path to the config directory. Tries to create it if it does not exist.
@@ -64,7 +60,7 @@ impl Nanny {
     /// Will error if unable to open or create the config directory.
     /// Could be caused by inadequate permissions.
     fn get_config_dir() -> Result<PathBuf> {
-        BaseDirectories::with_prefix("leftwm")?
+        BaseDirectories::with_prefix("leftwm")
             .create_config_directory("")
             .map_err(Into::into)
     }
