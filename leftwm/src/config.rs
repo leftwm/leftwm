@@ -486,7 +486,7 @@ impl leftwm_core::Config for Config {
                         manager.config.theme_setting.load(absolute);
                         write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
                     } else {
-                        tracing::warn!("Path submitted does not exist.");
+                        tracing::warn!("Path submitted does not exist: {}", value.trim());
                         write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist");
                     }
                     manager.load_theme_config()
