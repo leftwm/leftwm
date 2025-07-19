@@ -32,7 +32,7 @@
 
 ![Screenshot of LeftWM in action](screenshots/5.png)
 
-**IMPORTANT NOTE: LeftWM has changed the config language from `TOML` to `RON` with the `0.4.0` release. Please use `leftwm-check --migrate-toml-to-ron` to migrate your config and visit the [wiki](https://github.com/leftwm/leftwm/wiki) for more info.**
+**IMPORTANT NOTE: LeftWM has changed the config language from `TOML` to `RON` with the `0.4.0` release and removed support for TOML entirely in 0.6.0. Please use `leftwm-config migrate` to migrate your config and visit the [wiki](https://github.com/leftwm/leftwm/wiki) for more info.**
 
 # Table of contents
 
