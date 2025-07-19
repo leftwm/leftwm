@@ -183,7 +183,9 @@ impl XlibDisplayServer {
             let auto_derive_workspaces: bool = if config.auto_derive_workspaces() {
                 true
             } else if events.is_empty() {
-                tracing::warn!("No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\".");
+                tracing::warn!(
+                    "No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\"."
+                );
                 true
             } else {
                 false

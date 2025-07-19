@@ -1,6 +1,6 @@
 use crate::errors::{LeftError, Result};
-use crate::models::dto::ManagerState;
 use crate::models::Handle;
+use crate::models::dto::ManagerState;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::fs;
@@ -114,8 +114,8 @@ impl StateSocket {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::utils::helpers::test::temp_path;
     use crate::Manager;
+    use crate::utils::helpers::test::temp_path;
     use tokio::io::{AsyncBufReadExt, BufReader};
 
     #[tokio::test]

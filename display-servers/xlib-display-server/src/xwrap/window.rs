@@ -1,12 +1,12 @@
 //! Xlib calls related to a window.
 use super::{
-    on_error_from_xlib, on_error_from_xlib_dummy, Window, WindowHandle, ICONIC_STATE, NORMAL_STATE,
-    ROOT_EVENT_MASK, WITHDRAWN_STATE,
+    ICONIC_STATE, NORMAL_STATE, ROOT_EVENT_MASK, WITHDRAWN_STATE, Window, WindowHandle,
+    on_error_from_xlib, on_error_from_xlib_dummy,
 };
 use crate::{XWrap, XlibWindowHandle};
+use leftwm_core::DisplayEvent;
 use leftwm_core::config::WindowHidingStrategy;
 use leftwm_core::models::{WindowChange, WindowType, Xyhw, XyhwChange};
-use leftwm_core::DisplayEvent;
 use std::os::raw::{c_long, c_ulong};
 use x11_dl::xlib;
 
@@ -415,7 +415,7 @@ impl XWrap {
         mut attrs: xlib::XSetWindowAttributes,
     ) {
         unsafe {
-            (self.xlib.XChangeWindowAttributes)(self.display, window, mask, &mut attrs);
+            (self.xlib.XChangeWindowAttributes)(self.display, window, mask, &raw mut attrs);
         }
     }
 

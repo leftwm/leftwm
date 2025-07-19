@@ -5,7 +5,7 @@ use crate::config::Config;
 use crate::display_servers::DisplayServer;
 use crate::state::State;
 use crate::utils::child_process::Children;
-use std::sync::{atomic::AtomicBool, Arc};
+use std::sync::{Arc, atomic::AtomicBool};
 
 use super::Handle;
 
@@ -169,11 +169,11 @@ mod pr_1301_issue {
     use leftwm_layouts::layouts::Layouts;
 
     use crate::{
+        Manager,
         config::tests::TestConfig,
         display_servers::MockDisplayServer,
         layouts,
         models::{BBox, MockHandle, Screen},
-        Manager,
     };
 
     fn test_config() -> TestConfig {

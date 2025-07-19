@@ -23,7 +23,9 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
 
         let mut new_workspace = Workspace::new(screen.bbox, workspace_id);
         if self.state.workspaces.len() >= tag_len {
-            tracing::warn!("The number of workspaces needs to be less than or equal to the number of tags available. No more workspaces will be added.");
+            tracing::warn!(
+                "The number of workspaces needs to be less than or equal to the number of tags available. No more workspaces will be added."
+            );
         }
         new_workspace.load_config(&self.config);
 

@@ -13,6 +13,7 @@ use super::ThemeConfig;
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
+    DisplayAction, DisplayServer, Manager, ReturnPipe,
     config::{InsertBehavior, ScratchPad, WindowHidingStrategy, Workspace},
     layouts::LayoutMode,
     models::{
@@ -20,15 +21,14 @@ use leftwm_core::{
         WindowType,
     },
     state::State,
-    DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
 
 use leftwm_layouts::Layout;
 use regex::Regex;
 use ron::{
-    extensions::Extensions,
-    ser::{to_string_pretty, PrettyConfig},
     Options,
+    extensions::Extensions,
+    ser::{PrettyConfig, to_string_pretty},
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::env;
@@ -257,7 +257,7 @@ pub fn load() -> Config {
 fn load_from_file() -> Result<Config> {
     tracing::debug!("Loading config file");
 
-    let path = BaseDirectories::with_prefix("leftwm")?;
+    let path = BaseDirectories::with_prefix("leftwm");
 
     // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
     let config_file_ron = path.place_config_file("config.ron")?;
@@ -277,7 +277,9 @@ fn load_from_file() -> Result<Config> {
         );
         let contents = fs::read_to_string(config_file_toml)?;
         let config = toml::from_str(&contents)?;
-        tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
+        tracing::info!(
+            "You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki."
+        );
         Ok(config)
     } else {
         tracing::debug!("Config file not found. Using default config file.");
@@ -625,7 +627,7 @@ impl leftwm_core::Config for Config {
                 return;
             }
         };
-        if let Err(err) = ron::ser::to_writer(state_file, state) {
+        if let Err(err) = ron::Options::default().to_io_writer(state_file, state) {
             tracing::error!("Cannot save state: {}", err);
         }
     }
@@ -735,14 +737,14 @@ fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex
 #[allow(clippy::ref_option)]
 fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
     match wc {
-        Some(ref re) => s.serialize_some(re.as_str()),
+        Some(re) => s.serialize_some(re.as_str()),
         None => s.serialize_none(),
     }
 }
 
 fn get_return_pipe() -> Result<File, Box<dyn std::error::Error>> {
     let file_name = ReturnPipe::pipe_name();
-    let file_path = BaseDirectories::with_prefix("leftwm")?;
+    let file_path = BaseDirectories::with_prefix("leftwm");
     let file_path = file_path
         .find_runtime_file(file_name)
         .ok_or("Unable to open return pipe")?;

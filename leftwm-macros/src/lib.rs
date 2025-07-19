@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Error};
+use syn::{Data, DeriveInput, Error, parse_macro_input};
 
 use std::fmt::Write;
 

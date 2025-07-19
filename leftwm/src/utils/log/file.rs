@@ -32,7 +32,7 @@ where
 /// - If HOME is not set
 /// - If path permissions are not at least 0700
 pub fn get_log_path() -> Box<Path> {
-    let cache_dir = BaseDirectories::with_prefix(LOG_PREFIX).unwrap();
+    let cache_dir = BaseDirectories::with_prefix(LOG_PREFIX);
     cache_dir
         .place_state_file(LOG_FILE_NAME)
         .unwrap()

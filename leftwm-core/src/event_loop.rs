@@ -1,10 +1,10 @@
 use crate::models::Handle;
-use crate::{child_process::Nanny, config::Config};
 use crate::{
     Command, CommandPipe, DisplayEvent, DisplayServer, Manager, Mode, StateSocket, Window,
 };
+use crate::{child_process::Nanny, config::Config};
 use std::path::{Path, PathBuf};
-use std::sync::{atomic::Ordering, Once};
+use std::sync::{Once, atomic::Ordering};
 
 use tracing::error;
 
@@ -211,10 +211,10 @@ fn place_runtime_file<P>(path: P) -> std::io::Result<PathBuf>
 where
     P: AsRef<Path>,
 {
-    xdg::BaseDirectories::with_prefix("leftwm")?.place_runtime_file(path)
+    xdg::BaseDirectories::with_prefix("leftwm").place_runtime_file(path)
 }
 
 async fn timeout(mills: u64) {
-    use tokio::time::{sleep, Duration};
+    use tokio::time::{Duration, sleep};
     sleep(Duration::from_millis(mills)).await;
 }

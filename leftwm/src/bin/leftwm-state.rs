@@ -160,7 +160,7 @@ fn template_handler(
 }
 
 async fn stream_reader() -> Result<Lines<BufReader<UnixStream>>> {
-    let base = BaseDirectories::with_prefix("leftwm")?;
+    let base = BaseDirectories::with_prefix("leftwm");
     let socket_file = base.place_runtime_file("current_state.sock")?;
     let stream = UnixStream::connect(socket_file).await?;
     Ok(BufReader::new(stream).lines())

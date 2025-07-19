@@ -8,9 +8,9 @@ mod window_handler;
 mod window_move_handler;
 mod window_resize_handler;
 
+use super::DisplayEvent;
 use super::command::Command;
 use super::config::Config;
 use super::models::{
     Manager, Mode, Screen, Window, WindowChange, WindowHandle, WindowType, Workspace,
 };
-use super::DisplayEvent;

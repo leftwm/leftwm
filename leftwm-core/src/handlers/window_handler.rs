@@ -517,9 +517,9 @@ fn update_workspace_avoid_list<H: Handle>(state: &mut State<H>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Manager;
     use crate::layouts::MONOCLE;
     use crate::models::{MockHandle, Screen};
-    use crate::Manager;
 
     #[test]
     fn insert_behavior_bottom_add_window_at_the_end_of_the_stack() {

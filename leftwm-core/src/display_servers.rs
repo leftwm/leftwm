@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod mock_display_server;
 
+use crate::DisplayEvent;
 use crate::config::Config;
 use crate::display_action::DisplayAction;
 use crate::models::Handle;
 use crate::models::Window;
 use crate::models::WindowHandle;
 use crate::models::Workspace;
-use crate::DisplayEvent;
 
 use futures::prelude::*;
 use std::pin::Pin;

@@ -5,7 +5,7 @@ use super::BaseCommand;
 #[cfg(feature = "lefthk")]
 use crate::Config;
 #[cfg(feature = "lefthk")]
-use anyhow::{ensure, Context, Result};
+use anyhow::{Context, Result, ensure};
 #[cfg(feature = "lefthk")]
 use lefthk_core::config::Command;
 #[cfg(feature = "lefthk")]
@@ -81,9 +81,16 @@ impl Keybind {
             }
             BaseCommand::FocusNextTag | BaseCommand::FocusPreviousTag if value_is_some => {
                 ensure!(
-                usize::from_str(&self.value).is_ok()
-                || matches!(&self.value.as_str(), &""|&"goto_empty"|&"ignore_empty"|&"goto_used"|&"ignore_used"|&"default"),
-            "Value should be empty, or one of 'default', 'goto_empty', 'ignore_empty', 'goto_used', 'ignore_used'"
+                    usize::from_str(&self.value).is_ok()
+                        || matches!(
+                            &self.value.as_str(),
+                            &"" | &"goto_empty"
+                                | &"ignore_empty"
+                                | &"goto_used"
+                                | &"ignore_used"
+                                | &"default"
+                        ),
+                    "Value should be empty, or one of 'default', 'goto_empty', 'ignore_empty', 'goto_used', 'ignore_used'"
                 );
             }
             _ => {}
