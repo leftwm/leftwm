@@ -544,6 +544,8 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lefthk-core"
 version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4421be189d655a184af40049b70a917b87000bff5db76fa397c2444339cdbe2f"
 dependencies = [
  "inventory",
  "mio",
