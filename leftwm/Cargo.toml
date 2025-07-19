@@ -55,7 +55,6 @@ tokio = { version = "1.43.1", features = [
   "sync",
   "time",
 ] }
-toml = "0.8.2"
 xdg = "3.0.0"
 
 # logging
