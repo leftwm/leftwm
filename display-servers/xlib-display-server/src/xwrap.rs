@@ -294,7 +294,7 @@ impl XWrap {
                 self.display,
                 self.root,
                 xlib::CWEventMask | xlib::CWCursor,
-                &mut attrs,
+                &raw mut attrs,
             );
         }
 
@@ -348,13 +348,13 @@ impl XWrap {
                 ptr,
                 clist_tags.len() as i32,
                 xlib::XUTF8StringStyle,
-                &mut text,
+                &raw mut text,
             );
             std::mem::forget(clist_tags);
             (self.xlib.XSetTextProperty)(
                 self.display,
                 self.root,
-                &mut text,
+                &raw mut text,
                 self.atoms.NetDesktopNames,
             );
         }
@@ -413,7 +413,7 @@ impl XWrap {
             let mut array: *mut xlib::Atom = std::mem::zeroed();
             let mut length: c_int = std::mem::zeroed();
             let status: xlib::Status =
-                (self.xlib.XGetWMProtocols)(self.display, window, &mut array, &mut length);
+                (self.xlib.XGetWMProtocols)(self.display, window, &raw mut array, &raw mut length);
             let protocols: &[xlib::Atom] = slice::from_raw_parts(array, length as usize);
             status > 0 && protocols.contains(&atom)
         }

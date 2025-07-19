@@ -415,7 +415,7 @@ impl XWrap {
         mut attrs: xlib::XSetWindowAttributes,
     ) {
         unsafe {
-            (self.xlib.XChangeWindowAttributes)(self.display, window, mask, &mut attrs);
+            (self.xlib.XChangeWindowAttributes)(self.display, window, mask, &raw mut attrs);
         }
     }
 

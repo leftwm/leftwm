@@ -284,11 +284,12 @@ fn check_current_theme_set(filepath: Option<&PathBuf>, verbose: bool) -> Result<
                 if fs::symlink_metadata(p)?.file_type().is_symlink() {
                     println!(
                         "Found symlink `current`, pointing to theme folder: {:?}",
-                        fs::read_link(p).unwrap()
+                        fs::read_link(p).unwrap().display()
                     );
                 } else {
                     println!(
-                        "\x1b[1;93mWARN: Found `current` theme folder: {p:?}. Use of a symlink is recommended, instead.\x1b[0m"
+                        "\x1b[1;93mWARN: Found `current` theme folder: {:?}. Use of a symlink is recommended, instead.\x1b[0m",
+                        p.display()
                     );
                 }
             }

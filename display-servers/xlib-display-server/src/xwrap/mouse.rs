@@ -146,13 +146,13 @@ impl XWrap {
                 (self.xlib.XQueryPointer)(
                     self.display,
                     event.window,
-                    &mut event.root,
-                    &mut event.subwindow,
-                    &mut event.x_root,
-                    &mut event.y_root,
-                    &mut event.x,
-                    &mut event.y,
-                    &mut event.state,
+                    &raw mut event.root,
+                    &raw mut event.subwindow,
+                    &raw mut event.x_root,
+                    &raw mut event.y_root,
+                    &raw mut event.x,
+                    &raw mut event.y,
+                    &raw mut event.state,
                 );
             }
 
