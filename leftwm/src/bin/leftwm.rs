@@ -125,12 +125,14 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
 }
 
 /// Sets some relevant environment variables for leftwm
+// The use of `unsafe` is needed here as the environment
+// isn't protected against race conditions by the OS
+// We need to ensure to only use this single-threaded
+#[allow(unsafe_code)]
 fn set_env_vars() {
-    // TODO: Audit that the environment access only happens in single-threaded code.
     unsafe { env::set_var("XDG_CURRENT_DESKTOP", "LeftWM") };
 
     // Fix for Java apps so they repaint correctly
-    // TODO: Audit that the environment access only happens in single-threaded code.
     unsafe { env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1") };
 }
 
@@ -156,6 +158,7 @@ fn get_current_exe() -> std::path::PathBuf {
 fn start_leftwm() {
     let current_exe = get_current_exe();
 
+    // This call must happen before any child processes are created
     set_env_vars();
 
     // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
