@@ -73,19 +73,9 @@ pub struct WindowHook {
     // config. Without this attribute deserializer will fail on missing field due to it's inability
     // to treat missing value as Option::None
     /// `WM_CLASS` in X11
-    #[serde(
-        default,
-        deserialize_with = "from_regex",
-        serialize_with = "to_config_string"
-    )]
-    pub window_class: Option<Regex>,
+    pub window_class: Option<SerializableRegex>,
     /// `_NET_WM_NAME` in X11
-    #[serde(
-        default,
-        deserialize_with = "from_regex",
-        serialize_with = "to_config_string"
-    )]
-    pub window_title: Option<Regex>,
+    pub window_title: Option<SerializableRegex>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_on_workspace: Option<usize>,
     pub spawn_floating: Option<bool>,
@@ -94,6 +84,41 @@ pub struct WindowHook {
     /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
     pub spawn_as_type: Option<WindowType>,
     pub hiding_strategy: Option<WindowHidingStrategy>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SerializableRegex {
+    regex: Regex,
+}
+
+impl SerializableRegex {
+    pub fn new(str: String) -> Self {
+        SerializableRegex {
+            regex: Regex::new(&str).unwrap(),
+        }
+    }
+}
+
+impl Serialize for SerializableRegex {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        s.serialize_some(self.regex.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for SerializableRegex {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // ...deserialize implementation.
+        let res: Option<String> = Deserialize::deserialize(deserializer)?;
+        match res {
+            None => Err(<D::Error as serde::de::Error>::custom(
+                "Error during MyRegex deserialization",
+            )),
+            Some(re) => Ok(SerializableRegex::new(re)),
+        }
+    }
 }
 
 impl WindowHook {
@@ -117,11 +142,17 @@ impl WindowHook {
         };
 
         let class_score = self.window_class.as_ref().map_or(0, |re| {
-            u8::from(matches_any(re, vec![&window.res_class, &window.res_name]))
+            u8::from(matches_any(
+                &re.regex,
+                vec![&window.res_class, &window.res_name],
+            ))
         });
 
         let title_score = self.window_title.as_ref().map_or(0, |re| {
-            u8::from(matches_any(re, vec![&window.legacy_name, &window.name]))
+            u8::from(matches_any(
+                &re.regex,
+                vec![&window.legacy_name, &window.name],
+            ))
         });
 
         class_score + 2 * title_score
@@ -722,23 +753,6 @@ impl Config {
         self.state_path
             .as_deref()
             .unwrap_or_else(|| Path::new(STATE_FILE))
-    }
-}
-
-// Regular expression in leftwm config should correspond to RE2 syntax, described here:
-// https://github.com/google/re2/wiki/Syntax
-fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex>, D::Error> {
-    let res: Option<String> = Deserialize::deserialize(deserializer)?;
-    res.map_or(Ok(None), |s| {
-        Regex::new(&s).map_or(Ok(None), |re| Ok(Some(re)))
-    })
-}
-
-#[allow(clippy::ref_option)]
-fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
-    match wc {
-        Some(re) => s.serialize_some(re.as_str()),
-        None => s.serialize_none(),
     }
 }
 
