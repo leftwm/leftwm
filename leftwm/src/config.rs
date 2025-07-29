@@ -92,9 +92,14 @@ pub struct SerializableRegex {
 }
 
 impl SerializableRegex {
-    pub fn new(str: String) -> Self {
+    /// # Panics
+    ///
+    /// Function can only panic if the str used is not a valid regex
+    #[must_use]
+    pub fn new(str: &str) -> Self {
         SerializableRegex {
-            regex: Regex::new(&str).unwrap(),
+            regex: Regex::new(str)
+                .unwrap_or_else(|e| panic!("Can't create regex from {str} error {e}")),
         }
     }
 }
@@ -116,7 +121,7 @@ impl<'de> Deserialize<'de> for SerializableRegex {
             None => Err(<D::Error as serde::de::Error>::custom(
                 "Error during MyRegex deserialization",
             )),
-            Some(re) => Ok(SerializableRegex::new(re)),
+            Some(re) => Ok(SerializableRegex::new(re.as_str())),
         }
     }
 }
