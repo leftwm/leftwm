@@ -92,14 +92,14 @@ pub struct SerializableRegex {
 }
 
 impl SerializableRegex {
-    /// # Panics
+    /// # Errors
     ///
-    /// Function can only panic if the str used is not a valid regex
-    #[must_use]
-    pub fn new(str: &str) -> Self {
-        SerializableRegex {
-            regex: Regex::new(str)
-                .unwrap_or_else(|e| panic!("Can't create regex from {str} error {e}")),
+    /// Function will throw an error if `str` used is not a valid regex.
+    /// Please take a look at [link](https://docs.rs/regex/latest/regex/#syntax)
+    pub fn new(str: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        match Regex::new(str) {
+            Ok(x) => Ok(SerializableRegex { regex: x }),
+            Err(e) => Err(format!("Can't create regex from {str} error {e}"))?,
         }
     }
 }
@@ -119,9 +119,14 @@ impl<'de> Deserialize<'de> for SerializableRegex {
         let res: Option<String> = Deserialize::deserialize(deserializer)?;
         match res {
             None => Err(<D::Error as serde::de::Error>::custom(
-                "Error during MyRegex deserialization",
+                "Error during SerializableRegex deserialization",
             )),
-            Some(re) => Ok(SerializableRegex::new(re.as_str())),
+            Some(re) => match SerializableRegex::new(re.as_str()) {
+                Ok(x) => Ok(x),
+                Err(e) => Err(<D::Error as serde::de::Error>::custom(format!(
+                    "Can't deserialize SerializableRegex error: {e}",
+                ))),
+            },
         }
     }
 }
