@@ -801,4 +801,33 @@ mod tests {
         let ron_config = ron::from_str::<'_, Config>(ron.unwrap().as_str());
         assert!(ron_config.is_ok(), "Could not deserialize default config");
     }
+
+    #[test]
+    fn serialize_deserialize_valid_regex() {
+        let serializable_regex = SerializableRegex::new(".*");
+
+        assert!(serializable_regex.is_ok());
+
+        let serialized = serde_json::to_string(&serializable_regex.unwrap()).unwrap();
+
+        let deserialized: Result<SerializableRegex, serde_json::Error> =
+            serde_json::from_str(&serialized);
+
+        assert!(deserialized.is_ok());
+    }
+
+    #[test]
+    fn attempt_to_serialize_invalid_regex() {
+        // A regex that defines only an open bracket is invalid
+        // because is interpreted as the start of a group
+        let regex_str = "(";
+        let deserialized: Result<SerializableRegex, serde_json::Error> =
+            serde_json::from_str(regex_str);
+
+        // The deserialization process should return an error
+        assert!(
+            deserialized.is_err(),
+            "Regex: \"{regex_str}\" should return an error"
+        );
+    }
 }
