@@ -803,10 +803,24 @@ mod tests {
     }
 
     #[test]
-    fn serialize_deserialize_valid_regex() {
+    fn create_valid_regex() {
         let serializable_regex = SerializableRegex::new(".*");
 
         assert!(serializable_regex.is_ok());
+    }
+
+    #[test]
+    fn create_invalid_regex() {
+        // A regex that defines only an open bracket is invalid
+        // because is interpreted as the start of a group
+        let serializable_regex = SerializableRegex::new("(");
+
+        assert!(serializable_regex.is_err());
+    }
+
+    #[test]
+    fn serialize_deserialize_valid_regex() {
+        let serializable_regex = SerializableRegex::new(".*");
 
         let serialized = serde_json::to_string(&serializable_regex.unwrap()).unwrap();
 
@@ -817,7 +831,7 @@ mod tests {
     }
 
     #[test]
-    fn attempt_to_serialize_invalid_regex() {
+    fn attempt_to_deserialize_invalid_regex() {
         // A regex that defines only an open bracket is invalid
         // because is interpreted as the start of a group
         let regex_str = "(";
