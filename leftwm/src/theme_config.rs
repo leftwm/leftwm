@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use leftwm_core::models::{Gutter, Margins};
 use ron::{Options, extensions::Extensions};
 use serde::{Deserialize, Serialize};
@@ -61,8 +61,7 @@ fn load_theme_file(path: impl AsRef<Path>) -> Result<ThemeConfig> {
         let from_file: ThemeConfig = ron.from_str(&contents)?;
         Ok(from_file)
     } else {
-        let from_file: ThemeConfig = toml::from_str(&contents)?;
-        Ok(from_file)
+        Err(anyhow!("No theme file found"))
     }
 }
 
@@ -101,50 +100,6 @@ impl std::convert::TryFrom<CustomMargins> for Margins {
 mod tests {
     use super::*;
     use leftwm_core::models::Side;
-
-    #[test]
-    fn deserialize_custom_theme_config_toml() {
-        let config = r#"
-border_width = 0
-default_width = 400
-default_height = 400
-always_float = true
-margin = 5
-workspace_margin = 5
-default_border_color = '#222222'
-floating_border_color = '#005500'
-focused_border_color = '#FFB53A'
-background_color = '#333333'
-on_new_window = 'echo Hello World'
-
-[[gutter]]
-side = "Top"
-value = 0
-"#;
-        let config: ThemeConfig = toml::from_str(config).unwrap();
-
-        assert_eq!(
-            config,
-            ThemeConfig {
-                border_width: Some(0),
-                margin: Some(CustomMargins::Int(5)),
-                workspace_margin: Some(CustomMargins::Int(5)),
-                default_width: Some(400),
-                default_height: Some(400),
-                always_float: Some(true),
-                gutter: Some(vec![Gutter {
-                    side: Side::Top,
-                    value: 0,
-                    id: None
-                }]),
-                default_border_color: Some("#222222".to_string()),
-                floating_border_color: Some("#005500".to_string()),
-                focused_border_color: Some("#FFB53A".to_string()),
-                background_color: Some("#333333".to_owned()),
-                on_new_window_cmd: Some("echo Hello World".to_string()),
-            }
-        );
-    }
 
     #[test]
     fn deserialize_custom_theme_config_ron() {

@@ -22,7 +22,6 @@ async fn main() -> Result<()> {
         .help_template(leftwm::utils::get_help_template())
         .args(&[
             arg!(-v --verbose "Outputs received configuration file."),
-            arg!(migrate: -m --"migrate-toml-to-ron" "Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
             arg!([INPUT] "Sets the input file to use. Uses first in PATH otherwise."),
         ])
         .get_matches();
@@ -38,18 +37,6 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         option_env!("GIT_HASH").unwrap_or(git_version::git_version!(fallback = "unknown"))
     );
-    if matches.get_flag("migrate") {
-        println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
-        let path = BaseDirectories::with_prefix("leftwm");
-        let ron_file = path.place_config_file("config.ron")?;
-        let toml_file = path.place_config_file("config.toml")?;
-
-        let config = load_from_file(toml_file.as_os_str().to_str(), verbose)?;
-
-        write_to_file(&ron_file, &config)?;
-
-        return Ok(());
-    }
 
     match check_enabled_features(verbose) {
         Ok(()) => {}
@@ -108,13 +95,13 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         let toml_file = BaseDirectories::with_prefix("leftwm").place_config_file("config.toml")?;
         if Path::new(&ron_file).exists() {
             ron_file
-        } else if Path::new(&toml_file).exists() {
-            println!(
-                "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
-            );
-            toml_file
         } else {
+            if Path::new(&toml_file).exists() {
+                println!(
+                    "\x1b[1;93mERROR: support for TOML as a config format was removed in 0.6.0. Migrate\
+                    manually or use `leftwm-config migrate` to migrate to RON. Using default.\x1b[0m"
+                );
+            }
             let config = Config::default();
             write_to_file(&ron_file, &config)?;
             return Ok(config);
@@ -134,8 +121,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         let config: Config = ron.from_str(&contents)?;
         Ok(config)
     } else {
-        let config = toml::from_str(&contents)?;
-        Ok(config)
+        bail!("Config file is not present or not valid.")
     }
 }
 
@@ -211,7 +197,7 @@ fn check_elogind(verbose: bool) -> Result<()> {
 
 /// Checks if `.config/leftwm/theme/current/` is a valid path
 /// Checks if `up` and `down` scripts are in the `current` directory and have executable permission
-/// Checks if `theme.toml` is in the `current` path
+/// Checks if `theme.ron` is in the `current` path
 fn check_theme(verbose: bool) -> bool {
     let xdg_base_dir = BaseDirectories::with_prefix("leftwm/themes");
     let err_formatter = |s| println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {s} \x1b[0m");
@@ -245,10 +231,6 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
                 Err(e) => returns.push(e.to_string()),
             },
             f if f.ends_with("down") => match check_permissions(f, verbose) {
-                Ok(_fp) => {}
-                Err(e) => returns.push(e.to_string()),
-            },
-            f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
                 Ok(_fp) => {}
                 Err(e) => returns.push(e.to_string()),
             },
@@ -329,34 +311,6 @@ fn check_up_file(filepath: PathBuf) -> Result<()> {
         );
     }
     Ok(())
-}
-
-fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
-    let metadata = fs::metadata(&filepath)?;
-    let contents = fs::read_to_string(filepath.as_path())?;
-
-    if metadata.is_file() {
-        if verbose {
-            println!("Found: {}", filepath.display());
-        }
-
-        match toml::from_str::<ThemeConfig>(&contents) {
-            Ok(_) => {
-                if verbose {
-                    println!("The theme file looks OK.");
-                }
-                println!(
-                    "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON or contact the theme creator about this topic.
-      Note: make sure the `up` script is loading the correct theme file.\x1b[0m"
-                );
-                Ok(filepath)
-            }
-            Err(err) => bail!("Could not parse theme file: {}", err),
-        }
-    } else {
-        bail!("No `theme.toml` found at path: {}", filepath.display());
-    }
 }
 
 fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {

@@ -57,15 +57,6 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 /// ]
 /// ```
 ///
-/// In the deprecated `config.toml`
-///
-/// ```toml
-/// [[window_config_by_class]]
-/// wm_class = "krita"
-/// spawn_on_tag = 3
-/// spawn_floating = false
-/// ```
-///
 /// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct WindowHook {
@@ -300,10 +291,7 @@ fn load_from_file() -> Result<Config> {
 
     let path = BaseDirectories::with_prefix("leftwm");
 
-    // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
     let config_file_ron = path.place_config_file("config.ron")?;
-    let config_file_toml = path.place_config_file("config.toml")?;
-
     if Path::new(&config_file_ron).exists() {
         tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
         let ron = Options::default()
@@ -311,19 +299,8 @@ fn load_from_file() -> Result<Config> {
         let contents = fs::read_to_string(config_file_ron)?;
         let config: Config = ron.from_str(&contents)?;
         Ok(config)
-    } else if Path::new(&config_file_toml).exists() {
-        tracing::debug!(
-            "Config file '{}' found.",
-            config_file_toml.to_string_lossy()
-        );
-        let contents = fs::read_to_string(config_file_toml)?;
-        let config = toml::from_str(&contents)?;
-        tracing::info!(
-            "You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki."
-        );
-        Ok(config)
     } else {
-        tracing::debug!("Config file not found. Using default config file.");
+        tracing::debug!("Config file `config.ron` not found. Using default config.");
 
         let config = Config::default();
         let ron_pretty_conf = PrettyConfig::new()
