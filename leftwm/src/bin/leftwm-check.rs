@@ -331,7 +331,7 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
                 }
                 Ok(filepath)
             }
-            Err(err) => bail!("Could not parse theme file: {}", err),
+            Err(err) => bail!("Could not parse theme file: {err}"),
         }
     } else {
         bail!("No `theme.ron` found at path: {}", filepath.display())
@@ -349,7 +349,7 @@ where
             println!("\x1b[0;92m    -> {name} OK\x1b[0m");
             Ok(())
         }
-        Err(err) => bail!("Check for feature {} failed: {:?}", name, err),
+        Err(err) => bail!("Check for feature {name} failed: {err:?}"),
     }
 }
 
@@ -443,7 +443,7 @@ fn check_binary(binary: &str, verbose: bool) -> Result<()> {
                 return Ok(());
             }
         }
-        bail!("Could not find binary {} in PATH", binary)
+        bail!("Could not find binary {binary} in PATH")
     }
 
     bail!(
