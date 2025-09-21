@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
+// Note: if this struct is changed, the companion struct in 
+// leftwm-theme should also be altered. 
+// src.operations.migrate_toml_to_ron.Theme
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ThemeConfig {
     pub border_width: Option<i32>,
