@@ -59,7 +59,7 @@ xdg = "3.0.0"
 
 # logging
 tracing = "0.1.36"
-tracing-subscriber = {version = "0.3.15", features = ["env-filter"]}
+tracing-subscriber = {version = "0.3.20", features = ["env-filter"]}
 tracing-journald = {version = "0.3.0", optional = true}
 tracing-appender = {version = "0.2.2", optional = true}
 syslog-tracing = {version = "0.3.0", optional = true}
