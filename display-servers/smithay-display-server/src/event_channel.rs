@@ -1,10 +1,10 @@
 use crate::SmithayWindowHandle;
-use std::{
-    cell::RefCell,
-    sync::mpsc::{self, Receiver, SendError, Sender},
-};
-use tokio::sync::mpsc::{
-    self as async_mpsc, error::TrySendError, Receiver as AsyncReceiver, Sender as AsyncSender,
+use std::sync::mpsc::{self, Receiver, SendError, Sender};
+use tokio::sync::{
+    mpsc::{
+        self as async_mpsc, error::TrySendError, Receiver as AsyncReceiver, Sender as AsyncSender,
+    },
+    Mutex,
 };
 
 use leftwm_core::DisplayEvent;
@@ -34,13 +34,14 @@ pub struct EventChannelReceiver {
     event_receiver: Receiver<DisplayEvent<SmithayWindowHandle>>,
     // We wanna get mut access to this for recieving without self being mut because
     // `DisplayServer::wait_readable` doesn't give us mutable access to self.
-    event_notify_receiver: RefCell<AsyncReceiver<()>>,
+    event_notify_receiver: Mutex<AsyncReceiver<()>>,
 }
 
 impl EventChannelReceiver {
     pub async fn wait_readable(&self) {
         self.event_notify_receiver
-            .borrow_mut()
+            .lock()
+            .await
             .recv()
             .await
             .unwrap()
@@ -61,7 +62,7 @@ pub fn event_channel() -> (EventChannelSender, EventChannelReceiver) {
         },
         EventChannelReceiver {
             event_receiver,
-            event_notify_receiver: RefCell::new(event_notify_receiver),
+            event_notify_receiver: Mutex::new(event_notify_receiver),
         },
     )
 }
