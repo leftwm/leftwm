@@ -335,7 +335,7 @@ impl SmithayState {
 
         device.surfaces.insert(crtc, surface);
 
-        self.send_event(DisplayEvent::ScreenCreate(Screen::new(
+        let mut screen = Screen::new(
             BBox {
                 x: position.x,
                 y: position.y,
@@ -343,8 +343,9 @@ impl SmithayState {
                 height: mode.size.h,
             },
             output_name,
-        )))
-        .unwrap();
+        );
+        screen.id = Some(0);
+        self.send_event(DisplayEvent::ScreenCreate(screen)).unwrap();
 
         // self.schedule_initial_render(node, crtc, self.loop_handle.clone());
         self.render(node, crtc, None).unwrap();
