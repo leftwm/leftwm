@@ -3,6 +3,11 @@ use leftwm_core::Manager;
 use std::panic;
 use tracing_subscriber::EnvFilter;
 
+#[cfg(feature = "smithay")]
+use smithay_display_server::SmithayDisplayServer;
+#[cfg(feature = "smithay")]
+use smithay_display_server::SmithayWindowHandle;
+
 #[cfg(feature = "x11rb")]
 use x11rb_display_server::X11rbDisplayServer;
 #[cfg(feature = "x11rb")]
@@ -67,6 +72,19 @@ fn main() {
                 tracing::info!("Loading X11rb backend");
                 let manager =
                     Manager::<X11rbWindowHandle, leftwm::Config, X11rbDisplayServer>::new(config);
+
+                manager.register_child_hook();
+                //TODO: Error handling
+                rt.block_on(manager.start_event_loop())
+            }
+
+            #[cfg(feature = "smithay")]
+            leftwm::Backend::Smithay => {
+                tracing::info!("Loading smithay backend");
+                let manager =
+                    Manager::<SmithayWindowHandle, leftwm::Config, SmithayDisplayServer>::new(
+                        config,
+                    );
 
                 manager.register_child_hook();
                 //TODO: Error handling
