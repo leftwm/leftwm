@@ -116,8 +116,11 @@ impl SmithayState {
                 // NOTE: Should we never move the cursor??
                 self.focus_window(handle, false);
             }
-            InternalAction::DisplayAction(DisplayAction::Unfocus(_, _)) => {
-                todo!()
+            InternalAction::DisplayAction(DisplayAction::Unfocus(h, f)) => {
+                let Some(WindowHandle(SmithayWindowHandle(handle))) = h else {
+                    return;
+                };
+                self.unfocus_window(handle, f);
             }
             InternalAction::DisplayAction(DisplayAction::FocusWindowUnderCursor) => {
                 self.focus_window_under();

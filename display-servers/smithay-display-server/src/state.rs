@@ -209,6 +209,20 @@ impl SmithayState {
         self.event_sender.send_event(event)
     }
 
+    pub fn unfocus_window(&mut self, handle: WindowHandle, _floating: bool) {
+        if self.focused_window != Some(handle) {
+            return;
+        }
+        let Some(_window) = self.window_registry.get(handle).cloned() else {
+            return;
+        };
+        self.seat
+            .get_keyboard()
+            .unwrap()
+            .set_focus(self, None, SERIAL_COUNTER.next_serial());
+        self.focused_window = None;
+    }
+
     pub fn focus_window(&mut self, handle: WindowHandle, move_cursor: bool) {
         let serial = SERIAL_COUNTER.next_serial();
         let Some(window) = self.window_registry.get(handle).cloned() else {
