@@ -236,7 +236,7 @@ fn find_terminal<H: Handle>(state: &State<H>, pid: Option<u32>) -> Option<&Windo
     // Get $SHELL, e.g. /bin/zsh
     let shell_path = env::var("SHELL").ok()?;
     // Remove /bin/
-    let shell = shell_path.split('/').last()?;
+    let shell = shell_path.split('/').next_back()?;
     // Try and find the shell that launched this app, if such a thing exists.
     let is_terminal = |pid: u32| -> Option<bool> {
         let parent = std::fs::read(format!("/proc/{pid}/comm")).ok()?;
@@ -518,9 +518,9 @@ fn update_workspace_avoid_list<H: Handle>(state: &mut State<H>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Manager;
     use crate::layouts::MONOCLE;
     use crate::models::{MockHandle, Screen};
-    use crate::Manager;
 
     #[test]
     fn insert_behavior_bottom_add_window_at_the_end_of_the_stack() {

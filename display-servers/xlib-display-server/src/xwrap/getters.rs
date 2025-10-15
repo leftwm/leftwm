@@ -1,5 +1,5 @@
 //! `XWrap` getters.
-use super::{Screen, WindowHandle, XlibError, MAX_PROPERTY_VALUE_LEN, MOUSEMASK};
+use super::{MAX_PROPERTY_VALUE_LEN, MOUSEMASK, Screen, WindowHandle, XlibError};
 use crate::{XWrap, XlibWindowHandle};
 use leftwm_core::models::{BBox, DockArea, WindowState, WindowType, XyhwChange};
 use std::ffi::{CStr, CString};
@@ -43,7 +43,13 @@ impl XWrap {
             let cmap: xlib::Colormap = (self.xlib.XDefaultColormap)(self.display, screen);
             let color_cstr = CString::new(color).unwrap_or_default().into_raw();
             let mut color: xlib::XColor = std::mem::zeroed();
-            (self.xlib.XAllocNamedColor)(self.display, cmap, color_cstr, &mut color, &mut color);
+            (self.xlib.XAllocNamedColor)(
+                self.display,
+                cmap,
+                color_cstr,
+                &raw mut color,
+                &raw mut color,
+            );
             color.pixel
         }
     }
@@ -67,13 +73,13 @@ impl XWrap {
                 (self.xlib.XQueryPointer)(
                     self.display,
                     w,
-                    &mut root_return,
-                    &mut child_return,
-                    &mut root_x_return,
-                    &mut root_y_return,
-                    &mut win_x_return,
-                    &mut win_y_return,
-                    &mut mask_return,
+                    &raw mut root_return,
+                    &raw mut child_return,
+                    &raw mut root_x_return,
+                    &raw mut root_y_return,
+                    &raw mut win_x_return,
+                    &raw mut win_y_return,
+                    &raw mut mask_return,
                 )
             };
             if success > 0 {
@@ -102,13 +108,13 @@ impl XWrap {
                 (self.xlib.XQueryPointer)(
                     self.display,
                     w,
-                    &mut root_return,
-                    &mut child_return,
-                    &mut root_x_return,
-                    &mut root_y_return,
-                    &mut win_x_return,
-                    &mut win_y_return,
-                    &mut mask_return,
+                    &raw mut root_return,
+                    &raw mut child_return,
+                    &raw mut root_x_return,
+                    &raw mut root_y_return,
+                    &raw mut win_x_return,
+                    &raw mut win_y_return,
+                    &raw mut mask_return,
                 )
             };
             if success > 0 {
@@ -192,7 +198,7 @@ impl XWrap {
             (self.xlib.XMaskEvent)(
                 self.display,
                 MOUSEMASK | xlib::SubstructureRedirectMask | xlib::ExposureMask,
-                &mut event,
+                &raw mut event,
             );
             event
         }
@@ -204,7 +210,7 @@ impl XWrap {
     pub fn get_next_event(&self) -> xlib::XEvent {
         unsafe {
             let mut event: xlib::XEvent = std::mem::zeroed();
-            (self.xlib.XNextEvent)(self.display, &mut event);
+            (self.xlib.XNextEvent)(self.display, &raw mut event);
             event
         }
     }
@@ -259,7 +265,7 @@ impl XWrap {
             let root = self.get_default_root_handle();
             let mut screen_count = 0;
             let info_array_raw =
-                unsafe { (xlib.XineramaQueryScreens)(self.display, &mut screen_count) };
+                unsafe { (xlib.XineramaQueryScreens)(self.display, &raw mut screen_count) };
             // Take ownership of the array.
             let xinerama_infos: &[XineramaScreenInfo] =
                 unsafe { slice::from_raw_parts(info_array_raw, screen_count as usize) };
@@ -302,12 +308,8 @@ impl XWrap {
         unsafe {
             let mut transient: xlib::Window = std::mem::zeroed();
             let status: c_int =
-                (self.xlib.XGetTransientForHint)(self.display, window, &mut transient);
-            if status > 0 {
-                Some(transient)
-            } else {
-                None
-            }
+                (self.xlib.XGetTransientForHint)(self.display, window, &raw mut transient);
+            if status > 0 { Some(transient) } else { None }
         }
     }
 
@@ -329,11 +331,11 @@ impl XWrap {
                 MAX_PROPERTY_VALUE_LEN / 4,
                 xlib::False,
                 xlib::XA_ATOM,
-                &mut type_return,
-                &mut format_return,
-                &mut nitems_return,
-                &mut bytes_remaining,
-                &mut prop_return,
+                &raw mut type_return,
+                &raw mut format_return,
+                &raw mut nitems_return,
+                &raw mut bytes_remaining,
+                &raw mut prop_return,
             );
             if status == i32::from(xlib::Success) && !prop_return.is_null() {
                 #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
@@ -355,7 +357,8 @@ impl XWrap {
         window: xlib::Window,
     ) -> Result<xlib::XWindowAttributes, XlibError> {
         let mut attrs: xlib::XWindowAttributes = unsafe { std::mem::zeroed() };
-        let status = unsafe { (self.xlib.XGetWindowAttributes)(self.display, window, &mut attrs) };
+        let status =
+            unsafe { (self.xlib.XGetWindowAttributes)(self.display, window, &raw mut attrs) };
         if status == 0 {
             return Err(XlibError::FailedStatus);
         }
@@ -368,7 +371,7 @@ impl XWrap {
     pub fn get_window_class(&self, window: xlib::Window) -> Option<(String, String)> {
         unsafe {
             let mut class_return: xlib::XClassHint = std::mem::zeroed();
-            let status = (self.xlib.XGetClassHint)(self.display, window, &mut class_return);
+            let status = (self.xlib.XGetClassHint)(self.display, window, &raw mut class_return);
             if status == 0 {
                 return None;
             }
@@ -403,13 +406,13 @@ impl XWrap {
             let status = (self.xlib.XGetGeometry)(
                 self.display,
                 window,
-                &mut root_return,
-                &mut x_return,
-                &mut y_return,
-                &mut width_return,
-                &mut height_return,
-                &mut border_width_return,
-                &mut depth_return,
+                &raw mut root_return,
+                &raw mut x_return,
+                &raw mut y_return,
+                &raw mut width_return,
+                &raw mut height_return,
+                &raw mut border_width_return,
+                &raw mut depth_return,
             );
             if status == 0 {
                 return Err(XlibError::FailedStatus);
@@ -516,11 +519,11 @@ impl XWrap {
                 MAX_PROPERTY_VALUE_LEN / 4,
                 xlib::False,
                 xlib::XA_ATOM,
-                &mut type_return,
-                &mut format_return,
-                &mut nitems_return,
-                &mut bytes_remaining,
-                &mut prop_return,
+                &raw mut type_return,
+                &raw mut format_return,
+                &raw mut nitems_return,
+                &raw mut bytes_remaining,
+                &raw mut prop_return,
             );
             if status == i32::from(xlib::Success) && !prop_return.is_null() {
                 #[allow(clippy::cast_lossless, clippy::cast_ptr_alignment)]
@@ -621,8 +624,9 @@ impl XWrap {
     fn get_hint_sizing(&self, window: xlib::Window) -> Option<xlib::XSizeHints> {
         let mut xsize: xlib::XSizeHints = unsafe { std::mem::zeroed() };
         let mut msize: c_long = xlib::PSize;
-        let status =
-            unsafe { (self.xlib.XGetWMNormalHints)(self.display, window, &mut xsize, &mut msize) };
+        let status = unsafe {
+            (self.xlib.XGetWMNormalHints)(self.display, window, &raw mut xsize, &raw mut msize)
+        };
         match status {
             0 => None,
             _ => Some(xsize),
@@ -654,11 +658,11 @@ impl XWrap {
                 MAX_PROPERTY_VALUE_LEN / 4,
                 xlib::False,
                 r#type,
-                &mut type_return,
-                &mut format_return,
-                &mut nitems_return,
-                &mut bytes_after_return,
-                &mut prop_return,
+                &raw mut type_return,
+                &raw mut format_return,
+                &raw mut nitems_return,
+                &raw mut bytes_after_return,
+                &raw mut prop_return,
             );
             if status == i32::from(xlib::Success) && !prop_return.is_null() {
                 return Ok((prop_return, nitems_return));
@@ -671,7 +675,7 @@ impl XWrap {
     // `XRootWindowOfScreen`: https://tronche.com/gui/x/xlib/display/screen-information.html#RootWindowOfScreen
     fn get_roots(&self) -> impl Iterator<Item = xlib::Window> + '_ {
         self.get_xscreens()
-            .map(|mut s| unsafe { (self.xlib.XRootWindowOfScreen)(&mut s) })
+            .map(|mut s| unsafe { (self.xlib.XRootWindowOfScreen)(&raw mut s) })
     }
 
     /// Returns a text property for a window.
@@ -685,7 +689,7 @@ impl XWrap {
         unsafe {
             let mut text_prop: xlib::XTextProperty = std::mem::zeroed();
             let status: c_int =
-                (self.xlib.XGetTextProperty)(self.display, window, &mut text_prop, atom);
+                (self.xlib.XGetTextProperty)(self.display, window, &raw mut text_prop, atom);
             if status == 0 {
                 return Err(XlibError::FailedStatus);
             }
@@ -710,10 +714,10 @@ impl XWrap {
             let status: xlib::Status = (self.xlib.XQueryTree)(
                 self.display,
                 root,
-                &mut root_return,
-                &mut parent_return,
-                &mut array,
-                &mut length,
+                &raw mut root_return,
+                &raw mut parent_return,
+                &raw mut array,
+                &raw mut length,
             );
             let windows: &[xlib::Window] = slice::from_raw_parts(array, length as usize);
             match status {

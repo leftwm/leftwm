@@ -3,7 +3,6 @@ members = [
     "leftwm",
     "leftwm-core",
     "leftwm-macros",
-    "leftwm-watchdog",
     "leftway-watchdog",
     "display-servers/xlib-display-server",
     "display-servers/x11rb-display-server",
@@ -13,7 +12,6 @@ default-members = [
     "leftwm",
     "leftwm-core",
     "leftwm-macros",
-    "leftwm-watchdog",
     "leftway-watchdog",
     "display-servers/xlib-display-server",
     "display-servers/x11rb-display-server",
@@ -23,8 +21,8 @@ default-members = [
 resolver = "2"
 
 [workspace.package]
-edition = "2021"
-rust-version = "1.83.0" # MSRV MINIMUM SUPPORTED RUST VERSION
+edition = "2024"
+rust-version = "1.85.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 
 [profile.optimized]
 inherits = "release"

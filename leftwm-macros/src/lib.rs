@@ -4,7 +4,9 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Error};
+use syn::{Data, DeriveInput, Error, parse_macro_input};
+
+use std::fmt::Write;
 
 macro_rules! derive_error {
     ($string: tt) => {
@@ -24,7 +26,8 @@ fn parse_enum_doc_comment(attrs: &[syn::Attribute]) -> String {
                 ..
             }) = &meta.value
             {
-                ret.push_str(&format!("\n    {}", l.value().trim()));
+                write!(ret, "\n    {}", l.value().trim())
+                    .expect("failed to parse enum doc comment");
             }
         }
     }
@@ -63,7 +66,7 @@ pub fn derive_enum_docs(input: TokenStream) -> TokenStream {
             for variant in &data_enum.variants {
                 let doc = parse_enum_doc_comment(&variant.attrs);
 
-                names.push_str(&format!("\n{}{}", variant.ident, doc));
+                write!(names, "\n{}{}", variant.ident, doc).expect("failed to derive enum docs");
             }
 
             // The enum's name

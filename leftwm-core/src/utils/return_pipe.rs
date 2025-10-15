@@ -30,7 +30,7 @@ impl Drop for ReturnPipe {
                 self.pipe_file.display()
             ),
             Ok(f) => drop(f),
-        };
+        }
         if let Err(e) = std::fs::remove_file(&self.pipe_file) {
             tracing::error!("Failed to delete pipe file: {e}");
         }

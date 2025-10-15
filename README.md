@@ -32,7 +32,7 @@
 
 ![Screenshot of LeftWM in action](screenshots/5.png)
 
-**IMPORTANT NOTE: LeftWM has changed the config language from `TOML` to `RON` with the `0.4.0` release. Please use `leftwm-check --migrate-toml-to-ron` to migrate your config and visit the [wiki](https://github.com/leftwm/leftwm/wiki) for more info.**
+**IMPORTANT NOTE: LeftWM has changed the config language from `TOML` to `RON` with the `0.4.0` release and removed support for TOML entirely in 0.6.0. Please use `leftwm-config migrate` to migrate your config and visit the [wiki](https://github.com/leftwm/leftwm/wiki) for more info.**
 
 # Table of contents
 
@@ -92,7 +92,7 @@ With LeftWM, there are two types of configuration files:
   these settings out into themes, you can now easily tweak, switch, and share your experiences. This
   configuration is spread between `theme.ron` and related files contained within a theme's folder.
 
-**Note:** some example config and themes can be found in the share dir, e.g. `/usr/share/leftwm` oh Arch based disros.
+**Note:** some example config and themes can be found in the share dir, e.g. `/usr/share/leftwm` on Arch based disros.
 
 [ricing]: https://www.reddit.com/r/unixporn/comments/3iy3wd/stupid_question_what_is_ricing/
 
@@ -111,12 +111,12 @@ List of LeftWM dependencies:
 
 List of common dependencies for themes:
 
-| Dependency<br>(git)      | Ubuntu 20.4.1<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 33<br> _sudo dnf install {}_ | PKGS                     |
+| Dependency<br>(git)      | Ubuntu 24.04<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 42<br> _sudo dnf install {}_ | PKGS                     |
 | ------------------------ | --------------------------------------- | ---------------------------- | ----------------------------------- | ------------------------ |
 | [feh][feh-git]           | feh                                     | feh                          | feh                                 | [feh][feh-pkg]           |
 | [compton][compton-git]   | compton                                 | picom                        | compton                             | [compton][compton-pkg]   |
-| [picom][picom-git]       | manual \*\*                             | picom                        | picom                               | [picom][picom-pkg]       |
-| [polybar][polybar-git]   | manual \*\*                             | polybar                      | polybar                             | [polybar][polybar-pkg]   |
+| [picom][picom-git]       | picom \*\*                             | picom                        | picom                               | [picom][picom-pkg]       |
+| [polybar][polybar-git]   | polybar \*\*                             | polybar                      | polybar                             | [polybar][polybar-pkg]   |
 | [xmobar][xmobar-git]     | xmobar                                  | xmobar                       | xmobar                              | [xmobar][xmobar-pkg]     |
 | [lemonbar][lemonbar-git] | lemonbar                                | paru -S lemonbar\*           | manual \*\*                         | [lemonbar][lemonbar-pkg] |
 | [conky][conky-git]       | conky                                   | conky                        | conky                               | [conky][conky-pkg]       |
@@ -130,7 +130,7 @@ List of common dependencies for themes:
 [picom-pkg]: https://pkgs.org/download/picom
 [polybar-git]: https://github.com/polybar/polybar
 [polybar-pkg]: https://pkgs.org/download/polybar
-[xmobar-git]: https://github.com/jaor/xmobar
+[xmobar-git]: https://codeberg.org/xmobar/xmobar
 [xmobar-pkg]: https://pkgs.org/download/xmobar
 [lemonbar-git]: https://github.com/LemonBoy/bar
 [lemonbar-pkg]: https://pkgs.org/download/lemonbar
@@ -206,7 +206,7 @@ Also see [the build options](#optional-build-features) for more feature options,
 At the moment LeftWM is not packaged with OpenBSD package manager, but it could be installed via Cargo.
 
 ```sh
-cargo install leftwm --no-default-features --features lefthk
+cargo install leftwm --no-default-features --features lefthk,leftwm-watchdog
 ```
 
 `leftwm-config` not yet ported to OpenBSD, as it requires a nightly Rust compiler to build.
@@ -345,16 +345,17 @@ Use `cargo` with the added flags `--no-default-features --features=` and then co
 | file-log     | log to `/tmp/leftwm/<log-file-by-datetime-of-launch>`                                                                                                                                          | ✘       |
 | xlib (\*)    | legacy backend linking to `libX11`                                                                                                                                                             | ✔       |
 | x11rb (\*)   | rust based backend using [`x11rb`](https://github.com/psychon/x11rb)                                                                                                                           | ✔       |
+| leftwm (\*)  | whether to build the `leftwm` binary                                                                                                                                                           | ✔       | 
 
-⚠️ You need to select **at least one** backend feature (\*) for leftwm to build ⚠️
+⚠️ You need to select **at least one** backend feature (\*) for leftwm to build, and leftwm-watchdog in order to get the `leftwm` binary ⚠️
 
 Example:
 
 ```bash
-# With `lefthk` and logging to `sys-log` (`x11rb` backend)
-cargo build --profile optimized --no-default-features --features=x11rb,lefthk,sys-log
+# With `lefthk` and logging to `sys-log` (`x11rb` backend), with `leftwm` binary
+cargo build --profile optimized --no-default-features --features=x11rb,lefthk,sys-log,leftwm-watchdog
 
-# Without `lefthk` and logging to file (`xlib` backend)
+# Without `lefthk` and logging to file (`xlib` backend), without `leftwm` binary
 cargo build --profile optimized --no-default-features --features=xlib,file-log
 ```
 

@@ -15,7 +15,9 @@ impl Config {
                 println!("Mousekey is set.");
             }
             if mousekey.is_empty() {
-                println!("Your mousekey is set to nothing, this will cause windows to move/resize with just a mouse press.");
+                println!(
+                    "Your mousekey is set to nothing, this will cause windows to move/resize with just a mouse press."
+                );
                 return;
             }
             if verbose {

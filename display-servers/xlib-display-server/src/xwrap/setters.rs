@@ -179,7 +179,9 @@ impl XWrap {
         mut window_changes: xlib::XWindowChanges,
         unlock: u32,
     ) {
-        unsafe { (self.xlib.XConfigureWindow)(self.display, window, unlock, &mut window_changes) };
+        unsafe {
+            (self.xlib.XConfigureWindow)(self.display, window, unlock, &raw mut window_changes)
+        };
         self.sync();
     }
 

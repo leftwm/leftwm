@@ -1,16 +1,16 @@
 //! Xlib calls related to a window.
 
 use leftwm_core::{
+    DisplayEvent, Window,
     config::WindowHidingStrategy,
     models::{WindowChange, WindowHandle, WindowType, Xyhw},
-    DisplayEvent, Window,
 };
 use x11rb::{protocol::xproto, x11_utils::Serialize};
 
 use crate::xatom::WMStateWindowState;
-use crate::{error::Result, X11rbWindowHandle};
+use crate::{X11rbWindowHandle, error::Result};
 
-use super::{root_event_mask, XWrap};
+use super::{XWrap, root_event_mask};
 
 impl XWrap {
     /// Sets up a window before we manage it.
@@ -26,7 +26,7 @@ impl XWrap {
         let handle = WindowHandle(X11rbWindowHandle(window));
         // Gather info about the window from xlib.
         let name = self.get_window_name(window)?;
-        let legacy_name = self.get_window_legacy_name(window)?;
+        let legacy_name = self.get_window_legacy_name(window).ok();
         let class = self.get_window_class(window)?;
         let pid = self.get_window_pid(window)?;
         let r#type = self.get_window_type(window)?;
@@ -43,7 +43,7 @@ impl XWrap {
             .as_ref()
             .and_then(|c| String::from_utf8(c.instance().to_vec()).ok());
         w.res_class = class.and_then(|c| String::from_utf8(c.class().to_vec()).ok());
-        w.legacy_name = Some(legacy_name);
+        w.legacy_name = legacy_name;
         w.r#type = r#type.clone();
         w.states = states;
         w.transient = trans.map(|h| WindowHandle(X11rbWindowHandle(h)));
@@ -279,12 +279,16 @@ impl XWrap {
                 }
             }
 
-            // Set WM_STATE to iconic state.
-            if hiding_strategy == WindowHidingStrategy::Unmap
+            // make sure to always change the window state, so we don't forget
+            // to grab mouse button events when we show the window again.
+            let new_state = if hiding_strategy == WindowHidingStrategy::Unmap
                 || hiding_strategy == WindowHidingStrategy::MoveMinimize
             {
-                self.set_wm_state(window, WMStateWindowState::Iconic)?;
-            }
+                WMStateWindowState::Iconic
+            } else {
+                WMStateWindowState::Withdrawn
+            };
+            self.set_wm_state(window, new_state)?;
         }
 
         maybe_change_mask(root_event_mask())

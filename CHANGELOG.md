@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.5.5]
+### Breaking Change 
+- feat(watchdog): deprecate leftwm-watchdog bin; gate leftwm behind feature (via #1324 by @mautamu)
+- feat(MSRV): update edition to 2024, MSRV to 1.85.0 (via #1338 by @mautamu and @VuiMuich)
+- feat(config.toml): remove TOML support entirely from leftwm, leftwm-check (via #1339 by @mautamu).
+
+### Fixes
+
+- Sloppy focus when switching tags with mouse over margins is now fixed (via #1311 by @fransklaver)
+- ClickTo focus when switching tags is now fixed (via #1312 by @fransklaver)
 
 ## [0.5.4]
 
@@ -19,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixes
 
-- Sloppy focus after window close is corrected (via #1305 by @frankslaver)
+- Sloppy focus after window close is corrected (via #1305 by @fransklaver)
 - Update template.liquid documentation (via #1297 by @thealio)
 - Deadlink in README repaired (via #1300 by @AnthonyMichaelTDM)
 - Flake compilation (via #1304 by @VuiMuich)

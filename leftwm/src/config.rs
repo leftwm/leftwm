@@ -13,6 +13,7 @@ use super::ThemeConfig;
 use crate::config::keybind::Keybind;
 use anyhow::Result;
 use leftwm_core::{
+    DisplayAction, DisplayServer, Manager, ReturnPipe,
     config::{InsertBehavior, ScratchPad, WindowHidingStrategy, Workspace},
     layouts::LayoutMode,
     models::{
@@ -20,15 +21,14 @@ use leftwm_core::{
         WindowType,
     },
     state::State,
-    DisplayAction, DisplayServer, Manager, ReturnPipe,
 };
 
 use leftwm_layouts::Layout;
 use regex::Regex;
 use ron::{
-    extensions::Extensions,
-    ser::{to_string_pretty, PrettyConfig},
     Options,
+    extensions::Extensions,
+    ser::{PrettyConfig, to_string_pretty},
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::env;
@@ -57,15 +57,6 @@ const STATE_FILE: &str = "/tmp/leftwm.state";
 /// ]
 /// ```
 ///
-/// In the deprecated `config.toml`
-///
-/// ```toml
-/// [[window_config_by_class]]
-/// wm_class = "krita"
-/// spawn_on_tag = 3
-/// spawn_floating = false
-/// ```
-///
 /// windows whose `WM_CLASS` is "krita" will spawn on tag 3 (1-indexed) and not floating.
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct WindowHook {
@@ -73,19 +64,9 @@ pub struct WindowHook {
     // config. Without this attribute deserializer will fail on missing field due to it's inability
     // to treat missing value as Option::None
     /// `WM_CLASS` in X11
-    #[serde(
-        default,
-        deserialize_with = "from_regex",
-        serialize_with = "to_config_string"
-    )]
-    pub window_class: Option<Regex>,
+    pub window_class: Option<SerializableRegex>,
     /// `_NET_WM_NAME` in X11
-    #[serde(
-        default,
-        deserialize_with = "from_regex",
-        serialize_with = "to_config_string"
-    )]
-    pub window_title: Option<Regex>,
+    pub window_title: Option<SerializableRegex>,
     pub spawn_on_tag: Option<usize>,
     pub spawn_on_workspace: Option<usize>,
     pub spawn_floating: Option<bool>,
@@ -94,6 +75,51 @@ pub struct WindowHook {
     /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
     pub spawn_as_type: Option<WindowType>,
     pub hiding_strategy: Option<WindowHidingStrategy>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SerializableRegex {
+    regex: Regex,
+}
+
+impl SerializableRegex {
+    /// # Errors
+    ///
+    /// Function will throw an error if `str` used is not a valid regex.
+    /// Please take a look at [link](https://docs.rs/regex/latest/regex/#syntax)
+    pub fn new(str: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        match Regex::new(str) {
+            Ok(x) => Ok(SerializableRegex { regex: x }),
+            Err(e) => Err(format!("Can't create regex from {str} error {e}"))?,
+        }
+    }
+}
+
+impl Serialize for SerializableRegex {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        s.serialize_some(self.regex.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for SerializableRegex {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // ...deserialize implementation.
+        let res: Option<String> = Deserialize::deserialize(deserializer)?;
+        match res {
+            None => Err(<D::Error as serde::de::Error>::custom(
+                "Error during SerializableRegex deserialization",
+            )),
+            Some(re) => match SerializableRegex::new(re.as_str()) {
+                Ok(x) => Ok(x),
+                Err(e) => Err(<D::Error as serde::de::Error>::custom(format!(
+                    "Can't deserialize SerializableRegex error: {e}",
+                ))),
+            },
+        }
+    }
 }
 
 impl WindowHook {
@@ -111,17 +137,23 @@ impl WindowHook {
                     // empty, this will match it to every regex, so we need to check for that.
                     // however, if the window rule is explicitly for empty strings, we still
                     // want empty strings to match to it.
-                    re.replace(s, "") == "" && (!s.is_empty() || re.as_str().is_empty())
+                    re.replace(s, "").is_empty() && (!s.is_empty() || re.as_str().is_empty())
                 })
             })
         };
 
         let class_score = self.window_class.as_ref().map_or(0, |re| {
-            u8::from(matches_any(re, vec![&window.res_class, &window.res_name]))
+            u8::from(matches_any(
+                &re.regex,
+                vec![&window.res_class, &window.res_name],
+            ))
         });
 
         let title_score = self.window_title.as_ref().map_or(0, |re| {
-            u8::from(matches_any(re, vec![&window.legacy_name, &window.name]))
+            u8::from(matches_any(
+                &re.regex,
+                vec![&window.legacy_name, &window.name],
+            ))
         });
 
         class_score + 2 * title_score
@@ -257,12 +289,9 @@ pub fn load() -> Config {
 fn load_from_file() -> Result<Config> {
     tracing::debug!("Loading config file");
 
-    let path = BaseDirectories::with_prefix("leftwm")?;
+    let path = BaseDirectories::with_prefix("leftwm");
 
-    // the checks and fallback for `toml` can be removed when toml gets eventually deprecated
     let config_file_ron = path.place_config_file("config.ron")?;
-    let config_file_toml = path.place_config_file("config.toml")?;
-
     if Path::new(&config_file_ron).exists() {
         tracing::debug!("Config file '{}' found.", config_file_ron.to_string_lossy());
         let ron = Options::default()
@@ -270,17 +299,8 @@ fn load_from_file() -> Result<Config> {
         let contents = fs::read_to_string(config_file_ron)?;
         let config: Config = ron.from_str(&contents)?;
         Ok(config)
-    } else if Path::new(&config_file_toml).exists() {
-        tracing::debug!(
-            "Config file '{}' found.",
-            config_file_toml.to_string_lossy()
-        );
-        let contents = fs::read_to_string(config_file_toml)?;
-        let config = toml::from_str(&contents)?;
-        tracing::info!("You are using TOML as config language which will be deprecated in the future.\nPlease consider migrating you config to RON. For further info visit the leftwm wiki.");
-        Ok(config)
     } else {
-        tracing::debug!("Config file not found. Using default config file.");
+        tracing::debug!("Config file `config.ron` not found. Using default config.");
 
         let config = Config::default();
         let ron_pretty_conf = PrettyConfig::new()
@@ -486,7 +506,7 @@ impl leftwm_core::Config for Config {
                         manager.config.theme_setting.load(absolute);
                         write_to_pipe(&mut return_pipe, "OK: Command executed successfully");
                     } else {
-                        tracing::warn!("Path submitted does not exist.");
+                        tracing::warn!("Path submitted does not exist: {}", value.trim());
                         write_to_pipe(&mut return_pipe, "ERROR: Path submitted does not exist");
                     }
                     manager.load_theme_config()
@@ -625,7 +645,7 @@ impl leftwm_core::Config for Config {
                 return;
             }
         };
-        if let Err(err) = ron::ser::to_writer(state_file, state) {
+        if let Err(err) = ron::Options::default().to_io_writer(state_file, state) {
             tracing::error!("Cannot save state: {}", err);
         }
     }
@@ -723,26 +743,9 @@ impl Config {
     }
 }
 
-// Regular expression in leftwm config should correspond to RE2 syntax, described here:
-// https://github.com/google/re2/wiki/Syntax
-fn from_regex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Regex>, D::Error> {
-    let res: Option<String> = Deserialize::deserialize(deserializer)?;
-    res.map_or(Ok(None), |s| {
-        Regex::new(&s).map_or(Ok(None), |re| Ok(Some(re)))
-    })
-}
-
-#[allow(clippy::ref_option)]
-fn to_config_string<S: Serializer>(wc: &Option<Regex>, s: S) -> Result<S::Ok, S::Error> {
-    match wc {
-        Some(ref re) => s.serialize_some(re.as_str()),
-        None => s.serialize_none(),
-    }
-}
-
 fn get_return_pipe() -> Result<File, Box<dyn std::error::Error>> {
     let file_name = ReturnPipe::pipe_name();
-    let file_path = BaseDirectories::with_prefix("leftwm")?;
+    let file_path = BaseDirectories::with_prefix("leftwm");
     let file_path = file_path
         .find_runtime_file(file_name)
         .ok_or("Unable to open return pipe")?;
@@ -774,5 +777,48 @@ mod tests {
 
         let ron_config = ron::from_str::<'_, Config>(ron.unwrap().as_str());
         assert!(ron_config.is_ok(), "Could not deserialize default config");
+    }
+
+    #[test]
+    fn create_valid_regex() {
+        let serializable_regex = SerializableRegex::new(".*");
+
+        assert!(serializable_regex.is_ok());
+    }
+
+    #[test]
+    fn create_invalid_regex() {
+        // A regex that defines only an open bracket is invalid
+        // because is interpreted as the start of a group
+        let serializable_regex = SerializableRegex::new("(");
+
+        assert!(serializable_regex.is_err());
+    }
+
+    #[test]
+    fn serialize_deserialize_valid_regex() {
+        let serializable_regex = SerializableRegex::new(".*");
+
+        let serialized = serde_json::to_string(&serializable_regex.unwrap()).unwrap();
+
+        let deserialized: Result<SerializableRegex, serde_json::Error> =
+            serde_json::from_str(&serialized);
+
+        assert!(deserialized.is_ok());
+    }
+
+    #[test]
+    fn attempt_to_deserialize_invalid_regex() {
+        // A regex that defines only an open bracket is invalid
+        // because is interpreted as the start of a group
+        let regex_str = "(";
+        let deserialized: Result<SerializableRegex, serde_json::Error> =
+            serde_json::from_str(regex_str);
+
+        // The deserialization process should return an error
+        assert!(
+            deserialized.is_err(),
+            "Regex: \"{regex_str}\" should return an error"
+        );
     }
 }

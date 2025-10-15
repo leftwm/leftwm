@@ -1,8 +1,8 @@
 //! x11rb backend for leftwm
 
 use leftwm_core::{
-    models::{Handle, Screen, TagId, WindowHandle, WindowState},
     Config, DisplayAction, DisplayEvent, DisplayServer, Mode, Window, Workspace,
+    models::{Handle, Screen, TagId, WindowHandle, WindowState},
 };
 use serde::{Deserialize, Serialize};
 use x11rb::protocol::xproto;
@@ -97,7 +97,7 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
             if let DisplayEvent::WindowDestroy(WindowHandle(X11rbWindowHandle(w))) = event {
                 if let Err(e) = self.xw.force_unmapped(*w) {
                     tracing::error!(error = ?e, "Error when forcing unmapping of window {}", w);
-                };
+                }
             }
         }
 
@@ -204,7 +204,9 @@ impl X11rbDisplayServer {
             let auto_derive_workspaces: bool = if config.auto_derive_workspaces() {
                 true
             } else if events.is_empty() {
-                tracing::warn!("No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\".");
+                tracing::warn!(
+                    "No Workspace in Workspace config matches connected screen. Falling back to \"auto_derive_workspaces: true\"."
+                );
                 true
             } else {
                 false
@@ -368,7 +370,7 @@ fn from_set_window_order(
         .iter()
         .filter(|&w| *w != xw.get_default_root())
         .map(|&w| WindowHandle(X11rbWindowHandle(w)))
-        .filter(|h| !windows.iter().any(|&w| w == *h))
+        .filter(|h| !windows.contains(h))
         .collect();
     let all: Vec<WindowHandle<X11rbWindowHandle>> = [unmanaged, windows].concat();
     xw.restack(&all)?;
@@ -439,11 +441,6 @@ fn from_window_take_focus(
 fn from_focus_window_under_cursor(
     xw: &mut XWrap,
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
-    let mut window = xw.get_cursor_window()?;
-    if window == WindowHandle(X11rbWindowHandle(0)) {
-        window = xw.get_default_root_handle();
-        return Ok(Some(DisplayEvent::WindowTakeFocus(window)));
-    }
     let point = xw.get_cursor_point()?;
     let evt = DisplayEvent::MoveFocusTo(point.0, point.1);
     Ok(Some(evt))

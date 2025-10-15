@@ -25,13 +25,13 @@ You can check which backends are available on your LeftWM installation by using 
 Currently implemented backends: "xlib" (default), "x11rb"
 .IP "check"
 This command will run several actions to ensure leftwm is configured properly, this will report the current leftwm version and git commit, it will also check if configuration is loaded correctly, check for syntax errors in your
-.I config.toml
+.I config.ron
 file, check your environment and theme files for errors as well.
 .B "NOTE:"
 This subcommand will check for basic / common mistakes made in the directory structure or permissions, however it will not check or report if any mistakes were made in any extra scripts, bar configurations, liquid templates and anything that isn't the up or down executables.
 .IP "command"
 This subcommand sends commands directly to leftwm. It can also be used to concat commands for a keybind in
-.I config.toml
+.I config.ron
 For a list of available commands use the '-l, --list' flag.
 .IP "state"
 Prints the current state of leftwm (in JSON format). You can also use flags and liqud-like syntax for a more refined output of this command.
@@ -42,11 +42,11 @@ Manage leftwm configuration (This is part of an external package found in: https
 .SH CONFIGURING LEFTWM
 
 .B NOTE:
-We are in the transition from
+From 0.6.0, support for
 .I TOML
-to
+was dropped in favor of
 .I RON
-as config language. Please use leftwm-check with '-m, --migrate-ron-to-toml' flags to convert your config.
+as config language. Please use leftwm-config with the 'migrate' command to convert your config.
 For more info please refer to the wiki.
 .IP "Configuration file"
 The settings file of leftwm can be found at:
@@ -151,11 +151,11 @@ You will need to reload in order to apply any changes you write to
 .I config.ron
 
 .B NOTE:
-We are in the transition from
+From 0.6.0, support for
 .I TOML
-to
+was dropped in favor of
 .I RON
-as config language. Please use leftwm-check with '-m, --migrate-ron-to-toml' flags to convert your config.
+as config language. Please use leftwm-config with 'migrate' command to convert your config.
 For more info please refer to the wiki.
 
 .SS Modkey
@@ -320,6 +320,30 @@ Again the example for an ultra-wide screen, splitting workspaces by substracting
 workspaces: [
     ( output: "HDMI-1", y: 0, x: 0, height: 1440, width: -1720 ),
     ( output: "HDMI-1", y: 0, x: 1720, height: 1440, width: -1720 ),
+]
+\f[R]
+.fi
+.PP
+Workspaces can also be given their own list of layouts, which will override the global layouts list for that workspace only.
+.PP
+Example:
+.IP
+.nf
+\f[C]
+workspaces: [
+    ( output: "HDMI-1", y: 0, x: 0, height: 1440, width: 1720, layouts: [ "CenterMain", "MainAndVertStack", "MainAndDeck" ] ),
+]
+\f[R]
+.fi
+.PP
+You can also set the default layout for a workspace by using the default_layout field, this set the layout the workspace will start with.
+.PP
+Example (setting the default layout of workspace 1 to MainAndVertStack):
+.IP
+.nf
+\f[C]
+workspaces: [
+    ( output: "HDMI-1", y: 0, x: 0, height: 1440, width: 1720, default_layout: "MainAndVertStack" ),
 ]
 \f[R]
 .fi

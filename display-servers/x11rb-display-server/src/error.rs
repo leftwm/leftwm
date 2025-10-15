@@ -51,7 +51,7 @@ impl Display for BackendError {
         if let Some(e) = &self.src {
             f.write_str(": ")?;
             e.fmt(f)?;
-        };
+        }
         f.write_str("\nBacktrace:\n")?;
         self.backtrace.fmt(f)
     }
@@ -85,7 +85,7 @@ impl Display for ErrorKind {
 
 /// Implement From<T> for given error
 macro_rules! from_err {
-    ($e:ty, $kind:expr, $msg:literal) => {
+    ($e:ty, $kind:expr_2021, $msg:literal) => {
         impl core::convert::From<$e> for BackendError {
             fn from(value: $e) -> Self {
                 Self {

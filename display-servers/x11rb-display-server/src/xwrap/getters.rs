@@ -1,4 +1,4 @@
-use std::{backtrace::Backtrace, ffi::CStr};
+use std::backtrace::Backtrace;
 
 use leftwm_core::models::{
     BBox, DockArea, Screen, WindowHandle, WindowState, WindowType, XyhwChange,
@@ -10,12 +10,12 @@ use x11rb::{
 };
 
 use crate::{
+    X11rbWindowHandle,
     error::{BackendError, ErrorKind, Result},
     xatom::WMStateWindowState,
-    X11rbWindowHandle,
 };
 
-use super::{XWrap, MAX_PROPERTY_VALUE_LEN};
+use super::{MAX_PROPERTY_VALUE_LEN, XWrap};
 
 impl XWrap {
     // Public functions.
@@ -166,11 +166,7 @@ impl XWrap {
                 })
                 .filter_map(|res| res.reply().ok())
                 .filter_map(|output_info| {
-                    //FIX: This always fails
-                    let name = match CStr::from_bytes_with_nul(&output_info.name) {
-                        Ok(name) => name.to_str().unwrap(),
-                        Err(_) => "output_name",
-                    };
+                    let name = std::str::from_utf8(&output_info.name).unwrap_or("output_name");
                     Some((
                         randr::get_crtc_info(
                             &self.conn,
@@ -496,7 +492,7 @@ impl XWrap {
         r#type: xproto::Atom,
     ) -> Result<Vec<xproto::Atom>> {
         let res =
-            xproto::get_property(&self.conn, false, window, property, r#type, 0, 0)?.reply()?;
+            xproto::get_property(&self.conn, false, window, property, r#type, 0, 1)?.reply()?;
 
         let rt = match res.value32() {
             Some(props) => props.collect(),

@@ -41,8 +41,8 @@ impl<H: Handle> State<H> {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::Screen;
     use crate::Manager;
+    use crate::models::Screen;
 
     #[test]
     fn going_to_a_workspace_that_is_already_visible_should_not_duplicate_the_workspace() {

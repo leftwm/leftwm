@@ -2,14 +2,14 @@
 use std::backtrace::BacktraceStatus;
 
 use leftwm_core::{
+    DisplayEvent, Mode,
     models::{WindowChange, WindowHandle, WindowType, XyhwChange},
     utils::modmask_lookup::{Button, ModMask},
-    DisplayEvent, Mode,
 };
-use x11rb::protocol::{xproto, Event};
+use x11rb::protocol::{Event, xproto};
 
 use crate::xwrap::XWrap;
-use crate::{error::Result, X11rbWindowHandle};
+use crate::{X11rbWindowHandle, error::Result};
 
 mod client_message;
 mod property_notify;

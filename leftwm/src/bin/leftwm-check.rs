@@ -1,10 +1,10 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::{arg, command};
 use leftwm::{Config, ThemeConfig};
 use ron::{
-    extensions::Extensions,
-    ser::{to_string_pretty, PrettyConfig},
     Options,
+    extensions::Extensions,
+    ser::{PrettyConfig, to_string_pretty},
 };
 use std::env;
 use std::fs;
@@ -22,7 +22,6 @@ async fn main() -> Result<()> {
         .help_template(leftwm::utils::get_help_template())
         .args(&[
             arg!(-v --verbose "Outputs received configuration file."),
-            arg!(migrate: -m --"migrate-toml-to-ron" "Migrates an exesting `toml` based config to a `ron` based one.\nKeeps the old file for reference, please delete it manually."),
             arg!([INPUT] "Sets the input file to use. Uses first in PATH otherwise."),
         ])
         .get_matches();
@@ -38,18 +37,6 @@ async fn main() -> Result<()> {
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         option_env!("GIT_HASH").unwrap_or(git_version::git_version!(fallback = "unknown"))
     );
-    if matches.get_flag("migrate") {
-        println!("\x1b[0;94m::\x1b[0m Migrating configuration . . .");
-        let path = BaseDirectories::with_prefix("leftwm")?;
-        let ron_file = path.place_config_file("config.ron")?;
-        let toml_file = path.place_config_file("config.toml")?;
-
-        let config = load_from_file(toml_file.as_os_str().to_str(), verbose)?;
-
-        write_to_file(&ron_file, &config)?;
-
-        return Ok(());
-    }
 
     match check_enabled_features(verbose) {
         Ok(()) => {}
@@ -75,7 +62,9 @@ async fn main() -> Result<()> {
             config.check_mousekey(verbose);
             config.check_log_level(verbose);
             #[cfg(not(feature = "lefthk"))]
-            println!("\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m");
+            println!(
+                "\x1b[1;93mWARN: Ignoring checks on keybinds as you compiled for an external hot key daemon.\x1b[0m"
+            );
             #[cfg(feature = "lefthk")]
             config.check_keybinds(verbose);
         }
@@ -102,17 +91,17 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         println!("\x1b[1;35mNote: Using file {fspath} \x1b[0m");
         PathBuf::from(fspath)
     } else {
-        let ron_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.ron")?;
-        let toml_file = BaseDirectories::with_prefix("leftwm")?.place_config_file("config.toml")?;
+        let ron_file = BaseDirectories::with_prefix("leftwm").place_config_file("config.ron")?;
+        let toml_file = BaseDirectories::with_prefix("leftwm").place_config_file("config.toml")?;
         if Path::new(&ron_file).exists() {
             ron_file
-        } else if Path::new(&toml_file).exists() {
-            println!(
-                "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON manually or by using `leftwm-check -m`.\x1b[0m"
-            );
-            toml_file
         } else {
+            if Path::new(&toml_file).exists() {
+                println!(
+                    "\x1b[1;93mERROR: support for TOML as a config format was removed in 0.6.0. Migrate\
+                    manually or use `leftwm-config migrate` to migrate to RON. Using default.\x1b[0m"
+                );
+            }
             let config = Config::default();
             write_to_file(&ron_file, &config)?;
             return Ok(config);
@@ -132,8 +121,7 @@ pub fn load_from_file(fspath: Option<&str>, verbose: bool) -> Result<Config> {
         let config: Config = ron.from_str(&contents)?;
         Ok(config)
     } else {
-        let config = toml::from_str(&contents)?;
-        Ok(config)
+        bail!("Config file is not present or not valid.")
     }
 }
 
@@ -209,17 +197,11 @@ fn check_elogind(verbose: bool) -> Result<()> {
 
 /// Checks if `.config/leftwm/theme/current/` is a valid path
 /// Checks if `up` and `down` scripts are in the `current` directory and have executable permission
-/// Checks if `theme.toml` is in the `current` path
+/// Checks if `theme.ron` is in the `current` path
 fn check_theme(verbose: bool) -> bool {
     let xdg_base_dir = BaseDirectories::with_prefix("leftwm/themes");
     let err_formatter = |s| println!("\x1b[1;91mERROR:\x1b[0m\x1b[1m {s} \x1b[0m");
 
-    if let Err(e) = xdg_base_dir {
-        err_formatter(e.to_string());
-        return false;
-    }
-
-    let xdg_base_dir = xdg_base_dir.unwrap();
     let path_current_theme = xdg_base_dir.find_config_file("current");
 
     match check_current_theme_set(path_current_theme.as_ref(), verbose) {
@@ -243,24 +225,20 @@ fn check_theme_contents(filepaths: Vec<PathBuf>, verbose: bool) -> bool {
         match filepath {
             f if f.ends_with("up") => match check_permissions(f, verbose) {
                 Ok(fp) => match check_up_file(fp) {
-                    Ok(()) => continue,
+                    Ok(()) => {}
                     Err(e) => returns.push(e.to_string()),
                 },
                 Err(e) => returns.push(e.to_string()),
             },
             f if f.ends_with("down") => match check_permissions(f, verbose) {
-                Ok(_fp) => continue,
-                Err(e) => returns.push(e.to_string()),
-            },
-            f if f.ends_with("theme.toml") => match check_theme_toml(f, verbose) {
-                Ok(_fp) => continue,
+                Ok(_fp) => {}
                 Err(e) => returns.push(e.to_string()),
             },
             f if f.ends_with("theme.ron") => match check_theme_ron(f, verbose) {
-                Ok(_fp) => continue,
+                Ok(_fp) => {}
                 Err(e) => returns.push(e.to_string()),
             },
-            _ => continue,
+            _ => {}
         }
     }
 
@@ -288,10 +266,13 @@ fn check_current_theme_set(filepath: Option<&PathBuf>, verbose: bool) -> Result<
                 if fs::symlink_metadata(p)?.file_type().is_symlink() {
                     println!(
                         "Found symlink `current`, pointing to theme folder: {:?}",
-                        fs::read_link(p).unwrap()
+                        fs::read_link(p).unwrap().display()
                     );
                 } else {
-                    println!("\x1b[1;93mWARN: Found `current` theme folder: {p:?}. Use of a symlink is recommended, instead.\x1b[0m");
+                    println!(
+                        "\x1b[1;93mWARN: Found `current` theme folder: {:?}. Use of a symlink is recommended, instead.\x1b[0m",
+                        p.display()
+                    );
                 }
             }
             Ok(p)
@@ -325,37 +306,11 @@ fn check_up_file(filepath: PathBuf) -> Result<()> {
     let contents = fs::read_to_string(filepath)?;
     // Deprecate commands.pipe after 97de790. See #652 for details.
     if contents.contains("leftwm/commands.pipe") {
-        bail!("`commands.pipe` is deprecated. See https://github.com/leftwm/leftwm/issues/652 for workaround.");
+        bail!(
+            "`commands.pipe` is deprecated. See https://github.com/leftwm/leftwm/issues/652 for workaround."
+        );
     }
     Ok(())
-}
-
-fn check_theme_toml(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
-    let metadata = fs::metadata(&filepath)?;
-    let contents = fs::read_to_string(filepath.as_path())?;
-
-    if metadata.is_file() {
-        if verbose {
-            println!("Found: {}", filepath.display());
-        }
-
-        match toml::from_str::<ThemeConfig>(&contents) {
-            Ok(_) => {
-                if verbose {
-                    println!("The theme file looks OK.");
-                }
-                println!(
-                    "\x1b[1;93mWARN: TOML as config format is about to be deprecated.
-      Please consider migrating to RON or contact the theme creator about this topic.
-      Note: make sure the `up` script is loading the correct theme file.\x1b[0m"
-                );
-                Ok(filepath)
-            }
-            Err(err) => bail!("Could not parse theme file: {}", err),
-        }
-    } else {
-        bail!("No `theme.toml` found at path: {}", filepath.display());
-    }
 }
 
 fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
@@ -376,7 +331,7 @@ fn check_theme_ron(filepath: PathBuf, verbose: bool) -> Result<PathBuf> {
                 }
                 Ok(filepath)
             }
-            Err(err) => bail!("Could not parse theme file: {}", err),
+            Err(err) => bail!("Could not parse theme file: {err}"),
         }
     } else {
         bail!("No `theme.ron` found at path: {}", filepath.display())
@@ -394,7 +349,7 @@ where
             println!("\x1b[0;92m    -> {name} OK\x1b[0m");
             Ok(())
         }
-        Err(err) => bail!("Check for feature {} failed: {:?}", name, err),
+        Err(err) => bail!("Check for feature {name} failed: {err:?}"),
     }
 }
 
@@ -402,10 +357,10 @@ where
 ///
 /// # Errors
 /// - An enabled feature is missing a dependency
-///     Resolutions may include:
-///         - Disable the feature (remove from --features at compile time)
-///         - Install any dependency/dependencies which are missing
-///         - Ensure all binaries are installed to a location in your PATH
+///   Resolutions may include:
+///   - Disable the feature (remove from --features at compile time)
+///   - Install any dependency/dependencies which are missing
+///   - Ensure all binaries are installed to a location in your PATH
 #[allow(unused_variables)]
 fn check_enabled_features(verbose: bool) -> Result<()> {
     if env!("LEFTWM_FEATURES").is_empty() {
@@ -468,15 +423,15 @@ fn check_binaries(verbose: bool) -> Result<()> {
 ///
 /// # Errors
 /// - Will return an error if the listed `binary` can not be found in PATH
-///     Resolutions may include:
-///         - Installing leftwm using `cargo install --path {path}` where {path} is a directory in
-///         PATH
-///         - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
-///         shell
+///   Resolutions may include:
+///   - Installing leftwm using `cargo install --path {path}` where {path} is a directory in
+///     PATH
+///   - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
+///     shell
 /// - Will return an error if the PATH environmental variable is not set
-///     Resolutions may include:
-///         - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
-///         shell
+///   Resolutions may include:
+///   - Setting the PATH variable, usually in .bashrc, .profile, or similar depending on your
+///     shell
 fn check_binary(binary: &str, verbose: bool) -> Result<()> {
     if let Ok(path) = env::var("PATH") {
         for p in path.split(':') {
@@ -488,8 +443,10 @@ fn check_binary(binary: &str, verbose: bool) -> Result<()> {
                 return Ok(());
             }
         }
-        bail!("Could not find binary {} in PATH", binary)
+        bail!("Could not find binary {binary} in PATH")
     }
 
-    bail!("Binaries not checked. This is an error with leftwm-check, we would appreciate a bug report: https://github.com/leftwm/leftwm/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml")
+    bail!(
+        "Binaries not checked. This is an error with leftwm-check, we would appreciate a bug report: https://github.com/leftwm/leftwm/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml"
+    )
 }

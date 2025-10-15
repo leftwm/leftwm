@@ -10,7 +10,7 @@ use crate::XlibWindowHandle;
 
 use super::xatom::XAtom;
 use super::xcursor::XCursor;
-use super::{utils, Screen, Window, WindowHandle};
+use super::{Screen, Window, WindowHandle, utils};
 use leftwm_core::config::{Config, WindowHidingStrategy};
 use leftwm_core::models::{FocusBehaviour, FocusOnActivationBehaviour, Mode};
 use leftwm_core::utils::modmask_lookup::ModMask;
@@ -18,7 +18,7 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_double, c_int, c_long, c_short, c_ulong};
 use std::sync::Arc;
 use std::{ptr, slice};
-use tokio::sync::{oneshot, Notify};
+use tokio::sync::{Notify, oneshot};
 use tokio::time::Duration;
 
 use x11_dl::xlib;
@@ -53,11 +53,7 @@ const X_POLYSEGMENT: u8 = 66;
 const X_POLYFILLRECTANGLE: u8 = 70;
 const X_POLYTEXT8: u8 = 74;
 
-// This is allowed for now as const extern fns
-// are not yet stable (1.56.0, 16 Sept 2021)
-// see issue #64926 <https://github.com/rust-lang/rust/issues/64926> for more information.
-#[allow(clippy::missing_const_for_fn)]
-pub extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
+const extern "C" fn on_error_from_xlib(_: *mut xlib::Display, er: *mut xlib::XErrorEvent) -> c_int {
     let err = unsafe { *er };
     let ec = err.error_code;
     let rc = err.request_code;
@@ -164,20 +160,22 @@ impl XWrap {
             )
             .expect("Unable to boot Mio");
         let timeout = Duration::from_millis(100);
-        tokio::task::spawn_blocking(move || loop {
-            if guard.is_closed() {
-                return;
-            }
+        tokio::task::spawn_blocking(move || {
+            loop {
+                if guard.is_closed() {
+                    return;
+                }
 
-            if let Err(err) = poll.poll(&mut events, Some(timeout)) {
-                tracing::warn!("Xlib socket poll failed with {:?}", err);
-                continue;
-            }
+                if let Err(err) = poll.poll(&mut events, Some(timeout)) {
+                    tracing::warn!("Xlib socket poll failed with {:?}", err);
+                    continue;
+                }
 
-            events
-                .iter()
-                .filter(|event| SERVER == event.token())
-                .for_each(|_| notify.notify_one());
+                events
+                    .iter()
+                    .filter(|event| SERVER == event.token())
+                    .for_each(|_| notify.notify_one());
+            }
         });
 
         let atoms = XAtom::new(&xlib, display);
@@ -296,7 +294,7 @@ impl XWrap {
                 self.display,
                 self.root,
                 xlib::CWEventMask | xlib::CWCursor,
-                &mut attrs,
+                &raw mut attrs,
             );
         }
 
@@ -350,13 +348,13 @@ impl XWrap {
                 ptr,
                 clist_tags.len() as i32,
                 xlib::XUTF8StringStyle,
-                &mut text,
+                &raw mut text,
             );
             std::mem::forget(clist_tags);
             (self.xlib.XSetTextProperty)(
                 self.display,
                 self.root,
-                &mut text,
+                &raw mut text,
                 self.atoms.NetDesktopNames,
             );
         }
@@ -415,7 +413,7 @@ impl XWrap {
             let mut array: *mut xlib::Atom = std::mem::zeroed();
             let mut length: c_int = std::mem::zeroed();
             let status: xlib::Status =
-                (self.xlib.XGetWMProtocols)(self.display, window, &mut array, &mut length);
+                (self.xlib.XGetWMProtocols)(self.display, window, &raw mut array, &raw mut length);
             let protocols: &[xlib::Atom] = slice::from_raw_parts(array, length as usize);
             status > 0 && protocols.contains(&atom)
         }

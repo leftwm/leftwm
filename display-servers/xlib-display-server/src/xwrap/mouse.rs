@@ -1,7 +1,7 @@
 //! Xlib calls related to a mouse.
-use super::{XlibError, MOUSEMASK};
-use crate::xwrap::BUTTONMASK;
+use super::{MOUSEMASK, XlibError};
 use crate::XWrap;
+use crate::xwrap::BUTTONMASK;
 use std::os::raw::{c_int, c_uint, c_ulong};
 use x11_dl::xlib;
 
@@ -146,13 +146,13 @@ impl XWrap {
                 (self.xlib.XQueryPointer)(
                     self.display,
                     event.window,
-                    &mut event.root,
-                    &mut event.subwindow,
-                    &mut event.x_root,
-                    &mut event.y_root,
-                    &mut event.x,
-                    &mut event.y,
-                    &mut event.state,
+                    &raw mut event.root,
+                    &raw mut event.subwindow,
+                    &raw mut event.x_root,
+                    &raw mut event.y_root,
+                    &raw mut event.x,
+                    &raw mut event.y,
+                    &raw mut event.state,
                 );
             }
 

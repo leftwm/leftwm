@@ -175,7 +175,7 @@ impl<H: Handle> State<H> {
             if current_tag == tag {
                 return false;
             }
-        };
+        }
         // Clean old history.
         self.focus_manager.tag_history.truncate(10);
         // Add this focus to the history.
@@ -279,7 +279,7 @@ fn distance<H: Handle>(window: &Window<H>, x: i32, y: i32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{models::MockHandle, Manager};
+    use crate::{Manager, models::MockHandle};
 
     #[test]
     fn focusing_a_workspace_should_make_it_active() {
