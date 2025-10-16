@@ -114,7 +114,11 @@ impl CompositorHandler for SmithayState {
         ensure_initial_configure(
             surface,
             &self.window_registry,
-            &self.outputs.iter().map(|(o, _)| o.clone()).collect(),
+            &self
+                .outputs
+                .iter()
+                .map(|(o, _)| o.clone())
+                .collect::<Vec<_>>(),
         )
     }
 
@@ -313,7 +317,7 @@ pub struct SurfaceData {
 fn ensure_initial_configure(
     surface: &WlSurface,
     windows: &WindowRegisty,
-    outputs: &Vec<Output>,
+    outputs: &[Output],
     // popups: &mut PopupManager,
 ) {
     with_surface_tree_upward(
