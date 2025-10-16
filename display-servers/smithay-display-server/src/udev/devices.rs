@@ -325,7 +325,7 @@ impl SmithayState {
         let mode = if let Some(mode) = output.current_mode() {
             mode
         } else {
-            *output.modes().get(0).unwrap()
+            *output.modes().first().unwrap()
         };
 
         let surface = Surface {
