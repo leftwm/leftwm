@@ -1,4 +1,4 @@
-use leftwm::utils;
+use leftwm::{Backend, utils};
 use leftwm_core::Manager;
 use smithay_display_server::{SmithayHandle, SmithayWindowHandle};
 use std::panic;
@@ -19,6 +19,7 @@ fn main() {
 
     #[cfg(feature = "lefthk")]
     let mut config = leftwm::load();
+
     // Clear the keybinds so leftwm is not storing them.
     // TODO: Make this more elegant.
     #[cfg(feature = "lefthk")]
@@ -41,7 +42,10 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        let config = leftwm::load();
+        let mut config = leftwm::load();
+
+        // ignore whatever is in the config for now
+        config.backend = Backend::Smithay;
 
         let manager = Manager::<SmithayWindowHandle, leftwm::Config, SmithayHandle>::new(config);
         manager.register_child_hook();

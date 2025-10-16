@@ -4,15 +4,16 @@
 //! `leftwm-{check, command, state, theme}` as specified, and passes along any extra arguments.
 
 use clap::command;
+use leftwm_core::child_process::{self, Nanny};
 use std::env;
 use std::path::Path;
-use std::process::{exit, Child, Command, ExitStatus};
+use std::process::{Child, Command, ExitStatus, exit};
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
     Arc,
+    atomic::{AtomicBool, Ordering},
 };
 
-mod utils;
+use leftwm::utils;
 
 type Subcommand<'a> = &'a str;
 type SubcommandArgs = Vec<String>;
@@ -127,10 +128,14 @@ fn parse_subcommands(args: &LeftwmArgs) -> ! {
 
 /// Sets some relevant environment variables for leftwm
 fn set_env_vars() {
-    env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
+    unsafe {
+        env::set_var("XDG_CURRENT_DESKTOP", "LeftWM");
+    }
 
     // Fix for Java apps so they repaint correctly
-    env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
+    unsafe {
+        env::set_var("_JAVA_AWT_WM_NONREPARENTING", "1");
+    }
 }
 
 fn get_current_exe() -> std::path::PathBuf {
@@ -158,7 +163,7 @@ fn start_leftwm() {
     set_env_vars();
 
     // Boot everything WM agnostic or LeftWM related in ~/.config/autostart
-    let mut children = utils::autostart();
+    let mut children = Nanny::autostart();
 
     let flag = get_sigchld_flag();
 
@@ -166,7 +171,7 @@ fn start_leftwm() {
 
     while session_is_running(&mut leftwm_session) {
         // remove all child processes which finished
-        utils::remove_finished_children(&mut children);
+        children.remove_finished_children();
 
         while is_suspending(&flag) {
             nix::unistd::pause();
@@ -221,7 +226,7 @@ fn start_leftwm_session(current_exe: &Path) -> Child {
 /// example-description.
 fn get_sigchld_flag() -> Arc<AtomicBool> {
     let flag = Arc::new(AtomicBool::new(false));
-    utils::register_child_hook(flag.clone());
+    child_process::register_child_hook(flag.clone());
 
     flag
 }

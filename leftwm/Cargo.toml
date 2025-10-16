@@ -20,8 +20,16 @@ name = "leftwm"
 required-features = ["leftwm-watchdog"]
 
 [[bin]]
+name = "leftwm-worker"
+required-features = ["x11"]
+
+[[bin]]
+name = "leftway"
+required-features = ["leftway-watchdog"]
+
+[[bin]]
 name = "leftway-worker"
-required-features = ["smithay"]
+required-features = ["wayland"]
 
 [dependencies]
 anyhow = "1.0.48"
@@ -79,11 +87,17 @@ tempfile = "3.2.0"
 [features]
 default = ["journald-log", "lefthk", "xlib", "x11rb", "leftwm-watchdog"]
 lefthk = ["dep:lefthk-core"]
-smithay = ["dep:smithay-display-server"]
+smithay = ["dep:smithay-display-server", "wayland"]
+
+# marks the fact that we're building for x11 in general
+x11 = []
+
+# marks the fact that we're building for wayland in general
+wayland = []
 
 # backends
-x11rb = ['dep:x11rb-display-server']
-xlib = ['dep:xlib-display-server']
+x11rb = ['dep:x11rb-display-server', 'x11']
+xlib = ['dep:xlib-display-server', 'x11']
 
 # logging features
 journald-log = ["dep:tracing-journald"]
@@ -95,3 +109,6 @@ slow-dm-fix = []
 
 # Whether to include `leftwm` binary
 leftwm-watchdog = []
+
+# Whether to include the `leftway` binary
+leftway-watchdog = []
