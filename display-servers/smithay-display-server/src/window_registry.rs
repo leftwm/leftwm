@@ -33,7 +33,7 @@ impl WindowRegisty {
         self.next_key += 1;
         window.set_handle(key);
         self.map.insert(key, window);
-        return key;
+        key
     }
 
     #[allow(dead_code)]
