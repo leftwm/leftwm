@@ -1,9 +1,10 @@
-use std::{process::Command, sync::atomic::Ordering, time::Duration};
+use std::{sync::atomic::Ordering, time::Duration};
 
 use event_channel::EventChannelReceiver;
 use internal_action::InternalAction;
 use leftwm_config::{BorderConfig, LeftwmConfig};
 use leftwm_core::{
+    child_process,
     models::{Handle, Window, WindowHandle},
     DisplayAction, DisplayEvent, DisplayServer,
 };
@@ -104,6 +105,8 @@ impl DisplayServer<SmithayWindowHandle> for SmithayHandle {
                 .udev_assign_seat(&state.udev_data.session.seat())
                 .unwrap();
 
+            let mut children = child_process::Children::new();
+
             let libinput_backend = LibinputInputBackend::new(libinput_context.clone());
 
             // TODO: Proper key handling
@@ -121,6 +124,8 @@ impl DisplayServer<SmithayWindowHandle> for SmithayHandle {
                                 serial,
                                 time,
                                 |state, modifiers, handle| {
+                                    // TODO: manage this better
+                                    children.remove_finished_children();
                                     if event.state() == KeyState::Pressed {
                                         let mut leds = Led::empty();
                                         if modifiers.caps_lock {
@@ -134,7 +139,7 @@ impl DisplayServer<SmithayWindowHandle> for SmithayHandle {
                                             && modifiers.shift
                                             && handle.modified_sym() == xkb::KEY_Return
                                         {
-                                            Command::new("kitty").spawn().unwrap();
+                                            child_process::exec_shell("kitty", &mut children);
                                             FilterResult::Intercept(None)
                                         } else if modifiers.logo
                                             && modifiers.shift
