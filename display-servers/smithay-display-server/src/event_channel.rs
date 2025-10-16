@@ -1,5 +1,8 @@
 use crate::SmithayWindowHandle;
-use std::sync::mpsc::{self, Receiver, SendError, Sender};
+use std::{
+    process::exit,
+    sync::mpsc::{self, Receiver, SendError, Sender},
+};
 use tokio::sync::{
     mpsc::{
         self as async_mpsc, error::TrySendError, Receiver as AsyncReceiver, Sender as AsyncSender,
@@ -39,12 +42,17 @@ pub struct EventChannelReceiver {
 
 impl EventChannelReceiver {
     pub async fn wait_readable(&self) {
-        self.event_notify_receiver
+        if self
+            .event_notify_receiver
             .lock()
             .await
             .recv()
             .await
-            .unwrap()
+            .is_none()
+        {
+            tracing::error!("Event channel closed");
+            exit(0);
+        }
     }
 
     pub fn collect_events(&mut self) -> Vec<DisplayEvent<SmithayWindowHandle>> {
