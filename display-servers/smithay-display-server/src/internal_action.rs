@@ -6,7 +6,7 @@ use crate::{leftwm_config::LeftwmConfig, SmithayWindowHandle};
 pub enum InternalAction {
     Flush,
     GenerateVerifyFocusEvent,
-    UpdateConfig(LeftwmConfig),
+    UpdateConfig(Box<LeftwmConfig>),
     UpdateWindows(Vec<Window<SmithayWindowHandle>>),
     DisplayAction(DisplayAction<SmithayWindowHandle>),
 }

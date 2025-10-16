@@ -328,7 +328,7 @@ impl DisplayServer<SmithayWindowHandle> for SmithayHandle {
             },
         };
         self.action_sender
-            .send(InternalAction::UpdateConfig(config))
+            .send(InternalAction::UpdateConfig(Box::new(config)))
             .unwrap();
     }
 

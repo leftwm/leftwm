@@ -23,7 +23,7 @@ impl SmithayState {
                     .unwrap();
                 }
             } //NOTE: We should probably send an event too when nothing is focused
-            InternalAction::UpdateConfig(config) => self.config = config,
+            InternalAction::UpdateConfig(config) => self.config = *config,
             InternalAction::UpdateWindows(windows) => {
                 info!("Received window update: {:#?}", windows);
                 for window in windows {
