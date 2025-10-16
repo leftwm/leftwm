@@ -69,8 +69,9 @@ impl SmithayState {
             InternalAction::DisplayAction(DisplayAction::KillWindow(handle)) => {
                 let WindowHandle(SmithayWindowHandle(handle)) = handle;
                 let window = self.window_registry.get_mut(handle);
-                //NOTE: Nothing happens if the window doesnt exist;
-                window.map(|w| w.send_close());
+                if let Some(w) = window {
+                    w.send_close();
+                }
             }
             InternalAction::DisplayAction(DisplayAction::AddedWindow(handle, floating, focus)) => {
                 let WindowHandle(SmithayWindowHandle(handle)) = handle;
