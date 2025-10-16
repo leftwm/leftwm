@@ -333,7 +333,7 @@ impl DisplayServer<SmithayWindowHandle> for SmithayHandle {
     }
 
     fn update_windows(&self, windows: Vec<&Window<SmithayWindowHandle>>) {
-        let windows = windows.into_iter().map(|w| w.clone()).collect();
+        let windows = windows.into_iter().cloned().collect();
         self.action_sender
             .send(InternalAction::UpdateWindows(windows))
             .unwrap()
