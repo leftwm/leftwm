@@ -94,7 +94,7 @@ impl SmithayState {
             let frame = self
                 .udev_data
                 .pointer_image
-                .get_image(1, self.clock.now().try_into().unwrap());
+                .get_image(1, self.clock.now().into());
 
             let pointer_images = &mut self.udev_data.pointer_images;
             let pointer_image = pointer_images
