@@ -376,7 +376,11 @@ impl SmithayState {
             let timer = Timer::from_duration(duration);
             self.loop_handle
                 .insert_source(timer, move |_, _, data| {
-                    data.state.render(node, crtc, None).unwrap();
+                    match data.state.render(node, crtc, None) {
+                        Ok(_) => (),
+                        Err(SwapBuffersError::TemporaryFailure(_)) => (),
+                        Err(err) => panic!("An error occurred {err}"),
+                    }
                     TimeoutAction::Drop
                 })
                 .unwrap();

@@ -87,7 +87,11 @@ impl SmithayState {
                         let device = data.state.udev_data.devices.get_mut(&node).unwrap();
                         let surface = device.surfaces.get_mut(&crtc).unwrap();
                         surface.compositor.frame_submitted().unwrap();
-                        data.state.render(node, crtc, None).unwrap();
+                        match data.state.render(node, crtc, None) {
+                            Ok(_) => (),
+                            Err(smithay::backend::SwapBuffersError::TemporaryFailure(_)) => (),
+                            Err(err) => panic!("An error occurred: {err}"),
+                        }
                     }
                     DrmEvent::Error(error) => {
                         error!("{:?}", error);
