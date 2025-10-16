@@ -73,7 +73,7 @@ impl SmithayState {
     }
 
     fn clamp_coords(&self, pos: Point<f64, Logical>) -> Point<f64, Logical> {
-        if self.outputs.len() == 0 {
+        if self.outputs.is_empty() {
             return pos;
         }
 
