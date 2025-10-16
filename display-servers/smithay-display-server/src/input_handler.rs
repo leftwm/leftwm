@@ -125,7 +125,7 @@ impl SmithayState {
         //     under = Some((layer.clone().into(), output_geo.loc + layer_loc));
         // };
         if let Some((window, location)) = self.window_registry.window_under(pos.to_i32_ceil()) {
-            under = Some((window.clone().into(), location))
+            under = Some((window.clone(), location))
         }
 
         under
