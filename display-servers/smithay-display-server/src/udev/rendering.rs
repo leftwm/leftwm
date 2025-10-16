@@ -346,7 +346,7 @@ impl SmithayState {
         }
 
         let reschedule = match &frame_result {
-            Ok(has_rendered) => !has_rendered.damage.is_some(),
+            Ok(has_rendered) => has_rendered.damage.is_none(),
             Err(err) => {
                 warn!("Error rendering frame: {:?}", err);
                 match err {
