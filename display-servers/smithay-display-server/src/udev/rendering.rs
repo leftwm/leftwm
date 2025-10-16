@@ -395,7 +395,7 @@ impl SmithayState {
             );
         }
 
-        BorderRenderer::cleanup(&mut renderer.as_mut().borrow_mut());
+        BorderRenderer::cleanup(renderer.as_mut().borrow_mut());
 
         frame_result.map(|frame_result| frame_result.damage.is_some())
     }
