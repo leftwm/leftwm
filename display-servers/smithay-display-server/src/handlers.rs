@@ -181,7 +181,7 @@ impl WlrLayerShellHandler for SmithayState {
         let output = output
             .as_ref()
             .and_then(Output::from_resource)
-            .unwrap_or_else(|| self.outputs.iter().next().map(|(o, _)| o).unwrap().clone());
+            .unwrap_or_else(|| self.outputs.first().map(|(o, _)| o).unwrap().clone());
         let mut map = layer_map_for_output(&output);
         let layer_surface = LayerSurface::new(surface, namespace);
         map.map_layer(&layer_surface).unwrap();
