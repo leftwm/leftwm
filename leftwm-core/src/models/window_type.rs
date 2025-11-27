@@ -9,5 +9,11 @@ pub enum WindowType {
     Utility,
     Splash,
     Dialog,
+    DropdownMenu,
+    PopupMenu,
+    Tooltip,
+    Notification,
+    Combo,
+    Dnd,
     Normal,
 }

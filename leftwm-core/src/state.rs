@@ -95,6 +95,12 @@ impl<H: Handle> State<H> {
                 || w.r#type == WindowType::Splash
                 || w.r#type == WindowType::Utility
                 || w.r#type == WindowType::Menu
+                || w.r#type == WindowType::DropdownMenu
+                || w.r#type == WindowType::PopupMenu
+                || w.r#type == WindowType::Tooltip
+                || w.r#type == WindowType::Notification
+                || w.r#type == WindowType::Combo
+                || w.r#type == WindowType::Dnd
         });
 
         // Floating windows.

@@ -121,6 +121,7 @@ impl<H: Handle> Window<H> {
             || self.r#type == WindowType::Menu
             || self.r#type == WindowType::Splash
             || self.r#type == WindowType::Toolbar
+            || self.r#type == WindowType::Notification
     }
 
     pub fn set_floating(&mut self, value: bool) {
@@ -342,7 +343,14 @@ impl<H: Handle> Window<H> {
 
     #[must_use]
     pub fn is_managed(&self) -> bool {
-        self.r#type != WindowType::Desktop && self.r#type != WindowType::Dock
+        self.r#type != WindowType::Desktop
+            && self.r#type != WindowType::Dock
+            && self.r#type != WindowType::DropdownMenu
+            && self.r#type != WindowType::PopupMenu
+            && self.r#type != WindowType::Tooltip
+            && self.r#type != WindowType::Notification
+            && self.r#type != WindowType::Combo
+            && self.r#type != WindowType::Dnd
     }
 
     #[must_use]
