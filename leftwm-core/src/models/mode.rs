@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::window::Handle;
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Mode<H: Handle> {
     #[serde(bound = "")]
     ReadyToResize(WindowHandle<H>),
@@ -15,11 +15,6 @@ pub enum Mode<H: Handle> {
     ResizingWindow(WindowHandle<H>),
     #[serde(bound = "")]
     MovingWindow(WindowHandle<H>),
+    #[default]
     Normal,
-}
-
-impl<H: Handle> Default for Mode<H> {
-    fn default() -> Self {
-        Self::Normal
-    }
 }

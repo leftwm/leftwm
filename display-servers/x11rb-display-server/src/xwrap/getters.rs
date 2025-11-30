@@ -189,7 +189,7 @@ impl XWrap {
                         ..Default::default()
                     };
                     s.root = self.get_default_root_handle();
-                    s.output = name.to_string();
+                    s.output.clone_from(&name);
                     s
                 })
                 .collect());
