@@ -40,6 +40,9 @@ pub struct State<H: Handle> {
     pub single_window_border: bool,
 }
 
+// This clippy is mainly for readability, but changing it triggers `error[E0277]` '... is not an iterator'
+// and solving this feels like a lot just for a little bit of readability
+#[allow(clippy::explicit_iter_loop)]
 impl<H: Handle> State<H> {
     pub(crate) fn new(config: &impl Config) -> Self {
         let mut tags = Tags::new();
@@ -95,6 +98,12 @@ impl<H: Handle> State<H> {
                 || w.r#type == WindowType::Splash
                 || w.r#type == WindowType::Utility
                 || w.r#type == WindowType::Menu
+                || w.r#type == WindowType::DropdownMenu
+                || w.r#type == WindowType::PopupMenu
+                || w.r#type == WindowType::Tooltip
+                || w.r#type == WindowType::Notification
+                || w.r#type == WindowType::Combo
+                || w.r#type == WindowType::Dnd
         });
 
         // Floating windows.
@@ -141,7 +150,9 @@ impl<H: Handle> State<H> {
 
             // TODO: hardcoded layout name.
             if layout.is_monocle() {
-                windows_on_tag.iter_mut().for_each(|w| w.border = 0);
+                for w in &mut windows_on_tag.iter_mut() {
+                    w.border = 0;
+                }
                 continue;
             }
 
@@ -152,9 +163,9 @@ impl<H: Handle> State<H> {
                 continue;
             }
 
-            windows_on_tag
-                .iter_mut()
-                .for_each(|w| w.border = border_width);
+            for w in &mut windows_on_tag.iter_mut() {
+                w.border = border_width;
+            }
         }
     }
 
@@ -235,7 +246,9 @@ impl<H: Handle> State<H> {
                         _ => new_tag = Some(1),
                     }
                     new_window.untag();
-                    new_tag.iter().for_each(|&tag_id| new_window.tag(&tag_id));
+                    for &tag_id in new_tag.iter() {
+                        new_window.tag(&tag_id);
+                    }
                 }
                 new_window.strut = old_window.strut;
                 new_window.states.clone_from(&old_window.states);
@@ -269,9 +282,9 @@ impl<H: Handle> State<H> {
                         Some(tag) if all_tags.get(tag).is_some() => {}
                         _ => new_tag = Some(1),
                     }
-                    new_tag
-                        .iter()
-                        .for_each(|&tag_id| workspace.tag = Some(tag_id));
+                    for &tag_id in new_tag.iter() {
+                        workspace.tag = Some(tag_id);
+                    }
                 }
             }
         }

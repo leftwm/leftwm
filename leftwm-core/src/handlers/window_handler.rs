@@ -44,6 +44,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
         let follow_mouse = self.state.focus_manager.focus_new_windows
             && self.state.focus_manager.behaviour.is_sloppy()
             && self.state.focus_manager.sloppy_mouse_follows_focus
+            && window.is_managed()
             && on_same_tag;
 
         // Let the DS know we are managing this window.

@@ -208,6 +208,9 @@ pub struct Tag {
     pub hidden: bool,
 }
 
+// This clippy is mainly for readability, but changing it triggers `error[E0277]` '... is not an iterator'
+// and solving this feels like a lot just for a little bit of readability
+#[allow(clippy::explicit_iter_loop)]
 impl Tag {
     #[must_use]
     pub fn new(id: TagId, label: &str) -> Self {
@@ -261,7 +264,9 @@ impl Tag {
             // Mark all windows for this workspace as visible.
             let mut all_mine: Vec<&mut Window<H>> =
                 windows.iter_mut().filter(|w| w.has_tag(&self.id)).collect();
-            all_mine.iter_mut().for_each(|w| w.set_visible(true));
+            for w in all_mine.iter_mut() {
+                w.set_visible(true);
+            }
 
             // Update the location / visibility of all non-floating windows.
             let mut managed_nonfloat: Vec<&mut Window<H>> = windows

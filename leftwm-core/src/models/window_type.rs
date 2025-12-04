@@ -13,5 +13,11 @@ pub enum WindowType {
     Splash,
     Dialog,
     WlrSurface,
+    DropdownMenu,
+    PopupMenu,
+    Tooltip,
+    Notification,
+    Combo,
+    Dnd,
     Normal,
 }

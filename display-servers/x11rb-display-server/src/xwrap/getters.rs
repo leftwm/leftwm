@@ -189,7 +189,7 @@ impl XWrap {
                         ..Default::default()
                     };
                     s.root = self.get_default_root_handle();
-                    s.output = name.to_string();
+                    s.output.clone_from(&name);
                     s
                 })
                 .collect());
@@ -431,6 +431,12 @@ impl XWrap {
             x if x == Some(self.atoms.NetWMWindowTypeUtility) => WindowType::Utility,
             x if x == Some(self.atoms.NetWMWindowTypeSplash) => WindowType::Splash,
             x if x == Some(self.atoms.NetWMWindowTypeDialog) => WindowType::Dialog,
+            x if x == Some(self.atoms.NetWMWindowTypeDropdownMenu) => WindowType::DropdownMenu,
+            x if x == Some(self.atoms.NetWMWindowTypePopupMenu) => WindowType::PopupMenu,
+            x if x == Some(self.atoms.NetWMWindowTypeTooltip) => WindowType::Tooltip,
+            x if x == Some(self.atoms.NetWMWindowTypeNotification) => WindowType::Notification,
+            x if x == Some(self.atoms.NetWMWindowTypeCombo) => WindowType::Combo,
+            x if x == Some(self.atoms.NetWMWindowTypeDnd) => WindowType::Dnd,
             _ => WindowType::Normal,
         })
     }
