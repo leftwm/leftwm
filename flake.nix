@@ -38,18 +38,32 @@
           };
 
           commonArgs = {
-            src = craneLib.cleanCargoSource (craneLib.path ./.);
+            src = pkgs.lib.cleanSourceWith {
+              src = craneLib.path ./.;
+              filter =
+                path: type:
+                (craneLib.filterCargoSources path type)
+                || (pkgs.lib.hasSuffix ".frag" path)
+                || (pkgs.lib.hasSuffix ".rgba" path);
+            };
 
             buildInputs = with pkgs; [
               mold
               clang
+              libgbm
+              libinput
+              libxkbcommon
+              pkg-config
+              seatd
+              wayland
               xorg.libX11
               xorg.libXrandr
               xorg.libXinerama
             ];
 
             inherit GIT_HASH;
-          } // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
+          }
+          // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
 
           craneLib = (crane.mkLib pkgs).overrideToolchain pkgs.rust-bin.stable.latest.minimal;
 
