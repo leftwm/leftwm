@@ -217,14 +217,27 @@ pub enum Backend {
     XLib,
     #[cfg(feature = "x11rb")]
     X11rb,
+    #[cfg(feature = "smithay")]
+    Smithay,
 }
 
 impl Default for Backend {
     fn default() -> Self {
         #[cfg(feature = "xlib")]
         return Backend::XLib;
-        #[cfg(not(feature = "xlib"))]
+
+        #[cfg(feature = "x11rb")]
+        #[allow(unreachable_code)]
         return Backend::X11rb;
+
+        #[cfg(feature = "smithay")]
+        #[allow(unreachable_code)]
+        return Backend::Smithay;
+
+        #[allow(unreachable_code)]
+        {
+            unreachable!("No backend was configured");
+        }
     }
 }
 

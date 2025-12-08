@@ -5,7 +5,17 @@ members = [
     "leftwm-macros",
     "display-servers/xlib-display-server",
     "display-servers/x11rb-display-server",
+    "display-servers/smithay-display-server",
 ]
+default-members = [
+    "leftwm",
+    "leftwm-core",
+    "leftwm-macros",
+    "display-servers/xlib-display-server",
+    "display-servers/x11rb-display-server",
+    "display-servers/smithay-display-server",
+]
+
 resolver = "2"
 
 [workspace.package]

@@ -24,12 +24,13 @@ pub trait Handle:
 ///
 /// # Serde
 ///
-/// Using generics here with serde derive macros causes some wierd behaviour with the compiler, so
+/// Using generics here with serde derive macros causes some weird behaviour with the compiler, so
 /// as suggested by [this `serde` issue][serde-issue], just adding `#[serde(bound = "")]`
 /// everywhere the generic is declared fixes the bug.
 /// Hopefully this get fixed at some point so we can make this more pleasant to read...
 ///
 /// [serde-issue]: https://github.com/serde-rs/serde/issues/1296
+/// [rust-issue]: https://github.com/rust-lang/rust/issues/41617
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WindowHandle<H>(#[serde(bound = "")] pub H)
 where
@@ -194,7 +195,8 @@ impl<H: Handle> Window<H> {
 
     #[must_use]
     pub fn can_focus(&self) -> bool {
-        !self.never_focus && self.is_managed() && self.visible()
+        !self.never_focus
+            && ((self.is_managed() && self.visible()) || self.r#type == WindowType::WlrSurface)
     }
 
     pub fn set_width(&mut self, width: i32) {
@@ -345,6 +347,7 @@ impl<H: Handle> Window<H> {
     pub fn is_managed(&self) -> bool {
         self.r#type != WindowType::Desktop
             && self.r#type != WindowType::Dock
+            && self.r#type != WindowType::WlrSurface
             && self.r#type != WindowType::DropdownMenu
             && self.r#type != WindowType::PopupMenu
             && self.r#type != WindowType::Tooltip

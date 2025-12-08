@@ -1,17 +1,8 @@
-use leftwm::utils;
+use leftwm::{Backend, utils};
 use leftwm_core::Manager;
+use smithay_display_server::{SmithayHandle, SmithayWindowHandle};
 use std::panic;
 use tracing_subscriber::EnvFilter;
-
-#[cfg(feature = "x11rb")]
-use x11rb_display_server::X11rbDisplayServer;
-#[cfg(feature = "x11rb")]
-use x11rb_display_server::X11rbWindowHandle;
-
-#[cfg(feature = "xlib")]
-use xlib_display_server::XlibDisplayServer;
-#[cfg(feature = "xlib")]
-use xlib_display_server::XlibWindowHandle;
 
 fn main() {
     // INFO: This is used when attaching to leftwm-worker with lldb using `--waitfor` to ensure
@@ -24,10 +15,11 @@ fn main() {
     let log_guard = tracing::subscriber::set_default(utils::log::get_subscribers(
         EnvFilter::builder().parse("debug").unwrap(),
     ));
-    tracing::info!("leftwm-worker booting...");
+    tracing::info!("leftway-worker booting...");
 
     #[cfg(feature = "lefthk")]
     let mut config = leftwm::load();
+
     // Clear the keybinds so leftwm is not storing them.
     // TODO: Make this more elegant.
     #[cfg(feature = "lefthk")]
@@ -50,36 +42,18 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().expect("ERROR: couldn't init Tokio runtime");
         let _rt_guard = rt.enter();
 
-        match config.backend {
-            #[cfg(feature = "xlib")]
-            leftwm::Backend::XLib => {
-                tracing::info!("Loading XLib backend");
-                let manager =
-                    Manager::<XlibWindowHandle, leftwm::Config, XlibDisplayServer>::new(config);
+        let mut config = leftwm::load();
 
-                manager.register_child_hook();
-                //TODO: Error handling
-                rt.block_on(manager.start_event_loop())
-            }
+        // ignore whatever is in the config for now
+        config.backend = Backend::Smithay;
 
-            #[cfg(feature = "x11rb")]
-            leftwm::Backend::X11rb => {
-                tracing::info!("Loading X11rb backend");
-                let manager =
-                    Manager::<X11rbWindowHandle, leftwm::Config, X11rbDisplayServer>::new(config);
-
-                manager.register_child_hook();
-                //TODO: Error handling
-                rt.block_on(manager.start_event_loop())
-            }
-
-            #[cfg(feature = "smithay")]
-            leftwm::Backend::Smithay => panic!("smithay backend is not supported"),
-        }
+        let manager = Manager::<SmithayWindowHandle, leftwm::Config, SmithayHandle>::new(config);
+        manager.register_child_hook();
+        rt.block_on(manager.start_event_loop())
     });
 
     match exit_status {
-        Ok(Ok(())) => tracing::info!("Completed"),
+        Ok(_) => tracing::info!("Completed"),
         Ok(Err(err)) => tracing::info!("Completed with event loop error: {}", err),
         Err(err) => tracing::info!("Completed with error: {:?}", err),
     }

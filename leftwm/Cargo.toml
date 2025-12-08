@@ -19,6 +19,18 @@ required-features = ["lefthk"]
 name = "leftwm"
 required-features = ["leftwm-watchdog"]
 
+[[bin]]
+name = "leftwm-worker"
+required-features = ["x11"]
+
+[[bin]]
+name = "leftway"
+required-features = ["leftway-watchdog"]
+
+[[bin]]
+name = "leftway-worker"
+required-features = ["wayland"]
+
 [dependencies]
 anyhow = "1.0.48"
 clap = { version = "4.5.0", features = ["cargo"] }
@@ -29,7 +41,7 @@ futures = "0.3.21"
 git-version = "0.3.5"
 lefthk-core = { version = '0.3', optional = true }
 leftwm-core = { path = "../leftwm-core", version = '0.5.4' }
-leftwm-macros = {path = "../leftwm-macros", version = '0.5.4'}
+leftwm-macros = { path = "../leftwm-macros", version = '0.5.4' }
 leftwm-layouts = "0.9.1"
 liquid = "0.26.9"
 mio = "1.0.2"
@@ -65,6 +77,7 @@ tracing-appender = {version = "0.2.2", optional = true}
 syslog-tracing = {version = "0.3.0", optional = true}
 
 # display_servers
+smithay-display-server = { path = "../display-servers/smithay-display-server", version = "0.1.0", optional = true }
 xlib-display-server = { path = "../display-servers/xlib-display-server", version = "0.1.4", optional = true }
 x11rb-display-server = { path = "../display-servers/x11rb-display-server", version = "0.1.4", optional = true }
 
@@ -74,10 +87,17 @@ tempfile = "3.2.0"
 [features]
 default = ["journald-log", "lefthk", "xlib", "x11rb", "leftwm-watchdog"]
 lefthk = ["dep:lefthk-core"]
+smithay = ["dep:smithay-display-server", "wayland"]
+
+# marks the fact that we're building for x11 in general
+x11 = []
+
+# marks the fact that we're building for wayland in general
+wayland = []
 
 # backends
-x11rb = ['dep:x11rb-display-server']
-xlib = ['dep:xlib-display-server']
+x11rb = ['dep:x11rb-display-server', 'x11']
+xlib = ['dep:xlib-display-server', 'x11']
 
 # logging features
 journald-log = ["dep:tracing-journald"]
@@ -89,3 +109,6 @@ slow-dm-fix = []
 
 # Whether to include `leftwm` binary
 leftwm-watchdog = []
+
+# Whether to include the `leftway` binary
+leftway-watchdog = []
