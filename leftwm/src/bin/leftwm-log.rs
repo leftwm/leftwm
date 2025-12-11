@@ -7,7 +7,7 @@ fn main() {
     let matches = get_command().get_matches();
     #[cfg(any(feature = "sys-log", feature = "journald-log", feature = "file-log"))]
     let follow = matches.get_flag("follow");
-    #[cfg(any(feature = "sys-log", feature = "journald-log", feature = "file-log"))]
+    #[cfg(any(feature = "journald-log", feature = "file-log"))]
     let level = matches.get_count("verbose");
 
     #[allow(unreachable_patterns)]

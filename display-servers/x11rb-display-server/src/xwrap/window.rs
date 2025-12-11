@@ -261,8 +261,9 @@ impl XWrap {
                 WindowHidingStrategy::MoveMinimize | WindowHidingStrategy::MoveOnly => {
                     // Move the window out of view, so it can still be captured if necessary
                     let window_geometry = self.get_window_geometry(window)?;
-                    let (x, y) = if window_geometry.w.is_some() && window_geometry.h.is_some() {
-                        (window_geometry.w.unwrap(), window_geometry.h.unwrap())
+                    let (x, y) = if let (Some(x), Some(y)) = (window_geometry.w, window_geometry.h)
+                    {
+                        (x, y)
                     } else {
                         let screen_dimensions = self.get_screens_area_dimensions()?;
                         (
