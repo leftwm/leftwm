@@ -74,12 +74,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d301b3b94cb4b2f23d7917810addbbaff90738e0ca2be692bd027e70d7e0330c"
 
 [[package]]
-name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
-
-[[package]]
 name = "bitflags"
 version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -485,14 +479,14 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "lefthk-core"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4421be189d655a184af40049b70a917b87000bff5db76fa397c2444339cdbe2f"
+checksum = "374f45a47f7123daeff6230e10ba9c37be7a13983f2ac4984c60731cda009d00"
 dependencies = [
  "inventory",
  "mio",
  "nix",
- "ron 0.10.1",
+ "ron",
  "serde",
  "signal-hook",
  "thiserror 2.0.17",
@@ -521,7 +515,7 @@ dependencies = [
  "nix",
  "once_cell",
  "regex",
- "ron 0.12.0",
+ "ron",
  "serde",
  "serde_json",
  "shellexpand",
@@ -889,19 +883,6 @@ name = "regex-syntax"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
-
-[[package]]
-name = "ron"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "beceb6f7bf81c73e73aeef6dd1356d9a1b2b4909e1f0fc3e59b034f9572d7b7f"
-dependencies = [
- "base64",
- "bitflags",
- "serde",
- "serde_derive",
- "unicode-ident",
-]
 
 [[package]]
 name = "ron"
