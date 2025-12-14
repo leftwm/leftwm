@@ -6,8 +6,6 @@ use crate::{child_process::Nanny, config::Config};
 use std::path::{Path, PathBuf};
 use std::sync::{Once, atomic::Ordering};
 
-use tracing::error;
-
 /// Errors which can appear while running the event loop.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Error {
