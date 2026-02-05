@@ -136,7 +136,7 @@
       flake = {
         formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
         overlays.default = final: prev: {
-          leftwm = self.packages.${final.system}.leftwm;
+          leftwm = self.packages.${final.stdenv.hostPlatform.system}.leftwm;
         };
 
         # nixos development vm
