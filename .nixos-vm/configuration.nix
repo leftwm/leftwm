@@ -1,8 +1,20 @@
 { config, pkgs, ... }:
 {
   system.stateVersion = "23.05";
-  boot.initrd.availableKernelModules = [ "virtio_net" "virtio_pci" "virtio_mmio" "virtio_blk" "virtio_scsi" "9p" "9pnet_virtio" ];
-  boot.initrd.kernelModules = [ "virtio_balloon" "virtio_console" "virtio_rng" ];
+  boot.initrd.availableKernelModules = [
+    "virtio_net"
+    "virtio_pci"
+    "virtio_mmio"
+    "virtio_blk"
+    "virtio_scsi"
+    "9p"
+    "9pnet_virtio"
+  ];
+  boot.initrd.kernelModules = [
+    "virtio_balloon"
+    "virtio_console"
+    "virtio_rng"
+  ];
 
   virtualisation.diskImage = "./.nixos-vm/${config.system.name}.qcow2";
 
@@ -33,10 +45,10 @@
       enable = true;
 
       desktopManager.xterm.enable = false;
-      displayManager.autoLogin.enable = true;
-      displayManager.autoLogin.user = "leftwm";
       windowManager.leftwm.enable = true;
-    };  
+    };
+    displayManager.autoLogin.enable = true;
+    displayManager.autoLogin.user = "leftwm";
   };
 
 }
