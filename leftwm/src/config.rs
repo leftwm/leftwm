@@ -753,10 +753,10 @@ fn get_return_pipe() -> Result<File, Box<dyn std::error::Error>> {
 }
 
 fn write_to_pipe(return_pipe: &mut Result<File, Box<dyn Error>>, msg: &str) {
-    if let Ok(pipefile) = return_pipe {
-        if let Err(e) = writeln!(pipefile, "{msg}") {
-            tracing::warn!("Unable to connect to return pipe: {e}");
-        }
+    if let Ok(pipefile) = return_pipe
+        && let Err(e) = writeln!(pipefile, "{msg}")
+    {
+        tracing::warn!("Unable to connect to return pipe: {e}");
     }
 }
 

@@ -67,10 +67,10 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
     }
 
     fn update_workspaces(&self, focused: Option<&Workspace>) {
-        if let Some(focused) = focused {
-            if let Err(e) = self.xw.set_current_desktop(focused.tag) {
-                tracing::error!("Error when setting current desktop to {:?}: {}", focused, e);
-            }
+        if let Some(focused) = focused
+            && let Err(e) = self.xw.set_current_desktop(focused.tag)
+        {
+            tracing::error!("Error when setting current desktop to {:?}: {}", focused, e);
         }
     }
 
@@ -94,10 +94,10 @@ impl DisplayServer<X11rbWindowHandle> for X11rbDisplayServer {
         }
 
         for event in &events {
-            if let DisplayEvent::WindowDestroy(WindowHandle(X11rbWindowHandle(w))) = event {
-                if let Err(e) = self.xw.force_unmapped(*w) {
-                    tracing::error!(error = ?e, "Error when forcing unmapping of window {}", w);
-                }
+            if let DisplayEvent::WindowDestroy(WindowHandle(X11rbWindowHandle(w))) = event
+                && let Err(e) = self.xw.force_unmapped(*w)
+            {
+                tracing::error!(error = ?e, "Error when forcing unmapping of window {}", w);
             }
         }
 

@@ -206,35 +206,32 @@ pub fn toggle_scratchpad<H: Handle, C: Config, SERVER: DisplayServer<H>>(
     let current_tag = &manager.state.focus_manager.tag(0)?;
 
     // Check if there is a valid scratchpad, if so handle it and return immediately
-    if let Some(id) = manager.state.active_scratchpads.get_mut(name) {
-        if let Some(first_in_scratchpad) =
+    if let Some(id) = manager.state.active_scratchpads.get_mut(name)
+        && let Some(first_in_scratchpad) =
             next_valid_scratchpad_pid(id, &manager.state.windows, Direction::Forward)
-        {
-            if let Some((is_visible, window_handle)) = manager
-                .state
-                .windows
-                .iter()
-                .find(|w| w.pid == Some(first_in_scratchpad))
-                .map(|w| (w.has_tag(current_tag), w.handle))
-            {
-                let action_result = if is_visible {
-                    // Window is visible => Hide the scratchpad.
-                    hide_scratchpad(manager, &window_handle)
-                } else {
-                    // Window is hidden => show the scratchpad
-                    show_scratchpad(manager, &window_handle)
-                };
+        && let Some((is_visible, window_handle)) = manager
+            .state
+            .windows
+            .iter()
+            .find(|w| w.pid == Some(first_in_scratchpad))
+            .map(|w| (w.has_tag(current_tag), w.handle))
+    {
+        let action_result = if is_visible {
+            // Window is visible => Hide the scratchpad.
+            hide_scratchpad(manager, &window_handle)
+        } else {
+            // Window is hidden => show the scratchpad
+            show_scratchpad(manager, &window_handle)
+        };
 
-                // Report the result of hiding/showing the scratchpad
-                return match action_result {
-                    Ok(()) => Some(true),
-                    Err(msg) => {
-                        tracing::error!("{}", msg);
-                        return Some(false);
-                    }
-                };
+        // Report the result of hiding/showing the scratchpad
+        return match action_result {
+            Ok(()) => Some(true),
+            Err(msg) => {
+                tracing::error!("{}", msg);
+                return Some(false);
             }
-        }
+        };
     }
 
     let scratchpad = manager

@@ -110,10 +110,10 @@ impl Nanny {
         for entry in dir.flatten() {
             let file = entry.path();
 
-            if let Some(extension) = file.extension() {
-                if extension == ext.as_ref() {
-                    files.push(Reverse(file));
-                }
+            if let Some(extension) = file.extension()
+                && extension == ext.as_ref()
+            {
+                files.push(Reverse(file));
             }
         }
 
@@ -154,19 +154,19 @@ fn boot_desktop_file(path: &Path) -> std::result::Result<Child, EntryBootError> 
     let entry = DesktopEntry::parse_file(path)?;
     let env_curr_desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
 
-    if let Some(only_show_in) = entry.only_show_in {
-        if !only_show_in.contains(&env_curr_desktop) {
-            return Err(EntryBootError::NotForThisDesktop {
-                current: env_curr_desktop,
-            });
-        }
+    if let Some(only_show_in) = entry.only_show_in
+        && !only_show_in.contains(&env_curr_desktop)
+    {
+        return Err(EntryBootError::NotForThisDesktop {
+            current: env_curr_desktop,
+        });
     }
-    if let Some(not_show_in) = entry.not_show_in {
-        if not_show_in.contains(&env_curr_desktop) {
-            return Err(EntryBootError::NotForThisDesktop {
-                current: env_curr_desktop,
-            });
-        }
+    if let Some(not_show_in) = entry.not_show_in
+        && not_show_in.contains(&env_curr_desktop)
+    {
+        return Err(EntryBootError::NotForThisDesktop {
+            current: env_curr_desktop,
+        });
     }
 
     if entry.hidden {

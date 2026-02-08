@@ -91,10 +91,10 @@ impl<H: Handle> State<H> {
         }
 
         // Unfocus last window if the target tag is empty
-        if let Some(window) = self.focus_manager.window(&self.windows) {
-            if window.tag != Some(*tag) {
-                self.unfocus_current_window();
-            }
+        if let Some(window) = self.focus_manager.window(&self.windows)
+            && window.tag != Some(*tag)
+        {
+            self.unfocus_current_window();
         }
     }
 
@@ -136,10 +136,10 @@ impl<H: Handle> State<H> {
     /// Validates that the given window is focused.
     pub fn validate_focus_at(&mut self, handle: &WindowHandle<H>) {
         // If the window is already focused do nothing.
-        if let Some(current) = self.focus_manager.window(&self.windows) {
-            if &current.handle == handle {
-                return;
-            }
+        if let Some(current) = self.focus_manager.window(&self.windows)
+            && &current.handle == handle
+        {
+            return;
         }
         // Focus the window only if it is also focusable.
         if self
@@ -171,21 +171,20 @@ impl<H: Handle> State<H> {
     }
 
     fn focus_tag_work(&mut self, tag: TagId, update_workspace: bool) -> bool {
-        if let Some(current_tag) = self.focus_manager.tag(0) {
-            if current_tag == tag {
-                return false;
-            }
+        if let Some(current_tag) = self.focus_manager.tag(0)
+            && current_tag == tag
+        {
+            return false;
         }
         // Clean old history.
         self.focus_manager.tag_history.truncate(10);
         // Add this focus to the history.
         self.focus_manager.tag_history.push_front(tag);
 
-        if update_workspace {
-            if let Some(ws) = self.focus_manager.workspace_mut(&mut self.workspaces) {
-                ws.tag = Some(tag);
-                self.update_static();
-            }
+        if update_workspace && let Some(ws) = self.focus_manager.workspace_mut(&mut self.workspaces)
+        {
+            ws.tag = Some(tag);
+            self.update_static();
         }
 
         let act = DisplayAction::SetCurrentTags(Some(tag));
@@ -236,10 +235,10 @@ impl<H: Handle> State<H> {
 
     fn focus_workspace_work(&mut self, ws_id: usize) -> bool {
         // no new history if no change
-        if let Some(fws) = self.focus_manager.workspace(&self.workspaces) {
-            if fws.id == ws_id {
-                return false;
-            }
+        if let Some(fws) = self.focus_manager.workspace(&self.workspaces)
+            && fws.id == ws_id
+        {
+            return false;
         }
         // Clean old history.
         self.focus_manager.workspace_history.truncate(10);

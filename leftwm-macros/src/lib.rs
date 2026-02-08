@@ -20,15 +20,13 @@ fn parse_enum_doc_comment(attrs: &[syn::Attribute]) -> String {
     let mut ret = String::new();
     for attr in attrs {
         let meta = &attr.meta;
-        if let syn::Meta::NameValue(meta) = meta {
-            if let syn::Expr::Lit(syn::ExprLit {
+        if let syn::Meta::NameValue(meta) = meta
+            && let syn::Expr::Lit(syn::ExprLit {
                 lit: syn::Lit::Str(l),
                 ..
             }) = &meta.value
-            {
-                write!(ret, "\n    {}", l.value().trim())
-                    .expect("failed to parse enum doc comment");
-            }
+        {
+            write!(ret, "\n    {}", l.value().trim()).expect("failed to parse enum doc comment");
         }
     }
 

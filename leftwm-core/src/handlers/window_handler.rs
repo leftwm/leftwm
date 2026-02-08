@@ -301,15 +301,11 @@ fn insert_window<H: Handle>(state: &mut State<H>, window: &mut Window<H>, layout
             .windows
             .iter_mut()
             .find(|w| for_active_workspace(w) && w.is_maximized())
+            && !window.floating()
         {
-            if !window.floating() {
-                let act = DisplayAction::SetState(
-                    fsw.handle,
-                    !fsw.is_maximized(),
-                    WindowState::Maximized,
-                );
-                state.actions.push_back(act);
-            }
+            let act =
+                DisplayAction::SetState(fsw.handle, !fsw.is_maximized(), WindowState::Maximized);
+            state.actions.push_back(act);
         }
 
         // TODO: remove hard coded layout names.
@@ -426,11 +422,11 @@ fn setup_window<H: Handle>(
     let Some(ws) = ws else {
         tracing::warn!("setup_window failed to identify workspace. Falling back to tag 1");
         window.tag = Some(1);
-        if is_scratchpad(state, window) {
-            if let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP") {
-                window.tag(&scratchpad_tag.id);
-                window.set_floating(true);
-            }
+        if is_scratchpad(state, window)
+            && let Some(scratchpad_tag) = state.tags.get_hidden_by_label("NSP")
+        {
+            window.tag(&scratchpad_tag.id);
+            window.set_floating(true);
         }
         return;
     };

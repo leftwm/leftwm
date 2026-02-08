@@ -48,13 +48,12 @@ pub fn from_event(
                 return Some(update_title(xw, event.window));
             }
 
-            if event.atom == xw.atoms.NetWMStrut
+            if (event.atom == xw.atoms.NetWMStrut
                 || event.atom == xw.atoms.NetWMStrutPartial
-                    && xw.get_window_type(event.window) == WindowType::Dock
+                    && xw.get_window_type(event.window) == WindowType::Dock)
+                && let Some(change) = build_change_for_size_strut_partial(xw, event.window)
             {
-                if let Some(change) = build_change_for_size_strut_partial(xw, event.window) {
-                    return Some(DisplayEvent::WindowChange(change));
-                }
+                return Some(DisplayEvent::WindowChange(change));
             }
 
             if event.atom == xw.atoms.NetWMState {

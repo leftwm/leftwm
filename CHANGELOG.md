@@ -6,7 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.5.5]
-### Breaking Change 
+
+### Breaking Change
+
+- feat(MSRV)!: update MSRV to 1.88.0 (via #1351 by @mautamu, @dependabot, @VuiMuich)
 - feat(watchdog): deprecate leftwm-watchdog bin; gate leftwm behind feature (via #1324 by @mautamu)
 - feat(MSRV): update edition to 2024, MSRV to 1.85.0 (via #1338 by @mautamu and @VuiMuich)
 - feat(config.toml): remove TOML support entirely from leftwm, leftwm-check (via #1339 by @mautamu).
