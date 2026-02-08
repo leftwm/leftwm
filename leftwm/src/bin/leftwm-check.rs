@@ -36,9 +36,9 @@ async fn main() -> Result<()> {
     println!(
         "\x1b[0;94m::\x1b[0m LeftWM git hash: {}",
         option_env!("GIT_HASH").unwrap_or(git_version::git_version!(
-            args = [ "--always", "--dirty= modified", "--match=NONE" ],
-            fallback = "unknown")
-        )
+            args = ["--always", "--dirty= modified", "--match=NONE"],
+            fallback = "unknown"
+        ))
     );
 
     match check_enabled_features(verbose) {
