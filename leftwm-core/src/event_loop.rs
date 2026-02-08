@@ -155,10 +155,10 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
     // Perform any actions requested by the handler.
     fn execute_actions(&mut self, event_buffer: &mut Vec<DisplayEvent<H>>) {
         while !self.state.actions.is_empty() {
-            if let Some(act) = self.state.actions.pop_front() {
-                if let Some(event) = self.display_server.execute_action(act) {
-                    event_buffer.push(event);
-                }
+            if let Some(act) = self.state.actions.pop_front()
+                && let Some(event) = self.display_server.execute_action(act)
+            {
+                event_buffer.push(event);
             }
         }
     }

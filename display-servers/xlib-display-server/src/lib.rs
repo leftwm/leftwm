@@ -223,10 +223,10 @@ impl XlibDisplayServer {
                 let Some(state) = self.xw.get_wm_state(handle) else {
                     return;
                 };
-                if attrs.map_state == xlib::IsViewable || state == ICONIC_STATE {
-                    if let Some(event) = self.xw.setup_window(handle) {
-                        all.push(event);
-                    }
+                if (attrs.map_state == xlib::IsViewable || state == ICONIC_STATE)
+                    && let Some(event) = self.xw.setup_window(handle)
+                {
+                    all.push(event);
                 }
             }),
             Err(err) => {

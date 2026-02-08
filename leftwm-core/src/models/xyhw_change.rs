@@ -34,53 +34,53 @@ impl From<Xyhw> for XyhwChange {
 impl XyhwChange {
     pub fn update(&self, xyhw: &mut Xyhw) -> bool {
         let mut changed = false;
-        if let Some(x) = self.x {
-            if xyhw.x() != x {
-                xyhw.set_x(x);
-                changed = true;
-            }
+        if let Some(x) = self.x
+            && xyhw.x() != x
+        {
+            xyhw.set_x(x);
+            changed = true;
         }
-        if let Some(y) = self.y {
-            if xyhw.y() != y {
-                xyhw.set_y(y);
-                changed = true;
-            }
+        if let Some(y) = self.y
+            && xyhw.y() != y
+        {
+            xyhw.set_y(y);
+            changed = true;
         }
-        if let Some(w) = self.w {
-            if xyhw.w() != w {
-                xyhw.set_w(w);
-                changed = true;
-            }
+        if let Some(w) = self.w
+            && xyhw.w() != w
+        {
+            xyhw.set_w(w);
+            changed = true;
         }
-        if let Some(h) = self.h {
-            if xyhw.h() != h {
-                xyhw.set_h(h);
-                changed = true;
-            }
+        if let Some(h) = self.h
+            && xyhw.h() != h
+        {
+            xyhw.set_h(h);
+            changed = true;
         }
-        if let Some(minw) = self.minw {
-            if xyhw.minw() != minw {
-                xyhw.set_minw(minw);
-                changed = true;
-            }
+        if let Some(minw) = self.minw
+            && xyhw.minw() != minw
+        {
+            xyhw.set_minw(minw);
+            changed = true;
         }
-        if let Some(maxw) = self.maxw {
-            if xyhw.maxw() != maxw {
-                xyhw.set_maxw(maxw);
-                changed = true;
-            }
+        if let Some(maxw) = self.maxw
+            && xyhw.maxw() != maxw
+        {
+            xyhw.set_maxw(maxw);
+            changed = true;
         }
-        if let Some(minh) = self.minh {
-            if xyhw.minh() != minh {
-                xyhw.set_minh(minh);
-                changed = true;
-            }
+        if let Some(minh) = self.minh
+            && xyhw.minh() != minh
+        {
+            xyhw.set_minh(minh);
+            changed = true;
         }
-        if let Some(maxh) = self.maxh {
-            if xyhw.maxh() != maxh {
-                xyhw.set_maxh(maxh);
-                changed = true;
-            }
+        if let Some(maxh) = self.maxh
+            && xyhw.maxh() != maxh
+        {
+            xyhw.set_maxh(maxh);
+            changed = true;
         }
         changed
     }

@@ -581,22 +581,22 @@ fn set_layout<H: Handle>(layout: &str, state: &mut State<H>) -> Option<bool> {
                     .windows
                     .iter()
                     .find(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating());
-            } else if layout == layouts::MAIN_AND_DECK {
-                if let Some(&Some(h)) = focused_window {
-                    let mut tags_windows = state
-                        .windows
-                        .iter()
-                        .filter(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating());
+            } else if layout == layouts::MAIN_AND_DECK
+                && let Some(&Some(h)) = focused_window
+            {
+                let mut tags_windows = state
+                    .windows
+                    .iter()
+                    .filter(|w| w.has_tag(&tag_id) && w.is_managed() && !w.floating());
 
-                    let mw = tags_windows.next();
-                    let tdw = tags_windows.next();
+                let mw = tags_windows.next();
+                let tdw = tags_windows.next();
 
-                    if let (Some(mw), Some(tdw)) = (mw, tdw) {
-                        // If the focused window is the main or the top of the deck, we don't do
-                        // anything.
-                        if mw.handle != h && tdw.handle != h {
-                            to_focus = Some(tdw);
-                        }
+                if let (Some(mw), Some(tdw)) = (mw, tdw) {
+                    // If the focused window is the main or the top of the deck, we don't do
+                    // anything.
+                    if mw.handle != h && tdw.handle != h {
+                        to_focus = Some(tdw);
                     }
                 }
             }
@@ -969,22 +969,19 @@ mod tests {
         >,
     ) {
         while let Some(act) = manager.state.actions.pop_front() {
-            if let DisplayAction::SetState(window_handle, toggle_to, window_state) = act {
-                if let Some(window) = manager
+            if let DisplayAction::SetState(window_handle, toggle_to, window_state) = act
+                && let Some(window) = manager
                     .state
                     .windows
                     .iter_mut()
                     .find(|w| w.handle == window_handle)
-                {
-                    if window_state == WindowState::Fullscreen
-                        || window_state == WindowState::Maximized
-                    {
-                        if toggle_to {
-                            window.states = vec![window_state];
-                        } else {
-                            window.states.retain(|s| s != &window_state);
-                        }
-                    }
+                && (window_state == WindowState::Fullscreen
+                    || window_state == WindowState::Maximized)
+            {
+                if toggle_to {
+                    window.states = vec![window_state];
+                } else {
+                    window.states.retain(|s| s != &window_state);
                 }
             }
         }

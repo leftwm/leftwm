@@ -27,11 +27,11 @@ impl<H: Handle> State<H> {
                 // Build the display to say whether we are ready to move/resize.
                 let act = self.build_action(modmask, button, handle, modifier);
                 if let Some(act) = act {
-                    if self.reposition_cursor_on_resize {
-                        if let DisplayAction::ReadyToResizeWindow(_) = act {
-                            let move_act = DisplayAction::MoveMouseOverPoint(bottom_right);
-                            self.actions.push_back(move_act);
-                        }
+                    if self.reposition_cursor_on_resize
+                        && let DisplayAction::ReadyToResizeWindow(_) = act
+                    {
+                        let move_act = DisplayAction::MoveMouseOverPoint(bottom_right);
+                        self.actions.push_back(move_act);
                     }
                     self.actions.push_back(act);
                     return false;

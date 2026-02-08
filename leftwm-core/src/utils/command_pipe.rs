@@ -94,12 +94,11 @@ async fn read_from_pipe<H: Handle>(
                 } else {
                     let file_name = ReturnPipe::pipe_name();
                     let file_path = BaseDirectories::with_prefix("leftwm");
-                    if let Some(file_path) = file_path.find_runtime_file(&file_name) {
-                        if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
-                            if let Err(e) = writeln!(file, "OK: command executed successfully") {
-                                tracing::error!("Unable to write to return pipe: {e}");
-                            }
-                        }
+                    if let Some(file_path) = file_path.find_runtime_file(&file_name)
+                        && let Ok(mut file) = OpenOptions::new().append(true).open(file_path)
+                        && let Err(e) = writeln!(file, "OK: command executed successfully")
+                    {
+                        tracing::error!("Unable to write to return pipe: {e}");
                     }
 
                     cmd
@@ -110,12 +109,11 @@ async fn read_from_pipe<H: Handle>(
                 // return to stdout
                 let file_name = ReturnPipe::pipe_name();
                 let file_path = BaseDirectories::with_prefix("leftwm");
-                if let Some(file_path) = file_path.find_runtime_file(file_name) {
-                    if let Ok(mut file) = OpenOptions::new().append(true).open(file_path) {
-                        if let Err(e) = writeln!(file, "ERROR: Error parsing command: {err}") {
-                            tracing::error!("Unable to write error to return pipe: {e}");
-                        }
-                    }
+                if let Some(file_path) = file_path.find_runtime_file(file_name)
+                    && let Ok(mut file) = OpenOptions::new().append(true).open(file_path)
+                    && let Err(e) = writeln!(file, "ERROR: Error parsing command: {err}")
+                {
+                    tracing::error!("Unable to write error to return pipe: {e}");
                 }
 
                 return None;

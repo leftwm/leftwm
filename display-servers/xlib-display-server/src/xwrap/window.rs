@@ -86,10 +86,11 @@ impl XWrap {
             w.urgent = hint.flags & xlib::XUrgencyHint != 0;
         }
         // Is this needed? Made it so it doens't overwrite prior sizing.
-        if w.floating() && sizing_hint.is_none() {
-            if let Ok(geo) = self.get_window_geometry(window) {
-                geo.update_window_floating(&mut w);
-            }
+        if w.floating()
+            && sizing_hint.is_none()
+            && let Ok(geo) = self.get_window_geometry(window)
+        {
+            geo.update_window_floating(&mut w);
         }
 
         let cursor = self.get_cursor_point().unwrap_or_default();
