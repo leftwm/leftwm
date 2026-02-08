@@ -8,7 +8,7 @@ bitflags! {
         /// Used as the zero value
         const Zero = 0;
         const Any = 1;
-        const Shift = 1 << 1;
+        const Shift = 1 << 0;
         const Control = 1 << 2;
         /// Mod1
         const Alt = 1 << 3;
