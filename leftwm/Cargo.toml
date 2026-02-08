@@ -1,7 +1,7 @@
 [package]
 name = "leftwm"
 version = "0.5.4"
-rust-version = "1.85.0" # MSRV MINIMUM SUPPORTED RUST VERSION
+rust-version = "1.88.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["gui"]
 edition = "2024"
@@ -33,7 +33,7 @@ leftwm-macros = {path = "../leftwm-macros", version = '0.5.4'}
 leftwm-layouts = "0.9.1"
 liquid = "0.26.9"
 mio = "1.0.2"
-nix = { version = "0.30.1", features = ["fs", "signal"] }
+nix = { version = "0.31.1", features = ["fs", "signal"] }
 regex = "1"
 ron = "0.12.0"
 serde = { version = "1.0.104", features = ["derive", "rc"] }

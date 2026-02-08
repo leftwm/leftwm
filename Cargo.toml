@@ -10,7 +10,7 @@ resolver = "2"
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.85.0" # MSRV MINIMUM SUPPORTED RUST VERSION
+rust-version = "1.88.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 
 [profile.optimized]
 inherits = "release"
