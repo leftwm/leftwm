@@ -55,9 +55,12 @@ impl<H: Handle> State<H> {
         window: WindowHandle<H>,
         modifier: ModMask,
     ) -> Option<DisplayAction<H>> {
-        let is_mouse_key = *mod_mask == modifier || *mod_mask == (modifier | ModMask::Shift);
-        match button {
-            Button::Main if is_mouse_key => {
+        let is_mouse_key = *mod_mask == modifier;
+        let is_mouse_and_shift_key = *mod_mask == (modifier | ModMask::Shift);
+        match (&button, is_mouse_and_shift_key) {
+            (&Button::Main, false) | (&Button::Secondary, true)
+                if is_mouse_key || is_mouse_and_shift_key =>
+            {
                 _ = self
                     .windows
                     .iter()
@@ -65,7 +68,9 @@ impl<H: Handle> State<H> {
                 self.mode = Mode::ReadyToMove(window);
                 Some(DisplayAction::ReadyToMoveWindow(window))
             }
-            Button::Secondary if is_mouse_key => {
+            (&Button::Main, true) | (&Button::Secondary, false)
+                if is_mouse_key || is_mouse_and_shift_key =>
+            {
                 _ = self
                     .windows
                     .iter()
@@ -73,7 +78,9 @@ impl<H: Handle> State<H> {
                 self.mode = Mode::ReadyToResize(window);
                 Some(DisplayAction::ReadyToResizeWindow(window))
             }
-            Button::Main | Button::Secondary if self.focus_manager.behaviour.is_clickto() => {
+            (&Button::Main | &Button::Secondary, _)
+                if self.focus_manager.behaviour.is_clickto() =>
+            {
                 self.focus_window(&window);
                 Some(DisplayAction::ReplayClick(window, button))
             }
