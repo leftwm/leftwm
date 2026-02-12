@@ -9,6 +9,8 @@ bitflags! {
         const Zero = 0;
         const Any = 1;
         const Shift = 1 << 0;
+        /// Caps Lock
+        const Lock = 1 << 1;
         const Control = 1 << 2;
         /// Mod1
         const Alt = 1 << 3;
@@ -93,6 +95,7 @@ pub fn into_mod(key: &str) -> ModMask {
         "None" => ModMask::Any,
         "Shift" => ModMask::Shift,
         "Control" => ModMask::Control,
+        "Lock" | "Capslock" => ModMask::Lock,
         "Mod1" | "Alt" => ModMask::Alt,
         // NOTE: we are ignoring the state of Numlock
         // this is left here as a reminder
