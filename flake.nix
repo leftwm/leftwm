@@ -43,13 +43,14 @@
             buildInputs = with pkgs; [
               mold
               clang
-              xorg.libX11
-              xorg.libXrandr
-              xorg.libXinerama
+              libX11
+              libXrandr
+              libXinerama
             ];
 
             inherit GIT_HASH;
-          } // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
+          }
+          // (craneLib.crateNameFromCargoToml { cargoToml = ./leftwm/Cargo.toml; });
 
           craneLib = (crane.mkLib pkgs).overrideToolchain pkgs.rust-bin.stable.latest.minimal;
 
