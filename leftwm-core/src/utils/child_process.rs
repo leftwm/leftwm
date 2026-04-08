@@ -181,7 +181,7 @@ fn boot_desktop_file(path: &Path) -> std::result::Result<Child, EntryBootError> 
 
     let wd = entry
         .path
-        .unwrap_or_else(|| dirs_next::home_dir().unwrap_or_else(|| PathBuf::from(".")));
+        .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| PathBuf::from(".")));
 
     Command::new("sh")
         .current_dir(wd)
