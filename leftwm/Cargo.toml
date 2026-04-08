@@ -22,30 +22,19 @@ required-features = ["leftwm-watchdog"]
 [dependencies]
 anyhow = "1.0.48"
 clap = { version = "4.5.0", features = ["cargo"] }
-const_format = "0.2.26"
-once_cell = "1.13.0"
-dirs-next = "2.0.0"
-futures = "0.3.21"
 git-version = "0.3.5"
 lefthk-core = { version = '0.3', optional = true }
 leftwm-core = { path = "../leftwm-core", version = '0.5.4' }
 leftwm-macros = {path = "../leftwm-macros", version = '0.5.4'}
 leftwm-layouts = "0.9.1"
 liquid = "0.26.9"
-mio = "1.0.2"
 nix = { version = "0.31.1", features = ["fs", "signal"] }
 regex = "1"
 ron = "0.12.0"
 serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
 shellexpand = "3.0.0"
-signal-hook = "0.4.1"
 thiserror = "2.0.9"
-time_leftwm = { package = "time", version = "0.3.7", features = [
-  "macros",
-  "formatting",
-  "local-offset",
-] }
 tokio = { version = "1.43.1", features = [
   "fs",
   "io-util",
@@ -69,7 +58,7 @@ xlib-display-server = { path = "../display-servers/xlib-display-server", version
 x11rb-display-server = { path = "../display-servers/x11rb-display-server", version = "0.1.4", optional = true }
 
 [dev-dependencies]
-tempfile = "3.2.0"
+tempfile = {version = "3.2.0", default-features=false}
 
 [features]
 default = ["journald-log", "lefthk", "xlib", "x11rb", "leftwm-watchdog"]

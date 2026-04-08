@@ -12,10 +12,9 @@ repository = "https://github.com/leftwm/leftwm"
 description = "A window manager for Adventurers"
 
 [dependencies]
-dirs-next = "2.0.0"
+dirs = "6.0.0"
 futures = "0.3.21"
 tracing = "0.1.37"
-mio = { version = "1.0.2", features = ["os-ext"] }
 nix = {version = "0.31.1", features = ["fs", "signal"]}
 serde = { version = "1.0.104", features = ["derive", "rc"] }
 serde_json = "1.0.44"
@@ -31,12 +30,11 @@ tokio = { version = "1.43.1", features = [
   "time",
 ] }
 leftwm-layouts = "0.9.1"
-x11-dl = "2.18.4"
 xdg = "3.0.0"
 bitflags = "2.4.2"
 
 [dev-dependencies]
-tempfile = "3.2.0"
+tempfile = {version = "3.2.0", default-features=false}
 
 [features]
 # Sleep on restart
