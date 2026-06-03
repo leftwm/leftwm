@@ -195,7 +195,7 @@ fn start_leftwm() {
         // wait to give the login manager a second to boot.
         #[cfg(feature = "slow-dm-fix")]
         {
-            let delay = std::time::Duration::from_millis(2000);
+            let delay = std::time::Duration::from_secs(2);
             std::thread::sleep(delay);
         }
     }
