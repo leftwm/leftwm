@@ -89,22 +89,11 @@ impl<H: Handle> State<H> {
             })
         });
 
+        // Dialogs and modals.
+        sorter.sort(|w| w.r#type.is_dialog_like());
+
         // Fullscreen windows
         sorter.sort(Window::is_fullscreen);
-
-        // Dialogs and modals.
-        sorter.sort(|w| {
-            w.r#type == WindowType::Dialog
-                || w.r#type == WindowType::Splash
-                || w.r#type == WindowType::Utility
-                || w.r#type == WindowType::Menu
-                || w.r#type == WindowType::DropdownMenu
-                || w.r#type == WindowType::PopupMenu
-                || w.r#type == WindowType::Tooltip
-                || w.r#type == WindowType::Notification
-                || w.r#type == WindowType::Combo
-                || w.r#type == WindowType::Dnd
-        });
 
         // Floating windows.
         sorter.sort(|w| w.r#type == WindowType::Normal && w.floating());

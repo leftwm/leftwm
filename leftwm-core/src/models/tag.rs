@@ -240,6 +240,7 @@ impl Tag {
                 .filter(|w| {
                     w.has_tag(&self.id)
                         && (w.transient == Some(handle)
+                            || w.r#type.is_dialog_like()
                             || w.states.contains(&super::WindowState::Above) && w.floating())
                         && w.is_managed()
                 })
