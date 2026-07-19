@@ -20,21 +20,21 @@ name = "leftwm"
 required-features = ["leftwm-watchdog"]
 
 [dependencies]
-anyhow = "1.0.48"
-clap = { version = "4.5.0", features = ["cargo"] }
-git-version = "0.3.5"
+anyhow = { version = "1.0.48", default-features = false }
+clap = { version = "4.5.0", features = ["cargo", "std", "help"], default-features = false }
+git-version = { version = "0.3.5", default-features = false }
 lefthk-core = { version = '0.3', optional = true }
-leftwm-core = { path = "../leftwm-core", version = '0.5.4' }
-leftwm-macros = {path = "../leftwm-macros", version = '0.5.4'}
-leftwm-layouts = "0.9.1"
-liquid = "0.26.9"
-nix = { version = "0.31.1", features = ["fs", "signal"] }
-regex = "1"
-ron = "0.12.0"
-serde = { version = "1.0.104", features = ["derive", "rc"] }
-serde_json = "1.0.44"
-shellexpand = "3.0.0"
-thiserror = "2.0.9"
+leftwm-core = { path = "../leftwm-core", version = '0.5.4'}
+leftwm-macros = { path = "../leftwm-macros", version = '0.5.4' }
+leftwm-layouts = { version = "0.9.1" }
+liquid = { version = "0.26.9", features = ["stdlib"], default-features = false }
+nix = { version = "0.31.1", features = ["fs", "signal"], default-features = false }
+regex = { version = "1", features = ["perf"], default-features = false }
+ron = { version = "0.12.0", default-features = false }
+serde = { version = "1.0.104", features = ["derive", "rc"], default-features = false }
+serde_json = { version = "1.0.44", default-features = false }
+shellexpand = { version = "3.0.0", features = ["base-0", "full"], default-features = false }
+thiserror = { version = "2.0.9", default-features = false }
 tokio = { version = "1.43.1", features = [
   "fs",
   "io-util",
@@ -43,19 +43,19 @@ tokio = { version = "1.43.1", features = [
   "rt-multi-thread",
   "sync",
   "time",
-] }
-xdg = "3.0.0"
+], default-features = false }
+xdg = { version = "3.0.0", default-features = false }
 
 # logging
-tracing = "0.1.36"
-tracing-subscriber = {version = "0.3.20", features = ["env-filter"]}
-tracing-journald = {version = "0.3.0", optional = true}
-tracing-appender = {version = "0.2.2", optional = true}
-syslog-tracing = {version = "0.3.0", optional = true}
+tracing = { version = "0.1.36", default-features = false }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"], default-features = false }
+tracing-journald = { version = "0.3.0", optional = true, default-features = false }
+tracing-appender = { version = "0.2.2", optional = true, default-features = false }
+syslog-tracing = { version = "0.3.0", optional = true, default-features = false }
 
 # display_servers
-xlib-display-server = { path = "../display-servers/xlib-display-server", version = "0.1.4", optional = true }
-x11rb-display-server = { path = "../display-servers/x11rb-display-server", version = "0.1.4", optional = true }
+xlib-display-server = { path = "../display-servers/xlib-display-server", version = "0.1.4", optional = true}
+x11rb-display-server = { path = "../display-servers/x11rb-display-server", version = "0.1.4", optional = true}
 
 [dev-dependencies]
 tempfile = {version = "3.2.0", default-features=false}

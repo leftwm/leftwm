@@ -10,9 +10,9 @@ rust-version = "1.88.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 
 [dependencies]
 leftwm-core = { path = "../../leftwm-core", version = '0.5.4' }
-futures = "0.3.21"
-tracing = "0.1.36"
-tokio = { version = "1.43.1", features = [ "sync", "time" ] }
-mio = { version = "1.0.2", features = ["os-ext"] }
-x11rb = { version = "0.13.1", features = ["cursor", "randr", "xinerama"] }
-serde = { version = "1.0.104", features = ["derive"] }
+futures = { version = "0.3.21", default-features = false }
+tracing = { version = "0.1.36", default-features = false }
+tokio = { version = "1.43.1", features = [ "sync", "time" ], default-features = false }
+mio = { version = "1.0.2", features = ["os-ext"], default-features = false }
+x11rb = { version = "0.13.1", features = ["cursor", "randr", "xinerama"], default-features=false}
+serde = { version = "1.0.104", features = ["derive", "std"], default-features = false }

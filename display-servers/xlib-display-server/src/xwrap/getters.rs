@@ -20,13 +20,11 @@ impl XWrap {
     pub fn get_all_windows(&self) -> Result<Vec<xlib::Window>, String> {
         let mut all = Vec::new();
         for root in self.get_roots() {
-            match self.get_windows_for_root(root) {
-                Ok(some_windows) => {
-                    for w in some_windows {
-                        all.push(*w);
-                    }
+            {
+                let some_windows = self.get_windows_for_root(root)?;
+                for w in some_windows {
+                    all.push(*w);
                 }
-                Err(err) => return Err(err),
             }
         }
         Ok(all)
