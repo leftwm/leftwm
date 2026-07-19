@@ -487,14 +487,14 @@ impl<H: Handle> fmt::Display for InvalidFocusDeltaBehaviorError<H> {
             Command::FocusNextTag { .. } => write!(
                 f,
                 "Invalid behavior for FocusNextTag: {}",
-                &self.attempted_value
+                self.attempted_value
             ),
             Command::FocusPreviousTag { .. } => write!(
                 f,
                 "Invalid behavior for FocusPreviousTag: {}",
-                &self.attempted_value
+                self.attempted_value
             ),
-            _ => write!(f, "Invalid behavior: {}", &self.attempted_value),
+            _ => write!(f, "Invalid behavior: {}", self.attempted_value),
         }
     }
 }
