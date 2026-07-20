@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Sloppy focus when switching tags with mouse over margins is now fixed (via #1311 by @fransklaver)
 - ClickTo focus when switching tags is now fixed (via #1312 by @fransklaver)
+- feat: Update the makefile for man spec, and allow specifying features (via #1368 by @evanescente-ondine, @mautamu)
 
 ## [0.5.4]
 

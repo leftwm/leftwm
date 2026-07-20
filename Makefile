@@ -55,9 +55,9 @@ install: build
 	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 $(MAN_DIR)/man1/leftwm.1
 	[ -d '/usr/share/leftwm' ] || sudo mkdir $(SHARE_DIR)/leftwm
 	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
-	-sudo install -s -Dm755 $(ROOT_DIR)/target/$(folder)/lefthk-worker  -t $(TARGET_DIR)
-	sudo install -m755 -s \
-		$(ROOT_DIR)/target/$(folder)/leftwm \
+	-sudo install -s -Dm755 $(ROOT_DIR)/target/$(folder)/lefthk-worker -t $(TARGET_DIR)
+	-sudo install -s -Dm755 $(ROOT_DIR)/target/$(folder)/leftwm -t $(TARGET_DIR) 
+	sudo install -s -Dm755 \
 		$(ROOT_DIR)/target/$(folder)/leftwm-log \
 		$(ROOT_DIR)/target/$(folder)/leftwm-worker\
 		$(ROOT_DIR)/target/$(folder)/leftwm-state \
