@@ -805,10 +805,15 @@ fn focus_window_change<H: Handle>(
     val: i32,
 ) -> Option<bool> {
     let is_handle = |x: &Window<H>| -> bool { x.handle == handle };
+    let is_fullscreen = helpers::relative_find(&to_reorder, is_handle, 0, true)?;
+    if is_fullscreen.is_fullscreen() {
+        // state.windows.append(&mut to_reorder);
+        state.handle_window_focus(&is_fullscreen.handle);
+        return Some(!is_fullscreen.is_fullscreen());
+    }
+    // For the Monocle layout and the deck in the MainAndDeck layout we want to also move windows up/down
+    // Not the best solution but results in desired behaviour
     if layout == Some(layouts::MONOCLE.to_string()).as_ref() {
-        // For Monocle we want to also move windows up/down
-        // Not the best solution but results
-        // in desired behaviour
         handle = helpers::relative_find(&to_reorder, is_handle, -val, true)?.handle;
         let _ = helpers::cycle_vec(&mut to_reorder, val);
     } else if layout == Some(layouts::MAIN_AND_DECK.to_string()).as_ref() {
