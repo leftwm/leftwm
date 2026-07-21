@@ -163,7 +163,7 @@ impl<H: Handle> State<H> {
             .filter(|x| ws.is_managed(x) && x.can_focus())
             .map(|w| (distance(w, x, y), w))
             .collect();
-        dists.sort_by(|a, b| (a.0).cmp(&b.0));
+        dists.sort_by_key(|a| a.0);
         if let Some(first) = dists.first() {
             let handle = first.1.handle;
             self.focus_window(&handle);

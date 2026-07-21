@@ -2,9 +2,9 @@
 # or when 'make' is run from another directory.
 # - credit: https://stackoverflow.com/a/23324703/2726733
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-
 SHARE_DIR := /usr/share
 TARGET_DIR := /usr/local/bin
+MAN_DIR := /usr/local/share/man
 
 # Set default profile if unset
 ifndef profile
@@ -41,7 +41,7 @@ test-full-nix: test test-nix
 build:
 	@echo "Building with $(profile) profile"
 	@echo "Change the profile by adding profile=release or profile=dev to the command"
-	cd $(ROOT_DIR) && cargo build --profile $(profile)
+	cd $(ROOT_DIR) && cargo build --profile $(profile) $(if $(FEATURES),--features=$(FEATURES)) $(if $(filter-out undefined,$(origin NO_DEFAULT_FEATURES)),--no-default-features)
 
 # removes the generated binaries
 clean:
@@ -52,17 +52,17 @@ clean:
 # builds the project and installs the binaries (and .desktop)
 install: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/xsessions/
-	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
+	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 $(MAN_DIR)/man1/leftwm.1
 	[ -d '/usr/share/leftwm' ] || sudo mkdir $(SHARE_DIR)/leftwm
 	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
-	sudo install -s -Dm755\
-		$(ROOT_DIR)/target/$(folder)/leftwm\
-		$(ROOT_DIR)/target/$(folder)/leftwm-log\
+	-sudo install -s -Dm755 $(ROOT_DIR)/target/$(folder)/lefthk-worker -t $(TARGET_DIR)
+	-sudo install -s -Dm755 $(ROOT_DIR)/target/$(folder)/leftwm -t $(TARGET_DIR) 
+	sudo install -s -Dm755 \
+		$(ROOT_DIR)/target/$(folder)/leftwm-log \
 		$(ROOT_DIR)/target/$(folder)/leftwm-worker\
-		$(ROOT_DIR)/target/$(folder)/lefthk-worker\
-		$(ROOT_DIR)/target/$(folder)/leftwm-state\
-		$(ROOT_DIR)/target/$(folder)/leftwm-check\
-		$(ROOT_DIR)/target/$(folder)/leftwm-command\
+		$(ROOT_DIR)/target/$(folder)/leftwm-state \
+		$(ROOT_DIR)/target/$(folder)/leftwm-check \
+		$(ROOT_DIR)/target/$(folder)/leftwm-command \
 		-t $(TARGET_DIR)
 	cd $(ROOT_DIR) && cargo clean
 	@echo "Binaries, '.desktop' file, manpage, theme and config templates have been installed"
@@ -70,29 +70,29 @@ install: build
 # Function to build and link a specific profile
 install-linked: build
 	sudo cp $(ROOT_DIR)/leftwm.desktop $(SHARE_DIR)/
-	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 /usr/local/share/man/man1/leftwm.1
+	sudo cp $(ROOT_DIR)/leftwm/doc/leftwm.1 $(MAN_DIR)/man1/leftwm.1
 	[ -d '/usr/share/leftwm' ] || sudo mkdir $(SHARE_DIR)/leftwm
 	sudo cp -rL $(ROOT_DIR)/examples $(SHARE_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm $(TARGET_DIR)/leftwm
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-log $(TARGET_DIR)/leftwm-log
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-worker $(TARGET_DIR)/leftwm-worker
-	sudo ln -sf $(ROOT_DIR)/target/$(folder)/lefthk-worker $(TARGET_DIR)/lefthk-worker
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-state $(TARGET_DIR)/leftwm-state
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-check $(TARGET_DIR)/leftwm-check
 	sudo ln -sf $(ROOT_DIR)/target/$(folder)/leftwm-command $(TARGET_DIR)/leftwm-command
+	-sudo ln -sf $(ROOT_DIR)/target/$(folder)/lefthk-worker $(TARGET_DIR)/lefthk-worker
 	@echo "binaries have been linked, '.desktop' file, manpage, theme and config templates have been installed"
 
 # Uninstalls leftwm from the system.
 uninstall:
 	sudo rm -f $(SHARE_DIR)/leftwm.desktop
-	sudo rm /usr/local/share/man/man1/leftwm.1
+	sudo rm $(MAN_DIR)/man1/leftwm.1
 	sudo rm -rf $(SHARE_DIR)/leftwm
-	sudo rm -f\
-		$(TARGET_DIR)/leftwm\
-		$(TARGET_DIR)/leftwm-log\
-		$(TARGET_DIR)/leftwm-worker\
-		$(TARGET_DIR)/lefthk-worker\
-		$(TARGET_DIR)/leftwm-state\
-		$(TARGET_DIR)/leftwm-check\
+	sudo rm -f \
+		$(TARGET_DIR)/leftwm \
+		$(TARGET_DIR)/leftwm-log \
+		$(TARGET_DIR)/leftwm-worker $(if $(findstring lefthk-worker,$(FEATURES)),,$(TARGET_DIR)/lefthk-worker) \
+		$(TARGET_DIR)/leftwm-state \
+		$(TARGET_DIR)/leftwm-check \
 		$(TARGET_DIR)/leftwm-command
 	@echo "Binaries and manpage have been uninstalled and '.desktop' file, theme and config templates have been removed"
+

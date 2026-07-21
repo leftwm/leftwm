@@ -444,7 +444,7 @@ fn check_binary(binary: &str, verbose: bool) -> Result<()> {
             let path = format!("{p}/{binary}");
             if Path::new(&path).exists() {
                 if verbose {
-                    println!("In search for binaries, found {}", &path);
+                    println!("In search for binaries, found {path}");
                 }
                 return Ok(());
             }

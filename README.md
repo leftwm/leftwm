@@ -112,15 +112,15 @@ List of LeftWM dependencies:
 List of common dependencies for themes:
 
 | Dependency<br>(git)      | Ubuntu 24.04<br> _sudo apt install {}_ | Arch<br> _sudo pacman -S {}_ | Fedora 42<br> _sudo dnf install {}_ | PKGS                     |
-| ------------------------ | --------------------------------------- | ---------------------------- | ----------------------------------- | ------------------------ |
-| [feh][feh-git]           | feh                                     | feh                          | feh                                 | [feh][feh-pkg]           |
-| [compton][compton-git]   | compton                                 | picom                        | compton                             | [compton][compton-pkg]   |
+| ------------------------ | -------------------------------------- | ---------------------------- | ----------------------------------- | ------------------------ |
+| [feh][feh-git]           | feh                                    | feh                          | feh                                 | [feh][feh-pkg]           |
+| [compton][compton-git]   | compton                                | picom                        | compton                             | [compton][compton-pkg]   |
 | [picom][picom-git]       | picom \*\*                             | picom                        | picom                               | [picom][picom-pkg]       |
-| [polybar][polybar-git]   | polybar \*\*                             | polybar                      | polybar                             | [polybar][polybar-pkg]   |
-| [xmobar][xmobar-git]     | xmobar                                  | xmobar                       | xmobar                              | [xmobar][xmobar-pkg]     |
-| [lemonbar][lemonbar-git] | lemonbar                                | paru -S lemonbar\*           | manual \*\*                         | [lemonbar][lemonbar-pkg] |
-| [conky][conky-git]       | conky                                   | conky                        | conky                               | [conky][conky-pkg]       |
-| [dmenu][dmenu-git]       | dmenu                                   | dmenu                        | dmenu                               | [dmenu][dmenu-pkg]       |
+| [polybar][polybar-git]   | polybar \*\*                           | polybar                      | polybar                             | [polybar][polybar-pkg]   |
+| [xmobar][xmobar-git]     | xmobar                                 | xmobar                       | xmobar                              | [xmobar][xmobar-pkg]     |
+| [lemonbar][lemonbar-git] | lemonbar                               | paru -S lemonbar\*           | manual \*\*                         | [lemonbar][lemonbar-pkg] |
+| [conky][conky-git]       | conky                                  | conky                        | conky                               | [conky][conky-pkg]       |
+| [dmenu][dmenu-git]       | dmenu                                  | dmenu                        | dmenu                               | [dmenu][dmenu-pkg]       |
 
 [feh-git]: https://github.com/derf/feh
 [feh-pkg]: https://pkgs.org/search/?q=feh&on=provides
@@ -343,9 +343,9 @@ Use `cargo` with the added flags `--no-default-features --features=` and then co
 | journald-log | logging to `journald`, depends on `systemd`                                                                                                                                                    | ✔      |
 | sys-log      | use standard system logging                                                                                                                                                                    | ✘       |
 | file-log     | log to `/tmp/leftwm/<log-file-by-datetime-of-launch>`                                                                                                                                          | ✘       |
-| xlib (\*)    | legacy backend linking to `libX11`                                                                                                                                                             | ✔       |
-| x11rb (\*)   | rust based backend using [`x11rb`](https://github.com/psychon/x11rb)                                                                                                                           | ✔       |
-| leftwm (\*)  | whether to build the `leftwm` binary                                                                                                                                                           | ✔       | 
+| xlib (\*)    | legacy backend linking to `libX11`                                                                                                                                                             | ✔      |
+| x11rb (\*)   | rust based backend using [`x11rb`](https://github.com/psychon/x11rb)                                                                                                                           | ✔      |
+| leftwm (\*)  | whether to build the `leftwm` binary                                                                                                                                                           | ✔      |
 
 ⚠️ You need to select **at least one** backend feature (\*) for leftwm to build, and leftwm-watchdog in order to get the `leftwm` binary ⚠️
 
@@ -386,6 +386,12 @@ For conveniece we also have a Makefile with the following rules:
 | install        | install by copying binaries to `/usr/bin`, also places `leftwm.desktop` file to `/usr/share/xsession` and cleans build files |
 | install-linked | installs by symlinking, copies `leftwm.desktop`, no clean                                                                    |
 | uninstall      | removes `leftwm-*` files from `/usr/bin` and `leftwm.desktop` file                                                           |
+
+Additionally, the `build` and `install` portions of the makefile take an optional argument `FEATURES` which can be used to specify which feature(s) to build, for example:
+
+```
+make install FEATURES=lefthk,xlib
+```
 
 Note that for `build`, `install` and `install-linked`, you can specify the build profile to use by adding the `profile=<profile-name>` argument. Currently available are `dev`, `release` and `release-optimized`.
 
