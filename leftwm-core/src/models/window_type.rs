@@ -17,3 +17,22 @@ pub enum WindowType {
     Dnd,
     Normal,
 }
+
+impl WindowType {
+    #[must_use]
+    pub fn is_dialog_like(&self) -> bool {
+        matches!(
+            self,
+            Self::Dialog
+                | Self::Splash
+                | Self::Utility
+                | Self::Menu
+                | Self::DropdownMenu
+                | Self::PopupMenu
+                | Self::Tooltip
+                | Self::Notification
+                | Self::Combo
+                | Self::Dnd
+        )
+    }
+}

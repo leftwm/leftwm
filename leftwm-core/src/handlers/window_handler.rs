@@ -155,6 +155,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
         let mut changed = false;
         let mut fullscreen_changed = false;
         let mut above_changed = false;
+        let mut transient_changed = false;
         let strut_changed = change.strut.is_some();
         let windows = self.state.windows.clone();
         if let Some(window) = self
@@ -163,6 +164,10 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
             .iter_mut()
             .find(|w| w.handle == change.handle)
         {
+            transient_changed = change
+                .transient
+                .as_ref()
+                .is_some_and(|transient| transient != &window.transient);
             if let Some(states) = &change.states {
                 fullscreen_changed =
                     states.contains(&WindowState::Fullscreen) != window.is_fullscreen();
@@ -200,7 +205,7 @@ impl<H: Handle, C: Config, SERVER: DisplayServer<H>> Manager<H, C, SERVER> {
             }
         }
 
-        if fullscreen_changed || above_changed {
+        if fullscreen_changed || above_changed || transient_changed {
             // Reorder windows.
             self.state.sort_windows();
         }
@@ -336,13 +341,8 @@ fn insert_window<H: Handle>(state: &mut State<H>, window: &mut Window<H>, layout
         }
     }
 
-    // If a window is a dialog, splash, utility, floating or scractchpad we want it to be at the top.
-    if window.r#type == WindowType::Dialog
-        || window.r#type == WindowType::Splash
-        || window.r#type == WindowType::Utility
-        || window.floating()
-        || is_scratchpad(state, window)
-    {
+    // Keep dialog-like, floating, and scratchpad windows at the top.
+    if window.r#type.is_dialog_like() || window.floating() || is_scratchpad(state, window) {
         state.windows.insert(0, window.clone());
         return;
     }
@@ -517,6 +517,89 @@ mod tests {
     use crate::Manager;
     use crate::layouts::MONOCLE;
     use crate::models::{MockHandle, Screen};
+
+    fn last_window_order(state: &State<MockHandle>) -> Vec<WindowHandle<MockHandle>> {
+        state
+            .actions
+            .iter()
+            .rev()
+            .find_map(|action| match action {
+                DisplayAction::SetWindowOrder(order) => Some(order.clone()),
+                _ => None,
+            })
+            .expect("expected a window order action")
+    }
+
+    #[test]
+    fn dialog_is_visible_and_stacked_above_fullscreen_without_focus() {
+        let mut manager = Manager::new_test(vec!["1".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        let mut fullscreen = Window::new(WindowHandle::<MockHandle>(1), None, None);
+        fullscreen.states.push(WindowState::Fullscreen);
+        manager.window_created_handler(fullscreen, -1, -1);
+
+        let mut dialog = Window::new(WindowHandle::<MockHandle>(2), None, None);
+        dialog.r#type = WindowType::Dialog;
+        manager.window_created_handler(dialog, -1, -1);
+
+        assert_eq!(
+            manager
+                .state
+                .focus_manager
+                .window(&manager.state.windows)
+                .map(|window| window.handle),
+            Some(WindowHandle(1))
+        );
+        assert_eq!(
+            last_window_order(&manager.state),
+            vec![WindowHandle(2), WindowHandle(1)]
+        );
+
+        manager.update_windows();
+        assert!(
+            manager
+                .state
+                .windows
+                .iter()
+                .find(|window| window.handle == WindowHandle(2))
+                .is_some_and(Window::visible)
+        );
+    }
+
+    #[test]
+    fn late_transient_hint_restacks_dialog_above_fullscreen_parent() {
+        let mut manager = Manager::new_test(vec!["1".to_string()]);
+        manager.screen_create_handler(Screen::default());
+
+        let mut fullscreen = Window::new(WindowHandle::<MockHandle>(1), None, None);
+        fullscreen.states.push(WindowState::Fullscreen);
+        manager.window_created_handler(fullscreen, -1, -1);
+
+        let mut dialog = Window::new(WindowHandle::<MockHandle>(2), None, None);
+        dialog.r#type = WindowType::Dialog;
+        manager.window_created_handler(dialog, -1, -1);
+
+        manager.state.actions.clear();
+        let mut change = WindowChange::new(WindowHandle(2));
+        change.transient = Some(Some(WindowHandle(1)));
+
+        assert!(manager.window_changed_handler(change));
+        assert_eq!(
+            last_window_order(&manager.state),
+            vec![WindowHandle(2), WindowHandle(1)]
+        );
+
+        manager.update_windows();
+        assert!(
+            manager
+                .state
+                .windows
+                .iter()
+                .find(|window| window.handle == WindowHandle(2))
+                .is_some_and(Window::visible)
+        );
+    }
 
     #[test]
     fn insert_behavior_bottom_add_window_at_the_end_of_the_stack() {
