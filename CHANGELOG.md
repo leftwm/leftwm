@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(MSRV): update edition to 2024, MSRV to 1.85.0 (via #1338 by @mautamu and @VuiMuich)
 - feat(config.toml): remove TOML support entirely from leftwm, leftwm-check (via #1339 by @mautamu).
 
+### Added
+
+- Resizing a floating window with the mouse is now anchored to the corner nearest the pointer, instead of always the bottom right one (by @adrian-cancio)
+
 ### Fixes
 
 - Sloppy focus when switching tags with mouse over margins is now fixed (via #1311 by @fransklaver)

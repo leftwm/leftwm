@@ -1,6 +1,7 @@
 use crate::display_action::DisplayAction;
 use crate::models::Handle;
 use crate::models::Mode;
+use crate::models::ResizeCorner;
 use crate::models::WindowHandle;
 use crate::state::State;
 use crate::utils;
@@ -23,15 +24,28 @@ impl<H: Handle> State<H> {
         if let Some(window) = self.windows.iter().find(|w| w.handle == handle) {
             if !self.disable_tile_drag || window.floating() {
                 let modifier = utils::modmask_lookup::into_modmask(&self.mousekey);
-                let bottom_right = (window.x() + window.width(), window.y() + window.height());
+                // A resize is anchored to the corner the pointer is closest
+                // to, so grabbing near the top left edge grows the window up
+                // and to the left instead of always dragging the bottom right
+                // corner around.
+                let corner = ResizeCorner::nearest(
+                    x,
+                    y,
+                    window.x(),
+                    window.y(),
+                    window.width(),
+                    window.height(),
+                );
+                let anchor = corner.point(window.x(), window.y(), window.width(), window.height());
                 // Build the display to say whether we are ready to move/resize.
                 let act = self.build_action(modmask, button, handle, modifier);
                 if let Some(act) = act {
-                    if self.reposition_cursor_on_resize
-                        && let DisplayAction::ReadyToResizeWindow(_) = act
-                    {
-                        let move_act = DisplayAction::MoveMouseOverPoint(bottom_right);
-                        self.actions.push_back(move_act);
+                    if let DisplayAction::ReadyToResizeWindow(_) = act {
+                        self.resize_corner = corner;
+                        if self.reposition_cursor_on_resize {
+                            let move_act = DisplayAction::MoveMouseOverPoint(anchor);
+                            self.actions.push_back(move_act);
+                        }
                     }
                     self.actions.push_back(act);
                     return false;
