@@ -8,35 +8,34 @@ on:
         type: string
       target:
         type: string
-        default: 'x86_64-unknown-linux-gnu'
+        default: "x86_64-unknown-linux-gnu"
 
 jobs:
   msrv:
     name: Check MSRV (${{ inputs.toolchain }} on ${{ inputs.target }})
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install MSRV Toolchain (${{ inputs.toolchain }})
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: ${{ inputs.toolchain }}
-            target: ${{ inputs.target }}
-            override: true
-            components: clippy
+          toolchain: ${{ inputs.toolchain }}
+          target: ${{ inputs.target }}
+          override: true
+          components: clippy
 
       - name: Cargo Check
         uses: actions-rs/cargo@v1
         with:
-            command: check
+          command: check
 
       - name: Run MSRV clippy
         uses: actions-rs/cargo@v1
         with:
-            command: clippy
-            args: --all-targets --all-features -- -D warnings -W clippy::pedantic
+          command: clippy
+          args: --all-targets --all-features -- -D warnings -W clippy::pedantic
 
       - name: Display MSRV
         run: cargo -V
