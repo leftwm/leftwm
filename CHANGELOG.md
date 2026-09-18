@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resizing a floating window with the mouse is now anchored to the corner nearest the pointer, instead of always the bottom right one (by @adrian-cancio)
 - Add `disable_mouse_grab` to window rules and suppress creation-time mouse warping for utility windows by default (via #1366).
+- feat(#1296): add default_layout option to config by @AnthonyMichaelTDM in #1301
+- x11rb: allow legacy name to not exist by @fransklaver in #1318
+- x11rb: getters: fix getting the output name by @fransklaver in #1319
+- scratchpad_handler: remove try_bool macro by @fransklaver in #1320
+- config: Add SerializableRegex to serialize Regex (#1307) by @marianomarciello in #1341
+- Support ewmh 1.4 window types by @Lieunoir in #1346
 
 ### Fixes
 
@@ -25,6 +31,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ClickTo focus when switching tags is now fixed (via #1312 by @fransklaver)
 - Keep dialogs above fullscreen windows without relying on focus (via #1364 by @NicTanghe)
 - Update the makefile for man spec, and allow specifying features (via #1368 by @evanescente-ondine, @mautamu)
+- fix creating a scratchpad window on x11rb by @fransklaver in #1316
+- update xmobar source url in README by @VuiMuich in #1328
+- fix typo in README.md by @indium114 in #1332
+- update distro versions and packages in theme deps section by @indium114 in #1333
+- fix: include path in warning when path does not exists by @hosfeld in #1337
+- flake update, and fix two nix eval warnings by @VuiMuich in #1354
+- [leftwm-check] fix printing outdated release tag by @VuiMuich in #1356
+- flake update: xorg packageset was deprecated by @VuiMuich in #1357
+- fix: cleanup dependency tree by @mautamu in #1358
+- chore: bump dependencies, run clippies, remove unneeded dep features by @mautamu in #1361
+- fix: keep dialogs above windows by @NicTanghe in #1364
+- fix: preserve geometry for dialog-like windows by @NicTanghe in #1371
+- dont grab mouse for "dialogue like" windows. by @NicTanghe in #1370
 
 ## [0.5.4]
 
