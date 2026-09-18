@@ -211,6 +211,13 @@ the cursor will be snapped to the lower right corner of the window which is
 being resized.
 .PP
 Default: \f[C]disable_cursor_reposition_on_resize = false\f[R]
+.SS Dialog Position
+.PP
+LeftWM centers dialog windows by default while retaining the dimensions requested
+by the client. Set \f[C]respect_dialog_position\f[R] to true to also retain the
+position requested by dialog-like windows.
+.PP
+Default: \f[C]respect_dialog_position = false\f[R]
 .SS Window Creation and Cursor Focus
 .PP
 In multi-workspace layouts (such as with multiple monitors), LeftWM
@@ -228,6 +235,26 @@ when unset (\f[C]None\f[R]), \f[C]Some(true)\f[R], or when the cursor is in \f[C
 when set to \f[C]Some(false)\f[R]
 .PP
 Default: \f[C]create_follows_cursor = None\f[R]
+.SS Per-window New-window Mouse Warping
+.PP
+When Sloppy focus, focus_new_windows, and sloppy_mouse_follows_focus would normally
+move the pointer into a new window, a window rule can suppress that creation-time
+movement with \f[C]disable_mouse_grab\f[R]. This option controls pointer movement;
+it does not disable keyboard focus or mouse-button handling.
+.PP
+Example:
+.IP
+.nf
+\f[C]
+window_rules: [
+    (window_class: "^pavucontrol$", disable_mouse_grab: true),
+]
+\f[R]
+.fi
+.PP
+Windows of type \f[C]_NET_WM_WINDOW_TYPE_UTILITY\f[R] suppress the movement by
+default. A matching rule with \f[C]disable_mouse_grab: false\f[R] explicitly
+restores the normal behavior for a utility window.
 .SS Layouts
 .PP
 Leftwm supports a variety of user definable layouts. Layouts define the way that windows are tiled in the workspace.

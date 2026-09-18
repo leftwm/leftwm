@@ -59,7 +59,12 @@
     scratchpad: [
         (name: "Alacritty", value: "alacritty", x: 860, y: 390, height: 300, width: 200),
     ],
-    window_rules: [],
+    window_rules: [
+        // Utility windows disable the creation-time mouse warp by default.
+        // Disable it for another window by matching its class or title:
+        // (window_class: "^pavucontrol$", disable_mouse_grab: true),
+        // Use `disable_mouse_grab: false` to re-enable it for a matching utility window.
+    ],
     disable_current_tag_swap: false,
     disable_tile_drag: false,
     disable_window_snap: true,

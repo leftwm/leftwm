@@ -109,6 +109,17 @@ fn from_property_notify(x_event: &XEvent) -> Option<DisplayEvent<XlibWindowHandl
     event_translate_property_notify::from_event(x_event.0, event)
 }
 
+fn requested_geometry(event: &xlib::XConfigureRequestEvent) -> XyhwChange {
+    let value_mask = event.value_mask;
+    XyhwChange {
+        x: (value_mask & c_ulong::from(xlib::CWX) != 0).then_some(event.x),
+        y: (value_mask & c_ulong::from(xlib::CWY) != 0).then_some(event.y),
+        w: (value_mask & c_ulong::from(xlib::CWWidth) != 0).then_some(event.width),
+        h: (value_mask & c_ulong::from(xlib::CWHeight) != 0).then_some(event.height),
+        ..XyhwChange::default()
+    }
+}
+
 fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHandle>> {
     let xw = x_event.0;
     let event = xlib::XConfigureRequestEvent::from(x_event.1);
@@ -147,22 +158,13 @@ fn from_configure_request(x_event: XEvent) -> Option<DisplayEvent<XlibWindowHand
         return Some(DisplayEvent::ConfigureXlibWindow(handle));
     }
     let mut change = WindowChange::new(handle);
-    let xyhw = match window_type {
-        // We want to handle the window positioning when it is a dialog or a normal window with a
-        // parent.
-        WindowType::Dialog | WindowType::Normal => XyhwChange {
-            w: Some(event.width),
-            h: Some(event.height),
-            ..XyhwChange::default()
-        },
-        _ => XyhwChange {
-            w: Some(event.width),
-            h: Some(event.height),
-            x: Some(event.x),
-            y: Some(event.y),
-            ..XyhwChange::default()
-        },
-    };
+    let mut xyhw = requested_geometry(&event);
+    // Normal transient windows retain LeftWM's parent-relative placement. Dialog-like windows keep
+    // every geometry field explicitly selected by their client.
+    if window_type == WindowType::Normal {
+        xyhw.x = None;
+        xyhw.y = None;
+    }
     change.floating = Some(xyhw);
     Some(DisplayEvent::WindowChange(change))
 }
@@ -232,4 +234,38 @@ fn from_button_release(x_event: XEvent) -> DisplayEvent<XlibWindowHandle> {
     let xw = x_event.0;
     xw.set_mode(Mode::Normal);
     DisplayEvent::ChangeToNormalMode
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn configure_geometry_uses_the_x11_value_mask() {
+        let event = xlib::XConfigureRequestEvent {
+            type_: xlib::ConfigureRequest,
+            serial: 0,
+            send_event: xlib::False,
+            display: std::ptr::null_mut(),
+            parent: 0,
+            window: 1,
+            x: -40,
+            y: 210,
+            width: 300,
+            height: 190,
+            border_width: 0,
+            above: 0,
+            detail: 0,
+            value_mask: c_ulong::from(xlib::CWX | xlib::CWHeight),
+        };
+
+        assert_eq!(
+            requested_geometry(&event),
+            XyhwChange {
+                x: Some(-40),
+                h: Some(190),
+                ..XyhwChange::default()
+            }
+        );
+    }
 }

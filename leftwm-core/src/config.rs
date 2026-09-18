@@ -64,6 +64,9 @@ pub trait Config {
     fn disable_window_snap(&self) -> bool;
     fn sloppy_mouse_follows_focus(&self) -> bool;
     fn create_follows_cursor(&self) -> bool;
+    fn respect_dialog_position(&self) -> bool {
+        false
+    }
     fn reposition_cursor_on_resize(&self) -> bool;
     fn window_hiding_strategy(&self) -> WindowHidingStrategy;
 
@@ -114,6 +117,7 @@ pub(crate) mod tests {
         pub insert_behavior: InsertBehavior,
         pub border_width: i32,
         pub single_window_border: bool,
+        pub respect_dialog_position: bool,
     }
 
     impl Config for TestConfig {
@@ -248,6 +252,10 @@ pub(crate) mod tests {
 
         fn create_follows_cursor(&self) -> bool {
             false
+        }
+
+        fn respect_dialog_position(&self) -> bool {
+            self.respect_dialog_position
         }
 
         fn window_hiding_strategy(&self) -> WindowHidingStrategy {

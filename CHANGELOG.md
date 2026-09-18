@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat(MSRV): update edition to 2024, MSRV to 1.85.0 (via #1338 by @mautamu and @VuiMuich)
 - feat(config.toml): remove TOML support entirely from leftwm, leftwm-check (via #1339 by @mautamu).
 
+### Added
+
+- Add `disable_mouse_grab` to window rules and suppress creation-time mouse warping for utility windows by default (via #1366).
+
 ### Fixes
 
 - Sloppy focus when switching tags with mouse over margins is now fixed (via #1311 by @fransklaver)

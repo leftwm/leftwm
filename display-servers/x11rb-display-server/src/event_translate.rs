@@ -97,6 +97,18 @@ fn from_focus_in(
     Ok(None)
 }
 
+fn requested_geometry(event: &xproto::ConfigureRequestEvent) -> XyhwChange {
+    let value_mask = u16::from(event.value_mask);
+    XyhwChange {
+        x: (value_mask & u16::from(xproto::ConfigWindow::X) != 0).then_some(event.x.into()),
+        y: (value_mask & u16::from(xproto::ConfigWindow::Y) != 0).then_some(event.y.into()),
+        w: (value_mask & u16::from(xproto::ConfigWindow::WIDTH) != 0).then_some(event.width.into()),
+        h: (value_mask & u16::from(xproto::ConfigWindow::HEIGHT) != 0)
+            .then_some(event.height.into()),
+        ..XyhwChange::default()
+    }
+}
+
 fn from_configure_request(
     event: &xproto::ConfigureRequestEvent,
     xw: &mut XWrap,
@@ -129,22 +141,13 @@ fn from_configure_request(
         return Ok(Some(DisplayEvent::ConfigureXlibWindow(handle)));
     }
     let mut change = WindowChange::new(handle);
-    let xyhw = match window_type {
-        // We want to handle the window positioning when it is a dialog or a normal window with a
-        // parent.
-        WindowType::Dialog | WindowType::Normal => XyhwChange {
-            w: Some(event.width.into()),
-            h: Some(event.height.into()),
-            ..XyhwChange::default()
-        },
-        _ => XyhwChange {
-            w: Some(event.width.into()),
-            h: Some(event.height.into()),
-            x: Some(event.x.into()),
-            y: Some(event.y.into()),
-            ..XyhwChange::default()
-        },
-    };
+    let mut xyhw = requested_geometry(event);
+    // Normal transient windows retain LeftWM's parent-relative placement. Dialog-like windows keep
+    // every geometry field explicitly selected by their client.
+    if window_type == WindowType::Normal {
+        xyhw.x = None;
+        xyhw.y = None;
+    }
     change.floating = Some(xyhw);
     Ok(Some(DisplayEvent::WindowChange(change)))
 }
@@ -219,4 +222,31 @@ fn from_button_release(
 ) -> Result<Option<DisplayEvent<X11rbWindowHandle>>> {
     xw.set_mode(Mode::Normal)?;
     Ok(Some(DisplayEvent::ChangeToNormalMode))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn configure_geometry_uses_the_x11_value_mask() {
+        let event = xproto::ConfigureRequestEvent {
+            window: 1,
+            x: -40,
+            y: 210,
+            width: 300,
+            height: 190,
+            value_mask: xproto::ConfigWindow::X | xproto::ConfigWindow::HEIGHT,
+            ..xproto::ConfigureRequestEvent::default()
+        };
+
+        assert_eq!(
+            requested_geometry(&event),
+            XyhwChange {
+                x: Some(-40),
+                h: Some(190),
+                ..XyhwChange::default()
+            }
+        );
+    }
 }

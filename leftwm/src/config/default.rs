@@ -249,6 +249,7 @@ impl Default for Config {
             sloppy_mouse_follows_focus: true,
             create_follows_cursor: None,
             disable_cursor_reposition_on_resize: false,
+            respect_dialog_position: false,
             auto_derive_workspaces: true,
         }
     }
@@ -262,5 +263,10 @@ mod tests {
     fn serialize_default_config() {
         let config = Config::default();
         assert!(ron::to_string(&config).is_ok());
+    }
+
+    #[test]
+    fn dialog_position_is_not_respected_by_default() {
+        assert!(!Config::default().respect_dialog_position);
     }
 }
