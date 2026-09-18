@@ -74,6 +74,9 @@ pub struct WindowHook {
     pub spawn_fullscreen: Option<bool>,
     /// Handle the window as if it was of this `_NET_WM_WINDOW_TYPE`
     pub spawn_as_type: Option<WindowType>,
+    /// Suppress the creation-time pointer warp for matching windows.
+    #[serde(default)]
+    pub disable_mouse_grab: Option<bool>,
     pub hiding_strategy: Option<WindowHidingStrategy>,
 }
 
@@ -194,18 +197,28 @@ impl WindowHook {
         if let Some(should_float) = self.spawn_floating {
             window.set_floating(should_float);
         }
+        if let Some(window_type) = &self.spawn_as_type {
+            window.r#type.clone_from(window_type);
+        }
+        window.set_disable_mouse_grab(self.disable_mouse_grab);
+
+        let refocus_after_state_change = |state: &mut State<H>, window: &Window<H>| {
+            if window.allows_mouse_warp() {
+                state.handle_window_focus(&window.handle);
+            } else {
+                state.focus_window(&window.handle);
+            }
+        };
+
         if let Some(fullscreen) = self.spawn_fullscreen {
             let act = DisplayAction::SetState(window.handle, fullscreen, WindowState::Fullscreen);
             state.actions.push_back(act);
-            state.handle_window_focus(&window.handle);
+            refocus_after_state_change(state, window);
         }
         if let Some(sticky) = self.spawn_sticky {
             let act = DisplayAction::SetState(window.handle, sticky, WindowState::Sticky);
             state.actions.push_back(act);
-            state.handle_window_focus(&window.handle);
-        }
-        if let Some(w_type) = self.spawn_as_type.clone() {
-            window.r#type = w_type;
+            refocus_after_state_change(state, window);
         }
         window.hiding_strategy = self.hiding_strategy;
     }
@@ -256,6 +269,7 @@ pub struct Config {
     pub create_follows_cursor: Option<bool>,
     pub auto_derive_workspaces: bool,
     pub disable_cursor_reposition_on_resize: bool,
+    pub respect_dialog_position: bool,
     pub focus_on_activation: FocusOnActivationBehaviour,
     pub window_hiding_strategy: WindowHidingStrategy,
     #[cfg(feature = "lefthk")]
@@ -717,6 +731,10 @@ impl leftwm_core::Config for Config {
         !self.disable_cursor_reposition_on_resize
     }
 
+    fn respect_dialog_position(&self) -> bool {
+        self.respect_dialog_position
+    }
+
     // Determines if a new window should be created under the cursor or on the workspace which has the focus
     fn create_follows_cursor(&self) -> bool {
         // If follow behaviour has been explicitly set, use that value.
@@ -763,6 +781,78 @@ fn write_to_pipe(return_pipe: &mut Result<File, Box<dyn Error>>, msg: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use leftwm_core::models::WindowHandle;
+
+    #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Default)]
+    struct TestHandle(i32);
+
+    impl Handle for TestHandle {}
+
+    struct TestDisplayServer;
+
+    impl DisplayServer<TestHandle> for TestDisplayServer {
+        fn new(_: &impl leftwm_core::Config) -> Self {
+            Self
+        }
+
+        fn get_next_events(&mut self) -> Vec<leftwm_core::DisplayEvent<TestHandle>> {
+            vec![]
+        }
+
+        fn reload_config(
+            &mut self,
+            _: &impl leftwm_core::Config,
+            _: Option<WindowHandle<TestHandle>>,
+            _: &[Window<TestHandle>],
+        ) {
+        }
+
+        fn wait_readable(&self) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>> {
+            Box::pin(std::future::pending())
+        }
+
+        fn flush(&self) {}
+
+        fn generate_verify_focus_event(&self) -> Option<leftwm_core::DisplayEvent<TestHandle>> {
+            None
+        }
+    }
+
+    fn parse_ron_config(input: &str) -> Config {
+        Options::default()
+            .with_default_extension(Extensions::IMPLICIT_SOME | Extensions::UNWRAP_NEWTYPES)
+            .from_str(input)
+            .expect("test config should deserialize")
+    }
+
+    fn apply_window_rule(
+        config: Config,
+        class: &str,
+        window_type: WindowType,
+    ) -> (Window<TestHandle>, bool) {
+        let mut manager: Manager<TestHandle, Config, TestDisplayServer> = Manager::new(config);
+        manager.state.focus_manager.behaviour = FocusBehaviour::Sloppy;
+        manager.state.focus_manager.sloppy_mouse_follows_focus = true;
+        manager.state.actions.clear();
+
+        let mut window = Window::new(WindowHandle(TestHandle(1)), None, None);
+        window.res_class = Some(class.to_owned());
+        window.r#type = window_type;
+
+        assert!(<Config as leftwm_core::Config>::setup_predefined_window(
+            &manager.config,
+            &mut manager.state,
+            &mut window,
+        ));
+
+        let queued_mouse_warp = manager
+            .state
+            .actions
+            .iter()
+            .any(|action| matches!(action, DisplayAction::MoveMouseOver(..)));
+
+        (window, queued_mouse_warp)
+    }
 
     #[test]
     fn config_serializes_to_valid_ron_test() {
@@ -777,6 +867,116 @@ mod tests {
 
         let ron_config = ron::from_str::<'_, Config>(ron.unwrap().as_str());
         assert!(ron_config.is_ok(), "Could not deserialize default config");
+    }
+
+    #[test]
+    fn documented_mouse_grab_rule_example_deserializes() {
+        let config = parse_ron_config(
+            r#"(
+                window_rules: [
+                    // Disable the creation-time pointer warp for this application.
+                    (window_class: "^pavucontrol$", disable_mouse_grab: true),
+                ],
+            )"#,
+        );
+
+        assert_eq!(
+            config.window_rules.as_ref().unwrap()[0].disable_mouse_grab,
+            Some(true),
+        );
+    }
+
+    #[test]
+    fn window_rule_without_mouse_grab_setting_uses_window_type_default() {
+        let config = parse_ron_config(
+            r#"(
+                window_rules: [
+                    (window_class: "^target$"),
+                ],
+            )"#,
+        );
+
+        assert_eq!(
+            config.window_rules.as_ref().unwrap()[0].disable_mouse_grab,
+            None,
+        );
+
+        let (normal, queued_mouse_warp) = apply_window_rule(config, "target", WindowType::Normal);
+        assert!(normal.allows_mouse_warp());
+        assert!(!queued_mouse_warp);
+    }
+
+    #[test]
+    fn window_rule_mouse_grab_setting_accepts_both_boolean_overrides() {
+        let disabled = parse_ron_config(
+            r#"(
+                window_rules: [
+                    (window_class: "^target$", disable_mouse_grab: true),
+                ],
+            )"#,
+        );
+        let enabled = parse_ron_config(
+            r#"(
+                window_rules: [
+                    (window_class: "^target$", disable_mouse_grab: false),
+                ],
+            )"#,
+        );
+
+        let (normal, _) = apply_window_rule(disabled, "target", WindowType::Normal);
+        let (utility, _) = apply_window_rule(enabled, "target", WindowType::Utility);
+
+        assert!(!normal.allows_mouse_warp());
+        assert!(utility.allows_mouse_warp());
+    }
+
+    #[test]
+    fn rule_state_change_focus_respects_mouse_warp_policy() {
+        let disabled_fullscreen = parse_ron_config(
+            r#"(
+                window_rules: [
+                    (
+                        window_class: "^target$",
+                        spawn_fullscreen: false,
+                        disable_mouse_grab: true,
+                    ),
+                ],
+            )"#,
+        );
+        let utility_sticky = parse_ron_config(
+            r#"(
+                window_rules: [
+                    (
+                        window_class: "^target$",
+                        spawn_sticky: false,
+                        spawn_as_type: Utility,
+                    ),
+                ],
+            )"#,
+        );
+        let enabled_utility = parse_ron_config(
+            r#"(
+                window_rules: [
+                    (
+                        window_class: "^target$",
+                        spawn_fullscreen: false,
+                        disable_mouse_grab: false,
+                    ),
+                ],
+            )"#,
+        );
+
+        let (_, disabled_fullscreen_warp) =
+            apply_window_rule(disabled_fullscreen, "target", WindowType::Normal);
+        let (utility, utility_sticky_warp) =
+            apply_window_rule(utility_sticky, "target", WindowType::Normal);
+        let (_, enabled_utility_warp) =
+            apply_window_rule(enabled_utility, "target", WindowType::Utility);
+
+        assert!(!disabled_fullscreen_warp);
+        assert_eq!(utility.r#type, WindowType::Utility);
+        assert!(!utility_sticky_warp);
+        assert!(enabled_utility_warp);
     }
 
     #[test]

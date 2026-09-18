@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Resizing a floating window with the mouse is now anchored to the corner nearest the pointer, instead of always the bottom right one (by @adrian-cancio)
+- Add `disable_mouse_grab` to window rules and suppress creation-time mouse warping for utility windows by default (via #1366).
 
 ### Fixes
 

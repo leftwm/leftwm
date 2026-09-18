@@ -9,10 +9,10 @@ use std::sync::{Once, atomic::Ordering};
 /// Errors which can appear while running the event loop.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Error {
-    #[error("Couldn't create the file: '{0}'")]
+    #[error("Couldn't create the file: '{}'", .0.display())]
     CreateFile(PathBuf),
 
-    #[error("Couldn't connect to file: '{0}'")]
+    #[error("Couldn't connect to file: '{}'", .0.display())]
     ConnectToFile(PathBuf),
 }
 

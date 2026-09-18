@@ -55,6 +55,9 @@ pub struct Window<H: Handle> {
     pub(crate) must_float: bool,
     floating: Option<Xyhw>,
     pub never_focus: bool,
+    /// Per-window override for the creation-time pointer warp.
+    #[serde(default)]
+    disable_mouse_grab: Option<bool>,
     pub urgent: bool,
     pub debugging: bool,
     pub name: Option<String>,
@@ -89,6 +92,7 @@ impl<H: Handle> Window<H> {
             must_float: false,
             debugging: false,
             never_focus: false,
+            disable_mouse_grab: None,
             urgent: false,
             name,
             pid,
@@ -122,6 +126,20 @@ impl<H: Handle> Window<H> {
             || self.r#type == WindowType::Splash
             || self.r#type == WindowType::Toolbar
             || self.r#type == WindowType::Notification
+    }
+
+    /// Set a per-window override for the creation-time pointer warp.
+    pub fn set_disable_mouse_grab(&mut self, value: Option<bool>) {
+        self.disable_mouse_grab = value;
+    }
+
+    /// Whether the new-window path may move the pointer into this window.
+    #[must_use]
+    pub fn allows_mouse_warp(&self) -> bool {
+        match self.disable_mouse_grab {
+            Some(disabled) => !disabled,
+            None => self.r#type != WindowType::Utility,
+        }
     }
 
     pub fn set_floating(&mut self, value: bool) {
@@ -399,5 +417,48 @@ mod tests {
         subject.tag(&1);
         subject.untag();
         assert!(!subject.has_tag(&1), "was unable to untag the window");
+    }
+
+    #[test]
+    fn mouse_warp_policy_honors_type_defaults_and_explicit_overrides() {
+        let cases = [
+            (1, WindowType::Normal, None, true),
+            (2, WindowType::Utility, None, false),
+            (3, WindowType::Normal, Some(true), false),
+            (4, WindowType::Utility, Some(false), true),
+        ];
+
+        for (handle, window_type, disable_mouse_grab, expected) in cases {
+            let mut subject = Window::new(WindowHandle::<MockHandle>(handle), None, None);
+            subject.r#type = window_type;
+            subject.set_disable_mouse_grab(disable_mouse_grab);
+
+            assert_eq!(
+                subject.allows_mouse_warp(),
+                expected,
+                "unexpected mouse-warp policy for {:?} with disable_mouse_grab={:?}",
+                subject.r#type,
+                disable_mouse_grab,
+            );
+        }
+    }
+
+    #[test]
+    fn missing_mouse_grab_policy_deserializes_as_the_type_default() {
+        let mut subject = Window::new(WindowHandle::<MockHandle>(1), None, None);
+        subject.r#type = WindowType::Utility;
+        subject.set_disable_mouse_grab(Some(false));
+
+        let mut serialized = serde_json::to_value(subject).expect("window should serialize");
+        let fields = serialized
+            .as_object_mut()
+            .expect("a serialized window should be a map");
+        assert!(fields.remove("disable_mouse_grab").is_some());
+
+        let restored: Window<MockHandle> =
+            serde_json::from_value(serialized).expect("legacy window state should deserialize");
+
+        assert_eq!(restored.disable_mouse_grab, None);
+        assert!(!restored.allows_mouse_warp());
     }
 }

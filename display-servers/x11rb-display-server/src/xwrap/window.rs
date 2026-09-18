@@ -34,6 +34,7 @@ impl XWrap {
         let actions = self.get_window_actions_atoms(window)?;
         let mut can_resize = actions.contains(&self.atoms.NetWMActionResize);
         let trans = self.get_transient_for(window)?;
+        let geometry = self.get_window_geometry(window)?;
         let sizing_hint = self.get_hint_sizing_as_xyhw(window)?;
         let wm_hint = self.get_wmhints(window)?;
 
@@ -48,14 +49,12 @@ impl XWrap {
         w.states = states;
         w.transient = trans.map(|h| WindowHandle(X11rbWindowHandle(h)));
 
-        // Initialise the windows floating with the pre-mapped settings.
-        sizing_hint
-            .unwrap_or_default()
-            .update_window_floating(&mut w);
+        // Initialise the window's floating geometry with its pre-map rectangle.
+        geometry.update_window_floating(&mut w);
         let mut requested = Xyhw::default();
-        sizing_hint.unwrap_or_default().update(&mut requested);
+        geometry.update(&mut requested);
 
-        if let Some(hint) = sizing_hint {
+        if let Some(mut hint) = sizing_hint {
             // Ignore this for now for non-splashes as it causes issues, e.g. mintstick is non-resizable but is too
             // small, issue #614: https://github.com/leftwm/leftwm/issues/614.
             can_resize = match (r#type, hint.minw, hint.minh, hint.maxw, hint.maxh) {
@@ -69,8 +68,8 @@ impl XWrap {
                 _ => true,
             };
             // Use the pre-mapped sizes if they are bigger.
-            // hint.w = std::cmp::max(xyhw.w, hint.w);
-            // hint.h = std::cmp::max(xyhw.h, hint.h);
+            hint.w = std::cmp::max(geometry.w, hint.w);
+            hint.h = std::cmp::max(geometry.h, hint.h);
             hint.update_window_floating(&mut w);
             hint.update(&mut requested);
         }
@@ -81,12 +80,6 @@ impl XWrap {
             w.never_focus = !hint.input.unwrap_or(true);
             w.urgent = hint.urgent;
         }
-        // Is this needed? Made it so it doens't overwrite prior sizing.
-        if w.floating() && sizing_hint.is_none() {
-            let geo = self.get_window_geometry(window)?;
-            geo.update_window_floating(&mut w);
-        }
-
         let cursor = self.get_cursor_point()?;
         Ok(Some(DisplayEvent::WindowCreate(w, cursor.0, cursor.1)))
     }
