@@ -8,9 +8,8 @@ jobs:
     name: Run rustfmt in check mode
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -19,16 +18,15 @@ jobs:
       - name: Run fmt
         uses: actions-rs/cargo@v1
         with:
-            command: fmt
-            args: -- --check
+          command: fmt
+          args: -- --check
 
   clippy:
     name: Run clippy
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: apt update
         run: sudo apt update
@@ -43,16 +41,15 @@ jobs:
       - name: Run clippy
         uses: actions-rs/cargo@v1
         with:
-            command: clippy
-            args: --all-targets --all-features -- -W clippy::pedantic
+          command: clippy
+          args: --all-targets --all-features -- -W clippy::pedantic
 
   test:
     name: Run tests
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: apt update
         run: sudo apt update
@@ -61,7 +58,10 @@ jobs:
         run: sudo apt install -y --no-install-recommends libsystemd-dev
 
       - name: Run test
-        uses: actions-rs/cargo@v1
         with:
-            command: test
-            args: --all-targets --all-features
+          - uses: actions/checkout@v4
+          - uses: dtolnay/rust-toolchain@master
+            with:
+              toolchain: ${{ matrix.rust }}
+          - uses: Swatinem/rust-cache@v2
+          - run: cargo test --verbose --all-features -- all-targets
