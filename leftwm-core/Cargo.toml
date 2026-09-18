@@ -1,6 +1,6 @@
 [package]
 name = "leftwm-core"
-version = "0.5.4"
+version = "0.5.5"
 rust-version = "1.88.0" # MSRV MINIMUM SUPPORTED RUST VERSION
 authors = ["Lex Childs <lexchilds@gmail.com>"]
 categories = ["data-structures", "gui"]
@@ -12,7 +12,7 @@ repository = "https://github.com/leftwm/leftwm"
 description = "A window manager for Adventurers"
 
 [dependencies]
-dirs = { version = "6.0.0", default-features = false }
+dirs = { version = "7.0.0", default-features = false }
 futures = { version = "0.3.21", default-features = false }
 tracing = { version = "0.1.37", default-features = false }
 nix = { version = "0.31.1", features = ["fs", "signal"], default-features = false }

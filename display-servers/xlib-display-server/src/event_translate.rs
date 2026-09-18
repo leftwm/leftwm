@@ -221,12 +221,15 @@ fn from_button_press(raw_event: xlib::XEvent) -> DisplayEvent<XlibWindowHandle> 
     let h = WindowHandle(XlibWindowHandle(event.window));
     let mut mod_mask = event.state;
     mod_mask &= !(xlib::Mod2Mask | xlib::LockMask);
+    // Root coordinates, not window relative ones: the handler compares the
+    // click against the window's own position to pick a resize corner, and the
+    // x11rb backend already reports clicks this way.
     DisplayEvent::MouseCombo(
         ModMask::from_bits_retain(mod_mask as u16),
         Button::from(event.button as u8),
         h,
-        event.x,
-        event.y,
+        event.x_root,
+        event.y_root,
     )
 }
 

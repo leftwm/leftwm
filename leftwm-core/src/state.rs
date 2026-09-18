@@ -5,8 +5,8 @@ use crate::child_process::ChildID;
 use crate::config::{Config, InsertBehavior, ScratchPad};
 use crate::layouts::LayoutManager;
 use crate::models::{
-    FocusManager, Handle, Mode, ScratchPadName, Screen, Tags, Window, WindowHandle, WindowState,
-    WindowType, Workspace,
+    FocusManager, Handle, Mode, ResizeCorner, ScratchPadName, Screen, Tags, Window, WindowHandle,
+    WindowState, WindowType, Workspace,
 };
 use leftwm_layouts::Layout;
 use serde::{Deserialize, Serialize};
@@ -24,6 +24,10 @@ pub struct State<H: Handle> {
     pub layout_manager: LayoutManager,
     #[serde(bound = "")]
     pub mode: Mode<H>,
+    /// The corner the resize in progress is anchored to, set when the drag
+    /// starts from whichever corner the pointer was closest to.
+    #[serde(default)]
+    pub resize_corner: ResizeCorner,
     pub active_scratchpads: HashMap<ScratchPadName, VecDeque<ChildID>>,
     #[serde(bound = "")]
     pub actions: VecDeque<DisplayAction<H>>,
@@ -58,6 +62,7 @@ impl<H: Handle> State<H> {
             windows: Default::default(),
             workspaces: Default::default(),
             mode: Default::default(),
+            resize_corner: Default::default(),
             active_scratchpads: Default::default(),
             actions: Default::default(),
             tags,
