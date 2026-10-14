@@ -135,12 +135,14 @@ impl WindowHook {
         let matches_any = |re: &Regex, strs: Vec<&Option<String>>| {
             strs.iter().any(|str| {
                 str.as_ref().is_some_and(|s| {
-                    // we match the class/title to the window rule by checking if replacing the text
-                    // with the regex makes the string empty. if the original string is already
-                    // empty, this will match it to every regex, so we need to check for that.
-                    // however, if the window rule is explicitly for empty strings, we still
-                    // want empty strings to match to it.
-                    re.replace(s, "").is_empty() && (!s.is_empty() || re.as_str().is_empty())
+                    // an empty pattern would match every string, so it is reserved for windows
+                    // whose class/title is explicitly empty. conversely, empty strings must not
+                    // match every non-empty pattern (e.g. `.*`).
+                    if re.as_str().is_empty() {
+                        s.is_empty()
+                    } else {
+                        !s.is_empty() && re.is_match(s)
+                    }
                 })
             })
         };
@@ -977,6 +979,28 @@ mod tests {
         assert_eq!(utility.r#type, WindowType::Utility);
         assert!(!utility_sticky_warp);
         assert!(enabled_utility_warp);
+    }
+
+    fn class_rule_matches(pattern: &str, class: &str) -> bool {
+        let config = parse_ron_config(&format!("(window_rules: [(window_class: {pattern:?})])"));
+        let mut window = Window::new(WindowHandle(TestHandle(1)), None, None);
+        window.res_class = Some(class.to_owned());
+        config.window_rules.as_ref().unwrap()[0].score_window(&window) != 0
+    }
+
+    #[test]
+    fn class_rule_matches_partial_and_case_insensitive_patterns() {
+        assert!(class_rule_matches("firefox", "firefox-esr"));
+        assert!(class_rule_matches("(?i)firefox", "Firefox"));
+        assert!(!class_rule_matches("firefox", "Firefox"));
+        assert!(!class_rule_matches("^firefox$", "firefox-esr"));
+    }
+
+    #[test]
+    fn empty_class_pattern_only_matches_empty_class() {
+        assert!(class_rule_matches("", ""));
+        assert!(!class_rule_matches("", "firefox"));
+        assert!(!class_rule_matches(".*", ""));
     }
 
     #[test]
