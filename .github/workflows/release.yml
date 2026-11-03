@@ -57,3 +57,50 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           cargo publish --allow-dirty -p leftwm
+    publish_aur_package:
+      name: Publish AUR package
+
+      runs-on: ubuntu-latest
+
+      strategy:
+        fail-fast: true
+        matrix:
+          target:
+            - x86_64-unknown-linux-gnu
+
+      steps:
+        - uses: actions/checkout@v2
+
+        - name: Download checksums
+          uses: actions/download-artifact@v2.0.9
+          with:
+            name: checksums
+            path: ./checksums
+
+        - name: Generate PKGBUILD
+          env:
+            TARGET: ${{ matrix.target }}
+            RELEASE_TAG: ${{ needs.create_release.outputs.release_tag }}
+          run: ./ci/github-actions/generate-pkgbuild.py3
+
+        - name: Publish leftwm, leftwm-nonsystemd to the AUR
+          uses: KSXGitHub/github-actions-deploy-aur@v2.2.3
+          with:
+            pkgname: leftwm
+            pkgbuild: ./leftwm/release/PKGBUILD
+            commit_username: ${{ secrets.AUR_USERNAME }}
+            commit_email: ${{ secrets.AUR_EMAIL }}
+            ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+            commit_message: ${{ github.ref }}
+            updpkgsums: true
+
+        - name: Publish leftwm-git, leftwm-nonsystemd-git to the AUR
+          uses: KSXGitHub/github-actions-deploy-aur@v2.2.3
+          with:
+            pkgname: leftwm-git
+            pkgbuild: ./leftwm/release/git-PKGBUILD
+            commit_username: ${{ secrets.AUR_USERNAME }}
+            commit_email: ${{ secrets.AUR_EMAIL }}
+            ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+            commit_message: ${{ github.ref }}
+            updpkgsums: true
