@@ -4,7 +4,9 @@ description = "x11 backend for leftwm using pure rust + xcb specification"
 version = "0.1.5"
 license = "MIT"
 edition = "2024"
-rust-version = "1.88.0" # MSRV MINIMUM SUPPORTED RUST VERSION
+rust-version = "1.96.1" # MSRV MINIMUM SUPPORTED RUST VERSION
+homepage = "https://leftwm.org"
+repository = "https://github.com/leftwm/leftwm/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
