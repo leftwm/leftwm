@@ -46,6 +46,8 @@ impl Config {
         let mut returns = Vec::new();
         println!("\x1b[0;94m::\x1b[0m Checking keybinds . . .");
         let mut bindings = HashSet::new();
+        let default_on_release = Some(false);
+        let mut released;
         for keybind in &self.keybind {
             if verbose {
                 println!(
@@ -75,7 +77,12 @@ impl Config {
             }
 
             modkey.sort_unstable();
-            if let Some(conflict_key) = bindings.replace((modkey.clone(), &keybind.key)) {
+            if keybind.on_release.is_some() {
+                released = &keybind.on_release;
+            } else {
+                released = &default_on_release;
+            }
+            if let Some(conflict_key) = bindings.replace((modkey.clone(), released, &keybind.key)) {
                 returns.push((
                     None,
                     format!(

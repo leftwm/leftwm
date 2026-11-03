@@ -25,6 +25,7 @@ impl Default for Config {
                 value: "dmenu_run".to_owned(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "p".to_owned(),
+                on_release: Some(false),
             },
             // Mod + Shift + Enter => Open A Shell
             Keybind {
@@ -32,6 +33,7 @@ impl Default for Config {
                 value: default_terminal().to_owned(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "Return".to_owned(),
+                on_release: Some(false),
             },
             // Mod + Shift + q => kill focused window
             Keybind {
@@ -39,6 +41,7 @@ impl Default for Config {
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "q".to_owned(),
+                on_release: Some(false),
             },
             // Mod + Shift + r => soft reload leftwm
             Keybind {
@@ -46,6 +49,7 @@ impl Default for Config {
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "r".to_owned(),
+                on_release: Some(false),
             },
             // Mod + Shift + x => exit leftwm
             Keybind {
@@ -53,6 +57,7 @@ impl Default for Config {
                 value: exit_strategy().to_owned(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "x".to_owned(),
+                on_release: Some(false),
             },
             // Mod + Ctrl + l => lock the screen
             Keybind {
@@ -60,6 +65,7 @@ impl Default for Config {
                 value: "slock".to_owned(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "l".to_owned(),
+                on_release: Some(false),
             },
             // Mod + Shift + w => swap the tags on the last to active workspaces
             Keybind {
@@ -67,6 +73,7 @@ impl Default for Config {
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "w".to_owned(),
+                on_release: Some(false),
             },
             // Mod + w => move the active window to the previous workspace
             Keybind {
@@ -74,108 +81,126 @@ impl Default for Config {
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "w".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::MoveWindowUp,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "k".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::MoveWindowDown,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "j".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::MoveWindowTop,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Return".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::FocusWindowUp,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "k".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::FocusWindowDown,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "j".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::NextLayout,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "k".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::PreviousLayout,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "j".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::FocusWorkspaceNext,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "l".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::FocusWorkspacePrevious,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "h".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::MoveWindowUp,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "Up".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::MoveWindowDown,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: "Down".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::FocusWindowUp,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Up".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::FocusWindowDown,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Down".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::NextLayout,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "Up".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::PreviousLayout,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned(), "Control".to_owned()].into()),
                 key: "Down".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::FocusWorkspaceNext,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Right".to_owned(),
+                on_release: Some(false),
             },
             Keybind {
                 command: BaseCommand::FocusWorkspacePrevious,
                 value: String::default(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: "Left".to_owned(),
+                on_release: Some(false),
             },
         ];
 
@@ -187,6 +212,7 @@ impl Default for Config {
                 value: i.to_string(),
                 modifier: Some(vec!["modkey".to_owned()].into()),
                 key: i.to_string(),
+                on_release: Some(false),
             });
         }
 
@@ -198,6 +224,7 @@ impl Default for Config {
                 value: i.to_string(),
                 modifier: Some(vec!["modkey".to_owned(), "Shift".to_owned()].into()),
                 key: i.to_string(),
+                on_release: Some(false),
             });
         }
 
